@@ -1,0 +1,15 @@
+config.halo_src_dir = "@CMAKE_SOURCE_DIR@"
+config.halo_build_dir = "@CMAKE_BINARY_DIR@"
+config.halo_header_src_dir = "@CMAKE_SOURCE_DIR@/include"
+config.halo_header_build_dir = "@CMAKE_BINARY_DIR@/include"
+config.halo_lib_dir = "@CMAKE_BINARY_DIR@/lib"
+config.llvm_src_dir = "@LLVM_SRC_DIR@/include"
+config.llvm_build_dir = "@CMAKE_BINARY_DIR@/llvm/include"
+config.cxx = "@CMAKE_CXX_COMPILER@ @CMAKE_CXX_FLAGS@"
+config.cc = "@CMAKE_C_COMPILER@ @CMAKE_C_FLAGS@"
+config.build_type = "@CMAKE_BUILD_TYPE@"
+config.lib_cudart_path = "@cudart@"
+config.lib_dnnl_path = "@dnnl@"
+config.lib_xnnpack_path = "@xnnpack@"
+
+lit_config.load_config(config, "@CMAKE_CURRENT_SOURCE_DIR@/lit.cfg.py")

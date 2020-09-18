@@ -1,0 +1,844 @@
+//===- tf_parser.cc -------------------------------------------------------===//
+//
+// Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// =============================================================================
+
+#include "tf_parser.h"
+
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <google/protobuf/text_format.h>
+
+#include <fstream>
+#include <map>
+#include <set>
+#include <string_view>
+
+#include "graph.pb.h"
+#include "halo/lib/framework/common.h"
+#include "halo/lib/framework/type.h"
+#include "halo/lib/ir/ir_builder.h"
+
+namespace halo {
+
+TFParser::~TFParser() {}
+
+Status TFParser::Parse(Function* function,
+                       const std::vector<std::string>& file_list,
+                       const armory::Opts& opts) {
+  // Verify that the version of the library that we linked against is
+  // compatible with the version of the headers we compiled against.
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  tensorflow::GraphDef graph_def;
+  HLCHECK(!file_list.empty());
+
+  std::ifstream ifs(file_list.front());
+  HLCHECK(!ifs.fail());
+
+  if (!graph_def.ParseFromIstream(&ifs)) {
+    google::protobuf::io::IstreamInputStream input_stream(&ifs);
+    if (!google::protobuf::TextFormat::Parse(&input_stream, &graph_def)) {
+      LOG(ERROR) << "Encountered error(s) when parsing " << file_list.front();
+      return Status::ASSERTION;
+    }
+  }
+
+  BasicBlockBuilder bb_builder(function);
+  BasicBlock* bb = bb_builder.CreateBasicBlock("bb0");
+  return Parse(bb, graph_def, opts);
+}
+
+Status TFParser::Parse(BasicBlock* bb, const tensorflow::GraphDef& graph_def,
+                       const armory::Opts& opts) {
+  Init(bb, bb->GetParent(), opts);
+  return ConvertToHaloIR(graph_def);
+}
+
+/// register op and create ir builder
+void TFParser::Init(BasicBlock* bb, Function* function,
+                    const armory::Opts& opts) {
+  RegisterOp();
+  ir_builder_ = std::make_unique<IRBuilder>(bb);
+  arg_builder_ = std::make_unique<ArgumentBuilder>(function);
+  c_builder_ = std::make_unique<ConstantBuilder>(function);
+  opts_ = opts;
+}
+
+Status TFParser::ConvertToHaloIR(const tensorflow::GraphDef& graph_def) {
+  int i = 0;
+  Status s = Status::SUCCESS;
+  for (const auto& cur_node : graph_def.node()) {
+    VLOG(4) << "==========layer[" << i << "]==========";
+    s = ConvertOneNode(cur_node, i++);
+    if (s != Status::SUCCESS) {
+      return s;
+    }
+  }
+
+  VLOG(4) << "Total convert node num: " << graph_def.node_size();
+  HLCHECK(graph_def.node_size() == i);
+  return Status::SUCCESS;
+}
+
+Status TFParser::ConvertOneNode(const tensorflow::NodeDef& cur_node,
+                                size_t index) {
+  Status s = Status::SUCCESS;
+  auto fp = func_lists_.find(cur_node.op());
+  if (fp != func_lists_.end()) {
+    s = (fp->second)(cur_node);
+    if (s != Status::SUCCESS) {
+      return s;
+    }
+  } else {
+    if (opts_.print_diagnostic_report) {
+      TFParser::WriteCSVReport(cur_node, index, std::cout);
+      ConvertDummyNode(cur_node);
+    } else {
+      LOG(ERROR)
+          << "Convert function not found, Please check if it is supported: "
+          << "Name: "
+          << "[" << cur_node.name() << "], Op: [" << cur_node.op()
+          << "], Index: "
+          << "[" << index << "]";
+      return Status::ASSERTION;
+    }
+  }
+  return Status::SUCCESS;
+}
+
+void TFParser::WriteCSVReport(const tensorflow::NodeDef& cur_node,
+                              const size_t index, std::ostream& os) {
+  os << "Name: [" << cur_node.name() << "], Op: [" << cur_node.op()
+     << "], Index: [" << index << "]\n";
+}
+
+void TFParser::RegisterOp() {
+  func_lists_.emplace("Const", std::bind(&TFParser::ConvertConstNode, this,
+                                         std::placeholders::_1));
+  func_lists_.emplace("Placeholder",
+                      std::bind(&TFParser::ConvertPlaceholderNode, this,
+                                std::placeholders::_1));
+#include "tf_regist_op.h.inc"
+}
+
+static halo::DataType ProcessDataType(const tensorflow::DataType& data_type) {
+  switch (data_type) {
+    case tensorflow::DT_FLOAT:
+      return DataType::FLOAT32;
+    case tensorflow::DT_INT32:
+      return DataType::INT32;
+    case tensorflow::DT_UINT8:
+    case tensorflow::DT_QUINT8:
+      return DataType::UINT8;
+    case tensorflow::DT_INT16:
+      return DataType::INT16;
+    case tensorflow::DT_QINT8:
+    case tensorflow::DT_INT8:
+      return DataType::INT8;
+    case tensorflow::DT_STRING:
+      return DataType::STRING;
+    case tensorflow::DT_BOOL:
+      return DataType::BOOL;
+    default:
+      LOG(ERROR) << "Unsupported DataType";
+      return DataType::INVALID;
+  }
+}
+
+TFAttrs::TFAttrs(const tensorflow::NodeDef& node_def) {
+  for (const auto& it : node_def.attr()) {
+    attr_map_.emplace(it.first, it.second);
+  }
+}
+
+/// Get Attribute for enum
+template <>
+bool TFAttrs::Process<CodeType>(const std::string& key, CodeType* code_type) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+
+  HLCHECK(attr_map_.at(key).value_case() == tensorflow::AttrValue::kS);
+  static const std::unordered_map<std::string, CodeType> enum_map{
+      {"CORNER", CodeType::CORNER},
+      {"CENTER_SIZE", CodeType::CENTER_SIZE},
+      {"CORNER_SIZE", CodeType::CORNER_SIZE},
+  };
+
+  *code_type = enum_map.count(attr_map_.at(key).s())
+                   ? enum_map.at(attr_map_.at(key).s())
+                   : CodeType::INVALID;
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<DataFormat>(const std::string& key,
+                                  DataFormat* data_format) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+  HLCHECK(attr_map_.at(key).value_case() == tensorflow::AttrValue::kS);
+
+  static const std::unordered_map<std::string, DataFormat> enum_map{
+      {"NHWC", DataFormat::NHWC},   {"NCHW", DataFormat::NCHW},
+      {"NDHWC", DataFormat::NDHWC}, {"HWCN", DataFormat::HWCN},
+      {"DNCHW", DataFormat::DNCHW},
+  };
+
+  *data_format = enum_map.count(attr_map_.at(key).s())
+                     ? enum_map.at(attr_map_.at(key).s())
+                     : DataFormat::INVALID;
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<PadMode>(const std::string& key, PadMode* pad_mode) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+
+  HLCHECK(attr_map_.at(key).value_case() == tensorflow::AttrValue::kS);
+  static const std::unordered_map<std::string, PadMode> enum_map{
+      {"CONSTANT", PadMode::CONSTANT},
+      {"REFLECT", PadMode::REFLECT},
+      {"SYMMETRIC", PadMode::SYMMETRIC},
+  };
+
+  *pad_mode = enum_map.count(attr_map_.at(key).s())
+                  ? enum_map.at(attr_map_.at(key).s())
+                  : PadMode::INVALID;
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<Padding>(const std::string& key, Padding* padding) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+
+  HLCHECK(attr_map_.at(key).value_case() == tensorflow::AttrValue::kS);
+  static const std::unordered_map<std::string, Padding> enum_map{
+      {"VALID", Padding::VALID},
+      {"SAME", Padding::SAME},
+      {"SAME_LOWER", Padding::SAME_LOWER},
+      {"EXPLICIT", Padding::EXPLICIT},
+  };
+
+  *padding = enum_map.count(attr_map_.at(key).s())
+                 ? enum_map.at(attr_map_.at(key).s())
+                 : Padding::INVALID;
+  return true;
+}
+
+/// Process Tensor in list scope
+template <>
+Tensor<std::string> TFParser::ProcessTensor<std::string>(
+    const tensorflow::TensorProto& tensor_proto) {
+  const DataType& data_type = ProcessDataType(tensor_proto.dtype());
+  std::vector<int64_t> shape;
+  if (tensor_proto.has_tensor_shape()) {
+    shape = ProcessShape(tensor_proto.tensor_shape());
+  }
+
+  std::vector<std::string> v;
+  // string val e.g.  s: "NHWC"
+  for (const auto& it : tensor_proto.string_val()) {
+    v.emplace_back(it);
+  }
+
+  // has tensor content, e.g. tensor_content: "\000\000\000\001"
+  if (!tensor_proto.tensor_content().empty()) {
+    HLCHECK(v.empty());
+    v.emplace_back(tensor_proto.tensor_content());
+    // string val and tensor content will not coexist, we use
+    // `need_decode` flag to distinguish
+    return Tensor<std::string>(data_type, shape, v, true);
+  }
+  return Tensor<std::string>(data_type, shape, v);
+}
+
+template <>
+Tensor<bool> TFParser::ProcessTensor<bool>(
+    const tensorflow::TensorProto& tensor_proto) {
+  const DataType& data_type = ProcessDataType(tensor_proto.dtype());
+  std::vector<int64_t> shape;
+  if (tensor_proto.has_tensor_shape()) {
+    shape = ProcessShape(tensor_proto.tensor_shape());
+  }
+
+  std::vector<bool> v;
+  for (const auto& it : tensor_proto.bool_val()) {
+    v.emplace_back(it);
+  }
+  return Tensor<bool>(data_type, shape, v);
+}
+
+template <>
+Tensor<int> TFParser::ProcessTensor<int>(
+    const tensorflow::TensorProto& tensor_proto) {
+  const DataType& data_type = ProcessDataType(tensor_proto.dtype());
+  std::vector<int64_t> shape;
+  if (tensor_proto.has_tensor_shape()) {
+    shape = ProcessShape(tensor_proto.tensor_shape());
+  }
+
+  std::vector<int> v;
+  for (const auto& it : tensor_proto.int_val()) {
+    v.emplace_back(it);
+  }
+  return Tensor<int>(data_type, shape, v);
+}
+
+template <>
+Tensor<int64_t> TFParser::ProcessTensor<int64_t>(
+    const tensorflow::TensorProto& tensor_proto) {
+  const DataType& data_type = ProcessDataType(tensor_proto.dtype());
+  std::vector<int64_t> shape;
+  if (tensor_proto.has_tensor_shape()) {
+    shape = ProcessShape(tensor_proto.tensor_shape());
+  }
+
+  std::vector<int64_t> v;
+  for (const auto& it : tensor_proto.int64_val()) {
+    v.emplace_back(it);
+  }
+  return Tensor<int64_t>(data_type, shape, v);
+}
+
+template <>
+Tensor<float> TFParser::ProcessTensor<float>(
+    const tensorflow::TensorProto& tensor_proto) {
+  const DataType& data_type = ProcessDataType(tensor_proto.dtype());
+  std::vector<int64_t> shape;
+  if (tensor_proto.has_tensor_shape()) {
+    shape = ProcessShape(tensor_proto.tensor_shape());
+  }
+
+  std::vector<float> v;
+  for (const auto& it : tensor_proto.float_val()) {
+    v.emplace_back(it);
+  }
+  return Tensor<float>(data_type, shape, v);
+}
+
+template <>
+Tensor<double> TFParser::ProcessTensor<double>(
+    const tensorflow::TensorProto& tensor_proto) {
+  const DataType& data_type = ProcessDataType(tensor_proto.dtype());
+  std::vector<int64_t> shape;
+  if (tensor_proto.has_tensor_shape()) {
+    shape = ProcessShape(tensor_proto.tensor_shape());
+  }
+
+  std::vector<double> v;
+  for (const auto& it : tensor_proto.double_val()) {
+    v.emplace_back(it);
+  }
+  return Tensor<double>(data_type, shape, v);
+}
+
+template <>
+Tensor<char> TFParser::ProcessTensor<char>(
+    const tensorflow::TensorProto& tensor_proto) {
+  const DataType& data_type = ProcessDataType(tensor_proto.dtype());
+  std::vector<int64_t> shape;
+  if (tensor_proto.has_tensor_shape()) {
+    shape = ProcessShape(tensor_proto.tensor_shape());
+  }
+
+  std::vector<char> v;
+  for (const auto& it : tensor_proto.int_val()) {
+    v.emplace_back(it);
+  }
+  return Tensor<char>(data_type, shape, v);
+}
+
+std::vector<int64_t> TFParser::ProcessShape(
+    const tensorflow::TensorShapeProto& tensor_shape_proto) {
+  std::vector<int64_t> shape;
+  for (const auto& it : tensor_shape_proto.dim()) {
+    if (0 == it.size()) {
+      // dim_size = None scenario
+      break;
+    } else {
+      shape.emplace_back(it.size());
+    }
+  }
+  return shape;
+}
+
+// Process Attribute
+template <>
+bool TFAttrs::Process<std::string>(const std::string& key, std::string* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+  value->clear();
+  HLCHECK(attr_map_.at(key).value_case() == tensorflow::AttrValue::kS);
+  *value = attr_map_.at(key).s();
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<int64_t>(const std::string& key, int64_t* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+
+  HLCHECK(attr_map_.at(key).value_case() == tensorflow::AttrValue::kI);
+  *value = attr_map_.at(key).i();
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<int>(const std::string& key, int* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+
+  HLCHECK(attr_map_.at(key).value_case() == tensorflow::AttrValue::kI);
+  *value = attr_map_.at(key).i();
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<float>(const std::string& key, float* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+
+  HLCHECK(attr_map_.at(key).value_case() == tensorflow::AttrValue::kF);
+  *value = attr_map_.at(key).f();
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<bool>(const std::string& key, bool* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+
+  HLCHECK(attr_map_.at(key).value_case() == tensorflow::AttrValue::kB);
+  *value = attr_map_.at(key).b();
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<DataType>(const std::string& key, DataType* data_type) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+
+  HLCHECK(attr_map_.at(key).value_case() == tensorflow::AttrValue::kType);
+  *data_type = ProcessDataType(attr_map_.at(key).type());
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<std::vector<std::string>>(
+    const std::string& key, std::vector<std::string>* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+  value->clear();
+  const auto& attr_value = attr_map_.at(key);
+  HLCHECK(attr_value.value_case() == tensorflow::AttrValue::kList);
+  (*value).reserve(attr_value.list().s_size());
+  for (const auto& it : attr_value.list().s()) {
+    (*value).emplace_back(it);
+  }
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<std::vector<int64_t>>(const std::string& key,
+                                            std::vector<int64_t>* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+  value->clear();
+  const auto& attr_value = attr_map_.at(key);
+  if (attr_value.value_case() == tensorflow::AttrValue::kList) {
+    (*value).reserve(attr_value.list().i_size());
+    std::copy(attr_value.list().i().begin(), attr_value.list().i().end(),
+              (*value).begin());
+  } else if (attr_value.value_case() == tensorflow::AttrValue::kShape) {
+    *value = TFParser::ProcessShape(attr_map_.at(key).shape());
+  } else {
+    HLCHECK(0 && "Encountered attribute type error");
+  }
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<std::vector<int>>(const std::string& key,
+                                        std::vector<int>* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+  value->clear();
+  const auto& attr_value = attr_map_.at(key);
+  HLCHECK(attr_value.value_case() == tensorflow::AttrValue::kList);
+  (*value).reserve(attr_value.list().i_size());
+  for (const auto& it : attr_value.list().i()) {
+    (*value).push_back(static_cast<int>(it));
+  }
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<std::vector<float>>(const std::string& key,
+                                          std::vector<float>* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+  value->clear();
+  const auto& attr_value = attr_map_.at(key);
+  HLCHECK(attr_value.value_case() == tensorflow::AttrValue::kList);
+  (*value).reserve(attr_value.list().f_size());
+  std::copy(attr_value.list().f().begin(), attr_value.list().f().end(),
+            (*value).begin());
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<std::vector<bool>>(const std::string& key,
+                                         std::vector<bool>* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+  value->clear();
+  const auto& attr_value = attr_map_.at(key);
+  HLCHECK(attr_value.value_case() == tensorflow::AttrValue::kList);
+  (*value).reserve(attr_value.list().b_size());
+  std::copy(attr_value.list().b().begin(), attr_value.list().b().end(),
+            (*value).begin());
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<std::vector<DataType>>(
+    const std::string& key, std::vector<DataType>* data_types) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+  data_types->clear();
+  const auto& attr_value = attr_map_.at(key);
+  HLCHECK(attr_value.value_case() == tensorflow::AttrValue::kList);
+  (*data_types).reserve(attr_value.list().type_size());
+  for (const auto& it : attr_value.list().type()) {
+    (*data_types)
+        .emplace_back(ProcessDataType(static_cast<tensorflow::DataType>(it)));
+  }
+  return true;
+}
+
+/// Get Attr for Shape
+template <>
+bool TFAttrs::Process<std::vector<std::vector<int64_t>>>(
+    const std::string& key, std::vector<std::vector<int64_t>>* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+  value->clear();
+  const auto& attr_value = attr_map_.at(key);
+  if (attr_value.value_case() == tensorflow::AttrValue::kShape) {
+    *value = {TFParser::ProcessShape(attr_value.shape())};
+  } else {
+    HLCHECK(attr_value.value_case() == tensorflow::AttrValue::kList);
+    (*value).reserve(attr_value.list().shape_size());
+    for (const auto& it : attr_value.list().shape()) {
+      (*value).emplace_back(TFParser::ProcessShape(it));
+    }
+  }
+  return true;
+}
+
+/// Get Attr for Tensor
+template <>
+bool TFAttrs::Process<std::vector<Tensor<std::string>>>(
+    const std::string& key, std::vector<Tensor<std::string>>* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+  value->clear();
+  const auto& attr_value = attr_map_.at(key);
+  if (attr_value.value_case() == tensorflow::AttrValue::kTensor) {
+    *value = {TFParser::ProcessTensor<std::string>(attr_value.tensor())};
+  } else {
+    HLCHECK(attr_value.value_case() == tensorflow::AttrValue::kList);
+    (*value).reserve(attr_value.list().tensor_size());
+    for (const auto& it : attr_value.list().tensor()) {
+      (*value).emplace_back(TFParser::ProcessTensor<std::string>(it));
+    }
+  }
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<std::vector<Tensor<bool>>>(
+    const std::string& key, std::vector<Tensor<bool>>* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+  value->clear();
+  const auto& attr_value = attr_map_.at(key);
+  if (attr_value.value_case() == tensorflow::AttrValue::kTensor) {
+    *value = {TFParser::ProcessTensor<bool>(attr_value.tensor())};
+  } else {
+    HLCHECK(attr_value.value_case() == tensorflow::AttrValue::kList);
+    (*value).reserve(attr_value.list().tensor_size());
+    for (const auto& it : attr_value.list().tensor()) {
+      (*value).emplace_back(TFParser::ProcessTensor<bool>(it));
+    }
+  }
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<std::vector<Tensor<int>>>(
+    const std::string& key, std::vector<Tensor<int>>* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+  value->clear();
+  const auto& attr_value = attr_map_.at(key);
+  if (attr_value.value_case() == tensorflow::AttrValue::kTensor) {
+    (*value).reserve(1);
+    (*value).emplace_back(TFParser::ProcessTensor<int>(attr_value.tensor()));
+  } else {
+    HLCHECK(attr_value.value_case() == tensorflow::AttrValue::kList);
+    (*value).reserve(attr_value.list().tensor_size());
+    for (const auto& it : attr_value.list().tensor()) {
+      (*value).emplace_back(TFParser::ProcessTensor<int>(it));
+    }
+  }
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<std::vector<Tensor<int64_t>>>(
+    const std::string& key, std::vector<Tensor<int64_t>>* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+  value->clear();
+  const auto& attr_value = attr_map_.at(key);
+  if (attr_value.value_case() == tensorflow::AttrValue::kTensor) {
+    *value = {TFParser::ProcessTensor<int64_t>(attr_value.tensor())};
+  } else {
+    HLCHECK(attr_value.value_case() == tensorflow::AttrValue::kList);
+    (*value).reserve(attr_value.list().tensor_size());
+    for (const auto& it : attr_value.list().tensor()) {
+      (*value).emplace_back(TFParser::ProcessTensor<int64_t>(it));
+    }
+  }
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<std::vector<Tensor<float>>>(
+    const std::string& key, std::vector<Tensor<float>>* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+  value->clear();
+  const auto& attr_value = attr_map_.at(key);
+  if (attr_value.value_case() == tensorflow::AttrValue::kTensor) {
+    *value = {TFParser::ProcessTensor<float>(attr_value.tensor())};
+  } else {
+    HLCHECK(attr_value.value_case() == tensorflow::AttrValue::kList);
+    (*value).reserve(attr_value.list().tensor_size());
+    for (const auto& it : attr_value.list().tensor()) {
+      (*value).emplace_back(TFParser::ProcessTensor<float>(it));
+    }
+  }
+  return true;
+}
+
+template <>
+bool TFAttrs::Process<std::vector<Tensor<double>>>(
+    const std::string& key, std::vector<Tensor<double>>* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+  value->clear();
+  const auto& attr_value = attr_map_.at(key);
+  if (attr_value.value_case() == tensorflow::AttrValue::kTensor) {
+    *value = {TFParser::ProcessTensor<double>(attr_value.tensor())};
+  } else {
+    HLCHECK(attr_value.value_case() == tensorflow::AttrValue::kList);
+    (*value).reserve(attr_value.list().tensor_size());
+    for (const auto& it : attr_value.list().tensor()) {
+      (*value).emplace_back(TFParser::ProcessTensor<double>(it));
+    }
+  }
+  return true;
+}
+
+std::vector<Def> TFParser::GetInputOperands(
+    const tensorflow::NodeDef& node_def) {
+  std::vector<Def> operands;
+  size_t operand_num = node_def.input_size();
+  for (size_t i = 0; i < operand_num; ++i) {
+    std::string input_node_name = SkipFirstChar(node_def.input(i));
+    size_t pos = input_node_name.find(":");
+    std::string idx_str;
+    std::unordered_map<std::string, IRObject*>::iterator it;
+    if (pos != std::string::npos) {
+      it = inst_name_to_ptr_.find(input_node_name.substr(0, pos));
+      idx_str = input_node_name.substr(pos + 1);
+      input_node_name = input_node_name.substr(0, pos);
+    } else {
+      it = inst_name_to_ptr_.find(input_node_name);
+    }
+
+    if (it != inst_name_to_ptr_.end()) {
+      auto inst = it->second;
+      int idx = (idx_str.empty()) ? 0 : std::stoi(idx_str);
+      HLCHECK(0 <= idx && idx <= 1024);
+      operands.emplace_back(Def{inst, idx});
+    } else {
+      // those errors will be record in diagnostic report file
+      // LOG(ERROR) << node_def.name() << " Node's " << i
+      //<< "th operand:" << node_def.input(i) << " not found";
+    }
+  }
+  return operands;
+}
+
+void TFParser::InsertIDToInstMap(const tensorflow::NodeDef& node_def,
+                                 IRObject* inst) {
+  inst_name_to_ptr_.emplace(node_def.name(), inst);
+}
+
+// Define convert function
+Status TFParser::ConvertPlaceholderNode(const tensorflow::NodeDef& node_def) {
+  TFAttrs attrs(node_def);
+  DataType data_type = DataType::INVALID;
+  // TODO(unknown): This is a temp solution to handl dynamic shape of BERT.
+  if (node_def.name() == "sequence_lengths") {
+    Constant* inst = c_builder_->CreateConstant<int>(
+        node_def.name(), Type{DataType::INT32, {1}}, {15});
+    inst_name_to_ptr_.emplace(node_def.name(), inst);
+  } else if (attrs.Process<DataType>("dtype", &data_type)) {
+    std::vector<int64_t> shape;
+    Argument* arg = nullptr;
+    if (attrs.Process<std::vector<int64_t>>("shape", &shape)) {
+      arg =
+          arg_builder_->CreateArgument(node_def.name(), Type(data_type, shape));
+      inst_name_to_ptr_.emplace(node_def.name(), arg);
+    }
+  }
+  return Status::SUCCESS;
+}
+
+template <typename T>
+Constant* TFParser::CreateConstant(TFAttrs* attrs, DataType data_type,
+                                   const tensorflow::NodeDef& node_def) {
+  std::vector<Tensor<std::string>> tensors;
+  if (attrs->Process<std::vector<Tensor<std::string>>>("value", &tensors)) {
+    HLCHECK(1 == tensors.size());
+    if (tensors.back().GetNeedDecode()) {
+      auto v = Tensor<T>::DecodeTensorContent(tensors.back().GetData().back());
+      auto inst = c_builder_->CreateConstant(
+          node_def.name(), Type(data_type, tensors.back().GetShape()), v);
+      inst_name_to_ptr_.emplace(node_def.name(), inst);
+      return inst;
+    }
+  }
+  return nullptr;
+}
+
+Status TFParser::ConvertConstNode(const tensorflow::NodeDef& node_def) {
+  TFAttrs attrs(node_def);
+  DataType data_type = DataType::INVALID;
+  if (attrs.Process<DataType>("dtype", &data_type)) {
+    switch (data_type) {
+      case DataType::UINT8: {
+        CreateConstant<uint8_t>(&attrs, data_type, node_def);
+        break;
+      }
+
+      case DataType::INT8: {
+        // definitely need decoded from tensor content
+        CreateConstant<int8_t>(&attrs, data_type, node_def);
+        break;
+      }
+      case DataType::INT32: {
+        // check need decoded from tensor content
+        std::vector<Tensor<std::string>> tensors;
+        IRObject* inst = nullptr;
+        if (CreateConstant<int>(&attrs, data_type, node_def) == nullptr) {
+          std::vector<Tensor<int>> native_tensors;
+          if (attrs.Process<std::vector<Tensor<int>>>("value",
+                                                      &native_tensors)) {
+            HLCHECK(1 == native_tensors.size());
+            inst = c_builder_->CreateConstant(
+                node_def.name(),
+                Type(data_type, native_tensors.back().GetShape()),
+                native_tensors.back().GetData());
+          }
+        }
+        inst_name_to_ptr_.emplace(node_def.name(), inst);
+        break;
+      }
+      case DataType::FLOAT32: {
+        // check need decoded from tensor content
+        std::vector<Tensor<std::string>> tensors;
+        IRObject* inst = nullptr;
+        if (attrs.Process<std::vector<Tensor<std::string>>>("value",
+                                                            &tensors)) {
+          HLCHECK(1 == tensors.size());
+          if (tensors.back().GetNeedDecode()) {
+            auto v = Tensor<float>::DecodeTensorContent(
+                tensors.back().GetData().back());
+            inst = c_builder_->CreateConstant(
+                node_def.name(), Type(data_type, tensors.back().GetShape()), v);
+          } else {
+            std::vector<Tensor<float>> native_tensors;
+            if (attrs.Process<std::vector<Tensor<float>>>("value",
+                                                          &native_tensors)) {
+              HLCHECK(1 == native_tensors.size());
+              inst = c_builder_->CreateConstant(
+                  node_def.name(),
+                  Type(data_type, native_tensors.back().GetShape()),
+                  native_tensors.back().GetData());
+            }
+          }
+          inst_name_to_ptr_.emplace(node_def.name(), inst);
+        }
+        break;
+      }
+      default:
+        HLCHECK(0 && "Unsupported data type");
+    }
+  }
+  return Status::SUCCESS;
+}
+
+Status TFParser::ConvertDummyNode(const tensorflow::NodeDef& node_def) {
+  std::vector<Def> operands = GetInputOperands(node_def);
+  static const int max_num_outputs = 128;
+  auto inst = ir_builder_->CreateDummy(node_def.name(), operands,
+                                       max_num_outputs, node_def.op());
+  InsertIDToInstMap(node_def, inst);
+  return Status::SUCCESS;
+}
+
+// convert to halo ir def func
+#include "tf_convert.cc.inc"
+
+} // namespace halo

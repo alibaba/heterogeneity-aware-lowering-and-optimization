@@ -1,0 +1,66 @@
+#ifdef CG_TEST
+
+#include "halo/lib/ir/ir_builder.h"
+#include "halo/lib/ir/values.h"
+#include "halo/lib/pass/pass_manager.h"
+#include "halo/lib/target/generic_cxx/generic_cxx_codegen.h"
+#include "halo/lib/transforms/type_legalizer.h"
+
+using namespace halo;
+
+void build() {
+  GlobalContext ctx;
+  Module m(ctx, "test_module");
+
+  FunctionBuilder func_builder(&m);
+
+  Function* func = func_builder.CreateFunction("func");
+
+  Type ty(DataType::FLOAT32, {3});
+
+  ArgumentBuilder arg_builder(func);
+  auto input = arg_builder.CreateArgument("input", ty);
+
+  BasicBlockBuilder bb_builder(func);
+  BasicBlock* bb = bb_builder.CreateBasicBlock("bb0");
+
+  std::vector<float> w0{1.0, 2.0, 3.0};
+  std::vector<float> w1{4.0, 5.0, 6.0};
+
+  ConstantBuilder c_builder(func);
+  auto c0 = c_builder.CreateConstant("w0", ty, w0.data());
+  auto c1 = c_builder.CreateConstant("w1", ty, w1);
+
+  IRBuilder ir_builder(bb);
+
+  Instruction* add0 = ir_builder.CreateAdd("add0", *input, *c0);
+  Instruction* add1 = ir_builder.CreateAdd("add1", *add0, *c1);
+  ir_builder.CreateReturn("ret", *add1);
+
+  PassManager pm(ctx);
+  pm.AddPass<TypeLegalizer>();
+  auto cg = pm.AddPass<GenericCXXCodeGen>(std::ref(std::cout), std::ref(std::cout));
+
+  pm.Run(&m);
+}
+
+int main() { build(); }
+#endif
+
+#ifdef RUNTIME_TEST
+#include <stdio.h>
+
+extern "C" {
+float w0[] = {1, 2, 3}, w1[] = {4, 5, 6};
+extern void func(const float* in, float* out);
+}
+
+int main() {
+  float a[] = {1, 2, 3}, b[3];
+  func(a, b);
+  for (int i = 0; i < 3; ++i) {
+    printf("%f\n", b[i]);
+  }
+}
+
+#endif
