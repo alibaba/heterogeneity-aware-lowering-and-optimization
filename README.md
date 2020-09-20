@@ -1,9 +1,10 @@
 HALO
 ===============
 
-**H**eterogeneity-**A**ware **L**owering and **O**ptimization (**HALO**) is an optimizing compiler targeting heterogeneous accelerators. 
-It supplies a uniform Ahead-Of-Time compilation solution for heterogeneous computing in
-could, edge and IoT fields.
+**H**eterogeneity-**A**ware **L**owering and **O**ptimization (**HALO**) is a heterogeneous computing acceleration platform based on compiler technology.
+It exploits the powerfulness of heterogeneous computing while hiding the heterogeneity of computing resources
+through the abstract, extendable interface called Open Deep Learning API (**ODLA**). 
+HALO provides a unified Ahead-Of-Time compilation solution, auto tailored for various cloud, edge, and IoT scenarios.
 
 - [Get Started](#get-started)
   - [Design Overview](#design-overview)
