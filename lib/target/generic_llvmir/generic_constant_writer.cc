@@ -15,6 +15,7 @@
 // limitations under the License.
 // =============================================================================
 
+#include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/CodeGen/MachineModuleInfo.h"
@@ -32,7 +33,6 @@
 #include "llvm/Support/raw_os_ostream.h"
 #include "llvm/Target/TargetLoweringObjectFile.h"
 #include "llvm/Target/TargetMachine.h"
-#include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
 
 namespace halo {
 

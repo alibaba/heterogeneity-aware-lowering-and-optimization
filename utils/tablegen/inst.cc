@@ -112,7 +112,7 @@ void Attr::EmitAccess() {
       << ";\n";
   os_.indent(2);
   os_ << "}\n";
-} // namespace tablegen
+}
 
 // Emit attribute constructor function with attribute's name and init values.
 // e.g.,

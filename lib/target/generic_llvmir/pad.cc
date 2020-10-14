@@ -18,13 +18,13 @@
 #include <cstdio>
 #include <string>
 
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/IRBuilder.h"
 #include "halo/lib/ir/common_reduction_instructions.h"
 #include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/ir/nn_cnn_instructions.h"
 #include "halo/lib/ir/nn_instructions.h"
 #include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/IRBuilder.h"
 
 namespace halo {
 

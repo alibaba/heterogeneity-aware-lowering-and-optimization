@@ -25,7 +25,6 @@
 #include "llvm/IR/IRBuilder.h"
 
 namespace halo {
-
 void GenericLLVMIRCodeGen::RunOnMathBinaryInstruction(Instruction* inst) {
   llvm::IRBuilder<>* ir_builder = current_llvm_builder_;
   const Def& lhs = inst->GetOperand(0);

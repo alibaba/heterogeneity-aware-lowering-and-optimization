@@ -94,5 +94,5 @@ endfunction(set_halo_compile_flags)
 # Compile flags for halo objects
 set(HALO_COMPILE_FLAGS)
 
-# Set the SINIIAN_COMPILE_flags
+# Set the HALO_COMPILE_flags
 set_halo_compile_flags(HALO_COMPILE_FLAGS NORTTI NOEXCEPTIONS WERROR)

@@ -20,6 +20,11 @@
 #include <limits>
 #include <unordered_map>
 
+#include "halo/api/halo_data.h"
+#include "halo/lib/framework/global_context.h"
+#include "halo/lib/ir/all_instructions.h"
+#include "halo/lib/target/codegen.h"
+#include "halo/lib/target/codegen_object.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/DerivedTypes.h"
@@ -42,11 +47,6 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO/Internalize.h"
-#include "halo/api/halo_data.h"
-#include "halo/lib/framework/global_context.h"
-#include "halo/lib/ir/all_instructions.h"
-#include "halo/lib/target/codegen.h"
-#include "halo/lib/target/codegen_object.h"
 
 namespace halo {
 

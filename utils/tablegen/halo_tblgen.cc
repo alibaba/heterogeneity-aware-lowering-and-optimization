@@ -16,6 +16,7 @@
 // =============================================================================
 
 #include "halo_tblgen.h"
+
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/PrettyStackTrace.h"

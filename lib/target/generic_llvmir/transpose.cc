@@ -15,9 +15,9 @@
 // limitations under the License.
 // =============================================================================
 
-#include "llvm/IR/IRBuilder.h"
 #include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
 #include "halo/lib/transforms/type_legalizer.h"
+#include "llvm/IR/IRBuilder.h"
 
 namespace halo {
 
@@ -78,7 +78,7 @@ void GenericLLVMIRCodeGen::RunOnInstruction(TransposeInst* inst) {
   HLCHECK(gv != nullptr);
   gv->setInitializer(perm_cv);
   gv->setLinkage(llvm::GlobalValue::LinkageTypes::InternalLinkage);
-  
+
   llvm::Value* perm_gv_ptr = ir_builder->CreateBitCast(gv, int32_ptr_ty);
 
   llvm::Value* input0 = ir_builder->CreateBitCast(op0, data_ptr_type);

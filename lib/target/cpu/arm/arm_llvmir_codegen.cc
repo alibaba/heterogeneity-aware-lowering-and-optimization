@@ -17,14 +17,14 @@
 
 #include "halo/lib/target/cpu/arm/binary/arm_llvmir_codegen.h"
 
+#include "halo/lib/target/codegen_object.h"
+#include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
 #include "llvm-c/Target.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/raw_os_ostream.h"
 #include "llvm/Target/TargetMachine.h"
-#include "halo/lib/target/codegen_object.h"
-#include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
 
 namespace halo {
 
