@@ -51,6 +51,7 @@ include(create_halo_library)
 include(doxygen)
 include(glog)
 include(protobuf)
+include(flatbuf)
 include(tablegen)
 include(zbuild_llvm)
 
