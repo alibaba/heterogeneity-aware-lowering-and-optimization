@@ -51,6 +51,9 @@ halo_tblgen(convert_tf_info.def -gen-convert-info)
 set(LLVM_TARGET_DEFINITIONS onnx_convert.td)
 halo_tblgen(convert_onnx_info.def -gen-convert-info)
 
+set(LLVM_TARGET_DEFINITIONS tflite_convert.td)
+halo_tblgen(convert_tflite_info.def -gen-convert-info)
+
 set(LLVM_TARGET_DEFINITIONS caffe_convert.td)
 halo_tblgen(convert_caffe_info.def -gen-convert-info)
 

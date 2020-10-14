@@ -135,7 +135,8 @@ void EmitInstInfo(const llvm::RecordKeeper& records, llvm::raw_ostream& os) {
 void EmitConvertInfo(const llvm::RecordKeeper& records, llvm::raw_ostream& os) {
   std::vector<llvm::Record*> extensions =
       records.getAllDerivedDefinitions("OpExtension");
-  std::vector<std::string> frameworks = {"TF", "CAFFE", "ONNX", "MXNET"};
+  std::vector<std::string> frameworks = {"TF", "CAFFE", "ONNX", "MXNET",
+                                         "TFLITE"};
   std::string framework = "CUSTOM";
   if (!extensions.empty()) {
     for (const auto& fw : frameworks) {

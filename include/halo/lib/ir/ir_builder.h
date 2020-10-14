@@ -237,6 +237,10 @@ class IRBuilder final
                                          const std::vector<Def>& ops,
                                          const int num_outs,
                                          const std::string& opcode);
+  TFLITEExtensionInst* CreateTFLITEExtension(const std::string& name,
+                                             const std::vector<Def>& ops,
+                                             const int num_outs,
+                                             const std::string& opcode);
   CAFFEExtensionInst* CreateCAFFEExtension(const std::string& name,
                                            const std::vector<Def>& ops,
                                            const int num_outs,

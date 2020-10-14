@@ -33,6 +33,7 @@ class ExtensionInst : public Instruction {
     kExtension_CAFFE,
     kExtension_TENSORFLOW,
     kExtension_ONNX,
+    kExtension_TFLITE,
     kExtension_CUSTOM,
   };
   /// Define a custom instruction, its semantics is defined by
@@ -131,6 +132,29 @@ class ONNXExtensionInst final : public ExtensionInst {
   static const NameToOpMap ONNXMap;
   // ONNX extension opcode.
   ONNXExtOpCode ext_op_code_ = ONNXExtOpCode::UNSUPPORTED;
+};
+
+/// This defines a tflite op which cannot be one-on-one mapped to
+/// Halo IR.
+class TFLITEExtensionInst final : public ExtensionInst {
+ public:
+  using NameToOpMap = std::unordered_map<std::string, TFLITEExtOpCode>;
+
+  explicit TFLITEExtensionInst(GlobalContext& context, const std::string& name,
+                               const std::vector<Def>& operands, int num_outs,
+                               const std::string& opname);
+  /// Return the extension opcode.
+  TFLITEExtOpCode GetExtOpCode() const noexcept { return ext_op_code_; }
+  ExtensionKind GetExtensionKind() const noexcept override {
+    return ExtensionKind::kExtension_TFLITE;
+  }
+  std::unique_ptr<Instruction> Clone() const override;
+
+ private:
+  // A string name to extension opcode map.
+  static const NameToOpMap TFLITEMap;
+  // TFLITE extension opcode.
+  TFLITEExtOpCode ext_op_code_ = TFLITEExtOpCode::UNSUPPORTED;
 };
 
 /// This defines a onnx op which cannot be one-on-one mapped to

@@ -130,6 +130,17 @@ ONNXExtensionInst* IRBuilder::CreateONNXExtension(const std::string& name,
   return ret;
 }
 
+TFLITEExtensionInst* IRBuilder::CreateTFLITEExtension(
+    const std::string& name, const std::vector<Def>& ops, const int num_outs,
+    const std::string& opcode) {
+  auto inst = std::make_unique<TFLITEExtensionInst>(GetContext(), name, ops,
+                                                    num_outs, opcode);
+  inst->parent_basic_block_ = GetParent();
+  TFLITEExtensionInst* ret = inst.get();
+  Insert(std::move(inst));
+  return ret;
+}
+
 CAFFEExtensionInst* IRBuilder::CreateCAFFEExtension(const std::string& name,
                                                     const std::vector<Def>& ops,
                                                     const int num_outs,

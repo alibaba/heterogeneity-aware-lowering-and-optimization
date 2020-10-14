@@ -25,6 +25,7 @@
 #include "caffe/caffe_parser.h"
 #include "onnx/onnx_parser.h"
 #include "tensorflow/tf_parser.h"
+#include "tflite/tflite_parser.h"
 
 namespace halo {
 
@@ -55,6 +56,10 @@ Status Parser::Parse(Function* function, Format format,
     }
     case Format::ONNX: {
       parser = std::make_unique<ONNXParser>();
+      break;
+    }
+    case Format::TFLITE: {
+      parser = std::make_unique<TFLITEParser>();
       break;
     }
     case Format::CAFFE: {

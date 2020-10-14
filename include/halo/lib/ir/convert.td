@@ -75,5 +75,8 @@ class CAFFEExtension<string extern_op> : OpExtension<extern_op>;
 // Subclass to map ONNX op.
 class ONNXExtension<string extern_op> : OpExtension<extern_op>;
 
+// Subclass to map TFLITE op.
+class TFLITEExtension<string extern_op> : OpExtension<extern_op>;
+
 // Subclass to map MXNET op.
 class MXNETExtension<string extern_op> : OpExtension<extern_op>;

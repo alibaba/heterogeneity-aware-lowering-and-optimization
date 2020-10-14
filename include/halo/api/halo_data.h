@@ -70,6 +70,14 @@ enum class ONNXExtOpCode {
   UNSUPPORTED,
 };
 
+/// TFLITE Extension Op Code
+enum class TFLITEExtOpCode {
+#define GET_TFLITE_OPCODE_ENUM
+#include "halo/lib/ir/convert_tflite_info.def"
+#undef GET_TFLITE_OPCODE_ENUM
+  UNSUPPORTED,
+};
+
 /// CAFFE Extension Op Code
 enum class CAFFEExtOpCode {
 #define GET_CAFFE_OPCODE_ENUM

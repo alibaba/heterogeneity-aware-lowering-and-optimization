@@ -14,34 +14,26 @@
 # limitations under the License
 # ==============================================================================
 
-# name.
-set(NAME TRANSFORMS)
+set(NAME TFLITEPARSER)
 
-# source files.
+# Source files.
 set(SRCS
-  analyzer.cc
-  caffeextension_legalizer.cc
-  dce.cc
-  device_placement.cc
-  fusion.cc
-  input_legalizer.cc
-  input_rewriter.cc
-  inst_simplify.cc
-  onnxextension_legalizer.cc
-  output_rewriter.cc
-  reorder_channel.cc
-  splitting.cc
-  tfextension_legalizer.cc
-  tfliteextension_legalizer.cc
-  transforms_util.cc
-  type_legalizer.cc
-  analyzer.cc
+  tflite_parser.cc
 )
 
-# dependences which need to be built first.
+set(LLVM_TARGET_DEFINITIONS
+  ${CMAKE_SOURCE_DIR}/include/halo/lib/ir/tflite_convert.td
+)
+
+halo_tblgen(tflite_convert.h.inc -gen-converter-decl)
+halo_tblgen(tflite_convert.cc.inc -gen-converter-def)
+halo_tblgen(tflite_regist_op.h.inc -gen-register-op)
+add_public_tablegen_target(TFLITE_GEN)
+
+# Dependences which need to be built first.
 set(DEPENDENCES
-  IRGEN
   PARSER
+  TFLITE_GEN
 )
 
 create_halo_object(TARGET_NAME ${NAME}
@@ -49,9 +41,6 @@ create_halo_object(TARGET_NAME ${NAME}
   TARGET_DEPENDENCES ${DEPENDENCES}
 )
 
-target_include_directories(${NAME} PRIVATE
-  ${CMAKE_SOURCE_DIR}/lib/parser/onnx
-  ${CMAKE_BINARY_DIR}/lib/parser/onnx
-  ${LLVM_SRC_DIR}/include
-  ${CMAKE_BINARY_DIR}/llvm/include
+gen_flatbuf_files(TARGET_NAME ${NAME}
+  FLAT_DIR ${CMAKE_SOURCE_DIR}/external/flatbufs/tflite
 )
