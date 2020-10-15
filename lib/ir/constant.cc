@@ -30,22 +30,14 @@ Constant::Constant(GlobalContext& context, const std::string& name,
                    const void* data_ptr, bool do_splat)
     : IRObject(context, name, 1), parent_(nullptr), data_layout_(data_layout) {
   HLCHECK(ty.IsValid());
-  auto& results = GetResultsTypes();
-  results.resize(1);
-  results[0] = ty;
-  size_t bytes = data_layout.Bytes(ty);
-  data_.resize(bytes);
-  const unsigned char* src = static_cast<const unsigned char*>(data_ptr);
-  if (!do_splat) {
-    std::copy_n(src, bytes, data_.data());
-  } else {
-    size_t byte_per_element = data_layout.Bytes(ty.GetDataType());
-    for (size_t i = 0, e = bytes / byte_per_element; i != e;
-         i += byte_per_element) {
-      std::copy_n(src, byte_per_element, data_.begin() + i);
-    }
-  }
+  SetData(ty, data_ptr, do_splat);
 }
+
+Constant::Constant(const Constant& from)
+    : IRObject(from.GetGlobalContext(), from.GetName(), 1),
+      parent_(nullptr),
+      data_layout_(from.data_layout_),
+      data_(from.data_) {}
 
 template <typename T>
 static void PrintValues(std::ostream* os, const T* ptr, size_t n) {
@@ -54,6 +46,24 @@ static void PrintValues(std::ostream* os, const T* ptr, size_t n) {
       *os << ", ";
     }
     *os << ptr[i]; // NOLINT.
+  }
+}
+
+void Constant::SetData(const Type& ty, const void* data_ptr, bool do_splat) {
+  auto& results = GetResultsTypes();
+  results.resize(1);
+  results[0] = ty;
+  size_t bytes = data_layout_.Bytes(ty);
+  data_.resize(bytes);
+  const unsigned char* src = static_cast<const unsigned char*>(data_ptr);
+  if (!do_splat) {
+    std::copy_n(src, bytes, data_.data());
+  } else {
+    size_t byte_per_element = data_layout_.Bytes(ty.GetDataType());
+    for (size_t i = 0, e = bytes / byte_per_element; i != e;
+         i += byte_per_element) {
+      std::copy_n(src, byte_per_element, data_.begin() + i);
+    }
   }
 }
 

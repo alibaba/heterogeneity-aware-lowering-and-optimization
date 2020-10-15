@@ -210,6 +210,8 @@ class ConstantBuilder final
     return CreateConstant(name, type, v.data());
   }
 
+  Constant* Clone(const Constant& from);
+
   /// Create a new constant from a scalar by splating the value
   Constant* SplatConstant(const std::string& name, const Type& type,
                           const void* data_ptr);
