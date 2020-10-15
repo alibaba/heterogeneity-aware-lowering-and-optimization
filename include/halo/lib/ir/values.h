@@ -32,6 +32,7 @@
 
 namespace halo {
 
+const int kDynamicResultsNum = 16;
 class IRObject;
 
 /// This class defines a Value, a pair of <IRObject*, int>.

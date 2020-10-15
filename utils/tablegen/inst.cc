@@ -256,7 +256,11 @@ Inst::Inst(const llvm::Record* record, llvm::raw_ostream& o)
     }
   }
   for (auto arg : outs) {
-    args_.emplace_back(arg, os_, false);
+    Arg a(arg, os_, false);
+    if (a.IsVarArg()) {
+      num_out_ = kMaxOutNum;
+    }
+    args_.emplace_back(a);
   }
   desc_ = record_->getValueAsString("description_").str();
 }

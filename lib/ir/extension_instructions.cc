@@ -21,8 +21,11 @@ namespace halo {
 ExtensionInst::ExtensionInst(GlobalContext& context, const std::string& name,
                              const std::vector<Def>& operands, int num_outs,
                              const std::string& opname, OpCode opcode)
-    : Instruction(context, name, num_outs, opcode) {
+    : Instruction(context, name, std::max(0, num_outs), opcode) {
   AddOperands(operands);
+  if (num_outs < 0) {
+    SetVariadicReturns(true);
+  }
   opname_ = opname;
 }
 

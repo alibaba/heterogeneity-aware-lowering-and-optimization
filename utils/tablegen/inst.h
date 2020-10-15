@@ -25,6 +25,8 @@ namespace halo {
 
 namespace tablegen {
 
+const int kMaxOutNum = 16;
+
 /// ValueType class
 class Type {
  public:
