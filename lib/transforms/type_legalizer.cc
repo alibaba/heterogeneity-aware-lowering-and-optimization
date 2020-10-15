@@ -902,6 +902,7 @@ static void RunOnInstruction(ResizeInst* inst) {
     } else if (op1.GetType().GetDataType() == DataType::INT32) {
       dim = shape_c->GetData<int32_t>(j++);
     } else if (op1.GetType().GetDataType() == DataType::FLOAT32) {
+      HLCHECK(inst->GetExplicitShape() == false);
       dim = std::floor(new_shape[i] * shape_c->GetData<float>(j++));
     }
     new_shape[i] = dim;
@@ -935,8 +936,7 @@ static void RunOnInstruction(NonMaxSuppressionInst* inst) {
       ret_shape.push_back(max_output_boxes->GetData<int64_t>(0));
     }
     ret_shape.push_back(3);
-    const auto& input_type = inst->GetOperand(0).GetType();
-    inst->GetResultsTypes()[0] = Type{input_type.GetDataType(), ret_shape};
+    inst->GetResultsTypes()[0] = Type{inst->GetIndexType(), ret_shape};
   }
 }
 
@@ -961,7 +961,32 @@ static void RunOnInstruction(TopKInst* inst) {
   const auto dims = input_type.GetNumOfDims();
   std::vector<int64_t> ret_shape(dims, k);
   inst->GetResultsTypes()[0] = Type{input_type.GetDataType(), ret_shape};
-  inst->GetResultsTypes()[1] = Type{DataType::INT64, ret_shape};
+  inst->GetResultsTypes()[1] = Type{inst->GetIndexType(), ret_shape};
+}
+
+static void RunOnInstruction(TileInst* inst) {
+  auto& op0_type = inst->GetOperand(0).GetType();
+  Def op1 = inst->GetOperand(1);
+  if (!op0_type.IsValid() || !IsA<Constant>(op1)) {
+    return;
+  }
+  const Constant* repeats_value = DynCast<Constant>(op1.GetOwner());
+  std::vector<int64_t> new_shape;
+  size_t dims_cnt = repeats_value->GetResultType(0).GetTotalNumOfElements();
+  int64_t dim = 0;
+  for (size_t i = 0; i < dims_cnt; ++i) {
+    if (op1.GetType().GetDataType() == DataType::INT64) {
+      dim = repeats_value->GetData<int64_t>(i) *
+            op0_type.GetNumOfElementsInDim(i);
+    } else {
+      dim = repeats_value->GetData<int32_t>(i) *
+            op0_type.GetNumOfElementsInDim(i);
+    }
+    new_shape.push_back(dim);
+  }
+
+  halo::Type new_type{op0_type.GetDataType(), new_shape};
+  inst->GetResultsTypes()[0] = new_type;
 }
 
 bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
