@@ -56,6 +56,7 @@ class InstSimplify final : public BasicBlockPass {
   static std::pair<Def, Def> RunOnInstruction(ReluInst* inst);
   static std::pair<Def, Def> RunOnInstruction(Relu6Inst* inst);
   static std::pair<Def, Def> RunOnInstruction(LeakyReluInst* inst);
+  static std::pair<Def, Def> RunOnInstruction(ResizeInst* inst);
   static std::pair<Def, Def> RunOnInstruction(SetDiff1DInst* inst);
   static std::pair<Def, Def> RunOnInstruction(SItoFPInst* inst);
   static std::pair<Def, Def> RunOnInstruction(FPtoSIInst* inst);

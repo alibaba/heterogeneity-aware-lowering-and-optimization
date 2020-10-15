@@ -640,6 +640,50 @@ static Constant* GetPermutedConstant(ConstantBuilder* cb, const Constant* orig,
   return cb->CreateConstant(orig->GetName(), shape_type, data.data());
 }
 
+std::pair<Def, Def> InstSimplify::RunOnInstruction(ResizeInst* inst) {
+  Def orig_def{inst, 0};
+  auto op_shape = inst->GetOperand(1);
+  if (IsA<Instruction>(inst->GetOperand(0))) {
+    Instruction* op0_inst =
+        DynCast<Instruction>(inst->GetOperand(0).GetOwner());
+    if (auto op1 = inst->GetOperand(1);
+        op0_inst->GetOpCode() == OpCode::TRANSPOSE && IsA<Constant>(op1)) {
+      Constant* shape = DynCast<Constant>(op1);
+      const auto& shape_type = shape->GetResultType();
+      ConstantBuilder cb(inst->GetParent()->GetParent());
+      auto orig_perm = DynCast<TransposeInst>(op0_inst)->GetPermutation();
+      Constant* new_shape = nullptr;
+      switch (shape_type.GetDataType()) {
+        case DataType::INT32: {
+          new_shape = GetPermutedConstant<int32_t>(&cb, shape, orig_perm);
+          break;
+        }
+        case DataType::INT64: {
+          new_shape = GetPermutedConstant<int64_t>(&cb, shape, orig_perm);
+          break;
+        }
+        case DataType::FLOAT32: {
+          new_shape = GetPermutedConstant<float>(&cb, shape, orig_perm);
+          break;
+        }
+        default:
+          HLCHECK(0 && "Invalid resize shape type");
+      }
+
+      new_shape->SetName(inst->GetName() + "_resize_shape");
+
+      return SinkTranspose(
+          *inst, [new_shape, inst](IRBuilder& builder, const std::string& name,
+                                   const Def& op) {
+            auto new_inst = builder.CreateResize(name, {op, *new_shape});
+            new_inst->CopyAttrsFrom(*inst);
+            return new_inst;
+          });
+    }
+  }
+  return {orig_def, orig_def};
+}
+
 std::pair<Def, Def> InstSimplify::RunOnInstruction(Relu6Inst* inst) {
   return SinkTranspose(
       *inst, [](IRBuilder& builder, const std::string& name, const Def& op) {
