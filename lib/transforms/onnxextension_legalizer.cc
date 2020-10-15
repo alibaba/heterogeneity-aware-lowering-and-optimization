@@ -189,49 +189,6 @@ static std::vector<Def> ConvertConstantOfShape(const ONNXExtensionInst* ext,
   return {};
 }
 
-static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
-                                     IRBuilder* builder) {
-  auto op0 = ext->GetOperand(0);
-  const auto& in_type = op0.GetType();
-  if (!in_type.IsValid()) {
-    return {};
-  }
-  int axis = -1;
-  std::vector<int32_t> split;
-  for (const auto& attr : ext->GetAttributes()) {
-    if (attr->GetName() == "split") {
-      split = attr->GetValueAsIntegerList();
-    } else if (attr->GetName() == "axis") {
-      axis = attr->GetValueAsInteger();
-    }
-  }
-  HLCHECK(axis >= 0 && !split.empty());
-  builder->SetInsertAfter(ext);
-  std::vector<Def> ret;
-  ConstantBuilder cb(ext->GetParent()->GetParent());
-  int rank = in_type.GetNumOfDims();
-  for (int i = 0, e = split.size(); i < e; ++i) {
-    std::vector<int32_t> start_data(rank);
-    std::vector<int32_t> size_data(rank);
-    for (int j = 0; j < rank; ++j) {
-      start_data[j] = (j != axis) ? 0 : ((j == 0) ? 0 : split[j - 1]);
-      size_data[j] = (j != axis) ? in_type.GetNumOfElementsInDim(j) : split[j];
-    }
-
-    auto* start =
-        cb.CreateConstant(ext->GetName() + "_start",
-                          Type{DataType::INT32, {rank}}, start_data.data());
-    auto* size =
-        cb.CreateConstant(ext->GetName() + "_size",
-                          Type{DataType::INT32, {rank}}, size_data.data());
-
-    auto slice = builder->CreateSlice(ext->GetName() + "_" + std::to_string(i),
-                                      {*start, *size});
-    ret.push_back(*slice);
-  }
-  return ret;
-}
-
 static std::vector<Def> ConvertPad(const ONNXExtensionInst* ext,
                                    IRBuilder* builder) {
   std::vector<int32_t> paddings;
@@ -619,6 +576,166 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
   return {*slice};
 }
 
+static std::vector<Def> ConvertOneHot(const ONNXExtensionInst* ext,
+                                      IRBuilder* builder) {
+  HLCHECK(ext->GetNumOfAttributes() == 1);
+  const Attribute* attr = ext->GetAttributes()[0].get();
+  HLCHECK(attr->GetName() == "axis");
+  int axis = attr->GetValueAsInteger();
+  const std::string& name = ext->GetName();
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+
+  builder->SetInsertAfter(ext);
+  auto op0 = ext->GetOperand(0);
+  auto op1 = ext->GetOperand(1);
+  auto op2 = ext->GetOperand(2);
+
+  if (IsA<Instruction>(op2.GetDef())) {
+    const Instruction* op2_inst = Downcast<const Instruction>(op2.GetDef());
+    if (op2_inst->GetOpCode() == OpCode::CONCAT) {
+      OneHotInst* new_inst = builder->CreateOneHot(ext->GetName(), op0, op1,
+                                                   op2_inst->GetOperand(0),
+                                                   op2_inst->GetOperand(1));
+
+      new_inst->SetAxis(axis);
+      return {*new_inst};
+    }
+  }
+
+  if (IsA<Constant>(op2)) {
+    const Constant* values = DynCast<Constant>(op2.GetOwner());
+
+    auto& type = op2.GetType();
+    auto data_type = type.GetDataType();
+
+    // split values to on-value and off-value
+
+    const char* ptr = static_cast<const char*>(values->GetRawDataPtr());
+    size_t data_type_size =
+        values->GetElementSizeInBytes() / type.GetTotalNumOfElements();
+    Type ty{data_type};
+
+    Constant* off_value = cb.CreateConstant(name + "_off_value", ty,
+                                            static_cast<const void*>(ptr));
+    Constant* on_value = cb.CreateConstant(
+        name + "_on_value", ty,
+        static_cast<const void*>(&ptr[data_type_size])); // NOLINT
+
+    OneHotInst* new_inst =
+        builder->CreateOneHot(ext->GetName(), op0, op1, *off_value, *on_value);
+
+    new_inst->SetAxis(axis);
+    return {*new_inst};
+  }
+
+  HLCHECK(0 && "unhandled OneHot");
+  return {};
+}
+
+static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
+                                     IRBuilder* builder) {
+  auto op0 = ext->GetOperand(0);
+  auto& input_type = op0.GetType();
+  if (!input_type.IsValid()) {
+    return {};
+  }
+  int input_dims = input_type.GetNumOfDims();
+
+  HLCHECK(ext->GetNumOfAttributes() == 2);
+  const Attribute* attr = ext->GetAttributes()[0].get();
+  HLCHECK(attr->GetName() == "axis");
+  int axis = attr->GetValueAsInteger();
+  axis = (axis < 0) ? axis + input_dims : axis;
+  HLCHECK(((axis >= 0) && (axis < input_dims)) && "Invalid axis.");
+
+  const Attribute* attr1 = ext->GetAttributes()[1].get();
+  HLCHECK(attr1->GetName() == "split");
+  std::vector<int> splits = attr1->GetValueAsIntegerList();
+
+  builder->SetInsertAfter(ext);
+
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  // If no axes operand, assumes all axes are sliced and steps are 1.
+  Def op3 = Def::GetUndefined();
+  Def op4 = Def::GetUndefined();
+
+  std::vector<int> data(input_dims);
+  std::vector<int> steps(input_dims, 1);
+
+  for (int i = 0; i < input_dims; ++i) {
+    data[i] = i;
+  }
+  Constant* c_axes =
+      cb.CreateConstant(ext->GetName() + "_axes",
+                        Type{DataType::INT32, {input_dims}}, data.data());
+  op3 = *c_axes;
+  Constant* c_steps =
+      cb.CreateConstant(ext->GetName() + "_steps",
+                        Type{DataType::INT32, {input_dims}}, steps.data());
+  op4 = *c_steps;
+
+  std::vector<Def> ret_v;
+  int64_t dim = 0;
+
+  std::vector<int64_t> sizes;
+  std::vector<std::vector<int64_t>> sizes_v;
+  std::vector<int64_t> starts;
+  std::vector<std::vector<int64_t>> starts_v;
+  int32_t num_outputs = static_cast<int32_t>(ext->GetNumOfResults());
+
+  if (splits.empty()) {
+    for (size_t i = 0; i < input_type.GetNumOfDims(); ++i) {
+      dim = input_type.GetNumOfElementsInDim(i);
+      if (i == static_cast<size_t>(axis)) {
+        dim /= num_outputs;
+      }
+      sizes.push_back(dim);
+    }
+    for (int32_t i = 0; i < num_outputs; ++i) {
+      sizes_v.push_back(sizes);
+    }
+  } else {
+    for (size_t idx = 0; idx < splits.size(); ++idx) {
+      for (size_t i = 0; i < input_type.GetNumOfDims(); ++i) {
+        if (i == static_cast<size_t>(axis)) {
+          dim = splits[idx];
+        } else {
+          dim = input_type.GetNumOfElementsInDim(i);
+        }
+        sizes.push_back(dim);
+      }
+      sizes_v.push_back(sizes);
+    }
+  }
+
+  int64_t offset = 0;
+  for (auto sizes : sizes_v) {
+    for (size_t i = 0; i < input_type.GetNumOfDims(); ++i) {
+      int64_t value = (i == static_cast<size_t>(axis)) ? offset : 0;
+      starts.push_back(value);
+    }
+    starts_v.push_back(starts);
+    offset += sizes[axis];
+
+    Constant* c_begins = cb.CreateConstant(
+        ext->GetName() + "_starts",
+        Type{DataType::INT32, {static_cast<int64_t>(input_dims)}},
+        starts.data());
+
+    Constant* c_sizes = cb.CreateConstant(
+        ext->GetName() + "_sizes",
+        Type{DataType::INT32, {static_cast<int64_t>(input_dims)}},
+        sizes.data());
+
+    SliceInst* slice = builder->CreateSlice(
+        ext->GetName(), {op0, *c_begins, *c_sizes, op4, op3});
+
+    ret_v.push_back(*slice);
+  }
+
+  return ret_v;
+}
+
 static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
                                              IRBuilder* builder) {
   switch (onnx_inst->GetExtOpCode()) {
@@ -655,14 +772,17 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     case ONNXExtOpCode::EXPAND: {
       return ConvertExpand(onnx_inst, builder);
     }
+    case ONNXExtOpCode::IDENTITY: {
+      return {onnx_inst->GetOperand(0)};
+    }
+    case ONNXExtOpCode::ONEHOT: {
+      return ConvertOneHot(onnx_inst, builder);
+    }
     case ONNXExtOpCode::SUM: {
       return ConvertSum(onnx_inst, builder);
     }
     case ONNXExtOpCode::PAD: {
       return ConvertPad(onnx_inst, builder);
-    }
-    case ONNXExtOpCode::TILE: {
-      return {};
     }
     case ONNXExtOpCode::SPLIT: {
       return ConvertSplit(onnx_inst, builder);
