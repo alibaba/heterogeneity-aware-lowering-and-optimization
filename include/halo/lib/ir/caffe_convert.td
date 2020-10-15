@@ -159,3 +159,19 @@ def CAFFE_InnerProduct: CAFFEExtension<"InnerProduct"> {
 }
 
 def CAFFE_Dropout : CAFFEExtension<"Dropout">;
+
+def CAFFE_Upsample : CAFFEExtension<"Upsample"> {
+  let param_name_ = "upsample_param";
+  let extension_attr_ = [
+    ExtensionAttr<"scale", Integer, "1">
+  ];
+}
+
+def CAFFE_Permute: OpMapping<"Permute", Transpose> {
+  let param_name_ = "permute_param";
+  let attr_mapping_ = [
+    AttributeMapping<"order", "permutation", "{0, 0}">
+  ];
+}
+
+def CAFFE_PRelu: OpMapping<"PReLU", PRelu> { }

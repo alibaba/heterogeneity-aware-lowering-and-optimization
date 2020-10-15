@@ -52,7 +52,7 @@ class OpMapping<string extern_op, Inst sn_inst, code custom_code = ""> {
   list<AttributeMapping> attr_mapping_ = [];
   list<ExtensionAttr> extension_attr_ = [];
   code custom_code_ = custom_code;
-  int num_outputs_ = 1;
+  int num_outputs_ = 1; // Negative for variadic
   // caffe use only
   string param_name_ = "";
   list<string> optional_attrs_ = [];
