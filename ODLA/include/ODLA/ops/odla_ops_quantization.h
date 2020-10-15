@@ -29,6 +29,14 @@
 extern "C" {
 #endif
 
+//! \brief Quantization info for each odla value
+typedef struct {
+  // value id of odla_value
+  odla_value_id value_id;
+  odla_float32 scale;
+  odla_float32 offset;
+} odla_value_quant_info;
+
 #ifdef __cplusplus
 } // C extern
 #endif
