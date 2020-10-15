@@ -327,13 +327,10 @@ static Type ComputeKernelWiseType(
   int kernel_h = kernel_shape[info.kernel_height_axis];
   int kernel_w = kernel_shape[info.kernel_width_axis];
   if (op != OpCode::POOLINGMAX && op != OpCode::POOLINGAVG) {
-    // for depthwise, for NHWC, the kernel is H, W, <group>, 1
+    // for depthwise, for NHWC, the kernel is H, W, in_ch, multiplier
     // for NCHW, the kernel is output, in/<group>, H, W
-    ret_shape[info.data_channel_axis] = kernel_shape[info.kernel_output_axis];
-    if (group > 1 && kernel_format == DataFormat::HWCN) {
-      ret_shape[info.data_channel_axis] =
-          kernel_shape[info.kernel_input_axis] * group;
-    }
+    int kernel_output = kernel_shape[info.kernel_output_axis];
+    ret_shape[info.data_channel_axis] = kernel_output;
   }
 
   auto index_h = info.data_spatial_axis;
