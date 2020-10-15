@@ -104,6 +104,10 @@ static llvm::cl::opt<bool> SeparateConstants(
 static llvm::cl::opt<bool> DisableBroadcasting(
     "disable-broadcasting", llvm::cl::desc("disable broadcasting of constants"),
     llvm::cl::init(false));
+static llvm::cl::opt<bool> DisableConvBN(
+    "disable-convert-bn",
+    llvm::cl::desc("disable convert Batch Normalization into mul/add"),
+    llvm::cl::init(false));
 static llvm::cl::opt<bool> EmitCodeOnly(
     "code-only", llvm::cl::desc("Generate the code only"),
     llvm::cl::init(false));
@@ -343,14 +347,16 @@ static void PopulatePasses(PassManager* pm, std::ostream* out_code,
     pm->AddPass<InputRewriter>(inputs);
   }
 
+  auto fusion_opts = GetFusionOptions();
   pm->AddPass<InstSimplify>(
       llvm::StringRef(Target).startswith("cxx"), DisableBroadcasting.getValue(),
-      RemoveInputTranspose.getValue(), RemoveOutputTranspose.getValue());
+      RemoveInputTranspose.getValue(), RemoveOutputTranspose.getValue(),
+      DisableConvBN.getValue(), fusion_opts.ConvBias);
   if (ReorderChannelLayout != ReorderChannel::ChannelOrder::None) {
     pm->AddPass<ReorderChannel>(ReorderChannelLayout ==
                                 ReorderChannel::ChannelOrder::ChannelFirst);
   }
-  pm->AddPass<Fusion>(GetFusionOptions());
+  pm->AddPass<Fusion>(fusion_opts);
   if (SplitFunction) {
     pm->AddPass<Splitting>();
     pm->AddPass<DevicePlacement>();

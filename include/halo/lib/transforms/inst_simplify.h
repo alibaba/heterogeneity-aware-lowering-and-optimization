@@ -26,14 +26,17 @@ namespace halo {
 /// This pass simplififies instructions to reduce computation strength.
 class InstSimplify final : public BasicBlockPass {
  public:
-  InstSimplify() : InstSimplify(false, false, false, false) {}
+  InstSimplify() : InstSimplify(false, false, false, false, false, false) {}
   InstSimplify(bool simplify_for_preprocess, bool disable_broadcasting,
-               bool remove_input_transpose, bool remove_output_transpose)
+               bool remove_input_transpose, bool remove_output_transpose,
+               bool disable_conv_bn, bool fuse_conv_bias)
       : BasicBlockPass("Instruction Simplification"),
         simplify_for_preprocess_(simplify_for_preprocess),
         disable_broadcasting_(disable_broadcasting),
         remove_input_transpose_(remove_input_transpose),
-        remove_output_transpose_(remove_output_transpose) {}
+        remove_output_transpose_(remove_output_transpose),
+        disable_conv_bn_(disable_conv_bn),
+        fuse_conv_bias_(fuse_conv_bias) {}
 
   bool RunOnBasicBlock(BasicBlock* bb) override;
 
@@ -42,6 +45,7 @@ class InstSimplify final : public BasicBlockPass {
   std::pair<Def, Def> RunOnInstruction(Instruction* inst);
   std::pair<Def, Def> RunOnInstruction(TransposeInst* inst);
   std::pair<Def, Def> RunOnInstruction(ReturnInst* inst);
+  std::pair<Def, Def> RunOnInstruction(BatchNormInst* inst);
   static std::pair<Def, Def> RunOnInstruction(ConcatInst* inst);
   static std::pair<Def, Def> RunOnInstruction(Conv2DInst* inst);
   static std::pair<Def, Def> RunOnInstruction(GatherInst* inst);
@@ -65,6 +69,8 @@ class InstSimplify final : public BasicBlockPass {
   bool disable_broadcasting_;
   bool remove_input_transpose_;
   bool remove_output_transpose_;
+  bool disable_conv_bn_;
+  bool fuse_conv_bias_;
 };
 
 } // end namespace halo.
