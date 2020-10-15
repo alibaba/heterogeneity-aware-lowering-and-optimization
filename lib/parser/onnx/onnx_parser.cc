@@ -467,6 +467,9 @@ std::vector<Def> ONNXParser::GetInputOperands(const onnx::NodeProto& node_def) {
 void ONNXParser::InsertIDToInstMap(const onnx::NodeProto& node_def,
                                    IRObject* inst) {
   size_t num_outputs = node_def.output_size();
+  if (inst->GetNumOfResults() != num_outputs) {
+    inst->SetNumOfResults(num_outputs);
+  }
   for (size_t i = 0; i < num_outputs; ++i) {
     inst_name_to_ptr_.emplace(node_def.output(i), std::make_pair(inst, i));
   }
