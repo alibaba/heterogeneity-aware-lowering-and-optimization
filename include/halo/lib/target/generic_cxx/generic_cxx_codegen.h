@@ -71,17 +71,16 @@ struct CXXType {
 
 class CXXValue {
  public:
-  CXXValue() : name("undef"), id(-1), type("void"){};
+  CXXValue() : name("undef"), str_id(""), id(-1), type("void"){};
   CXXValue(const std::string& name, const CXXType& type);
+  const std::string& GetName() const { return str_id.empty() ? name : str_id; }
   static void Reset();
   std::string name;
+  std::string str_id;
   size_t id;
   CXXType type;
 
  private:
-  // make a valid C/C++ identifier name.
-  void Normalize(const std::string& n);
-
   inline static std::unordered_map<std::string, size_t> name2id;
 };
 

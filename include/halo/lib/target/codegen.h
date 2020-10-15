@@ -36,6 +36,9 @@ class CodeGen : public ModulePass {
   void SetAPI(API api) noexcept { api_ = api; }
   bool IsODLA05() const noexcept { return api_ == API::ODLA_05; }
 
+  /// make a valid C/C++ identifier name.
+  static std::string NormalizeVariableName(const std::string& name);
+
  protected:
   /// The entrance for all instructions. It will then forward the call to
   /// RunOnInstruction(const XXXInst&) based on op code.

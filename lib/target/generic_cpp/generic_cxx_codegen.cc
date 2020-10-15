@@ -47,23 +47,10 @@ std::string CXXType::Str(bool use_array_decl) const {
 }
 
 void CXXValue::Reset() { name2id.clear(); }
-void CXXValue::Normalize(const std::string& n) {
-  std::transform(n.begin(), n.end(), name.begin(), [](char c) {
-    switch (c) {
-      case '/':
-      case ' ':
-      case '.':
-      case '-': {
-        return '_';
-      }
-      default:
-        return c;
-    }
-  });
-}
+
 CXXValue::CXXValue(const std::string& name, const CXXType& type)
-    : name(name), type(type) {
-  Normalize(name);
+    : str_id(""), type(type) {
+  this->name = CodeGen::NormalizeVariableName(name);
   if (name2id.count(name) == 0) {
     name2id[name] = name2id.size();
   }
