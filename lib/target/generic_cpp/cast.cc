@@ -20,7 +20,27 @@
 namespace halo {
 
 void GenericCXXCodeGen::RunOnInstruction(FPtoSIInst* inst) {
-  VLOG(0) << "TODO cast is not implemented";
+  const Def& lhs = inst->GetOperand(0);
+
+  CXXValue op0 = ir_mapping_[lhs];
+
+  CXXValue ret(inst->GetName(), op0.type);
+  const auto& ret_type = inst->GetResultType();
+
+  EmitODLACall(ret, "odla_Cast", op0, GetODLAType(ret_type.GetDataType()));
+  ir_mapping_[*inst] = ret;
+}
+
+void GenericCXXCodeGen::RunOnInstruction(SItoFPInst* inst) {
+  const Def& lhs = inst->GetOperand(0);
+
+  CXXValue op0 = ir_mapping_[lhs];
+
+  CXXValue ret(inst->GetName(), op0.type);
+  const auto& ret_type = inst->GetResultType();
+
+  EmitODLACall(ret, "odla_Cast", op0, GetODLAType(ret_type.GetDataType()));
+  ir_mapping_[*inst] = ret;
 }
 
 } // end namespace halo
