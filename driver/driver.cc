@@ -67,6 +67,11 @@ static llvm::cl::opt<std::string> OutputFile(
 static llvm::cl::opt<bool> PrintAll(
     "print-all", llvm::cl::desc("print intermediates of all passes"),
     llvm::cl::init(false));
+
+static llvm::cl::opt<bool> PrintPass("print-pass",
+                                     llvm::cl::desc("print pass name"),
+                                     llvm::cl::init(false));
+
 static llvm::cl::opt<bool> EmitLLVMIR("emit-llvm",
                                       llvm::cl::desc("output the LLVM IR code"),
                                       llvm::cl::init(false));
@@ -372,6 +377,7 @@ int main(int argc, char** argv) {
   ctx.SetBasePath(argv[0]);
   ctx.SetTargetTriple(Target);
   ctx.SetProcessorName(Processor);
+  ctx.SetPrintPass(PrintPass);
 
   Module m(ctx, ModuleName);
 
@@ -440,6 +446,7 @@ int main(int argc, char** argv) {
   auto status = pm.Run(&m);
 
   if (PrintAll) {
+    pm.Dump();
     m.Dump();
   }
 
