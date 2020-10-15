@@ -510,7 +510,11 @@ odla_value odla_Transpose(odla_value input, odla_value_shape permutations,
 
   g_comp->primitives.push_back(prim);
   g_comp->args.push_back({{DNNL_ARG_FROM, input->mem}, {DNNL_ARG_TO, dst_mem}});
-  return CreateValue(dst_mem, output_dims, id);
+  auto v = CreateValue(dst_mem, output_dims, id);
+
+  InterpretIfNeeded();
+
+  return v;
 }
 
 odla_value odla_Reshape(odla_value input, odla_value_shape output_dims,
@@ -1067,6 +1071,9 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
                           {DNNL_ARG_DST, ret_mem}});
 
   odla_value v = CreateValue(ret_mem, output_dims, bias ? nullptr : id);
+
+  InterpretIfNeeded();
+
   return bias ? odla_Add(v, bias, id) : v;
 }
 
