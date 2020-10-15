@@ -44,6 +44,11 @@ typedef enum {
   ODLA_MAX_BATCH_SIZE,
   ODLA_OPT_BATCH_SIZE,
   ODLA_RUN_BATCH_SIZE,
+  ODLA_FP16_MODE,
+  ODLA_USE_SIM_MODE,
+  ODLA_PROCESSOR_NUM,
+  ODLA_BATCHES_PER_STEP,
+  ODLA_USE_DATA_TYPE,
 } odla_item_type;
 
 //! \brief Computation object

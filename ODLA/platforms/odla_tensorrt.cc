@@ -121,6 +121,8 @@ struct _odla_computation {
   std::unordered_map<std::string, odla_value> outputs;
   std::vector<std::vector<float>> buffers;
   std::vector<std::unique_ptr<_odla_value>> vals;
+  bool fp16_mode = false;
+
   bool is_dynamic_batch = false;
   int min_batch_size = 0;
   int max_batch_size = 0;
@@ -131,6 +133,7 @@ struct _odla_computation {
     builder->setMaxWorkspaceSize(MAX_WORKSPACE_SIZE_BYTES);
     network = builder->createNetwork();
 #else
+    initLibNvInferPlugins(static_cast<void*>(&Logger), "");
     nvinfer1::NetworkDefinitionCreationFlags flags = 0;
     network = builder->createNetworkV2(flags);
 #endif
@@ -194,6 +197,11 @@ struct _odla_context {
     }
 
     builder_cfg->setMaxWorkspaceSize(MAX_WORKSPACE_SIZE_BYTES);
+
+    if (comp->fp16_mode) {
+      builder_cfg->setFlag(BuilderFlag::kFP16);
+      builder_cfg->setFlag(BuilderFlag::kSTRICT_TYPES);
+    }
     engine = comp->builder->buildEngineWithConfig(*comp->network, *builder_cfg);
 #endif
     ctx = engine->createExecutionContext();
@@ -371,6 +379,10 @@ odla_status odla_SetComputationItem(odla_computation computation,
 
     case ODLA_OPT_BATCH_SIZE:
       computation->opt_batch_size = *(reinterpret_cast<int*>(value));
+      break;
+
+    case ODLA_FP16_MODE:
+      computation->fp16_mode = *(reinterpret_cast<bool*>(value));
       break;
 
     default:
