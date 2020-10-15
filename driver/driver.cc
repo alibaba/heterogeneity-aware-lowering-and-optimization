@@ -41,6 +41,7 @@
 #include "halo/lib/transforms/reorder_channel.h"
 #include "halo/lib/transforms/splitting.h"
 #include "halo/lib/transforms/tfextension_legalizer.h"
+#include "halo/lib/transforms/tfliteextension_legalizer.h"
 #include "halo/lib/transforms/type_legalizer.h"
 #include "halo/version.h"
 #include "llvm/ADT/SmallVector.h"
@@ -314,6 +315,9 @@ static void PopulatePasses(PassManager* pm, std::ostream* out_code,
     pm->AddPass<CAFFEExtensionLegalizer>();
   } else if (format == Parser::Format::TENSORFLOW) {
     pm->AddPass<TFExtensionLegalizer>();
+  } else if (format == Parser::Format::TFLITE) {
+    HLCHECK(format == Parser::Format::TFLITE);
+    pm->AddPass<TFLITEExtensionLegalizer>();
   } else {
     HLCHECK(format == Parser::Format::ONNX);
     pm->AddPass<ONNXExtensionLegalizer>();

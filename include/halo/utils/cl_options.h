@@ -1,4 +1,4 @@
-//===- analyzer.cc --------------------------------------------------------===//
+//===- cl_options.h ---------------------------------------------*- C++ -*-===//
 //
 // Copyright (C) 2019-2020 Alibaba Group Holding Limited.
 //
@@ -14,28 +14,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // =============================================================================
+#ifndef HALO_UTILS_CL_OPTIONS_H_
+#define HALO_UTILS_CL_OPTIONS_H_
 
-#include <fstream>
-#include <set>
-#include <string>
-
-#include "halo/lib/framework/common.h"
-#include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/parser/parser.h"
-#include "halo/lib/pass/pass_manager.h"
-#include "halo/lib/transforms/analyzer.h"
-#include "halo/lib/transforms/caffeextension_legalizer.h"
-#include "halo/lib/transforms/dce.h"
-#include "halo/lib/transforms/input_legalizer.h"
-#include "halo/lib/transforms/inst_simplify.h"
-#include "halo/lib/transforms/onnxextension_legalizer.h"
-#include "halo/lib/transforms/tfextension_legalizer.h"
-#include "halo/lib/transforms/type_legalizer.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
-
-using namespace halo;
+#
+namespace halo {
 
 static llvm::cl::list<std::string> ModelFiles(
     llvm::cl::Positional, llvm::cl::desc("model file name."),
@@ -49,13 +36,23 @@ static llvm::cl::opt<Parser::Format> ModelFormat(
         "guessed base on file's extension."),
     llvm::cl::init(Parser::Format::INVALID));
 
+static llvm::cl::opt<signed> Batch(
+    "batch-size",
+    llvm::cl::desc("Specify batch size if the first dim of input is negative"),
+    llvm::cl::init(1));
+
 static llvm::cl::opt<std::string> EntryFunctionName(
     "entry-func-name", llvm::cl::desc("name of entry function"),
     llvm::cl::init(""));
 
-static llvm::cl::opt<bool> PrintDiagnosticReport(
-    "print-diagnostic-report", llvm::cl::desc("Print diagnostic report"),
+static llvm::cl::opt<bool> PrintAnalysisReport(
+    "print-analysis-report", llvm::cl::desc("Print analysis report"),
     llvm::cl::init(false));
+
+static llvm::cl::list<std::string> InputsShape(
+    "input-shape",
+    llvm::cl::desc("Specify input names like -input-shape=foo:1x3x100x100 "
+                   "-input-shape=bar:int8:-1x3x200x200"));
 
 /// Guess the model format based on input file extension.gg
 static Parser::Format InferFormat(
@@ -67,6 +64,7 @@ static Parser::Format InferFormat(
                     .Case(".prototxt", Parser::Format::TENSORFLOW)
                     .Case(".onnx", Parser::Format::ONNX)
                     .Case(".json", Parser::Format::MXNET)
+                    .Case(".tflite", Parser::Format::TFLITE)
                     .Default(Parser::Format::INVALID);
   // Check the next input file to see if it is caffe.
   if (format == Parser::Format::TENSORFLOW &&
@@ -80,14 +78,16 @@ static Parser::Format InferFormat(
 static Status ParseModels(const llvm::cl::list<std::string>& model_files,
                           const llvm::cl::opt<Parser::Format>& model_format,
                           const llvm::cl::opt<std::string>& entry_func_name,
-                          const armory::Opts& opts, Module* module) {
+                          const armory::Opts& opts, Module* module,
+                          Parser::Format* f) {
   std::set<std::string> func_names;
   for (size_t i = 0, e = model_files.size(); i < e; ++i) {
     Parser::Format format = model_format;
     if (format == Parser::Format::INVALID) {
       format = InferFormat(model_files, i);
     }
-
+    HLCHECK(format != Parser::Format::INVALID);
+    *f = format;
     FunctionBuilder func_builder(module);
     // Use stem of the input model as function name.
     std::string func_name = entry_func_name.empty()
@@ -110,19 +110,6 @@ static Status ParseModels(const llvm::cl::list<std::string>& model_files,
   }
   return Status::SUCCESS;
 }
+} // namespace halo
 
-int main(int argc, char** argv) {
-  llvm::cl::ParseCommandLineOptions(argc, argv);
-  GlobalContext ctx;
-  ctx.SetBasePath(argv[0]);
-
-  Module m(ctx, "diagnostic_module");
-
-  armory::Opts opts(PrintDiagnosticReport);
-  if (ParseModels(ModelFiles, ModelFormat, EntryFunctionName, opts, &m) !=
-      Status::SUCCESS) {
-    return 1;
-  }
-
-  return 0;
-}
+#endif // HALO_UTILS_CL_OPTIONS_H_

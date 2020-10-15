@@ -315,8 +315,8 @@ class IRObject {
   }
 
   /// Return the attributes list.
-  const std::vector<std::unique_ptr<Attribute>>& GetAttributes()
-      const noexcept {
+  const std::vector<std::unique_ptr<Attribute>>& GetAttributes() const
+      noexcept {
     return attributes_;
   }
 
