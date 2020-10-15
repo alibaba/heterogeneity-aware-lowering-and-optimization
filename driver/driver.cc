@@ -199,6 +199,9 @@ static llvm::cl::opt<signed> MinBatch("min-batch-size",
 static llvm::cl::opt<signed> OptBatch("opt-batch-size",
                                       llvm::cl::desc("Specify opt batch size"),
                                       llvm::cl::init(4));
+static llvm::cl::opt<bool> CheckModel("check-model",
+                                      llvm::cl::desc("dynamic check model"),
+                                      llvm::cl::init(false));
 
 #undef HALO_FUSION_OPTIONS
 #define HALO_FUSION_CMD_OPTIONS_DECL
@@ -464,6 +467,14 @@ int main(int argc, char** argv) {
                               TritonConfigFile);
       TritonConfigFile = file_name.str();
     }
+  }
+
+  if (CheckModel) {
+    llvm::StringRef name(OutputFile);
+    llvm::SmallString<128> filename(name);
+    llvm::sys::path::replace_extension(filename, ".main.cc");
+    of_dynamic_check.open(filename.str(), std::ofstream::binary);
+    out_dynamic_check = &of_dynamic_check;
   }
 
   PopulatePasses(&pm, out_code, out_constants, out_header, out_dynamic_check,

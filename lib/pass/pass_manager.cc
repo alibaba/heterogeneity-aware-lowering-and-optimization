@@ -17,11 +17,15 @@
 
 #include "halo/lib/pass/pass_manager.h"
 
+static bool IsPrintPass = false;
+
 namespace halo {
 
 class PassManagerImpl {
  public:
-  explicit PassManagerImpl(GlobalContext* ctx) : ctx_(*ctx) {}
+  explicit PassManagerImpl(GlobalContext* ctx) : ctx_(*ctx) {
+    IsPrintPass = ctx->GetPrintPass();
+  }
 
   Pass* Add(std::unique_ptr<ModulePass> pass);
   Pass* Add(std::unique_ptr<FunctionPass> pass);
@@ -74,6 +78,9 @@ class BasicBlockPassManager final : public FunctionPass {
       changed = false;
       for (auto& bb : *function) {
         for (auto& fp : passes_) {
+          if (IsPrintPass) {
+            std::cout << "      BasicBlockPass : " << fp->Name() << std::endl;
+          }
           changed |= fp->RunOnBasicBlock(bb.get());
         }
       }
@@ -110,6 +117,9 @@ class FunctionPassManager final : public ModulePass {
       changed = false;
       for (auto& func : *module) {
         for (auto& fp : passes_) {
+          if (IsPrintPass) {
+            std::cout << "    FunctionPass : " << fp->Name() << std::endl;
+          }
           changed |= fp->RunOnFunction(func.get());
         }
       }
@@ -165,6 +175,9 @@ Pass* PassManagerImpl::Add(std::unique_ptr<BasicBlockPass> pass) {
 
 Status PassManagerImpl::Run(Module* module) {
   for (auto& pass : passes_) {
+    if (IsPrintPass) {
+      std::cout << "  ModulePass : " << pass->Name() << std::endl;
+    }
     pass->RunOnModule(module);
   }
   return Status::SUCCESS;
