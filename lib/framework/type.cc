@@ -17,6 +17,7 @@
 
 #include "halo/lib/framework/type.h"
 
+#include <algorithm>
 #include <iostream>
 #include <numeric>
 
@@ -105,6 +106,15 @@ bool Type::HasNativeType<int64_t>(DataType dt) {
 template <>
 bool Type::HasNativeType<uint64_t>(DataType dt) {
   return dt == DataType::INT64 || dt == DataType::UINT64;
+}
+
+DataType Type::StringToDataType(const std::string& name) {
+  std::string s = name;
+  std::transform(name.begin(), name.end(), s.begin(), ::toupper);
+#define GET_DATATYPE_ENUM_FROM_STRING
+#include "halo/lib/ir/datatype.def"
+#undef GET_DATATYPE_ENUM_FROM_STRING
+  return DataType::INVALID;
 }
 
 std::string Type::DataTypeToString(DataType dt) {

@@ -84,58 +84,53 @@ void EmitDataTypeEnum(const llvm::RecordKeeper& records,
               }
               return lhs.Width < rhs.Width;
             });
-  os << "#ifdef GET_DATATYPE_ENUM_VALUE\n";
+  std::vector<std::string> enum_strs;
+  enum_strs.reserve(datatypes.size());
   for (auto vt : datatypes) {
+    enum_strs.push_back("");
+    auto& name = enum_strs.back();
     if (vt.IsBool) {
-      os << "BOOL";
+      name = "BOOL";
     } else if (vt.IsString) {
-      os << "STRING";
+      name = "STRING";
     } else {
       if (vt.IsFloat) {
-        os << "FLOAT";
+        name = "FLOAT";
       } else if (vt.IsInt) {
         if (vt.IsQuantized) {
-          os << "Q";
+          name += "Q";
         }
         if (vt.IsUnsigned) {
-          os << "U";
+          name += "U";
         }
-        os << "INT";
+        name += "INT";
       }
-      os << vt.Width;
+      name += std::to_string(vt.Width);
     }
-    os << ",\n";
   }
+  os << "#ifdef GET_DATATYPE_ENUM_VALUE\n";
+  std::for_each(enum_strs.begin(), enum_strs.end(),
+                [&](const std::string& s) { os << s << ",\n"; });
   os << "#endif // GET_DATATYPE_ENUM_VALUE\n";
 
   os << "\n";
   os << "#ifdef GET_DATATYPE_ENUM_STRING\n";
-  for (auto vt : datatypes) {
-    std::string s;
-    if (vt.IsBool) {
-      s = "BOOL";
-    } else if (vt.IsString) {
-      s = "STRING";
-    } else {
-      if (vt.IsFloat) {
-        s = "FLOAT";
-      } else if (vt.IsInt) {
-        if (vt.IsQuantized) {
-          s = "Q";
-        }
-        if (vt.IsUnsigned) {
-          s = "U";
-        }
-        s += "INT";
-      }
-      s += std::to_string(vt.Width);
-    }
+  for (const auto& s : enum_strs) {
     os << "case DataType::" << s << ": ";
     os << "s = "
        << "\"" << s << "\"";
     os << "; break;\n";
   }
   os << "#endif // GET_DATATYPE_ENUM_STRING\n";
+
+  os << "\n";
+  os << "#ifdef GET_DATATYPE_ENUM_FROM_STRING\n";
+  for (const auto& s : enum_strs) {
+    os << "if (s == \"" << s << "\") {\n";
+    os << "  return DataType::" << s << ";\n";
+    os << "}\n";
+  }
+  os << "#endif // GET_DATATYPE_ENUM_FROM_STRING\n";
 }
 
 } // end namespace halo
