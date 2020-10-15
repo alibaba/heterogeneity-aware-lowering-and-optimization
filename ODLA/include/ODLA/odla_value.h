@@ -155,6 +155,15 @@ odla_FindValueById(const odla_value_id value_id, odla_value* value);
 extern ODLA_API_EXPORT odla_status ODLA_API_CALL
 odla_SetValueAsOutput(odla_value value);
 
+//! \brief Set multi values as a computation outputs
+/*!
+  \param value the values
+
+  \return odla_status
+*/
+extern ODLA_API_EXPORT odla_status ODLA_API_CALL
+odla_SetValuesAsOutput(odla_values values);
+
 //! \brief Set a value by id as a computation output
 /*!
   \param value_id the value id

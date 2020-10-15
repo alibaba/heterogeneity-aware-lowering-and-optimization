@@ -249,9 +249,10 @@ odla_Shape(odla_value input, odla_value_shape output_dims,
 
   \return odla_value
 */
-extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_Slice(
-    odla_value input, const odla_uint32* start, const odla_uint32* stride,
-    odla_value_shape output_dims, const odla_value_id value_id);
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Slice(odla_value input, const odla_uint32* start, const odla_uint32* end,
+           const odla_uint32* stride, odla_value_shape output_dims,
+           const odla_value_id value_id);
 
 //! \brief Remove dimensions of size 1
 /*!
@@ -285,6 +286,22 @@ odla_Squeeze(odla_value input, odla_size_t num_of_axes, const odla_uint32* axes,
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Transpose(odla_value input, odla_value_shape permutations,
                odla_value_shape output_dims, const odla_value_id value_id);
+
+//! \brief Tile input multiples times
+/*!
+  Replicate a given \p input value multiples times.
+
+  \param input the input value
+  \param repeat the dimension numbers of repeated copies along input's
+  dimensions.
+  \param output_dims the optional output shape (can be undefined)
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Tile(odla_value input, const odla_uint32* repeat,
+          odla_value_shape output_dims, const odla_value_id value_id);
 
 #ifdef __cplusplus
 } // C extern

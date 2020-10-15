@@ -366,7 +366,7 @@ odla_NMS(odla_value boxes, odla_value scores, odla_uint32 max_num_outputs,
   \return odla_value
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_PRelu(odla_value input, odla_float32 slope, const odla_value_id value_id);
+odla_PRelu(odla_value input, odla_value slope, const odla_value_id value_id);
 
 //! \brief Relu activateion
 /*!
@@ -477,22 +477,23 @@ odla_Tanh(odla_value input, const odla_value_id value_id);
 
 //! \brief Find Top-K elements
 /*!
-  TopK returns the top-K largest or smallest elements.
+  TopK returns the top-K largest or smallest elements and index
 
   \param input the input value
   \param K the number of top values to be returned
   \param largest indicates largest (true) or smallest values to retrieve
   \param sorted indicates if the results are sorted or in original order
   \param dimension on which to do the sort
-  \param output_value_type the output value type (an integer value type)
-  \param value_id a unique value id (can be NULL)
+  \param output_value_type the output 0 type
+  \param output_value_index_type the output 1 type
+  \param value_ids an array of value ids (can be NULL)
 
-  \return odla_value
+  \return odla_values
 */
-extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_TopK(odla_value input, odla_uint32 K, odla_bool largest, odla_bool sorted,
-          odla_uint32 axis, odla_value_type output_value_type,
-          const odla_value_id value_id);
+extern ODLA_API_EXPORT odla_values ODLA_API_CALL odla_TopK(
+    odla_value input, odla_uint32 K, odla_bool largest, odla_bool sorted,
+    odla_uint32 axis, odla_value_type output_value_type,
+    odla_value_type output_value_index_type, const odla_value_ids value_ids);
 
 #ifdef __cplusplus
 } // C extern

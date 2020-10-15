@@ -109,9 +109,9 @@ odla_ArgMax(odla_value input, odla_int32 axis, odla_bool keep_dims,
   \return odla_value
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-dla_ArgMin(odla_value input, odla_int32 axis, odla_bool keep_dims,
-           odla_bool return_last_index, odla_value_type output_value_type,
-           const odla_value_id value_id);
+odla_ArgMin(odla_value input, odla_int32 axis, odla_bool keep_dims,
+            odla_bool return_last_index, odla_value_type output_value_type,
+            const odla_value_id value_id);
 
 //! \brief Round up a value
 /*!
@@ -221,6 +221,24 @@ odla_Exp(odla_value input, const odla_value_id value_id);
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Floor(odla_value input, const odla_value_id value_id);
+
+//! \brief General Batch Matrix Multiplication
+/*!
+  Gemm computes: \n
+   \p A * \p B \n
+
+  \param A the matrix A
+  \param A_tranpose indicates if A needs to be transposed or not
+  \param B the matrix B
+  \param B_tranpose indicates if B needs to be transposed or not
+  \param output_dims the optional output shape (can be undefined)
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_BatchMatMul(
+    odla_value A, odla_bool A_transpose, odla_value B, odla_bool B_transpose,
+    odla_value_shape output_dims, const odla_value_id value_id);
 
 //! \brief General Matrix Multiplication
 /*!
@@ -565,6 +583,162 @@ odla_Sqrt(odla_value input, const odla_value_id value_id);
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Sub(odla_value lhs, odla_value rhs, const odla_value_id value_id);
+
+//! \brief Sin
+/*!
+  Computes sine of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Sin(odla_value x, const odla_value_id value_id);
+
+//! \brief Sinh
+/*!
+  Computes sineh of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Sinh(odla_value x, const odla_value_id value_id);
+
+//! \brief Cos
+/*!
+  Computes cosin of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Cos(odla_value x, const odla_value_id value_id);
+
+//! \brief Cosh
+/*!
+  Computes cosinh of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Cosh(odla_value x, const odla_value_id value_id);
+
+//! \brief Tan
+/*!
+  Computes tan of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Tan(odla_value x, const odla_value_id value_id);
+
+//! \brief Tanh
+/*!
+  Computes tanh of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Tanh(odla_value x, const odla_value_id value_id);
+
+//! \brief ACos
+/*!
+  Computes acos of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_ACos(odla_value x, const odla_value_id value_id);
+
+//! \brief ACosh
+/*!
+  Computes acosh of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_ACosh(odla_value x, const odla_value_id value_id);
+
+//! \brief ASin
+/*!
+  Computes asin of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_ASin(odla_value x, const odla_value_id value_id);
+
+//! \brief ASinh
+/*!
+  Computes asinh of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_ASinh(odla_value x, const odla_value_id value_id);
+
+//! \brief ATan
+/*!
+  Computes atan of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_ATan(odla_value x, const odla_value_id value_id);
+
+//! \brief ATanh
+/*!
+  Computes atanh of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_ATanh(odla_value x, const odla_value_id value_id);
 
 #ifdef __cplusplus
 } // C extern

@@ -334,23 +334,36 @@ static odla_value binary_eltwise(dnnl::algorithm algo, odla_value lhs,
       dnnl::memory::desc(getDims(dims_lhs), lhs->mem.get_desc().data_type(),
                          getFormatTag(dims_lhs));
   auto ret_md = lhs_md;
-  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
+  auto rhs_md = lhs_md;
 
-  auto rhs_md = rhs->mem.get_desc();
+  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
 
   auto ln = GetTotalElements(dims_lhs);
   auto rn = GetTotalElements(dims_rhs);
 
-  if (dims_lhs.size != dims_rhs.size) {
+  if (ln != rn) {
+    std::vector<int64_t> strides_v(dims_lhs.size, 0);
     assert(ln >= rn && ln % rn == 0);
-    auto strides = getStrides(dims_rhs);
-    for (int i = 0; i < dims_lhs.size - dims_rhs.size; ++i)
-      strides.insert(strides.begin(), 0);
-    rhs_md = lhs_md;
-    for (int i = 0; i < strides.size(); ++i)
-      rhs_md.data.format_desc.blocking.strides[i] = strides[i];
-  } else if (ln == rn) {
-    rhs_md = lhs_md;
+    if (dims_rhs.size == 1) {
+      for (int i = dims_lhs.size - 1; i >= 0; --i) {
+        if (dims_lhs.dims[i] == rn) {
+          strides_v[i] = 1;
+          break;
+        }
+      }
+    } else {
+      for (int i = dims_lhs.size - 1, j = dims_rhs.size - 1, s = 1;
+           i >= 0 && j >= 0; --i, --j) {
+        if (dims_lhs.dims[i] != dims_rhs.dims[j]) {
+          assert(dims_rhs.dims[j] == 1);
+        } else {
+          strides_v[i] = s;
+          s *= dims_rhs.dims[j];
+        }
+      }
+    }
+    for (int i = 0; i < dims_lhs.size; ++i)
+      rhs_md.data.format_desc.blocking.strides[i] = strides_v[i];
   }
   dnnl::binary::desc bd(algo, lhs_md, rhs_md, ret_md);
   dnnl::binary::primitive_desc pd(bd, g_comp->eng);
@@ -372,6 +385,24 @@ odla_value odla_Add(odla_value lhs, odla_value rhs, const odla_value_id id) {
 
 odla_value odla_Mul(odla_value lhs, odla_value rhs, const odla_value_id id) {
   return binary_eltwise(dnnl::algorithm::binary_mul, lhs, rhs, id);
+}
+
+odla_value odla_Round(odla_value input, const odla_value_id id) {
+  auto ret_md = input->mem.get_desc();
+  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
+  auto desc = dnnl::eltwise_forward::desc(dnnl::prop_kind::forward_inference,
+                                          dnnl::algorithm::eltwise_round,
+                                          input->mem.get_desc());
+  auto pd = dnnl::eltwise_forward::primitive_desc(desc, g_comp->eng);
+  auto prim = dnnl::eltwise_forward(pd);
+
+  g_comp->primitives.push_back(prim);
+
+  odla_value v = CreateValue(ret_mem, input->shape, id);
+  g_comp->args.push_back({{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, ret_mem}});
+  InterpretIfNeeded();
+
+  return v;
 }
 
 odla_value odla_Sigmoid(odla_value input, const odla_value_id id) {
@@ -538,12 +569,17 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
                                           dnnl::memory::format_tag::any);
   auto kernel_md_src = dnnl::memory::desc(getDims(kernel_dims), dt,
                                           getFormatTag(kernel_layout, group));
-
+  dnnl::memory::desc bias_md;
+  if (bias != nullptr) {
+    odla_value_shape scalar{.size = 1, .dims = {GetTotalElements(bias->shape)}};
+    bias_md =
+        dnnl::memory::desc(getDims(scalar), dt, dnnl::memory::format_tag::a);
+  }
   assert(dilations[0] == 1 && dilations[1] == 1);
   auto conv_desc = dnnl::convolution_forward::desc(
       dnnl::prop_kind::forward, dnnl::algorithm::convolution_direct,
-      input_md_any, kernel_md_any, ret_md_any, stride_dims, paddings_before,
-      paddings_after);
+      input_md_any, kernel_md_any, bias_md, ret_md_any, stride_dims,
+      paddings_before, paddings_after);
   auto pd = dnnl::convolution_forward::primitive_desc(conv_desc, g_comp->eng);
 
   auto ret_mem = dnnl::memory(pd.dst_desc(), g_comp->eng);
@@ -580,6 +616,9 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
   g_comp->args.push_back({{DNNL_ARG_SRC, input->mem},
                           {DNNL_ARG_WEIGHTS, kernel->mem},
                           {DNNL_ARG_DST, ret_mem}});
+  if (bias != nullptr) {
+    g_comp->args.back()[DNNL_ARG_BIAS] = bias->mem;
+  }
   if (needs_reorder_input) {
     input->mem = orig_mem;
   }
@@ -593,9 +632,10 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
         {{DNNL_ARG_FROM, ret_mem}, {DNNL_ARG_TO, reordered_mem}});
     v->mem = reordered_mem;
   }
+
   InterpretIfNeeded();
 
-  return bias ? odla_Add(v, bias, id) : v;
+  return v;
 }
 
 odla_value odla_DeConv(odla_value input, odla_memory_layout input_layout,
@@ -687,7 +727,8 @@ odla_value odla_DeConv(odla_value input, odla_memory_layout input_layout,
 
   g_comp->primitives.push_back(prim);
 
-  odla_value v = CreateValue(ret_mem, orig_output_dims, id);
+  odla_value v =
+      CreateValue(ret_mem, orig_output_dims, bias != nullptr ? nullptr : id);
   g_comp->args.push_back({{DNNL_ARG_SRC, input->mem},
                           {DNNL_ARG_WEIGHTS, kernel->mem},
                           {DNNL_ARG_DST, ret_mem}});
@@ -855,6 +896,34 @@ odla_value odla_BatchNormalization(odla_value input,
   return v;
 }
 
+odla_value odla_Resize(odla_value input, odla_interpolation_mode interpolation,
+                       odla_resize_coordinate_mode mode, odla_uint32 axes_mask,
+                       odla_value_shape output_dims,
+                       const odla_value_id value_id) {
+  auto algo = interpolation == ODLA_NEAREST
+                  ? dnnl::algorithm::resampling_nearest
+                  : dnnl::algorithm::resampling_linear;
+  auto input_md = input->mem.get_desc();
+  auto dt = input->mem.get_desc().data_type();
+
+  auto ret_md = dnnl::memory::desc(getDims(output_dims), dt,
+                                   dnnl::memory::format_tag::nchw);
+
+  auto op_desc = dnnl::resampling_forward::desc(dnnl::prop_kind::forward, algo,
+                                                input_md, ret_md);
+  auto pd = dnnl::resampling_forward::primitive_desc(op_desc, g_comp->eng);
+  auto prim = dnnl::resampling_forward(pd);
+
+  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
+
+  g_comp->primitives.push_back(prim);
+  odla_value v = CreateValue(ret_mem, output_dims, value_id);
+  g_comp->args.push_back({{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, ret_mem}});
+
+  InterpretIfNeeded();
+  return v;
+}
+
 odla_value odla_LRN(odla_value input, odla_memory_layout input_layout,
                     odla_int32 window_size, odla_float32 alpha,
                     odla_float32 beta, odla_float32 bias,
@@ -1002,8 +1071,8 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
 }
 
 odla_value odla_Slice(odla_value input, const odla_uint32* start,
-                      const odla_uint32* strides, odla_value_shape output_dims,
-                      const odla_value_id id) {
+                      const odla_uint32* end, const odla_uint32* strides,
+                      odla_value_shape output_dims, const odla_value_id id) {
   const auto& input_dims = input->shape;
   int dims = input_dims.size;
   auto offsets = dnnl::memory::dims(start, start + dims);
