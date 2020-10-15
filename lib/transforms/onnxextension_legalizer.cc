@@ -192,28 +192,30 @@ static std::vector<Def> ConvertConstantOfShape(const ONNXExtensionInst* ext,
 static std::vector<Def> ConvertPad(const ONNXExtensionInst* ext,
                                    IRBuilder* builder) {
   std::vector<int32_t> paddings;
-  std::string mode;
+  PadMode mode = PadMode::CONSTANT;
   float value = 0;
-  HLCHECK(ext->GetNumOfAttributes() == 3);
-  for (int i = 0; i < 3; ++i) {
+  HLCHECK(ext->GetNumOfAttributes() == 3 || ext->GetNumOfAttributes() == 2);
+  for (size_t i = 0; i < ext->GetNumOfAttributes(); ++i) {
     const Attribute* attr = ext->GetAttributes()[i].get();
     if (attr->GetName() == "pads") {
       paddings = attr->GetValueAsIntegerList();
     } else if (attr->GetName() == "mode") {
-      mode = attr->GetValueAsString();
-      std::transform(mode.begin(), mode.end(), mode.begin(),
-                     [](char c) { return std::toupper(c); });
+      mode = attr->GetValueAsEnumPadMode();
     } else {
-      value = attr->GetValueAsFloat();
+      if (mode == PadMode::CONSTANT) {
+        value = attr->GetValueAsFloat();
+      }
     }
   }
+
   bool all_zeros = true;
   for_each(paddings.begin(), paddings.end(),
            [&all_zeros](int x) { all_zeros &= (x == 0); });
   if (all_zeros) {
     return {ext->GetOperand(0)};
   }
-  HLCHECK(value == 0 && mode == "CONSTANT");
+
+  HLCHECK(value == 0 && mode == PadMode::CONSTANT);
   int64_t rank = paddings.size() / 2;
   std::vector<int32_t> padding_data(paddings.size());
   for (int axis = 0; axis < rank; ++axis) {
