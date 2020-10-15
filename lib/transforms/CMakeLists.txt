@@ -35,7 +35,7 @@ set(SRCS
   tfliteextension_legalizer.cc
   transforms_util.cc
   type_legalizer.cc
-  analyzer.cc
+  typecast.cc
 )
 
 # dependences which need to be built first.

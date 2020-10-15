@@ -43,6 +43,7 @@
 #include "halo/lib/transforms/tfextension_legalizer.h"
 #include "halo/lib/transforms/tfliteextension_legalizer.h"
 #include "halo/lib/transforms/type_legalizer.h"
+#include "halo/lib/transforms/typecast.h"
 #include "halo/utils/cl_options.h"
 #include "halo/version.h"
 #include "llvm/ADT/SmallVector.h"
@@ -175,6 +176,9 @@ static llvm::cl::list<std::string> Inputs(
 static llvm::cl::list<std::string> Outputs(
     "outputs",
     llvm::cl::desc("Specify output names like -outputs=foo, -outputs=bar:0"));
+static llvm::cl::opt<bool> DisableTypeCast(
+    "disable-type-cast", llvm::cl::desc("Disable casting int64 to int32"),
+    llvm::cl::init(true));
 
 #undef HALO_FUSION_OPTIONS
 #define HALO_FUSION_CMD_OPTIONS_DECL
@@ -316,6 +320,9 @@ static void PopulatePasses(PassManager* pm, std::ostream* out_code,
   if (SplitFunction) {
     pm->AddPass<Splitting>();
     pm->AddPass<DevicePlacement>();
+  }
+  if (!DisableTypeCast) {
+    pm->AddPass<TypeCast>();
   }
 
   PopulateCodeGenPasses(pm, out_code, out_constants, out_header,
