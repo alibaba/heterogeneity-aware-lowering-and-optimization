@@ -26,8 +26,10 @@ namespace halo {
 // The class to generate config file for Triton inference service.
 class TritonConfigWriter final : public CodeGen {
  public:
-  TritonConfigWriter(const std::string& filename)
-      : CodeGen("Triton Config Writer"), filename_(filename) {}
+  TritonConfigWriter(const std::string& filename, int max_batch_size)
+      : CodeGen("Triton Config Writer"),
+        filename_(filename),
+        max_batch_size_(max_batch_size) {}
   virtual ~TritonConfigWriter() = default;
 
   bool RunOnModule(Module* module) override;
@@ -35,6 +37,7 @@ class TritonConfigWriter final : public CodeGen {
  private:
   void PrintUseProtobuf(const Module& module, std::ostream* os);
   std::string filename_;
+  int max_batch_size_;
 };
 
 } // end namespace halo.

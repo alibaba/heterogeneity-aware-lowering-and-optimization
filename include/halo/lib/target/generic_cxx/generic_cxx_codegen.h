@@ -53,6 +53,10 @@ struct Opts {
   CodeGen::ExecMode exec_mode = CodeGen::ExecMode::Compile;
   bool emit_inference_func_sig = false;
   bool emit_dynamic_batch = false;
+  bool fp16_mode = false;
+  int max_batch_size = 0;
+  int min_batch_size = 0;
+  int opt_batch_size = 0;
 };
 
 struct CXXType {
@@ -86,7 +90,7 @@ class GenericCXXCodeGen : public CodeGen {
  public:
   GenericCXXCodeGen(std::ostream& os, std::ostream& header_os);
   GenericCXXCodeGen(std::ostream& os, std::ostream& header_os,
-                    const Opts& opts);
+                    std::ostream& dynamic_check_os, const Opts& opts);
 
   virtual ~GenericCXXCodeGen();
 
@@ -234,6 +238,7 @@ class GenericCXXCodeGen : public CodeGen {
 
   std::ostream& os_;
   std::ostream& header_os_;
+  std::ostream& dynamic_check_os_;
   GlobalContext* ctx_ = nullptr;
   std::unordered_map<Def, CXXValue> ir_mapping_;
   std::unique_ptr<MemoryAnalyzer> memory_analyzer_;

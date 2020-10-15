@@ -71,15 +71,20 @@ CXXValue::CXXValue(const std::string& name, const CXXType& type)
 }
 
 GenericCXXCodeGen::GenericCXXCodeGen(std::ostream& os, std::ostream& header_os)
-    : CodeGen("Generic CXX Compilation"), os_(os), header_os_(header_os) {
+    : CodeGen("Generic CXX Compilation"),
+      os_(os),
+      header_os_(header_os),
+      dynamic_check_os_(std::cout) {
   CXXValue::Reset();
 }
 
 GenericCXXCodeGen::GenericCXXCodeGen(std::ostream& os, std::ostream& header_os,
+                                     std::ostream& dynamic_check_os,
                                      const Opts& opts)
     : CodeGen("Generic CXX Compilation"),
       os_(os),
       header_os_(header_os),
+      dynamic_check_os_(dynamic_check_os),
       opts_(opts) {
   CXXValue::Reset();
 }
@@ -100,7 +105,7 @@ static const std::string& GetIncludeFile(CodeGen::API api) {
 static void EmitBanner(std::ostream* os, std::ostream* header_os,
                        CodeGen::API api) {
   static const std::string banner(
-      "//===- Halo Halo Compiler Generated File "
+      "//===- Halo Compiler Generated File "
       "--------------------------------===//\n\n");
   *os << banner;
   if (header_os != nullptr) {

@@ -115,6 +115,9 @@ static llvm::cl::opt<bool> RISCVOpt(
 static llvm::cl::opt<bool> EnableBF16("enable-bf16",
                                       llvm::cl::desc("Enable BF16"),
                                       llvm::cl::init(false));
+static llvm::cl::opt<bool> EnableFP16("enable-fp16",
+                                      llvm::cl::desc("Enable FP16 mode"),
+                                      llvm::cl::init(false));
 
 static llvm::cl::opt<bool> DisableCodeFormat(
     "disable-code-format",
@@ -185,6 +188,18 @@ static llvm::cl::opt<bool> DisableTypeCast(
     "disable-type-cast", llvm::cl::desc("Disable casting int64 to int32"),
     llvm::cl::init(true));
 
+static llvm::cl::opt<signed> MaxBatch("max-batch-size",
+                                      llvm::cl::desc("Specify max batch size"),
+                                      llvm::cl::init(8));
+
+static llvm::cl::opt<signed> MinBatch("min-batch-size",
+                                      llvm::cl::desc("Specify min batch size"),
+                                      llvm::cl::init(1));
+
+static llvm::cl::opt<signed> OptBatch("opt-batch-size",
+                                      llvm::cl::desc("Specify opt batch size"),
+                                      llvm::cl::init(4));
+
 #undef HALO_FUSION_OPTIONS
 #define HALO_FUSION_CMD_OPTIONS_DECL
 #include "halo/lib/ir/fusion.cc.inc"
@@ -193,6 +208,7 @@ static llvm::cl::opt<bool> DisableTypeCast(
 static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
                                   std::ostream* out_constants,
                                   std::ostream* out_header,
+                                  std::ostream* out_dynamic_check,
                                   bool is_c_or_cxx_output,
                                   bool is_binary_output) {
   auto constant_storage =
@@ -214,8 +230,14 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
     opts.emit_value_id_as_int = EmitValueIDAsInt;
     opts.emit_inference_func_sig = EmitInferenceFunctionSignature;
     opts.emit_dynamic_batch = (Batch.getValue() == kDynamicBatchSize);
+    opts.fp16_mode = EnableFP16;
+    opts.max_batch_size = MaxBatch.getValue();
+    opts.min_batch_size = MinBatch.getValue();
+    opts.opt_batch_size = OptBatch.getValue();
+
     cg = pm->AddPass<GenericCXXCodeGen>(std::ref(*out_code),
-                                        std::ref(*out_header), opts);
+                                        std::ref(*out_header),
+                                        std::ref(*out_dynamic_check), opts);
     cg->SetAPI(Api);
 
     if (EmitDataAsC) {
@@ -224,7 +246,9 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
       pm->AddPass<X86ConstantWriter>(std::ref(*out_constants));
     }
     if (EmitTritonConfig) {
-      pm->AddPass<TritonConfigWriter>(TritonConfigFile.getValue());
+      pm->AddPass<TritonConfigWriter>(
+          TritonConfigFile.getValue(),
+          opts.emit_dynamic_batch ? MaxBatch.getValue() : 0);
     }
     return;
   }
@@ -288,8 +312,10 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
 
 static void PopulatePasses(PassManager* pm, std::ostream* out_code,
                            std::ostream* out_constants,
-                           std::ostream* out_header, bool is_c_or_cxx_output,
-                           bool is_binary_output, Parser::Format format) {
+                           std::ostream* out_header,
+                           std::ostream* out_dynamic_check,
+                           bool is_c_or_cxx_output, bool is_binary_output,
+                           Parser::Format format) {
   std::vector<std::string> input_shapes(InputsShape.begin(), InputsShape.end());
   pm->AddPass<InputLegalizer>(Batch.getValue(), input_shapes);
   if (!Outputs.empty()) {
@@ -331,7 +357,8 @@ static void PopulatePasses(PassManager* pm, std::ostream* out_code,
   }
 
   PopulateCodeGenPasses(pm, out_code, out_constants, out_header,
-                        is_c_or_cxx_output, is_binary_output);
+                        out_dynamic_check, is_c_or_cxx_output,
+                        is_binary_output);
 }
 
 static bool FormatCode(const std::string& filename) {
@@ -397,9 +424,11 @@ int main(int argc, char** argv) {
   std::ofstream of_code;
   std::ofstream of_constants;
   std::ofstream of_header;
+  std::ofstream of_dynamic_check;
   std::ostream* out_code = &std::cout;
   std::ostream* out_constants = &std::cout;
   std::ostream* out_header = &std::cout;
+  std::ostream* out_dynamic_check = &std::cout;
 
   bool is_binary_output = false;
   llvm::StringRef target_name(Target);
@@ -437,8 +466,8 @@ int main(int argc, char** argv) {
     }
   }
 
-  PopulatePasses(&pm, out_code, out_constants, out_header, is_c_or_cxx_output,
-                 is_binary_output, format);
+  PopulatePasses(&pm, out_code, out_constants, out_header, out_dynamic_check,
+                 is_c_or_cxx_output, is_binary_output, format);
   if (is_c_or_cxx_output) {
     ctx.SetTargetTriple("x86_64"); // For binary constant writer.
   }
