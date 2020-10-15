@@ -150,45 +150,44 @@ void Constant::Print(std::ostream& os) const {
 
 bool Constant::IsScalarZero() const {
   const Type& type = GetResultType();
-  if (type.GetTotalNumOfElements() != 1) {
-    return false;
-  }
-  switch (type.GetDataType()) {
-    case DataType::INT32: {
-      return (GetData<int32_t>(0) == 0);
-    }
-    case DataType::FLOAT32: {
-      return (GetData<float>(0) == 0.0);
-    }
-    case DataType::INT64: {
-      return (GetData<int64_t>(0) == static_cast<int64_t>(0));
-    }
-    default: {
-      return false;
-    }
-  }
+  return type.GetTotalNumOfElements() == 1 && HasSameValueOf(0);
 }
 
 bool Constant::IsScalarOne() const {
   const Type& type = GetResultType();
-  if (type.GetTotalNumOfElements() != 1) {
-    return false;
-  }
-  switch (type.GetDataType()) {
-    case DataType::INT32: {
-      return (GetData<int32_t>(0) == 1);
-    }
-    case DataType::FLOAT32: {
-      return (GetData<float>(0) == 1.0);
-    }
-    case DataType::INT64: {
-      return (GetData<int64_t>(0) == static_cast<int64_t>(1));
-    }
-    default: {
-      return false;
-    }
-  }
+  return type.GetTotalNumOfElements() == 1 && HasSameValueOf(1);
 }
+
+bool Constant::HasSameValueOf(float x) const {
+  const Type& type = GetResultType();
+  for (int64_t i = 0, e = type.GetTotalNumOfElements(); i < e; ++i) {
+    switch (type.GetDataType()) {
+      case DataType::INT32: {
+        if (GetData<int32_t>(i) != x) {
+          return false;
+        }
+        break;
+      }
+      case DataType::FLOAT32: {
+        if (GetData<float>(i) != x) {
+          return false;
+        }
+        break;
+      }
+      case DataType::INT64: {
+        if (GetData<int64_t>(i) != x) {
+          return false;
+        }
+        break;
+      }
+      default: {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 template <typename T>
 static T GetDataAs(const Constant& c, size_t idx) {
   const Type& type = c.GetResultType();
