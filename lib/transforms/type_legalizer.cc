@@ -208,32 +208,71 @@ static void RunOnInstruction(ReshapeInst* inst) {
   }
 
   size_t product = 1;
-
+  size_t elements_num = 1;
   int neg_dim = -1;
-  for (int i = 0, e = new_shape.size(); i != e; ++i) {
-    if (new_shape[i] == 0) {
-      if (!op0_type.IsValid()) {
-        return;
-      }
-      new_shape[i] = op0_type.GetNumOfElementsInDim(i);
+  if (op0_type.IsDynamicBatch()) {
+    new_shape[0] = op0_type.GetNumOfElementsInDim(0);
+    for (size_t i = 1; i < op0_type.GetNumOfDims(); ++i) {
+      elements_num *= op0_type.GetNumOfElementsInDim(i);
     }
-    if (new_shape[i] == -1) {
-      if (neg_dim >= 0) {
-        HLCHECK(0 && "Invalid reshape operand");
-        break;
+    for (int i = 1, e = new_shape.size(); i != e; ++i) {
+      if (new_shape[i] == 0) {
+        if (!op0_type.IsValid()) {
+          return;
+        }
+        if (i < static_cast<int>(op0_type.GetNumOfDims())) {
+          new_shape[i] = op0_type.GetNumOfElementsInDim(i);
+        } else {
+          HLCHECK(0 && "Invalid reshape");
+        }
       }
-      neg_dim = i;
-    } else {
-      product *= new_shape[i];
+      if (new_shape[i] == -1) {
+        if (neg_dim > 0) {
+          HLCHECK(0 && "Invalid reshape operand");
+          break;
+        }
+        neg_dim = i;
+      } else {
+        product *= new_shape[i];
+      }
     }
-  }
-  if (neg_dim >= 0 && !op0_type.IsValid()) {
-    return;
-  }
-  if ((neg_dim >= 0) && (!op0_type.IsDynamicBatch())) {
-    HLCHECK(op0_type.GetTotalNumOfElements() % product == 0 &&
-            "Invalid reshape operand");
-    new_shape[neg_dim] = op0_type.GetTotalNumOfElements() / product;
+    if (neg_dim > 0 && !op0_type.IsValid()) {
+      return;
+    }
+    if (neg_dim > 0) {
+      HLCHECK(elements_num % product == 0 && "Invalid reshape operand");
+      new_shape[neg_dim] = elements_num / product;
+    }
+  } else {
+    for (int i = 0, e = new_shape.size(); i != e; ++i) {
+      if (new_shape[i] == 0) {
+        if (!op0_type.IsValid()) {
+          return;
+        }
+        if (i < static_cast<int>(op0_type.GetNumOfDims())) {
+          new_shape[i] = op0_type.GetNumOfElementsInDim(i);
+        } else {
+          HLCHECK(0 && "Invalid reshape");
+        }
+      }
+      if (new_shape[i] == -1) {
+        if (neg_dim >= 0) {
+          HLCHECK(0 && "Invalid reshape operand");
+          break;
+        }
+        neg_dim = i;
+      } else {
+        product *= new_shape[i];
+      }
+    }
+    if (neg_dim >= 0 && !op0_type.IsValid()) {
+      return;
+    }
+    if (neg_dim >= 0) {
+      HLCHECK(op0_type.GetTotalNumOfElements() % product == 0 &&
+              "Invalid reshape operand");
+      new_shape[neg_dim] = op0_type.GetTotalNumOfElements() / product;
+    }
   }
 
   halo::Type new_type{op0_type.GetDataType(), new_shape};
