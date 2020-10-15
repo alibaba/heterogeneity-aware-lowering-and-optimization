@@ -66,7 +66,8 @@ def EnumPadding : EnumValueType<"Padding",
 def EnumPadMode : EnumValueType<"PadMode",
                                 ["CONSTANT",
                                  "REFLECT",
-                                 "SYMMETRIC"]>;
+                                 "SYMMETRIC",
+                                 "EDGE"]>;
 def EnumCodeType : EnumValueType<"CodeType",
                                  ["CORNER",
                                   "CENTER_SIZE",
