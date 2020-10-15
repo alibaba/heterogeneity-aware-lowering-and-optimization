@@ -41,7 +41,8 @@ static void PopulatePassesAndRun(GlobalContext& ctx, Module& m,
                                  const llvm::cl::opt<signed>& batch,
                                  Parser::Format format) {
   PassManager pm(ctx);
-  pm.AddPass<InputLegalizer>(batch.getValue(), std::vector<std::string>{});
+  std::vector<std::string> input_shapes(InputsShape.begin(), InputsShape.end());
+  pm.AddPass<InputLegalizer>(batch.getValue(), input_shapes);
   if (format == Parser::Format::CAFFE) {
     pm.AddPass<CAFFEExtensionLegalizer>();
   } else if (format == Parser::Format::TENSORFLOW) {
