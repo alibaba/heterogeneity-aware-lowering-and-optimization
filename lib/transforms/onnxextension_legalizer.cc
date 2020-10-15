@@ -482,29 +482,37 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
   // If no axes operand, assumes all axes are sliced and steps are 1.
   Def op3 = Def::GetUndefined();
   Def op4 = Def::GetUndefined();
-  if (ext->GetNumOfOperands() == 3) {
-    std::vector<int> data(input_dims);
+
+  if ((ext->GetNumOfOperands() == 3) || (ext->GetNumOfOperands() == 4)) {
     std::vector<int> steps(input_dims, 1);
-    HLCHECK(input_dims == static_cast<int>(starts_type.GetNumOfDims()));
-    for (int i = 0; i < input_dims; ++i) {
-      axes.insert(i);
-      data[i] = i;
-    }
-    Constant* c_axes =
-        cb.CreateConstant(ext->GetName() + "_axes",
-                          Type{DataType::INT32, {input_dims}}, data.data());
-    op3 = *c_axes;
     Constant* c_steps =
         cb.CreateConstant(ext->GetName() + "_steps",
                           Type{DataType::INT32, {input_dims}}, steps.data());
     op4 = *c_steps;
+    if (ext->GetNumOfOperands() == 3) {
+      std::vector<int> data(input_dims);
+      for (int i = 0; i < input_dims; ++i) {
+        axes.insert(i);
+        data[i] = i;
+      }
+      Constant* c_axes =
+          cb.CreateConstant(ext->GetName() + "_axes",
+                            Type{DataType::INT32, {input_dims}}, data.data());
+      op3 = *c_axes;
+    }
   }
 
-  if (ext->GetNumOfOperands() > 4) {
+  if (ext->GetNumOfOperands() >= 4) {
     op3 = ext->GetOperand(3); // axes
-    op4 = ext->GetOperand(4); // steps
-    if (!IsA<Constant>(op3) || !IsA<Constant>(op4)) {
+    if (!IsA<Constant>(op3)) {
       return {};
+    }
+
+    if (ext->GetNumOfOperands() > 4) {
+      op4 = ext->GetOperand(4); // steps
+      if (!IsA<Constant>(op4)) {
+        return {};
+      }
     }
 
     Constant* c_axes = DynCast<Constant>(op3);
@@ -522,15 +530,23 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
   }
 
   auto e_s = op1.GetType().GetTotalNumOfElements();
+  int32_t start = 0;
   std::vector<int32_t> starts;
   starts.reserve(axes.size());
   for (int i = 0, j = 0; i < input_dims; ++i) {
     if (axes.count(i) != 0) {
       if (starts_type.GetDataType() == DataType::INT32) {
-        starts.push_back(c_starts->GetData<int32_t>(j));
+        start = c_starts->GetData<int32_t>(j);
       } else if (starts_type.GetDataType() == DataType::INT64) {
-        starts.push_back(static_cast<int32_t>(c_starts->GetData<int64_t>(j)));
+        start = static_cast<int32_t>(c_starts->GetData<int64_t>(j));
       }
+
+      if (start < 0) {
+        start = input_type.GetNumOfElementsInDim(i) - start;
+      } else if (start > input_type.GetNumOfElementsInDim(i)) {
+        start = input_type.GetNumOfElementsInDim(i);
+      }
+      starts.push_back(start);
       j++;
     }
   }
@@ -538,6 +554,7 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
   auto e_d = op2.GetType().GetTotalNumOfElements();
   std::vector<int32_t> ends;
   ends.reserve(axes.size());
+  int32_t end = 0;
   for (int i = 0, j = 0; i < input_dims; ++i) {
     if (axes.count(i) != 0) {
       if (ends_type.GetDataType() == DataType::INT32) {
@@ -547,7 +564,7 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
           // thus take all elements
           tmp = input_type.GetNumOfElementsInDim(i);
         }
-        ends.push_back(tmp);
+        end = tmp;
       } else if (ends_type.GetDataType() == DataType::INT64) {
         auto tmp = c_ends->GetData<int64_t>(j);
         if (tmp == std::numeric_limits<int64_t>::max()) {
@@ -555,8 +572,15 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
           // thus take all elements
           tmp = input_type.GetNumOfElementsInDim(i);
         }
-        ends.push_back(static_cast<int32_t>(tmp));
+        end = static_cast<int32_t>(tmp);
       }
+
+      if (end < 0) {
+        end = input_type.GetNumOfElementsInDim(i) - end;
+      } else if (end > input_type.GetNumOfElementsInDim(i)) {
+        end = input_type.GetNumOfElementsInDim(i);
+      }
+      ends.push_back(end);
       j++;
     }
   }
