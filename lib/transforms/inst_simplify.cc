@@ -27,6 +27,7 @@
 #include "halo/lib/framework/common.h"
 #include "halo/lib/framework/data_layout.h"
 #include "halo/lib/framework/global_context.h"
+#include "halo/lib/ir/common_cast_instructions.h"
 #include "halo/lib/ir/common_instructions.h"
 #include "halo/lib/ir/common_reduction_instructions.h"
 #include "halo/lib/ir/ir_builder.h"
@@ -853,10 +854,23 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(ReshapeInst* reshape_inst) {
     }
   }
 
-  if (IsA<Constant>(op0) && op0->GetNumberOfUses() == 1 &&
-      reshape_inst->GetResultType().IsValid()) {
-    op0->GetResultsTypes()[0] = reshape_inst->GetResultType();
-    return {orig_def, reshape_inst->GetOperand(0)};
+  const auto& input_type = op0->GetResultType();
+  const auto& ret_type = reshape_inst->GetResultType();
+  if (input_type.IsValid() && ret_type.IsValid() && input_type == ret_type) {
+    return {orig_def, *op0};
+  }
+
+  if (IsA<Constant>(op0) && reshape_inst->GetResultType().IsValid()) {
+    Constant* src = DynCast<Constant>(op0);
+    Constant* new_c = nullptr;
+    if (op0->GetNumberOfUses() == 1) {
+      new_c = src;
+    } else {
+      ConstantBuilder cb(reshape_inst->GetParent()->GetParent());
+      new_c = cb.Clone(*src);
+    }
+    new_c->GetResultsTypes()[0] = reshape_inst->GetResultType();
+    return {orig_def, *new_c};
   }
 
   return {orig_def, orig_def};
