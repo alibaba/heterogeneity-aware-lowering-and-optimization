@@ -23,6 +23,7 @@
 #include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/parser/parser.h"
 #include "halo/lib/pass/pass_manager.h"
+#include "halo/lib/quantizer/weights_quantizer.h"
 #include "halo/lib/target/cpu/arm/binary/arm_llvmir_codegen.h"
 #include "halo/lib/target/cpu/riscv/binary/riscv_llvmir_codegen.h"
 #include "halo/lib/target/cpu/x86/binary/x86_llvmir_codegen.h"
@@ -188,6 +189,13 @@ static llvm::cl::list<std::string> Inputs(
 static llvm::cl::list<std::string> Outputs(
     "outputs",
     llvm::cl::desc("Specify output names like -outputs=foo, -outputs=bar:0"));
+
+static llvm::cl::opt<CodeGen::Quantization> QuantWeights(
+    llvm::cl::values(clEnumValN(CodeGen::Quantization::QUINT8, "quint8",
+                                "Quantize weigths as quint8")),
+    "quantize-weights", llvm::cl::desc("Emit weights as quantized"),
+    llvm::cl::init(CodeGen::Quantization::None));
+
 static llvm::cl::opt<bool> DisableTypeCast(
     "disable-type-cast", llvm::cl::desc("Disable casting int64 to int32"),
     llvm::cl::init(true));
@@ -203,6 +211,10 @@ static llvm::cl::opt<signed> MinBatch("min-batch-size",
 static llvm::cl::opt<signed> OptBatch("opt-batch-size",
                                       llvm::cl::desc("Specify opt batch size"),
                                       llvm::cl::init(4));
+static llvm::cl::opt<std::string> PGQFile(
+    "pgq-file", llvm::cl::init(""),
+    llvm::cl::desc("Profiling file for quantization of biases"));
+
 static llvm::cl::opt<bool> CheckModel("check-model",
                                       llvm::cl::desc("dynamic check model"),
                                       llvm::cl::init(false));
@@ -242,6 +254,7 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
     opts.min_batch_size = MinBatch.getValue();
     opts.opt_batch_size = OptBatch.getValue();
 
+    pm->AddPass<WeightsQuantizer>(QuantWeights.getValue(), PGQFile.getValue());
     cg = pm->AddPass<GenericCXXCodeGen>(std::ref(*out_code),
                                         std::ref(*out_header),
                                         std::ref(*out_dynamic_check), opts);
@@ -261,6 +274,7 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
   }
 
   if (EmitLLVMIR) {
+    pm->AddPass<WeightsQuantizer>(QuantWeights.getValue(), PGQFile.getValue());
     cg = pm->AddPass<GenericLLVMIRCodeGen>(constant_storage);
     pm->AddPass<GenericLLVMIRWriter>(std::ref(*out_code), is_binary_output);
     if (SeparateConstants && !EmitCodeOnly) {
@@ -276,6 +290,8 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
             GenericLLVMIRCodeGen::ConstantDataStorage::DeclaredAsExternal);
         pm->AddPass<X86BinaryWriter>(std::ref(*out_code));
         if (SeparateConstants && !EmitCodeOnly) {
+          pm->AddPass<WeightsQuantizer>(QuantWeights.getValue(),
+                                        PGQFile.getValue());
           pm->AddPass<X86ConstantWriter>(std::ref(*out_constants));
         }
         break;
@@ -285,6 +301,8 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
             GenericLLVMIRCodeGen::ConstantDataStorage::DeclaredAsExternal);
         pm->AddPass<ARMBinaryWriter>(std::ref(*out_code));
         if (SeparateConstants && !EmitCodeOnly) {
+          pm->AddPass<WeightsQuantizer>(QuantWeights.getValue(),
+                                        PGQFile.getValue());
           pm->AddPass<ARMConstantWriter>(std::ref(*out_constants));
         }
         break;
@@ -301,6 +319,8 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
         }
         pm->AddPass<RISCVBinaryWriter>(std::ref(*out_code));
         if (SeparateConstants && !EmitCodeOnly) {
+          pm->AddPass<WeightsQuantizer>(QuantWeights.getValue(),
+                                        PGQFile.getValue());
           pm->AddPass<RISCVConstantWriter>(std::ref(*out_constants));
         }
 

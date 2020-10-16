@@ -29,6 +29,7 @@ class CodeGen : public ModulePass {
  public:
   enum class ExecMode { Compile, Interpret };
   enum class API { HALO_RT, ODLA_05 };
+  enum class Quantization { QUINT8, None };
   CodeGen(const std::string& pass_name)
       : ModulePass(pass_name), api_(API::ODLA_05) {}
   bool RunOnModule(Module* module) = 0;
