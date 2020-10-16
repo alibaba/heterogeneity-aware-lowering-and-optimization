@@ -180,7 +180,7 @@ std::string GenericCXXCodeGen::GetFunctionDecl(const Function& func,
                                                bool with_type) {
   const static std::string inference_func_decl =
       "void model_run(int num_inputs, const void* inputs[],"
-      "int num_outputs, void* outputs[])";
+      "int num_outputs, void* outputs[], int batch_size)";
   if (opts_.emit_inference_func_sig && func.IsEntryFunction()) {
     return inference_func_decl;
   }
@@ -250,14 +250,20 @@ std::string GenericCXXCodeGen::GetFunctionDecl(const Function& func,
   return ss.str();
 }
 
-const std::string& GenericCXXCodeGen::EmitReturnType(bool auto_type) {
-  const static std::string c_type{"odla_value"};
+const std::string& GenericCXXCodeGen::EmitReturnType(bool auto_type,
+                                                     bool single_value) {
+  const static std::string single_c_type{"odla_value"};
+  const static std::string multiple_c_type{"odla_values"};
   const static std::string cxx_type{"auto"};
-  return auto_type ? cxx_type : c_type;
+  return auto_type ? cxx_type : single_value ? single_c_type : multiple_c_type;
 }
 
 std::string GenericCXXCodeGen::EmitLValue(const std::string& name) const {
-  return EmitReturnType(opts_.dialect == Dialect::CXX_11) + " " + name;
+  return EmitReturnType(opts_.dialect == Dialect::CXX_11, true) + " " + name;
+}
+
+std::string GenericCXXCodeGen::EmitLValues(const std::string& name) const {
+  return EmitReturnType(opts_.dialect == Dialect::CXX_11, false) + " " + name;
 }
 
 const std::string& GenericCXXCodeGen::EmitNull() const noexcept {
@@ -460,6 +466,7 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
   // Emit wrappers for arguments.
   for (auto& arg : function.Args()) {
     auto& type = arg->GetResultType();
+    auto arg_name = NormalizeVariableName(arg->GetName());
     CXXValue v(is_compile_mode ? arg->GetName() : "in_" + arg->GetName(),
                TensorTypeToCXXType(type, true));
     if (is_compile_mode) {
@@ -613,7 +620,7 @@ void GenericCXXCodeGen::PostRunOnInstruction(Instruction* inst) {
     for (auto& dead : deads) {
       const auto& type = dead.GetType();
       CXXValue val(dead.GetOwner()->GetName(), TensorTypeToCXXType(type, true));
-      os_ << "  odla_ResetValue(" << val.name << ");\n";
+      os_ << "  odla_ReleaseValue(" << val.name << ");\n";
     }
   }
 }

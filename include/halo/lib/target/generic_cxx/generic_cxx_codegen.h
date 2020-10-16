@@ -57,6 +57,7 @@ struct Opts {
   int max_batch_size = 0;
   int min_batch_size = 0;
   int opt_batch_size = 0;
+  bool check_model = false;
 };
 
 struct CXXType {
@@ -163,9 +164,11 @@ class GenericCXXCodeGen : public CodeGen {
   virtual std::string EmitShape(const halo::Type& type);
   virtual std::string EmitType(const halo::Type& type);
   virtual std::string EmitLValue(const std::string& name) const;
+  virtual std::string EmitLValues(const std::string& name) const;
 
   void EmitODLAArgs(const std::vector<int32_t>& arg);
   void EmitODLAArgs(const std::vector<uint32_t>& arg);
+  void EmitODLAArgs(const std::vector<float>& arg);
   void EmitODLAArgs(const std::vector<CXXValue>& arg);
   void EmitODLAArgs(const halo::Type& arg);
   void EmitODLAArgs(const DataType& arg);
@@ -196,7 +199,7 @@ class GenericCXXCodeGen : public CodeGen {
       if (opts_.emit_value_id_as_int) {
         os_ << lhs.id;
       } else {
-        os_ << "\"" << lhs.name << "\"";
+        os_ << "\"" << (lhs.str_id.empty() ? lhs.name : lhs.str_id) << "\"";
       }
     }
     os_ << ");\n";
@@ -204,7 +207,7 @@ class GenericCXXCodeGen : public CodeGen {
 
   virtual const std::string& EmitNull() const noexcept;
   virtual std::string GetODLAType(halo::DataType data_type) const noexcept;
-  static const std::string& EmitReturnType(bool auto_type);
+  static const std::string& EmitReturnType(bool auto_type, bool single_value);
   static CXXType SNTypeToCXXType(DataType dt);
   static CXXType TensorTypeToCXXType(const halo::Type& type, bool is_const);
 
