@@ -1321,19 +1321,20 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(TransposeInst* inst) {
     return ret;
   }
 
-  if (remove_input_transpose_ && IsA<Argument>(input) &&
-      input.GetUses().size() == 1) {
-    Argument* arg = DynCast<Argument>(input);
-    const auto& orig_dims = input.GetType().GetDimSizes();
-    const auto& perms = inst->GetPermutation();
-    auto new_dims = orig_dims;
-    for (int i = 0, e = orig_dims.size(); i < e; ++i) {
-      new_dims[i] = orig_dims[perms[i]];
+  if (remove_input_transpose_ && input.GetUses().size() == 1) {
+    if (IsA<Argument>(input)) {
+      Argument* arg = DynCast<Argument>(input);
+      const auto& orig_dims = input.GetType().GetDimSizes();
+      const auto& perms = inst->GetPermutation();
+      auto new_dims = orig_dims;
+      for (int i = 0, e = orig_dims.size(); i < e; ++i) {
+        new_dims[i] = orig_dims[perms[i]];
+      }
+      halo::Type ty{input.GetType().GetDataType(), new_dims};
+      arg->SetType(ty);
+      ret.second = input;
+      return ret;
     }
-    halo::Type ty{input.GetType().GetDataType(), new_dims};
-    arg->SetType(ty);
-    ret.second = input;
-    return ret;
   }
 
   // Transpose(Transpose(in, perm0), perm1) => Transpose(in, perm2)
