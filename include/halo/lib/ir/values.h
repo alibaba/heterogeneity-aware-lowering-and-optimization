@@ -299,10 +299,7 @@ class IRObject {
   void SetNumOfResults(unsigned num_of_results);
 
   /// Return ith result uselist
-  UseList& GetIthResultUses(size_t i) {
-    HLCHECK(i < results_uses_.size() && "access uselist out of bound.");
-    return results_uses_[i];
-  }
+  UseList& GetIthResultUses(size_t i);
 
   /// Return the number of attributes.
   size_t GetNumOfAttributes() const noexcept { return attributes_.size(); }

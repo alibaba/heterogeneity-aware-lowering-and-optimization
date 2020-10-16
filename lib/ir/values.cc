@@ -119,10 +119,19 @@ IRObject::IRObject(GlobalContext& context, const std::string& name,
 }
 
 void IRObject::SetNumOfResults(unsigned int num_of_results) {
-  HLCHECK(has_variadic_returns_ && results_types_.empty() &&
-          results_uses_.empty());
   results_types_.resize(num_of_results);
   results_uses_.resize(num_of_results);
+}
+
+UseList& IRObject::GetIthResultUses(size_t i) {
+  if (HasVariadicReturns() && i >= results_uses_.size()) {
+    results_types_.resize(i + 1);
+    // Resize the results' uses vectors.
+    results_uses_.resize(i + 1);
+  } else {
+    HLCHECK(i < results_uses_.size() && "access uselist out of bound.");
+  }
+  return results_uses_[i];
 }
 
 bool IRObject::HasValidResultTypes() const {
