@@ -1553,10 +1553,18 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(FPtoSIInst* inst) {
     Constant* input = DynCast<Constant>(op0);
     auto n = op0.GetType().GetTotalNumOfElements();
     if (src_ty == DataType::FLOAT32 &&
-        (dst_ty == DataType::INT32 || dst_ty == DataType::INT64)) {
+        (dst_ty == DataType::INT32 || dst_ty == DataType::INT64 ||
+         dst_ty == DataType::UINT32)) {
       Constant* c = nullptr;
       if (dst_ty == DataType::INT32) {
         std::vector<int32_t> vals(n);
+        for (int64_t i = 0; i < n; ++i) {
+          vals[i] = input->GetData<float>(i);
+        }
+        c = cb.CreateConstant(inst->GetName(), inst->GetResultType(),
+                              vals.data());
+      } else if (dst_ty == DataType::UINT32) {
+        std::vector<uint32_t> vals(n);
         for (int64_t i = 0; i < n; ++i) {
           vals[i] = input->GetData<float>(i);
         }
