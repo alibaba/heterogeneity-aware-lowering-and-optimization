@@ -972,15 +972,6 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(ZExtInst* inst) {
   HLCHECK(halo::Type::IsIntegerType(src_dt) &&
           halo::Type::IsIntegerType(ret_dt));
 
-  // Gather(data, ZExt(index, int64)) ==> Gaher(data, index)
-  if (inst->GetNumberOfUses() == 1) {
-    auto& oneuse = inst->GetIthResultUses(0).front();
-    if (Instruction* indexed = DynCast<Instruction>(oneuse.GetOwner())) {
-      if (indexed->GetOpCode() == OpCode::GATHER && oneuse.GetIdx() == 1) {
-        return {orig_def, op0};
-      }
-    }
-  }
   if (!op0_type.IsValid() || !IsA<Constant>(op0)) {
     return {orig_def, orig_def};
   }
@@ -1094,17 +1085,40 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(GatherInst* inst) {
   Def orig_def{inst, 0};
   int axis = inst->GetAxis();
   const auto& dst_type = inst->GetResultsTypes()[0];
-  if (!dst_type.IsValid() || axis != 0) {
+  const auto& type_op0 = inst->GetOperand(0).GetType();
+  const auto& op1 = inst->GetOperand(1);
+  // Gather(data, ZExt(index, int64)) ==> Gather(data, index)
+  if (IsA<Instruction>(op1) &&
+      DynCast<Instruction>(op1)->GetOpCode() == OpCode::ZEXT) {
+    IRBuilder builder(inst->GetParent());
+    ZExtInst* zext = DynCast<ZExtInst>(op1.GetDef());
+    builder.SetInsertAfter(inst);
+    auto ops = inst->GetOperands();
+    ops[1] = zext->GetOperand(0);
+    auto new_inst = builder.Clone(*inst, ops);
+    return {orig_def, *new_inst};
+  }
+
+  if (!type_op0.IsValid()) {
     return {orig_def, orig_def};
   }
+  if (axis < 0) {
+    axis += type_op0.GetNumOfDims();
+  }
+  HLCHECK(axis >= 0 && axis < static_cast<int>(type_op0.GetNumOfDims()));
+
   for (size_t i = 0; i < inst->GetNumOfOperands(); ++i) {
     if (!IsA<Constant>(inst->GetOperand(i).GetOwner())) {
       return {orig_def, orig_def};
     }
   }
-  const auto& type_op0 = inst->GetOperand(0).GetType();
-  const auto& type_op1 = inst->GetOperand(1).GetType();
+
+  if (!dst_type.IsValid()) {
+    return {orig_def, orig_def};
+  }
+
   Constant* c_op0 = DynCast<Constant>(inst->GetOperand(0).GetOwner());
+  const auto& type_op1 = inst->GetOperand(1).GetType();
   Constant* c_op1 = DynCast<Constant>(inst->GetOperand(1).GetOwner());
   DataType dt = dst_type.GetDataType();
   DefaultDataLayout data_layout;
@@ -1113,24 +1127,44 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(GatherInst* inst) {
   size_t bytes = byte_per_element * dst_type.GetTotalNumOfElements();
   std::vector<unsigned char> buf(bytes);
   size_t per_copy_bytes = byte_per_element;
-  if (type_op0.GetNumOfDims() > 1) {
-    per_copy_bytes *=
-        type_op0.GetTotalNumOfElements() / type_op0.GetNumOfElementsInDim(0);
+  auto dst_extends = GetExtends(dst_type.GetDimSizes());
+  auto src_extends = GetExtends(type_op0.GetDimSizes());
+  auto idx_extends = GetExtends(type_op1.GetDimSizes());
+  int64_t dst_rank = dst_type.GetNumOfDims();
+  if (dst_rank == 0 && dst_type.GetTotalNumOfElements() == 1) {
+    dst_rank = 1;
   }
-  for (int i = 0, e = type_op1.GetTotalNumOfElements(); i != e; ++i) {
-    if (type_op1.GetDataType() == DataType::INT32) {
-      auto index = c_op1->GetData<int>(i);
-      unsigned char* src_ptr =
-          static_cast<unsigned char*>(c_op0->GetRawDataPtr()) + // NOLINT.
-          index * per_copy_bytes;
-      std::copy_n(src_ptr, per_copy_bytes, buf.begin() + i * per_copy_bytes);
-    } else if (type_op1.GetDataType() == DataType::INT64) {
-      auto index = c_op1->GetData<int64_t>(i);
-      unsigned char* src_ptr =
-          static_cast<unsigned char*>(c_op0->GetRawDataPtr()) + // NOLINT.
-          index * per_copy_bytes;
-      std::copy_n(src_ptr, per_copy_bytes, buf.begin() + i * per_copy_bytes);
+  int op1_rank = type_op1.GetNumOfDims();
+  if (op1_rank == 0 && type_op1.GetTotalNumOfElements() == 1) {
+    op1_rank = 1;
+  }
+  for (int64_t dst_idx = 0, e = dst_type.GetTotalNumOfElements(); dst_idx < e;
+       ++dst_idx) {
+    // map dst_idx to src_idx.
+    std::vector<int64_t> dst_dims(dst_rank);
+    for (int64_t i = 0, k = dst_idx; k > 0 && i < dst_rank; ++i) {
+      dst_dims[i] = k / dst_extends[i];
+      k -= dst_dims[i] * dst_extends[i];
     }
+    std::vector<int64_t> src_dims(type_op0.GetNumOfDims());
+    for (int i = 0; i < dst_rank; ++i) {
+      if (i < axis) {
+        src_dims[i] = dst_dims[i];
+      } else if (i >= (axis + op1_rank)) {
+        src_dims[i - op1_rank + 1] = dst_dims[i];
+      } else {
+        int64_t idx = std::inner_product(idx_extends.begin(), idx_extends.end(),
+                                         dst_dims.begin() + axis, 0L);
+        src_dims[axis] = c_op1->GetDataAsInt64(idx);
+      }
+    }
+    int64_t src_idx = std::inner_product(src_dims.begin(), src_dims.end(),
+                                         src_extends.begin(), 0L);
+    unsigned char* src_ptr =
+        static_cast<unsigned char*>(c_op0->GetRawDataPtr()) + // NOLINT.
+        src_idx * per_copy_bytes;
+    std::copy_n(src_ptr, per_copy_bytes,
+                buf.begin() + dst_idx * per_copy_bytes);
   }
   ConstantBuilder cb(inst->GetParent()->GetParent());
   Constant* c_ret =
