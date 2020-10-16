@@ -330,31 +330,13 @@ void GenericLLVMIRCodeGen::RunOnConstant(Constant& constant) {
     }
   }
 
-  // make a valid C/C++ identifier name.
-  auto normalize = [](const std::string& n) {
-    std::string name = n;
-    std::transform(n.begin(), n.end(), name.begin(), [](char c) {
-      switch (c) {
-        case '/':
-        case ' ':
-        case '.':
-        case '-': {
-          return '_';
-        }
-        default:
-          return c;
-      }
-    });
-    return name;
-  };
-
   if (cv == nullptr) {
     HLCHECK(0);
     return;
   }
 
-  auto v = llvm_module_->getOrInsertGlobal(normalize(constant.GetName()),
-                                           cv->getType());
+  auto v = llvm_module_->getOrInsertGlobal(
+      NormalizeVariableName(constant.GetName()), cv->getType());
   llvm::GlobalVariable* gv = llvm::dyn_cast<llvm::GlobalVariable>(v);
   HLCHECK(gv);
   if (gv != nullptr) {
