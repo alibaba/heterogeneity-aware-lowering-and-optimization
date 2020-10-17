@@ -8,7 +8,7 @@ mkdir -p $image_dir
 imgs="http://images.cocodataset.org/test2017/000000030207.jpg:plane.jpg \
       http://images.cocodataset.org/test2017/000000228503.jpg:food.jpg \
       http://images.cocodataset.org/test2017/000000133861.jpg:sport.jpg \
-      https://github.com/pytorch/hub/raw/master/dog.jpg:dog.jpg"
+      https://raw.githubusercontent.com/pytorch/hub/master/images/dog.jpg:dog.jpg"
 
 for img in $imgs;do
   url=${img%:*}
