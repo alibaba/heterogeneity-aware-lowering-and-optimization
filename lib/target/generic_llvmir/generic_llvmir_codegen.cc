@@ -308,21 +308,21 @@ void GenericLLVMIRCodeGen::RunOnConstant(Constant& constant) {
     case DataType::INT32: {
       llvm::ArrayRef<uint32_t> data(constant.GetDataPtr<uint32_t>(),
                                     sn_ty.GetTotalNumOfElements());
-      cv = llvm::ConstantDataVector::get(llvm_module_->getContext(), data);
+      cv = llvm::ConstantDataArray::get(llvm_module_->getContext(), data);
       break;
     }
     case DataType::INT16:
     case DataType::UINT16: {
       llvm::ArrayRef<uint16_t> data(constant.GetDataPtr<uint16_t>(),
                                     sn_ty.GetTotalNumOfElements());
-      cv = llvm::ConstantDataVector::get(llvm_module_->getContext(), data);
+      cv = llvm::ConstantDataArray::get(llvm_module_->getContext(), data);
       break;
     }
     case DataType::INT8:
     case DataType::UINT8: {
       llvm::ArrayRef<uint8_t> data(constant.GetDataPtr<uint8_t>(),
                                    sn_ty.GetTotalNumOfElements());
-      cv = llvm::ConstantDataVector::get(llvm_module_->getContext(), data);
+      cv = llvm::ConstantDataArray::get(llvm_module_->getContext(), data);
       break;
     }
     default: {
