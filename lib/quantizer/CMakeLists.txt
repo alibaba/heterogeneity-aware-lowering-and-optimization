@@ -13,3 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License
 # ==============================================================================
+
+# name.
+set(NAME QUANTIZER)
+
+# source files.
+set(SRCS
+  weights_quantizer.cc
+)
+
+# dependences which need to be built first.
+set(DEPENDENCES
+  IRGEN
+ )
+
+create_halo_object(TARGET_NAME ${NAME}
+  TARGET_SRCS ${SRCS}
+  TARGET_DEPENDENCES ${DEPENDENCES}
+)

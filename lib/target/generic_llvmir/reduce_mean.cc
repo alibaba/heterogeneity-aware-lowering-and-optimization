@@ -112,6 +112,6 @@ void GenericLLVMIRCodeGen::RunOnCommonReductionInstruction(
                        axis_size_v});
 
   ir_mapping_[*inst] = ret_buf;
-} // namespace halo
+}
 
 } // namespace halo

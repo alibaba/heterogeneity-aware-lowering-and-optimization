@@ -38,4 +38,24 @@ const std::string& CodeGen::GetRTLibFuncName(const Instruction& inst) {
   return kv->second;
 }
 
+std::string CodeGen::NormalizeVariableName(const std::string& name) {
+  std::string ret(name);
+  std::transform(name.begin(), name.end(), ret.begin(), [](char c) {
+    switch (c) {
+      case '/':
+      case ' ':
+      case '.':
+      case '-': {
+        return '_';
+      }
+      default:
+        return c;
+    }
+  });
+  if (std::isdigit(name[0]) != 0) {
+    ret = "val_" + ret;
+  }
+  return ret;
+}
+
 } // namespace halo

@@ -67,6 +67,12 @@ class GlobalContextImpl {
     processor_ = processor;
   }
 
+  void SetPrintPass(const bool is_print_pass) noexcept {
+    is_print_pass_ = is_print_pass;
+  }
+
+  bool GetPrintPass() const noexcept { return is_print_pass_; }
+
  private:
   // A global counter
   uint64_t global_counter_ = 0;
@@ -75,6 +81,7 @@ class GlobalContextImpl {
   std::string base_path_{""};
   std::string triple_{LLVM_HOST_TRIPLE};
   std::string processor_{"native"};
+  bool is_print_pass_ = false;
 };
 
 GlobalContext::GlobalContext() : impl_(std::make_unique<GlobalContextImpl>()) {}
@@ -123,5 +130,13 @@ void GlobalContext::SetProcessorName(const std::string& processor) noexcept {
 }
 
 std::ostream& GlobalContext::Dbgs() noexcept { return std::cerr; }
+
+void GlobalContext::SetPrintPass(const bool is_print_pass) noexcept {
+  impl_->SetPrintPass(is_print_pass);
+}
+
+bool GlobalContext::GetPrintPass() const noexcept {
+  return impl_->GetPrintPass();
+}
 
 } // namespace halo

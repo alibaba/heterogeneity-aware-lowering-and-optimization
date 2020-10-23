@@ -15,7 +15,7 @@
 # ==============================================================================
 
 unset(CMAKE_CXX_FLAGS)
-set(LLVM_SRC_DIR ${CMAKE_SOURCE_DIR}/external/llvm)
+set(LLVM_SRC_DIR ${CMAKE_SOURCE_DIR}/external/llvm-project/llvm)
 set(LLVM_CCACHE_BUILD ${HALO_CCACHE_BUILD})
 set(LLVM_ENABLE_EH OFF)
 

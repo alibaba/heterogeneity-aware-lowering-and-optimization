@@ -21,8 +21,11 @@ namespace halo {
 ExtensionInst::ExtensionInst(GlobalContext& context, const std::string& name,
                              const std::vector<Def>& operands, int num_outs,
                              const std::string& opname, OpCode opcode)
-    : Instruction(context, name, num_outs, opcode) {
+    : Instruction(context, name, std::max(0, num_outs), opcode) {
   AddOperands(operands);
+  if (num_outs < 0) {
+    SetVariadicReturns(true);
+  }
   opname_ = opname;
 }
 
@@ -98,6 +101,32 @@ const ONNXExtensionInst::NameToOpMap ONNXExtensionInst::ONNXMap({
 #include "halo/lib/ir/convert_onnx_info.def"
 #undef GET_ONNX_NAME_OPCODE_MAPPING
 });
+
+TFLITEExtensionInst::TFLITEExtensionInst(GlobalContext& context,
+                                         const std::string& name,
+                                         const std::vector<Def>& operands,
+                                         int num_outs,
+                                         const std::string& opname)
+    : ExtensionInst(context, name, operands, num_outs, "tflite_" + opname,
+                    OpCode::EXTENSION) {
+  auto it = TFLITEMap.find(opname);
+  if (it != TFLITEMap.end()) {
+    ext_op_code_ = it->second;
+  } else {
+    SetOpname("!tflite_" + opname);
+  }
+}
+
+const TFLITEExtensionInst::NameToOpMap TFLITEExtensionInst::TFLITEMap({
+#define GET_TFLITE_NAME_OPCODE_MAPPING
+#include "halo/lib/ir/convert_tflite_info.def"
+#undef GET_TFLITE_NAME_OPCODE_MAPPING
+});
+
+std::unique_ptr<Instruction> TFLITEExtensionInst::Clone() const {
+  return std::unique_ptr<Instruction>(
+      CloneInst<TFLITEExtensionInst>(*this, "tflite_"));
+}
 
 CAFFEExtensionInst::CAFFEExtensionInst(GlobalContext& context,
                                        const std::string& name,

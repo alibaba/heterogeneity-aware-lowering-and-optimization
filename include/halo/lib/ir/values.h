@@ -32,6 +32,7 @@
 
 namespace halo {
 
+const int kDynamicResultsNum = 16;
 class IRObject;
 
 /// This class defines a Value, a pair of <IRObject*, int>.
@@ -298,10 +299,7 @@ class IRObject {
   void SetNumOfResults(unsigned num_of_results);
 
   /// Return ith result uselist
-  UseList& GetIthResultUses(size_t i) {
-    HLCHECK(i < results_uses_.size() && "access uselist out of bound.");
-    return results_uses_[i];
-  }
+  UseList& GetIthResultUses(size_t i);
 
   /// Return the number of attributes.
   size_t GetNumOfAttributes() const noexcept { return attributes_.size(); }
@@ -315,8 +313,8 @@ class IRObject {
   }
 
   /// Return the attributes list.
-  const std::vector<std::unique_ptr<Attribute>>& GetAttributes()
-      const noexcept {
+  const std::vector<std::unique_ptr<Attribute>>& GetAttributes() const
+      noexcept {
     return attributes_;
   }
 

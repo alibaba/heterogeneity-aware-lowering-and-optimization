@@ -208,32 +208,71 @@ static void RunOnInstruction(ReshapeInst* inst) {
   }
 
   size_t product = 1;
-
+  size_t elements_num = 1;
   int neg_dim = -1;
-  for (int i = 0, e = new_shape.size(); i != e; ++i) {
-    if (new_shape[i] == 0) {
-      if (!op0_type.IsValid()) {
-        return;
-      }
-      new_shape[i] = op0_type.GetNumOfElementsInDim(i);
+  if (op0_type.IsDynamicBatch()) {
+    new_shape[0] = op0_type.GetNumOfElementsInDim(0);
+    for (size_t i = 1; i < op0_type.GetNumOfDims(); ++i) {
+      elements_num *= op0_type.GetNumOfElementsInDim(i);
     }
-    if (new_shape[i] == -1) {
-      if (neg_dim >= 0) {
-        HLCHECK(0 && "Invalid reshape operand");
-        break;
+    for (int i = 1, e = new_shape.size(); i != e; ++i) {
+      if (new_shape[i] == 0) {
+        if (!op0_type.IsValid()) {
+          return;
+        }
+        if (i < static_cast<int>(op0_type.GetNumOfDims())) {
+          new_shape[i] = op0_type.GetNumOfElementsInDim(i);
+        } else {
+          HLCHECK(0 && "Invalid reshape");
+        }
       }
-      neg_dim = i;
-    } else {
-      product *= new_shape[i];
+      if (new_shape[i] == -1) {
+        if (neg_dim > 0) {
+          HLCHECK(0 && "Invalid reshape operand");
+          break;
+        }
+        neg_dim = i;
+      } else {
+        product *= new_shape[i];
+      }
     }
-  }
-  if (neg_dim >= 0 && !op0_type.IsValid()) {
-    return;
-  }
-  if ((neg_dim >= 0) && (!op0_type.IsDynamicBatch())) {
-    HLCHECK(op0_type.GetTotalNumOfElements() % product == 0 &&
-            "Invalid reshape operand");
-    new_shape[neg_dim] = op0_type.GetTotalNumOfElements() / product;
+    if (neg_dim > 0 && !op0_type.IsValid()) {
+      return;
+    }
+    if (neg_dim > 0) {
+      HLCHECK(elements_num % product == 0 && "Invalid reshape operand");
+      new_shape[neg_dim] = elements_num / product;
+    }
+  } else {
+    for (int i = 0, e = new_shape.size(); i != e; ++i) {
+      if (new_shape[i] == 0) {
+        if (!op0_type.IsValid()) {
+          return;
+        }
+        if (i < static_cast<int>(op0_type.GetNumOfDims())) {
+          new_shape[i] = op0_type.GetNumOfElementsInDim(i);
+        } else {
+          HLCHECK(0 && "Invalid reshape");
+        }
+      }
+      if (new_shape[i] == -1) {
+        if (neg_dim >= 0) {
+          HLCHECK(0 && "Invalid reshape operand");
+          break;
+        }
+        neg_dim = i;
+      } else {
+        product *= new_shape[i];
+      }
+    }
+    if (neg_dim >= 0 && !op0_type.IsValid()) {
+      return;
+    }
+    if (neg_dim >= 0) {
+      HLCHECK(op0_type.GetTotalNumOfElements() % product == 0 &&
+              "Invalid reshape operand");
+      new_shape[neg_dim] = op0_type.GetTotalNumOfElements() / product;
+    }
   }
 
   halo::Type new_type{op0_type.GetDataType(), new_shape};
@@ -288,13 +327,10 @@ static Type ComputeKernelWiseType(
   int kernel_h = kernel_shape[info.kernel_height_axis];
   int kernel_w = kernel_shape[info.kernel_width_axis];
   if (op != OpCode::POOLINGMAX && op != OpCode::POOLINGAVG) {
-    // for depthwise, for NHWC, the kernel is H, W, <group>, 1
+    // for depthwise, for NHWC, the kernel is H, W, in_ch, multiplier
     // for NCHW, the kernel is output, in/<group>, H, W
-    ret_shape[info.data_channel_axis] = kernel_shape[info.kernel_output_axis];
-    if (group > 1 && kernel_format == DataFormat::HWCN) {
-      ret_shape[info.data_channel_axis] =
-          kernel_shape[info.kernel_input_axis] * group;
-    }
+    int kernel_output = kernel_shape[info.kernel_output_axis];
+    ret_shape[info.data_channel_axis] = kernel_output;
   }
 
   auto index_h = info.data_spatial_axis;
@@ -866,6 +902,7 @@ static void RunOnInstruction(ResizeInst* inst) {
     } else if (op1.GetType().GetDataType() == DataType::INT32) {
       dim = shape_c->GetData<int32_t>(j++);
     } else if (op1.GetType().GetDataType() == DataType::FLOAT32) {
+      HLCHECK(inst->GetExplicitShape() == false);
       dim = std::floor(new_shape[i] * shape_c->GetData<float>(j++));
     }
     new_shape[i] = dim;
@@ -899,8 +936,7 @@ static void RunOnInstruction(NonMaxSuppressionInst* inst) {
       ret_shape.push_back(max_output_boxes->GetData<int64_t>(0));
     }
     ret_shape.push_back(3);
-    const auto& input_type = inst->GetOperand(0).GetType();
-    inst->GetResultsTypes()[0] = Type{input_type.GetDataType(), ret_shape};
+    inst->GetResultsTypes()[0] = Type{inst->GetIndexType(), ret_shape};
   }
 }
 
@@ -925,7 +961,32 @@ static void RunOnInstruction(TopKInst* inst) {
   const auto dims = input_type.GetNumOfDims();
   std::vector<int64_t> ret_shape(dims, k);
   inst->GetResultsTypes()[0] = Type{input_type.GetDataType(), ret_shape};
-  inst->GetResultsTypes()[1] = Type{DataType::INT64, ret_shape};
+  inst->GetResultsTypes()[1] = Type{inst->GetIndexType(), ret_shape};
+}
+
+static void RunOnInstruction(TileInst* inst) {
+  auto& op0_type = inst->GetOperand(0).GetType();
+  Def op1 = inst->GetOperand(1);
+  if (!op0_type.IsValid() || !IsA<Constant>(op1)) {
+    return;
+  }
+  const Constant* repeats_value = DynCast<Constant>(op1.GetOwner());
+  std::vector<int64_t> new_shape;
+  size_t dims_cnt = repeats_value->GetResultType(0).GetTotalNumOfElements();
+  int64_t dim = 0;
+  for (size_t i = 0; i < dims_cnt; ++i) {
+    if (op1.GetType().GetDataType() == DataType::INT64) {
+      dim = repeats_value->GetData<int64_t>(i) *
+            op0_type.GetNumOfElementsInDim(i);
+    } else {
+      dim = repeats_value->GetData<int32_t>(i) *
+            op0_type.GetNumOfElementsInDim(i);
+    }
+    new_shape.push_back(dim);
+  }
+
+  halo::Type new_type{op0_type.GetDataType(), new_shape};
+  inst->GetResultsTypes()[0] = new_type;
 }
 
 bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {

@@ -19,9 +19,11 @@
 
 #include "halo/api/halo_data.h"
 #include "halo/lib/framework/common.h"
+#include "halo/lib/ir/attribute.h"
 #include "halo/lib/ir/common_instructions.h"
 #include "halo/lib/ir/extension_instructions.h"
 #include "halo/lib/ir/ir_builder.h"
+#include "halo/lib/transforms/transforms_util.h"
 
 namespace halo {
 
@@ -82,16 +84,16 @@ static std::vector<Def> ConvertConvolution(const CAFFEExtensionInst* ext,
   if (const auto& it = attr_map.find("stride_h"); it != attr_map.end()) {
     stride[2] = ext->GetAttributes()[it->second].get()->GetValueAsInteger();
   } else if (const auto& it = attr_map.find("stride"); it != attr_map.end()) {
-    const auto& vals =
+    const auto& value =
         ext->GetAttributes()[it->second].get()->GetValueAsIntegerList();
-    stride[2] = vals.empty() ? 1 : vals.front();
+    stride[2] = value.empty() ? 1 : value[0];
   }
   if (const auto& it = attr_map.find("stride_w"); it != attr_map.end()) {
     stride[3] = ext->GetAttributes()[it->second].get()->GetValueAsInteger();
   } else if (const auto& it = attr_map.find("stride"); it != attr_map.end()) {
-    const auto& vals =
+    const auto& value =
         ext->GetAttributes()[it->second].get()->GetValueAsIntegerList();
-    stride[3] = vals.empty() ? 1 : vals.back();
+    stride[3] = value.empty() ? 1 : value.back();
   }
 
   std::vector<int> dilation(4, 1);
@@ -162,6 +164,35 @@ static std::vector<Def> ConvertConvolution(const CAFFEExtensionInst* ext,
     new_inst = builder->CreateAdd(ext->GetName() + "_add", *new_inst, *c);
   }
   return {*new_inst};
+}
+
+static std::vector<Def> ConvertUpsample(const CAFFEExtensionInst* ext,
+                                        IRBuilder* builder) {
+  HLCHECK(ext->GetNumOfOperands() == 1);
+  auto input = ext->GetOperand(0);
+  if (!input.GetType().IsValid()) {
+    return {};
+  }
+  builder->SetInsertAfter(ext);
+  int scale = 1;
+  for (const auto& attr : ext->GetAttributes()) {
+    if (attr->GetName() == "scale") {
+      scale = attr->GetValueAsInteger();
+    }
+  }
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  auto rank = input.GetType().GetNumOfDims();
+  HLCHECK(rank == 4);
+  auto shape = input.GetType().GetDimSizes();
+  shape[2] *= scale;
+  shape[3] *= scale;
+  auto scale_c = cb.CreateConstant(
+      ext->GetName() + "_scale",
+      Type{DataType::INT64, {static_cast<int64_t>(shape.size())}},
+      shape.data());
+  ResizeInst* resize = builder->CreateResize(ext->GetName(), input, *scale_c);
+  resize->SetExplicitShape(true);
+  return {*resize};
 }
 
 static std::vector<Def> ConvertEltwise(const CAFFEExtensionInst* ext,
@@ -239,17 +270,19 @@ static std::vector<Def> ConvertInnerProduct(const CAFFEExtensionInst* ext,
   }
   HLCHECK(op1_type.GetNumOfDims() == 2);
   bool transpose = FindAttributeValue(ext, "transpose", false);
-  int axis = FindAttributeValue(ext, "axis", 1);
+  size_t axis = FindAttributeValue(ext, "axis", 1);
+  HLCHECK(axis < input_type.GetNumOfDims());
+
   builder->SetInsertAfter(ext);
   ConstantBuilder cb(ext->GetParent()->GetParent());
   HLCHECK(input_type.GetNumOfDims() >= 2);
   if (input_type.GetNumOfDims() > 2) {
     auto new_shape = input_type.GetDimSizes();
-    for (int i = 1; i < axis; ++i) {
+    for (size_t i = 1; i < axis; ++i) {
       new_shape[0] *= new_shape[i];
     }
     new_shape[1] = new_shape[axis];
-    for (int i = axis + 1, e = new_shape.size(); i < e; ++i) {
+    for (size_t i = axis + 1, e = new_shape.size(); i < e; ++i) {
       new_shape[1] *= new_shape[i];
     }
     new_shape.resize(2);
@@ -302,6 +335,30 @@ static std::vector<Def> ConvertScale(const CAFFEExtensionInst* ext,
     HLCHECK(ext->GetNumOfOperands() == 2);
   }
   builder->SetInsertAfter(ext);
+  // Check if input is BatchNorm without scaling. If so, fuse with it.
+  bool all_consts =
+      has_bias && IsA<Constant>(op1) && IsA<Constant>(ext->GetOperand(2));
+  if (all_consts && IsA<Instruction>(input) &&
+      DynCast<Instruction>(input)->GetOpCode() == OpCode::BATCHNORM) {
+    BatchNormInst* bn = DynCast<BatchNormInst>(input);
+    bool bn_without_scale = bn->GetNumOfOperands() == 3;
+    if (!bn_without_scale && bn->GetNumOfOperands() == 4) {
+      auto last_op = bn->GetOperand(3);
+      if (IsA<Constant>(last_op)) {
+        bn_without_scale = DynCast<Constant>(last_op)->IsScalarOne();
+      }
+    }
+    int ch = input_type.GetNumOfElementsInDim(1);
+    auto op2 = ext->GetOperand(2);
+    if (bn_without_scale && op1.GetType().GetTotalNumOfElements() == ch &&
+        op2.GetType().GetTotalNumOfElements() == ch) {
+      std::vector<Def> new_ops{bn->GetOperand(0), op1, op2, bn->GetOperand(2),
+                               bn->GetOperand(3)};
+      Instruction* new_bn = builder->Clone(*bn, new_ops);
+      return {*new_bn};
+    }
+  }
+
   // check if operand needs broadcasting.
   int axis = FindAttributeValue(ext, "axis", 1);
   int ranks = input_type.GetNumOfDims();
@@ -398,10 +455,10 @@ static std::vector<Def> ConvertReshape(const CAFFEExtensionInst* ext,
     HLCHECK(num_axes == -1);
     HLCHECK(axis == 0);
     const auto& orig_shape = input_type.GetDimSizes();
-    HLCHECK(input_type.GetNumOfDims() == shape.size());
     std::vector<int32_t> new_shape;
     int induced_index = -1;
     int64_t new_num_elements = 1;
+    auto orig_num_elements = input_type.GetTotalNumOfElements();
     for (int i = 0, e = shape.size(); i != e; ++i) {
       if (shape[i] == 0) {
         new_shape.push_back(static_cast<int32_t>(orig_shape[i]));
@@ -416,9 +473,10 @@ static std::vector<Def> ConvertReshape(const CAFFEExtensionInst* ext,
       new_num_elements *= new_shape.back();
     }
     if (induced_index != -1) {
-      HLCHECK(input_type.GetTotalNumOfElements() % new_num_elements == 0);
-      new_shape[induced_index] =
-          input_type.GetTotalNumOfElements() / new_num_elements;
+      HLCHECK(orig_num_elements % new_num_elements == 0);
+      new_shape[induced_index] = orig_num_elements / new_num_elements;
+    } else {
+      HLCHECK(orig_num_elements == new_num_elements);
     }
     ConstantBuilder cb(ext->GetParent()->GetParent());
     Constant* c = cb.CreateConstant(
@@ -570,13 +628,15 @@ static std::vector<Def> ConvertCAFFEExtension(
     case CAFFEExtOpCode::SCALE: {
       return ConvertScale(caffe_inst, builder);
     }
+    case CAFFEExtOpCode::UPSAMPLE: {
+      return ConvertUpsample(caffe_inst, builder);
+    }
     case CAFFEExtOpCode::POWER: {
       return ConvertPower(caffe_inst, builder);
     }
     case CAFFEExtOpCode::DROPOUT: {
       return {caffe_inst->GetOperand(0)};
     }
-
     default: {
       HLCHECK(0 && "Unhandled");
     }
@@ -587,20 +647,7 @@ static std::vector<Def> ConvertCAFFEExtension(
 bool CAFFEExtensionLegalizer::RunOnBasicBlock(BasicBlock* bb) {
   IRBuilder builder(bb);
   bool changed = false;
-  std::vector<Def> outputs;
-  if (!bb->empty() && bb->back()->GetOpCode() != OpCode::RETURN) {
-    for (auto& inst_t : *bb) {
-      Instruction* inst = inst_t.get();
-      if (inst->GetNumberOfUses() == 0 && inst->GetOpCode() != OpCode::RETURN) {
-        // TODO(unknown): from driver to specify the output names.
-        outputs.push_back(*inst);
-      }
-    }
-    if (!outputs.empty()) {
-      builder.SetInsertAfter(bb->back());
-      builder.CreateReturn("output", outputs);
-    }
-  }
+  changed |= AppendReturnInst(bb);
   for (auto& inst_t : *bb) {
     Instruction* inst = inst_t.get();
     if (inst->GetOpCode() == OpCode::EXTENSION) {
@@ -617,5 +664,4 @@ bool CAFFEExtensionLegalizer::RunOnBasicBlock(BasicBlock* bb) {
   }
   return changed;
 }
-
 } // end namespace halo

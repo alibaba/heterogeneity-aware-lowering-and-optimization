@@ -109,4 +109,10 @@ let cat_ = cat_common in {
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
   }
 
+  def Tile : Inst<"Replicate input multiples times."> {
+    let ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >,
+                Arg<"The multiples.", ArgType<[I32,I64]>, 1D>];
+    let outs_ = [Arg<"The result.", MatchArgType<0> >];
+  }
+
 }

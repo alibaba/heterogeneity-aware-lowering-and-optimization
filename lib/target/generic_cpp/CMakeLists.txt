@@ -45,6 +45,7 @@ set(SRCS
   sigmoid.cc
   slice.cc
   softmax.cc
+  tile.cc
   topk.cc
   transpose.cc
 )

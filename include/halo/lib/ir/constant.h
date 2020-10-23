@@ -39,6 +39,14 @@ class Constant : public IRObject {
   /// Returns the parent object that could be a Module or a Function.
   IRObject* GetParent() const noexcept { return parent_; }
 
+  Constant* Clone(const Constant& from) const;
+
+  void SetData(const Type& type, const void* data_ptr, bool do_splate);
+
+  void SetData(const Type& type, const void* data_ptr) {
+    SetData(type, data_ptr, false);
+  }
+
   /// Get the const pointer to the data.
   template <typename T>
   const T* GetDataPtr() const {
@@ -106,13 +114,17 @@ class Constant : public IRObject {
   /// Check Special constant
   bool IsScalarZero() const;
   bool IsScalarOne() const;
+  bool HasSameValueOf(float x) const;
 
  private:
+  Constant(const Constant&);
+
   IRObject* parent_ = nullptr;
   const DataLayout& data_layout_;
   std::vector<unsigned char> data_;
 
   friend class ConstantBuilder;
+  friend std::unique_ptr<Constant> std::make_unique<Constant>(const Constant&);
 };
 
 } // namespace halo

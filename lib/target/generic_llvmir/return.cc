@@ -17,12 +17,12 @@
 
 #include <cstdio>
 
+#include "halo/lib/ir/ir_builder.h"
+#include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/Support/Casting.h"
-#include "halo/lib/ir/ir_builder.h"
-#include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
 
 namespace halo {
 

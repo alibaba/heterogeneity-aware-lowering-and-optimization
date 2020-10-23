@@ -20,6 +20,11 @@
 #include <limits>
 #include <unordered_map>
 
+#include "halo/api/halo_data.h"
+#include "halo/lib/framework/global_context.h"
+#include "halo/lib/ir/all_instructions.h"
+#include "halo/lib/target/codegen.h"
+#include "halo/lib/target/codegen_object.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/DerivedTypes.h"
@@ -42,11 +47,6 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO/Internalize.h"
-#include "halo/api/halo_data.h"
-#include "halo/lib/framework/global_context.h"
-#include "halo/lib/ir/all_instructions.h"
-#include "halo/lib/target/codegen.h"
-#include "halo/lib/target/codegen_object.h"
 
 namespace halo {
 
@@ -308,21 +308,21 @@ void GenericLLVMIRCodeGen::RunOnConstant(Constant& constant) {
     case DataType::INT32: {
       llvm::ArrayRef<uint32_t> data(constant.GetDataPtr<uint32_t>(),
                                     sn_ty.GetTotalNumOfElements());
-      cv = llvm::ConstantDataVector::get(llvm_module_->getContext(), data);
+      cv = llvm::ConstantDataArray::get(llvm_module_->getContext(), data);
       break;
     }
     case DataType::INT16:
     case DataType::UINT16: {
       llvm::ArrayRef<uint16_t> data(constant.GetDataPtr<uint16_t>(),
                                     sn_ty.GetTotalNumOfElements());
-      cv = llvm::ConstantDataVector::get(llvm_module_->getContext(), data);
+      cv = llvm::ConstantDataArray::get(llvm_module_->getContext(), data);
       break;
     }
     case DataType::INT8:
     case DataType::UINT8: {
       llvm::ArrayRef<uint8_t> data(constant.GetDataPtr<uint8_t>(),
                                    sn_ty.GetTotalNumOfElements());
-      cv = llvm::ConstantDataVector::get(llvm_module_->getContext(), data);
+      cv = llvm::ConstantDataArray::get(llvm_module_->getContext(), data);
       break;
     }
     default: {
@@ -330,31 +330,13 @@ void GenericLLVMIRCodeGen::RunOnConstant(Constant& constant) {
     }
   }
 
-  // make a valid C/C++ identifier name.
-  auto normalize = [](const std::string& n) {
-    std::string name = n;
-    std::transform(n.begin(), n.end(), name.begin(), [](char c) {
-      switch (c) {
-        case '/':
-        case ' ':
-        case '.':
-        case '-': {
-          return '_';
-        }
-        default:
-          return c;
-      }
-    });
-    return name;
-  };
-
   if (cv == nullptr) {
     HLCHECK(0);
     return;
   }
 
-  auto v = llvm_module_->getOrInsertGlobal(normalize(constant.GetName()),
-                                           cv->getType());
+  auto v = llvm_module_->getOrInsertGlobal(
+      NormalizeVariableName(constant.GetName()), cv->getType());
   llvm::GlobalVariable* gv = llvm::dyn_cast<llvm::GlobalVariable>(v);
   HLCHECK(gv);
   if (gv != nullptr) {

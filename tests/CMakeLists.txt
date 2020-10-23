@@ -17,7 +17,7 @@
 set(HALO_TEST_DEPENDS
   FileCheck
   RTLIB
-  halo
+  halolib
   halo
   odla_tensorrt
   odla_dnnl

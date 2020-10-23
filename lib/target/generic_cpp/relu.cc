@@ -53,4 +53,41 @@ void GenericCXXCodeGen::RunOnInstruction(LeakyReluInst* inst) {
   ir_mapping_[*inst] = ret;
 }
 
+void GenericCXXCodeGen::RunOnInstruction(PReluInst* inst) {
+  const Def& input = inst->GetOperand(0);
+  const Def& slope = inst->GetOperand(1);
+
+  CXXValue op0 = ir_mapping_[input];
+  CXXValue op1 = ir_mapping_[slope];
+
+  CXXValue ret(inst->GetName(), op0.type);
+
+  EmitODLACall(ret, "odla_PRelu", op0, op1);
+
+  ir_mapping_[*inst] = ret;
+}
+
+void GenericCXXCodeGen::RunOnInstruction(ThresholdedReluInst* inst) {
+  const Def& input = inst->GetOperand(0);
+
+  CXXValue op0 = ir_mapping_[input];
+
+  CXXValue ret(inst->GetName(), op0.type);
+
+  EmitODLACall(ret, "odla_ThresholdedRelu", op0, inst->GetAlpha());
+
+  ir_mapping_[*inst] = ret;
+}
+
+void GenericCXXCodeGen::RunOnInstruction(SeluInst* inst) {
+  const Def& input = inst->GetOperand(0);
+
+  CXXValue op0 = ir_mapping_[input];
+
+  CXXValue ret(inst->GetName(), op0.type);
+
+  EmitODLACall(ret, "odla_Selu", op0, inst->GetAlpha(), inst->GetLambda());
+
+  ir_mapping_[*inst] = ret;
+}
 } // namespace halo

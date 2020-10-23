@@ -38,7 +38,7 @@ bool InputRewriter::RunOnBasicBlock(BasicBlock* bb) {
         if (const auto& type = inst->GetResultsTypes()[i]; type.IsValid()) {
           auto arg = arg_builder.CreateArgument(
               inst->GetName() + (e == 1 ? "" : std::to_string(i)), type);
-          inst->ReplaceAllUsesWith(0, Def(arg, 0));
+          inst->ReplaceAllUsesWith(i, Def(arg, 0));
           changed |= true;
         }
       }

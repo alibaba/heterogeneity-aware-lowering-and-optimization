@@ -163,7 +163,7 @@ static odla_value DepthwiseConvolution(
     odla_value_shape kernel_dims, odla_memory_layout kernel_layout,
     odla_value kernel, const unsigned* strides, const unsigned* dilations,
     const unsigned* paddings_front, const unsigned* paddings_back,
-    unsigned group, odla_value_shape& output_dims) {
+    unsigned group, odla_value bias, odla_value_shape& output_dims) {
   auto v = GetValue({type, output_dims});
   int data_ch_idx = (input_layout == ODLA_CHANNELS_LAST) ? 3 : 1;
   // assert(input_layout == ODLA_CHANNELS_FIRST && kernel_layout == ODLA_OIS);
@@ -202,7 +202,7 @@ static odla_value DepthwiseConvolution(
                                         1, pad_l, pad_r, pad_t, pad_b, 0)
                    .reshape(Eigen::array<long, 2>{out_h * out_w * batch,
                                                   k_w * k_h * in_ch});
-    // Element wise multplication with kernel
+    // Element wise multiplication with kernel
     auto out_elt_mul =
         out * ((kn.reshape(Eigen::array<long, 2>{1, k_w * k_w * in_ch}))
                    .broadcast(Eigen::array<long, 2>{out_h * out_w * batch, 1}));
@@ -213,7 +213,12 @@ static odla_value DepthwiseConvolution(
                 Eigen::array<long, 3>{out_h * out_w * batch, k_w * k_h, in_ch})
             .sum(Eigen::array<int, 1>{1})
             .reshape(Eigen::array<long, 4>{batch, out_h, out_w, out_ch});
-    ret = out_reduce;
+    if (bias != nullptr) {
+      ret = out_reduce + EigenTensorHelper<float, 4>::GetEigenTensorMap(
+                             bias->ptr, {1, 1, 1, out_ch});
+    } else {
+      ret = out_reduce;
+    }
     return Vals.back().get();
   }
 
@@ -247,6 +252,16 @@ static odla_value DepthwiseConvolution(
       out_ptr += out_h * out_w;
     }
   }
+  if (bias != nullptr) {
+    auto ret =
+        EigenTensorHelper<float, 4>::GetEigenTensorMap(v->ptr, output_dims);
+    odla_value_shape bias_shape{.size = 4, .dims = {1, out_ch, 1, 1}};
+
+    ret = ret +
+          EigenTensorHelper<float, 4>::GetEigenTensorMap(bias->ptr, bias_shape)
+              .broadcast(Eigen::array<int, 4>{batch, 1, static_cast<int>(out_h),
+                                              static_cast<int>(out_w)});
+  }
 
   return Vals.back().get();
 }
@@ -267,8 +282,9 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
     return DepthwiseConvolution(input->type.element_type, input_dims,
                                 input_layout, input, kernel_dims, kernel_layout,
                                 kernel, strides, dilations, paddings_front,
-                                paddings_back, group, output_dims);
+                                paddings_back, group, bias, output_dims);
   }
+
   auto v = GetValue({input->type.element_type, output_dims});
   int data_ch_idx = (input_layout == ODLA_CHANNELS_LAST) ? 3 : 1;
   // assert(input_layout == ODLA_CHANNELS_LAST && kernel_layout == SIO);
@@ -302,7 +318,13 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
                                  Eigen::IndexPair<int>(0, 1)})
                    .shuffle(perm)
                    .reshape(Eigen::array<int, 4>{batch, out_ch, out_h, out_w});
-    ret = out;
+    if (bias != nullptr) {
+      ret = out + EigenTensorHelper<float, 4>::GetEigenTensorMap(
+                      bias->ptr, {.size = 4, .dims = {1, out_ch, 1, 1}})
+                      .broadcast(Eigen::array<int, 4>{batch, 1, out_h, out_w});
+    } else {
+      ret = out;
+    }
     return Vals.back().get();
   }
   if (input_layout == ODLA_CHANNELS_LAST) { // NHWC
@@ -316,8 +338,12 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
                 Eigen::array<Eigen::IndexPair<int>, 1>{
                     Eigen::IndexPair<int>(1, 0)})
             .reshape(Eigen::array<int, 4>{batch, out_h, out_w, out_ch});
-
-    ret = out;
+    if (bias != nullptr) {
+      ret = out + EigenTensorHelper<float, 4>::GetEigenTensorMap(
+                      bias->ptr, {1, 1, 1, out_ch});
+    } else {
+      ret = out;
+    }
   } else {
     Eigen::array<int, 4> kernel_shuffles{2, 3, 1, 0};
     Eigen::array<int, 4> input_shuffles{0, 2, 3, 1};
@@ -334,9 +360,16 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
                 Eigen::array<Eigen::IndexPair<int>, 1>{
                     Eigen::IndexPair<int>(1, 0)})
             .reshape(Eigen::array<int, 4>{batch, out_h, out_w, out_ch});
-    ret = out.shuffle(output_shuffles);
+    if (bias != nullptr) {
+      odla_value_shape bias_shape{.size = 4, .dims = {1, out_ch, 1, 1}};
+      ret =
+          out.shuffle(output_shuffles) +
+          EigenTensorHelper<float, 4>::GetEigenTensorMap(bias->ptr, bias_shape)
+              .broadcast(Eigen::array<int, 4>{batch, 1, out_h, out_w});
+    } else {
+      ret = out.shuffle(output_shuffles);
+    }
   }
-
   return Vals.back().get();
 }
 
@@ -372,9 +405,12 @@ odla_value odla_LeakyRelu(odla_value input, odla_float32 alpha,
   return v;
 }
 
-odla_value odla_Add(odla_value lhs, odla_value rhs, const odla_value_id id) {
+enum class Op { ADD, MUL };
+
+static odla_value odla_binary(Op op, odla_value lhs, odla_value rhs,
+                              const odla_value_id id) {
   const auto& dims_lhs = lhs->type.shape;
-  const auto& dims_rhs = rhs->type.shape;
+  auto dims_rhs = rhs->type.shape;
 
   auto v = GetValue(lhs->type);
   auto l = EigenTensorHelper<float, 4>::GetEigenTensorMap(lhs->ptr, dims_lhs);
@@ -382,20 +418,44 @@ odla_value odla_Add(odla_value lhs, odla_value rhs, const odla_value_id id) {
 
   if (GetTotalElements(dims_lhs) != GetTotalElements(dims_rhs)) {
     assert(dims_lhs.size == 4);
-    assert(dims_rhs.size == 1);
-
-    auto r = EigenTensorHelper<float, 1>::GetEigenTensorMap(rhs->ptr, dims_rhs);
+    if (dims_rhs.size == 1) {
+      dims_rhs.size = 4;
+      dims_rhs.dims[3] = dims_rhs.dims[0];
+      dims_rhs.dims[0] = dims_rhs.dims[1] = dims_rhs.dims[2] = 1;
+    } else if (dims_rhs.size != 4) {
+      assert(0 && "invalid dim");
+    }
+    auto r = EigenTensorHelper<float, 4>::GetEigenTensorMap(rhs->ptr, dims_rhs);
     int d0 = dims_lhs.dims[0];
     int d1 = dims_lhs.dims[1];
     int d2 = dims_lhs.dims[2];
     int d3 = dims_lhs.dims[3];
-    ret = l + r.reshape(Eigen::array<int, 4>{1, 1, 1, d3})
-                  .broadcast(Eigen::array<int, 4>{d0, d1, d2, 1});
+
+    auto r2 = r.broadcast(Eigen::array<int, 4>{
+        d0 / (int)dims_rhs.dims[0], d1 / (int)dims_rhs.dims[1],
+        d2 / (int)dims_rhs.dims[2], d3 / (int)dims_rhs.dims[3]});
+    if (op == Op::ADD) {
+      ret = l + r2;
+    } else if (op == Op::MUL) {
+      ret = l * r2;
+    }
   } else {
     auto r = EigenTensorHelper<float, 4>::GetEigenTensorMap(rhs->ptr, dims_lhs);
-    ret = l + r;
+    if (op == Op::ADD) {
+      ret = l + r;
+    } else if (op == Op::MUL) {
+      ret = l * r;
+    }
   }
   return v;
+}
+
+odla_value odla_Add(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  return odla_binary(Op::ADD, lhs, rhs, id);
+}
+
+odla_value odla_Mul(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  return odla_binary(Op::MUL, lhs, rhs, id);
 }
 
 odla_value odla_BatchNormalization(odla_value input,
@@ -530,9 +590,9 @@ odla_value odla_Concat(odla_values inputs, odla_int32 axis,
   for (int i = 0; i < s; ++i) {
     for (int j = 0; j < inputs.size; ++j) {
       int ch = inputs.values[j]->type.shape.dims[3];
-      const float* src = reinterpret_cast<const float*>(inputs.values[j]->ptr);
-      memcpy(dst, src + i * ch, sizeof(float) * ch);
-      dst += ch;
+      const float* src = reinterpret_cast<const
+  float*>(inputs.values[j]->ptr); memcpy(dst, src + i * ch, sizeof(float) *
+  ch); dst += ch;
     }
   }
   */

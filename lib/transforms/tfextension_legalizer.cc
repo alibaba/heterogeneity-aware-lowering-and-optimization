@@ -24,6 +24,7 @@
 #include "halo/lib/ir/common_instructions.h"
 #include "halo/lib/ir/extension_instructions.h"
 #include "halo/lib/ir/ir_builder.h"
+#include "halo/lib/transforms/transforms_util.h"
 
 namespace halo {
 
@@ -696,13 +697,11 @@ static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
 bool TFExtensionLegalizer::RunOnBasicBlock(BasicBlock* bb) {
   IRBuilder builder(bb);
   bool changed = false;
-  std::vector<Def> outputs;
+  // Insert ouput before extension legalization.
+  changed |= AppendReturnInst(bb);
+
   for (auto& inst_t : *bb) {
     Instruction* inst = inst_t.get();
-    if (inst->GetNumberOfUses() == 0 && inst->GetOpCode() != OpCode::RETURN) {
-      // TODO(unknown): from driver to specify the output names.
-      outputs.push_back(*inst);
-    }
     if (inst->GetOpCode() == OpCode::EXTENSION) {
       ExtensionInst* ext_inst = Downcast<ExtensionInst>(inst);
       if (ext_inst->GetExtensionKind() ==
@@ -715,22 +714,20 @@ bool TFExtensionLegalizer::RunOnBasicBlock(BasicBlock* bb) {
       }
     } else if (inst->GetOpCode() == OpCode::CONV2D) {
       Conv2DInst* conv_inst = Downcast<Conv2DInst>(inst);
-      if (conv_inst->GetGroup() == 0) {
-        if (conv_inst->GetNumOfOperands() > 1 &&
-            IsA<Constant>(conv_inst->GetOperand(1))) {
-          auto filter = DynCast<Constant>(conv_inst->GetOperand(1));
-          const auto& shape = filter->GetResultsTypes()[0];
-          HLCHECK(shape.GetNumOfDims() == 4);
-          conv_inst->SetGroup(static_cast<int>(shape.GetNumOfElementsInDim(2) /
-                                               shape.GetNumOfElementsInDim(3)));
-        }
+      const auto& op1_type = conv_inst->GetOperand(1).GetType();
+      if (conv_inst->GetGroup() == 0 && op1_type.IsValid()) {
+        auto op1_dims = op1_type.GetDimSizes();
+        HLCHECK(op1_dims.size() >= 4);
+        conv_inst->SetGroup(static_cast<int>(op1_dims[op1_dims.size() - 2]));
+        // Normalize HWIM to HWIO
+        auto p = op1_dims[2] * op1_dims[3];
+        op1_dims[3] *= conv_inst->GetGroup();
+        HLCHECK(p % op1_dims[3] == 0);
+        op1_dims[2] = p / op1_dims[3];
+        conv_inst->GetOperand(1).SetType(
+            halo::Type{op1_type.GetDataType(), op1_dims});
       }
     }
-  }
-  if (!outputs.empty() && !bb->empty() &&
-      bb->back()->GetOpCode() != OpCode::RETURN) {
-    builder.SetInsertAfter(bb->back());
-    builder.CreateReturn("output", outputs);
   }
   return changed;
 }

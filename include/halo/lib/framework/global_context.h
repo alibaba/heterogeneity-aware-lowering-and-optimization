@@ -62,6 +62,8 @@ class GlobalContext {
   /// `base_path`/bin/file and thus computes the `base_path`.
   void SetBasePath(const char* path) noexcept;
   const std::string& GetBasePath() const noexcept;
+  void SetPrintPass(const bool is_print_pass) noexcept;
+  bool GetPrintPass() const noexcept;
 
  private:
   const std::unique_ptr<GlobalContextImpl> impl_;

@@ -128,6 +128,8 @@ def TF_Erf : OpMapping<"Erf", Erf>;
 
 def TF_Floor : OpMapping<"Floor", Floor>;
 
+def TF_Round: OpMapping<"Round", Round>;
+
 def TF_FusedBatchNorm : OpMapping<"FusedBatchNorm", BatchNorm> {
   let attr_mapping_ = [
     AttributeMapping<"offset", "offset", "0">,
@@ -206,6 +208,8 @@ def TF_Prod : OpMapping<"Prod", ReduceProduct> {
 def TF_RealDiv : OpMapping<"RealDiv", Div>;
 
 def TF_Relu : OpMapping<"Relu", Relu>;
+
+def TF_Relu6 : OpMapping<"Relu6", Relu6>;
 
 def TF_Rsqrt : OpMapping<"Rsqrt", Rsqrt>;
 

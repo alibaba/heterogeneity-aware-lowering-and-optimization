@@ -66,7 +66,8 @@ def EnumPadding : EnumValueType<"Padding",
 def EnumPadMode : EnumValueType<"PadMode",
                                 ["CONSTANT",
                                  "REFLECT",
-                                 "SYMMETRIC"]>;
+                                 "SYMMETRIC",
+                                 "EDGE"]>;
 def EnumCodeType : EnumValueType<"CodeType",
                                  ["CORNER",
                                   "CENTER_SIZE",
@@ -82,3 +83,12 @@ def EnumResizeMode : EnumValueType<"ResizeMode",
                                   ]>;
 def EnumInterpolation: EnumValueType<"Interpolation",
                                     ["NEAREST", "LINEAR", "CUBIC"]>;
+
+def EnumActivationType : EnumValueType<"ActivationType",
+                                    ["NONE",
+                                     "RELU",
+                                     "RELU1",
+                                     "RELU6",
+                                     "TANH",
+                                     "SIGN_BIT"
+                                     ]>;

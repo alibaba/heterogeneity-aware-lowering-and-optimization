@@ -47,6 +47,7 @@ class Converter {
   enum class Framework {
     FRAMEWORK_TF,
     FRAMEWORK_ONNX,
+    FRAMEWORK_TFLITE,
     FRAMEWORK_CAFFE,
     FRAMEWORK_MXNET,
   };
@@ -93,7 +94,12 @@ Converter::Converter(const llvm::RecordKeeper& records) : records_(records) {
   std::vector<llvm::Record*> convert_records =
       records.getAllDerivedDefinitions(RecordTypeName);
   auto one = convert_records[0];
-  if (one->getName().startswith("TF")) {
+  if (one->getName().startswith("TFLITE")) {
+    framework_kind_ = Framework::FRAMEWORK_TFLITE;
+    framework_name_ = "TFLITE";
+    framework_namespace_ = "tflite";
+    pb_node_ = "Operator";
+  } else if (one->getName().startswith("TF")) {
     framework_kind_ = Framework::FRAMEWORK_TF;
     framework_name_ = "TF";
     framework_namespace_ = "tensorflow";
@@ -160,7 +166,8 @@ void Converter::EmitConverterDef(llvm::raw_ostream& os) {
   std::vector<llvm::Record*> classes =
       records_.getAllDerivedDefinitions(RecordTypeName);
   for (auto c : classes) {
-    if (c->isSubClassOf("TFExtension") || c->isSubClassOf("ONNXExtension")) {
+    if (c->isSubClassOf("TFExtension") || c->isSubClassOf("ONNXExtension") ||
+        c->isSubClassOf("TFLITEExtension")) {
       EmitExtensionInstDef(c, os);
     } else if (c->isSubClassOf("MXNETExtension")) {
       llvm_unreachable("Unimplemented.");
@@ -233,12 +240,16 @@ void Converter::EmitHaloInstDef(llvm::Record* record, llvm::raw_ostream& os) {
   }
 
   std::vector<llvm::Record*> attrs = sn_inst->getValueAsListOfDefs("attrs_");
-  if (!attrs.empty()) {
+  if (!attrs.empty() && framework_name_ != "TFLITE") {
     os << "  " << framework_name_ << "Attrs attrs(node_def);\n";
   }
   os << "  std::vector<Def> operands = GetInputOperands(node_def);\n";
   os << "  auto inst = ir_builder_->Create" << sn_inst_name;
-  os << "(node_def.name(), operands);\n";
+  if (framework_name_ == "TFLITE") {
+    os << "(\"\", operands);\n"; // Instruction constructor auto set inst name
+  } else {
+    os << "(node_def.name(), operands);\n";
+  }
 
   bool need_new_attr = true;
   ProcessAttributes(sn_inst, need_mapping, os, &need_new_attr);
@@ -268,7 +279,11 @@ void Converter::EmitExtensionInstDef(llvm::Record* record,
 
   os << "  std::vector<Def> operands = GetInputOperands(node_def);\n";
   os << "  auto inst = ir_builder_->Create" << framework_name_ << sn_inst_name;
-  os << "(node_def.name()";
+  if (framework_name_ == "TFLITE") {
+    os << "(\"\""; // Instruction constructor auto set inst name
+  } else {
+    os << "(node_def.name()";
+  }
   os << ", operands, " << num_outputs << ", \"" << extern_op_name << "\");\n";
 
   ProcessExtensionAttributes(extension_attrs, framework_name_, param_name.str(),
@@ -405,8 +420,19 @@ void Converter::ProcessExtensionAttributesImpl(
     os << cpp_type << " " << extern_attr_name << " = " << default_value
        << ";\n";
     os.indent(indent_num);
-    os << "attrs.Process<" << cpp_type << ">(\"" << extern_attr_name << "\", &"
-       << extern_attr_name << ");\n";
+    if (framework_name == "TFLITE") {
+      if (value_type->isSubClassOf("EnumValueType") ||
+          value_type->getValueAsBit("is_array_")) {
+        os << extern_attr_name << " = process_" << extern_attr_name << "(attrs."
+           << extern_attr_name << "());\n";
+      } else {
+        os << extern_attr_name << " = "
+           << "attrs." << extern_attr_name << "();\n";
+      }
+    } else {
+      os << "attrs.Process<" << cpp_type << ">(\"" << extern_attr_name
+         << "\", &" << extern_attr_name << ");\n";
+    }
     os.indent(indent_num);
     os << "inst->AddOneAttribute(Attribute::Create";
     os << value_type->getName() << "(\"" << extern_attr_name << "\", "

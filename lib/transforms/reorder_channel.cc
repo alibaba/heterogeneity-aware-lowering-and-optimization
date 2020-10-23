@@ -70,7 +70,7 @@ static void UpdateFilterFormat(Conv2DTransposeInst* inst, DataFormat format) {
 
 static void UpdateFilterFormat(Conv2DInst* inst, DataFormat format) {
   if (format == DataFormat::NCHW) {
-    inst->SetFilterFormat(DataFormat::NHWC);
+    inst->SetFilterFormat(DataFormat::NCHW);
   } else {
     inst->SetFilterFormat(DataFormat::HWCN);
   }
@@ -108,6 +108,13 @@ static bool Reorder(T* inst, bool target_is_ch_first) {
       std::is_same_v<T, Conv2DInst> || std::is_same_v<T, Conv2DTransposeInst>;
   constexpr bool has_strides = has_kernels || has_filter;
   constexpr bool is_bn = std::is_same_v<T, BatchNormInst>;
+
+  if (is_bn) {
+    // Do transform after the instruction is legalized.
+    if (inst->GetNumOfOperands() != 5) { // NOLINT.
+      return false;
+    }
+  }
 
   const auto src_format = inst->GetDataFormat();
   bool src_is_ch_first =

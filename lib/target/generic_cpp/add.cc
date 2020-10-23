@@ -25,11 +25,11 @@ namespace halo {
 
 void GenericCXXCodeGen::RunOnUnaryInstruction(Instruction* inst) {
   static const std::unordered_map<OpCode, const char*> names{
-      {OpCode::ERF, "odla_Erf"},
-      {OpCode::EXP, "odla_Exp"},
-      {OpCode::FLOOR, "odla_Floor"},
-      {OpCode::RSQRT, "odla_Rsqrt"},
-      {OpCode::SQRT, "odla_Sqrt"}};
+      {OpCode::ERF, "odla_Erf"},     {OpCode::EXP, "odla_Exp"},
+      {OpCode::FLOOR, "odla_Floor"}, {OpCode::RSQRT, "odla_Rsqrt"},
+      {OpCode::SQRT, "odla_Sqrt"},   {OpCode::SIN, "odla_Sin"},
+      {OpCode::SINH, "odla_Sinh"},   {OpCode::COS, "odla_Cos"},
+      {OpCode::COSH, "odla_Cosh"},   {OpCode::ROUND, "odla_Round"}};
 
   auto it = names.find(inst->GetOpCode());
   HLCHECK(it != names.end());
@@ -82,6 +82,10 @@ void GenericCXXCodeGen::RunOnInstruction(FloorInst* inst) {
   RunOnUnaryInstruction(inst);
 }
 
+void GenericCXXCodeGen::RunOnInstruction(RoundInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
 void GenericCXXCodeGen::RunOnInstruction(ErfInst* inst) {
   RunOnUnaryInstruction(inst);
 }
@@ -95,6 +99,22 @@ void GenericCXXCodeGen::RunOnInstruction(SqrtInst* inst) {
 }
 
 void GenericCXXCodeGen::RunOnInstruction(RsqrtInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(SinInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(SinhInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(CosInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(CoshInst* inst) {
   RunOnUnaryInstruction(inst);
 }
 

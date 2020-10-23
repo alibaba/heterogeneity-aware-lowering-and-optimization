@@ -34,6 +34,27 @@ let cat_ = cat_math_unary,
   def Sign: Inst<"The unary opertion returns 1 if X1 > 0, return -1 if X1 < 0,"
                  " return 0 if X1 == 0, element-wise.">;
 
+  def ACos : Inst<"The unary opertion returns acos, element-wise.">;
+
+  def ACosh : Inst<"The unary opertion returns acosh, element-wise.">;
+
+  def ASin : Inst<"The unary opertion returns asin, element-wise.">;
+
+  def ASinh : Inst<"The unary opertion returns asinh, element-wise.">;
+
+  def ATan : Inst<"The unary opertion returns atan, element-wise.">;
+
+  def ATanh : Inst<"The unary opertion returns atanh, element-wise.">;
+
+  def Cos : Inst<"The unary opertion returns cos, element-wise.">;
+
+  def Cosh : Inst<"The unary opertion returns cosh, element-wise.">;
+
+  def Sin : Inst<"The unary opertion returns sin, element-wise.">;
+
+  def Sinh : Inst<"The unary opertion returns sinh, element-wise.">;
+
+  def Tan: Inst<"The unary opertion returns tan, element-wise.">;
 }
 
 let cat_ = cat_math_unary,
@@ -44,6 +65,8 @@ let cat_ = cat_math_unary,
 
   def Exp  : Inst<"The unary opertion returns exp(X1), element-wise.">;
 
+  def Log  : Inst<"The unary opertion returns log(X1), element-wise.">;
+
   def Floor: Inst<"The unary opertion returns floor(X1), element-wise.">;
 
   def Rcp  : Inst<"The unary opertion returns 1 / X1, element-wise.">;
@@ -52,4 +75,5 @@ let cat_ = cat_math_unary,
 
   def Sqrt : Inst<"The unary opertion returns X1 ^ 0.5, element-wise.">;
 
+  def Round: Inst<"The unary opertion returns round(X1), element-wise.">;
 }

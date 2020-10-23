@@ -23,6 +23,7 @@
 #include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/parser/parser.h"
 #include "halo/lib/pass/pass_manager.h"
+#include "halo/lib/quantizer/weights_quantizer.h"
 #include "halo/lib/target/cpu/arm/binary/arm_llvmir_codegen.h"
 #include "halo/lib/target/cpu/riscv/binary/riscv_llvmir_codegen.h"
 #include "halo/lib/target/cpu/x86/binary/x86_llvmir_codegen.h"
@@ -41,22 +42,20 @@
 #include "halo/lib/transforms/reorder_channel.h"
 #include "halo/lib/transforms/splitting.h"
 #include "halo/lib/transforms/tfextension_legalizer.h"
+#include "halo/lib/transforms/tfliteextension_legalizer.h"
 #include "halo/lib/transforms/type_legalizer.h"
+#include "halo/lib/transforms/typecast.h"
+#include "halo/utils/cl_options.h"
 #include "halo/version.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/FileSystem.h"
-#include "llvm/Support/Path.h"
 #include "llvm/Support/Process.h"
 #include "llvm/Support/Program.h"
 
 using namespace halo;
 
-static llvm::cl::list<std::string> ModelFiles(
-    llvm::cl::Positional, llvm::cl::desc("model file name."),
-    llvm::cl::OneOrMore);
 static llvm::cl::opt<std::string> Target(
     "target", llvm::cl::desc("target triple"),
     llvm::cl::init("x86_64-unknown-linux"));
@@ -65,23 +64,18 @@ static llvm::cl::opt<std::string> Processor("processor",
                                             llvm::cl::init("native"));
 static llvm::cl::opt<std::string> OutputFile(
     "o", llvm::cl::desc("output file name."), llvm::cl::Required);
-static llvm::cl::opt<Parser::Format> ModelFormat(
-    "x",
-    llvm::cl::desc(
-        "format of the following input model files. Permissible formats "
-        "include: TENSORFLOW CAFFE ONNX MXNET. If unspecified, the format is "
-        "guessed base on file's extension."),
-    llvm::cl::init(Parser::Format::INVALID));
+
 static llvm::cl::opt<bool> PrintAll(
     "print-all", llvm::cl::desc("print intermediates of all passes"),
     llvm::cl::init(false));
+
+static llvm::cl::opt<bool> PrintPass("print-pass",
+                                     llvm::cl::desc("print pass name"),
+                                     llvm::cl::init(false));
+
 static llvm::cl::opt<bool> EmitLLVMIR("emit-llvm",
                                       llvm::cl::desc("output the LLVM IR code"),
                                       llvm::cl::init(false));
-static llvm::cl::opt<std::string> EntryFunctionName(
-    "entry-func-name", llvm::cl::desc("name of entry function"),
-    llvm::cl::init(""));
-
 static llvm::cl::opt<std::string> ModuleName("module-name",
                                              llvm::cl::desc("name of module"),
                                              llvm::cl::init("halo_module"));
@@ -104,17 +98,16 @@ static llvm::cl::opt<bool> RemoveOutputTranspose(
     "remove-output-transpose",
     llvm::cl::desc("Remove the transpose for outputs"), llvm::cl::init(false));
 
-static llvm::cl::list<std::string> InputsShape(
-    "input-shape",
-    llvm::cl::desc("Specify input names like -input-shape=foo:1x3x100x100 "
-                   "-input-shape=bar:-1x3x200x200"));
-
 static llvm::cl::opt<bool> SeparateConstants(
     "separate-constants",
     llvm::cl::desc("Generate separate file for constants"),
     llvm::cl::init(true));
 static llvm::cl::opt<bool> DisableBroadcasting(
     "disable-broadcasting", llvm::cl::desc("disable broadcasting of constants"),
+    llvm::cl::init(false));
+static llvm::cl::opt<bool> DisableConvBN(
+    "disable-convert-bn",
+    llvm::cl::desc("disable convert Batch Normalization into mul/add"),
     llvm::cl::init(false));
 static llvm::cl::opt<bool> EmitCodeOnly(
     "code-only", llvm::cl::desc("Generate the code only"),
@@ -124,13 +117,11 @@ static llvm::cl::opt<bool> RISCVOpt(
     "riscv-opt", llvm::cl::desc("Enable optimizations for RISC-V only"),
     llvm::cl::init(false));
 
-static llvm::cl::opt<int> Batch(
-    "batch-size",
-    llvm::cl::desc("Specify batch size if the first dim of input is negative"),
-    llvm::cl::init(1));
-
 static llvm::cl::opt<bool> EnableBF16("enable-bf16",
                                       llvm::cl::desc("Enable BF16"),
+                                      llvm::cl::init(false));
+static llvm::cl::opt<bool> EnableFP16("enable-fp16",
+                                      llvm::cl::desc("Enable FP16 mode"),
                                       llvm::cl::init(false));
 
 static llvm::cl::opt<bool> DisableCodeFormat(
@@ -199,6 +190,35 @@ static llvm::cl::list<std::string> Outputs(
     "outputs",
     llvm::cl::desc("Specify output names like -outputs=foo, -outputs=bar:0"));
 
+static llvm::cl::opt<CodeGen::Quantization> QuantWeights(
+    llvm::cl::values(clEnumValN(CodeGen::Quantization::QUINT8, "quint8",
+                                "Quantize weigths as quint8")),
+    "quantize-weights", llvm::cl::desc("Emit weights as quantized"),
+    llvm::cl::init(CodeGen::Quantization::None));
+
+static llvm::cl::opt<bool> DisableTypeCast(
+    "disable-type-cast", llvm::cl::desc("Disable casting int64 to int32"),
+    llvm::cl::init(true));
+
+static llvm::cl::opt<signed> MaxBatch("max-batch-size",
+                                      llvm::cl::desc("Specify max batch size"),
+                                      llvm::cl::init(8));
+
+static llvm::cl::opt<signed> MinBatch("min-batch-size",
+                                      llvm::cl::desc("Specify min batch size"),
+                                      llvm::cl::init(1));
+
+static llvm::cl::opt<signed> OptBatch("opt-batch-size",
+                                      llvm::cl::desc("Specify opt batch size"),
+                                      llvm::cl::init(4));
+static llvm::cl::opt<std::string> PGQFile(
+    "pgq-file", llvm::cl::init(""),
+    llvm::cl::desc("Profiling file for quantization of biases"));
+
+static llvm::cl::opt<bool> CheckModel("check-model",
+                                      llvm::cl::desc("dynamic check model"),
+                                      llvm::cl::init(false));
+
 #undef HALO_FUSION_OPTIONS
 #define HALO_FUSION_CMD_OPTIONS_DECL
 #include "halo/lib/ir/fusion.cc.inc"
@@ -207,6 +227,7 @@ static llvm::cl::list<std::string> Outputs(
 static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
                                   std::ostream* out_constants,
                                   std::ostream* out_header,
+                                  std::ostream* out_dynamic_check,
                                   bool is_c_or_cxx_output,
                                   bool is_binary_output) {
   auto constant_storage =
@@ -228,8 +249,15 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
     opts.emit_value_id_as_int = EmitValueIDAsInt;
     opts.emit_inference_func_sig = EmitInferenceFunctionSignature;
     opts.emit_dynamic_batch = (Batch.getValue() == kDynamicBatchSize);
+    opts.fp16_mode = EnableFP16;
+    opts.max_batch_size = MaxBatch.getValue();
+    opts.min_batch_size = MinBatch.getValue();
+    opts.opt_batch_size = OptBatch.getValue();
+
+    pm->AddPass<WeightsQuantizer>(QuantWeights.getValue(), PGQFile.getValue());
     cg = pm->AddPass<GenericCXXCodeGen>(std::ref(*out_code),
-                                        std::ref(*out_header), opts);
+                                        std::ref(*out_header),
+                                        std::ref(*out_dynamic_check), opts);
     cg->SetAPI(Api);
 
     if (EmitDataAsC) {
@@ -238,12 +266,15 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
       pm->AddPass<X86ConstantWriter>(std::ref(*out_constants));
     }
     if (EmitTritonConfig) {
-      pm->AddPass<TritonConfigWriter>(TritonConfigFile.getValue());
+      pm->AddPass<TritonConfigWriter>(
+          TritonConfigFile.getValue(),
+          opts.emit_dynamic_batch ? MaxBatch.getValue() : 0);
     }
     return;
   }
 
   if (EmitLLVMIR) {
+    pm->AddPass<WeightsQuantizer>(QuantWeights.getValue(), PGQFile.getValue());
     cg = pm->AddPass<GenericLLVMIRCodeGen>(constant_storage);
     pm->AddPass<GenericLLVMIRWriter>(std::ref(*out_code), is_binary_output);
     if (SeparateConstants && !EmitCodeOnly) {
@@ -259,6 +290,8 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
             GenericLLVMIRCodeGen::ConstantDataStorage::DeclaredAsExternal);
         pm->AddPass<X86BinaryWriter>(std::ref(*out_code));
         if (SeparateConstants && !EmitCodeOnly) {
+          pm->AddPass<WeightsQuantizer>(QuantWeights.getValue(),
+                                        PGQFile.getValue());
           pm->AddPass<X86ConstantWriter>(std::ref(*out_constants));
         }
         break;
@@ -268,6 +301,8 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
             GenericLLVMIRCodeGen::ConstantDataStorage::DeclaredAsExternal);
         pm->AddPass<ARMBinaryWriter>(std::ref(*out_code));
         if (SeparateConstants && !EmitCodeOnly) {
+          pm->AddPass<WeightsQuantizer>(QuantWeights.getValue(),
+                                        PGQFile.getValue());
           pm->AddPass<ARMConstantWriter>(std::ref(*out_constants));
         }
         break;
@@ -284,6 +319,8 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
         }
         pm->AddPass<RISCVBinaryWriter>(std::ref(*out_code));
         if (SeparateConstants && !EmitCodeOnly) {
+          pm->AddPass<WeightsQuantizer>(QuantWeights.getValue(),
+                                        PGQFile.getValue());
           pm->AddPass<RISCVConstantWriter>(std::ref(*out_constants));
         }
 
@@ -302,8 +339,10 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
 
 static void PopulatePasses(PassManager* pm, std::ostream* out_code,
                            std::ostream* out_constants,
-                           std::ostream* out_header, bool is_c_or_cxx_output,
-                           bool is_binary_output, Parser::Format format) {
+                           std::ostream* out_header,
+                           std::ostream* out_dynamic_check,
+                           bool is_c_or_cxx_output, bool is_binary_output,
+                           Parser::Format format) {
   std::vector<std::string> input_shapes(InputsShape.begin(), InputsShape.end());
   pm->AddPass<InputLegalizer>(Batch.getValue(), input_shapes);
   if (!Outputs.empty()) {
@@ -314,6 +353,9 @@ static void PopulatePasses(PassManager* pm, std::ostream* out_code,
     pm->AddPass<CAFFEExtensionLegalizer>();
   } else if (format == Parser::Format::TENSORFLOW) {
     pm->AddPass<TFExtensionLegalizer>();
+  } else if (format == Parser::Format::TFLITE) {
+    HLCHECK(format == Parser::Format::TFLITE);
+    pm->AddPass<TFLITEExtensionLegalizer>();
   } else {
     HLCHECK(format == Parser::Format::ONNX);
     pm->AddPass<ONNXExtensionLegalizer>();
@@ -325,21 +367,27 @@ static void PopulatePasses(PassManager* pm, std::ostream* out_code,
     pm->AddPass<InputRewriter>(inputs);
   }
 
+  auto fusion_opts = GetFusionOptions();
   pm->AddPass<InstSimplify>(
       llvm::StringRef(Target).startswith("cxx"), DisableBroadcasting.getValue(),
-      RemoveInputTranspose.getValue(), RemoveOutputTranspose.getValue());
+      RemoveInputTranspose.getValue(), RemoveOutputTranspose.getValue(),
+      DisableConvBN.getValue(), fusion_opts.ConvBias);
   if (ReorderChannelLayout != ReorderChannel::ChannelOrder::None) {
     pm->AddPass<ReorderChannel>(ReorderChannelLayout ==
                                 ReorderChannel::ChannelOrder::ChannelFirst);
   }
-  pm->AddPass<Fusion>(GetFusionOptions());
+  pm->AddPass<Fusion>(fusion_opts);
   if (SplitFunction) {
     pm->AddPass<Splitting>();
     pm->AddPass<DevicePlacement>();
   }
+  if (!DisableTypeCast) {
+    pm->AddPass<TypeCast>();
+  }
 
   PopulateCodeGenPasses(pm, out_code, out_constants, out_header,
-                        is_c_or_cxx_output, is_binary_output);
+                        out_dynamic_check, is_c_or_cxx_output,
+                        is_binary_output);
 }
 
 static bool FormatCode(const std::string& filename) {
@@ -378,62 +426,6 @@ static void PrintVersion(llvm::raw_ostream& os) {
 #endif
 }
 
-/// Guess the model format based on input file extension.gg
-static Parser::Format InferFormat(
-    const llvm::cl::list<std::string>& model_files, size_t file_idx) {
-  llvm::StringRef ext = llvm::sys::path::extension(model_files[file_idx]);
-  auto format = llvm::StringSwitch<Parser::Format>(ext)
-                    .Case(".pb", Parser::Format::TENSORFLOW)
-                    .Case(".pbtxt", Parser::Format::TENSORFLOW)
-                    .Case(".prototxt", Parser::Format::TENSORFLOW)
-                    .Case(".onnx", Parser::Format::ONNX)
-                    .Case(".json", Parser::Format::MXNET)
-                    .Default(Parser::Format::INVALID);
-  // Check the next input file to see if it is caffe.
-  if (format == Parser::Format::TENSORFLOW &&
-      (file_idx + 1 < model_files.size()) &&
-      llvm::sys::path::extension(model_files[file_idx + 1]) == ".caffemodel") {
-    format = Parser::Format::CAFFE;
-  }
-  return format;
-}
-
-static Status ParseModels(const llvm::cl::list<std::string>& model_files,
-                          const llvm::cl::opt<Parser::Format>& model_format,
-                          const llvm::cl::opt<std::string>& entry_func_name,
-                          const armory::Opts& opts, Module* module,
-                          Parser::Format* f) {
-  std::set<std::string> func_names;
-  for (size_t i = 0, e = model_files.size(); i < e; ++i) {
-    Parser::Format format = model_format;
-    if (format == Parser::Format::INVALID) {
-      format = InferFormat(model_files, i);
-    }
-    HLCHECK(format != Parser::Format::INVALID);
-    *f = format;
-    FunctionBuilder func_builder(module);
-    // Use stem of the input model as function name.
-    std::string func_name = entry_func_name.empty()
-                                ? llvm::sys::path::stem(model_files[i]).str()
-                                : entry_func_name.getValue();
-    while (func_names.count(func_name) != 0) {
-      func_name.append("_").append(std::to_string(i));
-    }
-    func_names.insert(func_name);
-    Function* func = func_builder.CreateFunction(func_name);
-    std::vector<std::string> files{model_files[i]};
-    if (format == Parser::Format::CAFFE || format == Parser::Format::MXNET) {
-      HLCHECK(i + 1 < e);
-      files.push_back(model_files[++i]);
-    }
-    if (Status status = Parser::Parse(func, format, files, opts);
-        status != Status::SUCCESS) {
-      return status;
-    }
-  }
-  return Status::SUCCESS;
-}
-
 int main(int argc, char** argv) {
   llvm::cl::SetVersionPrinter(PrintVersion);
   llvm::cl::ParseCommandLineOptions(argc, argv);
@@ -441,6 +433,7 @@ int main(int argc, char** argv) {
   ctx.SetBasePath(argv[0]);
   ctx.SetTargetTriple(Target);
   ctx.SetProcessorName(Processor);
+  ctx.SetPrintPass(PrintPass);
 
   Module m(ctx, ModuleName);
 
@@ -460,9 +453,11 @@ int main(int argc, char** argv) {
   std::ofstream of_code;
   std::ofstream of_constants;
   std::ofstream of_header;
+  std::ofstream of_dynamic_check;
   std::ostream* out_code = &std::cout;
   std::ostream* out_constants = &std::cout;
   std::ostream* out_header = &std::cout;
+  std::ostream* out_dynamic_check = &std::cout;
 
   bool is_binary_output = false;
   llvm::StringRef target_name(Target);
@@ -500,8 +495,16 @@ int main(int argc, char** argv) {
     }
   }
 
-  PopulatePasses(&pm, out_code, out_constants, out_header, is_c_or_cxx_output,
-                 is_binary_output, format);
+  if (CheckModel) {
+    llvm::StringRef name(OutputFile);
+    llvm::SmallString<128> filename(name);
+    llvm::sys::path::replace_extension(filename, ".main.cc");
+    of_dynamic_check.open(filename.str(), std::ofstream::binary);
+    out_dynamic_check = &of_dynamic_check;
+  }
+
+  PopulatePasses(&pm, out_code, out_constants, out_header, out_dynamic_check,
+                 is_c_or_cxx_output, is_binary_output, format);
   if (is_c_or_cxx_output) {
     ctx.SetTargetTriple("x86_64"); // For binary constant writer.
   }
@@ -509,6 +512,7 @@ int main(int argc, char** argv) {
   auto status = pm.Run(&m);
 
   if (PrintAll) {
+    pm.Dump();
     m.Dump();
   }
 

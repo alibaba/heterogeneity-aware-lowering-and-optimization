@@ -41,14 +41,18 @@ void GenericCXXCodeGen::RunOnInstruction(PadInst* inst) {
   std::vector<uint32_t> paddings_front(dims);
   std::vector<uint32_t> paddings_back(dims);
   for (size_t i = 0; i < dims; ++i) {
-    paddings_front[i] = pad_amt->GetData<int32_t>(i * 2);
-    paddings_back[i] = pad_amt->GetData<int32_t>(i * 2 + 1);
+    paddings_front[i] = pad_amt->GetData<uint32_t>(i * 2);
+    paddings_back[i] = pad_amt->GetData<uint32_t>(i * 2 + 1);
   }
 
+  const auto& ret_type = inst->GetResultType();
+
   CXXValue op0 = ir_mapping_[lhs];
+
   CXXValue ret(inst->GetName(), op0.type);
   EmitODLACall(ret, "odla_Pad", op0, paddings_front, paddings_back,
-               EmitShape(inst->GetResultType()));
+               EmitShape(ret_type));
+
   ir_mapping_[*inst] = ret;
 }
 

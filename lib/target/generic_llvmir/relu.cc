@@ -15,8 +15,8 @@
 // limitations under the License.
 // =============================================================================
 
-#include "llvm/IR/IRBuilder.h"
 #include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
+#include "llvm/IR/IRBuilder.h"
 
 namespace halo {
 

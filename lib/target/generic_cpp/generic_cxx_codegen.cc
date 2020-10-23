@@ -47,23 +47,10 @@ std::string CXXType::Str(bool use_array_decl) const {
 }
 
 void CXXValue::Reset() { name2id.clear(); }
-void CXXValue::Normalize(const std::string& n) {
-  std::transform(n.begin(), n.end(), name.begin(), [](char c) {
-    switch (c) {
-      case '/':
-      case ' ':
-      case '.':
-      case '-': {
-        return '_';
-      }
-      default:
-        return c;
-    }
-  });
-}
+
 CXXValue::CXXValue(const std::string& name, const CXXType& type)
-    : name(name), type(type) {
-  Normalize(name);
+    : str_id(""), type(type) {
+  this->name = CodeGen::NormalizeVariableName(name);
   if (name2id.count(name) == 0) {
     name2id[name] = name2id.size();
   }
@@ -71,15 +58,20 @@ CXXValue::CXXValue(const std::string& name, const CXXType& type)
 }
 
 GenericCXXCodeGen::GenericCXXCodeGen(std::ostream& os, std::ostream& header_os)
-    : CodeGen("Generic CXX Compilation"), os_(os), header_os_(header_os) {
+    : CodeGen("Generic CXX Compilation"),
+      os_(os),
+      header_os_(header_os),
+      dynamic_check_os_(std::cout) {
   CXXValue::Reset();
 }
 
 GenericCXXCodeGen::GenericCXXCodeGen(std::ostream& os, std::ostream& header_os,
+                                     std::ostream& dynamic_check_os,
                                      const Opts& opts)
     : CodeGen("Generic CXX Compilation"),
       os_(os),
       header_os_(header_os),
+      dynamic_check_os_(dynamic_check_os),
       opts_(opts) {
   CXXValue::Reset();
 }
@@ -100,7 +92,7 @@ static const std::string& GetIncludeFile(CodeGen::API api) {
 static void EmitBanner(std::ostream* os, std::ostream* header_os,
                        CodeGen::API api) {
   static const std::string banner(
-      "//===- Halo Halo Compiler Generated File "
+      "//===- Halo Compiler Generated File "
       "--------------------------------===//\n\n");
   *os << banner;
   if (header_os != nullptr) {
@@ -188,7 +180,7 @@ std::string GenericCXXCodeGen::GetFunctionDecl(const Function& func,
                                                bool with_type) {
   const static std::string inference_func_decl =
       "void model_run(int num_inputs, const void* inputs[],"
-      "int num_outputs, void* outputs[])";
+      "int num_outputs, void* outputs[], int batch_size)";
   if (opts_.emit_inference_func_sig && func.IsEntryFunction()) {
     return inference_func_decl;
   }
@@ -258,14 +250,20 @@ std::string GenericCXXCodeGen::GetFunctionDecl(const Function& func,
   return ss.str();
 }
 
-const std::string& GenericCXXCodeGen::EmitReturnType(bool auto_type) {
-  const static std::string c_type{"odla_value"};
+const std::string& GenericCXXCodeGen::EmitReturnType(bool auto_type,
+                                                     bool single_value) {
+  const static std::string single_c_type{"odla_value"};
+  const static std::string multiple_c_type{"odla_values"};
   const static std::string cxx_type{"auto"};
-  return auto_type ? cxx_type : c_type;
+  return auto_type ? cxx_type : single_value ? single_c_type : multiple_c_type;
 }
 
 std::string GenericCXXCodeGen::EmitLValue(const std::string& name) const {
-  return EmitReturnType(opts_.dialect == Dialect::CXX_11) + " " + name;
+  return EmitReturnType(opts_.dialect == Dialect::CXX_11, true) + " " + name;
+}
+
+std::string GenericCXXCodeGen::EmitLValues(const std::string& name) const {
+  return EmitReturnType(opts_.dialect == Dialect::CXX_11, false) + " " + name;
 }
 
 const std::string& GenericCXXCodeGen::EmitNull() const noexcept {
@@ -468,6 +466,7 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
   // Emit wrappers for arguments.
   for (auto& arg : function.Args()) {
     auto& type = arg->GetResultType();
+    auto arg_name = NormalizeVariableName(arg->GetName());
     CXXValue v(is_compile_mode ? arg->GetName() : "in_" + arg->GetName(),
                TensorTypeToCXXType(type, true));
     if (is_compile_mode) {
@@ -621,7 +620,7 @@ void GenericCXXCodeGen::PostRunOnInstruction(Instruction* inst) {
     for (auto& dead : deads) {
       const auto& type = dead.GetType();
       CXXValue val(dead.GetOwner()->GetName(), TensorTypeToCXXType(type, true));
-      os_ << "  odla_ResetValue(" << val.name << ");\n";
+      os_ << "  odla_ReleaseValue(" << val.name << ");\n";
     }
   }
 }

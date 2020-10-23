@@ -28,7 +28,8 @@ let cat_ = cat_objectDetection in {
       Attr<"Coefficient to adjust num_threshold in a fast nms algorithm.",
            Float, "eta", "1.0">,
       Attr<"The min score for a box to be selected.", Float, "score_threshold",
-           "-1.0">
+           "-1.0">,
+      Attr<"The datatype of the result indices", EnumDataType, "index_type", "INT32">,
     ];
     let ins_ = [
       Arg<"Input box, 2-D of [num_boxes, 4].", ArgType<[ F32 ]>, 2D>,
@@ -42,7 +43,7 @@ let cat_ = cat_objectDetection in {
           ArgType<[ F32 ]>, 0D>
     ];
     let outs_ = [Arg<"The result of the selected indices from input box, 1-D.",
-                     ArgType<[I32]>, 1D>];
+                     ArgType<[I32, I64]>, 1D>];
   }
 
   def TopK : Inst <"Calculate values and indices of the largest k elements of" 
@@ -51,12 +52,13 @@ let cat_ = cat_objectDetection in {
       Attr<"Dimension on which to do the sort.", Integer, "axis", "-1">,
       Attr<"Whether to return the top-K largest or smallest elements.", Bool,
            "largest", "true">,
-      Attr<"Whether the input is sorted.", Bool, "sorted", "true">
+      Attr<"Whether the input is sorted.", Bool, "sorted", "true">,
+      Attr<"The datatype of the result indices", EnumDataType, "index_type", "INT32">,
     ];
     let ins_ = [Arg<"Input data.", ArgType<[I8, I16, I32, F16, F32]> >,
                 Arg<"Input k.", ArgType<[I32]>, 0D>];
     let outs_ = [Arg<"The result value.", MatchArgType<0> >,
-                 Arg<"The result indices.", ArgType<[I32]> >]; 
+                 Arg<"The result indices.", ArgType<[I32, I64]> >]; 
   }
 
   def Resize : Inst<"Resize the input tensor."> {
@@ -65,10 +67,11 @@ let cat_ = cat_objectDetection in {
                         EnumResizeMode, "mode", "HALF_PIXEL">, 
                   Attr<"Interpolation mode such as NEAREST, LINEAR and CUBIC", 
                         EnumInterpolation, "interpolation_mode", "NEAREST">,
-                  Attr<"The mask for axes to be resized", Integer, "axes_mask", "0">
+                  Attr<"The mask for axes to be resized", Integer, "axes_mask", "0">,
+                  Attr<"Explicit result shape", Bool, "explicit_shape", "true">
                  ];
     let ins_ = [Arg<"Input data.", ArgType<[I8, I16, I32, F16, F32]> >,
-                Arg<"Resized shape", ArgType<[I64]> >];
+                Arg<"Resized shape", ArgType<[I64, F32]> >];
     let outs_ = [Arg<"The result value.", MatchArgType<0>>];
   }
 

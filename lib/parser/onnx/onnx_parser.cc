@@ -467,6 +467,9 @@ std::vector<Def> ONNXParser::GetInputOperands(const onnx::NodeProto& node_def) {
 void ONNXParser::InsertIDToInstMap(const onnx::NodeProto& node_def,
                                    IRObject* inst) {
   size_t num_outputs = node_def.output_size();
+  if (inst->GetNumOfResults() != num_outputs) {
+    inst->SetNumOfResults(num_outputs);
+  }
   for (size_t i = 0; i < num_outputs; ++i) {
     inst_name_to_ptr_.emplace(node_def.output(i), std::make_pair(inst, i));
   }
@@ -629,6 +632,26 @@ bool ONNXAttrs::Process<DataType>(const std::string& key, DataType* data_type) {
 
   HLCHECK(attr_map_.at(key).type() == onnx::AttributeProto::INT);
   *data_type = ONNXParser::ProcessDataType(attr_map_.at(key).type());
+  return true;
+}
+
+template <>
+bool ONNXAttrs::Process<PadMode>(const std::string& key, PadMode* pad_mode) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+
+  HLCHECK(attr_map_.at(key).type() == onnx::AttributeProto::STRING);
+  static const std::unordered_map<std::string, PadMode> enum_map{
+      {"CONSTANT", PadMode::CONSTANT},
+      {"REFLECT", PadMode::REFLECT},
+      {"EDGE", PadMode::EDGE},
+  };
+
+  std::string mode = attr_map_.at(key).s();
+  std::transform(mode.begin(), mode.end(), mode.begin(),
+                 [](char c) { return std::toupper(c); });
+  *pad_mode = enum_map.count(mode) ? enum_map.at(mode) : PadMode::INVALID;
   return true;
 }
 

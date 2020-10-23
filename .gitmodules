@@ -1,4 +1,4 @@
-[submodule "llvm"]
-	path = external/llvm
-	url = https://git.llvm.org/git/llvm
-	branch = release_90
+[submodule "external/llvm"]
+	path = external/llvm-project
+	url = https://github.com/llvm/llvm-project.git
+	branch = release/9.x

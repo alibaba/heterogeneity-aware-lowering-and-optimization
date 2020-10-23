@@ -58,7 +58,7 @@ void TritonConfigWriter::PrintUseProtobuf(const Module& module,
   nvidia::inferenceserver::ModelConfig cfg;
   cfg.set_name(module.GetName());
   cfg.set_platform("custom");
-  cfg.set_max_batch_size(0);
+  cfg.set_max_batch_size(max_batch_size_);
   auto instance = cfg.add_instance_group();
   instance->set_count(1);
   instance->set_kind(::nvidia::inferenceserver::ModelInstanceGroup_Kind::
@@ -70,8 +70,16 @@ void TritonConfigWriter::PrintUseProtobuf(const Module& module,
     auto const& type = arg->GetResultType();
     input->set_name(arg->GetName());
     input->set_data_type(GetTritonType(type));
-    std::for_each(type.GetDimSizes().begin(), type.GetDimSizes().end(),
-                  [&](int x) { input->add_dims(x); });
+    if (type.GetNumOfDims() == 4) {
+      input->set_format(::nvidia::inferenceserver::ModelInput_Format::
+                            ModelInput_Format_FORMAT_NCHW);
+      for (size_t i = 1; i < type.GetNumOfDims(); ++i) {
+        input->add_dims(type.GetDimSizes()[i]);
+      }
+    } else {
+      std::for_each(type.GetDimSizes().begin(), type.GetDimSizes().end(),
+                    [&](int x) { input->add_dims(x); });
+    }
   }
   auto return_inst = func->GetReturnInst();
   for (auto op : return_inst->GetOperands()) {

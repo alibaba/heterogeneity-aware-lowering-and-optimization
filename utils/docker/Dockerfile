@@ -187,7 +187,7 @@ RUN cd /tmp && \
     rm -fr /tmp/glog
 
 # Build & Install DNNL (MKLDNN)
-RUN cd /tmp && git clone --depth=1 https://github.com/intel/mkl-dnn.git --branch v1.2-rc && \
+RUN cd /tmp && git clone --depth=1 https://github.com/intel/mkl-dnn.git --branch v1.7-rc && \
     cd /tmp/mkl-dnn && \
     cmake -G Ninja -DDNNL_BUILD_EXAMPLES=OFF -DDNNL_BUILD_TESTS=OFF -DDNNL_ENABLE_PRIMITIVE_CACHE=ON -DCMAKE_INSTALL_PREFIX=/opt/dnnl && \
     ninja install
@@ -208,6 +208,14 @@ RUN cd /tmp && git clone https://github.com/google/XNNPACK.git && \
 # Install frameworks for model conversion
 RUN pip3 install torch
 RUN pip3 install tensorflow tf_slim scipy matplotlib
+
+# Install Flatbuffer
+RUN cd /tmp && \
+    git clone --depth=1 https://github.com/google/flatbuffers.git -b v1.12.0 && \
+    cd flatbuffers && \
+    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release  -DFLATBUFFERS_BUILD_SHAREDLIB=ON && make -j && make install && \
+    rm -fr /tmp/flatbuffers 
+
 
 RUN mkdir -p /var/run/sshd
 RUN sed -i 's/prohibit-password/yes/' /etc/ssh/sshd_config

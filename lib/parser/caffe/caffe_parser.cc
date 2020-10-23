@@ -108,6 +108,11 @@ Status CAFFEParser::ReadWeightFromCaffeModelFile(
   return Status::SUCCESS;
 }
 
+static bool is_input_type(const std::string& type) {
+  return type == "Input" || type == "ImageData" || type == "AnnotatedData" ||
+         type == "Split";
+}
+
 Status CAFFEParser::ConvertToHaloIR(
     const caffe::NetParameter& net_param,
     const caffe::NetParameter& net_param_weight) {
@@ -128,9 +133,7 @@ Status CAFFEParser::ConvertToHaloIR(
     if (weight_v1) {
       return net_param_weight.layers(i).type() == caffe::V1LayerParameter::DATA;
     }
-    const std::string& type = net_param_weight.layer(i).type();
-    return type == "Input" || type == "ImageData" || type == "AnnotatedData" ||
-           type == "Split";
+    return is_input_type(net_param_weight.layer(i).type());
   };
   // std::vector<std::unique_ptr<caffe::BlobShape>> shapes;
   for (int i = 0, j = 0, layer_size = net_param.layer_size(); i < layer_size;
@@ -207,36 +210,49 @@ void CAFFEParser::RegisterOp(){
 
 Status
     CAFFEParser::ConvertPlaceholderNode(const caffe::NetParameter& net_param) {
-  DataType data_type = DataType::FLOAT32;
-  std::vector<int64_t> shape;
-  std::string cur_node_name;
-  bool is_input_param_stype =
-      net_param.layer(0).type() == "Input" && net_param.input_shape_size() == 0;
-  if (!is_input_param_stype) {
-    // TODO(unknown) may have multi inputs
-    cur_node_name = net_param.input(0);
-    for (int i = 0; i < net_param.input_shape_size(); ++i) {
-      const caffe::BlobShape& blob_shape = net_param.input_shape(i);
-      for (int j = 0; j < blob_shape.dim_size(); ++j) {
-        VLOG(3) << "Input shape(" << j << "): " << blob_shape.dim(j);
-        shape.emplace_back(blob_shape.dim(j));
+  int num_inputs = net_param.input_size();
+  bool is_input_param_stype = false;
+  std::vector<const caffe::LayerParameter*> input_layer_params;
+  if (num_inputs == 0) {
+    for (int i = 0, layer_size = net_param.layer_size(); i < layer_size; ++i)
+      if (is_input_type(net_param.layer(i).type())) {
+        input_layer_params.push_back(&net_param.layer(i));
       }
-    }
-  } else {
-    const caffe::InputParameter& input_param = net_param.layer(0).input_param();
-    cur_node_name = net_param.layer(0).name();
-    for (int i = 0; i < input_param.shape_size(); ++i) {
-      const caffe::BlobShape& blob_shape = input_param.shape(i);
-      for (int j = 0; j < blob_shape.dim_size(); ++j) {
-        VLOG(3) << "Input shape(" << j << "): " << blob_shape.dim(j);
-        shape.emplace_back(blob_shape.dim(j));
-      }
+    if (!input_layer_params.empty()) {
+      num_inputs = input_layer_params.size();
+      is_input_param_stype = true;
     }
   }
-  auto arg =
-      arg_builder_->CreateArgument(cur_node_name, Type(data_type, shape));
-  inst_name_to_ptr_.emplace(cur_node_name, arg);
-
+  for (int input_idx = 0; input_idx < num_inputs; ++input_idx) {
+    DataType data_type = DataType::FLOAT32;
+    std::vector<int64_t> shape;
+    std::string cur_node_name;
+    auto shape_blob_to_shape = [&shape](const caffe::BlobShape& blob_shape) {
+      for (int j = 0; j < blob_shape.dim_size(); ++j) {
+        VLOG(3) << "Input shape(" << j << "): " << blob_shape.dim(j);
+        shape.push_back(blob_shape.dim(j));
+      }
+    };
+    if (!is_input_param_stype) {
+      cur_node_name = net_param.input(input_idx);
+      if (net_param.input_shape_size()) {
+        shape_blob_to_shape(net_param.input_shape(input_idx));
+      } else if (net_param.input_dim_size() > 0) {
+        HLCHECK(net_param.input_dim_size() % 4 == 0);
+        for (int i = input_idx * 4; i < input_idx * 4 + 4; ++i) {
+          shape.push_back(net_param.input_dim(i));
+        }
+      }
+    } else {
+      auto layer = input_layer_params[input_idx];
+      const caffe::InputParameter& input_param = layer->input_param();
+      cur_node_name = layer->name();
+      shape_blob_to_shape(input_param.shape(input_idx));
+    }
+    auto arg =
+        arg_builder_->CreateArgument(cur_node_name, Type(data_type, shape));
+    inst_name_to_ptr_.emplace(cur_node_name, arg);
+  }
   return Status::SUCCESS;
 }
 

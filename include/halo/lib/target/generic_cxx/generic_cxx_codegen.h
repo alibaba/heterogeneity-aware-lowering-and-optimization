@@ -53,6 +53,11 @@ struct Opts {
   CodeGen::ExecMode exec_mode = CodeGen::ExecMode::Compile;
   bool emit_inference_func_sig = false;
   bool emit_dynamic_batch = false;
+  bool fp16_mode = false;
+  int max_batch_size = 0;
+  int min_batch_size = 0;
+  int opt_batch_size = 0;
+  bool check_model = false;
 };
 
 struct CXXType {
@@ -67,17 +72,16 @@ struct CXXType {
 
 class CXXValue {
  public:
-  CXXValue() : name("undef"), id(-1), type("void"){};
+  CXXValue() : name("undef"), str_id(""), id(-1), type("void"){};
   CXXValue(const std::string& name, const CXXType& type);
+  const std::string& GetName() const { return str_id.empty() ? name : str_id; }
   static void Reset();
   std::string name;
+  std::string str_id;
   size_t id;
   CXXType type;
 
  private:
-  // make a valid C/C++ identifier name.
-  void Normalize(const std::string& n);
-
   inline static std::unordered_map<std::string, size_t> name2id;
 };
 
@@ -86,7 +90,7 @@ class GenericCXXCodeGen : public CodeGen {
  public:
   GenericCXXCodeGen(std::ostream& os, std::ostream& header_os);
   GenericCXXCodeGen(std::ostream& os, std::ostream& header_os,
-                    const Opts& opts);
+                    std::ostream& dynamic_check_os, const Opts& opts);
 
   virtual ~GenericCXXCodeGen();
 
@@ -112,11 +116,15 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(ErfInst*) override;
   virtual void RunOnInstruction(ExpInst*) override;
   virtual void RunOnInstruction(FloorInst*) override;
+  virtual void RunOnInstruction(RoundInst*) override;
   virtual void RunOnInstruction(FPtoSIInst*) override;
   virtual void RunOnInstruction(LeakyReluInst*) override;
+  virtual void RunOnInstruction(SeluInst*) override;
+  virtual void RunOnInstruction(ThresholdedReluInst*) override;
   virtual void RunOnInstruction(SqrtInst*) override;
   virtual void RunOnInstruction(RsqrtInst*) override;
   virtual void RunOnInstruction(BatchNormInst*) override;
+  virtual void RunOnInstruction(InstanceNormInst*) override;
   virtual void RunOnInstruction(BatchMatMulInst*) override;
   virtual void RunOnInstruction(Conv2DInst*) override;
   virtual void RunOnInstruction(Conv2DTransposeInst*) override;
@@ -129,17 +137,24 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(PadInst*) override;
   virtual void RunOnInstruction(PoolingMaxInst*) override;
   virtual void RunOnInstruction(PoolingAvgInst*) override;
+  virtual void RunOnInstruction(PReluInst*) override;
   virtual void RunOnInstruction(ReduceMeanInst*) override;
   virtual void RunOnInstruction(ReluInst*) override;
   virtual void RunOnInstruction(Relu6Inst*) override;
   virtual void RunOnInstruction(ReshapeInst*) override;
   virtual void RunOnInstruction(ResizeInst*) override;
   virtual void RunOnInstruction(ReturnInst*) override;
+  virtual void RunOnInstruction(SItoFPInst*) override;
   virtual void RunOnInstruction(SliceInst*) override;
   virtual void RunOnInstruction(SoftmaxInst*) override;
   virtual void RunOnInstruction(SigmoidInst*) override;
+  virtual void RunOnInstruction(SinInst*) override;
+  virtual void RunOnInstruction(SinhInst*) override;
+  virtual void RunOnInstruction(CosInst*) override;
+  virtual void RunOnInstruction(CoshInst*) override;
   virtual void RunOnInstruction(TopKInst*) override;
   virtual void RunOnInstruction(TransposeInst*) override;
+  virtual void RunOnInstruction(TileInst*) override;
   virtual void RunOnBinaryInstruction(Instruction*);
   virtual void RunOnUnaryInstruction(Instruction*);
 
@@ -149,9 +164,11 @@ class GenericCXXCodeGen : public CodeGen {
   virtual std::string EmitShape(const halo::Type& type);
   virtual std::string EmitType(const halo::Type& type);
   virtual std::string EmitLValue(const std::string& name) const;
+  virtual std::string EmitLValues(const std::string& name) const;
 
   void EmitODLAArgs(const std::vector<int32_t>& arg);
   void EmitODLAArgs(const std::vector<uint32_t>& arg);
+  void EmitODLAArgs(const std::vector<float>& arg);
   void EmitODLAArgs(const std::vector<CXXValue>& arg);
   void EmitODLAArgs(const halo::Type& arg);
   void EmitODLAArgs(const DataType& arg);
@@ -182,7 +199,7 @@ class GenericCXXCodeGen : public CodeGen {
       if (opts_.emit_value_id_as_int) {
         os_ << lhs.id;
       } else {
-        os_ << "\"" << lhs.name << "\"";
+        os_ << "\"" << (lhs.str_id.empty() ? lhs.name : lhs.str_id) << "\"";
       }
     }
     os_ << ");\n";
@@ -190,7 +207,7 @@ class GenericCXXCodeGen : public CodeGen {
 
   virtual const std::string& EmitNull() const noexcept;
   virtual std::string GetODLAType(halo::DataType data_type) const noexcept;
-  static const std::string& EmitReturnType(bool auto_type);
+  static const std::string& EmitReturnType(bool auto_type, bool single_value);
   static CXXType SNTypeToCXXType(DataType dt);
   static CXXType TensorTypeToCXXType(const halo::Type& type, bool is_const);
 
@@ -223,6 +240,7 @@ class GenericCXXCodeGen : public CodeGen {
 
   std::ostream& os_;
   std::ostream& header_os_;
+  std::ostream& dynamic_check_os_;
   GlobalContext* ctx_ = nullptr;
   std::unordered_map<Def, CXXValue> ir_mapping_;
   std::unique_ptr<MemoryAnalyzer> memory_analyzer_;

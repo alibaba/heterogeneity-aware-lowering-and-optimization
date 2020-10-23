@@ -39,7 +39,7 @@ struct Opts {
 /// This class represents a parser interface.
 class Parser {
  public:
-  enum class Format { TENSORFLOW, CAFFE, ONNX, MXNET, INVALID };
+  enum class Format { TENSORFLOW, CAFFE, ONNX, TFLITE, MXNET, INVALID };
   virtual ~Parser() = default;
 
   virtual Status Parse(Function* function,
@@ -83,6 +83,7 @@ class Tensor {
 
   const DataType& GetDataType() const noexcept { return data_type_; }
   const std::vector<int64_t>& GetShape() const noexcept { return shape_; }
+  void SetShape(std::vector<int64_t> shape) noexcept { shape_ = shape; }
   const std::vector<T>& GetData() const noexcept { return data_; }
   const bool GetNeedDecode() const noexcept { return need_decode_; }
   inline static std::vector<T> DecodeTensorContent(const std::string& buf) {

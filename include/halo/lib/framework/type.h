@@ -111,6 +111,7 @@ class Type final {
   }
 
   static std::string DataTypeToString(DataType dt);
+  static DataType StringToDataType(const std::string& name);
 
  private:
   /// The ID of this type.

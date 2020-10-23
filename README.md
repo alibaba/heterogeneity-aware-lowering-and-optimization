@@ -1,9 +1,10 @@
 HALO
 ===============
 
-**H**eterogeneity-**A**ware **L**owering and **O**ptimization (**HALO**) is an optimizing compiler targeting heterogeneous accelerators. 
-It supplies a uniform Ahead-Of-Time compilation solution for heterogeneous computing in
-could, edge and IoT fields.
+**H**eterogeneity-**A**ware **L**owering and **O**ptimization (**HALO**) is a heterogeneous computing acceleration platform based on compiler technology.
+It exploits the powerfulness of heterogeneous computing while hiding the heterogeneity of computing resources
+through the abstract, extendable interface called Open Deep Learning API (**ODLA**). 
+HALO provides a unified Ahead-Of-Time compilation solution, auto tailored for various cloud, edge, and IoT scenarios.
 
 - [Get Started](#get-started)
   - [Design Overview](#design-overview)
@@ -373,10 +374,10 @@ Command line options of HALO:
 | Option                                               | Descriptions                                                                                                                                                                                                                |
 | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--help`                                             | Display available options.                                                                                                                                                                                                  |
-| `--target [cxx|cc]`                                  | `cxx`: Generate the C++11 souce code.  <br> `cc`: Generate the C99 source code.                                                                                                                                             |
+| `--target [cxx\|cc]`                                 | `cxx`: Generate the C++11 souce code.  <br> `cc`: Generate the C99 source code.                                                                                                                                             |
 | `-o <filename>`                                      | Specify the output file. Weight file is automatically generated with '.bin' suffix.                                                                                                                                         |
 | `--batch-size <number>`                              | Specify/override the batch size of inputs. It assumes the first dimension of input is for batch number.                                                                                                                     |
-| `--exec-mode=[compile|interpret]`                    | Specify the ODLA execution mode. Default is the `compile` mode.                                                                                                                                                             |
+| `--exec-mode=[compile\|interpret]`                    | Specify the ODLA execution mode. Default is the `compile` mode.                                                                                                                                                             |
 | `--entry-func-name=<name>`                           | Specify the name of generated function. Default is the model's file name.                                                                                                                                                   |
 | `--reorder-data-layout=[channel-first,channel-last]` | Specify the model to be compiled into the specific data layout. By default, the generated ODLA function uses the same data layout (NHWC or NCHW) as the input model. Transpose operation might be inserted for input nodes. |
 | `--remove-input-transpose`                           | Remove the transpose operation on input nodes. This option is usually used together with `--reorder-data-layout`.                                                                                                           |

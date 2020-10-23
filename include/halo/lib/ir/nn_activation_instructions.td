@@ -32,6 +32,19 @@ let cat_ = cat_nn_activation,
     let attrs_ = [Attr<"Slope at X1 < 0", Float, "alpha", "0.2">];
   }
 
+  def Selu : Inst<"Compute selu activation, element-wise. Return lambda * X1, "
+                  "if X1 > 0; lambda * (alpha * exp(X1) - alpha), if X1 <= 0."> {
+    let attrs_ = [
+      Attr<"Scale factor", Float, "lambda", "1.0507">,
+      Attr<"Slope at X1 < 0", Float, "alpha", "1.67326">
+    ];
+  }
+
+  def ThresholdedRelu : Inst<"Compute thresholded relu activation, element-wise. Return"
+                       " y = X1 > alpha ? X1 : 0."> {
+    let attrs_ = [ Attr<"Threshold", Float, "alpha", "1.0"> ];
+  }
+
   def Relu : Inst<"Compute the relu activation, element-wise." 
                   " Return max(0, X1)">;
 
@@ -49,4 +62,12 @@ let cat_ = cat_nn_activation,
                        Integer, "axis", "-1">];
   }
 
+}
+
+let cat_ = cat_nn_activation,
+    ins_ = [Arg<"The input data.", ArgType<[F16, F32]> >,
+            Arg<"The slope param, support broadcast", ArgType<[F16, F32]> >],
+    outs_ = [Arg<"The result.", MatchArgType<0> >] in {
+  def PRelu : Inst<"Compute prelu activation, element-wise. Return"
+                   "f(x) = slope * x for x < 0, f(x) = x for x >= 0.">;
 }

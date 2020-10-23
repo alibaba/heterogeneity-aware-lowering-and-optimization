@@ -94,6 +94,12 @@ Constant* ConstantBuilder::SplatConstantZero(const std::string& name,
   }
 }
 
+Constant* ConstantBuilder::Clone(const Constant& from) {
+  auto c = std::make_unique<Constant>(from);
+  c->parent_ = GetParent();
+  return Insert(std::move(c));
+}
+
 CustomInst* IRBuilder::CreateCustom(const std::string& name,
                                     const std::vector<Def>& ops,
                                     const int num_outs,
@@ -130,6 +136,17 @@ ONNXExtensionInst* IRBuilder::CreateONNXExtension(const std::string& name,
   return ret;
 }
 
+TFLITEExtensionInst* IRBuilder::CreateTFLITEExtension(
+    const std::string& name, const std::vector<Def>& ops, const int num_outs,
+    const std::string& opcode) {
+  auto inst = std::make_unique<TFLITEExtensionInst>(GetContext(), name, ops,
+                                                    num_outs, opcode);
+  inst->parent_basic_block_ = GetParent();
+  TFLITEExtensionInst* ret = inst.get();
+  Insert(std::move(inst));
+  return ret;
+}
+
 CAFFEExtensionInst* IRBuilder::CreateCAFFEExtension(const std::string& name,
                                                     const std::vector<Def>& ops,
                                                     const int num_outs,
@@ -147,8 +164,13 @@ Instruction* IRBuilder::Clone(const Instruction& from,
   auto inst = from.Clone();
   inst->parent_basic_block_ = GetParent();
   auto ret = inst.get();
+  int orig_op_n = inst->GetNumOfOperands();
   for (int i = 0, e = ops.size(); i < e; ++i) {
-    inst->ReplaceOperandWith(i, ops[i]);
+    if (i >= orig_op_n) {
+      inst->AddOneOperand(ops[i]);
+    } else {
+      inst->ReplaceOperandWith(i, ops[i]);
+    }
   }
   Insert(std::move(inst));
   return ret;

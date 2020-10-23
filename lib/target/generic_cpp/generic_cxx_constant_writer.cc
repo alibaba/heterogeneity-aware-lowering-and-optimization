@@ -36,7 +36,7 @@ void GenericCXXConstantWriter::RunOnConstant(const Constant& constant,
 
 bool GenericCXXConstantWriter::RunOnModule(Module* module) {
   os_ << "//===- Halo Compiler Generated File "
-         "-------------------------------------===//\n\n";
+         "---------------------------------------===//\n\n";
   os_ << "#include <stdint.h>\n";
 
   for (auto& func : *module) {

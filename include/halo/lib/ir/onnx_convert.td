@@ -136,8 +136,12 @@ def ONNX_Clip : OpMapping<"Clip", Relu6>;
 
 def ONNX_Exp : OpMapping<"Exp", Exp>;
 def ONNX_Sqrt : OpMapping<"Sqrt", Sqrt>;
+def ONNX_Log : OpMapping<"Log", Log>;
 def ONNX_Floor : OpMapping<"Floor", Floor>;
 def ONNX_Ceil : OpMapping<"Ceil", Ceil>;
+
+def ONNX_Equal: OpMapping<"Equal", Equal>;
+def ONNX_Greater: OpMapping<"Greater", Greater>;
 
 def ONNX_Gather : OpMapping<"Gather", Gather> {
   let attr_mapping_ = [AttributeMapping<"axis", "axis", "0">];
@@ -193,7 +197,6 @@ def ONNX_Flatten : ONNXExtension<"Flatten"> {
 
 def ONNX_ConstantOfShape : ONNXExtension<"ConstantOfShape"> { }
 def ONNX_Expand : ONNXExtension<"Expand"> { }
-def ONNX_Tile : ONNXExtension<"Tile">{}
 def ONNX_NonZero : ONNXExtension<"NonZero"> { }
 
 def ONNX_Resize : OpMapping<"Resize", Resize> {
@@ -232,19 +235,11 @@ def ONNX_ConvTranspose : OpMapping<"ConvTranspose", Conv2DTranspose> {
 def ONNX_Sigmoid : OpMapping<"Sigmoid", Sigmoid> {
 }
 
-def ONNX_LeakyRelu: OpMapping<"LeakyRelu", LeakyRelu> {
-  let attr_mapping_ = [
-    AttributeMapping<"alpha", "alpha", "0.2">
-  ];
+def ONNX_LeakyRelu : OpMapping<"LeakyRelu", LeakyRelu> {
+  let attr_mapping_ = [ AttributeMapping<"alpha", "alpha", "0.2"> ];
 }
 
-def ONNX_Pad : ONNXExtension<"Pad"> {
-  let extension_attr_ = [
-    ExtensionAttr<"pads", IntegerList, "{}">,
-    ExtensionAttr<"value", Float, "0">,
-    ExtensionAttr<"mode", String, "\"CONSTANT\"">,
-    ];
-}
+def ONNX_PRelu: OpMapping<"PRelu", PRelu> { }
 
 // onnx slice op operands order is different from halo ir
 def ONNX_Slice : ONNXExtension<"Slice">;
@@ -253,12 +248,41 @@ def ONNX_Loop : ONNXExtension<"Loop"> {
   let num_outputs_= 2;
 }
 
+def ONNX_Identity : ONNXExtension<"Identity">;
+
+def ONNX_OneHot : ONNXExtension<"OneHot"> {
+  let extension_attr_ = [ ExtensionAttr<"axis", Integer, "-1"> ];
+}
+
+def ONNX_Reciprocal : OpMapping<"Reciprocal", Rcp>;
+
+def ONNX_Pow : OpMapping<"Pow", Pow>;
+
+def ONNX_Tanh : OpMapping<"Tanh", Tanh>;
+
+def ONNX_Tile : OpMapping<"Tile", Tile>;
+
 def ONNX_Sum : ONNXExtension<"Sum">;
-def ONNX_Split :ONNXExtension<"Split"> {
+
+def ONNX_Split : ONNXExtension<"Split"> {
   let extension_attr_ = [
     ExtensionAttr<"split", IntegerList, "{}">,
     ExtensionAttr<"axis", Integer, "0">,
     ];
+  let num_outputs_ = -1; // Variadic
 }
 
 def ONNX_Dropout : ONNXExtension<"Dropout">;
+
+def ONNX_Pad : ONNXExtension<"Pad"> {
+  let extension_attr_ = [
+    ExtensionAttr<"mode", EnumPadMode, "CONSTANT">,
+    ExtensionAttr<"pads", IntegerList, "{}">,
+    ExtensionAttr<"values", Float, "0">
+  ];
+}
+
+def ONNX_Sin : OpMapping<"Sin", Sin>;
+def ONNX_Sinh : OpMapping<"Sinh", Sinh>;
+def ONNX_Cos: OpMapping<"Cos", Cos>;
+def ONNX_Cosh : OpMapping<"Cosh", Cosh>;

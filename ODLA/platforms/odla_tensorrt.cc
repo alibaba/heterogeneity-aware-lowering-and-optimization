@@ -121,6 +121,8 @@ struct _odla_computation {
   std::unordered_map<std::string, odla_value> outputs;
   std::vector<std::vector<float>> buffers;
   std::vector<std::unique_ptr<_odla_value>> vals;
+  bool fp16_mode = false;
+
   bool is_dynamic_batch = false;
   int min_batch_size = 0;
   int max_batch_size = 0;
@@ -131,6 +133,7 @@ struct _odla_computation {
     builder->setMaxWorkspaceSize(MAX_WORKSPACE_SIZE_BYTES);
     network = builder->createNetwork();
 #else
+    initLibNvInferPlugins(static_cast<void*>(&Logger), "");
     nvinfer1::NetworkDefinitionCreationFlags flags = 0;
     network = builder->createNetworkV2(flags);
 #endif
@@ -194,6 +197,11 @@ struct _odla_context {
     }
 
     builder_cfg->setMaxWorkspaceSize(MAX_WORKSPACE_SIZE_BYTES);
+
+    if (comp->fp16_mode) {
+      builder_cfg->setFlag(BuilderFlag::kFP16);
+      builder_cfg->setFlag(BuilderFlag::kSTRICT_TYPES);
+    }
     engine = comp->builder->buildEngineWithConfig(*comp->network, *builder_cfg);
 #endif
     ctx = engine->createExecutionContext();
@@ -311,6 +319,7 @@ template <typename T>
 static odla_value CreateValue(T* t, const odla_value_type& type,
                               const odla_value_id id) {
   const char* name = reinterpret_cast<const char*>(id);
+
   auto v = std::make_unique<_odla_value>(t, type, name);
   auto ret = v.get();
   g_comp->vals.push_back(std::move(v));
@@ -370,6 +379,10 @@ odla_status odla_SetComputationItem(odla_computation computation,
 
     case ODLA_OPT_BATCH_SIZE:
       computation->opt_batch_size = *(reinterpret_cast<int*>(value));
+      break;
+
+    case ODLA_FP16_MODE:
+      computation->fp16_mode = *(reinterpret_cast<bool*>(value));
       break;
 
     default:
@@ -618,6 +631,64 @@ odla_value odla_Rsqrt(odla_value input, const odla_value_id id) {
   return CreateValue(op, input->type, id);
 }
 
+odla_value odla_Sin(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kSIN, input, id);
+}
+
+odla_value odla_Sinh(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kSINH, input, id);
+}
+
+odla_value odla_Cos(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kCOS, input, id);
+}
+
+odla_value odla_Cosh(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kCOSH, input, id);
+}
+
+odla_value odla_Tan(odla_value input, const odla_value_id id) {
+  auto op0 = g_comp->network->addUnary(*input, nvinfer1::UnaryOperation::kSIN);
+  auto op1 = g_comp->network->addUnary(*input, nvinfer1::UnaryOperation::kCOS);
+  auto op = g_comp->network->addElementWise(
+      *(op0->getOutput(0)), *(op1->getOutput(0)),
+      nvinfer1::ElementWiseOperation::kDIV);
+  return CreateValue(op, input->type, id);
+}
+
+odla_value odla_Tanh(odla_value input, const odla_value_id id) {
+  auto op0 = g_comp->network->addUnary(*input, nvinfer1::UnaryOperation::kSINH);
+  auto op1 = g_comp->network->addUnary(*input, nvinfer1::UnaryOperation::kCOSH);
+  auto op = g_comp->network->addElementWise(
+      *(op0->getOutput(0)), *(op1->getOutput(0)),
+      nvinfer1::ElementWiseOperation::kDIV);
+  return CreateValue(op, input->type, id);
+}
+
+odla_value odla_ACos(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kACOS, input, id);
+}
+
+odla_value odla_ACosH(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kCOSH, input, id);
+}
+
+odla_value odla_ASin(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kASIN, input, id);
+}
+
+odla_value odla_ASinh(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kASINH, input, id);
+}
+
+odla_value odla_ATan(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kATAN, input, id);
+}
+
+odla_value odla_ATanh(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kATANH, input, id);
+}
+
 odla_value odla_Pad(odla_value input, const odla_uint32* padding_front,
                     const odla_uint32* padding_back,
                     odla_value_shape output_dims, const odla_value_id id) {
@@ -658,6 +729,23 @@ odla_value odla_LeakyRelu(odla_value input, odla_float32 alpha,
   auto relu = g_comp->network->addActivation(
       *input, nvinfer1::ActivationType::kLEAKY_RELU);
   relu->setAlpha(alpha);
+  return CreateValue(relu, input->type, id);
+}
+
+odla_value odla_ThresholdedRelu(odla_value input, odla_float32 alpha,
+                                const odla_value_id id) {
+  auto relu = g_comp->network->addActivation(
+      *input, nvinfer1::ActivationType::kTHRESHOLDED_RELU);
+  relu->setAlpha(alpha);
+  return CreateValue(relu, input->type, id);
+}
+
+odla_value odla_Selu(odla_value input, odla_float32 alpha, odla_float32 beta,
+                     const odla_value_id id) {
+  auto relu =
+      g_comp->network->addActivation(*input, nvinfer1::ActivationType::kSELU);
+  relu->setAlpha(alpha);
+  relu->setBeta(beta);
   return CreateValue(relu, input->type, id);
 }
 
@@ -768,6 +856,27 @@ odla_value odla_BatchNormalization(odla_value input,
   auto bn = g_comp->network->addScale(*input, nvinfer1::ScaleMode::kCHANNEL,
                                       shift, multiply, power);
   return CreateValue(bn, input->type, value_id);
+}
+
+odla_value odla_InstanceNormalization(
+    odla_value input, odla_memory_layout input_layout, odla_value mean,
+    odla_value var, odla_float32 epsilon, odla_value scale, odla_value offset,
+    odla_float32 scalar_scale, odla_float32 scalar_offset,
+    const odla_value_id value_id) {
+  std::vector<nvinfer1::ITensor*> inputs = {input->tensor, scale->tensor,
+                                            offset->tensor};
+  const static char* plugin_name = "InstanceNormalization_TRT";
+  const static char* plugin_ver = "1";
+  auto creator = getPluginRegistry()->getPluginCreator(plugin_name, plugin_ver);
+  std::vector<nvinfer1::PluginField> f;
+  f.emplace_back("epsilon", &epsilon, nvinfer1::PluginFieldType::kFLOAT32, 1);
+  nvinfer1::PluginFieldCollection plugin_data;
+  plugin_data.nbFields = f.size();
+  plugin_data.fields = f.data();
+  auto plugin = creator->createPlugin(plugin_name, &plugin_data);
+  auto norm = g_comp->network->addPluginV2(
+      &inputs[0], static_cast<int>(inputs.size()), *plugin);
+  return CreateValue(norm->getOutput(0), input->type, value_id);
 }
 
 odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
@@ -1011,8 +1120,8 @@ odla_value odla_Gather(odla_value input, const odla_value indices,
 }
 
 odla_value odla_Slice(odla_value input, const odla_uint32* start,
-                      const odla_uint32* stride, odla_value_shape output_dims,
-                      const odla_value_id id) {
+                      const odla_uint32* end, const odla_uint32* stride,
+                      odla_value_shape output_dims, const odla_value_id id) {
   odla_value_shape start_dims, stride_dims;
   const auto& dims = input->type.shape;
   start_dims.size = dims.size;
@@ -1025,6 +1134,97 @@ odla_value odla_Slice(odla_value input, const odla_uint32* start,
       g_comp->network->addSlice(*input, GetNVDims(start_dims),
                                 GetNVDims(output_dims), GetNVDims(stride_dims));
   return CreateValue(slice, {input->type.element_type, output_dims}, id);
+}
+
+odla_value odla_NMS(odla_value boxes, odla_value scores,
+                    odla_uint32 max_num_outputs, odla_float32 iou_threshold,
+                    odla_float32 score_threshold,
+                    odla_value_type output_value_type,
+                    const odla_value_id value_id) {
+  const static int num_inputs = 2;
+  bool shared_location = true;
+  auto input_boxes = boxes->tensor;
+  if (shared_location) {
+    const auto& dims = boxes->type.shape;
+    assert(dims.size == 3);
+    odla_value_shape new_shape{
+        .size = 3, .dims = {dims.dims[0] * dims.dims[1], 1, dims.dims[2]}};
+    auto boxes_reshape = g_comp->network->addShuffle(*boxes->tensor);
+    boxes_reshape->setReshapeDimensions(GetNVDims(new_shape));
+    input_boxes = boxes_reshape->getOutput(0);
+  }
+
+  // nmsPlugin requires scores of shape [batch_size,
+  // num_boxes, num_classes]
+  const auto& dims = scores->type.shape;
+  assert(dims.size == 3);
+  int num_classes = dims.dims[1];
+  odla_value_shape new_shape{
+      .size = 2, .dims = {dims.dims[0] * dims.dims[2], dims.dims[1]}};
+  auto score_trans = g_comp->network->addShuffle(*scores);
+  nvinfer1::Permutation perm;
+  perm.order[0] = 0;
+  perm.order[1] = 2;
+  perm.order[2] = 1;
+  score_trans->setFirstTranspose(perm);
+  score_trans->setReshapeDimensions(GetNVDims(new_shape));
+
+  std::vector<nvinfer1::ITensor*> inputs = {input_boxes,
+                                            score_trans->getOutput(0)};
+  nvinfer1::plugin::NMSParameters param{
+      .shareLocation = shared_location,
+      .backgroundLabelId = -1,
+      .numClasses = num_classes,
+      .topK = static_cast<int>(max_num_outputs),
+      .keepTopK = static_cast<int>(max_num_outputs),
+      .scoreThreshold = score_threshold,
+      .iouThreshold = iou_threshold,
+      .isNormalized = true,
+  };
+#if NV_TENSORRT_MAJOR < 7
+  auto nms_plugin = createBatchedNMSPlugin(param);
+#else
+  auto creator = getPluginRegistry()->getPluginCreator("BatchedNMS_TRT", "1");
+  nvinfer1::PluginFieldCollection pluginData;
+  std::vector<nvinfer1::PluginField> f;
+  f.emplace_back("shareLocation", &param.shareLocation,
+                 nvinfer1::PluginFieldType::kINT32, 1);
+  f.emplace_back("backgroundLabelId", &param.backgroundLabelId,
+                 nvinfer1::PluginFieldType::kINT32, 1);
+  f.emplace_back("numClasses", &param.numClasses,
+                 nvinfer1::PluginFieldType::kINT32, 1);
+  f.emplace_back("topK", &param.topK, nvinfer1::PluginFieldType::kINT32, 1);
+  f.emplace_back("keepTopK", &param.keepTopK, nvinfer1::PluginFieldType::kINT32,
+                 1);
+  f.emplace_back("scoreThreshold", &param.scoreThreshold,
+                 nvinfer1::PluginFieldType::kFLOAT32, 1);
+  f.emplace_back("iouThreshold", &param.iouThreshold,
+                 nvinfer1::PluginFieldType::kFLOAT32, 1);
+  f.emplace_back("isNormalized", &param.isNormalized,
+                 nvinfer1::PluginFieldType::kINT32, 1);
+  pluginData.nbFields = f.size();
+  pluginData.fields = f.data();
+  auto nms_plugin = creator->createPlugin("BatchedNMS_TRT", &pluginData);
+#endif
+
+  auto nms = g_comp->network->addPluginV2(&inputs[0], num_inputs, *nms_plugin);
+  return CreateValue(nms->getOutput(4), output_value_type, value_id);
+}
+
+odla_values odla_TopK(odla_value input, odla_uint32 K, odla_bool largest,
+                      odla_bool sorted, odla_uint32 axis,
+                      odla_value_type output_value_type,
+                      odla_value_type output_value_index_type,
+                      const odla_value_ids value_ids) {
+  nvinfer1::TopKOperation op = (largest == true)
+                                   ? nvinfer1::TopKOperation::kMAX
+                                   : nvinfer1::TopKOperation::kMIN;
+  auto topk = g_comp->network->addTopK(*input, op, K, 1 << axis);
+  return {.size = 2,
+          .values = {CreateValue(topk->getOutput(0), output_value_type,
+                                 value_ids.value_ids[0]),
+                     CreateValue(topk->getOutput(1), output_value_index_type,
+                                 value_ids.value_ids[1])}};
 }
 
 } // C extern

@@ -17,6 +17,8 @@
 
 #include "halo/lib/target/cpu/riscv/binary/riscv_llvmir_codegen.h"
 
+#include "halo/lib/target/codegen_object.h"
+#include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
 #include "llvm-c/Target.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/MC/MCTargetOptions.h"
@@ -24,8 +26,6 @@
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/raw_os_ostream.h"
 #include "llvm/Target/TargetMachine.h"
-#include "halo/lib/target/codegen_object.h"
-#include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
 
 namespace halo {
 

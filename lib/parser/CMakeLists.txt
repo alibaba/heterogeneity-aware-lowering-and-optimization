@@ -16,6 +16,7 @@
 
 add_subdirectory(caffe)
 add_subdirectory(onnx)
+add_subdirectory(tflite)
 add_subdirectory(tensorflow)
 
 set(NAME PARSER)
@@ -39,6 +40,7 @@ target_include_directories(${NAME} PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}/tensorflow
   ${CMAKE_CURRENT_BINARY_DIR}/onnx
   ${CMAKE_CURRENT_BINARY_DIR}/caffe
+  ${CMAKE_CURRENT_BINARY_DIR}/tflite
   ${LLVM_SRC_DIR}/include
   ${CMAKE_BINARY_DIR}/llvm/include
 )
