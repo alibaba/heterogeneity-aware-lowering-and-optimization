@@ -1,0 +1,25 @@
+name: Build and Test
+
+on:
+  push
+  pull_request
+
+jobs:
+  build:
+    runs-on: [self-hosted, gpu]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Lint
+      uses: DoozyX/clang-format-lint-action@v0.11
+      with:
+        source: '.'
+        exclude: './third_party ./external'
+        extensions: 'h,cpp,cc'
+        clangFormatVersion: 9
+        style: file
+
+    - name: Build
+      uses: ./.github/actions
+      

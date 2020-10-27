@@ -1,0 +1,9 @@
+name: 'Build'
+description: 'Build HALO'
+runs:
+  using: "composite"
+  steps:
+    - run: echo "workspace ${{runner.workspace}}"
+      shell: bash
+    - run: echo "ls"
+      shell: bash
