@@ -19,5 +19,5 @@ jobs:
         style: file
 
     - name: Build
-      uses: ./.github/actions
+      uses: ./.github/actions/build
       
