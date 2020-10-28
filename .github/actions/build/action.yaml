@@ -3,5 +3,5 @@ description: 'Build HALO'
 runs:
   using: "composite"
   steps:
-    - run: bash ./halo/.github/actions/build/build_docker.sh $${{runner.workspace}}
+    - run: bash ./halo/.github/actions/build/build_in_docker.sh $${{runner.workspace}}
       shell: bash
