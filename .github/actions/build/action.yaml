@@ -3,5 +3,6 @@ description: 'Build HALO'
 runs:
   using: "composite"
   steps:
-    - run: bash ./halo/.github/actions/build/build_in_docker.sh $${{runner.workspace}}
+    - run: echo "Curr:${{runner.workspace}}"
+    - run: ./halo/.github/actions/build/build_in_docker.sh $${{runner.workspace}}
       shell: bash
