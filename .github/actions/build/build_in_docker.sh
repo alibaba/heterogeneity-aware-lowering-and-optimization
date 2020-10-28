@@ -20,4 +20,4 @@ if [ -z "$DOCKER_ID" ]; then
   docker run $docker_run_flag -t -d --name $CONTAINER_NAME -v $MOUNT_DIR:/host  --tmpfs /tmp:exec --rm $IMAGE
 fi
 
-docker exec $CONTAINER_NAME bash -c 'cd /host && rm -fr build && mkdir -p build && cd build && cmake -G Ninja ../halo && ninja && ninja-check'
+docker exec $CONTAINER_NAME bash -c 'cd /host && rm -fr build && mkdir -p build && cd build && cmake -G Ninja ../halo && ninja && ninja check-halo'
