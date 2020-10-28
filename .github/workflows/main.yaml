@@ -21,5 +21,4 @@ jobs:
         style: file
 
     - name: Build
-      uses: ./.github/actions/build
-      
+      uses: ./halo/.github/actions/build
