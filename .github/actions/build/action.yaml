@@ -3,9 +3,5 @@ description: 'Build HALO'
 runs:
   using: "composite"
   steps:
-    - run: |
-        echo "workspace ${{runner.workspace}}"
-        echo "curr: $PWD"
-        ./halo/utils/docker/start_docker_gpu.sh ${{runner.workspace}}
-        docker exec halo bash -c "cd /host && rm -fr build && mkdir -p build && cd build && cmake -G Ninja ${{runner.workspace}}/halo && ninja
+    - run: bash ./halo/.github/actions/build/build_docker.sh $${{runner.workspace}}
       shell: bash
