@@ -16,8 +16,7 @@ jobs:
       uses: DoozyX/clang-format-lint-action@v0.11
       with:
         source: '.'
-        exclude: './third_party ./external'
-        extensions: 'h,cpp,cc'
+        exclude: 'halo/third_party halo/external'
         clangFormatVersion: 9
         style: file
 
