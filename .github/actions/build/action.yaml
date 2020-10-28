@@ -5,5 +5,7 @@ runs:
   steps:
     - run: echo "workspace ${{runner.workspace}}"
       shell: bash
-    - run: echo "ls"
+    - run: ${{runner.workspace}}/halo/utils/docker/start_docker_gpu.sh ${{runner.workspace}}
       shell: bash
+    - run: docker exec halo bash -c "cd ${{runner.workspace}} && rm -fr build && mkdir -p build && cd build && cmake -G Ninja ${{runner.workspace}}/halo && ninja
+      shell bash

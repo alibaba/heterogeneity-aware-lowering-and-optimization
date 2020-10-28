@@ -8,6 +8,9 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+      with:
+        path: halo
+        submodules: true
 
     - name: Lint
       uses: DoozyX/clang-format-lint-action@v0.11
