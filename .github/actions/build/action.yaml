@@ -4,5 +4,6 @@ runs:
   using: "composite"
   steps:
     - run: echo "Curr:${{runner.workspace}}"
+      shell: bash
     - run: ./halo/.github/actions/build/build_in_docker.sh $${{runner.workspace}}
       shell: bash
