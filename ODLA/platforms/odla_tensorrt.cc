@@ -133,7 +133,9 @@ struct _odla_computation {
     builder->setMaxWorkspaceSize(MAX_WORKSPACE_SIZE_BYTES);
     network = builder->createNetwork();
 #else
+#ifdef USE_PLUGIN
     initLibNvInferPlugins(static_cast<void*>(&Logger), "");
+#endif
     nvinfer1::NetworkDefinitionCreationFlags flags = 0;
     network = builder->createNetworkV2(flags);
 #endif
@@ -858,6 +860,7 @@ odla_value odla_BatchNormalization(odla_value input,
   return CreateValue(bn, input->type, value_id);
 }
 
+#ifdef USE_PLUGIN
 odla_value odla_InstanceNormalization(
     odla_value input, odla_memory_layout input_layout, odla_value mean,
     odla_value var, odla_float32 epsilon, odla_value scale, odla_value offset,
@@ -878,6 +881,7 @@ odla_value odla_InstanceNormalization(
       &inputs[0], static_cast<int>(inputs.size()), *plugin);
   return CreateValue(norm->getOutput(0), input->type, value_id);
 }
+#endif
 
 odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
                      odla_uint32 group, odla_value kernel,
