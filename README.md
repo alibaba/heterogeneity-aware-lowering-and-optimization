@@ -13,6 +13,16 @@ It exploits the powerfulness of heterogeneous computing while hiding the heterog
 through the abstract, extendable interface called Open Deep Learning API (**ODLA**). 
 HALO provides a unified Ahead-Of-Time compilation solution, auto tailored for various cloud, edge, and IoT scenarios.
 
+## Collaboration
+
+All contributions to Halo are welcomed!
+
+This project is developed with supports from the following partners:
+
+<!-- alphabetical order of partners -->
+|[![GraphCore Logo](./docs/partners/graphcore.png)](https://www.graphcore.ai/posts/graphcore-announces-support-for-odla) | ![Intel Logo](./docs/partners/intel.png) | [![Qualcomm Logo](./docs/partners/qualcomm.jpg "Support of ODLA Runtime for Qualcomm® Cloud AI 100, a high-performance AI inference accelerator")](https://www.qualcomm.com/products/cloud-artificial-intelligence) |
+:--:|:--:|:--:
+
 - [Get Started](#get-started)
   - [Design Overview](#design-overview)
   - [System Requirements](#system-requirements)
