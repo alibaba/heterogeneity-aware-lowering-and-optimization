@@ -14,20 +14,18 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+
     - name: Configure Doxygen
     - run:  sed -i -e 's/@PROJECT_SOURCE_DIR@/..' ${{runner.workspace}}/ODLA/Doxyfile
       shell: bash
+
     - name: Build HTML
       uses: mattnotmitt/doxygen-action@v1
       with:
         working-directory: 'odla_docs'
         doxyfile-path: '../ODLA/Doxyfile'
         enable-latex: true
+
     - name: Publish
-      #uses: peaceiris/actions-gh-pages@v3
-      #with:
-         #github_token: ${{ secrets.GITHUB_TOKEN }}
-         #publis_dir: docs/ODLA
     - run: ls ${{runner.workspace}}/odla_docs
       shell: bash
-
