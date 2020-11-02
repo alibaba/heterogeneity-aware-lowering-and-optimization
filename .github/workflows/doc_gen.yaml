@@ -3,8 +3,7 @@ name: API Publish
 on:
   push:
     branches:
-      - ci_test
-  pull_request: # for testing
+      - master
   release:
     types: [published]
 
@@ -25,7 +24,6 @@ jobs:
           doxyfile-path: "ODLA/Doxyfile"
           enable-latex: false
       - name: Publish
-        #run: ls $GITHUB_WORKSPACE/odla_docs
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
