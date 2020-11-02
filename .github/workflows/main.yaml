@@ -1,24 +1,30 @@
 name: Build and Test
 
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore:
+      - "web"
+  pull_request:
+    branches-ignore:
+      - "web"
 
 jobs:
   build:
     runs-on: [self-hosted, gpu]
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-      with:
-        path: halo
-        submodules: true
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: halo
+          submodules: true
 
-    - name: Lint
-      uses: DoozyX/clang-format-lint-action@v0.11
-      with:
-        source: './halo'
-        exclude: './halo/third_party ./halo/external'
-        clangFormatVersion: 9
-        style: file
+      - name: Lint
+        uses: DoozyX/clang-format-lint-action@v0.11
+        with:
+          source: "./halo"
+          exclude: "./halo/third_party ./halo/external"
+          clangFormatVersion: 9
+          style: file
 
-    - name: Build
-      uses: ./halo/.github/actions/build
+      - name: Build
+        uses: ./halo/.github/actions/build

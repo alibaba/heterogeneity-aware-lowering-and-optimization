@@ -1,4 +1,6 @@
 ![Build and Test](https://github.com/alibaba/heterogeneity-aware-lowering-and-optimization/workflows/Build%20and%20Test/badge.svg?branch=master)
+![API Documentation](https://github.com/alibaba/heterogeneity-aware-lowering-and-optimization/workflows/Generate%20API%20docs/badge.svg?branch=master)
+
 
 HALO
 ===============
