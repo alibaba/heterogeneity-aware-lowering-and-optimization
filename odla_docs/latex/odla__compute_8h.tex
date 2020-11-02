@@ -1,0 +1,830 @@
+\hypertarget{odla__compute_8h}{}\doxysection{O\+D\+L\+A/odla\+\_\+compute.h File Reference}
+\label{odla__compute_8h}\index{ODLA/odla\_compute.h@{ODLA/odla\_compute.h}}
+\doxysubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}\label{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}} 
+typedef struct \+\_\+odla\+\_\+computation $\ast$ \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}}
+\begin{DoxyCompactList}\small\item\em Computation object. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}\label{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}} 
+typedef struct \+\_\+odla\+\_\+executable $\ast$ \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}}
+\begin{DoxyCompactList}\small\item\em Executable object. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}\label{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}} 
+typedef struct \+\_\+odla\+\_\+context $\ast$ \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}}
+\begin{DoxyCompactList}\small\item\em Context object. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}\label{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}} 
+typedef struct \+\_\+odla\+\_\+item\+\_\+value $\ast$ \mbox{\hyperlink{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}{odla\+\_\+item\+\_\+value}}
+\begin{DoxyCompactList}\small\item\em Property item value object. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}\label{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}} 
+typedef struct \+\_\+odla\+\_\+constants\+\_\+array $\ast$ \mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\+\_\+constants\+\_\+array}}
+\begin{DoxyCompactList}\small\item\em Constants array object. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}\label{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}} 
+enum \mbox{\hyperlink{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}{odla\+\_\+compute\+\_\+mode}} \{ {\bfseries O\+D\+L\+A\+\_\+\+C\+O\+M\+P\+U\+T\+E\+\_\+\+D\+E\+F\+A\+U\+LT}, 
+{\bfseries O\+D\+L\+A\+\_\+\+C\+O\+M\+P\+U\+T\+E\+\_\+\+I\+N\+F\+E\+R\+E\+N\+CE}, 
+{\bfseries O\+D\+L\+A\+\_\+\+C\+O\+M\+P\+U\+T\+E\+\_\+\+T\+R\+A\+I\+N\+I\+NG}
+ \}
+\begin{DoxyCompactList}\small\item\em Compute mode. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}\label{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}} 
+enum \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\+\_\+item\+\_\+type}} \{ \newline
+{\bfseries O\+D\+L\+A\+\_\+\+D\+Y\+N\+A\+M\+I\+C\+\_\+\+B\+A\+T\+CH}, 
+{\bfseries O\+D\+L\+A\+\_\+\+M\+I\+N\+\_\+\+B\+A\+T\+C\+H\+\_\+\+S\+I\+ZE}, 
+{\bfseries O\+D\+L\+A\+\_\+\+M\+A\+X\+\_\+\+B\+A\+T\+C\+H\+\_\+\+S\+I\+ZE}, 
+{\bfseries O\+D\+L\+A\+\_\+\+O\+P\+T\+\_\+\+B\+A\+T\+C\+H\+\_\+\+S\+I\+ZE}, 
+\newline
+{\bfseries O\+D\+L\+A\+\_\+\+R\+U\+N\+\_\+\+B\+A\+T\+C\+H\+\_\+\+S\+I\+ZE}, 
+{\bfseries O\+D\+L\+A\+\_\+\+F\+P16\+\_\+\+M\+O\+DE}, 
+{\bfseries O\+D\+L\+A\+\_\+\+U\+S\+E\+\_\+\+S\+I\+M\+\_\+\+M\+O\+DE}, 
+{\bfseries O\+D\+L\+A\+\_\+\+P\+R\+O\+C\+E\+S\+S\+O\+R\+\_\+\+N\+UM}, 
+\newline
+{\bfseries O\+D\+L\+A\+\_\+\+B\+A\+T\+C\+H\+E\+S\+\_\+\+P\+E\+R\+\_\+\+S\+T\+EP}, 
+{\bfseries O\+D\+L\+A\+\_\+\+U\+S\+E\+\_\+\+D\+A\+T\+A\+\_\+\+T\+Y\+PE}
+ \}
+\begin{DoxyCompactList}\small\item\em Property item type. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_aedc3cc00aac00f6ea608c4968fc76178}{odla\+\_\+\+Create\+Computation}} (\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} $\ast$computation)
+\begin{DoxyCompactList}\small\item\em Create a computation object. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_ae3bf1987e563cd2755890db9497a59a8}{odla\+\_\+\+Compile\+Computation}} (const \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} computation, \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} $\ast$executable)
+\begin{DoxyCompactList}\small\item\em Compile a computation object into executable. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_aa86e465d71ac084cf74b006d1437c59b}{odla\+\_\+\+Load\+Computation}} (const \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\+\_\+char}} $\ast$file\+\_\+name, \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} $\ast$computation)
+\begin{DoxyCompactList}\small\item\em Load a computation from the file system. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_a0b551a95a03962d03b6cd8d18b400ac4}{odla\+\_\+\+Store\+Computation}} (const \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\+\_\+char}} $\ast$file\+\_\+name, const \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} computation)
+\begin{DoxyCompactList}\small\item\em Store a computation object into the file system. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_a2d42e143efcda54765a4ed1b3b0c9986}{odla\+\_\+\+Differentiate\+Computation}} (\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} computation)
+\begin{DoxyCompactList}\small\item\em Differentiate a computation. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_aa164c55ee48284ef1dc9766deeaa38c2}{odla\+\_\+\+Execute\+Computation}} (const \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} computation, const \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} context, const \mbox{\hyperlink{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}{odla\+\_\+compute\+\_\+mode}} mode, \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} device)
+\begin{DoxyCompactList}\small\item\em Execute a computation. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_a64cc20bfecd19538d92ec920407659d7}{odla\+\_\+\+Async\+Execute\+Computation}} (const \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} computation, const \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} context, const \mbox{\hyperlink{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}{odla\+\_\+compute\+\_\+mode}} mode, \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} device)
+\begin{DoxyCompactList}\small\item\em Asynchronously execute a computation. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_ad35845886b1213cad24cbadcca335d51}{odla\+\_\+\+Get\+Num\+Of\+Args\+From\+Computation}} (const \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} computation, \mbox{\hyperlink{odla__common_8h_a909bbb71e3a1f9ef49083a8256465c9c}{odla\+\_\+uint32}} $\ast$num\+\_\+args)
+\begin{DoxyCompactList}\small\item\em Get the number of arguments from a computation. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_a6177f78c953434aa831d0ed2ebecb5ae}{odla\+\_\+\+Get\+Arg\+From\+Computation\+By\+Idx}} (const \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} computation, const \mbox{\hyperlink{odla__common_8h_a909bbb71e3a1f9ef49083a8256465c9c}{odla\+\_\+uint32}} arg\+\_\+idx, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} $\ast$arg\+\_\+value)
+\begin{DoxyCompactList}\small\item\em Get the \#idx argument value from a computation. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_add614986ba37efadbe9db5e34c3dd699}{odla\+\_\+\+Get\+Num\+Of\+Outputs\+From\+Computation}} (const \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} computation, \mbox{\hyperlink{odla__common_8h_a909bbb71e3a1f9ef49083a8256465c9c}{odla\+\_\+uint32}} $\ast$num\+\_\+outputs)
+\begin{DoxyCompactList}\small\item\em Get the number of outputs from a computation. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_a397c756aca00881648ac68dfac7d509f}{odla\+\_\+\+Get\+Output\+From\+Computation\+By\+Idx}} (const \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} computation, const \mbox{\hyperlink{odla__common_8h_a909bbb71e3a1f9ef49083a8256465c9c}{odla\+\_\+uint32}} output\+\_\+idx, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} $\ast$output\+\_\+value)
+\begin{DoxyCompactList}\small\item\em Get the \#idx output value from a computation. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_afeac3628599c4806a3c1fe73d6fd6339}{odla\+\_\+\+Destroy\+Computation}} (\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} computation)
+\begin{DoxyCompactList}\small\item\em Destroy a created computation. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_ade7c51b5da824e80505e95170f020bc9}{odla\+\_\+\+Set\+Computation\+Item}} (\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} computation, \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\+\_\+item\+\_\+type}} type, \mbox{\hyperlink{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}{odla\+\_\+item\+\_\+value}} value)
+\begin{DoxyCompactList}\small\item\em Set the computation with a property item. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_ac065f191ce3c6eabe42ff3079e83c4d9}{odla\+\_\+\+Create\+Constants\+Array}} (\mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\+\_\+constants\+\_\+array}} $\ast$constants\+\_\+array)
+\begin{DoxyCompactList}\small\item\em Create a constants array object. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_a73b75c0a8eb2e85b786b0bd555bcdafc}{odla\+\_\+\+Load\+Constants\+Array}} (const \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\+\_\+char}} $\ast$file\+\_\+name, \mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\+\_\+constants\+\_\+array}} $\ast$constants\+\_\+array)
+\begin{DoxyCompactList}\small\item\em Load a constants array from the file system. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_a2b55a5bd868ca8bf533f918a87530f37}{odla\+\_\+\+Store\+Constants\+Array}} (const \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\+\_\+char}} $\ast$file\+\_\+name, const \mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\+\_\+constants\+\_\+array}} constants\+\_\+array)
+\begin{DoxyCompactList}\small\item\em Store a constants array into the file system. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_a93dd6a6215574b2ace5be8d698c87637}{odla\+\_\+\+Destroy\+Constants\+Array}} (\mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\+\_\+constants\+\_\+array}} constants\+\_\+array)
+\begin{DoxyCompactList}\small\item\em Destroy a created constants array object. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_acc4b0259d59d784d145f8d82e169aaec}{odla\+\_\+\+Create\+Executable}} (\mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} $\ast$executable)
+\begin{DoxyCompactList}\small\item\em Create an executable object. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_a559331ae14f00daee903db9954a87590}{odla\+\_\+\+Load\+Executable}} (const \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\+\_\+char}} $\ast$file\+\_\+name, \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} $\ast$executable)
+\begin{DoxyCompactList}\small\item\em Load an executable from the file system. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_a5780236487fdbcfdd5f8a963de940d27}{odla\+\_\+\+Store\+Executable}} (const \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\+\_\+char}} $\ast$file\+\_\+name, const \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} executable)
+\begin{DoxyCompactList}\small\item\em Store an executable object into the file system. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_ab56d87ed06d5f3bfb180ea8ba343130b}{odla\+\_\+\+Launch\+Executable}} (const \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} executable, const \mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\+\_\+constants\+\_\+array}} constants\+\_\+array, const \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} context, const \mbox{\hyperlink{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}{odla\+\_\+compute\+\_\+mode}} mode, \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} device)
+\begin{DoxyCompactList}\small\item\em Launch an executable. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_a28a46a4f653e1a78f061055dbe4b1254}{odla\+\_\+\+Async\+Launch\+Executable}} (const \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} executable, const \mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\+\_\+constants\+\_\+array}} constants\+\_\+array, const \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} context, const \mbox{\hyperlink{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}{odla\+\_\+compute\+\_\+mode}} mode, \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} device)
+\begin{DoxyCompactList}\small\item\em Asynchronously launch an executable. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_a782215a68326098002d1d0cb8d5acaee}{odla\+\_\+\+Get\+Num\+Of\+Args\+From\+Executable}} (const \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} executable, \mbox{\hyperlink{odla__common_8h_a909bbb71e3a1f9ef49083a8256465c9c}{odla\+\_\+uint32}} $\ast$num\+\_\+args)
+\begin{DoxyCompactList}\small\item\em Get the number of arguments from an Executable. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_a0da929e3f4896b9939b2f8cd88e2da6b}{odla\+\_\+\+Get\+Arg\+From\+Executable\+By\+Idx}} (const \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} executable, const \mbox{\hyperlink{odla__common_8h_a909bbb71e3a1f9ef49083a8256465c9c}{odla\+\_\+uint32}} arg\+\_\+idx, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} $\ast$arg\+\_\+value)
+\begin{DoxyCompactList}\small\item\em Get the \#idx argument value from an executable. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_a6ed12a71e0c2443208e3c209007c68cc}{odla\+\_\+\+Get\+Num\+Of\+Outputs\+From\+Executable}} (const \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} executable, \mbox{\hyperlink{odla__common_8h_a909bbb71e3a1f9ef49083a8256465c9c}{odla\+\_\+uint32}} $\ast$num\+\_\+outputs)
+\begin{DoxyCompactList}\small\item\em Get the number of outputs from an executable. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_ac302a51f5938bde00bed0524de7745af}{odla\+\_\+\+Get\+Output\+From\+Executable\+By\+Idx}} (const \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} executable, const \mbox{\hyperlink{odla__common_8h_a909bbb71e3a1f9ef49083a8256465c9c}{odla\+\_\+uint32}} output\+\_\+idx, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} $\ast$output\+\_\+value)
+\begin{DoxyCompactList}\small\item\em Get the \#idx output value from an executable. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_a810e442760978d8b91bb3812550810a5}{odla\+\_\+\+Destroy\+Executable}} (\mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} executable)
+\begin{DoxyCompactList}\small\item\em Destroy a created executable. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_aba5b33f631d860ffe2ef96e4966aa7cf}{odla\+\_\+\+Create\+Context}} (\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} $\ast$context)
+\begin{DoxyCompactList}\small\item\em Create a context object. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_a7481cc6c3d147e5538df0ae20816619d}{odla\+\_\+\+Set\+Context\+Item}} (\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} context, \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\+\_\+item\+\_\+type}} type, \mbox{\hyperlink{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}{odla\+\_\+item\+\_\+value}} value)
+\begin{DoxyCompactList}\small\item\em Set the context with a property item. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_acb4beb721ca073e03d197671e5a6064d}{odla\+\_\+\+Destroy\+Context}} (\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} context)
+\begin{DoxyCompactList}\small\item\em Destroy a created context. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_aa52b7810d7b35e1ab9c0bcbd290b4822}{odla\+\_\+\+Bind\+To\+Argument}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} value, const \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$data\+\_\+ptr, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} context)
+\begin{DoxyCompactList}\small\item\em Bind data to an argument. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_ad12ec50954c76007f319fa0cea4425d9}{odla\+\_\+\+Bind\+To\+Argument\+By\+Id}} (const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id, const \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$data\+\_\+ptr, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} context)
+\begin{DoxyCompactList}\small\item\em Bind data to an argument by id. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{odla__compute_8h_a723896221f34e3cb747d2aa300a8fdb8}\label{odla__compute_8h_a723896221f34e3cb747d2aa300a8fdb8}} 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL {\bfseries odla\+\_\+\+Bind\+Value\+To\+Argument\+By\+Id} (const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} data, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} context)
+\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_ac6e884a1708ef8ce1fcfb02fe71dc063}{odla\+\_\+\+Bind\+To\+Output}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} value, \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$data\+\_\+ptr, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} context)
+\begin{DoxyCompactList}\small\item\em Bind memory to an output value. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__compute_8h_a781388a236372f0f59d64f71660230eb}{odla\+\_\+\+Bind\+To\+Output\+By\+Id}} (const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id, \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$data\+\_\+ptr, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} context)
+\begin{DoxyCompactList}\small\item\em Bind memory to an output value by id. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{odla__compute_8h_a44387689e53d19cc98fb9c0d825d0186}\label{odla__compute_8h_a44387689e53d19cc98fb9c0d825d0186}} 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL {\bfseries odla\+\_\+\+Bind\+Value\+To\+Output\+By\+Id} (const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} data, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} context)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+This file defines the O\+D\+LA compute related A\+P\+Is. 
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{odla__compute_8h_a64cc20bfecd19538d92ec920407659d7}\label{odla__compute_8h_a64cc20bfecd19538d92ec920407659d7}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_AsyncExecuteComputation@{odla\_AsyncExecuteComputation}}
+\index{odla\_AsyncExecuteComputation@{odla\_AsyncExecuteComputation}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_AsyncExecuteComputation()}{odla\_AsyncExecuteComputation()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Async\+Execute\+Computation (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}}}]{computation,  }\item[{const \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}}}]{context,  }\item[{const \mbox{\hyperlink{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}{odla\+\_\+compute\+\_\+mode}}}]{mode,  }\item[{\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}}]{device }\end{DoxyParamCaption})}
+
+
+
+Asynchronously execute a computation. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em computation} & the computation object \\
+\hline
+{\em context} & the context object \\
+\hline
+{\em mode} & the compute mode \\
+\hline
+{\em device} & the device object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_a28a46a4f653e1a78f061055dbe4b1254}\label{odla__compute_8h_a28a46a4f653e1a78f061055dbe4b1254}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_AsyncLaunchExecutable@{odla\_AsyncLaunchExecutable}}
+\index{odla\_AsyncLaunchExecutable@{odla\_AsyncLaunchExecutable}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_AsyncLaunchExecutable()}{odla\_AsyncLaunchExecutable()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Async\+Launch\+Executable (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}}}]{executable,  }\item[{const \mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\+\_\+constants\+\_\+array}}}]{constants\+\_\+array,  }\item[{const \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}}}]{context,  }\item[{const \mbox{\hyperlink{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}{odla\+\_\+compute\+\_\+mode}}}]{mode,  }\item[{\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}}]{device }\end{DoxyParamCaption})}
+
+
+
+Asynchronously launch an executable. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em executable} & the executable object \\
+\hline
+{\em constants\+\_\+array} & the constants array object (can be N\+U\+LL) \\
+\hline
+{\em context} & the context object \\
+\hline
+{\em mode} & the compute mode \\
+\hline
+{\em device} & the device object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_aa52b7810d7b35e1ab9c0bcbd290b4822}\label{odla__compute_8h_aa52b7810d7b35e1ab9c0bcbd290b4822}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_BindToArgument@{odla\_BindToArgument}}
+\index{odla\_BindToArgument@{odla\_BindToArgument}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_BindToArgument()}{odla\_BindToArgument()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Bind\+To\+Argument (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{value,  }\item[{const \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$}]{data\+\_\+ptr,  }\item[{\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}}}]{context }\end{DoxyParamCaption})}
+
+
+
+Bind data to an argument. 
+
+Bind input data to an argument of computation. An error will be returned if {\ttfamily value} is not an argument. 
+\begin{DoxyParams}{Parameters}
+{\em value} & the argument \\
+\hline
+{\em data\+\_\+ptr} & the pointer to the host memory \\
+\hline
+{\em context} & the context object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_ad12ec50954c76007f319fa0cea4425d9}\label{odla__compute_8h_ad12ec50954c76007f319fa0cea4425d9}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_BindToArgumentById@{odla\_BindToArgumentById}}
+\index{odla\_BindToArgumentById@{odla\_BindToArgumentById}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_BindToArgumentById()}{odla\_BindToArgumentById()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Bind\+To\+Argument\+By\+Id (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id,  }\item[{const \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$}]{data\+\_\+ptr,  }\item[{\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}}}]{context }\end{DoxyParamCaption})}
+
+
+
+Bind data to an argument by id. 
+
+Bind input data to an argument of computation. An error will be returned if the value specified by {\ttfamily value\+\_\+id} is not an argument. 
+\begin{DoxyParams}{Parameters}
+{\em value\+\_\+id} & the value id for the argument \\
+\hline
+{\em data\+\_\+ptr} & the pointer to the host memory \\
+\hline
+{\em context} & the context object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_ac6e884a1708ef8ce1fcfb02fe71dc063}\label{odla__compute_8h_ac6e884a1708ef8ce1fcfb02fe71dc063}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_BindToOutput@{odla\_BindToOutput}}
+\index{odla\_BindToOutput@{odla\_BindToOutput}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_BindToOutput()}{odla\_BindToOutput()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Bind\+To\+Output (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{value,  }\item[{\mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$}]{data\+\_\+ptr,  }\item[{\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}}}]{context }\end{DoxyParamCaption})}
+
+
+
+Bind memory to an output value. 
+
+Bind a memory buffer to an output of computation. An error will be returned if the value specified by {\ttfamily value\+\_\+id} is not set as output value. 
+\begin{DoxyParams}{Parameters}
+{\em value} & the output value \\
+\hline
+{\em data\+\_\+ptr} & the pointer to the host data buffer \\
+\hline
+{\em context} & the context object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_a781388a236372f0f59d64f71660230eb}\label{odla__compute_8h_a781388a236372f0f59d64f71660230eb}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_BindToOutputById@{odla\_BindToOutputById}}
+\index{odla\_BindToOutputById@{odla\_BindToOutputById}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_BindToOutputById()}{odla\_BindToOutputById()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Bind\+To\+Output\+By\+Id (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id,  }\item[{\mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$}]{data\+\_\+ptr,  }\item[{\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}}}]{context }\end{DoxyParamCaption})}
+
+
+
+Bind memory to an output value by id. 
+
+Bind a memory buffer to an output of computation by id. An error will be returned if the value specified by {\ttfamily value\+\_\+id} is not set as output value. 
+\begin{DoxyParams}{Parameters}
+{\em value\+\_\+id} & the id for the output value \\
+\hline
+{\em data\+\_\+ptr} & the pointer to the host data buffer \\
+\hline
+{\em context} & the context object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_ae3bf1987e563cd2755890db9497a59a8}\label{odla__compute_8h_ae3bf1987e563cd2755890db9497a59a8}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_CompileComputation@{odla\_CompileComputation}}
+\index{odla\_CompileComputation@{odla\_CompileComputation}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_CompileComputation()}{odla\_CompileComputation()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Compile\+Computation (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}}}]{computation,  }\item[{\mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} $\ast$}]{executable }\end{DoxyParamCaption})}
+
+
+
+Compile a computation object into executable. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em computation} & the computation object \\
+\hline
+{\em excecutable} & the pointer to the compiled excecutable object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_aedc3cc00aac00f6ea608c4968fc76178}\label{odla__compute_8h_aedc3cc00aac00f6ea608c4968fc76178}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_CreateComputation@{odla\_CreateComputation}}
+\index{odla\_CreateComputation@{odla\_CreateComputation}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_CreateComputation()}{odla\_CreateComputation()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Create\+Computation (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} $\ast$}]{computation }\end{DoxyParamCaption})}
+
+
+
+Create a computation object. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em computation} & the pointer to the created computation object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_ac065f191ce3c6eabe42ff3079e83c4d9}\label{odla__compute_8h_ac065f191ce3c6eabe42ff3079e83c4d9}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_CreateConstantsArray@{odla\_CreateConstantsArray}}
+\index{odla\_CreateConstantsArray@{odla\_CreateConstantsArray}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_CreateConstantsArray()}{odla\_CreateConstantsArray()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Create\+Constants\+Array (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\+\_\+constants\+\_\+array}} $\ast$}]{constants\+\_\+array }\end{DoxyParamCaption})}
+
+
+
+Create a constants array object. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em constants\+\_\+array} & the pointer to the created constants array object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_aba5b33f631d860ffe2ef96e4966aa7cf}\label{odla__compute_8h_aba5b33f631d860ffe2ef96e4966aa7cf}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_CreateContext@{odla\_CreateContext}}
+\index{odla\_CreateContext@{odla\_CreateContext}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_CreateContext()}{odla\_CreateContext()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Create\+Context (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} $\ast$}]{context }\end{DoxyParamCaption})}
+
+
+
+Create a context object. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em context} & the pointer to the created context object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_acc4b0259d59d784d145f8d82e169aaec}\label{odla__compute_8h_acc4b0259d59d784d145f8d82e169aaec}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_CreateExecutable@{odla\_CreateExecutable}}
+\index{odla\_CreateExecutable@{odla\_CreateExecutable}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_CreateExecutable()}{odla\_CreateExecutable()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Create\+Executable (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} $\ast$}]{executable }\end{DoxyParamCaption})}
+
+
+
+Create an executable object. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em executable} & the pointer to the created executable object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_afeac3628599c4806a3c1fe73d6fd6339}\label{odla__compute_8h_afeac3628599c4806a3c1fe73d6fd6339}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_DestroyComputation@{odla\_DestroyComputation}}
+\index{odla\_DestroyComputation@{odla\_DestroyComputation}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_DestroyComputation()}{odla\_DestroyComputation()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Destroy\+Computation (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}}}]{computation }\end{DoxyParamCaption})}
+
+
+
+Destroy a created computation. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em computation} & the computation object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_a93dd6a6215574b2ace5be8d698c87637}\label{odla__compute_8h_a93dd6a6215574b2ace5be8d698c87637}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_DestroyConstantsArray@{odla\_DestroyConstantsArray}}
+\index{odla\_DestroyConstantsArray@{odla\_DestroyConstantsArray}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_DestroyConstantsArray()}{odla\_DestroyConstantsArray()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Destroy\+Constants\+Array (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\+\_\+constants\+\_\+array}}}]{constants\+\_\+array }\end{DoxyParamCaption})}
+
+
+
+Destroy a created constants array object. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em constants\+\_\+array} & the constants array object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_acb4beb721ca073e03d197671e5a6064d}\label{odla__compute_8h_acb4beb721ca073e03d197671e5a6064d}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_DestroyContext@{odla\_DestroyContext}}
+\index{odla\_DestroyContext@{odla\_DestroyContext}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_DestroyContext()}{odla\_DestroyContext()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Destroy\+Context (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}}}]{context }\end{DoxyParamCaption})}
+
+
+
+Destroy a created context. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em context} & the context object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_a810e442760978d8b91bb3812550810a5}\label{odla__compute_8h_a810e442760978d8b91bb3812550810a5}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_DestroyExecutable@{odla\_DestroyExecutable}}
+\index{odla\_DestroyExecutable@{odla\_DestroyExecutable}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_DestroyExecutable()}{odla\_DestroyExecutable()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Destroy\+Executable (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}}}]{executable }\end{DoxyParamCaption})}
+
+
+
+Destroy a created executable. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em executable} & the executable object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_a2d42e143efcda54765a4ed1b3b0c9986}\label{odla__compute_8h_a2d42e143efcda54765a4ed1b3b0c9986}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_DifferentiateComputation@{odla\_DifferentiateComputation}}
+\index{odla\_DifferentiateComputation@{odla\_DifferentiateComputation}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_DifferentiateComputation()}{odla\_DifferentiateComputation()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Differentiate\+Computation (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}}}]{computation }\end{DoxyParamCaption})}
+
+
+
+Differentiate a computation. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em computation} & the computation object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_aa164c55ee48284ef1dc9766deeaa38c2}\label{odla__compute_8h_aa164c55ee48284ef1dc9766deeaa38c2}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_ExecuteComputation@{odla\_ExecuteComputation}}
+\index{odla\_ExecuteComputation@{odla\_ExecuteComputation}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_ExecuteComputation()}{odla\_ExecuteComputation()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Execute\+Computation (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}}}]{computation,  }\item[{const \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}}}]{context,  }\item[{const \mbox{\hyperlink{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}{odla\+\_\+compute\+\_\+mode}}}]{mode,  }\item[{\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}}]{device }\end{DoxyParamCaption})}
+
+
+
+Execute a computation. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em computation} & the computation object \\
+\hline
+{\em context} & the context object \\
+\hline
+{\em mode} & the compute mode \\
+\hline
+{\em device} & the device object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_a6177f78c953434aa831d0ed2ebecb5ae}\label{odla__compute_8h_a6177f78c953434aa831d0ed2ebecb5ae}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_GetArgFromComputationByIdx@{odla\_GetArgFromComputationByIdx}}
+\index{odla\_GetArgFromComputationByIdx@{odla\_GetArgFromComputationByIdx}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_GetArgFromComputationByIdx()}{odla\_GetArgFromComputationByIdx()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Get\+Arg\+From\+Computation\+By\+Idx (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}}}]{computation,  }\item[{const \mbox{\hyperlink{odla__common_8h_a909bbb71e3a1f9ef49083a8256465c9c}{odla\+\_\+uint32}}}]{arg\+\_\+idx,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} $\ast$}]{arg\+\_\+value }\end{DoxyParamCaption})}
+
+
+
+Get the \#idx argument value from a computation. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em computation} & the computation object \\
+\hline
+{\em arg\+\_\+idx} & the index of argument \\
+\hline
+{\em arg\+\_\+value} & the pointer to the retrieved argument value\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_a0da929e3f4896b9939b2f8cd88e2da6b}\label{odla__compute_8h_a0da929e3f4896b9939b2f8cd88e2da6b}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_GetArgFromExecutableByIdx@{odla\_GetArgFromExecutableByIdx}}
+\index{odla\_GetArgFromExecutableByIdx@{odla\_GetArgFromExecutableByIdx}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_GetArgFromExecutableByIdx()}{odla\_GetArgFromExecutableByIdx()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Get\+Arg\+From\+Executable\+By\+Idx (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}}}]{executable,  }\item[{const \mbox{\hyperlink{odla__common_8h_a909bbb71e3a1f9ef49083a8256465c9c}{odla\+\_\+uint32}}}]{arg\+\_\+idx,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} $\ast$}]{arg\+\_\+value }\end{DoxyParamCaption})}
+
+
+
+Get the \#idx argument value from an executable. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em executable} & the executable object \\
+\hline
+{\em arg\+\_\+idx} & the index of argument \\
+\hline
+{\em arg\+\_\+value} & the pointer to the retrieved argument value\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_ad35845886b1213cad24cbadcca335d51}\label{odla__compute_8h_ad35845886b1213cad24cbadcca335d51}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_GetNumOfArgsFromComputation@{odla\_GetNumOfArgsFromComputation}}
+\index{odla\_GetNumOfArgsFromComputation@{odla\_GetNumOfArgsFromComputation}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_GetNumOfArgsFromComputation()}{odla\_GetNumOfArgsFromComputation()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Get\+Num\+Of\+Args\+From\+Computation (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}}}]{computation,  }\item[{\mbox{\hyperlink{odla__common_8h_a909bbb71e3a1f9ef49083a8256465c9c}{odla\+\_\+uint32}} $\ast$}]{num\+\_\+args }\end{DoxyParamCaption})}
+
+
+
+Get the number of arguments from a computation. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em computation} & the computation object \\
+\hline
+{\em num\+\_\+args} & the pointer to the retrieved number of args\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_a782215a68326098002d1d0cb8d5acaee}\label{odla__compute_8h_a782215a68326098002d1d0cb8d5acaee}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_GetNumOfArgsFromExecutable@{odla\_GetNumOfArgsFromExecutable}}
+\index{odla\_GetNumOfArgsFromExecutable@{odla\_GetNumOfArgsFromExecutable}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_GetNumOfArgsFromExecutable()}{odla\_GetNumOfArgsFromExecutable()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Get\+Num\+Of\+Args\+From\+Executable (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}}}]{executable,  }\item[{\mbox{\hyperlink{odla__common_8h_a909bbb71e3a1f9ef49083a8256465c9c}{odla\+\_\+uint32}} $\ast$}]{num\+\_\+args }\end{DoxyParamCaption})}
+
+
+
+Get the number of arguments from an Executable. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em executable} & the executable object \\
+\hline
+{\em num\+\_\+args} & the pointer to the retrieved number of args\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_add614986ba37efadbe9db5e34c3dd699}\label{odla__compute_8h_add614986ba37efadbe9db5e34c3dd699}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_GetNumOfOutputsFromComputation@{odla\_GetNumOfOutputsFromComputation}}
+\index{odla\_GetNumOfOutputsFromComputation@{odla\_GetNumOfOutputsFromComputation}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_GetNumOfOutputsFromComputation()}{odla\_GetNumOfOutputsFromComputation()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Get\+Num\+Of\+Outputs\+From\+Computation (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}}}]{computation,  }\item[{\mbox{\hyperlink{odla__common_8h_a909bbb71e3a1f9ef49083a8256465c9c}{odla\+\_\+uint32}} $\ast$}]{num\+\_\+outputs }\end{DoxyParamCaption})}
+
+
+
+Get the number of outputs from a computation. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em computation} & the computation object \\
+\hline
+{\em num\+\_\+outputs} & the pointer to the retrieved number of outputs\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_a6ed12a71e0c2443208e3c209007c68cc}\label{odla__compute_8h_a6ed12a71e0c2443208e3c209007c68cc}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_GetNumOfOutputsFromExecutable@{odla\_GetNumOfOutputsFromExecutable}}
+\index{odla\_GetNumOfOutputsFromExecutable@{odla\_GetNumOfOutputsFromExecutable}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_GetNumOfOutputsFromExecutable()}{odla\_GetNumOfOutputsFromExecutable()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Get\+Num\+Of\+Outputs\+From\+Executable (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}}}]{executable,  }\item[{\mbox{\hyperlink{odla__common_8h_a909bbb71e3a1f9ef49083a8256465c9c}{odla\+\_\+uint32}} $\ast$}]{num\+\_\+outputs }\end{DoxyParamCaption})}
+
+
+
+Get the number of outputs from an executable. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em executable} & the executable object \\
+\hline
+{\em num\+\_\+outputs} & the pointer to the retrieved number of outputs\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_a397c756aca00881648ac68dfac7d509f}\label{odla__compute_8h_a397c756aca00881648ac68dfac7d509f}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_GetOutputFromComputationByIdx@{odla\_GetOutputFromComputationByIdx}}
+\index{odla\_GetOutputFromComputationByIdx@{odla\_GetOutputFromComputationByIdx}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_GetOutputFromComputationByIdx()}{odla\_GetOutputFromComputationByIdx()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Get\+Output\+From\+Computation\+By\+Idx (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}}}]{computation,  }\item[{const \mbox{\hyperlink{odla__common_8h_a909bbb71e3a1f9ef49083a8256465c9c}{odla\+\_\+uint32}}}]{output\+\_\+idx,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} $\ast$}]{output\+\_\+value }\end{DoxyParamCaption})}
+
+
+
+Get the \#idx output value from a computation. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em computation} & the computation object \\
+\hline
+{\em output\+\_\+idx} & the index of output \\
+\hline
+{\em output\+\_\+value} & the pointer to the retrieved output value\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_ac302a51f5938bde00bed0524de7745af}\label{odla__compute_8h_ac302a51f5938bde00bed0524de7745af}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_GetOutputFromExecutableByIdx@{odla\_GetOutputFromExecutableByIdx}}
+\index{odla\_GetOutputFromExecutableByIdx@{odla\_GetOutputFromExecutableByIdx}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_GetOutputFromExecutableByIdx()}{odla\_GetOutputFromExecutableByIdx()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Get\+Output\+From\+Executable\+By\+Idx (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}}}]{executable,  }\item[{const \mbox{\hyperlink{odla__common_8h_a909bbb71e3a1f9ef49083a8256465c9c}{odla\+\_\+uint32}}}]{output\+\_\+idx,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} $\ast$}]{output\+\_\+value }\end{DoxyParamCaption})}
+
+
+
+Get the \#idx output value from an executable. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em executable} & the executable object \\
+\hline
+{\em output\+\_\+idx} & the index of output \\
+\hline
+{\em output\+\_\+value} & the pointer to the retrieved output value\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_ab56d87ed06d5f3bfb180ea8ba343130b}\label{odla__compute_8h_ab56d87ed06d5f3bfb180ea8ba343130b}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_LaunchExecutable@{odla\_LaunchExecutable}}
+\index{odla\_LaunchExecutable@{odla\_LaunchExecutable}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_LaunchExecutable()}{odla\_LaunchExecutable()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Launch\+Executable (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}}}]{executable,  }\item[{const \mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\+\_\+constants\+\_\+array}}}]{constants\+\_\+array,  }\item[{const \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}}}]{context,  }\item[{const \mbox{\hyperlink{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}{odla\+\_\+compute\+\_\+mode}}}]{mode,  }\item[{\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}}]{device }\end{DoxyParamCaption})}
+
+
+
+Launch an executable. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em executable} & the executable object \\
+\hline
+{\em constants\+\_\+array} & the constants array object (can be N\+U\+LL) \\
+\hline
+{\em context} & the context object \\
+\hline
+{\em mode} & the compute mode \\
+\hline
+{\em device} & the device object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_aa86e465d71ac084cf74b006d1437c59b}\label{odla__compute_8h_aa86e465d71ac084cf74b006d1437c59b}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_LoadComputation@{odla\_LoadComputation}}
+\index{odla\_LoadComputation@{odla\_LoadComputation}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_LoadComputation()}{odla\_LoadComputation()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Load\+Computation (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\+\_\+char}} $\ast$}]{file\+\_\+name,  }\item[{\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} $\ast$}]{computation }\end{DoxyParamCaption})}
+
+
+
+Load a computation from the file system. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em file\+\_\+name} & the file name \\
+\hline
+{\em computation} & the pointer to the loaded computation object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_a73b75c0a8eb2e85b786b0bd555bcdafc}\label{odla__compute_8h_a73b75c0a8eb2e85b786b0bd555bcdafc}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_LoadConstantsArray@{odla\_LoadConstantsArray}}
+\index{odla\_LoadConstantsArray@{odla\_LoadConstantsArray}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_LoadConstantsArray()}{odla\_LoadConstantsArray()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Load\+Constants\+Array (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\+\_\+char}} $\ast$}]{file\+\_\+name,  }\item[{\mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\+\_\+constants\+\_\+array}} $\ast$}]{constants\+\_\+array }\end{DoxyParamCaption})}
+
+
+
+Load a constants array from the file system. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em file\+\_\+name} & the file name \\
+\hline
+{\em constants\+\_\+array} & the pointer to the loaded constants array object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_a559331ae14f00daee903db9954a87590}\label{odla__compute_8h_a559331ae14f00daee903db9954a87590}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_LoadExecutable@{odla\_LoadExecutable}}
+\index{odla\_LoadExecutable@{odla\_LoadExecutable}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_LoadExecutable()}{odla\_LoadExecutable()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Load\+Executable (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\+\_\+char}} $\ast$}]{file\+\_\+name,  }\item[{\mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} $\ast$}]{executable }\end{DoxyParamCaption})}
+
+
+
+Load an executable from the file system. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em file\+\_\+name} & the file name \\
+\hline
+{\em executable} & the pointer to the loaded executable object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_ade7c51b5da824e80505e95170f020bc9}\label{odla__compute_8h_ade7c51b5da824e80505e95170f020bc9}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_SetComputationItem@{odla\_SetComputationItem}}
+\index{odla\_SetComputationItem@{odla\_SetComputationItem}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_SetComputationItem()}{odla\_SetComputationItem()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Set\+Computation\+Item (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}}}]{computation,  }\item[{\mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\+\_\+item\+\_\+type}}}]{type,  }\item[{\mbox{\hyperlink{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}{odla\+\_\+item\+\_\+value}}}]{value }\end{DoxyParamCaption})}
+
+
+
+Set the computation with a property item. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em computation} & the computation object \\
+\hline
+{\em type} & the property item type \\
+\hline
+{\em value} & the property item value\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_a7481cc6c3d147e5538df0ae20816619d}\label{odla__compute_8h_a7481cc6c3d147e5538df0ae20816619d}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_SetContextItem@{odla\_SetContextItem}}
+\index{odla\_SetContextItem@{odla\_SetContextItem}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_SetContextItem()}{odla\_SetContextItem()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Set\+Context\+Item (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}}}]{context,  }\item[{\mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\+\_\+item\+\_\+type}}}]{type,  }\item[{\mbox{\hyperlink{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}{odla\+\_\+item\+\_\+value}}}]{value }\end{DoxyParamCaption})}
+
+
+
+Set the context with a property item. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em context} & the context object \\
+\hline
+{\em type} & the property item type \\
+\hline
+{\em value} & the property item value\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_a0b551a95a03962d03b6cd8d18b400ac4}\label{odla__compute_8h_a0b551a95a03962d03b6cd8d18b400ac4}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_StoreComputation@{odla\_StoreComputation}}
+\index{odla\_StoreComputation@{odla\_StoreComputation}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_StoreComputation()}{odla\_StoreComputation()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Store\+Computation (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\+\_\+char}} $\ast$}]{file\+\_\+name,  }\item[{const \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}}}]{computation }\end{DoxyParamCaption})}
+
+
+
+Store a computation object into the file system. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em file\+\_\+name} & the file name \\
+\hline
+{\em computation} & the computation object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_a2b55a5bd868ca8bf533f918a87530f37}\label{odla__compute_8h_a2b55a5bd868ca8bf533f918a87530f37}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_StoreConstantsArray@{odla\_StoreConstantsArray}}
+\index{odla\_StoreConstantsArray@{odla\_StoreConstantsArray}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_StoreConstantsArray()}{odla\_StoreConstantsArray()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Store\+Constants\+Array (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\+\_\+char}} $\ast$}]{file\+\_\+name,  }\item[{const \mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\+\_\+constants\+\_\+array}}}]{constants\+\_\+array }\end{DoxyParamCaption})}
+
+
+
+Store a constants array into the file system. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em file\+\_\+name} & the file name \\
+\hline
+{\em constants\+\_\+array} & the constants array object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_a5780236487fdbcfdd5f8a963de940d27}\label{odla__compute_8h_a5780236487fdbcfdd5f8a963de940d27}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_StoreExecutable@{odla\_StoreExecutable}}
+\index{odla\_StoreExecutable@{odla\_StoreExecutable}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_StoreExecutable()}{odla\_StoreExecutable()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Store\+Executable (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\+\_\+char}} $\ast$}]{file\+\_\+name,  }\item[{const \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}}}]{executable }\end{DoxyParamCaption})}
+
+
+
+Store an executable object into the file system. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em file\+\_\+name} & the file name \\
+\hline
+{\em executable} & the executable object\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}

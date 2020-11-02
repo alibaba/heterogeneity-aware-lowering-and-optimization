@@ -1,0 +1,69 @@
+\hypertarget{odla__task_8h}{}\doxysection{O\+D\+L\+A/odla\+\_\+task.h File Reference}
+\label{odla__task_8h}\index{ODLA/odla\_task.h@{ODLA/odla\_task.h}}
+\doxysubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structodla__task}{odla\+\_\+task}}
+\begin{DoxyCompactList}\small\item\em odla task definition \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{odla__task_8h_adae89133dd25d38030140bf4a79778fc}\label{odla__task_8h_adae89133dd25d38030140bf4a79778fc}} 
+typedef \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}}($\ast$ \mbox{\hyperlink{odla__task_8h_adae89133dd25d38030140bf4a79778fc}{odla\+\_\+async\+\_\+executor}}) (\mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}}($\ast$) (\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}, \mbox{\hyperlink{structodla__task}{odla\+\_\+task}}), \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}, \mbox{\hyperlink{structodla__task}{odla\+\_\+task}})
+\begin{DoxyCompactList}\small\item\em odla task async executor \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{odla__task_8h_a1e3f4664f64afb00aa43fffc5aa4cab3}\label{odla__task_8h_a1e3f4664f64afb00aa43fffc5aa4cab3}} 
+\mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} \mbox{\hyperlink{odla__task_8h_a1e3f4664f64afb00aa43fffc5aa4cab3}{odla\+\_\+\+Set\+Async\+Executor}} (\mbox{\hyperlink{odla__task_8h_adae89133dd25d38030140bf4a79778fc}{odla\+\_\+async\+\_\+executor}} executor)
+\begin{DoxyCompactList}\small\item\em \textbackslash{}biref set a customized async executor \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__task_8h_ae44cff8c829c8620b049074280116b9a}{odla\+\_\+\+Run\+Task}} (\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} device, \mbox{\hyperlink{structodla__task}{odla\+\_\+task}} task)
+\begin{DoxyCompactList}\small\item\em Start a O\+D\+LA task in a synchronized manner. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__task_8h_afd92b3aeb5b11085813c781b48caad3d}{odla\+\_\+\+Run\+Task\+Async}} (\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} device, \mbox{\hyperlink{structodla__task}{odla\+\_\+task}} task)
+\begin{DoxyCompactList}\small\item\em Start a O\+D\+LA task in a asynchronized manner. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+This file defines the O\+D\+LA task related A\+P\+Is. 
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{odla__task_8h_ae44cff8c829c8620b049074280116b9a}\label{odla__task_8h_ae44cff8c829c8620b049074280116b9a}} 
+\index{odla\_task.h@{odla\_task.h}!odla\_RunTask@{odla\_RunTask}}
+\index{odla\_RunTask@{odla\_RunTask}!odla\_task.h@{odla\_task.h}}
+\doxysubsubsection{\texorpdfstring{odla\_RunTask()}{odla\_RunTask()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Run\+Task (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}}]{device,  }\item[{\mbox{\hyperlink{structodla__task}{odla\+\_\+task}}}]{task }\end{DoxyParamCaption})}
+
+
+
+Start a O\+D\+LA task in a synchronized manner. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em device} & The device to run the task \\
+\hline
+{\em task} & The task object \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__task_8h_afd92b3aeb5b11085813c781b48caad3d}\label{odla__task_8h_afd92b3aeb5b11085813c781b48caad3d}} 
+\index{odla\_task.h@{odla\_task.h}!odla\_RunTaskAsync@{odla\_RunTaskAsync}}
+\index{odla\_RunTaskAsync@{odla\_RunTaskAsync}!odla\_task.h@{odla\_task.h}}
+\doxysubsubsection{\texorpdfstring{odla\_RunTaskAsync()}{odla\_RunTaskAsync()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Run\+Task\+Async (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}}]{device,  }\item[{\mbox{\hyperlink{structodla__task}{odla\+\_\+task}}}]{task }\end{DoxyParamCaption})}
+
+
+
+Start a O\+D\+LA task in a asynchronized manner. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em device} & The device to run the task \\
+\hline
+{\em task} & The task object \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
