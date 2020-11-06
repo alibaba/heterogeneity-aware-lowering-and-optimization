@@ -42,15 +42,17 @@ Simply speaking, HALO compiles AI models into C/C++ code.
 
 The generated code are based on Open Deep Learning API (**ODLA**), which allows it run on any platforms with corresponding ODLA Runtime Library.
 
-<center>
-<img src="docs/halo_odla.png" width="85%" align=middle>
-</center>
+<p align="center">
+<img src="docs/halo_odla.png" width="100%">
+</p>
 
-So far, HALO supports the compilation of models of
+HALO has supported the compilation of models from the following frameworks:
 - Caffe
 - ONNX
 - TensorFlow
 - TFLite
+
+More frameworks will be supported soon.
 
 Various ODLA runtime libraries are implemented:
 - [Eigen](http://eigen.tuxfamily.org)
@@ -75,9 +77,9 @@ Let's start with a simple example of MNIST based on
 [TensorFlow Tutorial](https://chromium.googlesource.com/external/github.com/tensorflow/tensorflow/+/r0.10/tensorflow/g3doc/tutorials/mnist/beginners/index.md).
 The diagram below shows the overall workflow:
 
-<center>
-<img src="docs/mnist.png" align="middle" width="75%">
-</center>
+<p align="center">
+<img src="docs/mnist.png" width="100%">
+</p>
 
 Brief explanations:
 
