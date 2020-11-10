@@ -17,7 +17,7 @@ Simply speaking, HALO compiles AI models into C/C++ code.
 The generated code are based on Open Deep Learning API (**ODLA**), which allows it run on any platforms with corresponding ODLA Runtime Library. The picture below shows the overall idea: 
 
 <p align="center">
-<img src="docs/halo_odla.png" width="100%">
+<img src="docs/halo_odla.png" width="90%">
 </p>
 
 HALO has supported the compilation of models from the following frameworks:
