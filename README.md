@@ -13,34 +13,8 @@ It exploits the powerfulness of heterogeneous computing while hiding the heterog
 through the abstract, extendable interface called Open Deep Learning API (**ODLA**). 
 HALO provides a unified Ahead-Of-Time compilation solution, auto tailored for cloud, edge, and IoT scenarios.
 
-## Partners
-
-We appreciate the support of ODLA runtimes from the following partners:
-
-<!-- alphabetical order of partners -->
-
-<table style="width:100%">
-<tr>
-<td><a href=https://www.graphcore.ai/posts/graphcore-announces-support-for-odla>
-    <img src="./docs/partners/graphcore.png" width=80%></a></td>
-<td><a href=https://www.intel.com><img src="./docs/partners/intel.png" width=80%>
-    </a></td>
-<td><a href=https://www.qualcomm.com/products/cloud-artificial-intelligence>
-    <img title="Qualcomm Cloud AI 100" src="./docs/partners/qualcomm.jpg" width=80%>
-</a></td>
-</tr>
-</table>
-
-<!--
-|[![GraphCore Logo](./docs/partners/graphcore.png)](https://www.graphcore.ai/posts/graphcore-announces-support-for-odla) | ![Intel Logo](./docs/partners/intel.png) | [![Qualcomm Logo](./docs/partners/qualcomm.jpg "Support of ODLA Runtime for Qualcomm® Cloud AI 100, a high-performance AI inference accelerator")](https://www.qualcomm.com/products/cloud-artificial-intelligence) |
-:--:|:--:|:--:
--->
-
-## What Can HALO Do?
-
 Simply speaking, HALO compiles AI models into C/C++ code.
-
-The generated code are based on Open Deep Learning API (**ODLA**), which allows it run on any platforms with corresponding ODLA Runtime Library.
+The generated code are based on Open Deep Learning API (**ODLA**), which allows it run on any platforms with corresponding ODLA Runtime Library. The picture below shows the overall idea: 
 
 <p align="center">
 <img src="docs/halo_odla.png" width="100%">
@@ -97,16 +71,15 @@ Example code can be found [here](models/vision/classification/mnist_simple)
 
 Please refer to [HALO options list](docs/halo_cl_options.md) for all command line options.
 
-### More Examples
 
-#### An Object Dection Example
+### An Object Dection Example
 
 [This example](docs/yolo-examples.md) includes a complete end-to-end workflow of
 deploying YOLOv3 object detection model. 
 It demonstrates the use of HALO to compile a subgraph, to change the data layout,
 to override input dimensions.
 
-#### Using Inside Python 
+### Using Inside Python 
 
 HALO generated code can also be used inside Python.
 
@@ -114,13 +87,13 @@ HALO generated code can also be used inside Python.
 with [CaffeNet](https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf)
 inside Python using HALO.
 
-#### List of Demos 
+### List of Demos 
 
 [models directory](models/) contains scripts for the following models, which download the pretrained models, compile and deploy them using HALO on X86-CPU or NVGPU.
 Please refer to [Instruction.md](models/Instruction.md) for more details about how to run the examples.
 
 
-#### Image Classification <a name="image-classification"/>
+#### Image Classification
 
 | Model Class                                                                                                       | Model Source                                                                                                                                                   | HALO Examples                             |
 | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
@@ -143,25 +116,54 @@ Please refer to [Instruction.md](models/Instruction.md) for more details about h
 | [VGG-19](https://arxiv.org/abs/1409.1556)                                                                         | [PyTorch](https://pytorch.org/hub/pytorch_vision_vgg/)                                                                                                         | models/vision/classification/vgg          |
 
 
-#### Object Detection & Segmentation <a name="object-detection--segmentation"/>
+#### Object Detection & Segmentation
 
 | Model Class                                    | Model Source                                                                                     | HALO Examples                      |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------- |
 | [YOLO v3](https://pjreddie.com/darknet/yolo/)  | [ONNX](https://github.com/onnx/models/tree/master/vision/object_detection_segmentation/yolov3)   | models/vision/detection/yolo       |
 | [UNet](https://arxiv.org/abs/1505.04597)       | [PyTorch](https://pytorch.org/hub/mateuszbuda_brain-segmentation-pytorch_unet/)                  | models/vision/segmentation/unet    |
+<!--
 | RetinaNet                                      |                                                                                                  |
 | SSD                                            |                                                                                                  |
+-->
 
+<!--
 #### NLP <a name="nlp"/>
 
 | Model Class | Description |
 | ----------- | ----------- |
 | BERT        |             |
 |             |
+-->
 
-[HALO Command Line Options](docs/halo_cl_options.md)
 
 ## Contributions and Feedback
+
+<!--
+### Partners
+-->
+
+We appreciate the support of ODLA runtimes from the following partners:
+
+<!-- alphabetical order of partners -->
+
+<table style="width:100%">
+<tr align="middle">
+<td width="36%"><a href=https://www.graphcore.ai/posts/graphcore-announces-support-for-odla>
+    <img src="./docs/partners/graphcore.png" width=110%></a></td>
+<td width="30%" align="middle" width="35%"><a href=https://www.intel.com><img src="./docs/partners/intel.png" width=60%>
+    </a></td>
+<td align="middle"><a href=https://www.qualcomm.com/products/cloud-artificial-intelligence>
+    <img title="Qualcomm Cloud AI 100" src="./docs/partners/qualcomm.jpg" >
+</a></td>
+</tr>
+</table>
+
+<!--
+|[![GraphCore Logo](./docs/partners/graphcore.png)](https://www.graphcore.ai/posts/graphcore-announces-support-for-odla) | ![Intel Logo](./docs/partners/intel.png) | [![Qualcomm Logo](./docs/partners/qualcomm.jpg "Support of ODLA Runtime for Qualcomm® Cloud AI 100, a high-performance AI inference accelerator")](https://www.qualcomm.com/products/cloud-artificial-intelligence) |
+:--:|:--:|:--:
+-->
+
 
 We're always looking for help to improve HALO.
 
@@ -169,6 +171,12 @@ We mainly follow the [Google C++ Style Guide](https://google.github.io/styleguid
 [clang-tidy](https://clang.llvm.org/extra/clang-tidy/) is used to enforce the coding style check.
 
 We use GitHub issues to track bugs.
+
+## Resources
+
+* [How to build HALO](docs/how_to_build.md)
+* [YOLO-v3 example](docs/yolo-examples.md)
+* [HALO options list](docs/halo_cl_options.md)
 
 ## License
 
