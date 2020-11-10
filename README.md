@@ -147,7 +147,7 @@ We appreciate the support of ODLA runtimes from the following partners:
 
 <!-- alphabetical order of partners -->
 
-<table style="width:100%">
+<table style="width:100% border:none">
 <tr align="middle">
 <td width="36%"><a href=https://www.graphcore.ai>
     <img src="./docs/partners/graphcore.png" width=110%></a></td>
