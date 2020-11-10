@@ -137,7 +137,7 @@ Please refer to [Instruction.md](models/Instruction.md) for more details about h
 -->
 
 
-## Contributions and Feedback
+## Support and Contribution
 
 <!--
 ### Partners
@@ -149,7 +149,7 @@ We appreciate the support of ODLA runtimes from the following partners:
 
 <table style="width:100%">
 <tr align="middle">
-<td width="36%"><a href=https://www.graphcore.ai/posts/graphcore-announces-support-for-odla>
+<td width="36%"><a href=https://www.graphcore.ai>
     <img src="./docs/partners/graphcore.png" width=110%></a></td>
 <td width="30%" align="middle" width="35%"><a href=https://www.intel.com><img src="./docs/partners/intel.png" width=60%>
     </a></td>
@@ -164,19 +164,15 @@ We appreciate the support of ODLA runtimes from the following partners:
 :--:|:--:|:--:
 -->
 
+And we're always looking for help to improve HALO. See [CONTRIBUTING](docs/CONTRIBUTING.md) for additional details.
+Thank you!
 
-We're always looking for help to improve HALO.
-
-We mainly follow the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
-[clang-tidy](https://clang.llvm.org/extra/clang-tidy/) is used to enforce the coding style check.
-
-We use GitHub issues to track bugs.
-
-## Resources
+## Links 
 
 * [How to build HALO](docs/how_to_build.md)
 * [YOLO-v3 example](docs/yolo-examples.md)
 * [HALO options list](docs/halo_cl_options.md)
+* [Graphcore Announces Support for ODLA](https://www.graphcore.ai/posts/graphcore-announces-support-for-odla)
 
 ## License
 
