@@ -13,8 +13,9 @@ It exploits the powerfulness of heterogeneous computing while hiding the heterog
 through the abstract, extendable interface called Open Deep Learning API (**ODLA**). 
 HALO provides a unified Ahead-Of-Time compilation solution, auto tailored for cloud, edge, and IoT scenarios.
 
-Simply speaking, HALO compiles AI models into C/C++ code.
-The generated code are based on Open Deep Learning API (**ODLA**), which allows it run on any platforms with corresponding ODLA Runtime Library. The picture below shows the overall idea: 
+HALO supports multiple compilation modes. For the ahead-of-time (AOT) compilation mode,
+HALO compiles AI models into C/C++ code based on the Open Deep Learning API (ODLA), which allows it to run on any platforms with corresponding ODLA Runtime Library.
+HALO is the first platform to simultaneously generate both host code and heterogeneous device code automatically. The picture below shows the overall compilation flow:
 
 <p align="center">
 <img src="docs/halo_odla.png" width="90%">
