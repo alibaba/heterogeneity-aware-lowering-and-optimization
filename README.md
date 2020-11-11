@@ -146,7 +146,6 @@ Please refer to [Instruction.md](models/Instruction.md) for more details about h
 We appreciate the support of ODLA runtimes from the following partners:
 
 <!-- alphabetical order of partners -->
-<style>.table-no-border table {border: 0}</style>
 <div class="table-no-border">
 <table rules="none" border=0 class="table-no-border">
 <tr align="middle">
@@ -167,7 +166,6 @@ We appreciate the support of ODLA runtimes from the following partners:
 <td></td>
 </tr>
 </table>
-</div>
 
 <!--
 |[![GraphCore Logo](./docs/partners/graphcore.png)](https://www.graphcore.ai/posts/graphcore-announces-support-for-odla) | ![Intel Logo](./docs/partners/intel.png) | [![Qualcomm Logo](./docs/partners/qualcomm.jpg "Support of ODLA Runtime for Qualcomm® Cloud AI 100, a high-performance AI inference accelerator")](https://www.qualcomm.com/products/cloud-artificial-intelligence) |
