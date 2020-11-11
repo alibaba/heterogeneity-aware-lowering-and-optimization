@@ -146,18 +146,28 @@ Please refer to [Instruction.md](models/Instruction.md) for more details about h
 We appreciate the support of ODLA runtimes from the following partners:
 
 <!-- alphabetical order of partners -->
-
-<table style="width:100% border:none">
+<style>.table-no-border table {border: 0}</style>
+<div class="table-no-border">
+<table rules="none" border=0 class="table-no-border">
 <tr align="middle">
-<td width="36%"><a href=https://www.graphcore.ai>
-    <img src="./docs/partners/graphcore.png" width=110%></a></td>
-<td width="30%" align="middle" width="35%"><a href=https://www.intel.com><img src="./docs/partners/intel.png" width=60%>
-    </a></td>
+<td align="middle" width="25%"><a href=http://www.cambricon.com>
+  <img src="./docs/partners/cambricon.png"></a></td>
+<td align="middle" width="36%"><a href=https://www.graphcore.ai>
+  <img src="./docs/partners/graphcore.png" width=110%></a></td>
+<td align="middle">
+  <a href=https://www.intel.com><img src="./docs/partners/intel.png" width=60%></a></td>
+</tr>
+<tr></tr> <!-- disable zebra striping -->
+<tr align="middle" style="border:none">
+<td align="middle">
+  <a href=https://www.nvidia.com><img src="./docs/partners/nvidia.png" width=60%></a></td>
 <td align="middle"><a href=https://www.qualcomm.com/products/cloud-artificial-intelligence>
-    <img title="Qualcomm Cloud AI 100" src="./docs/partners/qualcomm.jpg" >
+    <img title="Qualcomm Cloud AI 100" src="./docs/partners/qualcomm.jpg">
 </a></td>
+<td></td>
 </tr>
 </table>
+</div>
 
 <!--
 |[![GraphCore Logo](./docs/partners/graphcore.png)](https://www.graphcore.ai/posts/graphcore-announces-support-for-odla) | ![Intel Logo](./docs/partners/intel.png) | [![Qualcomm Logo](./docs/partners/qualcomm.jpg "Support of ODLA Runtime for Qualcomm® Cloud AI 100, a high-performance AI inference accelerator")](https://www.qualcomm.com/products/cloud-artificial-intelligence) |
