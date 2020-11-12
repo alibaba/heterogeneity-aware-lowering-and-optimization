@@ -826,10 +826,10 @@ odla_value odla_Sigmoid(odla_value input, const odla_value_id value_id) {
   return CreateValue(relu, input->type, value_id);
 }
 
-odla_value odla_ReduceMean(odla_value input, odla_size_t num_of_axes,
-                           const odla_uint32* axes, odla_bool keep_dims,
-                           odla_value_shape output_dims,
-                           const odla_value_id id) {
+static odla_value reduce(odla_value input, nvinfer1::ReduceOperation op,
+                         odla_size_t num_of_axes, const odla_uint32* axes,
+                         odla_bool keep_dims, odla_value_shape output_dims,
+                         const odla_value_id id) {
   if (output_dims.size != input->type.shape.size) {
     assert(!keep_dims);
   }
@@ -839,9 +839,32 @@ odla_value odla_ReduceMean(odla_value input, odla_size_t num_of_axes,
     reduce_axes |= (1 << axes[i]);
   }
 
-  auto mean = g_comp->network->addReduce(
-      *input, nvinfer1::ReduceOperation::kAVG, reduce_axes, keep_dims);
+  auto mean = g_comp->network->addReduce(*input, op, reduce_axes, keep_dims);
   return CreateValue(mean, {input->type.element_type, output_dims}, id);
+}
+
+odla_value odla_ReduceMean(odla_value input, odla_size_t num_of_axes,
+                           const odla_uint32* axes, odla_bool keep_dims,
+                           odla_value_shape output_dims,
+                           const odla_value_id id) {
+  return reduce(input, nvinfer1::ReduceOperation::kAVG, num_of_axes, axes,
+                keep_dims, output_dims, id);
+}
+
+odla_value odla_ReduceMin(odla_value input, odla_size_t num_of_axes,
+                          const odla_uint32* axes, odla_bool keep_dims,
+                          odla_value_shape output_dims,
+                          const odla_value_id id) {
+  return reduce(input, nvinfer1::ReduceOperation::kMIN, num_of_axes, axes,
+                keep_dims, output_dims, id);
+}
+
+odla_value odla_ReduceMax(odla_value input, odla_size_t num_of_axes,
+                          const odla_uint32* axes, odla_bool keep_dims,
+                          odla_value_shape output_dims,
+                          const odla_value_id id) {
+  return reduce(input, nvinfer1::ReduceOperation::kMAX, num_of_axes, axes,
+                keep_dims, output_dims, id);
 }
 
 odla_value odla_LRN(odla_value input, odla_memory_layout input_layout,
