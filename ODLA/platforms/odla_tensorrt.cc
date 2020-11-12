@@ -592,6 +592,10 @@ odla_value odla_Add(odla_value lhs, odla_value rhs, const odla_value_id id) {
   return binary_op(nvinfer1::ElementWiseOperation::kSUM, lhs, rhs, id);
 }
 
+odla_value odla_And(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  return binary_op(nvinfer1::ElementWiseOperation::kAND, lhs, rhs, id);
+}
+
 odla_value odla_Sub(odla_value lhs, odla_value rhs, const odla_value_id id) {
   return binary_op(nvinfer1::ElementWiseOperation::kSUB, lhs, rhs, id);
 }
@@ -604,10 +608,55 @@ odla_value odla_Div(odla_value lhs, odla_value rhs, const odla_value_id id) {
   return binary_op(nvinfer1::ElementWiseOperation::kDIV, lhs, rhs, id);
 }
 
+odla_value odla_Equal(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  return binary_op(nvinfer1::ElementWiseOperation::kEQUAL, lhs, rhs, id);
+}
+
+odla_value odla_Or(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  return binary_op(nvinfer1::ElementWiseOperation::kOR, lhs, rhs, id);
+}
+
+odla_value odla_NotEqual(odla_value lhs, odla_value rhs,
+                         const odla_value_id id) {
+  auto eq = odla_Equal(lhs, rhs, nullptr);
+  return odla_Not(eq, id);
+}
+
+odla_value odla_Greater(odla_value lhs, odla_value rhs,
+                        const odla_value_id id) {
+  return binary_op(nvinfer1::ElementWiseOperation::kGREATER, lhs, rhs, id);
+}
+
+odla_value odla_GreaterOrEqual(odla_value lhs, odla_value rhs,
+                               const odla_value_id id) {
+  auto gt = odla_Greater(lhs, rhs, nullptr);
+  auto eq = odla_Equal(lhs, rhs, nullptr);
+  return odla_Or(gt, eq, id);
+}
+
+odla_value odla_Less(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  return binary_op(nvinfer1::ElementWiseOperation::kLESS, lhs, rhs, id);
+}
+
+odla_value odla_LessOrEqual(odla_value lhs, odla_value rhs,
+                            const odla_value_id id) {
+  auto gt = odla_Less(lhs, rhs, nullptr);
+  auto eq = odla_Equal(lhs, rhs, nullptr);
+  return odla_Or(gt, eq, id);
+}
+
 static odla_value unary_op(nvinfer1::UnaryOperation op, odla_value input,
                            const odla_value_id id) {
   auto layer = g_comp->network->addUnary(*input->tensor, op);
   return CreateValue(layer, input->type, id);
+}
+
+odla_value odla_Not(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kNOT, input, id);
+}
+
+odla_value odla_Abs(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kABS, input, id);
 }
 
 odla_value odla_Floor(odla_value input, const odla_value_id id) {
