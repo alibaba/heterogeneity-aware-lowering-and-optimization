@@ -720,8 +720,8 @@ odla_value odla_ACos(odla_value input, const odla_value_id id) {
   return unary_op(nvinfer1::UnaryOperation::kACOS, input, id);
 }
 
-odla_value odla_ACosH(odla_value input, const odla_value_id id) {
-  return unary_op(nvinfer1::UnaryOperation::kCOSH, input, id);
+odla_value odla_ACosh(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kACOSH, input, id);
 }
 
 odla_value odla_ASin(odla_value input, const odla_value_id id) {
