@@ -119,6 +119,9 @@ def ONNX_Gather : OpMapping<"Gather", Gather> {
   let attr_mapping_ = [AttributeMapping<"axis", "axis", "0">];
 }
 
+def ONNX_GatherElements : ONNXExtension <"GatherElements"> {
+  let extension_attr_ = [ ExtensionAttr<"axis", Integer, "0"> ];
+}
 
 def ONNX_Greater: OpMapping<"Greater", Greater>;
 
