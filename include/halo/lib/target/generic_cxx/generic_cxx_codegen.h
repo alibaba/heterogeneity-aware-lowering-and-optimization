@@ -106,15 +106,25 @@ class GenericCXXCodeGen : public CodeGen {
 
   // TODO(unknown): The following RunOnInstruction will be generated via .td
   // file.
+  virtual void RunOnInstruction(AbsInst*) override;
+  virtual void RunOnInstruction(ACosInst*) override;
+  virtual void RunOnInstruction(ACoshInst*) override;
   virtual void RunOnInstruction(AddInst*) override;
+  virtual void RunOnInstruction(AndInst*) override;
   virtual void RunOnInstruction(ArgmaxInst*) override;
+  virtual void RunOnInstruction(ASinInst*) override;
+  virtual void RunOnInstruction(ASinhInst*) override;
+  virtual void RunOnInstruction(ATanInst*) override;
+  virtual void RunOnInstruction(ATanhInst*) override;
   virtual void RunOnInstruction(SubInst*) override;
   virtual void RunOnInstruction(MulInst*) override;
   virtual void RunOnInstruction(CallInst*) override;
+  virtual void RunOnInstruction(CeilInst*) override;
   virtual void RunOnInstruction(ConcatInst*) override;
   virtual void RunOnInstruction(DivInst*) override;
   virtual void RunOnInstruction(ErfInst*) override;
   virtual void RunOnInstruction(ExpInst*) override;
+
   virtual void RunOnInstruction(FloorInst*) override;
   virtual void RunOnInstruction(RoundInst*) override;
   virtual void RunOnInstruction(FPtoSIInst*) override;

@@ -25,11 +25,15 @@ namespace halo {
 
 void GenericCXXCodeGen::RunOnUnaryInstruction(Instruction* inst) {
   static const std::unordered_map<OpCode, const char*> names{
-      {OpCode::ERF, "odla_Erf"},     {OpCode::EXP, "odla_Exp"},
-      {OpCode::FLOOR, "odla_Floor"}, {OpCode::RSQRT, "odla_Rsqrt"},
+      {OpCode::ABS, "odla_Abs"},     {OpCode::ACOS, "odla_ACos"},
+      {OpCode::ACOSH, "odla_ACosh"}, {OpCode::ASIN, "odla_ASin"},
+      {OpCode::ASINH, "odla_ASinh"}, {OpCode::ATAN, "odla_ATan"},
+      {OpCode::ATANH, "odla_ATanh"}, {OpCode::COS, "odla_Cos"},
+      {OpCode::COSH, "odla_Cosh"},   {OpCode::ERF, "odla_Erf"},
+      {OpCode::EXP, "odla_Exp"},     {OpCode::FLOOR, "odla_Floor"},
+      {OpCode::CEIL, "odla_Ceil"},   {OpCode::RSQRT, "odla_Rsqrt"},
       {OpCode::SQRT, "odla_Sqrt"},   {OpCode::SIN, "odla_Sin"},
-      {OpCode::SINH, "odla_Sinh"},   {OpCode::COS, "odla_Cos"},
-      {OpCode::COSH, "odla_Cosh"},   {OpCode::ROUND, "odla_Round"}};
+      {OpCode::SINH, "odla_Sinh"},   {OpCode::ROUND, "odla_Round"}};
 
   auto it = names.find(inst->GetOpCode());
   HLCHECK(it != names.end());
@@ -46,9 +50,10 @@ void GenericCXXCodeGen::RunOnUnaryInstruction(Instruction* inst) {
 void GenericCXXCodeGen::RunOnBinaryInstruction(Instruction* inst) {
   static const std::unordered_map<OpCode, const char*> names{
       {OpCode::ADD, "odla_Add"},
-      {OpCode::SUB, "odla_Sub"},
+      {OpCode::AND, "odla_And"},
+      {OpCode::DIV, "odla_Div"},
       {OpCode::MUL, "odla_Mul"},
-      {OpCode::DIV, "odla_Div"}};
+      {OpCode::SUB, "odla_Sub"}};
   auto it = names.find(inst->GetOpCode());
   HLCHECK(it != names.end());
   const Def& lhs = inst->GetOperand(0);
@@ -78,7 +83,15 @@ void GenericCXXCodeGen::RunOnInstruction(DivInst* inst) {
   RunOnBinaryInstruction(inst);
 }
 
+void GenericCXXCodeGen::RunOnInstruction(AndInst* inst) {
+  RunOnBinaryInstruction(inst);
+}
+
 void GenericCXXCodeGen::RunOnInstruction(FloorInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(CeilInst* inst) {
   RunOnUnaryInstruction(inst);
 }
 
@@ -115,6 +128,34 @@ void GenericCXXCodeGen::RunOnInstruction(CosInst* inst) {
 }
 
 void GenericCXXCodeGen::RunOnInstruction(CoshInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(AbsInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(ACosInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(ACoshInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(ASinInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(ASinhInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(ATanInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(ATanhInst* inst) {
   RunOnUnaryInstruction(inst);
 }
 
