@@ -73,6 +73,8 @@ void TritonConfigWriter::PrintUseProtobuf(const Module& module,
     if (type.GetNumOfDims() == 4) {
       input->set_format(::nvidia::inferenceserver::ModelInput_Format::
                             ModelInput_Format_FORMAT_NCHW);
+    }
+    if (max_batch_size_ > 0) {
       for (size_t i = 1; i < type.GetNumOfDims(); ++i) {
         input->add_dims(type.GetDimSizes()[i]);
       }
@@ -87,8 +89,15 @@ void TritonConfigWriter::PrintUseProtobuf(const Module& module,
     const auto& type = op.GetType();
     output->set_name(op.GetDef()->GetName());
     output->set_data_type(GetTritonType(type));
-    std::for_each(type.GetDimSizes().begin(), type.GetDimSizes().end(),
-                  [&](int x) { output->add_dims(x); });
+
+    if (max_batch_size_ > 0) {
+      for (size_t i = 1; i < type.GetNumOfDims(); ++i) {
+        output->add_dims(type.GetDimSizes()[i]);
+      }
+    } else {
+      std::for_each(type.GetDimSizes().begin(), type.GetDimSizes().end(),
+                    [&](int x) { output->add_dims(x); });
+    }
   }
 
   google::protobuf::TextFormat::Printer printer;
