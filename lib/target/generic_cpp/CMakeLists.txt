@@ -27,6 +27,7 @@ set(SRCS
   concat.cc
   conv.cc
   deconv.cc
+  expand.cc
   gather.cc
   gemm.cc
   generic_cxx_codegen.cc

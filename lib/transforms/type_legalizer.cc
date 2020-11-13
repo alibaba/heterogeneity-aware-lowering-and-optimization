@@ -916,6 +916,22 @@ static void RunOnInstruction(SetDiff1DInst* inst) {
   ;
 }
 
+static void RunOnInstruction(ExpandDimsInst* inst) {
+  const auto& idx_op = inst->GetOperand(1);
+  const auto& idx_type = idx_op.GetType();
+  const auto& input_type = inst->GetOperand(0).GetType();
+  if (!IsA<Constant>(idx_op)) {
+    return;
+  }
+  std::vector<int64_t> shape;
+  shape.reserve(idx_type.GetTotalNumOfElements());
+  Constant* c = DynCast<Constant>(idx_op);
+  for (int i = 0, e = idx_type.GetTotalNumOfElements(); i < e; ++i) {
+    shape.push_back(c->GetDataAsInt64(i));
+  }
+  inst->GetResultsTypes()[0] = Type{input_type.GetDataType(), shape};
+}
+
 static void RunOnInstruction(NonMaxSuppressionInst* inst) {
   if (inst->GetNumOfOperands() > 4) {
     const auto& op2 = inst->GetOperand(2);

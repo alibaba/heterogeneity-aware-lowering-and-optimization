@@ -109,6 +109,8 @@ def ONNX_Dropout : ONNXExtension<"Dropout">;
 
 def ONNX_Equal: OpMapping<"Equal", Equal>;
 
+def ONNX_Expand : OpMapping<"Expand", ExpandDims>;
+
 def ONNX_Flatten : ONNXExtension<"Flatten"> { 
   let extension_attr_ = [
     ExtensionAttr<"axis", Integer, "1">,
