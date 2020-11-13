@@ -234,6 +234,7 @@ def ONNX_ReduceMin: OpMapping<"ReduceMin", ReduceMin> {
 def ONNX_Relu : OpMapping<"Relu", Relu>;
 
 def ONNX_Reshape : OpMapping<"Reshape", Reshape>;
+def ONNX_Expand : ONNXExtension<"Expand"> { }
 
 def ONNX_Resize : OpMapping<"Resize", Resize> {
   let attr_mapping_ = [
