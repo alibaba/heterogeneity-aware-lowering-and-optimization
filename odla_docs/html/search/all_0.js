@@ -88,7 +88,7 @@ var searchData=
   ['odla_5fexecutable_85',['odla_executable',['../odla__compute_8h.html#a58a9f95845de8c2dcee9df9efd983aaf',1,'odla_compute.h']]],
   ['odla_5fexecutecomputation_86',['odla_ExecuteComputation',['../odla__compute_8h.html#aa164c55ee48284ef1dc9766deeaa38c2',1,'odla_compute.h']]],
   ['odla_5fexp_87',['odla_Exp',['../odla__ops__math_8h.html#a5a1b9fd034e1901ffe5b18c8f9221313',1,'odla_ops_math.h']]],
-  ['odla_5fexpanddims_88',['odla_ExpandDims',['../odla__ops__process_8h.html#af28b8693896b3a62228eea33d113d7ce',1,'odla_ops_process.h']]],
+  ['odla_5fexpanddims_88',['odla_ExpandDims',['../odla__ops__process_8h.html#ad8f03fa238e900ae7fc3934c7a77273f',1,'odla_ops_process.h']]],
   ['odla_5feyelike_89',['ODLA_EyeLike',['../odla__ops__process_8h.html#ae5784f32274737503651496765cc159ca2ac3addaabcc1bd7a45f7015188ec81b',1,'odla_ops_process.h']]],
   ['odla_5ffill_90',['odla_Fill',['../odla__ops__process_8h.html#a3191cb5978e6fcc84ee13d57547ef9e1',1,'odla_ops_process.h']]],
   ['odla_5ffill_5fmethod_91',['odla_fill_method',['../odla__ops__process_8h.html#ae5784f32274737503651496765cc159c',1,'odla_ops_process.h']]],
