@@ -33,6 +33,7 @@ Various ODLA runtime libraries are implemented:
 - [GraphCore® IPU](https://www.graphcore.ai)
 - [Intel® oneAPI](https://github.com/oneapi-src)
 - [Qualcomm® Cloud AI 100](https://www.qualcomm.com/products/cloud-artificial-intelligence)
+- [T-Head Hangguang NPU](https://www.t-head.cn)
 - [TensorRT™](https://developer.nvidia.com/tensorrt)
 - [XNNPACK](https://github.com/google/XNNPACK)
 
@@ -139,6 +140,10 @@ Please refer to [Instruction.md](models/Instruction.md) for more details about h
 
 ## Support and Contribution
 
+HALO supports T-Head's Hangguang 800 NPU. 
+
+<a href="https://www.t-head.cn"> <img src="./docs/t_head.png" width="30%"></a>
+<a href="https://www.t-head.cn/product/npu?spm=a2ouz.12987052.0.0.7d1a6245rNL0T1"><img src="./docs/hanguang800.png" width="10%"></a>
 <!--
 ### Partners
 -->
