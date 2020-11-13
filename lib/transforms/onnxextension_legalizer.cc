@@ -55,7 +55,7 @@ static std::vector<Def> ConvertUnsqueeze(const ONNXExtensionInst* ext,
   } else {
     for (auto& a : axis) {
       if (a < 0) {
-        a += input_type.GetNumOfDims() + 1;
+        a += input_type.GetNumOfDims();
       }
       new_dims.insert(new_dims.begin() + a, 1);
     }
