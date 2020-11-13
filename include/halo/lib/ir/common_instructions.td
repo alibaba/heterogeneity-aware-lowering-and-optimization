@@ -115,4 +115,10 @@ let cat_ = cat_common in {
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
   }
 
+  def ExpandDims: Inst<"Broadcast the input following the given shape"> {
+    let ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >,
+                Arg<"The shape.", ArgType<[I32,I64]>, 1D>];
+    let outs_ = [Arg<"The result.", MatchArgType<0> >];
+  }
+
 }
