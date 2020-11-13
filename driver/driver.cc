@@ -366,7 +366,6 @@ static void PopulatePasses(PassManager* pm, std::ostream* out_code,
     std::vector<std::string> inputs(Inputs.begin(), Inputs.end());
     pm->AddPass<InputRewriter>(inputs);
   }
-
   auto fusion_opts = GetFusionOptions();
   pm->AddPass<InstSimplify>(
       llvm::StringRef(Target).startswith("cxx"), DisableBroadcasting.getValue(),
