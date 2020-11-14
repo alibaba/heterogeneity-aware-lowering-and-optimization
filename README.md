@@ -30,8 +30,10 @@ More frameworks will be supported soon.
 
 HALO supports
 [Alibaba's first AI-inference chip](https://www.alibabacloud.com/blog/announcing-hanguang-800-alibabas-first-ai-inference-chip_595482
-): [Hanghuang 800](https://www.t-head.cn/product/npu?spm=a2ouz.12987052.0.0.7d1a6245rNL0T1) (a neural processing unit designed by Alibaba's research group, [T-Head](https://www.t-head.cn))
+): [Hanghuang-800 NPU](https://www.t-head.cn/product/npu?spm=a2ouz.12987052.0.0.7d1a6245rNL0T1)
 via its [HgAI SDK](http://doc.ratelnn.com).
+Hangguang-800 NPU is designed by [PingTouGe Semiconductor Co., Ltd.](https://www.t-head.cn) (also known as T-Head),
+a business entity of Alibaba Group.
 
 <a href="https://www.t-head.cn"> <img src="./docs/t_head.png" width="30%"></a>
 <a href="https://www.t-head.cn/product/npu?spm=a2ouz.12987052.0.0.7d1a6245rNL0T1"><img src="./docs/hanguang800.png" width="10%"></a>
