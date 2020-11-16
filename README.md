@@ -41,7 +41,8 @@ a business entity of Alibaba Group.
 <a href="https://www.t-head.cn"> <img src="./docs/t_head.png" width="30%"></a>
 <a href="https://www.t-head.cn/product/npu?spm=a2ouz.12987052.0.0.7d1a6245rNL0T1"><img src="./docs/hanguang800.png" width="10%"></a>
 
-A broader hardware ecosystem is supported via various ODLA runtime libraries implementations:
+A broad ODLA ecosystem is supported via the ODLA runtime library set
+targeting various heterogeneous accelerators/runtimes:
 - [Eigen](http://eigen.tuxfamily.org)
 - [GraphCore® IPU](https://www.graphcore.ai)
 - [Intel® oneAPI](https://github.com/oneapi-src)
@@ -49,7 +50,7 @@ A broader hardware ecosystem is supported via various ODLA runtime libraries imp
 - [TensorRT™](https://developer.nvidia.com/tensorrt)
 - [XNNPACK](https://github.com/google/XNNPACK)
 
-And we welcome new hardware platforms to join us.
+And we welcome new accelerator platforms to join in the ODLA community.
 
 ## Partners
 
