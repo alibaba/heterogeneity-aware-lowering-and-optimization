@@ -975,7 +975,18 @@ static void RunOnInstruction(TopKInst* inst) {
 
   const auto& input_type = inst->GetOperand(0).GetType();
   const auto dims = input_type.GetNumOfDims();
-  std::vector<int64_t> ret_shape(dims, k);
+  // Normalize axis.
+  auto axis = inst->GetAxis();
+  if (axis < 0) {
+    axis += dims;
+    inst->SetAxis(axis);
+  }
+
+  HLCHECK(axis >= 0 && axis < static_cast<int>(dims));
+
+  auto ret_shape = input_type.GetDimSizes();
+  ret_shape[axis] = k;
+
   inst->GetResultsTypes()[0] = Type{input_type.GetDataType(), ret_shape};
   inst->GetResultsTypes()[1] = Type{inst->GetIndexType(), ret_shape};
 }
