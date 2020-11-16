@@ -221,6 +221,8 @@ def TF_Sqrt : OpMapping<"Sqrt", Sqrt>;
 
 def TF_Sub : OpMapping<"Sub", Sub>;
 
+def TF_Tanh : OpMapping<"Tanh", Tanh>;
+
 def TF_Transpose : OpMapping<"Transpose", Transpose> {
   let attr_mapping_ = [
     AttributeMapping<"perm", "permutation", "{}">];
