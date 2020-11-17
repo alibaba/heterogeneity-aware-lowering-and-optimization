@@ -236,4 +236,6 @@ def TF_RandomUniform : OpMapping<"RandomUniform", RandomUniform> {
     AttributeMapping<"", "maxval", "1.0">];
 }
 
+def TF_TopK  : OpMapping<"TopKV2", TopK>;
+
 def TF_Range : OpMapping<"Range", Range>;
