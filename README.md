@@ -52,6 +52,10 @@ targeting various heterogeneous accelerators/runtimes:
 
 And we welcome new accelerator platforms to join in the ODLA community.
 
+ODLA API Reference can be found
+[here](https://alibaba.github.io/heterogeneity-aware-lowering-and-optimization/odla_docs/html/index.html)
+and detailed programming guide be coming soon...
+
 ## Partners
 
 We appreciate the support of ODLA runtimes from the following partners:
