@@ -1,3 +1,10 @@
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
+
+![Build and Test](https://github.com/alibaba/heterogeneity-aware-lowering-and-optimization/workflows/Build%20and%20Test/badge.svg?branch=master)
+![API Publish](https://github.com/alibaba/heterogeneity-aware-lowering-and-optimization/workflows/API%20Publish/badge.svg?branch=master)
+
+
 HALO
 ===============
 

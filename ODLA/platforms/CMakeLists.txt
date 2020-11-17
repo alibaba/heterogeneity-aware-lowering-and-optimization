@@ -13,12 +13,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License
 # ==============================================================================
+
+macro(add_odla_library)
+  add_library(${ARGN})
+  install(TARGETS ${ARGV0} LIBRARY DESTINATION lib)
+endmacro(add_odla_library)
+
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
 set(DNNL_ROOT /opt/dnnl)
-add_library(odla_dnnl SHARED odla_dnnl.cc)
+add_odla_library(odla_dnnl SHARED odla_dnnl.cc)
 find_library(dnnl NAMES dnnl PATHS ${DNNL_ROOT} PATH_SUFFIXES lib NO_DEFAULT_PATH)
 target_include_directories(odla_dnnl PRIVATE ${DNNL_ROOT}/include)
 target_link_libraries(odla_dnnl ODLA ${dnnl})
+
+add_odla_library(odla_dnnl_interpreter SHARED odla_dnnl.cc)
+target_include_directories(odla_dnnl_interpreter PRIVATE ${DNNL_ROOT}/include)
+target_compile_definitions(odla_dnnl_interpreter PRIVATE ODLA_DNNL_BUILD_AS_INTERPRETER)
+target_link_libraries(odla_dnnl_interpreter ODLA ${dnnl})
+
 
 set(CUDA_VERSION 10.0)
 set(TRT_ROOT /usr/local/cuda-${CUDA_VERSION}/targets/x86_64-linux)
@@ -28,7 +40,7 @@ if(NOT cudart OR NOT nvinfer)
   message(STATUS "CUDA library not found, skip building odla for TensorRT")
   add_library(odla_tensorrt INTERFACE) # pseudo target
 else()
-  add_library(odla_tensorrt SHARED odla_tensorrt.cc)
+  add_odla_library(odla_tensorrt SHARED odla_tensorrt.cc)
   target_include_directories(odla_tensorrt PRIVATE ${TRT_ROOT}/include)
   target_compile_options(odla_tensorrt PRIVATE -Wno-deprecated-declarations)
   target_link_libraries(odla_tensorrt ODLA ${nvinfer} ${cudart})
@@ -36,12 +48,12 @@ endif()
 
 set(EIGEN_VERSION 3.3.7)
 set(EIGEN_ROOT /opt/eigen-${EIGEN_VERSION})
-add_library(odla_eigen SHARED odla_eigen.cc)
+add_odla_library(odla_eigen SHARED odla_eigen.cc)
 target_include_directories(odla_eigen PRIVATE ${EIGEN_ROOT})
 target_link_libraries(odla_eigen ODLA)
 
 set(XNNPACK_ROOT /opt/XNNPACK)
-add_library(odla_xnnpack SHARED odla_xnnpack.c)
+add_odla_library(odla_xnnpack SHARED odla_xnnpack.c)
 find_library(xnnpack NAMES XNNPACK PATHS ${XNNPACK_ROOT} PATH_SUFFIXES lib NO_DEFAULT_PATH)
 find_library(clog NAMES clog PATHS ${XNNPACK_ROOT} PATH_SUFFIXES lib NO_DEFAULT_PATH)
 find_library(cpuinfo NAMES cpuinfo PATHS ${XNNPACK_ROOT} PATH_SUFFIXES lib NO_DEFAULT_PATH)

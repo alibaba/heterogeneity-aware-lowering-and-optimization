@@ -25,8 +25,6 @@ install(TARGETS halo halolib
 
 # Install ODLA
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/ODLA/include/ODLA DESTINATION include)
-install(TARGETS odla_dnnl odla_eigen odla_xnnpack odla_tensorrt LIBRARY DESTINATION lib/ODLA)
-
 install(DIRECTORY ${CMAKE_BINARY_DIR}/runtime DESTINATION .)
 install(CODE "execute_process(COMMAND ${CMAKE_SOURCE_DIR}/demo/install.sh ${CMAKE_INSTALL_PREFIX})")
 install(FILES ${CMAKE_BINARY_DIR}/docs/HaloIR.md DESTINATION docs OPTIONAL)

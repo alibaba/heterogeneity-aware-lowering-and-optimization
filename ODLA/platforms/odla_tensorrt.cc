@@ -133,7 +133,9 @@ struct _odla_computation {
     builder->setMaxWorkspaceSize(MAX_WORKSPACE_SIZE_BYTES);
     network = builder->createNetwork();
 #else
+#ifdef USE_PLUGIN
     initLibNvInferPlugins(static_cast<void*>(&Logger), "");
+#endif
     nvinfer1::NetworkDefinitionCreationFlags flags = 0;
     network = builder->createNetworkV2(flags);
 #endif
@@ -590,6 +592,10 @@ odla_value odla_Add(odla_value lhs, odla_value rhs, const odla_value_id id) {
   return binary_op(nvinfer1::ElementWiseOperation::kSUM, lhs, rhs, id);
 }
 
+odla_value odla_And(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  return binary_op(nvinfer1::ElementWiseOperation::kAND, lhs, rhs, id);
+}
+
 odla_value odla_Sub(odla_value lhs, odla_value rhs, const odla_value_id id) {
   return binary_op(nvinfer1::ElementWiseOperation::kSUB, lhs, rhs, id);
 }
@@ -602,10 +608,55 @@ odla_value odla_Div(odla_value lhs, odla_value rhs, const odla_value_id id) {
   return binary_op(nvinfer1::ElementWiseOperation::kDIV, lhs, rhs, id);
 }
 
+odla_value odla_Equal(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  return binary_op(nvinfer1::ElementWiseOperation::kEQUAL, lhs, rhs, id);
+}
+
+odla_value odla_Or(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  return binary_op(nvinfer1::ElementWiseOperation::kOR, lhs, rhs, id);
+}
+
+odla_value odla_NotEqual(odla_value lhs, odla_value rhs,
+                         const odla_value_id id) {
+  auto eq = odla_Equal(lhs, rhs, nullptr);
+  return odla_Not(eq, id);
+}
+
+odla_value odla_Greater(odla_value lhs, odla_value rhs,
+                        const odla_value_id id) {
+  return binary_op(nvinfer1::ElementWiseOperation::kGREATER, lhs, rhs, id);
+}
+
+odla_value odla_GreaterOrEqual(odla_value lhs, odla_value rhs,
+                               const odla_value_id id) {
+  auto gt = odla_Greater(lhs, rhs, nullptr);
+  auto eq = odla_Equal(lhs, rhs, nullptr);
+  return odla_Or(gt, eq, id);
+}
+
+odla_value odla_Less(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  return binary_op(nvinfer1::ElementWiseOperation::kLESS, lhs, rhs, id);
+}
+
+odla_value odla_LessOrEqual(odla_value lhs, odla_value rhs,
+                            const odla_value_id id) {
+  auto gt = odla_Less(lhs, rhs, nullptr);
+  auto eq = odla_Equal(lhs, rhs, nullptr);
+  return odla_Or(gt, eq, id);
+}
+
 static odla_value unary_op(nvinfer1::UnaryOperation op, odla_value input,
                            const odla_value_id id) {
   auto layer = g_comp->network->addUnary(*input->tensor, op);
   return CreateValue(layer, input->type, id);
+}
+
+odla_value odla_Not(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kNOT, input, id);
+}
+
+odla_value odla_Abs(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kABS, input, id);
 }
 
 odla_value odla_Floor(odla_value input, const odla_value_id id) {
@@ -669,8 +720,8 @@ odla_value odla_ACos(odla_value input, const odla_value_id id) {
   return unary_op(nvinfer1::UnaryOperation::kACOS, input, id);
 }
 
-odla_value odla_ACosH(odla_value input, const odla_value_id id) {
-  return unary_op(nvinfer1::UnaryOperation::kCOSH, input, id);
+odla_value odla_ACosh(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kACOSH, input, id);
 }
 
 odla_value odla_ASin(odla_value input, const odla_value_id id) {
@@ -775,10 +826,10 @@ odla_value odla_Sigmoid(odla_value input, const odla_value_id value_id) {
   return CreateValue(relu, input->type, value_id);
 }
 
-odla_value odla_ReduceMean(odla_value input, odla_size_t num_of_axes,
-                           const odla_uint32* axes, odla_bool keep_dims,
-                           odla_value_shape output_dims,
-                           const odla_value_id id) {
+static odla_value reduce(odla_value input, nvinfer1::ReduceOperation op,
+                         odla_size_t num_of_axes, const odla_uint32* axes,
+                         odla_bool keep_dims, odla_value_shape output_dims,
+                         const odla_value_id id) {
   if (output_dims.size != input->type.shape.size) {
     assert(!keep_dims);
   }
@@ -788,9 +839,32 @@ odla_value odla_ReduceMean(odla_value input, odla_size_t num_of_axes,
     reduce_axes |= (1 << axes[i]);
   }
 
-  auto mean = g_comp->network->addReduce(
-      *input, nvinfer1::ReduceOperation::kAVG, reduce_axes, keep_dims);
+  auto mean = g_comp->network->addReduce(*input, op, reduce_axes, keep_dims);
   return CreateValue(mean, {input->type.element_type, output_dims}, id);
+}
+
+odla_value odla_ReduceMean(odla_value input, odla_size_t num_of_axes,
+                           const odla_uint32* axes, odla_bool keep_dims,
+                           odla_value_shape output_dims,
+                           const odla_value_id id) {
+  return reduce(input, nvinfer1::ReduceOperation::kAVG, num_of_axes, axes,
+                keep_dims, output_dims, id);
+}
+
+odla_value odla_ReduceMin(odla_value input, odla_size_t num_of_axes,
+                          const odla_uint32* axes, odla_bool keep_dims,
+                          odla_value_shape output_dims,
+                          const odla_value_id id) {
+  return reduce(input, nvinfer1::ReduceOperation::kMIN, num_of_axes, axes,
+                keep_dims, output_dims, id);
+}
+
+odla_value odla_ReduceMax(odla_value input, odla_size_t num_of_axes,
+                          const odla_uint32* axes, odla_bool keep_dims,
+                          odla_value_shape output_dims,
+                          const odla_value_id id) {
+  return reduce(input, nvinfer1::ReduceOperation::kMAX, num_of_axes, axes,
+                keep_dims, output_dims, id);
 }
 
 odla_value odla_LRN(odla_value input, odla_memory_layout input_layout,
@@ -858,6 +932,7 @@ odla_value odla_BatchNormalization(odla_value input,
   return CreateValue(bn, input->type, value_id);
 }
 
+#ifdef USE_PLUGIN
 odla_value odla_InstanceNormalization(
     odla_value input, odla_memory_layout input_layout, odla_value mean,
     odla_value var, odla_float32 epsilon, odla_value scale, odla_value offset,
@@ -878,6 +953,7 @@ odla_value odla_InstanceNormalization(
       &inputs[0], static_cast<int>(inputs.size()), *plugin);
   return CreateValue(norm->getOutput(0), input->type, value_id);
 }
+#endif
 
 odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
                      odla_uint32 group, odla_value kernel,
