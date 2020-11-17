@@ -279,6 +279,20 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_Gemm(
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Greater(odla_value lhs, odla_value rhs, const odla_value_id value_id);
 
+//! \brief "Greater Than Or Equal" test
+/*!
+  Greater tests if \p lhs is greater than \p rhs.
+  The result element type is implementation determined.
+
+  \param lhs the first value
+  \param rhs the second value
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_GreaterOrEqual(
+    odla_value lhs, odla_value rhs, const odla_value_id value_id);
+
 //! \brief Inverse of a square matrix
 /*!
   Inverse returns the inverse of a square matrix or batches of square matrices.
@@ -304,6 +318,20 @@ odla_Inverse(odla_value input, const odla_value_id value_id);
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Less(odla_value lhs, odla_value rhs, const odla_value_id value_id);
+
+//! \brief "Less Than Or Equal" test
+/*!
+  Less tests if \p lhs is less than \p rhs.
+  The result element type is implementation determined.
+
+  \param lhs the first value
+  \param rhs the second value
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_LessOrEqual(odla_value lhs, odla_value rhs, const odla_value_id value_id);
 
 //! \brief Compute the natural logrithm
 /*!
@@ -405,6 +433,21 @@ odla_Not(odla_value input, const odla_value_id value_id);
 
   \return odla_value
 */
+
+//! \brief Inequality test
+/*!
+  Equal tests if \p lhs and \p rhs are equal or not.
+  The returning element type is implementation determined.
+
+  \param lhs the first value
+  \param rhs the second value
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value.
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_NotEqual(odla_value lhs, odla_value rhs, const odla_value_id value_id);
+
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Or(odla_value lhs, odla_value rhs, const odla_value_id value_id);
 

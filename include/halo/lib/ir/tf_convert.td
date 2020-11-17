@@ -221,6 +221,8 @@ def TF_Sqrt : OpMapping<"Sqrt", Sqrt>;
 
 def TF_Sub : OpMapping<"Sub", Sub>;
 
+def TF_Tanh : OpMapping<"Tanh", Tanh>;
+
 def TF_Transpose : OpMapping<"Transpose", Transpose> {
   let attr_mapping_ = [
     AttributeMapping<"perm", "permutation", "{}">];
@@ -233,5 +235,7 @@ def TF_RandomUniform : OpMapping<"RandomUniform", RandomUniform> {
     AttributeMapping<"", "minval", "0.0">,
     AttributeMapping<"", "maxval", "1.0">];
 }
+
+def TF_TopK  : OpMapping<"TopKV2", TopK>;
 
 def TF_Range : OpMapping<"Range", Range>;

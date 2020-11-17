@@ -55,7 +55,7 @@ static std::vector<Def> ConvertUnsqueeze(const ONNXExtensionInst* ext,
   } else {
     for (auto& a : axis) {
       if (a < 0) {
-        a += input_type.GetNumOfDims() + 1;
+        a += input_type.GetNumOfDims();
       }
       new_dims.insert(new_dims.begin() + a, 1);
     }
@@ -246,78 +246,6 @@ static std::vector<Def> ConvertSum(const ONNXExtensionInst* ext,
                              ext->GetOperand(i));
   }
   return {*op0};
-}
-
-static std::vector<Def> ConvertExpand(const ONNXExtensionInst* ext,
-                                      IRBuilder* builder) {
-  HLCHECK(ext->GetNumOfOperands() == 2);
-  auto input = ext->GetOperand(0);
-  const Type& input_type = input.GetType();
-  if (!input_type.IsValid() || !IsA<Constant>(ext->GetOperand(1))) {
-    return {};
-  }
-  const Constant* shape = DynCast<Constant>(ext->GetOperand(1));
-  auto input_elem = input_type.GetTotalNumOfElements();
-  HLCHECK(shape->GetResultType().GetNumOfDims() == 1);
-  std::vector<int64_t> output_shape;
-  std::vector<int64_t> output_extends;
-
-  int shape_rank = shape->GetResultType().GetTotalNumOfElements();
-  int input_rank = input_type.GetNumOfDims();
-  auto src_extends = GetExtends(input_type.GetDimSizes());
-  for (int i = 0, e = std::max(shape_rank, input_rank); i < e; ++i) {
-    int input_idx = input_rank - 1 - i;
-    int shape_idx = shape_rank - 1 - i;
-    int64_t dim0 =
-        (input_idx < 0) ? 1 : input_type.GetNumOfElementsInDim(input_idx);
-    int64_t dim1 = (shape_idx < 0) ? 1 : shape->GetDataAsInt64(shape_idx);
-    HLCHECK(dim0 == dim1 || dim0 == 1 || dim1 == 1);
-    output_shape.push_back((dim0 == 1) ? dim1 : dim0);
-    bool is_bs = dim0 == 1;
-    output_extends.push_back(is_bs ? 0 : src_extends[input_idx]);
-  }
-  std::reverse(output_shape.begin(), output_shape.end());
-  std::reverse(output_extends.begin(), output_extends.end());
-
-  Type ret_type{input_type.GetDataType(), output_shape};
-  auto ret_elem = ret_type.GetTotalNumOfElements();
-
-  ConstantBuilder cb(ext->GetParent()->GetParent());
-  if (input_elem == ret_elem) {
-    Constant* c = cb.CreateConstant(
-        ext->GetName() + "_expand",
-        Type{DataType::INT64, {static_cast<int64_t>(output_shape.size())}},
-        output_shape.data());
-    auto reshape =
-        builder->CreateReshape(ext->GetName(), {ext->GetOperand(0), *c});
-
-    return {*reshape};
-  }
-  if (IsA<Constant>(ext->GetOperand(0))) {
-    const Constant* src = DynCast<Constant>(input);
-    DefaultDataLayout data_layout;
-    size_t elem_size = data_layout.Bytes(input_type.GetDataType());
-    std::vector<unsigned char> buf(ret_elem * elem_size);
-    const auto& dst_extends = GetExtends(output_shape);
-    for (int64_t dst_idx = 0; dst_idx < ret_elem; ++dst_idx) {
-      std::vector<int64_t> dst_dims(output_shape.size());
-      for (int64_t i = 0, e = dst_dims.size(), t = dst_idx; t >= 0 && i < e;
-           ++i) {
-        dst_dims[i] = t / dst_extends[i];
-        t -= dst_dims[i] * dst_extends[i];
-      }
-      auto src_idx = std::inner_product(
-          output_extends.begin(), output_extends.end(), dst_dims.begin(), 0L);
-      const unsigned char* src_ptr =
-          static_cast<const unsigned char*>(src->GetRawDataPtr()) + // NOLINT.
-          src_idx * elem_size;
-      std::copy_n(src_ptr, elem_size, buf.begin() + dst_idx * elem_size);
-    }
-    Constant* c =
-        cb.CreateConstant(ext->GetName() + "_expand", ret_type, buf.data());
-    return {*c};
-  }
-  return {};
 }
 
 static std::vector<Def> ConvertFlatten(const ONNXExtensionInst* ext,
@@ -658,6 +586,64 @@ static std::vector<Def> ConvertOneHot(const ONNXExtensionInst* ext,
   return {};
 }
 
+static std::vector<Def> ConvertGatherElements(const ONNXExtensionInst* ext,
+                                              IRBuilder* builder) {
+  HLCHECK(ext->GetNumOfOperands() == 2);
+  HLCHECK(ext->GetNumOfAttributes() == 1);
+  const Attribute* attr = ext->GetAttributes()[0].get();
+  HLCHECK(attr->GetName() == "axis");
+
+  auto input_op = ext->GetOperand(0);
+  auto idx_op = ext->GetOperand(1);
+  auto const& input_type = input_op.GetType();
+  auto const& idx_type = idx_op.GetType();
+
+  if (!input_type.IsValid() || !idx_type.IsValid()) {
+    return {};
+  }
+
+  const auto& input_shape = input_type.GetDimSizes();
+  auto idx_shape = idx_type.GetDimSizes();
+
+  int axis = attr->GetValueAsInteger();
+  axis = axis < 0 ? static_cast<int>(idx_shape.size()) + axis : axis;
+
+  // if idx_shape[i] and input_shape[i] are 1 for all dims except for "axis", it
+  // can be converted to Gather. Otherwise, if idx_shape is a result of
+  // broadcasting, the input of broadcasting might be converted.
+  bool can_be_gather = input_shape.size() == idx_shape.size();
+  for (unsigned i = 0, e = input_shape.size(); can_be_gather && i < e; ++i) {
+    can_be_gather &= (input_shape[i] == idx_shape[i] && input_shape[i] == 1) ||
+                     (i == static_cast<unsigned>(axis));
+  }
+  if (!can_be_gather) {
+    // try to check if input_shape is a result of broadcasting.
+    if (IsA<Instruction>(idx_op) &&
+        DynCast<Instruction>(idx_op)->GetOpCode() == OpCode::EXPANDDIMS) {
+      ExpandDimsInst* exp_dim = DynCast<ExpandDimsInst>(idx_op);
+      idx_op = exp_dim->GetOperand(0);
+      idx_shape = idx_op.GetType().GetDimSizes(); // FIXME: more checks
+      can_be_gather = true;
+    }
+  }
+  if (can_be_gather) {
+    ConstantBuilder cb(ext->GetParent()->GetParent());
+    std::vector<int64_t> new_dims{idx_shape[axis]};
+    Constant* c = cb.CreateConstant(
+        idx_op.GetDef()->GetName() + "_shape",
+        Type{DataType::INT64, {static_cast<int64_t>(new_dims.size())}},
+        new_dims.data());
+
+    builder->SetInsertAfter(ext);
+    auto reshape = builder->CreateReshape(
+        idx_op.GetDef()->GetName() + "_reshape", idx_op, *c);
+    auto new_inst = builder->CreateGather(ext->GetName(), {input_op, *reshape});
+    new_inst->SetAxis(axis);
+    return {*new_inst};
+  }
+  return {};
+}
+
 static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
                                      IRBuilder* builder) {
   auto op0 = ext->GetOperand(0);
@@ -777,6 +763,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     case ONNXExtOpCode::SQUEEZE: {
       return ConvertSqueeze(onnx_inst, builder);
     }
+    case ONNXExtOpCode::GATHERELEMENTS: {
+      return ConvertGatherElements(onnx_inst, builder);
+    }
     case ONNXExtOpCode::LOOP: {
       return ConvertLoop(onnx_inst, builder);
     }
@@ -794,9 +783,6 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::FLATTEN: {
       return ConvertFlatten(onnx_inst, builder);
-    }
-    case ONNXExtOpCode::EXPAND: {
-      return ConvertExpand(onnx_inst, builder);
     }
     case ONNXExtOpCode::IDENTITY: {
       return {onnx_inst->GetOperand(0)};

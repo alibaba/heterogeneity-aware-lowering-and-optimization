@@ -916,6 +916,22 @@ static void RunOnInstruction(SetDiff1DInst* inst) {
   ;
 }
 
+static void RunOnInstruction(ExpandDimsInst* inst) {
+  const auto& idx_op = inst->GetOperand(1);
+  const auto& idx_type = idx_op.GetType();
+  const auto& input_type = inst->GetOperand(0).GetType();
+  if (!IsA<Constant>(idx_op)) {
+    return;
+  }
+  std::vector<int64_t> shape;
+  shape.reserve(idx_type.GetTotalNumOfElements());
+  Constant* c = DynCast<Constant>(idx_op);
+  for (int i = 0, e = idx_type.GetTotalNumOfElements(); i < e; ++i) {
+    shape.push_back(c->GetDataAsInt64(i));
+  }
+  inst->GetResultsTypes()[0] = Type{input_type.GetDataType(), shape};
+}
+
 static void RunOnInstruction(NonMaxSuppressionInst* inst) {
   if (inst->GetNumOfOperands() > 4) {
     const auto& op2 = inst->GetOperand(2);
@@ -959,7 +975,18 @@ static void RunOnInstruction(TopKInst* inst) {
 
   const auto& input_type = inst->GetOperand(0).GetType();
   const auto dims = input_type.GetNumOfDims();
-  std::vector<int64_t> ret_shape(dims, k);
+  // Normalize axis.
+  auto axis = inst->GetAxis();
+  if (axis < 0) {
+    axis += dims;
+    inst->SetAxis(axis);
+  }
+
+  HLCHECK(axis >= 0 && axis < static_cast<int>(dims));
+
+  auto ret_shape = input_type.GetDimSizes();
+  ret_shape[axis] = k;
+
   inst->GetResultsTypes()[0] = Type{input_type.GetDataType(), ret_shape};
   inst->GetResultsTypes()[1] = Type{inst->GetIndexType(), ret_shape};
 }

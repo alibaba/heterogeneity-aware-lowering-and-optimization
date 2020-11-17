@@ -453,6 +453,7 @@ void GenericLLVMIRCodeGen::RunOnBaseInstruction(Instruction* inst) {
       RunOnMathBinaryInstruction(inst);
       break;
     }
+    case OpCode::CEIL:
     case OpCode::FLOOR:
     case OpCode::ERF:
     case OpCode::RSQRT:

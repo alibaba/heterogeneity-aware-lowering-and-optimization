@@ -472,8 +472,9 @@ bool TFAttrs::Process<std::vector<int64_t>>(const std::string& key,
   const auto& attr_value = attr_map_.at(key);
   if (attr_value.value_case() == tensorflow::AttrValue::kList) {
     (*value).reserve(attr_value.list().i_size());
-    std::copy(attr_value.list().i().begin(), attr_value.list().i().end(),
-              (*value).begin());
+    for (const auto& it : attr_value.list().i()) {
+      (*value).push_back(it);
+    }
   } else if (attr_value.value_case() == tensorflow::AttrValue::kShape) {
     *value = TFParser::ProcessShape(attr_map_.at(key).shape());
   } else {
@@ -493,7 +494,7 @@ bool TFAttrs::Process<std::vector<int>>(const std::string& key,
   HLCHECK(attr_value.value_case() == tensorflow::AttrValue::kList);
   (*value).reserve(attr_value.list().i_size());
   for (const auto& it : attr_value.list().i()) {
-    (*value).push_back(static_cast<int>(it));
+    (*value).push_back(it);
   }
   return true;
 }
@@ -508,8 +509,9 @@ bool TFAttrs::Process<std::vector<float>>(const std::string& key,
   const auto& attr_value = attr_map_.at(key);
   HLCHECK(attr_value.value_case() == tensorflow::AttrValue::kList);
   (*value).reserve(attr_value.list().f_size());
-  std::copy(attr_value.list().f().begin(), attr_value.list().f().end(),
-            (*value).begin());
+  for (const auto& it : attr_value.list().f()) {
+    (*value).push_back(it);
+  }
   return true;
 }
 
@@ -523,8 +525,9 @@ bool TFAttrs::Process<std::vector<bool>>(const std::string& key,
   const auto& attr_value = attr_map_.at(key);
   HLCHECK(attr_value.value_case() == tensorflow::AttrValue::kList);
   (*value).reserve(attr_value.list().b_size());
-  std::copy(attr_value.list().b().begin(), attr_value.list().b().end(),
-            (*value).begin());
+  for (const auto& it : attr_value.list().b()) {
+    (*value).push_back(it);
+  };
   return true;
 }
 

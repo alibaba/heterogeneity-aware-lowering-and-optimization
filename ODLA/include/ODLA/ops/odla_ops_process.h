@@ -97,20 +97,18 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Concat(odla_values inputs, odla_int32 axis, odla_value_shape output_shape,
             const odla_value_id value_id);
 
-//! \brief Insert dimension of size 1
+//! \brief Broadcast the input tensor
 /*!
-  ExpandDims inserts a single-dimension into the shape of \p input
-  at index \p axis.
+  ExpandDims broadcast the \p input tensor into the shape of \p output_dims .
 
   \param input the input value
-  \param axis the dimension index where the new single-dimension is inserted.
-  \param output_dims the optional output shape (can be undefined)
+  \param output_dims the output shape
   \param value_id a unique value id (can be NULL)
 
   \return odla_value
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_ExpandDims(odla_value input, odla_int32 axis, odla_value_shape output_dims,
+odla_ExpandDims(odla_value input, odla_value_shape output_dims,
                 const odla_value_id value_id);
 
 //! \brief Generate a value with data

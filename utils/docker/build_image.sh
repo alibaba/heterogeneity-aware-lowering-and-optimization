@@ -1,6 +1,5 @@
 #!/bin/bash
-ARG BASEIMAGE
-FROM ${BASEIMAGE}
+
 base_image_gpu="nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04"
 base_image_cpu="ubuntu:18.04"
 
