@@ -1051,6 +1051,31 @@ static void RunOnInstruction(TileInst* inst) {
   inst->GetResultsTypes()[0] = new_type;
 }
 
+static void RunOnInstruction(HgEngineInst* inst) {
+  std::vector<std::string> out_type_list = inst->GetOutTypeList();
+  std::vector<std::vector<int64_t>> output_shapes = inst->GetOutputShapes();
+
+  auto type = DataType::INT8;
+  HLCHECK(output_shapes.size() == out_type_list.size());
+
+  std::vector<int64_t> new_shape;
+  for (size_t i = 0; i < output_shapes.size(); ++i) {
+    if (out_type_list[i] == "int8") {
+      type = DataType::INT8;
+    } else if (out_type_list[i] == "int16") {
+      type = DataType::INT16;
+    } else {
+      HLCHECK(false && "Wrong output type");
+    }
+    for (auto dim : output_shapes[i]) {
+      new_shape.push_back(static_cast<int64_t>(dim));
+    }
+
+    halo::Type new_type{type, new_shape};
+    inst->GetResultsTypes()[i] = new_type;
+  }
+}
+
 bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
   for (auto& it : *bb) {
