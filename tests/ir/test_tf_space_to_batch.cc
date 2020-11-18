@@ -2,7 +2,7 @@
 
 // RUN: %cxx -DCG_TEST %s -o %t.gen %flags %include %link -DOUTPUT=%t.cc
 // RUN: %t.gen
-// RUN: %cxx -O2 %t.cc %t.cc.bin %odla_path/platforms/odla_dnnl.cc %s -I%odla_path/include -I%dnnl_path/include -o %t.dnnl.exe -L%dnnl_path/lib -ldnnl -Wl,-rpath=%dnnl_path/lib
+// RUN: %cxx -O2 %t.cc %t.cc.bin %odla_link -lodla_dnnl %s -I%odla_path/include -o %t.dnnl.exe
 // RUN: %t.dnnl.exe 2>&1| FileCheck %s
 
 // clang-format on
