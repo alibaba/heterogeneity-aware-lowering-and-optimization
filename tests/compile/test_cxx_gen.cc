@@ -25,8 +25,7 @@
 // RUN: %cxx %s -DRUNTIME_TEST -I%odla_path/include -c -o %t.main.o
 // RUN: %cxx %t.gen.cc -I%odla_path/include -c -o %t.gen.o
 
-// RUN: %cxx %odla_path/platforms/odla_dnnl.cc -I%odla_path/include -I%dnnl_path/include -c -o %t.dnnl.o
-// RUN: %cxx %t.dnnl.o %t.gen.o  %t.main.o -L%dnnl_path/lib -ldnnl -o %t.mkl_exe -Wl,-rpath=%dnnl_path/lib -I%odla_path/include
+// RUN: %cxx %t.gen.o  %t.main.o %odla_link -lodla_dnnl -o %t.mkl_exe
 // RUN: %t.mkl_exe 2>&1| FileCheck %s --check-prefix=EXECUTE
 
 // GEN: include <ODLA/odla.h>
