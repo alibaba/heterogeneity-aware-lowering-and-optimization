@@ -49,6 +49,7 @@ set(SRCS
   tile.cc
   topk.cc
   transpose.cc
+  hgengine.cc
 )
 
 # dependences which need to be built first.

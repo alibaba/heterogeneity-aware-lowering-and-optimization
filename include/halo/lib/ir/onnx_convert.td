@@ -357,3 +357,45 @@ def ONNX_Upsample : OpMapping<"Upsample", Resize> {
     AttributeMapping<"", "explicit_shape", "false">
   ];
 }
+
+def ONNX_HgEngine : TFExtension<"HgEngine"> {
+  let extension_attr_ = [
+    ExtensionAttr<"serialized_engine", String, "{}">,
+    ExtensionAttr<"in_data_format", String, "{}">,
+    ExtensionAttr<"out_data_format", String, "{}">,
+    ExtensionAttr<"_output_shapes", String, "{}">,
+    ExtensionAttr<"in_binding_list", String, "{}">,
+    ExtensionAttr<"out_binding_list", String, "{}">,
+    ExtensionAttr<"in_type_list", String, "{}">,
+    ExtensionAttr<"out_type_list", String, "{}">,];
+}
+
+def ONNX_HgQuant : TFExtension<"HgQuant"> {
+  let extension_attr_ = [
+    ExtensionAttr<"in_scale", String, "\"1.0\"">,
+    ExtensionAttr<"in_bias", String, "\"0.0\"">,
+    ExtensionAttr<"qtype", String, "\"int8\"">,
+    ExtensionAttr<"is_per_channel", Integer, "0">,
+    ExtensionAttr<"round_mode", Integer, "0">,
+    ExtensionAttr<"in_data_format", String, "\"NHWC\"">,
+    ExtensionAttr<"out_data_format", String, "\"NHWC\"">,
+    ExtensionAttr<"model_name", String, "\"\"">,
+    ExtensionAttr<"op_name", String, "\"\"">,
+    ExtensionAttr<"in_type", String, "\"FLOAT32\"">,
+    ExtensionAttr<"out_type", String, "\"INT8\"">
+  ];
+}
+
+def ONNX_HgDequant : TFExtension<"HgDequant"> {
+  let extension_attr_ = [
+    ExtensionAttr<"in_scale", String, "\"1.0\"">,
+    ExtensionAttr<"in_bias", String, "\"0.0\"">,
+    ExtensionAttr<"is_per_channel", Integer, "0">,
+    ExtensionAttr<"in_data_format", String, "\"NHWC\"">,
+    ExtensionAttr<"out_data_format", String, "\"NHWC\"">,
+    ExtensionAttr<"model_name", String, "\"\"">,
+    ExtensionAttr<"op_name", String, "\"\"">,
+    ExtensionAttr<"in_type", String, "\"INT8\"">,
+    ExtensionAttr<"out_type", String, "\"FLOAT32\"">
+  ];
+}
