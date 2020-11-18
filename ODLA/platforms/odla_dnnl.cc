@@ -16,8 +16,10 @@
 // =============================================================================
 
 #include <ODLA/odla.h>
+#include <immintrin.h>
 
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <cstring>
 #include <iostream>
@@ -27,6 +29,7 @@
 
 #include "ODLA/odla_compute.h"
 #include "dnnl.hpp"
+#include "dnnl_threadpool_iface.hpp"
 
 #if !defined(ODLA_VERSION_NUMBER) || (ODLA_VERSION_NUMBER < 50)
 #error This library requires minimum ODLA version 0.5
@@ -280,6 +283,7 @@ odla_status odla_GetValueData(const odla_value value, odla_void* data_ptr) {
   assert(g_interpret_mode == true);
   memcpy(data_ptr, value->mem.get_data_handle(),
          value->mem.get_desc().get_size());
+  return ODLA_SUCCESS;
 }
 
 odla_status odla_BindToArgumentById(const odla_value_id value_id,
@@ -305,6 +309,7 @@ odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
 
 odla_status odla_SetValueAsOutput(const odla_value val) {
   g_comp->outputs[val->name] = val;
+  return ODLA_SUCCESS;
 }
 
 odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
@@ -326,6 +331,294 @@ odla_status odla_BindToOutputById(const odla_value_id value_id,
   return odla_BindToOutput(val, data_ptr, context);
 }
 
+static int calculat_offset(int len, int vec_size) {
+  /*
+  calculate the offset when using intrinsics.
+  example:
+    when len is 108 vec_size is 32 when using bf16
+    the result is 108 % 32 = 12
+    so we need to set the mask to 0b00000000000000000000111111111111
+  */
+  int offset = len;
+  int expo = 0;
+  int dst = 0;
+  while (offset - vec_size > 0) {
+    offset -= vec_size;
+  }
+  while (offset > 0) {
+    dst += pow(2, expo);
+    offset -= 1;
+    expo += 1;
+  }
+  return dst;
+}
+
+#if defined(__AVX512F__)
+inline __m512 _mm512_cvtbf16f32_load(__mmask16 mask, void* mem_addr) {
+  auto dst = _mm512_slli_epi32(
+      _mm512_cvtepu16_epi32(_mm256_maskz_loadu_epi16(mask, mem_addr)), 0x10);
+  return _mm512_castsi512_ps(dst);
+}
+#endif
+
+#if defined(__GNUC__) && (__GNUC__ > 9)
+inline void floorbf_func(int len, float* src, float* dst) {
+  int i = 0;
+  int vec_size = 512 / 16;
+  __mmask16 mask16 = 0xFFFF;
+  auto alpha_vec = _mm512_set1_ps(0.0);
+  for (; i <= len - vec_size; i += vec_size) {
+    auto a0 = _mm512_cvtbf16f32_load(mask16, src + i);
+    auto a1 = _mm512_cvtbf16f32_load(mask16, src + i + 16);
+
+    auto out0 = _mm512_floor_ps(a0);
+    auto out1 = _mm512_floor_ps(a1);
+
+    auto C_bf16 = _mm512_cvtne2ps_pbh(out1, out0);
+    _mm512_mask_storeu_ps(dst + i, mask16, _mm512_castsi512_ps(C_bf16));
+  }
+  if ((len - i) > 16) {
+    auto a0 = _mm512_cvtbf16f32_load(mask16, src + i);
+    auto out0 = _mm512_floor_ps(a0);
+    auto C_bf16 = _mm512_cvtneps_pbh(out0);
+    _mm256_storeu_ps(dst + i, _mm256_castsi256_ps(C_bf16));
+    i += vec_size;
+  }
+  if (len - i) {
+    __mmask16 tail_mask = calculat_offset(i, vec_size);
+    auto a0 = _mm512_cvtbf16f32_load(tail_mask, src + i);
+    auto out0 = _mm512_floor_ps(a0);
+    auto C_bf16 = _mm512_cvtneps_pbh(out0);
+    _mm256_mask_storeu_ps(dst + i, tail_mask, _mm256_castsi256_ps(C_bf16));
+  }
+}
+#elif defined(__GNUC__) && (__GNUC__ > 8)
+inline void floorbf_func(int len, float* src, float* dst) {
+  int i = 0;
+  int vec_size = 512 / 32;
+  __mmask16 mask16 = 0xFFFF;
+  auto alpha_vec = _mm512_set1_ps(0.0);
+  auto tail_mask = calculat_offset(len, vec_size);
+  for (; i <= len - vec_size; i += vec_size) {
+    auto a0 = _mm512_cvtbf16f32_load(mask16, src + i);
+    auto out0 = _mm512_floor_ps(a0);
+    auto C_bf16 = _mm512_cvtneps_pbh(out0);
+    _mm256_storeu_ps(dst + i, _mm256_castsi256_ps(C_bf16));
+  }
+  if (len - i) {
+    auto a0 = _mm512_cvtbf16f32_load(tail_mask, src + i);
+    auto out0 = _mm512_floor_ps(a0);
+    auto C_bf16 = _mm512_cvtneps_pbh(out0);
+    _mm256_mask_storeu_ps(dst + i, tail_mask, _mm256_castsi256_ps(C_bf16));
+  }
+}
+#else
+inline void floorbf_func(int len, float* src, float* dst) {}
+#endif
+
+#if defined(__AVX512F__)
+inline void floorf_func(int len, float* src, float* dst) {
+  int i = 0;
+  int vec_size = 512 / 32;
+  __mmask16 mask16 = 0xFFFF;
+
+  for (; i <= len - vec_size; i += vec_size) {
+    auto a1 = _mm512_loadu_ps(src + i);
+    auto out1 = _mm512_floor_ps(a1);
+    _mm512_mask_storeu_ps(dst + i, mask16, out1);
+  }
+  if (len - i) {
+    auto tail_mask = calculat_offset(len - i, vec_size);
+    auto a1 = _mm512_maskz_loadu_ps(tail_mask, src + i);
+    auto out1 = _mm512_floor_ps(a1);
+    _mm512_mask_storeu_ps(dst + i, tail_mask, out1);
+  }
+}
+
+odla_value odla_Floor(odla_value input, const odla_value_id id) {
+  int64_t total_elems = GetTotalElements(input->shape);
+  auto ret_md = input->mem.get_desc();
+  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
+  if (g_comp->opts.enable_bf16) {
+    floorbf_func(total_elems, (float*)input->mem.get_data_handle(),
+                 (float*)ret_mem.get_data_handle());
+  } else {
+    floorf_func(total_elems, (float*)input->mem.get_data_handle(),
+                (float*)ret_mem.get_data_handle());
+  }
+  InterpretIfNeeded();
+  return CreateValue(ret_mem, input->shape, id);
+}
+#endif
+
+#if defined(__AVX512F__)
+inline void rsqrtf_func(int len, float* src, float* dst) {
+  int i = 0;
+  int vec_size = 512 / 32;
+  __mmask16 mask16 = 0xFFFF;
+
+  for (; i <= len - vec_size; i += vec_size) {
+    auto a1 = _mm512_loadu_ps(src + i);
+    auto out1 = _mm512_rsqrt14_ps(a1);
+    _mm512_mask_storeu_ps(dst + i, mask16, out1);
+  }
+  if (len - i) {
+    auto tail_mask = calculat_offset(len - i, vec_size);
+    auto a1 = _mm512_maskz_loadu_ps(tail_mask, src + i);
+    auto out1 = _mm512_rsqrt14_ps(a1);
+    _mm512_mask_storeu_ps(dst + i, tail_mask, out1);
+  }
+}
+#endif
+
+#if defined(__GNUC__) && (__GNUC__ > 9)
+inline void rsqrtbf_func(int len, float* src, float* dst) {
+  int i = 0;
+  int vec_size = 512 / 16;
+  __mmask16 mask16 = 0xFFFF;
+  auto alpha_vec = _mm512_set1_ps(0.0);
+  for (; i <= len - vec_size; i += vec_size) {
+    auto a0 = _mm512_cvtbf16f32_load(mask16, src + i);
+    auto a1 = _mm512_cvtbf16f32_load(mask16, src + i + 16);
+
+    auto out0 = _mm512_rsqrt14_ps(a0);
+    auto out1 = _mm512_rsqrt14_ps(a1);
+
+    auto C_bf16 = _mm512_cvtne2ps_pbh(out1, out0);
+    _mm512_mask_storeu_ps(dst + i, mask16, _mm512_castsi512_ps(C_bf16));
+  }
+  if ((len - i) > 16) {
+    auto a0 = _mm512_cvtbf16f32_load(mask16, src + i);
+    auto out0 = _mm512_rsqrt14_ps(a0);
+    auto C_bf16 = _mm512_cvtneps_pbh(out0);
+    _mm256_storeu_ps(dst + i, _mm256_castsi256_ps(C_bf16));
+    i += vec_size;
+  }
+  if (len - i) {
+    auto tail_mask = calculat_offset(len - i, vec_size);
+    auto a0 = _mm512_cvtbf16f32_load(tail_mask, src + i);
+    auto out0 = _mm512_rsqrt14_ps(a0);
+    auto C_bf16 = _mm512_cvtneps_pbh(out0);
+    _mm256_mask_storeu_ps(dst + i, tail_mask, _mm256_castsi256_ps(C_bf16));
+  }
+}
+#elif defined(__GNUC__) && (__GNUC__ > 8)
+inline void rsqrtbf_func(int len, float* src, float* dst) {
+  int i = 0;
+  int vec_size = 512 / 32;
+  __mmask16 mask16 = 0xFFFF;
+  auto alpha_vec = _mm512_set1_ps(0.0);
+  auto tail_mask = calculat_offset(len, vec_size);
+  for (; i <= len - vec_size; i += vec_size) {
+    auto a0 = _mm512_cvtbf16f32_load(mask16, src + i);
+    auto out0 = _mm512_rsqrt14_ps(a0);
+    auto C_bf16 = _mm512_cvtneps_pbh(out0);
+    _mm256_storeu_ps(dst + i, _mm256_castsi256_ps(C_bf16));
+  }
+  if (len - i) {
+    auto a0 = _mm512_cvtbf16f32_load(tail_mask, src + i);
+    auto out0 = _mm512_rsqrt14_ps(a0);
+    auto C_bf16 = _mm512_cvtneps_pbh(out0);
+    _mm256_mask_storeu_ps(dst + i, tail_mask, _mm256_castsi256_ps(C_bf16));
+  }
+}
+#else
+inline void rsqrtbf_func(int len, float* src, float* dst) {}
+#endif
+
+#if defined(__AVX512F__)
+odla_value odla_Rsqrt(odla_value input, const odla_value_id id) {
+  int64_t total_elems = GetTotalElements(input->shape);
+  auto ret_md = input->mem.get_desc();
+  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
+  if (g_comp->opts.enable_bf16) {
+    rsqrtbf_func(total_elems, (float*)input->mem.get_data_handle(),
+                 (float*)ret_mem.get_data_handle());
+  } else {
+    rsqrtf_func(total_elems, (float*)input->mem.get_data_handle(),
+                (float*)ret_mem.get_data_handle());
+  }
+  InterpretIfNeeded();
+  return CreateValue(ret_mem, input->shape, id);
+}
+#endif
+
+odla_value odla_Gather(odla_value params, const odla_value indices,
+                       odla_int32 axis, odla_value_shape output_dims,
+                       const odla_value_id id) {
+  axis = axis < 0 ? params->shape.size + axis : axis;
+  int64_t batch_size;
+  int64_t idx_size;
+  if (indices->shape.size > 1) {
+    batch_size = indices->shape.dims[0];
+    idx_size = indices->shape.dims[1];
+  } else {
+    batch_size = 1;
+    idx_size = indices->shape.dims[0];
+  }
+  int64_t inner_size = 1;
+  for (int i = axis + 1; i < params->shape.size; ++i) {
+    inner_size *= params->shape.dims[i];
+  }
+  auto buffer_size = g_comp->opts.enable_bf16 ? sizeof(int16_t) : sizeof(float);
+  auto ret_md = dnnl::memory::desc(getDims(output_dims),
+                                   params->mem.get_desc().data_type(),
+                                   getStrides(output_dims));
+  auto output_buffer = malloc(GetTotalElements(output_dims) * buffer_size);
+  auto ret_mem = dnnl::memory(ret_md, g_comp->eng, output_buffer);
+
+  if (g_comp->opts.enable_bf16) {
+    int16_t* output_ptr = (int16_t*)ret_mem.get_data_handle();
+    int16_t* params_base = (int16_t*)params->mem.get_data_handle();
+    int32_t* idx_base = (int32_t*)indices->mem.get_data_handle();
+    size_t bytes = ret_md.get_size();
+    const size_t slice_bytes = inner_size * buffer_size;
+    // copy the memory:
+#pragma omp parallel for
+    for (int i = 0; i < batch_size; i++) {
+      for (int j = 0; j < idx_size; j++) {
+        int32_t curr_idx = idx_base[i * batch_size + j];
+        memcpy(output_ptr + (i * idx_size + j) * inner_size,
+               params_base + (curr_idx)*inner_size, slice_bytes);
+      }
+    }
+  } else {
+    int32_t* output_ptr = (int32_t*)ret_mem.get_data_handle();
+    int32_t* params_base = (int32_t*)params->mem.get_data_handle();
+    int32_t* idx_base = (int32_t*)indices->mem.get_data_handle();
+    size_t bytes = ret_md.get_size();
+    const size_t slice_bytes = inner_size * buffer_size;
+    // copy the memory:
+#pragma omp parallel for
+    for (int i = 0; i < batch_size; i++) {
+      for (int j = 0; j < idx_size; j++) {
+        int32_t curr_idx = idx_base[i * batch_size + j];
+        memcpy(output_ptr + (i * idx_size + j) * inner_size,
+               params_base + (curr_idx)*inner_size, slice_bytes);
+      }
+    }
+  }
+#if 0 // below code is aligned with tensorflow
+
+  for (int i = 0; i < axis; ++i) {
+    result_shape.push_back(params->shape.dims[i]);
+    outer_size *= params->shape.dims[i];
+  }
+  for (int i = 0; i < indices->shape.size; ++i) {
+    result_shape.push_back(indices->shape.dims[i]);
+  }
+  for (int i = axis + 1; i < params->shape.size; ++i) {
+    result_shape.push_back(params->shape.dims[i]);
+    inner_size *= params->shape.dims[i];
+  }
+  int64_t gather_dim_size = params->shape.dims(axis);
+
+#endif
+
+  InterpretIfNeeded();
+  return CreateValue(ret_mem, output_dims, id);
+}
+
 static odla_value binary_eltwise(dnnl::algorithm algo, odla_value lhs,
                                  odla_value rhs, const odla_value_id id) {
   const auto& dims_lhs = lhs->shape;
@@ -334,9 +627,9 @@ static odla_value binary_eltwise(dnnl::algorithm algo, odla_value lhs,
       dnnl::memory::desc(getDims(dims_lhs), lhs->mem.get_desc().data_type(),
                          getFormatTag(dims_lhs));
   auto ret_md = lhs_md;
-  auto rhs_md = lhs_md;
-
   auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
+
+  auto rhs_md = rhs->mem.get_desc();
 
   auto ln = GetTotalElements(dims_lhs);
   auto rn = GetTotalElements(dims_rhs);
@@ -1076,6 +1369,223 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
 
   return bias ? odla_Add(v, bias, id) : v;
 }
+
+#if defined(__GNUC__) && (__GNUC__ > 9)
+static inline __m512 pexp(const __m512& _x) {
+  __m512 p16f_1 = _mm512_set1_ps(1.0f);
+  __m512 p16f_half = _mm512_set1_ps(0.5f);
+  __m512 p16f_127 = _mm512_set1_ps(127.f);
+  __m512 p16f_exp_hi = _mm512_set1_ps(88.3762626647950f);
+  __m512 p16f_exp_lo = _mm512_set1_ps(-88.3762626647949f);
+
+  __m512 p16f_cephes_LOG2EF = _mm512_set1_ps(1.44269504088896341f);
+
+  __m512 p16f_cephes_exp_p0 = _mm512_set1_ps(1.9875691500E-4f);
+  __m512 p16f_cephes_exp_p1 = _mm512_set1_ps(1.3981999507E-3f);
+  __m512 p16f_cephes_exp_p2 = _mm512_set1_ps(8.3334519073E-3f);
+  __m512 p16f_cephes_exp_p3 = _mm512_set1_ps(4.1665795894E-2f);
+  __m512 p16f_cephes_exp_p4 = _mm512_set1_ps(1.6666665459E-1f);
+  __m512 p16f_cephes_exp_p5 = _mm512_set1_ps(5.0000001201E-1f);
+
+  // Clamp x.
+  __m512 x = _mm512_max_ps(_mm512_min_ps(_x, p16f_exp_hi), p16f_exp_lo);
+
+  // Express exp(x) as exp(m*ln(2) + r), start by extracting
+  // m = floor(x/ln(2) + 0.5).
+  __m512 m = _mm512_floor_ps(_mm512_fmadd_ps(x, p16f_cephes_LOG2EF, p16f_half));
+
+  // Get r = x - m*ln(2). If no FMA instructions are available, m*ln(2) is
+  // subtracted out in two parts, m*C1+m*C2 = m*ln(2), to avoid accumulating
+  // truncation errors. Note that we don't use the "pmadd" function here to
+  // ensure that a precision-preserving FMA instruction is used.
+  __m512 p16f_nln2 = _mm512_set1_ps(-0.6931471805599453f);
+  __m512 r = _mm512_fmadd_ps(m, p16f_nln2, x);
+
+  __m512 r2 = _mm512_mul_ps(r, r);
+
+  // TODO(gonnet): Split into odd/even polynomials and try to exploit
+  //               instruction-level parallelism.
+  __m512 y = p16f_cephes_exp_p0;
+  y = _mm512_fmadd_ps(y, r, p16f_cephes_exp_p1);
+  y = _mm512_fmadd_ps(y, r, p16f_cephes_exp_p2);
+  y = _mm512_fmadd_ps(y, r, p16f_cephes_exp_p3);
+  y = _mm512_fmadd_ps(y, r, p16f_cephes_exp_p4);
+  y = _mm512_fmadd_ps(y, r, p16f_cephes_exp_p5);
+  y = _mm512_fmadd_ps(y, r2, r);
+  y = _mm512_add_ps(y, p16f_1);
+
+  // Build emm0 = 2^m.
+  __m512i emm0 = _mm512_cvttps_epi32(_mm512_add_ps(m, p16f_127));
+  emm0 = _mm512_slli_epi32(emm0, 23);
+
+  // Return 2^m * exp(r).
+  return _mm512_max_ps(_mm512_mul_ps(y, _mm512_castsi512_ps(emm0)), _x);
+};
+
+static inline __m512 erf_avx512(const __m512& src512) {
+  const __m512 coeff0 = _mm512_set1_ps(+7.853861353153693E-5);
+  const __m512 coeff1 = _mm512_set1_ps(-8.010193625184903E-4);
+  const __m512 coeff2 = _mm512_set1_ps(+5.188327685732524E-3);
+  const __m512 coeff3 = _mm512_set1_ps(-2.685381193529856E-2);
+  const __m512 coeff4 = _mm512_set1_ps(+1.128358514861418E-1);
+  const __m512 coeff5 = _mm512_set1_ps(-3.761262582423300E-1);
+  const __m512 coeff6 = _mm512_set1_ps(+1.128379165726710E+0);
+
+  __m512 dst512;
+  __m512 base512 = _mm512_mul_ps(src512, src512);
+  dst512 = _mm512_fmadd_ps(coeff0, base512, coeff1);
+  dst512 = _mm512_fmadd_ps(dst512, base512, coeff2);
+  dst512 = _mm512_fmadd_ps(dst512, base512, coeff3);
+  dst512 = _mm512_fmadd_ps(dst512, base512, coeff4);
+  dst512 = _mm512_fmadd_ps(dst512, base512, coeff5);
+  dst512 = _mm512_fmadd_ps(dst512, base512, coeff6);
+  dst512 = _mm512_mul_ps(dst512, src512);
+
+  return dst512;
+}
+
+static inline __m512 erfc_avx512(const __m512& src512) {
+  const __m512 Pcoeff0 = _mm512_set1_ps(+2.326819970068386E-2);
+  const __m512 Pcoeff1 = _mm512_set1_ps(-1.387039388740657E-1);
+  const __m512 Pcoeff2 = _mm512_set1_ps(+3.687424674597105E-1);
+  const __m512 Pcoeff3 = _mm512_set1_ps(-5.824733027278666E-1);
+  const __m512 Pcoeff4 = _mm512_set1_ps(+6.210004621745983E-1);
+  const __m512 Pcoeff5 = _mm512_set1_ps(-4.944515323274145E-1);
+  const __m512 Pcoeff6 = _mm512_set1_ps(+3.404879937665872E-1);
+  const __m512 Pcoeff7 = _mm512_set1_ps(-2.741127028184656E-1);
+  const __m512 Pcoeff8 = _mm512_set1_ps(+5.638259427386472E-1);
+
+  const __m512 Rcoeff0 = _mm512_set1_ps(-1.047766399936249E+1);
+  const __m512 Rcoeff1 = _mm512_set1_ps(+1.297719955372516E+1);
+  const __m512 Rcoeff2 = _mm512_set1_ps(-7.495518717768503E+0);
+  const __m512 Rcoeff3 = _mm512_set1_ps(+2.921019019210786E+0);
+  const __m512 Rcoeff4 = _mm512_set1_ps(-1.015265279202700E+0);
+  const __m512 Rcoeff5 = _mm512_set1_ps(+4.218463358204948E-1);
+  const __m512 Rcoeff6 = _mm512_set1_ps(-2.820767439740514E-1);
+  const __m512 Rcoeff7 = _mm512_set1_ps(+5.641895067754075E-1);
+
+  const __m512 one = _mm512_set1_ps(1.0);
+  const __m512 two = _mm512_set1_ps(2.0);
+  const __m512 zero = _mm512_set1_ps(0.0);
+  const __m512 MinorMaxlog = _mm512_set1_ps(-88.72283905206835);
+
+  __m512 abssrc = _mm512_abs_ps(src512);
+  __m512 nabssrc = _mm512_sub_ps(zero, abssrc);
+  __m512 v = _mm512_mul_ps(abssrc, nabssrc);
+  __m512 z = pexp(v);
+  __m512 q = _mm512_div_ps(one, abssrc);
+  __m512 y = _mm512_mul_ps(q, q);
+
+  __mmask16 PCoeff_mask = _mm512_cmplt_ps_mask(abssrc, two); // < 2
+  __mmask16 RCoeff_mask = ~PCoeff_mask;
+
+  __m512 pP;
+  __m512 pR;
+  if (PCoeff_mask) {
+    pP = _mm512_fmadd_ps(Pcoeff0, y, Pcoeff1);
+    pP = _mm512_fmadd_ps(pP, y, Pcoeff2);
+    pP = _mm512_fmadd_ps(pP, y, Pcoeff3);
+    pP = _mm512_fmadd_ps(pP, y, Pcoeff4);
+    pP = _mm512_fmadd_ps(pP, y, Pcoeff5);
+    pP = _mm512_fmadd_ps(pP, y, Pcoeff6);
+    pP = _mm512_fmadd_ps(pP, y, Pcoeff7);
+    pP = _mm512_fmadd_ps(pP, y, Pcoeff8);
+  }
+
+  if (RCoeff_mask) {
+    pR = _mm512_fmadd_ps(Rcoeff0, y, Rcoeff1);
+    pR = _mm512_fmadd_ps(pR, y, Rcoeff2);
+    pR = _mm512_fmadd_ps(pR, y, Rcoeff3);
+    pR = _mm512_fmadd_ps(pR, y, Rcoeff4);
+    pR = _mm512_fmadd_ps(pR, y, Rcoeff5);
+    pR = _mm512_fmadd_ps(pR, y, Rcoeff6);
+    pR = _mm512_fmadd_ps(pR, y, Rcoeff7);
+  }
+
+  pP = _mm512_mask_mov_ps(pP, RCoeff_mask, pR);
+  //  y = z * q * p;
+  //  float y_clamp = z < -kMaxlog ? 0 : y;
+
+  //  return x < 0 ? 2 - y_clamp : y_clamp;
+  y = _mm512_mul_ps(z, q);
+  y = _mm512_mul_ps(y, pP);
+  __mmask16 y_clamp_mask = _mm512_cmplt_ps_mask(z, MinorMaxlog);
+  __m512 y_clamp = _mm512_mask_mov_ps(y, y_clamp_mask, zero);
+  __mmask16 x_mask = _mm512_cmplt_ps_mask(src512, zero);
+  __m512 y_clamp2 = _mm512_sub_ps(two, y_clamp);
+  y = _mm512_mask_mov_ps(y_clamp, x_mask, y_clamp2);
+  y = _mm512_sub_ps(one, y);
+
+  return y;
+}
+
+odla_value odla_Erf(odla_value input, const odla_value_id value_id) {
+  auto erf_p = [](float* src, float* dst, size_t len) {
+    int i;
+    for (i = 0; i + 16 <= len; i += 16) {
+      __m512 src512 = _mm512_loadu_ps(src + i);
+      __m512 abssrc = _mm512_abs_ps(src512);
+      __mmask16 erf_mask =
+          _mm512_cmplt_ps_mask(abssrc, _mm512_set1_ps(1.0)); // < 1
+      __mmask16 erfc_mask = ~erf_mask;
+      // printf("erf_mask:%x, erfc_mask=%x\n", erf_mask, erfc_mask);
+
+      if (erf_mask) { // call erf
+        __m512 dst512 = erf_avx512(src512);
+        _mm512_mask_storeu_ps(dst + i, erf_mask, dst512);
+      }
+      if (erfc_mask) { // call erfc
+        __m512 dst512 = erfc_avx512(src512);
+        _mm512_mask_storeu_ps(dst + i, erfc_mask, dst512);
+      }
+      // printf("erf_p main...\n");
+    }
+
+    int remain = len - i;
+    if (remain) {
+      __mmask16 mask = 0xffff;
+      mask = mask >> (16 - remain);
+      __m512 src512 = _mm512_maskz_loadu_ps(mask, src + i);
+      __mmask16 erf_mask =
+          _mm512_cmplt_ps_mask(src512, _mm512_set1_ps(1.0)); // < 1
+      __mmask16 erfc_mask = ~erf_mask;
+
+      if (erf_mask) {
+        __m512 dst512 = erf_avx512(src512);
+        _mm512_mask_store_ps(dst + i, mask, dst512);
+      }
+      if (erfc_mask) {
+        __m512 dst512 = erfc_avx512(src512);
+        _mm512_mask_storeu_ps(dst + i, mask, dst512);
+      }
+      // printf("erf_p remain...\n");
+    }
+
+    return;
+  };
+
+  const auto& input_shape = input->shape;
+  dnnl::memory::data_type type = input->mem.get_desc().data_type();
+  assert(type == dnnl_f32);
+
+  float* src_ptr = (float*)input->mem.get_data_handle();
+
+  auto ret_md = input->mem.get_desc();
+  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
+  float* dst_ptr = (float*)ret_mem.get_data_handle();
+
+  size_t total_size = GetTotalElements(input->shape);
+
+  erf_p(src_ptr, dst_ptr, total_size);
+
+  odla_value v = CreateValue(ret_mem, input->shape, value_id);
+
+  InterpretIfNeeded();
+
+  return v;
+}
+
+#endif
 
 odla_value odla_Slice(odla_value input, const odla_uint32* start,
                       const odla_uint32* end, const odla_uint32* strides,
