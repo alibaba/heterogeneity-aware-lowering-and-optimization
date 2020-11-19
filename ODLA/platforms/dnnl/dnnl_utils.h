@@ -31,13 +31,29 @@ inline void rsqrtf_func(int len, float* src, float* dst) { assert(0); }
 
 inline void rsqrtbf_func(int len, float* src, float* dst) { assert(0); }
 
-inline void castf_fp32int8_func(int len, float* src, int8_t* dst) { assert(0); }
-inline void castf_int32fp32_func(int len, int* src, float* dst) { assert(0); }
-inline void castf_fp32int32_func(int len, float* src, int* dst) { assert(0); }
-inline void castf_int8fp32_func(int len, int8_t* src, float* dst) { assert(0); }
+inline void cast_fp32int8_func(int len, float* src, int8_t* dst) { assert(0); }
+inline void cast_int32fp32_func(int len, int* src, float* dst) { assert(0); }
+inline void cast_fp32int32_func(int len, float* src, int* dst) { assert(0); }
+inline void cast_int8fp32_func(int len, int8_t* src, float* dst) { assert(0); }
 inline void topk_func(float* src, float* dst_data, int* dst_idx,
                       std::vector<int32_t> src_dims, uint32_t K, bool largest,
                       bool sorted, uint32_t axis) {
+  assert(0);
+}
+
+inline void gather_byte1_func(int8_t* params, int32_t* idx, size_t batch_size,
+                              size_t idx_size, size_t inner_size, int8_t* dst) {
+  assert(0);
+}
+
+inline void gather_byte2_func(int16_t* params, int32_t* idx, size_t batch_size,
+                              size_t idx_size, size_t inner_size,
+                              int16_t* dst) {
+  assert(0);
+}
+
+inline void gather_byte4_func(float* params, int32_t* idx, size_t batch_size,
+                              size_t idx_size, size_t inner_size, float* dst) {
   assert(0);
 }
 

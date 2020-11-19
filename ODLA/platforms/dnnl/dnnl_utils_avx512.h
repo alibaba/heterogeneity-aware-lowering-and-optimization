@@ -48,6 +48,46 @@ inline __m512 _mm512_cvtbf16f32_load(__mmask16 mask, void* mem_addr) {
   return _mm512_castsi512_ps(dst);
 }
 
+inline void gather_byte1_func(int8_t* params, int32_t* idx, size_t batch_size,
+                              size_t idx_size, size_t inner_size, int8_t* dst) {
+  size_t slice_bytes = inner_size;
+#pragma omp parallel for
+  for (int i = 0; i < batch_size; i++) {
+    for (int j = 0; j < idx_size; j++) {
+      int32_t curr_idx = idx[i * batch_size + j];
+      memcpy(dst + (i * idx_size + j) * inner_size,
+             params + (curr_idx)*inner_size, slice_bytes);
+    }
+  }
+}
+
+inline void gather_byte2_func(int16_t* params, int32_t* idx, size_t batch_size,
+                              size_t idx_size, size_t inner_size,
+                              int16_t* dst) {
+  size_t slice_bytes = inner_size * 2;
+#pragma omp parallel for
+  for (int i = 0; i < batch_size; i++) {
+    for (int j = 0; j < idx_size; j++) {
+      int32_t curr_idx = idx[i * batch_size + j];
+      memcpy(dst + (i * idx_size + j) * inner_size,
+             params + (curr_idx)*inner_size, slice_bytes);
+    }
+  }
+}
+
+inline void gather_byte4_func(float* params, int32_t* idx, size_t batch_size,
+                              size_t idx_size, size_t inner_size, float* dst) {
+  size_t slice_bytes = inner_size * 4;
+#pragma omp parallel for
+  for (int i = 0; i < batch_size; i++) {
+    for (int j = 0; j < idx_size; j++) {
+      int32_t curr_idx = idx[i * batch_size + j];
+      memcpy(dst + (i * idx_size + j) * inner_size,
+             params + (curr_idx)*inner_size, slice_bytes);
+    }
+  }
+}
+
 #if defined(__GNUC__) && (__GNUC__ > 9)
 inline void floorbf_func(int len, float* src, float* dst) {
   int i = 0;
@@ -343,7 +383,7 @@ static inline __m512 erfc_avx512(const __m512& src512) {
 }
 #endif
 
-inline void castf_fp32int32_func(int len, float* src, int* dst) {
+inline void cast_fp32int32_func(int len, float* src, int* dst) {
   int i = 0;
   int vec_size = 512 / 32;
   __mmask16 mask16 = 0xFFFF;
@@ -360,7 +400,7 @@ inline void castf_fp32int32_func(int len, float* src, int* dst) {
   }
 }
 
-inline void castf_int32fp32_func(int len, int* src, float* dst) {
+inline void cast_int32fp32_func(int len, int* src, float* dst) {
   int i = 0;
   int vec_size = 512 / 32;
   __mmask16 mask16 = 0xFFFF;
@@ -377,7 +417,7 @@ inline void castf_int32fp32_func(int len, int* src, float* dst) {
   }
 }
 
-inline void castf_fp32int8_func(int len, float* src, int8_t* dst) {
+inline void cast_fp32int8_func(int len, float* src, int8_t* dst) {
   int i = 0;
   int vec_size = 512 / 32;
   __mmask16 mask16 = 0xFFFF;
@@ -394,7 +434,7 @@ inline void castf_fp32int8_func(int len, float* src, int8_t* dst) {
   }
 }
 
-inline void castf_int8fp32_func(int len, int8_t* src, float* dst) {
+inline void cast_int8fp32_func(int len, int8_t* src, float* dst) {
   int i = 0;
   int vec_size = 512 / 32;
   __mmask16 mask16 = 0xFFFF;
@@ -538,6 +578,7 @@ struct cmplt_ps {
 static inline __m512 _mm_uni_loadu_ps(const float* psrc) {
   return _mm512_mask_loadu_ps(_mm_uni_any_ps(), (__mmask16)-1, psrc);
 }
+
 template <class Compare1, template <typename> class Compare2>
 void top1_axis(const float* src_data, float* dst_data, int* dst_idx,
                SizeVector in_dims, int32_t axis, int before_num, int dim,
