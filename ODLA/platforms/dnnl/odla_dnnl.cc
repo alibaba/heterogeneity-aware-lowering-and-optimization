@@ -265,12 +265,11 @@ static void InterpretIfNeeded() {
   if (context->stream == nullptr) {
     context->stream = std::make_unique<dnnl::stream>(g_comp->eng);
   }
-  for (size_t i = 0, e = g_comp->primitives.size(); i < e; ++i) {
-    g_comp->primitives[i].execute(*context->stream, g_comp->args[i]);
+  for (auto& op : g_comp->ops) {
+    op.execute(*context->stream);
   }
   context->stream->wait();
-  g_comp->primitives.clear();
-  g_comp->args.clear();
+  g_comp->ops.clear();
 #endif
 }
 
@@ -409,9 +408,11 @@ odla_value odla_Rsqrt(odla_value input, const odla_value_id id) {
 odla_value odla_Gather(odla_value params, const odla_value indices,
                        odla_int32 axis, odla_value_shape output_dims,
                        const odla_value_id id) {
+  std::function<void()> op;
   axis = axis < 0 ? params->shape.size + axis : axis;
-  int64_t batch_size;
-  int64_t idx_size;
+  size_t batch_size;
+  size_t idx_size;
+  auto dt = params->mem.get_desc().data_type();
   if (indices->shape.size > 1) {
     batch_size = indices->shape.dims[0];
     idx_size = indices->shape.dims[1];
@@ -419,48 +420,42 @@ odla_value odla_Gather(odla_value params, const odla_value indices,
     batch_size = 1;
     idx_size = indices->shape.dims[0];
   }
-  int64_t inner_size = 1;
+  size_t inner_size = 1;
   for (int i = axis + 1; i < params->shape.size; ++i) {
     inner_size *= params->shape.dims[i];
   }
-  auto buffer_size = g_comp->opts.enable_bf16 ? sizeof(int16_t) : sizeof(float);
-  auto ret_md = dnnl::memory::desc(getDims(output_dims),
-                                   params->mem.get_desc().data_type(),
-                                   getStrides(output_dims));
-  auto output_buffer = malloc(GetTotalElements(output_dims) * buffer_size);
-  auto ret_mem = dnnl::memory(ret_md, g_comp->eng, output_buffer);
-
-  if (g_comp->opts.enable_bf16) {
-    int16_t* output_ptr = (int16_t*)ret_mem.get_data_handle();
-    int16_t* params_base = (int16_t*)params->mem.get_data_handle();
-    int32_t* idx_base = (int32_t*)indices->mem.get_data_handle();
-    size_t bytes = ret_md.get_size();
-    const size_t slice_bytes = inner_size * buffer_size;
+  auto ret_md =
+      dnnl::memory::desc(getDims(output_dims), dt, getStrides(output_dims));
+  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
+  if (dt == dnnl::memory::data_type::s8 || dt == dnnl::memory::data_type::u8) {
+    std::cout << "entry gather 1 bytes" << std::endl;
+    op = [&params, &indices, batch_size, idx_size, inner_size, &ret_mem]() {
+      dnnl_utils::gather_byte1_func((int8_t*)params->mem.get_data_handle(),
+                                    (int32_t*)indices->mem.get_data_handle(),
+                                    batch_size, idx_size, inner_size,
+                                    (int8_t*)ret_mem.get_data_handle());
+    };
+  } else if (g_comp->opts.enable_bf16 || dt == dnnl::memory::data_type::f16) {
+    std::cout << "entry gather 2 bytes" << std::endl;
+    op = [&params, &indices, batch_size, idx_size, inner_size, &ret_mem]() {
+      dnnl_utils::gather_byte2_func((int16_t*)params->mem.get_data_handle(),
+                                    (int32_t*)indices->mem.get_data_handle(),
+                                    batch_size, idx_size, inner_size,
+                                    (int16_t*)ret_mem.get_data_handle());
+    };
     // copy the memory:
-#pragma omp parallel for
-    for (int i = 0; i < batch_size; i++) {
-      for (int j = 0; j < idx_size; j++) {
-        int32_t curr_idx = idx_base[i * batch_size + j];
-        memcpy(output_ptr + (i * idx_size + j) * inner_size,
-               params_base + (curr_idx)*inner_size, slice_bytes);
-      }
-    }
+  } else if (dt == dnnl::memory::data_type::s32 ||
+             dt == dnnl::memory::data_type::f32) {
+    op = [&params, &indices, batch_size, idx_size, inner_size, &ret_mem]() {
+      dnnl_utils::gather_byte4_func((float*)params->mem.get_data_handle(),
+                                    (int32_t*)indices->mem.get_data_handle(),
+                                    batch_size, idx_size, inner_size,
+                                    (float*)ret_mem.get_data_handle());
+    };
   } else {
-    int32_t* output_ptr = (int32_t*)ret_mem.get_data_handle();
-    int32_t* params_base = (int32_t*)params->mem.get_data_handle();
-    int32_t* idx_base = (int32_t*)indices->mem.get_data_handle();
-    size_t bytes = ret_md.get_size();
-    const size_t slice_bytes = inner_size * buffer_size;
-    // copy the memory:
-#pragma omp parallel for
-    for (int i = 0; i < batch_size; i++) {
-      for (int j = 0; j < idx_size; j++) {
-        int32_t curr_idx = idx_base[i * batch_size + j];
-        memcpy(output_ptr + (i * idx_size + j) * inner_size,
-               params_base + (curr_idx)*inner_size, slice_bytes);
-      }
-    }
+    std::cerr << "This data type cast is not allowed yet.";
   }
+  // copy the memory:
 #if 0 // below code is aligned with tensorflow
 
   for (int i = 0; i < axis; ++i) {
@@ -477,7 +472,7 @@ odla_value odla_Gather(odla_value params, const odla_value indices,
   int64_t gather_dim_size = params->shape.dims(axis);
 
 #endif
-
+  add_op(op);
   InterpretIfNeeded();
   return CreateValue(ret_mem, output_dims, id);
 }
@@ -492,37 +487,33 @@ odla_value odla_Cast(odla_value input, odla_element_type target_type,
   auto ret_mem = dnnl::memory();
   auto dt = input->mem.get_desc().data_type();
   if (dt == dnnl::memory::data_type::f32 && target_type == ODLA_INT32) {
-    auto output_buf = malloc(total_elems * sizeof(int32_t));
-    ret_mem = dnnl::memory(ret_md, g_comp->eng, output_buf);
+    ret_mem = dnnl::memory(ret_md, g_comp->eng);
     op = [total_elems, &input, &ret_mem]() {
-      dnnl_utils::castf_fp32int32_func(total_elems,
-                                       (float*)input->mem.get_data_handle(),
-                                       (int*)ret_mem.get_data_handle());
+      dnnl_utils::cast_fp32int32_func(total_elems,
+                                      (float*)input->mem.get_data_handle(),
+                                      (int*)ret_mem.get_data_handle());
     };
   } else if (dt == dnnl::memory::data_type::f32 && target_type == ODLA_INT8) {
-    auto output_buf = malloc(total_elems * sizeof(int8_t));
-    ret_mem = dnnl::memory(ret_md, g_comp->eng, output_buf);
+    ret_mem = dnnl::memory(ret_md, g_comp->eng);
     op = [total_elems, &input, &ret_mem]() {
-      dnnl_utils::castf_fp32int8_func(total_elems,
-                                      (float*)input->mem.get_data_handle(),
-                                      (int8_t*)ret_mem.get_data_handle());
+      dnnl_utils::cast_fp32int8_func(total_elems,
+                                     (float*)input->mem.get_data_handle(),
+                                     (int8_t*)ret_mem.get_data_handle());
     };
   } else if (dt == dnnl::memory::data_type::s32 &&
              target_type == ODLA_FLOAT32) {
-    auto output_buf = malloc(total_elems * sizeof(float));
-    ret_mem = dnnl::memory(ret_md, g_comp->eng, output_buf);
+    ret_mem = dnnl::memory(ret_md, g_comp->eng);
     op = [total_elems, &input, &ret_mem]() {
-      dnnl_utils::castf_int32fp32_func(total_elems,
-                                       (int*)input->mem.get_data_handle(),
-                                       (float*)ret_mem.get_data_handle());
+      dnnl_utils::cast_int32fp32_func(total_elems,
+                                      (int*)input->mem.get_data_handle(),
+                                      (float*)ret_mem.get_data_handle());
     };
   } else if (dt == dnnl::memory::data_type::s8 && target_type == ODLA_FLOAT32) {
-    auto output_buf = malloc(total_elems * sizeof(float));
-    ret_mem = dnnl::memory(ret_md, g_comp->eng, output_buf);
+    ret_mem = dnnl::memory(ret_md, g_comp->eng);
     op = [total_elems, &input, &ret_mem]() {
-      dnnl_utils::castf_int8fp32_func(total_elems,
-                                      (int8_t*)input->mem.get_data_handle(),
-                                      (float*)ret_mem.get_data_handle());
+      dnnl_utils::cast_int8fp32_func(total_elems,
+                                     (int8_t*)input->mem.get_data_handle(),
+                                     (float*)ret_mem.get_data_handle());
     };
   } else {
     op = [] { assert(0); };
@@ -1261,20 +1252,21 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
 }
 
 odla_value odla_Erf(odla_value input, const odla_value_id value_id) {
+  std::function<void()> op;
   const auto& input_shape = input->shape;
   dnnl::memory::data_type type = input->mem.get_desc().data_type();
   assert(type == dnnl_f32);
 
-  float* src_ptr = (float*)input->mem.get_data_handle();
-
   auto ret_md = input->mem.get_desc();
   auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
-  float* dst_ptr = (float*)ret_mem.get_data_handle();
 
   size_t total_size = GetTotalElements(input->shape);
 
-  dnnl_utils::erf_p(src_ptr, dst_ptr, total_size);
-
+  op = [total_size, &input, &ret_mem]() {
+    dnnl_utils::erf_p((float*)input->mem.get_data_handle(),
+                      (float*)ret_mem.get_data_handle(), total_size);
+  };
+  add_op(op);
   odla_value v = CreateValue(ret_mem, input->shape, value_id);
 
   InterpretIfNeeded();
@@ -1316,12 +1308,8 @@ odla_values odla_TopK(odla_value input, odla_uint32 K, odla_bool largest,
   auto input_ptr = (float*)input->mem.get_data_handle();
   auto output_dims = output_value_type.shape;
   dnnl::memory::desc dst_md = getMemoryDesc(output_dims, type);
-  auto output_buf =
-      (float*)malloc(GetTotalElements(output_dims) * sizeof(float));
-  auto output_idx_buf =
-      (float*)malloc(GetTotalElements(output_dims) * sizeof(int));
-  auto dst_mem = dnnl::memory(dst_md, g_comp->eng, output_buf);
-  auto dst_idx_mem = dnnl::memory(dst_md, g_comp->eng, output_idx_buf);
+  auto dst_mem = dnnl::memory(dst_md, g_comp->eng);
+  auto dst_idx_mem = dnnl::memory(dst_md, g_comp->eng);
   std::vector<int32_t> input_shape;
   for (int i = 0; i < input->shape.size; i++) {
     input_shape.push_back(input->shape.dims[i]);
