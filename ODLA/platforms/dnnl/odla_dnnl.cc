@@ -540,6 +540,7 @@ static odla_value binary_eltwise(dnnl::algorithm algo, odla_value lhs,
   auto rn = GetTotalElements(dims_rhs);
 
   if (ln != rn) {
+    // broadcasting.
     std::vector<int64_t> strides_v(dims_lhs.size, 0);
     assert(ln >= rn && ln % rn == 0);
     if (dims_rhs.size == 1) {
@@ -560,8 +561,14 @@ static odla_value binary_eltwise(dnnl::algorithm algo, odla_value lhs,
         }
       }
     }
-    for (int i = 0; i < dims_lhs.size; ++i)
-      rhs_md.data.format_desc.blocking.strides[i] = strides_v[i];
+
+    rhs_md = dnnl::memory::desc(getDims(dims_lhs),
+                                rhs->mem.get_desc().data_type(), strides_v);
+  } else if (dims_lhs.size > dims_rhs.size) {
+    // Reshape.
+    rhs_md =
+        dnnl::memory::desc(getDims(dims_lhs), rhs->mem.get_desc().data_type(),
+                           getStrides(dims_lhs));
   }
   dnnl::binary::desc bd(algo, lhs_md, rhs_md, ret_md);
   dnnl::binary::primitive_desc pd(bd, g_comp->eng);
