@@ -44,7 +44,7 @@ a business entity of Alibaba Group.
 A broad ODLA ecosystem is supported via the ODLA runtime library set
 targeting various heterogeneous accelerators/runtimes:
 - [Eigen](http://eigen.tuxfamily.org)
-- [GraphCore® IPU](https://www.graphcore.ai)
+- [Graphcore® IPU](https://www.graphcore.ai)
 - [Intel® oneAPI](https://github.com/oneapi-src)
 - [Qualcomm® Cloud AI 100](https://www.qualcomm.com/products/cloud-artificial-intelligence)
 - [TensorRT™](https://developer.nvidia.com/tensorrt)
