@@ -590,12 +590,15 @@ static void RunOnMatrixMultiplyInstruction(Instruction* inst, bool trans_a,
   }
   const auto& input_type = op0.GetType();
   std::vector<int64_t> ret_shape(input_type.GetDimSizes());
-  auto dims = input_type.GetNumOfDims();
+  auto lhs_dims = input_type.GetNumOfDims();
 
-  auto row = trans_a ? input_type.GetNumOfElementsInDim(dims - 1)
-                     : input_type.GetNumOfElementsInDim(dims - 2);
-  auto col = trans_b ? op1.GetType().GetNumOfElementsInDim(dims - 2)
-                     : op1.GetType().GetNumOfElementsInDim(dims - 1);
+  const auto& rhs_type = op1.GetType();
+  auto rhs_dims = rhs_type.GetNumOfDims();
+
+  auto row = trans_a ? input_type.GetNumOfElementsInDim(lhs_dims - 1)
+                     : input_type.GetNumOfElementsInDim(lhs_dims - 2);
+  auto col = trans_b ? rhs_type.GetNumOfElementsInDim(rhs_dims - 2)
+                     : rhs_type.GetNumOfElementsInDim(rhs_dims - 1);
   ret_shape.pop_back();
   ret_shape.pop_back();
   ret_shape.push_back(row);
