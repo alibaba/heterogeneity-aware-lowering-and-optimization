@@ -528,13 +528,20 @@ static odla_value binary_eltwise(dnnl::algorithm algo, odla_value lhs,
                                  odla_value rhs, const odla_value_id id) {
   const auto& dims_lhs = lhs->shape;
   const auto& dims_rhs = rhs->shape;
+
+  // Construct new memory desc based on input shape. This is because
+  // lhs might be has mem_desc of NCHW (storage layout is NHWC) and rhs
+  // has mem_desc of NHWC (storage layout is NHWC). And DNNL won't allow
+  // this situation.
   auto lhs_md =
       dnnl::memory::desc(getDims(dims_lhs), lhs->mem.get_desc().data_type(),
                          getFormatTag(dims_lhs));
   auto ret_md = lhs_md;
   auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
 
-  auto rhs_md = rhs->mem.get_desc();
+  auto rhs_md =
+      dnnl::memory::desc(getDims(dims_rhs), rhs->mem.get_desc().data_type(),
+                         getFormatTag(dims_rhs));
 
   auto ln = GetTotalElements(dims_lhs);
   auto rn = GetTotalElements(dims_rhs);
@@ -684,13 +691,16 @@ static odla_value_shape getOIHWDims(const odla_value_shape& src_dims) {
 }
 
 static odla_value_shape getGOIHWDims(const odla_value_shape& src_dims,
-                                     unsigned groups,
+                                     unsigned groups, unsigned data_in_ch,
                                      odla_memory_layout layout) {
   assert(src_dims.size == 4);
   assert(layout == ODLA_OIS);
-  return {src_dims.size + 1,
-          {groups, src_dims.dims[0] / groups, src_dims.dims[1],
-           src_dims.dims[2], src_dims.dims[3]}};
+  auto group_in_ch = data_in_ch / groups;
+  auto group_out_ch =
+      src_dims.dims[0] * src_dims.dims[1] / (groups * group_in_ch);
+  return {
+      src_dims.size + 1,
+      {groups, group_out_ch, group_in_ch, src_dims.dims[2], src_dims.dims[3]}};
 }
 
 odla_value odla_Transpose(odla_value input, odla_value_shape permutations,
@@ -751,7 +761,8 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
       if (kernel_dims.dims[0] * group == kernel_dims.dims[1])
         std::swap(kernel_dims.dims[0], kernel_dims.dims[1]);
     }
-    kernel_dims = getGOIHWDims(kernel_dims, group, ODLA_OIS);
+    kernel_dims =
+        getGOIHWDims(kernel_dims, group, input_dims.dims[1], ODLA_OIS);
   }
 
   dnnl::memory::desc ret_md;
@@ -866,7 +877,8 @@ odla_value odla_DeConv(odla_value input, odla_memory_layout input_layout,
   }
 
   if (group > 1) {
-    kernel_dims = getGOIHWDims(kernel_dims, group, ODLA_OIS);
+    kernel_dims =
+        getGOIHWDims(kernel_dims, group, input_dims.dims[1], ODLA_OIS);
   }
   dnnl::memory::desc ret_md;
   if (g_comp->opts.enable_bf16) {
@@ -1334,3 +1346,4 @@ odla_values odla_TopK(odla_value input, odla_uint32 K, odla_bool largest,
 }
 
 } // C extern
+
