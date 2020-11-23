@@ -59,5 +59,16 @@ inline void gather_byte4_func(float* params, int32_t* idx, size_t batch_size,
 
 inline void erf_p(float* src, float* dst, size_t len) { assert(0); }
 
+inline void binary_s32_func(dnnl::algorithm alg, int32_t* lhs, int32_t* rhs,
+                            int32_t* dst, int len) {
+  assert(0);
+}
+
+void nms_func(float* boxes, float* scores, size_t batch_idx, size_t class_num,
+              size_t num_boxes, size_t max_num_outputs, float score_threshold,
+              float iou_threshold, int32_t* output_indices) {
+  assert(0);
+}
+
 } // namespace dnnl_utils
 #endif
