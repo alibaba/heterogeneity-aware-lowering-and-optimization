@@ -42,6 +42,7 @@ static int calculat_offset(int len, int vec_size) {
   return dst;
 }
 
+#if defined(__GNUC__) && (__GNUC__ > 9)
 inline void binary_s32_func(dnnl::algorithm alg, int32_t* lhs, int32_t* rhs,
                             int32_t* dst, int len) {
   int i = 0;
@@ -75,6 +76,12 @@ inline void binary_s32_func(dnnl::algorithm alg, int32_t* lhs, int32_t* rhs,
     _mm512_mask_storeu_epi32(dst + i, tail_mask, out1);
   }
 }
+#else
+inline void binary_s32_func(dnnl::algorithm alg, int32_t* lhs, int32_t* rhs,
+                            int32_t* dst, int len) {
+  assert(0);
+}
+#endif
 
 inline __m512 _mm512_cvtbf16f32_load(__mmask16 mask, void* mem_addr) {
   auto dst = _mm512_slli_epi32(
