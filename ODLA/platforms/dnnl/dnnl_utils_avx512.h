@@ -59,6 +59,7 @@ inline void binary_s32_func(dnnl::algorithm alg, int32_t* lhs, int32_t* rhs,
       __mm512_binary_op = [](__m512i a, __m512i b) {
         return _mm512_mul_epi32(a, b);
       };
+      break;
     default:
       break;
   }
