@@ -22,6 +22,7 @@ endmacro(add_odla_library)
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
 
 add_subdirectory(dnnl)
+add_subdirectory(odla_popart)
 
 set(CUDA_VERSION 10.0)
 set(TRT_ROOT /usr/local/cuda-${CUDA_VERSION}/targets/x86_64-linux)
