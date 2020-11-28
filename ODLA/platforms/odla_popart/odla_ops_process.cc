@@ -25,6 +25,11 @@
 #include <iostream>
 #include <memory>
 #include <numeric>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <vector>
+#include <random>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
@@ -35,14 +40,8 @@
 #include <popart/stepio.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/voiddata.hpp>
-#include <random>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <vector>
-
-#include "common.h"
 #include "odla_popart.h"
+#include "common.h"
 
 #if !defined(ODLA_VERSION_NUMBER) || (ODLA_VERSION_NUMBER < 50)
 #error This library requires minimum ODLA version 0.5
@@ -122,6 +121,7 @@ odla_value odla_Pad(odla_value input, const odla_uint32* padding_front,
   std::vector<int64_t> padding_from_back;
   int rank = input->tensor_info.rank();
   for (int64_t i = 0; i < rank; i++) {
+<<<<<<< HEAD
     padding.emplace_back(padding_front[i]);
     padding_from_back.emplace_back(padding_back[i]);
   }
