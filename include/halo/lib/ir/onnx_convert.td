@@ -109,13 +109,17 @@ def ONNX_Dropout : ONNXExtension<"Dropout">;
 
 def ONNX_Equal: OpMapping<"Equal", Equal>;
 
+def ONNX_Exp : OpMapping<"Exp", Exp>;
+
 def ONNX_Expand : OpMapping<"Expand", ExpandDims>;
 
-def ONNX_Flatten : ONNXExtension<"Flatten"> { 
+def ONNX_Flatten : ONNXExtension<"Flatten"> {
   let extension_attr_ = [
     ExtensionAttr<"axis", Integer, "1">,
   ];
 }
+
+def ONNX_Floor : OpMapping<"Floor", Floor>;
 
 def ONNX_Gather : OpMapping<"Gather", Gather> {
   let attr_mapping_ = [AttributeMapping<"axis", "axis", "0">];
@@ -124,12 +128,6 @@ def ONNX_Gather : OpMapping<"Gather", Gather> {
 def ONNX_GatherElements : ONNXExtension <"GatherElements"> {
   let extension_attr_ = [ ExtensionAttr<"axis", Integer, "0"> ];
 }
-
-def ONNX_Greater: OpMapping<"Greater", Greater>;
-
-def ONNX_Exp : OpMapping<"Exp", Exp>;
-
-def ONNX_Floor : OpMapping<"Floor", Floor>;
 
 def ONNX_Gemm: OpMapping<"Gemm", Gemm> {
   let attr_mapping_ = [
@@ -146,6 +144,8 @@ def ONNX_GlobalAveragePool : OpMapping<"GlobalAveragePool", ReduceMean> {
     AttributeMapping<"", "axis", "{2,3}">,
     AttributeMapping<"", "keep_dims", "true">];
 }
+
+def ONNX_Greater: OpMapping<"Greater", Greater>;
 
 def ONNX_Identity : ONNXExtension<"Identity">;
 
@@ -252,6 +252,15 @@ def ONNX_Resize : OpMapping<"Resize", Resize> {
 
 def ONNX_Shape : ONNXExtension<"Shape">;
 
+def ONNX_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
+
+def ONNX_Sin : OpMapping<"Sin", Sin>;
+
+def ONNX_Sinh : OpMapping<"Sinh", Sinh>;
+
+// onnx slice op operands order is different from halo ir
+def ONNX_Slice : ONNXExtension<"Slice">;
+
 def ONNX_Softmax : OpMapping<"Softmax", Softmax>;
 
 def ONNX_Split : ONNXExtension<"Split"> {
@@ -267,15 +276,6 @@ def ONNX_Sqrt : OpMapping<"Sqrt", Sqrt>;
 def ONNX_Squeeze : ONNXExtension<"Squeeze"> {
   let extension_attr_ = [ ExtensionAttr<"axes", IntegerList, "{}"> ];
 }
-
-def ONNX_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
-
-// onnx slice op operands order is different from halo ir
-def ONNX_Slice : ONNXExtension<"Slice">;
-
-def ONNX_Sin : OpMapping<"Sin", Sin>;
-
-def ONNX_Sinh : OpMapping<"Sinh", Sinh>;
 
 def ONNX_Sub : OpMapping<"Sub", Sub>;
 
