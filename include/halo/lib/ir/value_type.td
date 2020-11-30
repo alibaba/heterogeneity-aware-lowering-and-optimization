@@ -36,6 +36,8 @@ class ValueType<int size, string cpp_ty = ""> {
   bit is_unsigned_ = 0;
   // quantized type flag
   bit is_quantized_ = 0;
+  // 2d array type flag
+  bit is_2d_array_ = 0;
 }
 
 #endif // VALUE_TYPE

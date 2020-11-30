@@ -29,6 +29,7 @@ Type::Type(const llvm::Record* record) {
   IsString = record->getValueAsBit("is_string_");
   IsFloat = !IsInt && !IsString;
   IsArray = record->getValueAsBit("is_array_");
+  Is2DArray = record->getValueAsBit("is_2d_array_");
   IsUnsigned = record->getValueAsBit("is_unsigned_");
   IsQuantized = record->getValueAsBit("is_quantized_");
 }
@@ -52,7 +53,7 @@ void Type::EmitDoc(llvm::raw_ostream& o) const {
     }
     o << Width;
   }
-  if (IsArray) {
+  if (IsArray || Is2DArray) {
     o << " list";
   }
 }
@@ -131,6 +132,8 @@ void Attr::EmitInit() {
     std::string init_value;
     Type vt(type_record);
     if (vt.IsArray) {
+      init_value = "{}";
+    } else if (vt.Is2DArray) {
       init_value = "{}";
     } else if (vt.IsBool) {
       init_value = "false";

@@ -50,6 +50,8 @@ class Type {
   bool IsUnsigned;
   /// whether a quantized type
   bool IsQuantized;
+  /// list of list type flag, always false for an arg type.
+  bool Is2DArray;
 };
 
 /// Attr class and attribute access functions emitter.
