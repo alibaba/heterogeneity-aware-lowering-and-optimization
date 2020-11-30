@@ -107,6 +107,10 @@ def ONNX_Div : OpMapping<"Div", Div>;
 
 def ONNX_Dropout : ONNXExtension<"Dropout">;
 
+def ONNX_Elu : OpMapping<"Elu", Elu> {
+  let attr_mapping_ = [ AttributeMapping<"alpha", "alpha", "1.0"> ];
+}
+
 def ONNX_Equal: OpMapping<"Equal", Equal>;
 
 def ONNX_Exp : OpMapping<"Exp", Exp>;
@@ -176,6 +180,8 @@ def ONNX_MatMul: OpMapping<"MatMul", MatMul> {
   ];
 }
 
+def ONNX_Max : OpMapping<"Max", Maximum>;
+
 def ONNX_MaxPool : OpMapping<"MaxPool", PoolingMax> {
   let attr_mapping_ = [
     AttributeMapping<"auto_pad", "padding", "EXPLICIT">,
@@ -193,7 +199,11 @@ def ONNX_MaxPool : OpMapping<"MaxPool", PoolingMax> {
     ExtensionAttr<"storage_order", Integer, "0">];
 }
 
+def ONNX_Min : OpMapping<"Min", Minimum>;
+
 def ONNX_Mul : OpMapping<"Mul", Mul>;
+
+def ONNX_Neg : OpMapping<"Neg", Neg>;
 
 def ONNX_NonMaxSupression : OpMapping<"NonMaxSuppression", NonMaxSuppression> {
   let attr_mapping_ = [
@@ -203,6 +213,8 @@ def ONNX_NonMaxSupression : OpMapping<"NonMaxSuppression", NonMaxSuppression> {
 }
 
 def ONNX_NonZero : ONNXExtension<"NonZero">;
+
+def ONNX_Not : OpMapping<"Not", Not>;
 
 def ONNX_OneHot : ONNXExtension<"OneHot"> {
   let extension_attr_ = [ ExtensionAttr<"axis", Integer, "-1"> ];
@@ -222,6 +234,34 @@ def ONNX_PRelu: OpMapping<"PRelu", PRelu>;
 
 def ONNX_Reciprocal : OpMapping<"Reciprocal", Rcp>;
 
+def ONNX_ReduceL1 : OpMapping<"ReduceL1", ReduceL1> {
+  let attr_mapping_ = [
+    AttributeMapping<"keepdims", "keep_dims", "true">,
+    AttributeMapping<"axes", "axis", "{}">
+  ];
+}
+
+def ONNX_ReduceL2 : OpMapping<"ReduceL2", ReduceL2> {
+  let attr_mapping_ = [
+    AttributeMapping<"keepdims", "keep_dims", "true">,
+    AttributeMapping<"axes", "axis", "{}">
+  ];
+}
+
+def ONNX_ReduceLogSum : OpMapping<"ReduceLogSum", ReduceLogSum> {
+  let attr_mapping_ = [
+    AttributeMapping<"keepdims", "keep_dims", "true">,
+    AttributeMapping<"axes", "axis", "{}">
+  ];
+}
+
+def ONNX_ReduceLogSumExp : OpMapping<"ReduceLogSumExp", ReduceLogSumExp> {
+  let attr_mapping_ = [
+    AttributeMapping<"keepdims", "keep_dims", "true">,
+    AttributeMapping<"axes", "axis", "{}">
+  ];
+}
+
 def ONNX_ReduceMean: OpMapping<"ReduceMean", ReduceMean> {
   let attr_mapping_ = [
     AttributeMapping<"keepdims", "keep_dims", "true">,
@@ -230,6 +270,13 @@ def ONNX_ReduceMean: OpMapping<"ReduceMean", ReduceMean> {
 }
 
 def ONNX_ReduceMin: OpMapping<"ReduceMin", ReduceMin> {
+  let attr_mapping_ = [
+    AttributeMapping<"keepdims", "keep_dims", "true">,
+    AttributeMapping<"axes", "axis", "{}">
+  ];
+}
+
+def ONNX_ReduceSumSquare : OpMapping<"ReduceSumSquare", ReduceSumSquare> {
   let attr_mapping_ = [
     AttributeMapping<"keepdims", "keep_dims", "true">,
     AttributeMapping<"axes", "axis", "{}">
