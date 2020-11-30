@@ -45,7 +45,7 @@ let cat_ = cat_nn_activation,
     let attrs_ = [ Attr<"Threshold", Float, "alpha", "1.0"> ];
   }
 
-  def Relu : Inst<"Compute the relu activation, element-wise." 
+  def Relu : Inst<"Compute the relu activation, element-wise."
                   " Return max(0, X1)">;
 
   def Relu6 : Inst<"Compute the relu6 activation, element-wise."

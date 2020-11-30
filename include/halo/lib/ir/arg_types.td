@@ -35,7 +35,7 @@ let is_integer_ = 1 in {
 }
 
 // unsigned integer
-let is_integer_ = 1, 
+let is_integer_ = 1,
     is_unsigned_ = 1 in {
   def UI8 : ValueType<8>;
   def UI16 : ValueType<16>;
