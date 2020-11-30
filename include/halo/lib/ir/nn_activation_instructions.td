@@ -24,9 +24,11 @@ let cat_ = cat_nn_activation,
     ins_ = [Arg<"The unary input", ArgType<[F16,F32]> >],
     outs_ = [Arg<"The result.", MatchArgType<0> >] in {
 
-  def Elu : Inst<"Compute elu activation, element-wise. Return exp(X1) - 1 if"
-                 " X1 < 0, return X1 else.">;
-  
+  def Elu : Inst<"Compute elu activation, element-wise. Return "
+                 "alpha * (exp(X1) - 1) if X1 < 0, return X1 else."> {
+    let attrs_ = [Attr<"Coefficient of elu", Float, "alpha", "1.0">];
+  }
+
   def LeakyRelu : Inst<"Compute leaky relu activation, element-wise. Return"
                        " max(X1, X1 * alpha)."> {
     let attrs_ = [Attr<"Slope at X1 < 0", Float, "alpha", "0.2">];
