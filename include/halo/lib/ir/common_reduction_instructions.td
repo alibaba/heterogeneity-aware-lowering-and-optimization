@@ -30,11 +30,20 @@ let cat_ = cat_common_reduction,
   let ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >,
               OptionalArg<"The axis.", ArgType<[I32]>, 1D>] in {
 
-    //def ReduceL1 : Inst<"Computes the L1 norm of the elements across"
-    //                    " dimensions.">;
+    def ReduceL1 : Inst<"Computes the L1 norm of the elements across"
+                        " dimensions.">;
 
-    //def ReduceL2 : Inst<"Compute the L2 norm of the elements across"
-    //                    " dimensions.">;
+    def ReduceL2 : Inst<"Compute the L2 norm of the elements across"
+                        " dimensions.">;
+
+    def ReduceLogSum : Inst<"Compute the log sum of the elements across"
+                            " dimensions.">;
+
+    def ReduceLogSumExp : Inst<"Compute the log sum exp of the elements across"
+                               " dimensions.">;
+
+    def ReduceSumSquare : Inst<"Compute the log sum of the elements across"
+                               " dimensions.">;
 
     def ReduceMax : Inst<"Compute the maximum of the elements across"
                          " dimensions">;
