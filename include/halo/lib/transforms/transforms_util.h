@@ -115,9 +115,8 @@ bool AppendReturnInst(BasicBlock* bb);
 
 std::vector<int64_t> GetExtends(const std::vector<int64_t>& dims);
 
-void SplitString(const std::string& s, std::vector<int64_t>* v,
-                 const std::string& c);
-
+void SplitStringToInt64List(const std::string& src, std::vector<int64_t>* dst,
+                            const std::string& delimiter);
 template <typename T>
 std::vector<Def> ConvertSqueezeImpl(const T* ext, IRBuilder* builder,
                                     const std::string& attr_name) {
@@ -234,6 +233,5 @@ class ConstantAccessor {
 // The result of inst may contain compile-time constant.
 std::pair<bool, int64_t> GetAvailIntegerResult(const Def& op, int64_t idx);
 
->>>>>>> 1b5e8b60a... fix
 } // end namespace halo.
 #endif // HALO_LIB_TRANSFORMS_TRANSFORMS_UTIL_H_
