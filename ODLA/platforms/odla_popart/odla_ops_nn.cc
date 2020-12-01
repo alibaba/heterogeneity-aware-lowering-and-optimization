@@ -401,7 +401,6 @@ odla_value odla_PRelu(odla_value input, odla_float32 slope, const odla_value_id 
 //   std::vector<int64_t> output_shape(2, 0);
 //   for (int i = 0; i < output_dim.size; ++i) {
 //     output_shape[i] = output_dim.dims[i]; 
-//     std::cout << output_shape[0] << std::endl;
 //   }
 //   auto rois_shape = g_comp->builder->getTensorShape(rois->tensor_id);
 //   int nums_rois = 0;
@@ -412,7 +411,6 @@ odla_value odla_PRelu(odla_value input, odla_float32 slope, const odla_value_id 
 //   std::vector<int64_t> batch_indices_tmp(nums_rois, 0);   // batch_indices default is all 0
 //   auto batch_indices = odla_CreateConstant_10({ODLA_INT32, {.size = 1, .dims = {nums_rois}}}, batch_indices_tmp.data(), (const odla_value_id)"batch_indices");
 //   std::string pooling_mode = "avg";
-//   std::cout << input->tensor_id << std::endl;
 //   popart::TensorId result =
 //       g_comp->builder->aiOnnxOpset10().roialign({input->tensor_id, rois->tensor_id, batch_indices->tensor_id}, 
 //                                                 pooling_mode, 

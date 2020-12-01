@@ -14,7 +14,6 @@
 # limitations under the License
 # ==============================================================================
 
-message(STATUS "Found popart")
 
 set(CMAKE_CXX_STANDARD 14)
 add_odla_library(custom_ops SHARED custom_ops/rsqrt.cc custom_ops/erf.cc)

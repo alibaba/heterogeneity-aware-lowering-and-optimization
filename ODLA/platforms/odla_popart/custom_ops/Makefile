@@ -1,7 +1,7 @@
 CXX ?= g++
 CXXFLAGS = -std=c++14 -fPIC -g -DONNX_NAMESPACE=onnx
 LDLIBS = -shared -lpopart -lpoplar -lpopops
-INCLUDES = -Iinclude
+INCLUDES = -Iinclude -I/usr/local/include
 
 BUILD_DIR = build
 SOURCES = rsqrt.cc erf.cc
