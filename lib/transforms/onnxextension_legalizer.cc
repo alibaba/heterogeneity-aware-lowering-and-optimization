@@ -1029,22 +1029,6 @@ std::vector<Def> ConvertGlobalMaxPooling(const ONNXExtensionInst* ext,
   return {*inst};
 }
 
-void SplitString(const std::string& s, std::vector<int64_t>* v,
-                 const std::string& c) {
-  std::string::size_type pos2 = s.find(c);
-  std::string::size_type pos1 = 0;
-
-  while (std::string::npos != pos2) {
-    v->push_back(std::stol(s.substr(pos1, pos2 - pos1)));
-
-    pos1 = pos2 + c.size();
-    pos2 = s.find(c, pos1);
-  }
-  if (pos1 != s.length()) {
-    v->push_back(std::stol(s.substr(pos1)));
-  }
-}
-
 static std::vector<Def> ConvertHgEngine(const ONNXExtensionInst* ext,
                                         IRBuilder* builder) {
   auto n = ext->GetNumOfOperands();
