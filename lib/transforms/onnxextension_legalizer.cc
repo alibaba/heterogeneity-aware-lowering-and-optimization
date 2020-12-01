@@ -1047,7 +1047,7 @@ static std::vector<Def> ConvertHgEngine(const ONNXExtensionInst* ext,
   std::string shape_str = ext->GetAttributes()[attr_idx++]->GetValueAsString();
   std::vector<std::vector<int64_t>> output_shapes;
   output_shapes.resize(1);
-  SplitString(shape_str, &(output_shapes[0]), ",");
+  SplitStringToInt64List(shape_str, &(output_shapes[0]), ",");
   hg_engine->SetOutputShapes(output_shapes);
   hg_engine->SetInBindingList(
       {ext->GetAttributes()[attr_idx++]->GetValueAsString()});
