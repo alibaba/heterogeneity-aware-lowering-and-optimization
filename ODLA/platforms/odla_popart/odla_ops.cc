@@ -203,15 +203,6 @@ odla_value odla_Matmul(odla_value lhs, odla_value rhs, const odla_value_id id) {
   popart::TensorId result =
       g_comp->builder->aiOnnxOpset10().matmul({lhs->tensor_id, rhs->tensor_id});
 
- // std::cout << "Found Matmul: " << static_cast<std::string>(result) << std::endl;
- // std::cout << "  lhs: " << static_cast<std::string>(lhs->tensor_id) << std::endl;
- // std::cout << "  lhs data_type: " << g_comp->builder->getTensorDataType(lhs->tensor_id) << std::endl;
- // std::cout << "  lhs shape: " << _VecToStr(g_comp->builder->getTensorShape(lhs->tensor_id)) << std::endl;
- // std::cout << "  rhs: " << static_cast<std::string>(rhs->tensor_id) << std::endl;
- // std::cout << "  rhs data_type: " << g_comp->builder->getTensorDataType(rhs->tensor_id) << std::endl;
- // std::cout << "  rhs shape: " << _VecToStr(g_comp->builder->getTensorShape(rhs->tensor_id)) << std::endl;
- // std::cout << "  result shape: " << _VecToStr(g_comp->builder->getTensorShape(result)) << std::endl;
-
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -228,8 +219,6 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
 #if 1 // USE_BATCHED_MATMUL
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
 
- //  std::cout << "transA:" << transpose_lhs << ", transB: " << transpose_rhs
- //            << "\n";
   popart::TensorId lhs_trans = lhs->tensor_id;
   int rank = lhs->tensor_info.rank();
   if (rank > 2 && transpose_lhs) {
@@ -257,25 +246,6 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
   popart::TensorId result =
       g_comp->builder->aiOnnxOpset10().matmul({lhs_trans, rhs_trans});
 
-//  std::cout << "Found Matmul: " << static_cast<std::string>(result)
-//            << std::endl;
-//  std::cout << "  lhs: " << static_cast<std::string>(lhs->tensor_id)
-//            << std::endl;
-//  std::cout << "  lhs data_type: "
-//            << g_comp->builder->getTensorDataType(lhs->tensor_id) << std::endl;
-//  std::cout << "  lhs shape: "
-//            << _VecToStr(g_comp->builder->getTensorShape(lhs->tensor_id))
-//            << std::endl;
-//  std::cout << "  rhs: " << static_cast<std::string>(rhs->tensor_id)
-//            << std::endl;
-//  std::cout << "  rhs data_type: "
-//            << g_comp->builder->getTensorDataType(rhs->tensor_id) << std::endl;
-//  std::cout << "  rhs shape: "
-//            << _VecToStr(g_comp->builder->getTensorShape(rhs->tensor_id))
-//            << std::endl;
-//  std::cout << "  result shape: "
-//            << _VecToStr(g_comp->builder->getTensorShape(result)) << std::endl;
-//
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},

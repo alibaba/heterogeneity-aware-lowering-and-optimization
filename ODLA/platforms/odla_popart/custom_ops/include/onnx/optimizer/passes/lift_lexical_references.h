@@ -78,10 +78,8 @@ namespace optimization {
 //    return unresolved_references
 struct LiftLexicalReferences : public FullGraphBasedPass {
   explicit LiftLexicalReferences()
-      : FullGraphBasedPass(
-            PassType::Seperate,
-            PassEfficiency::Complete,
-            PassOptimizationType::Memory) {}
+      : FullGraphBasedPass(PassType::Separate, PassEfficiency::Complete,
+                           PassOptimizationType::Memory) {}
 
   std::string getPassName() const override {
     return "lift_lexical_references";
