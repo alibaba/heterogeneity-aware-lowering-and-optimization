@@ -22,7 +22,14 @@ endmacro(add_odla_library)
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
 
 add_subdirectory(dnnl)
-add_subdirectory(odla_popart)
+
+find_library(poplar NAMES poplar PATHS $ENV{POPLAR_SDK_ENABLED} PATH_SUFFIXES lib NO_DEFAULT_PATH)
+if(NOT poplar)
+  message(STATUS "Popart library not found, skip building odla for Popart")
+else()
+  message(STATUS "Found Popart library")
+  add_subdirectory(odla_popart)
+endif()
 
 set(CUDA_VERSION 10.0)
 set(TRT_ROOT /usr/local/cuda-${CUDA_VERSION}/targets/x86_64-linux)
