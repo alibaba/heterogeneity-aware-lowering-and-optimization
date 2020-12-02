@@ -30,7 +30,6 @@
 #include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
-#include <iostream>
 
 // namespace CustomOperators {
 //   extern const popart::OperatorIdentifier Rsqrt_1;
