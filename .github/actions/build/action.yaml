@@ -1,9 +1,14 @@
-name: 'Build Halo'
-description: 'Build HALO'
+name: "Build Halo"
+description: "Build and test HALO"
+inputs:
+  docker_image_variant:
+    description: "Docker image variant"
+    required: true
+    default: "x86_64"
 runs:
   using: "composite"
   steps:
     - run: echo "Curr:${{runner.workspace}}"
       shell: bash
-    - run: ./halo/.github/actions/build/build_in_docker.sh ${{runner.workspace}}
+    - run: ./halo/.github/actions/build/build_in_docker.sh ${{runner.workspace}} ${{ inputs.docker_image_variant }}
       shell: bash
