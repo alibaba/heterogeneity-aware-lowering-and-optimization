@@ -38,8 +38,9 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include "odla_popart.h"
+
 #include "common.h"
+#include "odla_popart.h"
 
 #if !defined(ODLA_VERSION_NUMBER) || (ODLA_VERSION_NUMBER < 50)
 #error This library requires minimum ODLA version 0.5
