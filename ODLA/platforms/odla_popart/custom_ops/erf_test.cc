@@ -15,6 +15,8 @@
 // =============================================================================
 
 #include <dlfcn.h>
+
+#include <iostream>
 #include <popart/builder.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/logging.hpp>
@@ -28,7 +30,6 @@
 #include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
-#include <iostream>
 
 // namespace CustomOperators {
 //   extern const popart::OperatorIdentifier Rsqrt_1;
@@ -73,20 +74,21 @@ int main(int argc, char const* argv[]) {
   // or acquireAvailableDevice();
 
   std::cout << "Creating session from Onnx Model...\n";
-  auto session = popart::InferenceSession::createFromOnnxModel(
-      proto, dataFlow, ipuModelDevice);
+  auto session = popart::InferenceSession::createFromOnnxModel(proto, dataFlow,
+                                                               ipuModelDevice);
   std::cout << "Creating session from Onnx Model...done\n";
 
   // Prepare input tensor
-  float rawInputData[21] = {-1.0, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1,
-                            0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8, 0.9, 1.0f};
+  float rawInputData[21] = {-1.0, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4,
+                            -0.3, -0.2, -0.1, 0.0f, 0.1f, 0.2f, 0.3f,
+                            0.4f, 0.5f, 0.6f, 0.7f, 0.8,  0.9,  1.0f};
   popart::NDArrayWrapper<float> inData(rawInputData, {21});
-  std::map<popart::TensorId, popart::IArray &> inputs = {{input, inData}};
+  std::map<popart::TensorId, popart::IArray&> inputs = {{input, inData}};
 
   // Prepare output tensor
   float rawOutputData[21] = {0};
   popart::NDArrayWrapper<float> outData(rawOutputData, {21});
-  std::map<popart::TensorId, popart::IArray &> anchors = {{o, outData}};
+  std::map<popart::TensorId, popart::IArray&> anchors = {{o, outData}};
 
   std::cout << "Preparing session device...\n";
   session->prepareDevice();
