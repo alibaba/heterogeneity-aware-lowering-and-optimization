@@ -1,3 +1,4 @@
+//===- odla_ops_process.cc ------------------------------------------------===//
 //
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 //
@@ -49,12 +50,6 @@
 #endif
 
 extern thread_local odla_computation g_comp;
-
-// odla_value odla_Broadcast(const odla_value input, odla_value_shape
-// output_shape,
-//                const odla_value_id value_id) {
-
-// }
 
 odla_value odla_Cast(odla_value input, odla_element_type target_type,
                      const odla_value_id value_id) {
