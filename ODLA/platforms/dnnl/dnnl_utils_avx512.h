@@ -42,6 +42,48 @@ static int calculat_offset(int len, int vec_size) {
   return dst;
 }
 
+#if defined(__GNUC__) && (__GNUC__ > 9)
+inline void binary_s32_func(dnnl::algorithm alg, int32_t* lhs, int32_t* rhs,
+                            int32_t* dst, int len) {
+  int i = 0;
+  int vec_size = 512 / 32;
+  __mmask16 mask16 = 0xFFFF;
+  std::function<__m512i(__m512i, __m512i)> __mm512_binary_op;
+  switch (alg) {
+    case dnnl::algorithm::binary_add:
+      __mm512_binary_op = [](__m512i a, __m512i b) {
+        return _mm512_add_epi32(a, b);
+      };
+      break;
+    case dnnl::algorithm::binary_mul:
+      __mm512_binary_op = [](__m512i a, __m512i b) {
+        return _mm512_mul_epi32(a, b);
+      };
+      break;
+    default:
+      break;
+  }
+  for (; i <= len - vec_size; i += vec_size) {
+    auto a1 = _mm512_loadu_epi32(lhs + i);
+    auto b1 = _mm512_loadu_epi32(rhs + i);
+    auto out1 = __mm512_binary_op(a1, b1);
+    _mm512_mask_storeu_epi32(dst + i, mask16, out1);
+  }
+  if (len - i) {
+    auto tail_mask = calculat_offset(len - i, vec_size);
+    auto a1 = _mm512_maskz_loadu_epi32(tail_mask, lhs + i);
+    auto b1 = _mm512_maskz_loadu_epi32(tail_mask, rhs + i);
+    auto out1 = __mm512_binary_op(a1, b1);
+    _mm512_mask_storeu_epi32(dst + i, tail_mask, out1);
+  }
+}
+#else
+inline void binary_s32_func(dnnl::algorithm alg, int32_t* lhs, int32_t* rhs,
+                            int32_t* dst, int len) {
+  assert(0);
+}
+#endif
+
 inline __m512 _mm512_cvtbf16f32_load(__mmask16 mask, void* mem_addr) {
   auto dst = _mm512_slli_epi32(
       _mm512_cvtepu16_epi32(_mm256_maskz_loadu_epi16(mask, mem_addr)), 0x10);
@@ -339,7 +381,7 @@ static inline __m512 erfc_avx512(const __m512& src512) {
   __m512 q = _mm512_div_ps(one, abssrc);
   __m512 y = _mm512_mul_ps(q, q);
 
-  __mmask16 PCoeff_mask = _mm512_cmplt_ps_mask(abssrc, two); // < 2
+  __mmask16 PCoeff_mask = _mm512_cmp_ps_mask(abssrc, two, _CMP_LT_OQ); // < 2
   __mmask16 RCoeff_mask = ~PCoeff_mask;
 
   __m512 pP;
@@ -372,9 +414,9 @@ static inline __m512 erfc_avx512(const __m512& src512) {
   //  return x < 0 ? 2 - y_clamp : y_clamp;
   y = _mm512_mul_ps(z, q);
   y = _mm512_mul_ps(y, pP);
-  __mmask16 y_clamp_mask = _mm512_cmplt_ps_mask(z, MinorMaxlog);
+  __mmask16 y_clamp_mask = _mm512_cmp_ps_mask(z, MinorMaxlog, _CMP_LT_OQ);
   __m512 y_clamp = _mm512_mask_mov_ps(y, y_clamp_mask, zero);
-  __mmask16 x_mask = _mm512_cmplt_ps_mask(src512, zero);
+  __mmask16 x_mask = _mm512_cmp_ps_mask(src512, zero, _CMP_LT_OQ);
   __m512 y_clamp2 = _mm512_sub_ps(two, y_clamp);
   y = _mm512_mask_mov_ps(y_clamp, x_mask, y_clamp2);
   y = _mm512_sub_ps(one, y);
@@ -938,7 +980,7 @@ static void erf_p(float* src, float* dst, size_t len) {
     __m512 src512 = _mm512_loadu_ps(src + i);
     __m512 abssrc = _mm512_abs_ps(src512);
     __mmask16 erf_mask =
-        _mm512_cmplt_ps_mask(abssrc, _mm512_set1_ps(1.0)); // < 1
+        _mm512_cmp_ps_mask(abssrc, _mm512_set1_ps(1.0), _CMP_LT_OQ); // < 1
     __mmask16 erfc_mask = ~erf_mask;
     // printf("erf_mask:%x, erfc_mask=%x\n", erf_mask, erfc_mask);
 
@@ -959,7 +1001,7 @@ static void erf_p(float* src, float* dst, size_t len) {
     mask = mask >> (16 - remain);
     __m512 src512 = _mm512_maskz_loadu_ps(mask, src + i);
     __mmask16 erf_mask =
-        _mm512_cmplt_ps_mask(src512, _mm512_set1_ps(1.0)); // < 1
+        _mm512_cmp_ps_mask(src512, _mm512_set1_ps(1.0), _CMP_LT_OQ); // < 1
     __mmask16 erfc_mask = ~erf_mask;
 
     if (erf_mask) {
@@ -977,5 +1019,130 @@ static void erf_p(float* src, float* dst, size_t len) {
 #else
 static void erf_p(float* src, float* dst, size_t len) { assert(0); }
 #endif
+
+// nms function related
+enum class boxEncoding { CORNER, CENTER };
+
+struct filteredBoxes {
+  float score;
+  int class_index;
+  int box_index;
+  filteredBoxes() : score(0), class_index(0), box_index(0) {}
+  filteredBoxes(float _score, int _class_index, int _box_index)
+      : score(_score), class_index(_class_index), box_index(_box_index) {}
+};
+
+struct Box {
+  float score;
+  int class_index;
+  int box_index;
+  Box() {}
+  Box(float _score, int _class_index, int _box_index)
+      : score(_score), class_index(_class_index), box_index(_box_index) {}
+};
+
+void nms_func(float* boxes, float* scores, size_t batch_idx, size_t class_num,
+              size_t num_boxes, size_t max_num_outputs, float score_threshold,
+              float iou_threshold, int32_t* output_indices) {
+  auto intersectionOverUnion = [](const float* boxesI, const float* boxesJ,
+                                  boxEncoding boxEncodingType) {
+    float yminI, xminI, ymaxI, xmaxI, yminJ, xminJ, ymaxJ, xmaxJ;
+    if (boxEncodingType == boxEncoding::CENTER) {
+      //  box format: x_center, y_center, width, height
+      yminI = boxesI[1] - boxesI[3] / 2.f;
+      xminI = boxesI[0] - boxesI[2] / 2.f;
+      ymaxI = boxesI[1] + boxesI[3] / 2.f;
+      xmaxI = boxesI[0] + boxesI[2] / 2.f;
+      yminJ = boxesJ[1] - boxesJ[3] / 2.f;
+      xminJ = boxesJ[0] - boxesJ[2] / 2.f;
+      ymaxJ = boxesJ[1] + boxesJ[3] / 2.f;
+      xmaxJ = boxesJ[0] + boxesJ[2] / 2.f;
+    } else {
+      //  box format: y1, x1, y2, x2
+      yminI = (std::min)(boxesI[0], boxesI[2]);
+      xminI = (std::min)(boxesI[1], boxesI[3]);
+      ymaxI = (std::max)(boxesI[0], boxesI[2]);
+      xmaxI = (std::max)(boxesI[1], boxesI[3]);
+      yminJ = (std::min)(boxesJ[0], boxesJ[2]);
+      xminJ = (std::min)(boxesJ[1], boxesJ[3]);
+      ymaxJ = (std::max)(boxesJ[0], boxesJ[2]);
+      xmaxJ = (std::max)(boxesJ[1], boxesJ[3]);
+    }
+
+    float areaI = (ymaxI - yminI) * (xmaxI - xminI);
+    float areaJ = (ymaxJ - yminJ) * (xmaxJ - xminJ);
+    if (areaI <= 0.f || areaJ <= 0.f) return 0.f;
+
+    float intersection_area =
+        (std::max)((std::min)(ymaxI, ymaxJ) - (std::max)(yminI, yminJ), 0.f) *
+        (std::max)((std::min)(xmaxI, xmaxJ) - (std::max)(xminI, xminJ), 0.f);
+    return intersection_area / (areaI + areaJ - intersection_area);
+  };
+  size_t numFiltBox;
+  bool sort_result_descending = true;
+  boxEncoding boxEncodingType = boxEncoding::CORNER;
+
+  if (max_num_outputs == 0) {
+    return;
+  }
+
+  std::vector<filteredBoxes> filtBoxes(num_boxes);
+
+  std::vector<Box> sorted_boxes;
+  for (int box_idx = 0; box_idx < num_boxes; box_idx++) {
+    float* scores_ptr = scores + box_idx * class_num;
+    int idx = std::max_element(scores_ptr, scores_ptr + class_num) - scores_ptr;
+    float score = scores_ptr[idx];
+    if (score > score_threshold) {
+      sorted_boxes.emplace_back(Box(score, idx, box_idx));
+    }
+  }
+
+  int io_selection_size = 0;
+  if (sorted_boxes.size() > 0) {
+    auto _compare = [](const Box l, const Box r) {
+      return (l.score > r.score ||
+              ((l.score == r.score) && (l.box_index < r.box_index)));
+    };
+    std::sort(sorted_boxes.begin(), sorted_boxes.end(), _compare);
+    for (int i = 0; i < sorted_boxes.size(); i++) {
+      auto score = sorted_boxes[i].score;
+      auto idx = sorted_boxes[i].class_index;
+      auto box_idx = sorted_boxes[i].box_index;
+    }
+    filtBoxes[0] =
+        filteredBoxes(sorted_boxes[0].score, sorted_boxes[0].class_index,
+                      sorted_boxes[0].box_index);
+    io_selection_size++;
+    for (size_t box_idx = 1; (box_idx < sorted_boxes.size()) &&
+                             (io_selection_size < max_num_outputs);
+         box_idx++) {
+      bool box_is_selected = true;
+      for (int idx = io_selection_size - 1; idx >= 0; idx--) {
+        float iou = intersectionOverUnion(
+            &boxes[sorted_boxes[box_idx].box_index * 4],
+            &boxes[filtBoxes[idx].box_index * 4], boxEncodingType);
+        if (iou >= iou_threshold) {
+          box_is_selected = false;
+          break;
+        }
+      }
+
+      if (box_is_selected) {
+        filtBoxes[io_selection_size] = filteredBoxes(
+            sorted_boxes[box_idx].score, sorted_boxes[box_idx].class_index,
+            sorted_boxes[box_idx].box_index);
+        io_selection_size++;
+      }
+    }
+  }
+  numFiltBox = io_selection_size;
+  memset(output_indices, max_num_outputs * 3, 0);
+  memset(output_indices, max_num_outputs, batch_idx);
+  for (size_t idx = 0; idx < numFiltBox; idx++) {
+    output_indices[max_num_outputs + 2 * idx] = filtBoxes[idx].class_index;
+    output_indices[max_num_outputs + 2 * idx + 1] = filtBoxes[idx].box_index;
+  }
+}
 
 } // namespace dnnl_utils

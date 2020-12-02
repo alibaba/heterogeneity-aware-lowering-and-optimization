@@ -330,7 +330,17 @@ static Type ComputeKernelWiseType(
     // for depthwise, for NHWC, the kernel is H, W, in_ch, multiplier
     // for NCHW, the kernel is output, in/<group>, H, W
     int kernel_output = kernel_shape[info.kernel_output_axis];
-    ret_shape[info.data_channel_axis] = kernel_output;
+    int kernel_input = kernel_shape[info.kernel_input_axis];
+    int input_ch = data_shape[info.data_channel_axis];
+    HLCHECK(input_ch % group == 0);
+    // The meanings of kernel dimension are different with groups.
+    // Here we recompute the.
+    int per_group_ch_in = input_ch / group;
+    int per_group_ch_out =
+        (kernel_output * kernel_input) / (group * per_group_ch_in);
+    HLCHECK(per_group_ch_in * per_group_ch_out * group ==
+            kernel_output * kernel_input);
+    ret_shape[info.data_channel_axis] = group * per_group_ch_out;
   }
 
   auto index_h = info.data_spatial_axis;
