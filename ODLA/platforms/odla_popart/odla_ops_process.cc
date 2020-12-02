@@ -35,11 +35,11 @@
 #include <popart/stepio.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/voiddata.hpp>
+#include <random>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <random>
 
 #include "common.h"
 #include "odla_popart.h"
