@@ -17,28 +17,29 @@
 #include <ODLA/odla_device.h>
 
 #include <cstdint>
-#include <vector>
-#include <map>
 #include <exception>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <popart/devicemanager.hpp>
 #include <string>
+#include <vector>
+
 #include "odla_popart.h"
 
-static constexpr const char *sDeviceType = "__device_type";
-static constexpr const char *sDeviceTypeValues[] = {"ipu", "ipu_model"};
+static constexpr const char* sDeviceType = "__device_type";
+static constexpr const char* sDeviceTypeValues[] = {"ipu", "ipu_model"};
 
-static constexpr const char *sSyncPatterm = "__sync_pattern";
-static constexpr const char *sSyncPattermValues[] = {"full", "SinglePipeline",
+static constexpr const char* sSyncPatterm = "__sync_pattern";
+static constexpr const char* sSyncPattermValues[] = {"full", "SinglePipeline",
                                                      "PingPong"};
 
-static constexpr const char *sConnectionType = "__connection_type";
-static constexpr const char *sConnectionTypeValues[] = {"Always", "OnDemand",
+static constexpr const char* sConnectionType = "__connection_type";
+static constexpr const char* sConnectionTypeValues[] = {"Always", "OnDemand",
                                                         "Never"};
 
-static constexpr const char *sNumIpus = "__num_ipus";
-static constexpr const char *sTilesPerIpu = "__tiles_per_ipu";
+static constexpr const char* sNumIpus = "__num_ipus";
+static constexpr const char* sTilesPerIpu = "__tiles_per_ipu";
 
 struct _odla_device_config {
   std::map<std::string, std::string> items;
@@ -80,7 +81,7 @@ popart::DeviceManager& GetDeviceManager() {
       popart::DeviceManager::createDeviceManager();
   return device_manager;
 }
-}  // namespace
+} // namespace
 
 odla_status odla_CreateDeviceConfig(odla_device_config* device_config) {
   *device_config = new _odla_device_config();
@@ -92,11 +93,11 @@ odla_status odla_DestroyDeviceConfig(odla_device_config device_config) {
   return ODLA_SUCCESS;
 }
 
-odla_status odla_SetDeviceConfigItem(odla_device_config device_config,
-                                     odla_device_config_item *device_config_item,
-                                     ...) {
-  device_config->items.emplace(
-      std::string(device_config_item->key), std::string(device_config_item->value));
+odla_status odla_SetDeviceConfigItem(
+    odla_device_config device_config,
+    odla_device_config_item* device_config_item, ...) {
+  device_config->items.emplace(std::string(device_config_item->key),
+                               std::string(device_config_item->value));
   return ODLA_SUCCESS;
 }
 

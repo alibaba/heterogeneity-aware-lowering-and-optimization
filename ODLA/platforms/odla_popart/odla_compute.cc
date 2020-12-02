@@ -38,13 +38,13 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include "odla_popart.h"
+
 #include "common.h"
+#include "odla_popart.h"
 
 #if !defined(ODLA_VERSION_NUMBER) || (ODLA_VERSION_NUMBER < 50)
 #error This library requires minimum ODLA version 0.5
 #endif
-
 
 thread_local odla_computation g_comp;
 static std::vector<std::unique_ptr<_odla_computation>> g_comps;
@@ -107,7 +107,6 @@ odla_status odla_CreateComputation(odla_computation* comp) {
 }
 
 odla_status odla_CreateContext(odla_context* context) {
-  
   // Create dataflow
   std::vector<popart::TensorId> ids;
   for (const auto& output : g_comp->outputs_map) {
@@ -140,7 +139,6 @@ odla_status odla_CreateContext(odla_context* context) {
   (*context)->session->setRandomSeed(0);
   // Copy weights from host to IPU
   (*context)->session->weightsFromHost();
-
 }
 
 odla_status odla_DestroyContext(odla_context ctx) {
@@ -196,7 +194,7 @@ odla_value odla_CreateConstant(odla_value_type type, const void* data_ptr,
 }
 
 odla_value odla_CreateConstant_10(odla_value_type type, const void* data_ptr,
-                               const odla_value_id id) {
+                                  const odla_value_id id) {
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
   popart::TensorInfo tensor_info(GetPopartType(type),
                                  GetPopartShape(type.shape));

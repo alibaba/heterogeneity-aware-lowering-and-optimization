@@ -1,4 +1,4 @@
-# ODLA-PopART interface
+#ODLA - PopART interface
 
 This directory contains the ODLA-PopART interface which uses the PopART API to
 run models on Graphcore IPUs.
