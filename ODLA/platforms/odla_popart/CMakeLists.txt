@@ -16,6 +16,7 @@
 
 
 set(CMAKE_CXX_STANDARD 14)
+
 #add_odla_library(custom_ops SHARED custom_ops/rsqrt.cc custom_ops/erf.cc)
 #set(CUSTOM_OP_CXX_FLAGS -std=c++14 -fPIC -DONNX_NAMESPACE=onnx)
 #set(POPART_CUSTOM_OP_PATH ${CMAKE_CURRENT_SOURCE_DIR}/custom_ops)
@@ -26,6 +27,7 @@ set(CMAKE_CXX_STANDARD 14)
 #set(POPLAR_ROOT ${POPLAR_SDK_ENABLED})
 #set(POPART_ROOT ${POPART_ROOT})
 #set(ODLA_POPART_PATH ${CMAKE_CURRENT_SOURCE_DIR}/ODLA/platforms/odla_popart)
+
 add_odla_library(odla_popart SHARED odla_compute.cc odla_ops.cc common.cc) 
  #find_library(popart NAMES popart PATHS ${POPART_ROOT} PATH_SUFFIXES lib NO_DEFAULT_PATH)
  #find_library(popart NAMES poplar PATHS ${POPLAR_ROOT} PATH_SUFFIXES lib NO_DEFAULT_PATH)
