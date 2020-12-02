@@ -57,6 +57,10 @@ struct Opts {
   int max_batch_size = 0;
   int min_batch_size = 0;
   int opt_batch_size = 0;
+  bool enable_ipu_device = false;
+  bool use_ipu_model = false;
+  int64_t ipu_num = 1;
+  int64_t batches_per_step = 1;
   bool check_model = false;
 };
 
