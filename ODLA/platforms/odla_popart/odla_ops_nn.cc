@@ -25,11 +25,6 @@
 #include <iostream>
 #include <memory>
 #include <numeric>
-#include <random>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
@@ -40,6 +35,12 @@
 #include <popart/stepio.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/voiddata.hpp>
+#include <random>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
 #include "common.h"
 #include "odla_popart.h"
 
