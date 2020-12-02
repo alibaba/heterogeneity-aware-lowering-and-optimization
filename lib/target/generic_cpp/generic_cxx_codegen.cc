@@ -417,6 +417,18 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
     if (is_compile_mode) {
       os_ << "static void " << helper_func_name << "() {\n";
       os_ << "  odla_CreateComputation(&Comp);\n";
+      if (opts_.enable_ipu_device) {
+        os_ << "bool use_ipu_model = " << opts_.use_ipu_model << ";\n";
+        os_ << "int ipu_num = " << opts_.ipu_num << ";\n";
+        os_ << "int batches_per_step = " << opts_.batches_per_step << ";\n";
+        os_ << "odla_SetComputationItem(Comp, ODLA_USE_SIM_MODE, "
+               "(odla_item_value) &use_ipu_model);\n";
+        os_ << "odla_SetComputationItem(Comp, ODLA_PROCESSOR_NUM, "
+               "(odla_item_value) &ipu_num);\n";
+        os_ << "odla_SetComputationItem(Comp, ODLA_BATCHES_PER_STEP, "
+               "(odla_item_value) &batches_per_step);\n";
+      }
+
       if (opts_.emit_dynamic_batch) {
         os_ << "bool is_dynamic_batch = true;\n";
         os_ << "int min_batch_size = 1;\n";
@@ -446,6 +458,18 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
       os_ << "  static odla_computation Comp;\n";
       os_ << "  if (Comp == " << EmitNull() << ") {\n";
       os_ << "    odla_CreateComputation(&Comp);\n";
+      if (opts_.enable_ipu_device) {
+        os_ << "bool use_ipu_model = " << opts_.use_ipu_model << ";\n";
+        os_ << "int ipu_num = " << opts_.ipu_num << ";\n";
+        os_ << "int batches_per_step = " << opts_.batches_per_step << ";\n";
+        os_ << "odla_SetComputationItem(Comp, ODLA_USE_SIM_MODE, "
+               "(odla_item_value) &use_ipu_model);\n";
+        os_ << "odla_SetComputationItem(Comp, ODLA_PROCESSOR_NUM, "
+               "(odla_item_value) &ipu_num);\n";
+        os_ << "odla_SetComputationItem(Comp, ODLA_BATCHES_PER_STEP, "
+               "(odla_item_value) &batches_per_step);\n";
+      }
+
       if (opts_.emit_dynamic_batch) {
         os_ << "bool is_dynamic_batch = true;\n";
         os_ << "int min_batch_size = 1;\n";

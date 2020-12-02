@@ -18,6 +18,7 @@
 #include "halo/lib/transforms/dce.h"
 
 #include <iterator>
+#include <set>
 
 #include "halo/lib/ir/ir_builder.h"
 
@@ -25,19 +26,26 @@ namespace halo {
 
 bool DCE::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
-  for (BasicBlock::reverse_iterator it = bb->rbegin(), e = bb->rend();
-       it != e;) {
+  std::set<Instruction*> dead_instrs;
+  for (BasicBlock::reverse_iterator it = bb->rbegin(), e = bb->rend(); it != e;
+       ++it) {
     Instruction* inst = it->get();
     if (inst->GetOpCode() == OpCode::RETURN || inst->GetNumberOfUses() != 0) {
-      ++it;
       continue;
     }
     changed = true;
-    auto nit = std::next(it);
-    // Delete the instruction.
     inst->DropAllOperands();
-    bb->Instructions().erase(nit.base());
-    it = nit;
+    dead_instrs.insert(inst);
+  }
+
+  // Delete the instruction.
+  for (auto it = bb->begin(), e = bb->end(); it != e;) {
+    Instruction* inst = it->get();
+    if (dead_instrs.count(inst) > 0) {
+      it = bb->Instructions().erase(it);
+    } else {
+      it = std::next(it);
+    }
   }
 
   auto remove = [](auto& objs) {
