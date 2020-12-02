@@ -46,7 +46,7 @@ let cat_ = cat_objectDetection in {
                      ArgType<[I32, I64]>, 1D>];
   }
 
-  def TopK : Inst <"Calculate values and indices of the largest k elements of" 
+  def TopK : Inst <"Calculate values and indices of the largest k elements of"
                    " input along the last dimension."> {
     let attrs_ = [
       Attr<"Dimension on which to do the sort.", Integer, "axis", "-1">,
@@ -58,14 +58,14 @@ let cat_ = cat_objectDetection in {
     let ins_ = [Arg<"Input data.", ArgType<[I8, I16, I32, F16, F32]> >,
                 Arg<"Input k.", ArgType<[I32]>, 0D>];
     let outs_ = [Arg<"The result value.", MatchArgType<0> >,
-                 Arg<"The result indices.", ArgType<[I32, I64]> >]; 
+                 Arg<"The result indices.", ArgType<[I32, I64]> >];
   }
 
   def Resize : Inst<"Resize the input tensor."> {
     let attrs_ = [Attr<"Coordinating mode such as HALF_PIXEL, "
                        "TF_HALF_PIXEL, ALIGN_CORNETS, ASYMMETRIC",
-                        EnumResizeMode, "mode", "HALF_PIXEL">, 
-                  Attr<"Interpolation mode such as NEAREST, LINEAR and CUBIC", 
+                        EnumResizeMode, "mode", "HALF_PIXEL">,
+                  Attr<"Interpolation mode such as NEAREST, LINEAR and CUBIC",
                         EnumInterpolation, "interpolation_mode", "NEAREST">,
                   Attr<"The mask for axes to be resized", Integer, "axes_mask", "0">,
                   Attr<"Explicit result shape", Bool, "explicit_shape", "true">

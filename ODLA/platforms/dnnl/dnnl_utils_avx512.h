@@ -381,7 +381,7 @@ static inline __m512 erfc_avx512(const __m512& src512) {
   __m512 q = _mm512_div_ps(one, abssrc);
   __m512 y = _mm512_mul_ps(q, q);
 
-  __mmask16 PCoeff_mask = _mm512_cmplt_ps_mask(abssrc, two); // < 2
+  __mmask16 PCoeff_mask = _mm512_cmp_ps_mask(abssrc, two, _CMP_LT_OQ); // < 2
   __mmask16 RCoeff_mask = ~PCoeff_mask;
 
   __m512 pP;
@@ -414,9 +414,9 @@ static inline __m512 erfc_avx512(const __m512& src512) {
   //  return x < 0 ? 2 - y_clamp : y_clamp;
   y = _mm512_mul_ps(z, q);
   y = _mm512_mul_ps(y, pP);
-  __mmask16 y_clamp_mask = _mm512_cmplt_ps_mask(z, MinorMaxlog);
+  __mmask16 y_clamp_mask = _mm512_cmp_ps_mask(z, MinorMaxlog, _CMP_LT_OQ);
   __m512 y_clamp = _mm512_mask_mov_ps(y, y_clamp_mask, zero);
-  __mmask16 x_mask = _mm512_cmplt_ps_mask(src512, zero);
+  __mmask16 x_mask = _mm512_cmp_ps_mask(src512, zero, _CMP_LT_OQ);
   __m512 y_clamp2 = _mm512_sub_ps(two, y_clamp);
   y = _mm512_mask_mov_ps(y_clamp, x_mask, y_clamp2);
   y = _mm512_sub_ps(one, y);
@@ -980,7 +980,7 @@ static void erf_p(float* src, float* dst, size_t len) {
     __m512 src512 = _mm512_loadu_ps(src + i);
     __m512 abssrc = _mm512_abs_ps(src512);
     __mmask16 erf_mask =
-        _mm512_cmplt_ps_mask(abssrc, _mm512_set1_ps(1.0)); // < 1
+        _mm512_cmp_ps_mask(abssrc, _mm512_set1_ps(1.0), _CMP_LT_OQ); // < 1
     __mmask16 erfc_mask = ~erf_mask;
     // printf("erf_mask:%x, erfc_mask=%x\n", erf_mask, erfc_mask);
 
@@ -1001,7 +1001,7 @@ static void erf_p(float* src, float* dst, size_t len) {
     mask = mask >> (16 - remain);
     __m512 src512 = _mm512_maskz_loadu_ps(mask, src + i);
     __mmask16 erf_mask =
-        _mm512_cmplt_ps_mask(src512, _mm512_set1_ps(1.0)); // < 1
+        _mm512_cmp_ps_mask(src512, _mm512_set1_ps(1.0), _CMP_LT_OQ); // < 1
     __mmask16 erfc_mask = ~erf_mask;
 
     if (erf_mask) {

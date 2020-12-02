@@ -20,7 +20,7 @@
 include "instruction_base.td"
 #endif
 
-let cat_ = cat_math_binary, 
+let cat_ = cat_math_binary,
     ins_ = [Arg<"The left hand side operand.", ArgType<[I8,I16,I32,F16,F32]> >,
             Arg<"The right hand side operand", MatchArgType<0> >],
     outs_ = [Arg<"The result.", MatchArgType<0> >] in {
@@ -38,7 +38,7 @@ let cat_ = cat_math_binary,
   def Mul : Inst<"Binary multiplication, element-wise, return X1 * X2,"
                  " support broadcast.">;
 
-  def Pow : Inst<"Power operation, element-wise, return X1 ^ X2, support" 
+  def Pow : Inst<"Power operation, element-wise, return X1 ^ X2, support"
                  " broadcast.">;
 
   def Sub : Inst<"Binary subtraction operation, element-wise,"
@@ -46,12 +46,12 @@ let cat_ = cat_math_binary,
 
 }
 
-let cat_ = cat_math_binary, 
+let cat_ = cat_math_binary,
     ins_ = [Arg<"The left hand side operand.", ArgType<[I8,I16,I32]> >,
             Arg<"The right hand side operand", MatchArgType<0> >],
     outs_ = [Arg<"The result.", MatchArgType<0> >] in {
 
-  def ShiftL : Inst<"Bitwise shift left operation, element-wise," 
+  def ShiftL : Inst<"Bitwise shift left operation, element-wise,"
                     " return X1 << X2, support broadcast.">;
 
   def ShiftR : Inst<"Bitwise logical shift right operation, element-wise,"
