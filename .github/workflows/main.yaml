@@ -28,3 +28,18 @@ jobs:
 
       - name: Build
         uses: ./halo/.github/actions/build
+        with:
+          docker_image_variant: cuda10.0-cudnn7
+
+    runs-on: [self-hosted, ipu_sim]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: halo
+          submodules: true
+
+      - name: Build
+        uses: ./halo/.github/actions/build
+        with:
+          image_variant: graphcore1.2.0.131
