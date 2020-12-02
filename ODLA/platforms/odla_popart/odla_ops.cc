@@ -38,8 +38,9 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include "odla_popart.h"
+
 #include "common.h"
+#include "odla_popart.h"
 
 #if !defined(ODLA_VERSION_NUMBER) || (ODLA_VERSION_NUMBER < 50)
 #error This library requires minimum ODLA version 0.5
@@ -464,26 +465,30 @@ odla_value odla_Slice(odla_value input, const odla_uint32* start,
     strides.push_back(stride[i]);
   }
   auto builder = g_comp->builder.get();
-  
-  auto start_tensor = odla_CreateConstant(
-      {ODLA_INT64, {.size = 1, .dims = {rank}}}, static_cast<odla_void*>(starts.data()),
-      (const odla_value_id)((name + "_starts").c_str()));
- 
-  auto end_tensor = odla_CreateConstant(
-      {ODLA_INT64, {.size = 1, .dims = {rank}}}, static_cast<odla_void*>(ends.data()),
-      (const odla_value_id)((name + "_ends").c_str()));
 
-  auto axes_tensor = odla_CreateConstant(
-      {ODLA_INT64, {.size = 1, .dims = {rank}}}, static_cast<odla_void*>(axes.data()),
-      (const odla_value_id)((name + "_axes").c_str()));
+  auto start_tensor =
+      odla_CreateConstant({ODLA_INT64, {.size = 1, .dims = {rank}}},
+                          static_cast<odla_void*>(starts.data()),
+                          (const odla_value_id)((name + "_starts").c_str()));
 
-  auto strides_tensor = odla_CreateConstant(
-      {ODLA_INT64, {.size = 1, .dims = {rank}}}, static_cast<odla_void*>(strides.data()),
-      (const odla_value_id)((name + "_strides").c_str()));
+  auto end_tensor =
+      odla_CreateConstant({ODLA_INT64, {.size = 1, .dims = {rank}}},
+                          static_cast<odla_void*>(ends.data()),
+                          (const odla_value_id)((name + "_ends").c_str()));
+
+  auto axes_tensor =
+      odla_CreateConstant({ODLA_INT64, {.size = 1, .dims = {rank}}},
+                          static_cast<odla_void*>(axes.data()),
+                          (const odla_value_id)((name + "_axes").c_str()));
+
+  auto strides_tensor =
+      odla_CreateConstant({ODLA_INT64, {.size = 1, .dims = {rank}}},
+                          static_cast<odla_void*>(strides.data()),
+                          (const odla_value_id)((name + "_strides").c_str()));
 
   popart::TensorId sliced = builder->aiOnnxOpset10().slice(
-        {input->tensor_id, start_tensor->tensor_id, end_tensor->tensor_id, 
-        axes_tensor->tensor_id, strides_tensor->tensor_id});
+      {input->tensor_id, start_tensor->tensor_id, end_tensor->tensor_id,
+       axes_tensor->tensor_id, strides_tensor->tensor_id});
 
   odla_value result = new _odla_value(
       sliced,

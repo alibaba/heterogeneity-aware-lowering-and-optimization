@@ -38,6 +38,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+
 #include "odla_popart.h"
 
 popart::DataType GetPopartType(odla_value_type type) {
@@ -142,7 +143,7 @@ std::unique_ptr<popart::IArray> MakeNDArrayWrapper(const odla_void* data_ptr,
     case popart::DataType::BOOL: {
       pArray = std::unique_ptr<popart::NDArrayWrapper<bool>>(
           new popart::NDArrayWrapper<bool>(reinterpret_cast<bool*>(ptr),
-                                              shape));
+                                           shape));
       break;
     }
     default:
@@ -154,7 +155,7 @@ std::unique_ptr<popart::IArray> MakeNDArrayWrapper(const odla_void* data_ptr,
 
 std::string&& GetTypeName(odla_element_type type_value) {
   std::string result;
-  switch(type_value) {
+  switch (type_value) {
     case ODLA_INT8:
       return std::move(std::string("INT8"));
     case ODLA_INT16:
@@ -192,5 +193,4 @@ std::string&& GetTypeName(odla_element_type type_value) {
     default:
       assert(false);
   }
-
 }

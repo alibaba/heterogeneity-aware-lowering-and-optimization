@@ -18,12 +18,12 @@
 #define ODLA_POPART_COMMON_H_
 
 #include <ODLA/odla.h>
-#include <vector>
+
 #include <memory>
 #include <popart/iarray.hpp>
 #include <popart/names.hpp>
 #include <popart/tensorinfo.hpp>
-
+#include <vector>
 
 popart::DataType GetPopartType(odla_value_type type);
 popart::Shape GetPopartShape(odla_value_shape shape);
@@ -32,7 +32,7 @@ std::string&& GetTypeName(odla_element_type element_type);
 std::string&& GetResizeInterpolationModeName(odla_interpolation_mode mode);
 odla_element_type GetOdlaType(popart::DataType type);
 
-std::unique_ptr<popart::IArray> MakeNDArrayWrapper(const odla_void *data_ptr,
+std::unique_ptr<popart::IArray> MakeNDArrayWrapper(const odla_void* data_ptr,
                                                    popart::DataType data_type,
                                                    std::vector<int64_t> shape);
 #endif
