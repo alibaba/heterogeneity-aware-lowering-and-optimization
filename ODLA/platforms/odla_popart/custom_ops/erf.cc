@@ -14,66 +14,65 @@
 // limitations under the License.
 // =============================================================================
 
-// This file contains the implementation of the erf() function on IPU as a float32 PopART custom op.
+// This file contains the implementation of the erf() function on IPU as a
+// float32 PopART custom op.
+#include <onnx/defs/schema.h>
+#include <onnx/defs/shape_inference.h>
+
 #include <memory>
-#include <poplar/Graph.hpp>
 #include <popart/op.hpp>
 #include <popart/op/elementwise.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
+#include <popart/popx/op/elementwisex.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <poplar/Graph.hpp>
 #include <popops/ElementWise.hpp>
-#include <popart/popx/op/elementwisex.hpp>
 #include <vector>
-#include <onnx/defs/schema.h>
-#include <onnx/defs/shape_inference.h>
 
 using namespace poplar;
-
 
 class ErfOp;
 class ErfOpx;
 
 namespace CustomOperators {
-  const popart::OperatorIdentifier Erf = {popart::Domain::ai_graphcore, "Erf", 1, 1, 1};
+const popart::OperatorIdentifier Erf = {popart::Domain::ai_graphcore, "Erf", 1,
+                                        1, 1};
 }
 
 // Forward op
 class ErfOp : public popart::ElementWiseUnaryOp {
-public:
-  ErfOp(const popart::OperatorIdentifier &_opid,
-                    const popart::Op::Settings &settings_) :
-    popart::ElementWiseUnaryOp(_opid, settings_) {}
+ public:
+  ErfOp(const popart::OperatorIdentifier& _opid,
+        const popart::Op::Settings& settings_)
+      : popart::ElementWiseUnaryOp(_opid, settings_) {}
 
-  std::unique_ptr<popart::Op> clone() const final { 
-    return std::make_unique<ErfOp>(*this); 
+  std::unique_ptr<popart::Op> clone() const final {
+    return std::make_unique<ErfOp>(*this);
   }
 };
 
 static popart::OpDefinition::DataTypes T = {popart::DataType::FLOAT16,
                                             popart::DataType::FLOAT};
 
-static popart::OpDefinition ErfOpDef(
-    {popart::OpDefinition::Inputs({{"X", T}}),
-     popart::OpDefinition::Outputs({{"Y", T}}),
-     popart::OpDefinition::Attributes({})});
+static popart::OpDefinition ErfOpDef({popart::OpDefinition::Inputs({{"X", T}}),
+                                      popart::OpDefinition::Outputs({{"Y", T}}),
+                                      popart::OpDefinition::Attributes({})});
 
 static popart::OpCreator<ErfOp> ErfOpCreator(popart::OpDefinitions({
     {CustomOperators::Erf, ErfOpDef},
 }));
 
-
 // Forward Opx, poplar implementation of forward Op
 class ErfOpx : public popart::popx::ElementWiseUnaryOpx {
-public:
-  ErfOpx(popart::Op *op, popart::popx::Devicex *devicex)
-    : popart::popx::ElementWiseUnaryOpx(op, devicex) {
+ public:
+  ErfOpx(popart::Op* op, popart::popx::Devicex* devicex)
+      : popart::popx::ElementWiseUnaryOpx(op, devicex) {
     verifyOp<ErfOp>(op, CustomOperators::Erf);
   }
 
   void grow(poplar::program::Sequence& prog) const final {
-
     Tensor x = getInTensor(0);
 
     Tensor sign = popops::signum(graph(), x, prog);
@@ -82,13 +81,12 @@ public:
     popops::addInPlace(graph(), y, 1.0f, prog);
     popops::invInPlace(graph(), y, prog);
 
-    static const std::array<float ,4> coeff {
-        -1.453152027f, 1.421413741f, -0.284496736f, 0.254829592f
-    };
+    static const std::array<float, 4> coeff{-1.453152027f, 1.421413741f,
+                                            -0.284496736f, 0.254829592f};
     Tensor poly = popops::mul(graph(), y, 1.061405429f, prog);
-    for (float c: coeff) {
-        popops::addInPlace(graph(), poly, c, prog);
-        popops::mulInPlace(graph(), poly, y, prog);
+    for (float c : coeff) {
+      popops::addInPlace(graph(), poly, c, prog);
+      popops::mulInPlace(graph(), poly, y, prog);
     }
 
     y = popops::square(graph(), x, prog);
@@ -103,34 +101,36 @@ public:
   }
 };
 
-
 namespace {
 popart::popx::OpxCreator<ErfOpx> ErfOpxCreator(CustomOperators::Erf);
-}  // namespace
+} // namespace
 
 namespace ONNX_NAMESPACE {
-  static std::string ErfDoc("Erf:: ");
-  ONNX_OPERATOR_SET_SCHEMA_EX(
-      Erf,
-      AiGraphcore,
-      popart::Domain::ai_graphcore,
-      1,
-      false,
-      OpSchema("Erf", __FILE__, __LINE__)
-          .SetDoc(ErfDoc)
-          .Input(0, std::string("X"), std::string("Input tensor"), std::string("T"))
-          .Output(0, std::string("Y"), std::string("Output tensor"), std::string("T"))
-          .TypeConstraint(
-              std::string("T"),
-              {std::string("tensor(float16)"), std::string("tensor(uint32)"), std::string("tensor(uint64)"), std::string("tensor(int32)"), std::string("tensor(int64)"), std::string("tensor(float)")},
-              "")
-          .TypeAndShapeInferenceFunction([](ONNX_NAMESPACE::InferenceContext& ctx) {
-					   ONNX_NAMESPACE::propagateShapeAndTypeFromFirstInput(ctx);}));
+static std::string ErfDoc("Erf:: ");
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    Erf, AiGraphcore, popart::Domain::ai_graphcore, 1, false,
+    OpSchema("Erf", __FILE__, __LINE__)
+        .SetDoc(ErfDoc)
+        .Input(0, std::string("X"), std::string("Input tensor"),
+               std::string("T"))
+        .Output(0, std::string("Y"), std::string("Output tensor"),
+                std::string("T"))
+        .TypeConstraint(
+            std::string("T"),
+            {std::string("tensor(float16)"), std::string("tensor(uint32)"),
+             std::string("tensor(uint64)"), std::string("tensor(int32)"),
+             std::string("tensor(int64)"), std::string("tensor(float)")},
+            "")
+        .TypeAndShapeInferenceFunction(
+            [](ONNX_NAMESPACE::InferenceContext& ctx) {
+              ONNX_NAMESPACE::propagateShapeAndTypeFromFirstInput(ctx);
+            }));
 
-  static bool registerOps() {
-    ONNX_NAMESPACE::RegisterSchema(GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, Erf)>());
+static bool registerOps() {
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, Erf)>());
 
-    return true;
-  }
-  static bool ret = registerOps();
-} //namespace ONNX_NAMESPACE
+  return true;
+}
+static bool ret = registerOps();
+} // namespace ONNX_NAMESPACE
