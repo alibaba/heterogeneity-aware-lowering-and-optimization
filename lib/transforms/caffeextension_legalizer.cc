@@ -117,7 +117,6 @@ static std::vector<Def> ConvertConvolution(const CAFFEExtensionInst* ext,
   HLCHECK(ext->GetNumOfOperands() == 2 || ext->GetNumOfOperands() == 3);
   auto input = ext->GetOperand(0);
   auto weight = ext->GetOperand(1);
-  builder->SetInsertAfter(ext);
 
   IRObject* new_inst =
       builder->CreateConv2D(ext->GetName() + "_conv", input, weight);
@@ -173,7 +172,6 @@ static std::vector<Def> ConvertUpsample(const CAFFEExtensionInst* ext,
   if (!input.GetType().IsValid()) {
     return {};
   }
-  builder->SetInsertAfter(ext);
   int scale = 1;
   for (const auto& attr : ext->GetAttributes()) {
     if (attr->GetName() == "scale") {
@@ -200,7 +198,6 @@ static std::vector<Def> ConvertEltwise(const CAFFEExtensionInst* ext,
   HLCHECK(ext->GetNumOfOperands() == 2);
   auto lhs = ext->GetOperand(0);
   auto rhs = ext->GetOperand(1);
-  builder->SetInsertAfter(ext);
 
   std::unordered_map<std::string, int> attr_map;
   CreateAttributeMap(ext, &attr_map);
@@ -226,14 +223,30 @@ static std::vector<Def> ConvertEltwise(const CAFFEExtensionInst* ext,
 
 static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
                                     IRBuilder* builder) {
-  builder->SetInsertAfter(ext);
   HLCHECK(ext->GetNumOfOperands() == 1);
+  auto input = ext->GetOperand(0);
+  const auto& input_type = input.GetType();
+  bool global_pooling = FindAttributeValue<bool>(ext, "global_pooling", false);
   int stride = FindAttributeValue(ext, "stride", 1);
-  int kernel_size = FindAttributeValue(ext, "kernel_size", -1);
+  int kernel_size_h = FindAttributeValue(ext, "kernel_size", -1);
+  int kernel_size_w = kernel_size_h;
+
   int pad = FindAttributeValue(ext, "pad", 0);
+
+  if (global_pooling) {
+    if (!input_type.IsValid()) {
+      return {};
+    }
+    kernel_size_h = input_type.GetNumOfElementsInDim(2);
+    kernel_size_w = input_type.GetNumOfElementsInDim(3);
+
+    stride = 1;
+    pad = 0;
+  }
+
   PoolingMaxInst* inst =
       builder->CreatePoolingMax(ext->GetName(), ext->GetOperand(0));
-  inst->SetKsize({1, 1, kernel_size, kernel_size});
+  inst->SetKsize({1, 1, kernel_size_h, kernel_size_w});
   inst->SetPaddingLeft(pad);
   inst->SetPaddingRight(pad);
   inst->SetPaddingTop(pad);
@@ -273,7 +286,6 @@ static std::vector<Def> ConvertInnerProduct(const CAFFEExtensionInst* ext,
   size_t axis = FindAttributeValue(ext, "axis", 1);
   HLCHECK(axis < input_type.GetNumOfDims());
 
-  builder->SetInsertAfter(ext);
   ConstantBuilder cb(ext->GetParent()->GetParent());
   HLCHECK(input_type.GetNumOfDims() >= 2);
   if (input_type.GetNumOfDims() > 2) {
@@ -334,7 +346,6 @@ static std::vector<Def> ConvertScale(const CAFFEExtensionInst* ext,
   } else {
     HLCHECK(ext->GetNumOfOperands() == 2);
   }
-  builder->SetInsertAfter(ext);
   // Check if input is BatchNorm without scaling. If so, fuse with it.
   bool all_consts =
       has_bias && IsA<Constant>(op1) && IsA<Constant>(ext->GetOperand(2));
@@ -408,7 +419,6 @@ static std::vector<Def> ConvertPower(const CAFFEExtensionInst* ext,
   float shift = FindAttributeValue(ext, "shift", .0F);
 
   ConstantBuilder cb(ext->GetParent()->GetParent());
-  builder->SetInsertAfter(ext);
   if (scale != 1) {
     Constant* c = cb.CreateConstant(ext->GetName() + "_scale",
                                     Type{DataType::FLOAT32, {1}}, &scale);
@@ -483,7 +493,6 @@ static std::vector<Def> ConvertReshape(const CAFFEExtensionInst* ext,
         ext->GetName() + "_shape",
         Type{DataType::INT32, {static_cast<int64_t>(new_shape.size())}},
         new_shape.data());
-    builder->SetInsertAfter(ext);
     auto new_inst = builder->CreateReshape(ext->GetName(), {bottom, *c});
     return {*new_inst};
   }
@@ -564,7 +573,6 @@ static std::vector<Def> ConvertDeConvolution(const CAFFEExtensionInst* ext,
   HLCHECK(ext->GetNumOfOperands() == 2 || ext->GetNumOfOperands() == 3);
   auto input = ext->GetOperand(0);
   auto weight = ext->GetOperand(1);
-  builder->SetInsertAfter(ext);
 
   IRObject* new_inst =
       builder->CreateConv2DTranspose(ext->GetName() + "_conv", input, weight);
@@ -604,8 +612,34 @@ static std::vector<Def> ConvertDeConvolution(const CAFFEExtensionInst* ext,
   return {*new_inst};
 }
 
+static std::vector<Def> ConvertTile(const CAFFEExtensionInst* ext,
+                                    IRBuilder* builder) {
+  HLCHECK(ext->GetNumOfOperands() == 1);
+  auto input = ext->GetOperand(0);
+  const auto& input_type = input.GetType();
+
+  if (!input_type.IsValid()) {
+    return {};
+  }
+  int dims = input_type.GetNumOfDims();
+  int axis = FindAttributeValue(ext, "axis", 1);
+  axis = (axis < 0) ? dims + axis : axis;
+  int copies = FindAttributeValue(ext, "tiles", 1);
+  std::vector<int64_t> multipliers(dims, 1);
+  HLCHECK(axis < dims);
+  multipliers[axis] = copies;
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+
+  Constant* c =
+      cb.CreateConstant(ext->GetName() + "_tile", Type{DataType::INT64, {dims}},
+                        multipliers.data());
+  TileInst* new_inst = builder->CreateTile(ext->GetName(), input, *c);
+  return {*new_inst};
+}
+
 static std::vector<Def> ConvertCAFFEExtension(
     const CAFFEExtensionInst* caffe_inst, IRBuilder* builder) {
+  builder->SetInsertAfter(caffe_inst);
   switch (caffe_inst->GetExtOpCode()) {
     case CAFFEExtOpCode::CONVOLUTION: {
       return ConvertConvolution(caffe_inst, builder);
@@ -636,6 +670,9 @@ static std::vector<Def> ConvertCAFFEExtension(
     }
     case CAFFEExtOpCode::DROPOUT: {
       return {caffe_inst->GetOperand(0)};
+    }
+    case CAFFEExtOpCode::TILE: {
+      return ConvertTile(caffe_inst, builder);
     }
     default: {
       HLCHECK(0 && "Unhandled");
