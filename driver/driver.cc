@@ -253,6 +253,7 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
     opts.max_batch_size = MaxBatch.getValue();
     opts.min_batch_size = MinBatch.getValue();
     opts.opt_batch_size = OptBatch.getValue();
+    opts.check_model = CheckModel;
 
     pm->AddPass<WeightsQuantizer>(QuantWeights.getValue(), PGQFile.getValue());
     cg = pm->AddPass<GenericCXXCodeGen>(std::ref(*out_code),

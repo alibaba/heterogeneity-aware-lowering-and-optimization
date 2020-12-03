@@ -313,7 +313,102 @@ std::string GenericCXXCodeGen::EmitType(const halo::Type& type) {
 }
 
 static std::string DeclAsExtern(const std::string& str) {
-  return "extern \"C\" {   " + str + ";\n}\n";
+  return "extern \"C\" {\n" + str + ";\n};\n";
+}
+
+std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
+                                                const std::string& func_decl,
+                                                const Instruction& ret_inst) {
+  std::ostringstream oss;
+  oss << "#include \"unittests.h\"\n\n";
+
+  auto convert_data_type = [](DataType dtype) {
+    std::string data_type_str;
+    switch (dtype) {
+      case DataType::FLOAT32:
+        data_type_str = "float";
+        break;
+      case DataType::INT32:
+        data_type_str = "int32_t";
+        break;
+      case DataType::UINT32:
+        data_type_str = "uint32_t";
+        break;
+      case DataType::INT64:
+        data_type_str = "int64_t";
+        break;
+      default:
+        HLCHECK(0);
+    }
+    return data_type_str;
+  };
+
+  if (func.IsEntryFunction()) {
+    if (opts_.dialect == Dialect::CXX_11) {
+      oss << DeclAsExtern(func_decl);
+    }
+    oss << "int main(int argc, char** argv) {\n";
+    oss << "  std::string test_case_dir = argv[argc - 1];\n";
+    oss << "  std::string device_name = argv[argc - 2];\n";
+    oss << "  int data_set_id = atoi(argv[argc - 3]);\n";
+    oss << "  double thre = strtod(argv[argc - 4], NULL);\n\n";
+    oss << "  std::vector<const void*> inputs;\n";
+    oss << "  std::vector<const void*> output_refs;\n";
+    oss << "  std::vector<void*> outputs;\n\n";
+    oss << "  UnitTests unittests;\n";
+    int32_t i = 0;
+    std::string data_type;
+    // load input data
+    for (auto& arg : func.Args()) {
+      auto& type = arg->GetResultType();
+      data_type.clear();
+      data_type = convert_data_type(type.GetDataType());
+      oss << "  std::vector<" << data_type << "> in_" << i
+          << " = unittests.LoadInData<" << data_type << ">("
+          << "test_case_dir, data_set_id, " << i << ");\n";
+      oss << "  inputs.push_back(in_" << i << ".data());\n";
+      i++;
+    }
+
+    i = 0;
+    // load reference data and declare output
+    for (auto& out : ret_inst.GetOperands()) {
+      const auto& type = out.GetType();
+      const auto elem_nums = type.GetTotalNumOfElements();
+      data_type.clear();
+      data_type = convert_data_type(type.GetDataType());
+      oss << "  std::vector<" << data_type << "> out_ref_" << i
+          << " = unittests.LoadOutData<" << data_type << ">("
+          << "test_case_dir, data_set_id, " << i << ");\n";
+      oss << "  output_refs.push_back(out_ref_" << i << ".data());\n";
+      oss << "  " << data_type << " out_" << i << "[" << elem_nums
+          << "] = {};\n";
+      oss << "  outputs.push_back(out_" << i++ << ");\n";
+    }
+
+    // start time
+    oss << "#ifdef TIME_PERF\n";
+    oss << "  unittests.TimeBegin();\n";
+    oss << "#endif\n";
+    // execute func
+    oss << "  model_run(" << func.Args().size() << ", inputs.data(), ";
+    oss << ret_inst.GetOperands().size() << ", outputs.data(), 1);\n";
+
+    oss << "  long long times = 0;\n";
+    // end time
+    oss << "#ifdef TIME_PERF\n";
+    oss << "  unittests.TimeStop();\n";
+    // elapsed time
+    oss << "  times = unittests.GetDuration();\n";
+    oss << "#endif\n";
+    // verify output data
+    oss << "  unittests.CheckResult<" << data_type << ">("
+        << ret_inst.GetOperands().size() << ", outputs.data()"
+        << ", output_refs.data()"
+        << ", test_case_dir, device_name, times, thre);\n";
+    oss << "  return 0;\n}\n";
+  }
+  return oss.str();
 }
 
 void GenericCXXCodeGen::RunOnHostFunction(Function& function) {
@@ -545,7 +640,9 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
                 "Ctx")
         << ");\n";
   }
-
+  if (opts_.check_model) {
+    dynamic_check_os_ << GenerateTestFunc(function, func_decl, *return_inst);
+  }
   index = 0;
   // Pre-launch binding.
   for (auto& op : return_inst->GetOperands()) {

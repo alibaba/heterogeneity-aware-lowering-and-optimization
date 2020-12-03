@@ -171,6 +171,9 @@ class GenericCXXCodeGen : public CodeGen {
   virtual CXXValue AllocateBuffer(const Def& def, bool on_stack);
   std::string GetFunctionDecl(const Function& func, const Instruction& ret_inst,
                               bool with_func_name, bool with_type);
+  std::string GenerateTestFunc(const Function& func,
+                               const std::string& func_decl,
+                               const Instruction& ret_inst);
   virtual std::string EmitShape(const halo::Type& type);
   virtual std::string EmitType(const halo::Type& type);
   virtual std::string EmitLValue(const std::string& name) const;
