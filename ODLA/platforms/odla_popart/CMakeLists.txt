@@ -14,31 +14,24 @@
 # limitations under the License
 # ==============================================================================
 
-set(CMAKE_CXX_STANDARD 14)
-
 #add_odla_library(custom_ops SHARED custom_ops/rsqrt.cc custom_ops/erf.cc)
-#set(CUSTOM_OP_CXX_FLAGS -std=c++14 -fPIC -DONNX_NAMESPACE=onnx)
 #set(POPART_CUSTOM_OP_PATH ${CMAKE_CURRENT_SOURCE_DIR}/custom_ops)
 #target_include_directories(custom_ops PRIVATE ${POPART_CUSTOM_OP_PATH}/include )
 #target_link_libraries(custom_ops ODLA poplar popart popops)
 #target_compile_options(custom_ops PRIVATE ${CUSTOM_OP_CXX_FLAGS})
 
-#set(POPLAR_ROOT ${POPLAR_SDK_ENABLED})
-#set(POPART_ROOT ${POPART_ROOT})
-#set(ODLA_POPART_PATH ${CMAKE_CURRENT_SOURCE_DIR}/ODLA/platforms/odla_popart)
+set(POPLAR_ROOT ${POPLAR_SDK_ROOT}/poplar-${POPLAR_VERSION})
+set(POPART_ROOT ${POPLAR_SDK_ROOT}/popart-${POPART_VERSION})
 
-add_odla_library(odla_popart SHARED odla_compute.cc odla_ops.cc common.cc) 
- #find_library(popart NAMES popart PATHS ${POPART_ROOT} PATH_SUFFIXES lib NO_DEFAULT_PATH)
- #find_library(popart NAMES poplar PATHS ${POPLAR_ROOT} PATH_SUFFIXES lib NO_DEFAULT_PATH)
- #find_library(popart NAMES popops PATHS ${POPLAR_ROOT} PATH_SUFFIXES lib NO_DEFAULT_PATH)
-find_library(custom_ops NAMES custom_ops PATHS ${CMAKE_CURRENT_SOURCE_DIR}/custom_ops PATH_SUFFIXES lib NO_DEFAULT_PATH)
-#target_include_directories(odla_popart PRIVATE ${POPART_ROOT}/include )
-#target_include_directories(odla_popart PRIVATE ${POPLAR_ROOT}/include )
-target_link_libraries(odla_popart ODLA poplar popart popops ${custom_ops})
+add_odla_library(odla_popart SHARED odla_compute.cc odla_ops.cc common.cc)
+find_library(popart NAMES popart PATHS ${POPART_ROOT} PATH_SUFFIXES lib
+             NO_DEFAULT_PATH)
+find_library(custom_ops NAMES custom_ops PATHS ${CMAKE_CURRENT_SOURCE_DIR}/custom_ops
+             PATH_SUFFIXES lib NO_DEFAULT_PATH)
+set_property(TARGET odla_popart PROPERTY CXX_STANDARD 14)
+target_include_directories(odla_popart PRIVATE ${POPART_ROOT}/include )
+target_include_directories(odla_popart PRIVATE ${POPLAR_ROOT}/include )
 
-set(POPART_CXX_FLAGS -std=c++14 -DONNX_NAMESPACE=onnx)
-target_compile_options(odla_popart PRIVATE ${POPART_CXX_FLAGS})
-
-
-set(CMAKE_CXX_COMPILER_LAUNCHER ${DEFAULT_COMPILER})
-set(CMAKE_CXX_STANDARD 17)
+target_compile_definitions(odla_popart PRIVATE ONNX_NAMESPACE=onnx)
+target_link_libraries(odla_popart ODLA ${custom_ops})
+target_link_options(odla_popart PRIVATE -Wl,-rpath=${POPLAR_ROOT}/lib:${POPART_ROOT}/lib)

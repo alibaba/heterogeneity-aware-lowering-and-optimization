@@ -74,6 +74,7 @@ std::unique_ptr<popart::SessionOptions> SessionOptions() {
 odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
                                     odla_item_value value) {
   switch (type) {
+    /*
     case ODLA_USE_IPU_MODEL:
       comp->opts.use_ipu_model = *(reinterpret_cast<bool*>(value));
       break;
@@ -83,6 +84,7 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
     case ODLA_BATCHES_PER_STEP:
       comp->opts.batches_per_step = *(reinterpret_cast<int*>(value));
       break;
+    */
     default:
       std::cerr << "Unsupported property type: " << type << std::endl;
       return ODLA_FAILURE;

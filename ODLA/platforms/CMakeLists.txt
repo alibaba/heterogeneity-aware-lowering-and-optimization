@@ -23,7 +23,8 @@ set(CMAKE_SKIP_BUILD_RPATH FALSE)
 
 add_subdirectory(dnnl)
 
-find_library(poplar NAMES poplar PATHS $ENV{POPLAR_SDK_ENABLED} PATH_SUFFIXES lib NO_DEFAULT_PATH)
+find_library(poplar NAMES poplar PATHS ${POPLAR_SDK_ROOT}/poplar-${POPLAR_VERSION} 
+             PATH_SUFFIXES lib NO_DEFAULT_PATH)
 if(NOT poplar)
   message(STATUS "Popart library not found, skip building odla for Popart")
 else()

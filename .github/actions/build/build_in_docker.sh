@@ -19,10 +19,20 @@ IMAGE="halo:$VER-$VARIANT-ubuntu18.04"
 CONTAINER_NAME="halo.ci-$VER-$VARIANT"
 
 docker_run_flag=""
+cmake_flags=""
+check_cmds="ninja check-halo"
+
 if [[ "$VARIANT" =~ cuda ]]; then
   docker_run_flag="--runtime=nvidia"
 fi
-  
+
+if [[ "$VARIANT" =~ graphcore ]]; then
+  cmake_flags="-DPOPLAR_SDK_ROOT=/opt/poplar_sdk-ubuntu_18_04-1.2.0+131-495c1aa368 \
+              -DPOPLAR_VERSION=ubuntu_18_04-1.2.100+9677-c27b85b309 \
+              -DPOPART_VERSION=ubuntu_18_04-1.2.100-63af2bbaea"
+  check_cmds="ls lib/libodla_popart.so"
+fi
+
 DOCKER_ID=`docker ps -aq -f name=$CONTAINER_NAME -f status=running`
 
 if [ -z "$DOCKER_ID" ]; then
@@ -38,4 +48,5 @@ if [ -z "$DOCKER_ID" ]; then
 fi
 
 docker exec --user $USER $CONTAINER_NAME bash -c \
-  'cd /host && rm -fr build && mkdir -p build && cd build && cmake -G Ninja ../halo && ninja && ninja check-halo'
+  "cd /host && rm -fr build && mkdir -p build && cd build && \
+   cmake -G Ninja $cmake_flags ../halo && ninja && $check_cmds"
