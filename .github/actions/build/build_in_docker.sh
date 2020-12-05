@@ -26,11 +26,16 @@ fi
 DOCKER_ID=`docker ps -aq -f name=$CONTAINER_NAME -f status=running`
 
 if [ -z "$DOCKER_ID" ]; then
+  gid=$(id -g ${USER})
+  group=$(id -g -n ${USER})
+  uid=$(id -u ${USER})
   docker run $docker_run_flag -t -d --name $CONTAINER_NAME -v $MOUNT_DIR:/host \
     --tmpfs /tmp:exec --rm $IMAGE
-  docker exec groupadd -f -g $(id -g ${USER}) $(id -g -n ${USER})
-  docker exec adduser --shell /bin/bash --uid $(id -u ${USER}) --gecos '' \
-    --ingroup $(id -g ${USER}) --disabled-password --home /home/$USER $USER
+  docker exec $CONTAINER_NAME bash -c "groupadd -f -g $gid $group"
+  docker exec $CONTAINER_NAME bash -c \
+    "adduser --shell /bin/bash --uid $uid --gecos '' --gid $gid \
+    --disabled-password --home /home/$USER $USER"
 fi
 
-docker exec $CONTAINER_NAME bash -c 'cd /host && rm -fr build && mkdir -p build && cd build && cmake -G Ninja ../halo && ninja && ninja check-halo'
+docker exec --user $USER $CONTAINER_NAME bash -c \
+  'cd /host && rm -fr build && mkdir -p build && cd build && cmake -G Ninja ../halo && ninja && ninja check-halo'
