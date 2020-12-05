@@ -77,7 +77,7 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
     case ODLA_USE_SIM_MODEL:
       comp->opts.use_ipu_model = *(reinterpret_cast<bool*>(value));
       break;
-    case ODLA_PROCESS_NUM:
+    case ODLA_PROCESSOR_NUM:
       comp->opts.ipu_num = *(reinterpret_cast<int*>(value));
       break;
     case ODLA_BATCHES_PER_STEP:
