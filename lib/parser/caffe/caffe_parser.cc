@@ -129,27 +129,34 @@ Status CAFFEParser::ConvertToHaloIR(
   }
   auto layer_size_weight = weight_v1 ? net_param_weight.layers_size()
                                      : net_param_weight.layer_size();
-  auto is_input_layer = [&](int i) {
-    if (weight_v1) {
-      return net_param_weight.layers(i).type() == caffe::V1LayerParameter::DATA;
+
+  std::unordered_map<std::string, int> weight_name_to_id;
+  for (int id = 0; id < layer_size_weight; ++id) {
+    auto name = weight_v1 ? net_param_weight.layers(id).name()
+                          : net_param_weight.layer(id).name();
+    if (weight_name_to_id.count(name)) {
+      LOG(ERROR) << "weight file has duplicated layer name: '" << name << "'";
+      return Status::ASSERTION;
     }
-    return is_input_type(net_param_weight.layer(i).type());
-  };
-  // std::vector<std::unique_ptr<caffe::BlobShape>> shapes;
-  for (int i = 0, j = 0, layer_size = net_param.layer_size(); i < layer_size;
-       ++i, ++j) {
+    weight_name_to_id[name] = id;
+  }
+
+  for (int i = 0, layer_size = net_param.layer_size(); i < layer_size; ++i) {
     VLOG(3) << "====layer====" << i << "=========";
     if (net_param.layer(i).type() == "Input") {
       ++i;
     }
 
-    j = (j < layer_size_weight) ? j : layer_size_weight - 1;
-    while (is_input_layer(j)) {
-      ++j;
-    }
+    auto& net_layer = net_param.layer(i);
+
+    int weight_layer_id = -1;
     caffe::LayerParameter weight_layer;
-    if (weight_v1) {
-      auto v1layer = net_param_weight.layers(j);
+    if (auto it = weight_name_to_id.find(net_layer.name());
+        it != weight_name_to_id.end()) {
+      weight_layer_id = it->second;
+    }
+    if (weight_v1 && weight_layer_id >= 0) {
+      auto v1layer = net_param_weight.layers(weight_layer_id);
       weight_layer.set_name(v1layer.name());
       for (auto& blob : v1layer.blobs()) {
         auto b = weight_layer.add_blobs();
@@ -160,11 +167,12 @@ Status CAFFEParser::ConvertToHaloIR(
         shape->add_dim(blob.height());
         shape->add_dim(blob.width());
         b->set_allocated_shape(shape);
-        // shapes.push_back(std::move(shape));
       }
     }
-    s = ConvertOneNode(net_param.layer(i),
-                       weight_v1 ? weight_layer : net_param_weight.layer(j));
+    auto& weight = (weight_v1 || weight_layer_id < 0)
+                       ? weight_layer
+                       : net_param_weight.layer(weight_layer_id);
+    s = ConvertOneNode(net_layer, weight);
     if (s != Status::SUCCESS) {
       return s;
     }
