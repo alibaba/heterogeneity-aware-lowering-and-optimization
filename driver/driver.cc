@@ -124,6 +124,23 @@ static llvm::cl::opt<bool> EnableFP16("enable-fp16",
                                       llvm::cl::desc("Enable FP16 mode"),
                                       llvm::cl::init(false));
 
+static llvm::cl::opt<bool> EnableIpuDevice("enable-ipu-device",
+                                           llvm::cl::desc("Enable IPU Device"),
+                                           llvm::cl::init(false));
+
+static llvm::cl::opt<bool> UseIpuModel("use-ipu-model",
+                                       llvm::cl::desc("Use IPU Mode"),
+                                       llvm::cl::init(false));
+
+static llvm::cl::opt<int> IpuNum(
+    "ipu-num",
+    llvm::cl::desc("Num of ipus, should consistent with subgraph num"),
+    llvm::cl::init(1));
+
+static llvm::cl::opt<int> BatchesPerStep(
+    "batches-per-step", llvm::cl::desc("Specify batches num for each step"),
+    llvm::cl::init(1));
+
 static llvm::cl::opt<bool> DisableCodeFormat(
     "disable-code-format",
     llvm::cl::desc("Disable formatting the generated C/C++ code"),
@@ -254,6 +271,10 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
     opts.min_batch_size = MinBatch.getValue();
     opts.opt_batch_size = OptBatch.getValue();
     opts.check_model = CheckModel;
+    opts.enable_ipu_device = EnableIpuDevice;
+    opts.use_ipu_model = UseIpuModel;
+    opts.ipu_num = IpuNum;
+    opts.batches_per_step = BatchesPerStep;
 
     pm->AddPass<WeightsQuantizer>(QuantWeights.getValue(), PGQFile.getValue());
     cg = pm->AddPass<GenericCXXCodeGen>(std::ref(*out_code),

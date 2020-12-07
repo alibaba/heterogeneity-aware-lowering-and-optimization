@@ -58,6 +58,14 @@ let cat_ = cat_math_unary,
 }
 
 let cat_ = cat_math_unary,
+    ins_ = [Arg<"The unary input.", ArgType<[I1]> >],
+    outs_ = [Arg<"The result.", MatchArgType<0> >] in {
+  def Not : Inst<
+                "The unary opertion returns ~X1, element-wise, constrains "
+                "input/output to boolean.">;
+}
+
+let cat_ = cat_math_unary,
     ins_ =  [Arg<"The unary input.", ArgType<[F16,F32]> >],
     outs_ = [Arg<"The result.", MatchArgType<0> >] in {
 

@@ -13,7 +13,7 @@ ENV \
   VALGRIND_VERSION=3.13.0 \
   GCC_VERSION=7 \
   LLVM_VERSION=9 \
-  BINUTILS_VERSION=2.32
+  BINUTILS_VERSION=2.35
 
 ARG python=3.7.0
 ENV PYTHON_VERSION=${python}
@@ -66,7 +66,7 @@ RUN apt-get update -y && \
       openssh-client \
       openssh-server  \
       g++-${GCC_VERSION} gcc-${GCC_VERSION}  \
-      g++-5-aarch64-linux-gnu \
+      g++-${GCC_VERSION}-aarch64-linux-gnu \
       less \
       scons \
       git-lfs \
@@ -91,8 +91,8 @@ RUN apt-get update -y && \
     apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 60 --slave /usr/bin/g++ g++ /usr/bin/g++-${GCC_VERSION} && \
-    update-alternatives --install /usr/bin/aarch64-linux-gnu-g++ aarch64-linux-gnu-g++ /usr/bin/aarch64-linux-gnu-g++-5 60 && \
-    update-alternatives --install /usr/bin/aarch64-linux-gnu-gcc aarch64-linux-gnu-gcc /usr/bin/aarch64-linux-gnu-gcc-5 60 && \
+    update-alternatives --install /usr/bin/aarch64-linux-gnu-g++ aarch64-linux-gnu-g++ /usr/bin/aarch64-linux-gnu-g++-${GCC_VERSION} 60 && \
+    update-alternatives --install /usr/bin/aarch64-linux-gnu-gcc aarch64-linux-gnu-gcc /usr/bin/aarch64-linux-gnu-gcc-${GCC_VERSION} 60 && \
     update-alternatives --install "/usr/bin/ld" "ld" "/usr/bin/ld.gold" 20 && \
     update-alternatives --install "/usr/bin/ld" "ld" "/usr/bin/ld.bfd" 10
 
@@ -185,6 +185,12 @@ RUN cd /tmp && \
     cmake -H. -Bbuild -G "Unix Makefiles" && cmake --build build && \
     cmake --build build --target install && ldconfig && \
     rm -fr /tmp/glog
+
+# Install GCC-10
+RUN add-apt-repository ppa:ubuntu-toolchain-r/test && \
+    apt-get update && \
+    apt install gcc-10 g++-10 -y --no-install-recommends && \
+    apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Build & Install DNNL (MKLDNN)
 RUN cd /tmp && git clone --depth=1 https://github.com/intel/mkl-dnn.git --branch v1.7-rc && \

@@ -19,7 +19,7 @@
 
 namespace halo {
 
-void GenericCXXCodeGen::RunOnInstruction(FPtoSIInst* inst) {
+void GenericCXXCodeGen::RunOnCastInstruction(Instruction* inst) {
   const Def& lhs = inst->GetOperand(0);
 
   CXXValue op0 = ir_mapping_[lhs];
@@ -31,16 +31,16 @@ void GenericCXXCodeGen::RunOnInstruction(FPtoSIInst* inst) {
   ir_mapping_[*inst] = ret;
 }
 
+void GenericCXXCodeGen::RunOnInstruction(FPtoSIInst* inst) {
+  RunOnCastInstruction(inst);
+}
+
 void GenericCXXCodeGen::RunOnInstruction(SItoFPInst* inst) {
-  const Def& lhs = inst->GetOperand(0);
+  RunOnCastInstruction(inst);
+}
 
-  CXXValue op0 = ir_mapping_[lhs];
-
-  CXXValue ret(inst->GetName(), op0.type);
-  const auto& ret_type = inst->GetResultType();
-
-  EmitODLACall(ret, "odla_Cast", op0, GetODLAType(ret_type.GetDataType()));
-  ir_mapping_[*inst] = ret;
+void GenericCXXCodeGen::RunOnInstruction(ZExtInst* inst) {
+  RunOnCastInstruction(inst);
 }
 
 } // end namespace halo

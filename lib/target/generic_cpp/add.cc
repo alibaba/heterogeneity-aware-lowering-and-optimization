@@ -31,9 +31,11 @@ void GenericCXXCodeGen::RunOnUnaryInstruction(Instruction* inst) {
       {OpCode::ATANH, "odla_ATanh"}, {OpCode::COS, "odla_Cos"},
       {OpCode::COSH, "odla_Cosh"},   {OpCode::ERF, "odla_Erf"},
       {OpCode::EXP, "odla_Exp"},     {OpCode::FLOOR, "odla_Floor"},
-      {OpCode::CEIL, "odla_Ceil"},   {OpCode::RSQRT, "odla_Rsqrt"},
-      {OpCode::SQRT, "odla_Sqrt"},   {OpCode::SIN, "odla_Sin"},
-      {OpCode::SINH, "odla_Sinh"},   {OpCode::ROUND, "odla_Round"}};
+      {OpCode::RSQRT, "odla_Rsqrt"}, {OpCode::SQRT, "odla_Sqrt"},
+      {OpCode::SIN, "odla_Sin"},     {OpCode::SINH, "odla_Sinh"},
+      {OpCode::ROUND, "odla_Round"}, {OpCode::NEG, "odla_Neg"},
+      {OpCode::RCP, "odla_Recip"},   {OpCode::NOT, "odla_Not"},
+      {OpCode::CEIL, "odla_Ceil"},   {OpCode::LOG, "odla_Log"}};
 
   auto it = names.find(inst->GetOpCode());
   HLCHECK(it != names.end());
@@ -49,10 +51,9 @@ void GenericCXXCodeGen::RunOnUnaryInstruction(Instruction* inst) {
 
 void GenericCXXCodeGen::RunOnBinaryInstruction(Instruction* inst) {
   static const std::unordered_map<OpCode, const char*> names{
-      {OpCode::ADD, "odla_Add"},
-      {OpCode::AND, "odla_And"},
-      {OpCode::DIV, "odla_Div"},
-      {OpCode::MUL, "odla_Mul"},
+      {OpCode::ADD, "odla_Add"},     {OpCode::AND, "odla_And"},
+      {OpCode::DIV, "odla_Div"},     {OpCode::MAXIMUM, "odla_Max"},
+      {OpCode::MINIMUM, "odla_Min"}, {OpCode::MUL, "odla_Mul"},
       {OpCode::SUB, "odla_Sub"}};
   auto it = names.find(inst->GetOpCode());
   HLCHECK(it != names.end());
@@ -75,6 +76,14 @@ void GenericCXXCodeGen::RunOnInstruction(SubInst* inst) {
   RunOnBinaryInstruction(inst);
 }
 
+void GenericCXXCodeGen::RunOnInstruction(MaximumInst* inst) {
+  RunOnBinaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(MinimumInst* inst) {
+  RunOnBinaryInstruction(inst);
+}
+
 void GenericCXXCodeGen::RunOnInstruction(MulInst* inst) {
   RunOnBinaryInstruction(inst);
 }
@@ -87,11 +96,19 @@ void GenericCXXCodeGen::RunOnInstruction(AndInst* inst) {
   RunOnBinaryInstruction(inst);
 }
 
+void GenericCXXCodeGen::RunOnInstruction(CeilInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
 void GenericCXXCodeGen::RunOnInstruction(FloorInst* inst) {
   RunOnUnaryInstruction(inst);
 }
 
-void GenericCXXCodeGen::RunOnInstruction(CeilInst* inst) {
+void GenericCXXCodeGen::RunOnInstruction(LogInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(RcpInst* inst) {
   RunOnUnaryInstruction(inst);
 }
 
@@ -156,6 +173,14 @@ void GenericCXXCodeGen::RunOnInstruction(ATanInst* inst) {
 }
 
 void GenericCXXCodeGen::RunOnInstruction(ATanhInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(NegInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(NotInst* inst) {
   RunOnUnaryInstruction(inst);
 }
 

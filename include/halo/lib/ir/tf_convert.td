@@ -94,6 +94,12 @@ def TF_BatchMatMul : OpMapping<"BatchMatMul", BatchMatMul> {
                        AttributeMapping<"adj_y", "transpose_b", "false">];
 }
 
+def TF_BatchMatMulV2 : OpMapping<"BatchMatMulV2", BatchMatMul> {
+  let attr_mapping_ = [AttributeMapping<"adj_x", "transpose_a", "false">,
+                       AttributeMapping<"adj_y", "transpose_b", "false">];
+}
+
+
 def TF_ConcatV2 : OpMapping<"ConcatV2", Concat> {
   let attr_mapping_ = [AttributeMapping<"N", "N", "0">];
 }
@@ -236,4 +242,10 @@ def TF_RandomUniform : OpMapping<"RandomUniform", RandomUniform> {
     AttributeMapping<"", "maxval", "1.0">];
 }
 
+def TF_TopK  : OpMapping<"TopKV2", TopK>;
+
 def TF_Range : OpMapping<"Range", Range>;
+
+def TF_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
+
+def TF_Tile : OpMapping<"Tile", Tile>;
