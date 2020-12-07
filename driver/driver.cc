@@ -270,6 +270,7 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
     opts.max_batch_size = MaxBatch.getValue();
     opts.min_batch_size = MinBatch.getValue();
     opts.opt_batch_size = OptBatch.getValue();
+    opts.check_model = CheckModel;
     opts.enable_ipu_device = EnableIpuDevice;
     opts.use_ipu_model = UseIpuModel;
     opts.ipu_num = IpuNum;
