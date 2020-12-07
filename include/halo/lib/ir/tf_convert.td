@@ -245,3 +245,7 @@ def TF_RandomUniform : OpMapping<"RandomUniform", RandomUniform> {
 def TF_TopK  : OpMapping<"TopKV2", TopK>;
 
 def TF_Range : OpMapping<"Range", Range>;
+
+def TF_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
+
+def TF_Tile : OpMapping<"Tile", Tile>;

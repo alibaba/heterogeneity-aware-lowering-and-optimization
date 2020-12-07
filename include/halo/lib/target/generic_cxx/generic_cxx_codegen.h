@@ -57,6 +57,10 @@ struct Opts {
   int max_batch_size = 0;
   int min_batch_size = 0;
   int opt_batch_size = 0;
+  bool enable_ipu_device = false;
+  bool use_ipu_model = false;
+  int64_t ipu_num = 1;
+  int64_t batches_per_step = 1;
   bool check_model = false;
 };
 
@@ -127,6 +131,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(ExpandDimsInst*) override;
   virtual void RunOnInstruction(FloorInst*) override;
   virtual void RunOnInstruction(RoundInst*) override;
+  virtual void RunOnInstruction(RcpInst*) override;
   virtual void RunOnInstruction(FPtoSIInst*) override;
   virtual void RunOnInstruction(LeakyReluInst*) override;
   virtual void RunOnInstruction(SeluInst*) override;
@@ -140,14 +145,24 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(Conv2DTransposeInst*) override;
   virtual void RunOnInstruction(GatherInst*) override;
   virtual void RunOnInstruction(GemmInst*) override;
+  virtual void RunOnInstruction(LogInst*) override;
   virtual void RunOnInstruction(LRNInst*) override;
   virtual void RunOnInstruction(MatMulInst*) override;
+  virtual void RunOnInstruction(MaximumInst*) override;
+  virtual void RunOnInstruction(MinimumInst*) override;
   virtual void RunOnInstruction(NonMaxSuppressionInst*) override;
+  virtual void RunOnInstruction(NegInst*) override;
+  virtual void RunOnInstruction(NotInst*) override;
   virtual void RunOnInstruction(OneHotInst*) override;
   virtual void RunOnInstruction(PadInst*) override;
   virtual void RunOnInstruction(PoolingMaxInst*) override;
   virtual void RunOnInstruction(PoolingAvgInst*) override;
   virtual void RunOnInstruction(PReluInst*) override;
+  virtual void RunOnInstruction(ReduceL1Inst*) override;
+  virtual void RunOnInstruction(ReduceL2Inst*) override;
+  virtual void RunOnInstruction(ReduceLogSumInst*) override;
+  virtual void RunOnInstruction(ReduceLogSumExpInst*) override;
+  virtual void RunOnInstruction(ReduceSumSquareInst*) override;
   virtual void RunOnInstruction(ReduceMeanInst*) override;
   virtual void RunOnInstruction(ReluInst*) override;
   virtual void RunOnInstruction(Relu6Inst*) override;
@@ -165,12 +180,22 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(TopKInst*) override;
   virtual void RunOnInstruction(TransposeInst*) override;
   virtual void RunOnInstruction(TileInst*) override;
+  virtual void RunOnInstruction(ZExtInst*) override;
+
   virtual void RunOnBinaryInstruction(Instruction*);
+  virtual void RunOnCastInstruction(Instruction*);
+  virtual void RunOnReductionInstruction(Instruction*,
+                                         const std::vector<int32_t>& axis_attr,
+                                         bool keep_dims,
+                                         const char* odla_func_name);
   virtual void RunOnUnaryInstruction(Instruction*);
 
   virtual CXXValue AllocateBuffer(const Def& def, bool on_stack);
   std::string GetFunctionDecl(const Function& func, const Instruction& ret_inst,
                               bool with_func_name, bool with_type);
+  std::string GenerateTestFunc(const Function& func,
+                               const std::string& func_decl,
+                               const Instruction& ret_inst);
   virtual std::string EmitShape(const halo::Type& type);
   virtual std::string EmitType(const halo::Type& type);
   virtual std::string EmitLValue(const std::string& name) const;
