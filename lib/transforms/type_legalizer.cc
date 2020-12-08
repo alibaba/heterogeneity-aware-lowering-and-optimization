@@ -639,8 +639,7 @@ static void RunOnInstruction(ConcatInst* inst) {
     return;
   }
 
-  if (num_inputs != 0 &&
-      inst->GetNumOfOperands() > static_cast<size_t>(num_inputs)) {
+  if (num_inputs != 0 && inst->GetNumOfOperands() > num_inputs) {
     HLCHECK(num_inputs + 1 == inst->GetNumOfOperands());
     auto op1 = inst->GetOperand(num_inputs);
     if (!IsA<Constant>(op1)) {
