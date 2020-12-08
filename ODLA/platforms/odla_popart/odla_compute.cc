@@ -74,7 +74,7 @@ std::unique_ptr<popart::SessionOptions> SessionOptions() {
 odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
                                     odla_item_value value) {
   switch (type) {
-    case ODLA_USE_SIM_MODEL:
+    case ODLA_USE_SIM_MODE:
       comp->opts.use_ipu_model = *(reinterpret_cast<bool*>(value));
       break;
     case ODLA_PROCESSOR_NUM:
