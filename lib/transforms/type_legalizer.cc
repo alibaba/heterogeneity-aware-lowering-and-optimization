@@ -632,7 +632,7 @@ static void RunOnInstruction(MatMulInst* inst) {
 }
 
 static void RunOnInstruction(ConcatInst* inst) {
-  int num_inputs = inst->GetN();
+  size_t num_inputs = inst->GetN();
   int axis = inst->GetAxis();
   auto& input_type = inst->GetOperand(0).GetType();
   if (!input_type.IsValid()) {
@@ -641,12 +641,17 @@ static void RunOnInstruction(ConcatInst* inst) {
 
   if (num_inputs != 0 &&
       inst->GetNumOfOperands() > static_cast<size_t>(num_inputs)) {
+    HLCHECK(num_inputs + 1 == inst->GetNumOfOperands());
     auto op1 = inst->GetOperand(num_inputs);
-    if (!IsA<Constant>(op1.GetOwner())) {
+    if (!IsA<Constant>(op1)) {
       return;
     }
-    Constant* c_axis = DynCast<Constant>(op1.GetOwner());
-    axis = c_axis->GetData<int32_t>(0);
+    Constant* c_axis = DynCast<Constant>(op1);
+    axis = c_axis->GetDataAsInt64(0);
+    auto ops = inst->GetOperands();
+    ops.pop_back(); // Drop the last one.
+    inst->DropAllOperands();
+    inst->AddOperands(ops);
   } else {
     num_inputs = inst->GetNumOfOperands();
   }
