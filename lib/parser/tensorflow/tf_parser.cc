@@ -137,6 +137,10 @@ static halo::DataType ProcessDataType(const tensorflow::DataType& data_type) {
   switch (data_type) {
     case tensorflow::DT_FLOAT:
       return DataType::FLOAT32;
+    case tensorflow::DT_INT64:
+      return DataType::INT64;
+    case tensorflow::DT_UINT64:
+      return DataType::UINT64;
     case tensorflow::DT_INT32:
       return DataType::INT32;
     case tensorflow::DT_UINT8:
@@ -737,13 +741,12 @@ Status TFParser::ConvertPlaceholderNode(const tensorflow::NodeDef& node_def) {
         node_def.name(), Type{DataType::INT32, {1}}, {15});
     inst_name_to_ptr_.emplace(node_def.name(), inst);
   } else if (attrs.Process<DataType>("dtype", &data_type)) {
-    std::vector<int64_t> shape;
+    // Add default shape if no shape info in placehold
+    std::vector<int64_t> shape = {};
+    attrs.Process<std::vector<int64_t>>("shape", &shape);
     Argument* arg = nullptr;
-    if (attrs.Process<std::vector<int64_t>>("shape", &shape)) {
-      arg =
-          arg_builder_->CreateArgument(node_def.name(), Type(data_type, shape));
-      inst_name_to_ptr_.emplace(node_def.name(), arg);
-    }
+    arg = arg_builder_->CreateArgument(node_def.name(), Type(data_type, shape));
+    inst_name_to_ptr_.emplace(node_def.name(), arg);
   }
   return Status::SUCCESS;
 }
@@ -788,6 +791,24 @@ Status TFParser::ConvertConstNode(const tensorflow::NodeDef& node_def) {
           std::vector<Tensor<int>> native_tensors;
           if (attrs.Process<std::vector<Tensor<int>>>("value",
                                                       &native_tensors)) {
+            HLCHECK(1 == native_tensors.size());
+            inst = c_builder_->CreateConstant(
+                node_def.name(),
+                Type(data_type, native_tensors.back().GetShape()),
+                native_tensors.back().GetData());
+          }
+        }
+        inst_name_to_ptr_.emplace(node_def.name(), inst);
+        break;
+      }
+      case DataType::INT64: {
+        // check need decoded from tensor content
+        std::vector<Tensor<std::string>> tensors;
+        IRObject* inst = nullptr;
+        if (CreateConstant<int64_t>(&attrs, data_type, node_def) == nullptr) {
+          std::vector<Tensor<int64_t>> native_tensors;
+          if (attrs.Process<std::vector<Tensor<int64_t>>>("value",
+                                                          &native_tensors)) {
             HLCHECK(1 == native_tensors.size());
             inst = c_builder_->CreateConstant(
                 node_def.name(),

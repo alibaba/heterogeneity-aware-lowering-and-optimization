@@ -74,10 +74,10 @@ std::unique_ptr<popart::SessionOptions> SessionOptions() {
 odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
                                     odla_item_value value) {
   switch (type) {
-    case ODLA_USE_IPU_MODEL:
+    case ODLA_USE_SIM_MODEL:
       comp->opts.use_ipu_model = *(reinterpret_cast<bool*>(value));
       break;
-    case ODLA_IPU_NUM:
+    case ODLA_PROCESSOR_NUM:
       comp->opts.ipu_num = *(reinterpret_cast<int*>(value));
       break;
     case ODLA_BATCHES_PER_STEP:

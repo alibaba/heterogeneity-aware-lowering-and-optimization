@@ -175,7 +175,7 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_OneHot(
 
   \param input the input value
   \param padding_front the padding amount applied to the start of input
-  \param padding_back the padding amoutt appleid to the end of input
+  \param padding_back the padding amount applied to the end of input
   \param output_dims the optional output shape (can be undefined)
   \param value_id a unique value id (can be NULL)
 

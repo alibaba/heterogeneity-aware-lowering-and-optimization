@@ -1,3 +1,4 @@
+//===- odla_popart.cc -----------------------------------------------------===//
 //
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 //
@@ -96,20 +97,8 @@ odla_value odla_Div(odla_value lhs, odla_value rhs, const odla_value_id id) {
 }
 
 /* Unary Ops */
-#if 0
 // Erf is declared, but not implemented in onnx namespace,
 // so we call the custom version temporialy
-odla_value odla_Erf(odla_value input, const odla_value_id id) {
-  const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
-
-  popart::TensorId result =
-      g_comp->builder->aiOnnxOpset10().erf({input->tensor_id});
-  return new _odla_value(result,
-                         {g_comp->builder->getTensorDataType(result),
-                          g_comp->builder->getTensorShape(result)},
-                         name);
-}
-#endif
 odla_value odla_Erf(odla_value input, const odla_value_id id) {
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
 
@@ -185,20 +174,9 @@ odla_value odla_Gather(odla_value input, odla_value indices, odla_int32 axis,
                          name);
 }
 
-std::string _VecToStr(const std::vector<int64_t>& vec) {
-  std::ostringstream oss;
-  oss << "{";
-  for (int n = 0; n < vec.size(); ++n) {
-    if (n != 0) {
-      oss << ", ";
-    }
-    oss << vec[n];
-  }
-  oss << "}";
-  return oss.str();
-}
-
-odla_value odla_Matmul(odla_value lhs, odla_value rhs, const odla_value_id id) {
+odla_value odla_BatchMatmul(odla_value lhs, odla_bool lhs_trans, odla_value rhs,
+                            odla_bool rhs_trans, odla_value_shape output_dims,
+                            const odla_value_id id) {
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
 
   popart::TensorId result =
@@ -217,7 +195,6 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
                      odla_bool transpose_rhs, odla_float32 alpha,
                      odla_float32 beta, odla_value bias,
                      odla_value_shape output_dims, const odla_value_id id) {
-#if 1 // USE_BATCHED_MATMUL
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
 
   popart::TensorId lhs_trans = lhs->tensor_id;
@@ -244,6 +221,7 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
     }
   }
 
+  // USE_BATCHED_MATMUL
   popart::TensorId result =
       g_comp->builder->aiOnnxOpset10().matmul({lhs_trans, rhs_trans});
 
@@ -251,83 +229,6 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
                          name);
-#else // USE_GEMM
-  const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
-  std::cout << "======name: " << name << "==========\n";
-  std::cout << "transA:" << transpose_lhs << ", transB: " << transpose_rhs
-            << "\n";
-  popart::TensorId lhs_reshape = lhs->tensor_id;
-  if (int rank = lhs->tensor_info.rank(); rank > 2) {
-    std::cout << "lhs shape: "
-              << g_comp->builder->getTensorShape(lhs->tensor_id)[0] << ", "
-              << g_comp->builder->getTensorShape(lhs->tensor_id)[1] << ", "
-              << g_comp->builder->getTensorShape(lhs->tensor_id)[2] << ", "
-              << g_comp->builder->getTensorShape(lhs->tensor_id)[3] << "\n";
-    std::vector<int64_t> shape0{
-        -1, lhs->tensor_info.dim(rank - 1) * lhs->tensor_info.dim(rank - 2)};
-    auto new_shape = odla_CreateConstant(
-        {ODLA_INT64, {.size = 1, .dims = {2}}},
-        static_cast<odla_void*>(shape0.data()),
-        (const odla_value_id)((name + "_new_shape0").c_str()));
-    lhs_reshape = g_comp->builder->aiOnnxOpset10().reshape(
-        {lhs->tensor_id, new_shape->tensor_id}, name + "_new_shape0");
-    std::cout << "popart lhs shape: "
-              << g_comp->builder->getTensorShape(lhs_reshape)[0] << ", "
-              << g_comp->builder->getTensorShape(lhs_reshape)[1] << "\n";
-  }
-
-  popart::TensorId rhs_reshape = rhs->tensor_id;
-  if (int rank = rhs->tensor_info.rank(); rank > 2) {
-    std::cout << "rhs shape: "
-              << g_comp->builder->getTensorShape(rhs->tensor_id)[0] << ", "
-              << g_comp->builder->getTensorShape(rhs->tensor_id)[1] << ", "
-              << g_comp->builder->getTensorShape(rhs->tensor_id)[2] << ", "
-              << g_comp->builder->getTensorShape(rhs->tensor_id)[3] << "\n";
-    std::vector<int64_t> shape1{
-        -1, rhs->tensor_info.dim(rank - 1) * rhs->tensor_info.dim(rank - 2)};
-    auto new_shape = odla_CreateConstant(
-        {ODLA_INT64, {.size = 1, .dims = {2}}},
-        static_cast<odla_void*>(shape1.data()),
-        (const odla_value_id)((name + "_new_shape1").c_str()));
-    rhs_reshape = g_comp->builder->aiOnnxOpset10().reshape(
-        {rhs->tensor_id, new_shape->tensor_id}, name + "_new_shape1");
-    std::cout << "popart rhs shape: "
-              << g_comp->builder->getTensorShape(rhs_reshape)[0] << ", "
-              << g_comp->builder->getTensorShape(rhs_reshape)[1] << "\n";
-  }
-
-  std::vector<int64_t> bias_data{0};
-  auto C = odla_CreateConstant({ODLA_FLOAT32, {.size = 1, .dims = {1}}},
-                               static_cast<odla_void*>(bias_data.data()),
-                               (const odla_value_id)((name + "_bias").c_str()));
-  popart::TensorId result = g_comp->builder->aiOnnxOpset10().gemm(
-      {lhs_reshape, rhs_reshape, bias ? bias->tensor_id : C->tensor_id}, alpha,
-      beta, static_cast<int64_t>(transpose_lhs),
-      static_cast<int64_t>(transpose_rhs), name);
-
-  popart::TensorId result_reshape = result;
-  if (output_dims.size > 2) {
-    std::cout << "out shape: " << output_dims.dims[0] << ", "
-              << output_dims.dims[1] << ", " << output_dims.dims[2] << ", "
-              << output_dims.dims[3] << "\n";
-    auto new_shape = odla_CreateConstant(
-        {ODLA_INT64, {.size = 1, .dims = {output_dims.size}}},
-        static_cast<odla_void*>(GetPopartShape(output_dims).data()),
-        (const odla_value_id)((name + "_new_shape2").c_str()));
-    result_reshape = g_comp->builder->aiOnnxOpset10().reshape(
-        {result, new_shape->tensor_id}, name + "_new_shape2");
-    std::cout << "popart out shape: "
-              << g_comp->builder->getTensorShape(result_reshape)[0] << ", "
-              << g_comp->builder->getTensorShape(result_reshape)[1] << ", "
-              << g_comp->builder->getTensorShape(result_reshape)[2] << ", "
-              << g_comp->builder->getTensorShape(result_reshape)[3] << "\n";
-  }
-
-  return new _odla_value(result_reshape,
-                         {g_comp->builder->getTensorDataType(result_reshape),
-                          g_comp->builder->getTensorShape(result_reshape)},
-                         name);
-#endif
 }
 
 odla_value odla_Reshape(odla_value input, odla_value_shape output_dims,
@@ -464,7 +365,6 @@ odla_value odla_Slice(odla_value input, const odla_uint32* start,
     axes.push_back(i);
     strides.push_back(stride[i]);
   }
-  auto builder = g_comp->builder.get();
 
   auto start_tensor =
       odla_CreateConstant({ODLA_INT64, {.size = 1, .dims = {rank}}},
@@ -486,6 +386,7 @@ odla_value odla_Slice(odla_value input, const odla_uint32* start,
                           static_cast<odla_void*>(strides.data()),
                           (const odla_value_id)((name + "_strides").c_str()));
 
+  auto builder = g_comp->builder.get();
   popart::TensorId sliced = builder->aiOnnxOpset10().slice(
       {input->tensor_id, start_tensor->tensor_id, end_tensor->tensor_id,
        axes_tensor->tensor_id, strides_tensor->tensor_id});

@@ -1,0 +1,4 @@
+config.halo_build_dir = "@CMAKE_BINARY_DIR@"
+config.halo_src_dir = "@CMAKE_SOURCE_DIR@"
+
+lit_config.load_config(config, "@CMAKE_CURRENT_SOURCE_DIR@/unittests/lit.cfg.py")
