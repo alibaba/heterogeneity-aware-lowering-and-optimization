@@ -1282,8 +1282,8 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
                      odla_bool transpose_rhs, odla_float32 alpha,
                      odla_float32 beta, odla_value bias,
                      odla_value_shape output_dims, const odla_value_id id) {
-  const auto &lhs_dims = lhs->shape;
-  const auto &rhs_dims = rhs->shape;
+  const auto& lhs_dims = lhs->shape;
+  const auto& rhs_dims = rhs->shape;
   auto dt = lhs->mem.get_desc().data_type();
   assert(lhs_dims.size == 2 && rhs_dims.size == 2);
   long M = output_dims.dims[0], N = output_dims.dims[1],
@@ -1305,7 +1305,8 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
   auto rhs_mem = dnnl::memory(rhs_md, g_comp->eng, rhs->mem.get_data_handle());
   if (bias) {
     dnnl::memory::desc bias_md({1, N}, dt, dnnl::memory::format_tag::ab);
-    auto bias_mem = dnnl::memory(bias_md, g_comp->eng, bias->mem.get_data_handle());
+    auto bias_mem =
+        dnnl::memory(bias_md, g_comp->eng, bias->mem.get_data_handle());
     dnnl::matmul::desc md(lhs_md, rhs_md, bias_md, ret_md);
     dnnl::matmul::primitive_desc pd(md, g_comp->eng);
     dnnl::primitive prim = dnnl::matmul(pd);
