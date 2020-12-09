@@ -1,11 +1,17 @@
 #!/bin/bash
-# RUN: %s
+# RUN: %s %src_dir %build_dir %S
+
+export HALO_SRC_DIR=$1
+export HALO_BUILD_DIR=$2
+export HALO_UNITTESTS_PATH=$3
+
+odla_lib_path=${HALO_BUILD_DIR}/lib
 
 # build_ipu not install tensorrt lib, can't run the run_test.py
-odla_lib_path=${HALO_BUILD_DIR}/lib
-odla_tensor_file=${odla_lib_path}/libodla_tensorrt.so
-if [ "${odla_tensor_file}" != "`find ${odla_lib_path} -name "libodla_tensorrt.so"`" ]; then
-exit 0
+odla_tensorrt_file=${odla_lib_path}/libodla_tensorrt.so
+if [ ! -f "${odla_tensorrt_file}" ]; then
+  echo "No odla_tensorrt found. Skip tests"
+  exit 0
 fi
 
 python3 ${HALO_UNITTESTS_PATH}/run_test.py --test-mode 'list'    \

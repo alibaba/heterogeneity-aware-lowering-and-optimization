@@ -43,7 +43,7 @@ vector<T> UnitTests::ConvertTxtToVec(string test_case_name) {
 
 template<typename T>
 vector<T> UnitTests::ConvertPbToVec(string test_case_name) {
-  
+
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   vector<T> res_data;
@@ -60,7 +60,7 @@ vector<T> UnitTests::ConvertPbToVec(string test_case_name) {
     return res_data;
   }
   const T* ptr = reinterpret_cast<const T*>(tensor_def.raw_data().c_str());
-  
+
   for (size_t i = 0; i < raw_data_size; ++i) {
     res_data.push_back(*ptr++);
   }
@@ -74,7 +74,7 @@ vector<T> UnitTests::LoadSingleData(string test_case_name) {
   inputfile.open (test_case_name, std::ifstream::in);
 
   if (inputfile.fail()) {
-    cerr << "Warning:: fail to open: " 
+    cerr << "Warning:: fail to open: "
               << test_case_name << endl;
     ret_data.clear();
     return ret_data;
@@ -87,7 +87,7 @@ vector<T> UnitTests::LoadSingleData(string test_case_name) {
       ret_data = ConvertTxtToVec<T>(test_case_name);
       break;
     default:
-      cerr << "Warning:: only support .pb & .txt: " 
+      cerr << "Warning:: only support .pb & .txt: "
                 << endl;
       ret_data.clear();
   }
@@ -97,7 +97,7 @@ vector<T> UnitTests::LoadSingleData(string test_case_name) {
 }
 
 template <typename T>
-vector<T> UnitTests::LoadInData(string test_case_dir, 
+vector<T> UnitTests::LoadInData(string test_case_dir,
                                   int data_set_id,
                                   int input_id) {
   ostringstream oss;
@@ -107,7 +107,7 @@ vector<T> UnitTests::LoadInData(string test_case_dir,
 }
 
 template <typename T>
-vector<T> UnitTests::LoadOutData(string test_case_dir, 
+vector<T> UnitTests::LoadOutData(string test_case_dir,
                                    int data_set_id,
                                    int output_id) {
   ostringstream oss;
@@ -117,7 +117,7 @@ vector<T> UnitTests::LoadOutData(string test_case_dir,
 }
 
 template <typename T>
-void UnitTests::CheckResult(size_t num_out, 
+void UnitTests::CheckResult(size_t num_out,
                               void* out[],
                               const void* out_ref[],
                               string test_case_dir,
@@ -126,7 +126,7 @@ void UnitTests::CheckResult(size_t num_out,
                               double thre) {
   string test_case_name = test_case_dir.substr(
                           test_case_dir.find_last_of("/") + 1);
-  string report_file_name = "tmp/" + test_case_name 
+  string report_file_name = "tmp/" + test_case_name
                            + "_" + device_name + ".txt";
   ostringstream oss;
   ofstream outfile(report_file_name);
@@ -149,7 +149,7 @@ void UnitTests::CheckResult(size_t num_out,
       }
     }
   }
-  
+
   oss << " result: PASS";
   outfile << oss.str();
   outfile.close();
