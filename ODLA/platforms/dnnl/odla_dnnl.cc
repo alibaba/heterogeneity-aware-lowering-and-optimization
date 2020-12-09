@@ -1308,11 +1308,9 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
   dnnl::matmul::primitive_desc pd(md, g_comp->eng);
   dnnl::primitive prim = dnnl::matmul(pd);
   if (bias) {
-    dnnl::memory::desc bias_md({1, N}, dt, dnnl::memory::format_tag::ab);
-    auto bias_mem = dnnl::memory(bias_md, g_comp->eng);
     add_op(prim, {{DNNL_ARG_SRC, lhs->mem},
                   {DNNL_ARG_WEIGHTS, rhs->mem},
-                  {DNNL_ARG_BIAS, bias_mem},
+                  {DNNL_ARG_BIAS, bias->mem},
                   {DNNL_ARG_DST, ret_mem}});
   } else {
     add_op(prim, {{DNNL_ARG_SRC, lhs->mem},
@@ -1320,7 +1318,7 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
                   {DNNL_ARG_DST, ret_mem}});
   }
 
-  odla_value v = CreateValue(ret_mem, output_dims, bias ? nullptr : id);
+  odla_value v = CreateValue(ret_mem, output_dims, id);
 
   InterpretIfNeeded();
 
