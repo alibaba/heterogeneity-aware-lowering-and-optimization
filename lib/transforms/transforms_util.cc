@@ -17,8 +17,6 @@
 
 #include "halo/lib/transforms/transforms_util.h"
 
-#include "halo/lib/ir/ir_builder.h"
-
 namespace halo {
 
 bool AppendReturnInst(BasicBlock* bb) {

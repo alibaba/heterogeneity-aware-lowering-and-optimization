@@ -190,6 +190,11 @@ static std::vector<Def> ConvertDepthwiseConv2D(const TFLITEExtensionInst* ext,
                                 new_inst, builder);
 }
 
+static std::vector<Def> ConvertSqueeze(const TFLITEExtensionInst* ext,
+                                       IRBuilder* builder) {
+  return ConvertSqueezeImpl<TFLITEExtensionInst>(ext, builder, "squeeze_dims");
+}
+
 static std::vector<Def> ConvertTFLITEExtension(
     const TFLITEExtensionInst* tflite_inst, IRBuilder* builder) {
   switch (tflite_inst->GetExtOpCode()) {
@@ -204,6 +209,9 @@ static std::vector<Def> ConvertTFLITEExtension(
     }
     case TFLITEExtOpCode::ADD: {
       return ConvertADD(tflite_inst, builder);
+    }
+    case TFLITEExtOpCode::SQUEEZE: {
+      return ConvertSqueeze(tflite_inst, builder);
     }
     default: {
       HLCHECK(0 && "Unhandled");
