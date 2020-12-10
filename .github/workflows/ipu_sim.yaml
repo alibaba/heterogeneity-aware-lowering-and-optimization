@@ -1,4 +1,4 @@
-name: Build and Test (IPU_Simulator)
+name: Testing (IPU Simulator)
 
 on:
   push:
