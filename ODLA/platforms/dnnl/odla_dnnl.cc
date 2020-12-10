@@ -1304,7 +1304,6 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
   auto lhs_mem = dnnl::memory(lhs_md, g_comp->eng, lhs->mem.get_data_handle());
   auto rhs_mem = dnnl::memory(rhs_md, g_comp->eng, rhs->mem.get_data_handle());
   bool is_elements_add = false;
-  
   if (bias) {
     auto bias_elements = GetTotalElements(bias->shape);
     if (bias_elements == N) {
@@ -1318,11 +1317,10 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
                     {DNNL_ARG_WEIGHTS, rhs_mem},
                     {DNNL_ARG_BIAS, bias_mem},
                     {DNNL_ARG_DST, ret_mem}});
-    }
-    else if(bias_elements == 1) {
+    } else if (bias_elements == 1) {
       dnnl::post_ops ops;
       dnnl::primitive_attr gemm_attr;
-      float beta = ((float *)bias->mem.get_data_handle())[0];
+      float beta = ((float*)bias->mem.get_data_handle())[0];
       ops.append_eltwise(1.f, dnnl::algorithm::eltwise_linear, 0.f, beta);
       gemm_attr.set_post_ops(ops);
       dnnl::matmul::desc md(lhs_md, rhs_md, ret_md);
@@ -1331,8 +1329,8 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
       add_op(prim, {{DNNL_ARG_SRC, rhs_mem},
                     {DNNL_ARG_WEIGHTS, rhs_mem},
                     {DNNL_ARG_DST, ret_mem}});
-    } else 
-        is_elements_add = true;
+    } else
+      is_elements_add = true;
   } else {
     dnnl::matmul::desc md(lhs_md, rhs_md, ret_md);
     dnnl::matmul::primitive_desc pd(md, g_comp->eng);
@@ -1342,13 +1340,14 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
                   {DNNL_ARG_DST, ret_mem}});
   }
 
-  odla_value v = CreateValue(ret_mem, output_dims, is_elements_add ? nullptr : id);
+  odla_value v =
+      CreateValue(ret_mem, output_dims, is_elements_add ? nullptr : id);
 
   InterpretIfNeeded();
 
   return is_elements_add ? odla_Add(v, bias, id) : v;
 }
-  
+
 odla_value odla_Erf(odla_value input, const odla_value_id value_id) {
   std::function<void()> op;
   const auto& input_shape = input->shape;
