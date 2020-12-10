@@ -1,6 +1,11 @@
 #!/bin/bash
 # RUN: %s %src_dir %build_dir %S
 
+if [ "$#" -ne 3 ]; then
+  echo "Usage: $0 [HALO_SRC_DIR] [HALO_BUILD_DIR] [HALO_UNITTESTS_PATH]"
+  exit 1
+fi
+
 export HALO_SRC_DIR=$1
 export HALO_BUILD_DIR=$2
 export HALO_UNITTESTS_PATH=$3
