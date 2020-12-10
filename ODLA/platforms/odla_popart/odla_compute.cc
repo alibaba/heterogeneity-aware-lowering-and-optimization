@@ -157,11 +157,11 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
   // Config StepIO
   std::map<popart::TensorId, popart::IArray&> inputs;
   for (auto& input : comp->inputs) {
-    inputs[input.first] = *input.second;
+    inputs.at(input.first) = std::move(*input.second);
   }
   std::map<popart::TensorId, popart::IArray&> outputs;
   for (auto& output : comp->outputs) {
-    outputs[output.first] = *output.second;
+    outputs.at(output.first) = std::move(*output.second);
   }
 
   popart::StepIO stepio(inputs, outputs);
