@@ -248,4 +248,6 @@ def TF_Range : OpMapping<"Range", Range>;
 
 def TF_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
 
+def TF_Exp : OpMapping<"Exp", Exp>;
+
 def TF_Tile : OpMapping<"Tile", Tile>;
