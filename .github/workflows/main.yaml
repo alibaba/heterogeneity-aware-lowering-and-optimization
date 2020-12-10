@@ -1,4 +1,4 @@
-name: Build and Test (X86_64 w/ GPU)
+name: Testing (X86_64, GPU)
 
 on:
   push:
