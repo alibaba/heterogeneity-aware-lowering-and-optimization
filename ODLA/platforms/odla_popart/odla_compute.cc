@@ -157,11 +157,11 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
   // Config StepIO
   std::map<popart::TensorId, popart::IArray&> inputs;
   for (auto& input : comp->inputs) {
-    inputs.emplace(input.first, *input.second);
+    inputs[input.first] = *input.second;
   }
   std::map<popart::TensorId, popart::IArray&> outputs;
   for (auto& output : comp->outputs) {
-    outputs.emplace(output.first, *output.second);
+    outputs[output.first] = *output.second;
   }
 
   popart::StepIO stepio(inputs, outputs);
@@ -210,7 +210,7 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
   std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
       data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
       context->comp->builder->getTensorShape(value->tensor_id));
-  context->comp->inputs.emplace(value->tensor_id, std::move(p_array));
+  context->comp->inputs[value->tensor_id] = std::move(p_array);
   return ODLA_SUCCESS;
 }
 
@@ -240,7 +240,7 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
   std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
       data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
       context->comp->builder->getTensorShape(value->tensor_id));
-  context->comp->outputs.emplace(value->tensor_id, std::move(p_array));
+  context->comp->outputs[value->tensor_id] = std::move(p_array);
   return ODLA_SUCCESS;
 }
 
