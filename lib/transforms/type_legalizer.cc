@@ -473,7 +473,7 @@ static void RunOnCommonReductionInstruction(Instruction* inst,
     if (!IsA<Constant>(op1)) {
       return;
     }
-    HLCHECK(axis.empty());
+
     const Constant* axis_c = DynCast<const Constant>(op1);
     for (size_t i = 0, e = axis_c->GetResultType(0).GetTotalNumOfElements();
          i != e; ++i) {
@@ -489,6 +489,13 @@ static void RunOnCommonReductionInstruction(Instruction* inst,
       axis[i] += input_type.GetNumOfDims();
     }
   }
+
+  if (axis.empty()) {
+    for (size_t i = 0, e = input_type.GetNumOfDims(); i < e; ++i) {
+      axis.push_back(i);
+    }
+  }
+
   std::vector<int64_t> ret_shape;
   ret_shape.reserve(input_type.GetNumOfDims());
   for (size_t i = 0, e = input_type.GetNumOfDims(); i < e; ++i) {
@@ -513,6 +520,22 @@ static void RunOnCommonReductionInstruction(Instruction* inst,
   }
 }
 
+static void RunOnInstruction(ReduceL1Inst* inst) {
+  RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
+}
+
+static void RunOnInstruction(ReduceL2Inst* inst) {
+  RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
+}
+
+static void RunOnInstruction(ReduceLogSumInst* inst) {
+  RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
+}
+
+static void RunOnInstruction(ReduceLogSumExpInst* inst) {
+  RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
+}
+
 static void RunOnInstruction(ReduceMeanInst* inst) {
   RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
 }
@@ -526,6 +549,10 @@ static void RunOnInstruction(ReduceMinInst* inst) {
 }
 
 static void RunOnInstruction(ReduceProductInst* inst) {
+  RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
+}
+
+static void RunOnInstruction(ReduceSumSquareInst* inst) {
   RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
 }
 
