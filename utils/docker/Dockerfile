@@ -193,8 +193,8 @@ RUN add-apt-repository ppa:ubuntu-toolchain-r/test && \
     apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Build & Install DNNL (MKLDNN)
-RUN cd /tmp && git clone --depth=1 https://github.com/intel/mkl-dnn.git --branch v1.7-rc && \
-    cd /tmp/mkl-dnn && \
+RUN cd /tmp && git clone --depth=1 https://github.com/oneapi-src/oneDNN.git --branch v1.7 && \
+    cd /tmp/oneDNN && \
     cmake -G Ninja -DDNNL_BUILD_EXAMPLES=OFF -DDNNL_BUILD_TESTS=OFF -DDNNL_ENABLE_PRIMITIVE_CACHE=ON -DCMAKE_INSTALL_PREFIX=/opt/dnnl && \
     ninja install
 

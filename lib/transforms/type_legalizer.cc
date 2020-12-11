@@ -473,7 +473,7 @@ static void RunOnCommonReductionInstruction(Instruction* inst,
     if (!IsA<Constant>(op1)) {
       return;
     }
-    HLCHECK(axis.empty());
+
     const Constant* axis_c = DynCast<const Constant>(op1);
     for (size_t i = 0, e = axis_c->GetResultType(0).GetTotalNumOfElements();
          i != e; ++i) {
@@ -489,6 +489,13 @@ static void RunOnCommonReductionInstruction(Instruction* inst,
       axis[i] += input_type.GetNumOfDims();
     }
   }
+
+  if (axis.empty()) {
+    for (size_t i = 0, e = input_type.GetNumOfDims(); i < e; ++i) {
+      axis.push_back(i);
+    }
+  }
+
   std::vector<int64_t> ret_shape;
   ret_shape.reserve(input_type.GetNumOfDims());
   for (size_t i = 0, e = input_type.GetNumOfDims(); i < e; ++i) {
@@ -513,6 +520,22 @@ static void RunOnCommonReductionInstruction(Instruction* inst,
   }
 }
 
+static void RunOnInstruction(ReduceL1Inst* inst) {
+  RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
+}
+
+static void RunOnInstruction(ReduceL2Inst* inst) {
+  RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
+}
+
+static void RunOnInstruction(ReduceLogSumInst* inst) {
+  RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
+}
+
+static void RunOnInstruction(ReduceLogSumExpInst* inst) {
+  RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
+}
+
 static void RunOnInstruction(ReduceMeanInst* inst) {
   RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
 }
@@ -526,6 +549,10 @@ static void RunOnInstruction(ReduceMinInst* inst) {
 }
 
 static void RunOnInstruction(ReduceProductInst* inst) {
+  RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
+}
+
+static void RunOnInstruction(ReduceSumSquareInst* inst) {
   RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
 }
 
@@ -632,21 +659,25 @@ static void RunOnInstruction(MatMulInst* inst) {
 }
 
 static void RunOnInstruction(ConcatInst* inst) {
-  int num_inputs = inst->GetN();
+  size_t num_inputs = inst->GetN();
   int axis = inst->GetAxis();
   auto& input_type = inst->GetOperand(0).GetType();
   if (!input_type.IsValid()) {
     return;
   }
 
-  if (num_inputs != 0 &&
-      inst->GetNumOfOperands() > static_cast<size_t>(num_inputs)) {
+  if (num_inputs != 0 && inst->GetNumOfOperands() > num_inputs) {
+    HLCHECK(num_inputs + 1 == inst->GetNumOfOperands());
     auto op1 = inst->GetOperand(num_inputs);
-    if (!IsA<Constant>(op1.GetOwner())) {
+    if (!IsA<Constant>(op1)) {
       return;
     }
-    Constant* c_axis = DynCast<Constant>(op1.GetOwner());
-    axis = c_axis->GetData<int32_t>(0);
+    Constant* c_axis = DynCast<Constant>(op1);
+    axis = c_axis->GetDataAsInt64(0);
+    auto ops = inst->GetOperands();
+    ops.pop_back(); // Drop the last one.
+    inst->DropAllOperands();
+    inst->AddOperands(ops);
   } else {
     num_inputs = inst->GetNumOfOperands();
   }
