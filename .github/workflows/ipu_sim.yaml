@@ -1,0 +1,24 @@
+name: Build and Test (IPU_Simulator)
+
+on:
+  push:
+    branches-ignore:
+      - "web"
+  pull_request:
+    branches-ignore:
+      - "web"
+
+jobs:
+  build_ipu:
+    runs-on: [self-hosted, ipu_sim]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: halo
+          submodules: true
+
+      - name: Build
+        uses: ./halo/.github/actions/build
+        with:
+          docker_image_variant: graphcore1.2.0.131-x86_64
