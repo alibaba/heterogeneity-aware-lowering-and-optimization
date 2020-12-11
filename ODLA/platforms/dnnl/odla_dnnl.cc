@@ -656,8 +656,8 @@ odla_value odla_Mul(odla_value lhs, odla_value rhs, const odla_value_id id) {
 }
 
 static odla_value unary_eltwise_op(dnnl::algorithm algo, odla_value input,
-                             odla_float32 alpha, odla_float32 beta,
-                             const odla_value_id id) {
+                                   odla_float32 alpha, odla_float32 beta,
+                                   const odla_value_id id) {
   auto eltwise_d =
       dnnl::eltwise_forward::desc(dnnl::prop_kind::forward_inference, algo,
                                   input->mem.get_desc(), alpha, beta);
@@ -676,11 +676,13 @@ odla_value odla_Round(odla_value input, const odla_value_id id) {
 }
 
 odla_value odla_Exp(odla_value input, const odla_value_id value_id) {
-  return unary_eltwise_op(dnnl::algorithm::eltwise_exp, input, 0.f, 0.f, value_id);
+  return unary_eltwise_op(dnnl::algorithm::eltwise_exp, input, 0.f, 0.f,
+                          value_id);
 }
 
 odla_value odla_Sigmoid(odla_value input, const odla_value_id id) {
-  return unary_eltwise_op(dnnl::algorithm::eltwise_logistic, input, 0.f, 0.f, id);
+  return unary_eltwise_op(dnnl::algorithm::eltwise_logistic, input, 0.f, 0.f,
+                          id);
 }
 
 odla_value odla_LeakyRelu(odla_value input, odla_float32 alpha,
@@ -689,7 +691,8 @@ odla_value odla_LeakyRelu(odla_value input, odla_float32 alpha,
 }
 
 odla_value odla_Relu(odla_value input, const odla_value_id value_id) {
-  return unary_eltwise_op(dnnl::algorithm::eltwise_relu, input, 0.f, 0.f, value_id);
+  return unary_eltwise_op(dnnl::algorithm::eltwise_relu, input, 0.f, 0.f,
+                          value_id);
 }
 
 odla_value odla_Clamp(odla_value input, odla_float32 lo, odla_float32 hi,
