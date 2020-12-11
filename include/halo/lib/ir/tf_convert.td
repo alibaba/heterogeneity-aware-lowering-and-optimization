@@ -132,6 +132,8 @@ def TF_EQ : OpMapping<"Equal", Cmp> {
 
 def TF_Erf : OpMapping<"Erf", Erf>;
 
+def TF_Exp : OpMapping<"Exp", Exp>;
+
 def TF_Floor : OpMapping<"Floor", Floor>;
 
 def TF_Round: OpMapping<"Round", Round>;
@@ -247,7 +249,5 @@ def TF_TopK  : OpMapping<"TopKV2", TopK>;
 def TF_Range : OpMapping<"Range", Range>;
 
 def TF_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
-
-def TF_Exp : OpMapping<"Exp", Exp>;
 
 def TF_Tile : OpMapping<"Tile", Tile>;
