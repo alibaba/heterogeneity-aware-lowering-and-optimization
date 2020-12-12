@@ -19,6 +19,7 @@ if [ ! -f "${odla_tensorrt_file}" ]; then
   exit 0
 fi
 
+export ODLA_TRT_MAX_WS_MB=20 # Set max workspace size for trt.
 python3 ${HALO_UNITTESTS_PATH}/run_test.py --test-mode 'list'    \
                     --enable-time-perf '' \
                     --test-case ''        \
