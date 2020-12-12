@@ -22,6 +22,7 @@ import os
 import argparse
 import threading
 import csv
+import contextlib
 
 build_dir = os.environ.get('HALO_BUILD_DIR')
 if not os.path.exists(build_dir):
@@ -136,28 +137,31 @@ def print_results():
             f[0], f[1], f[3][1], f[3][3]))
 
 
-def single_test(test_case, device, error_thr, enable_timeperf, data_path):
-    print('----------Test: [' + test_case + ':' + device + ']------')
-    case_path = os.path.join(data_path, test_case)
-    flags = ['-g']
-    if enable_timeperf == 'TRUE':
-        flags.append('-DTIME_PERF')
-    ret = compile(case_path)
-    obj_file = ret[0]
-    if not obj_file:
-        results.append([test_case, device, False, ret[-1:]])
-        return False
-    ret = link(case_path, obj_file, device, flags)
-    exe_file = ret[0]
-    if not exe_file:
-        results.append([test_case, device, False, ret[-1:]])
-    ret = run_shell_cmd([exe_file, str(error_thr), '0', device, case_path])
-    if ret[0]:
-        results.append([test_case, device, False, ret])
-    else:
-        results.append([test_case, device, True, ret])
-    return ret
-# all cases test
+def single_test(test_case, device, error_thr, enable_timeperf, data_path, sema = None):
+    if not sema:
+        sema = contextlib.suppress()
+    with sema:
+        print('----------Test: [' + test_case + ':' + device + ']------')
+        case_path = os.path.join(data_path, test_case)
+        flags = ['-g']
+        if enable_timeperf == 'TRUE':
+            flags.append('-DTIME_PERF')
+        ret = compile(case_path)
+        obj_file = ret[0]
+        if not obj_file:
+            results.append([test_case, device, False, ret[-1:]])
+            return False
+        ret = link(case_path, obj_file, device, flags)
+        exe_file = ret[0]
+        if not exe_file:
+            results.append([test_case, device, False, ret[-1:]])
+        ret = run_shell_cmd([exe_file, str(error_thr), '0', device, case_path])
+        if ret[0]:
+            results.append([test_case, device, False, ret])
+        else:
+            results.append([test_case, device, True, ret])
+        return ret
+    # all cases test
 
 
 def all_test(args, data_path):
@@ -198,6 +202,7 @@ def all_test(args, data_path):
 def list_test(data_path):
     config_file = os.path.join(test_path, 'config.csv')
     threads = []
+    pool_sema = threading.BoundedSemaphore(value = 16)
     with open(config_file) as csvfile:
         reader = csv.reader(csvfile)
         for index, row in enumerate(reader):
@@ -206,13 +211,13 @@ def list_test(data_path):
             error_thre = row[2]
             timed_test = row[3]
             if index != 0 and row[5] == 'yes' and row[6] == 'PASS':
-                parallel = timed_test != 'TRUE' and device != 'tensorrt'
+                parallel = timed_test != 'TRUE'
                 if not parallel:
                     # Wait for all existing threads to finish
                     for t in threads:
                         t.join()
                 t = threading.Thread(target=single_test, args=['test_' + test_name,
-                                                               device, error_thre, timed_test, data_path])
+                                                               device, error_thre, timed_test, data_path, pool_sema])
                 threads.append(t)
                 t.start()
                 if not parallel:
