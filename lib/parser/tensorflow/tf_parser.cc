@@ -1,4 +1,4 @@
-//===- tf_parser.cc -------------------------------------------------------===//
+///===- tf_parser.cc ------------------------------------------------------===//
 //
 // Copyright (C) 2019-2020 Alibaba Group Holding Limited.
 //
@@ -836,10 +836,18 @@ Status TFParser::ConvertConstNode(const tensorflow::NodeDef& node_def) {
             if (attrs.Process<std::vector<Tensor<float>>>("value",
                                                           &native_tensors)) {
               HLCHECK(1 == native_tensors.size());
-              inst = c_builder_->CreateConstant(
-                  node_def.name(),
-                  Type(data_type, native_tensors.back().GetShape()),
-                  native_tensors.back().GetData());
+              auto& data = native_tensors.back().GetData();
+              Type ty{data_type, native_tensors.back().GetShape()};
+              if (data.size() !=
+                  static_cast<size_t>(ty.GetTotalNumOfElements())) {
+                HLCHECK(data.size() == 1);
+                std::vector<float> expanded_data(ty.GetTotalNumOfElements(),
+                                                 data[0]);
+                inst = c_builder_->CreateConstant(node_def.name(), ty,
+                                                  expanded_data);
+              } else {
+                inst = c_builder_->CreateConstant(node_def.name(), ty, data);
+              }
             }
           }
           inst_name_to_ptr_.emplace(node_def.name(), inst);
