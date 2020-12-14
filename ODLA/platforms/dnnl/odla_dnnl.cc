@@ -1444,4 +1444,60 @@ odla_value odla_NMS(odla_value input_boxes, odla_value input_scores,
   return v;
 }
 
+odla_value odla_Tile(odla_value input, const odla_uint32* repeat,
+                     odla_value_shape output_dims,
+                     const odla_value_id value_id) {
+  std::function<void()> op;
+  auto output_dim_size = output_dims.size;
+  auto input_elems = GetTotalElements(input->shape);
+  auto data_bytes = input->mem.get_desc().get_size() / input_elems;
+  auto ret_md = dnnl::memory::desc(getDims(output_dims),
+                                   input->mem.get_desc().data_type(),
+                                   getStrides(output_dims));
+  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
+  std::vector<dnnl::memory> mems;
+  auto elms = GetTotalElements(input->shape);
+  for (int i = output_dim_size - 1; i > 0; i--) {
+    int curr_repeat = repeat[i];
+    auto md = dnnl::memory::desc({elms * curr_repeat},
+                                 input->mem.get_desc().data_type(),
+                                 dnnl::memory::format_tag::a);
+    auto mem = dnnl::memory(md, g_comp->eng);
+    mems.push_back(std::move(mem));
+    elms = elms * curr_repeat;
+  }
+  mems.push_back(ret_mem);
+  std::reverse(mems.begin(), mems.end());
+  op = [mems, repeat, output_dim_size, input, input_elems, data_bytes]() {
+    int curr_strides = 1;
+    int elems = input_elems;
+    // using one byte as datatype of ptr.
+    int8_t* src_ptr = (int8_t*)input->mem.get_data_handle();
+    for (int u = output_dim_size - 1; u >= 0; u--) {
+      int curr_repeat = repeat[u];
+      if (curr_repeat == 1) {
+        continue;
+      }
+      curr_strides *= input->shape.dims[u];
+      int outer_loop = elems / curr_strides;
+      int8_t* dst_ptr = (int8_t*)mems[u].get_data_handle();
+      // tile current axis, data[i] = tile(data[i-1], axis[i])
+      for (int j = 0; j < outer_loop; j++) {
+        for (int i = 0; i < curr_repeat; i++) {
+          memcpy(dst_ptr, src_ptr, curr_strides * data_bytes);
+          dst_ptr += curr_strides * data_bytes;
+        }
+        src_ptr += curr_strides * data_bytes;
+      }
+      curr_strides *= curr_repeat;
+      elems *= curr_repeat;
+      src_ptr = (int8_t*)mems[u].get_data_handle();
+    }
+  };
+  add_op(op);
+  InterpretIfNeeded();
+  odla_value v = CreateValue(ret_mem, output_dims, value_id);
+  return v;
+}
+
 } // C extern
