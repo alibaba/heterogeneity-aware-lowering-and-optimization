@@ -127,10 +127,18 @@ struct _odla_computation {
   int min_batch_size = 0;
   int max_batch_size = 0;
   int opt_batch_size = 0;
+  size_t max_workspace_size = MAX_WORKSPACE_SIZE_BYTES;
+
   _odla_computation() {
     builder = nvinfer1::createInferBuilder(Logger);
+    if (const char* env_p = std::getenv("ODLA_TRT_MAX_WS_MB")) {
+      if (int mb = std::stoi(env_p); mb != 0) {
+        max_workspace_size = mb << 20;
+      }
+    }
+
 #if NV_TENSORRT_MAJOR < 7
-    builder->setMaxWorkspaceSize(MAX_WORKSPACE_SIZE_BYTES);
+    builder->setMaxWorkspaceSize(max_workspace_size);
     network = builder->createNetwork();
 #else
 #ifdef USE_PLUGIN
@@ -197,8 +205,7 @@ struct _odla_context {
       }
       builder_cfg->addOptimizationProfile(builder_profile);
     }
-
-    builder_cfg->setMaxWorkspaceSize(MAX_WORKSPACE_SIZE_BYTES);
+    builder_cfg->setMaxWorkspaceSize(comp->max_workspace_size);
 
     if (comp->fp16_mode) {
       builder_cfg->setFlag(BuilderFlag::kFP16);
