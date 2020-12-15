@@ -2,11 +2,11 @@
 ### An Object Dection Example
 
 [This example](docs/yolo-examples.md) includes a complete end-to-end workflow of
-deploying YOLOv3 object detection model. 
+deploying YOLOv3 object detection model.
 It demonstrates the use of HALO to compile a subgraph, to change the data layout,
 to override input dimensions.
 
-### Using Inside Python 
+### Using Inside Python
 
 HALO generated code can also be used inside Python.
 
@@ -15,10 +15,10 @@ with [CaffeNet](https://papers.nips.cc/paper/4824-imagenet-classification-with-d
 inside Python using HALO.
 -->
 
-### List of Demos 
+### List of Demos
 
-[models directory](models/) contains scripts for the following models, which download the pretrained models, compile and deploy them using HALO on X86-CPU or NVGPU.
-Please refer to [Instruction.md](models/Instruction.md) for more details about how to run the examples.
+[models directory](../models/) contains scripts for the following models, which download the pretrained models, compile and deploy them using HALO on X86-CPU or NVGPU.
+Please refer to [Instruction.md](../models/Instruction.md) for more details about how to run the examples.
 
 
 #### Image Classification

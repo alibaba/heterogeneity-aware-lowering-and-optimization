@@ -22,7 +22,7 @@ Options explained:
 * `-outputs`: to specify the output nodes by their names.
 * `-input-shape`: to explicitly specify the input shape.
 * `-entry-func-name=yolo_v3`: to specify the generate function names as yolo_v3(), yolo_v3_init() and yolo_v3_fini().
-  
+
 A complete Yolo application, including the input preprocessing, inferencing,
-and the result rendering, can be found [here](models/vision/detection/yolo).
+and the result rendering, can be found [here](../models/vision/detection/yolo).
 
