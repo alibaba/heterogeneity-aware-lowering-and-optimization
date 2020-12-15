@@ -695,6 +695,39 @@ odla_value odla_Relu(odla_value input, const odla_value_id value_id) {
                           value_id);
 }
 
+odla_value odla_PRelu(odla_value input, odla_value slope,
+                      const odla_value_id value_id) {
+  // prelu(input, slope) = relue(input) - relu(mul(mul(input, -1), slope))
+  float alpha = 0.f;
+  float beta = 0.f;
+  auto relu0_d = dnnl::eltwise_forward::desc(
+      dnnl::prop_kind::forward_inference, dnnl::algorithm::eltwise_relu,
+      input->mem.get_desc(), alpha, beta);
+  auto relu0_pd = dnnl::eltwise_forward::primitive_desc(relu0_d, g_comp->eng);
+  dnnl::primitive relu0_prim = dnnl::eltwise_forward(relu0_pd);
+  auto relu0_ret_mem = dnnl::memory(input->mem.get_desc(), g_comp->eng);
+  add_op(relu0_prim,
+         {{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, relu0_ret_mem}});
+  auto linear_d = dnnl::eltwise_forward::desc(
+      dnnl::prop_kind::forward_inference, dnnl::algorithm::eltwise_linear,
+      input->mem.get_desc(), -1.f, beta);
+  auto linear_pd = dnnl::eltwise_forward::primitive_desc(linear_d, g_comp->eng);
+  auto linear_ret_mem = dnnl::memory(input->mem.get_desc(), g_comp->eng);
+  dnnl::primitive linear_prim = dnnl::eltwise_forward(linear_pd);
+  add_op(linear_prim,
+         {{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, linear_ret_mem}});
+
+  odla_value linear_v = CreateValue(linear_ret_mem, input->shape, nullptr);
+  odla_value reg_relu_mul = odla_Mul(linear_v, slope, nullptr);
+  odla_value neg_relue_v = odla_Relu(reg_relu_mul, nullptr);
+  odla_value relu_v = CreateValue(relu0_ret_mem, input->shape, nullptr);
+  add_op(linear_prim,
+         {{DNNL_ARG_SRC, neg_relue_v->mem}, {DNNL_ARG_DST, neg_relue_v->mem}});
+  auto v = odla_Add(neg_relue_v, relu_v, value_id);
+  InterpretIfNeeded();
+  return v;
+}
+
 odla_value odla_Clamp(odla_value input, odla_float32 lo, odla_float32 hi,
                       const odla_value_id id) {
   return unary_eltwise_op(dnnl::algorithm::eltwise_clip, input, lo, hi, id);
