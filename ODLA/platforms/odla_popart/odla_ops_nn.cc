@@ -106,14 +106,14 @@ odla_value odla_BatchNormalization(odla_value input,
 
   auto input_popart_type = g_comp->builder->getTensorDataType(input->tensor_id);
   odla_element_type input_type = GetOdlaType(input_popart_type);
-  if (scale == NULL) {
-    std::vector<float> scale_tmp(channel_dim, scalar_scale);
+  std::vector<float> scale_tmp(channel_dim, scalar_scale);
+  if (scale == nullptr) {
     scale =
         odla_CreateConstant({input_type, {.size = 1, .dims = {channel_dim}}},
                             scale_tmp.data(), (const odla_value_id) "scale");
   }
-  if (offset == NULL) {
-    std::vector<float> offset_tmp(channel_dim, scalar_offset);
+  std::vector<float> offset_tmp(channel_dim, scalar_offset);
+  if (offset == nullptr) {
     offset =
         odla_CreateConstant({input_type, {.size = 1, .dims = {channel_dim}}},
                             offset_tmp.data(), (const odla_value_id) "offset");
@@ -137,6 +137,7 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
                      const odla_uint32* paddings_back, odla_value bias,
                      odla_value_shape output_dims,
                      const odla_value_id value_id) {
+  assert(bias == nullptr);
   const auto& name =
       value_id ? std::string(reinterpret_cast<const char*>(value_id)) : "Conv";
 
@@ -177,6 +178,7 @@ odla_value odla_DeConv(odla_value input, odla_memory_layout input_layout,
                        const odla_uint32* paddings_back, odla_value bias,
                        odla_value_shape output_dims,
                        const odla_value_id value_id) {
+  assert(bias == nullptr);
   const auto& name = value_id
                          ? std::string(reinterpret_cast<const char*>(value_id))
                          : "DeConv";
