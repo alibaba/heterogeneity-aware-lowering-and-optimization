@@ -655,82 +655,49 @@ odla_value odla_Mul(odla_value lhs, odla_value rhs, const odla_value_id id) {
   return binary_eltwise(dnnl::algorithm::binary_mul, lhs, rhs, id);
 }
 
-odla_value odla_Round(odla_value input, const odla_value_id id) {
-  auto ret_md = input->mem.get_desc();
-  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
-  auto desc = dnnl::eltwise_forward::desc(dnnl::prop_kind::forward_inference,
-                                          dnnl::algorithm::eltwise_round,
-                                          input->mem.get_desc());
-  auto pd = dnnl::eltwise_forward::primitive_desc(desc, g_comp->eng);
-  auto prim = dnnl::eltwise_forward(pd);
+static odla_value unary_eltwise_op(dnnl::algorithm algo, odla_value input,
+                                   odla_float32 alpha, odla_float32 beta,
+                                   const odla_value_id id) {
+  auto eltwise_d =
+      dnnl::eltwise_forward::desc(dnnl::prop_kind::forward_inference, algo,
+                                  input->mem.get_desc(), alpha, beta);
+  auto pd = dnnl::eltwise_forward::primitive_desc(eltwise_d, g_comp->eng);
 
-  add_op(prim, {{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, ret_mem}});
-
+  dnnl::primitive prim = dnnl::eltwise_forward(pd);
+  auto ret_mem = dnnl::memory(input->mem.get_desc(), g_comp->eng);
   odla_value v = CreateValue(ret_mem, input->shape, id);
-
+  add_op(prim, {{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, ret_mem}});
   InterpretIfNeeded();
-
   return v;
 }
 
+odla_value odla_Round(odla_value input, const odla_value_id id) {
+  return unary_eltwise_op(dnnl::algorithm::eltwise_round, input, 0.f, 0.f, id);
+}
+
+odla_value odla_Exp(odla_value input, const odla_value_id value_id) {
+  return unary_eltwise_op(dnnl::algorithm::eltwise_exp, input, 0.f, 0.f,
+                          value_id);
+}
+
 odla_value odla_Sigmoid(odla_value input, const odla_value_id id) {
-  auto ret_md = input->mem.get_desc();
-  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
-  auto desc = dnnl::eltwise_forward::desc(dnnl::prop_kind::forward_inference,
-                                          dnnl::algorithm::eltwise_logistic,
-                                          input->mem.get_desc());
-  auto pd = dnnl::eltwise_forward::primitive_desc(desc, g_comp->eng);
-  auto prim = dnnl::eltwise_forward(pd);
-
-  odla_value v = CreateValue(ret_mem, input->shape, id);
-
-  add_op(prim, {{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, ret_mem}});
-
-  InterpretIfNeeded();
-
-  return v;
+  return unary_eltwise_op(dnnl::algorithm::eltwise_logistic, input, 0.f, 0.f,
+                          id);
 }
 
 odla_value odla_LeakyRelu(odla_value input, odla_float32 alpha,
                           const odla_value_id id) {
-  auto ret_md = input->mem.get_desc();
-  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
-  // MKL uses leaky relu: f(x) = x >= 0 ? x : x * negative_slope
-  float negative_slope = alpha;
-  auto relu_desc = dnnl::eltwise_forward::desc(
-      dnnl::prop_kind::forward_inference, dnnl::algorithm::eltwise_relu,
-      input->mem.get_desc(), negative_slope);
-  auto pd = dnnl::eltwise_forward::primitive_desc(relu_desc, g_comp->eng);
-  auto prim = dnnl::eltwise_forward(pd);
-
-  odla_value v = CreateValue(ret_mem, input->shape, id);
-  add_op(prim, {{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, ret_mem}});
-  InterpretIfNeeded();
-
-  return v;
+  return unary_eltwise_op(dnnl::algorithm::eltwise_relu, input, alpha, 0.f, id);
 }
 
 odla_value odla_Relu(odla_value input, const odla_value_id value_id) {
-  return odla_LeakyRelu(input, 0, value_id);
+  return unary_eltwise_op(dnnl::algorithm::eltwise_relu, input, 0.f, 0.f,
+                          value_id);
 }
 
 odla_value odla_Clamp(odla_value input, odla_float32 lo, odla_float32 hi,
                       const odla_value_id id) {
-  auto ret_md = input->mem.get_desc();
-  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
-  float negative_slope = -0.0;
-  auto relu_desc = dnnl::eltwise_forward::desc(
-      dnnl::prop_kind::forward_inference, dnnl::algorithm::eltwise_clip,
-      input->mem.get_desc(), lo, hi);
-  auto pd = dnnl::eltwise_forward::primitive_desc(relu_desc, g_comp->eng);
-  auto prim = dnnl::eltwise_forward(pd);
-
-  add_op(prim, {{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, ret_mem}});
-
-  odla_value v = CreateValue(ret_mem, input->shape, id);
-  InterpretIfNeeded();
-
-  return v;
+  return unary_eltwise_op(dnnl::algorithm::eltwise_clip, input, lo, hi, id);
 }
 
 static odla_value_shape getNCHWDims(const odla_value_shape& src_dims) {
@@ -1303,17 +1270,35 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
   auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
   auto lhs_mem = dnnl::memory(lhs_md, g_comp->eng, lhs->mem.get_data_handle());
   auto rhs_mem = dnnl::memory(rhs_md, g_comp->eng, rhs->mem.get_data_handle());
+  bool is_elements_add = false;
+
   if (bias) {
-    dnnl::memory::desc bias_md({1, N}, dt, dnnl::memory::format_tag::ab);
-    auto bias_mem =
-        dnnl::memory(bias_md, g_comp->eng, bias->mem.get_data_handle());
-    dnnl::matmul::desc md(lhs_md, rhs_md, bias_md, ret_md);
-    dnnl::matmul::primitive_desc pd(md, g_comp->eng);
-    dnnl::primitive prim = dnnl::matmul(pd);
-    add_op(prim, {{DNNL_ARG_SRC, rhs_mem},
-                  {DNNL_ARG_WEIGHTS, rhs_mem},
-                  {DNNL_ARG_BIAS, bias_mem},
-                  {DNNL_ARG_DST, ret_mem}});
+    auto bias_elements = GetTotalElements(bias->shape);
+    if (bias_elements == N) {
+      dnnl::memory::desc bias_md({1, N}, dt, dnnl::memory::format_tag::ab);
+      auto bias_mem =
+          dnnl::memory(bias_md, g_comp->eng, bias->mem.get_data_handle());
+      dnnl::matmul::desc md(lhs_md, rhs_md, bias_md, ret_md);
+      dnnl::matmul::primitive_desc pd(md, g_comp->eng);
+      dnnl::primitive prim = dnnl::matmul(pd);
+      add_op(prim, {{DNNL_ARG_SRC, rhs_mem},
+                    {DNNL_ARG_WEIGHTS, rhs_mem},
+                    {DNNL_ARG_BIAS, bias_mem},
+                    {DNNL_ARG_DST, ret_mem}});
+    } else if (bias_elements == 1) {
+      dnnl::post_ops ops;
+      dnnl::primitive_attr gemm_attr;
+      float beta = ((float*)bias->mem.get_data_handle())[0];
+      ops.append_eltwise(1.f, dnnl::algorithm::eltwise_linear, 0.f, beta);
+      gemm_attr.set_post_ops(ops);
+      dnnl::matmul::desc md(lhs_md, rhs_md, ret_md);
+      dnnl::matmul::primitive_desc pd(md, gemm_attr, g_comp->eng);
+      dnnl::primitive prim = dnnl::matmul(pd);
+      add_op(prim, {{DNNL_ARG_SRC, rhs_mem},
+                    {DNNL_ARG_WEIGHTS, rhs_mem},
+                    {DNNL_ARG_DST, ret_mem}});
+    } else
+      is_elements_add = true;
   } else {
     dnnl::matmul::desc md(lhs_md, rhs_md, ret_md);
     dnnl::matmul::primitive_desc pd(md, g_comp->eng);
@@ -1323,11 +1308,12 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
                   {DNNL_ARG_DST, ret_mem}});
   }
 
-  odla_value v = CreateValue(ret_mem, output_dims, id);
+  odla_value v =
+      CreateValue(ret_mem, output_dims, is_elements_add ? nullptr : id);
 
   InterpretIfNeeded();
 
-  return v;
+  return is_elements_add ? odla_Add(v, bias, id) : v;
 }
 
 odla_value odla_Erf(odla_value input, const odla_value_id value_id) {
