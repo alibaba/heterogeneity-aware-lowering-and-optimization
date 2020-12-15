@@ -1477,4 +1477,73 @@ odla_value odla_NMS(odla_value input_boxes, odla_value input_scores,
   return v;
 }
 
+odla_value odla_Tile(odla_value input, const odla_uint32* repeat,
+                     odla_value_shape output_dims,
+                     const odla_value_id value_id) {
+  std::function<void()> rewrite_input_ptr_op;
+  rewrite_input_ptr_op = [input]() {
+    auto op = g_comp->ops[1];
+    // if tile is the first op then we rewrite the src_mem data handle to bind
+    // the input to it. condition: the first op has primitive && primitive is
+    // dnnl_concat && all data handle of srcs is same.
+    auto kind = op.prim.get_kind();
+    if (kind == dnnl::primitive::kind::concat) {
+      auto iterator0 = op.args.find(DNNL_ARG_MULTIPLE_SRC);
+      auto iterator1 = op.args.find(DNNL_ARG_MULTIPLE_SRC + 1);
+      if (iterator0->second.get_data_handle() ==
+          iterator1->second.get_data_handle()) {
+        for (int i = 0; i < op.args.size() - 1; i++) {
+          op.args[DNNL_ARG_MULTIPLE_SRC + i].set_data_handle(
+              input->mem.get_data_handle());
+        }
+      }
+    }
+  };
+  add_op(rewrite_input_ptr_op);
+
+  auto dim_size = output_dims.size;
+  auto input_elems = GetTotalElements(input->shape);
+  auto ret_md = dnnl::memory::desc(getDims(output_dims),
+                                   input->mem.get_desc().data_type(),
+                                   getFormatTag(output_dims));
+
+  std::vector<std::pair<dnnl::memory, dnnl::memory>> mems;
+  auto elms = GetTotalElements(input->shape);
+  std::vector<int64_t> input_shape;
+  for (int i = 0; i < dim_size; i++) {
+    input_shape.push_back(input->shape.dims[i]);
+  }
+  auto input_ptr = input->mem.get_data_handle();
+  for (int i = 0; i < dim_size; i++) {
+    std::vector<dnnl::memory::desc> src_mds;
+    std::vector<dnnl::memory> src_mems;
+    std::unordered_map<int, dnnl::memory> concat_args;
+    auto curr_dim = dnnl::memory::dims(input_shape);
+    odla_value_shape curr_shape = {dim_size, *input_shape.data()};
+    if (repeat[i] == 1) continue;
+    auto src_md =
+        dnnl::memory::desc(curr_dim, input->mem.get_desc().data_type(),
+                           getFormatTag(input->shape));
+    auto src_mem = dnnl::memory(src_md, g_comp->eng, input_ptr);
+    for (int j = 0; j < repeat[i]; j++) {
+      src_mds.push_back(src_md);
+      src_mems.push_back(src_mem);
+      concat_args.insert({DNNL_ARG_MULTIPLE_SRC + j, src_mem});
+    }
+    auto concat_pd = dnnl::concat::primitive_desc(i, src_mds, g_comp->eng);
+    auto dst_mem = dnnl::memory(concat_pd.dst_desc(), g_comp->eng);
+    concat_args.insert({DNNL_ARG_DST, dst_mem});
+    auto concat_prim = dnnl::concat(concat_pd);
+    auto kd = concat_prim.get_kind();
+    add_op(concat_prim, concat_args);
+    input_ptr = dst_mem.get_data_handle();
+    input_shape[i] = input_shape[i] * repeat[i];
+  }
+  auto ret_mem = dnnl::memory(ret_md, g_comp->eng, input_ptr);
+  InterpretIfNeeded();
+  odla_value v = CreateValue(ret_mem, output_dims, value_id);
+  v->is_const = true;
+  return v;
+}
+
 } // C extern
