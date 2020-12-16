@@ -57,7 +57,7 @@ The code snippet of the demo application:
 int main(int argc, char** argv) {
   //... read 1000 images & labels.
   mnist_simple_init(); // Initialize computation.
-  
+
   int correct = 0;
   for (int i = 0; i < 1000; ++i) {
     std::array<float, 28 * 28> input;
@@ -86,4 +86,4 @@ g++ -o out/demo out/main.o out/model.o out/model.bin \
 To switch to the TensorRT based ODLA runtime, just simply replace "-lodla_dnnl" with "-lodla_tensorrt".
 
 
-MNIST example code can be found [here](models/vision/classification/mnist_simple)
+MNIST example code can be found [here](../models/vision/classification/mnist_simple)

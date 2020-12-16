@@ -25,7 +25,13 @@ jobs:
           exclude: "./halo/third_party ./halo/external"
           clangFormatVersion: 9
           style: file
-
+      - name: Check markdown for broken links
+        uses: ruzickap/action-my-markdown-link-checker@v1
+        with:
+          config_file: ./halo/.github/workflows/mlc_config.json
+          exclude: |
+            external/
+            .github/
       - name: Build
         uses: ./halo/.github/actions/build
         with:
