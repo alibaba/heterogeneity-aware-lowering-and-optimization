@@ -1271,24 +1271,41 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
   auto lhs_mem = dnnl::memory(lhs_md, g_comp->eng);
   auto rhs_mem = dnnl::memory(rhs_md, g_comp->eng);
   std::function<void()> op;
+  bool is_elements_add = false;
   auto s = dnnl::stream(g_comp->eng);
   if (bias) {
-    dnnl::memory::desc bias_md({1, N}, dt, dnnl::memory::format_tag::ab);
-    auto bias_mem =
-        dnnl::memory(bias_md, g_comp->eng, bias->mem.get_data_handle());
-    dnnl::matmul::desc md(lhs_md, rhs_md, bias_md, ret_md);
-    dnnl::matmul::primitive_desc pd(md, g_comp->eng);
-    dnnl::primitive prim = dnnl::matmul(pd);
-    op = [lhs_mem, rhs_mem, bias_mem, ret_mem, rhs, lhs, bias, prim, s]() {
-      lhs_mem.set_data_handle(lhs->mem.get_data_handle());
-      rhs_mem.set_data_handle(rhs->mem.get_data_handle());
-      bias_mem.set_data_handle(bias->mem.get_data_handle());
-      prim.execute(s, {{DNNL_ARG_SRC, lhs->mem},
-                       {DNNL_ARG_WEIGHTS, rhs->mem},
-                       {DNNL_ARG_BIAS, bias->mem},
-                       {DNNL_ARG_DST, ret_mem}});
-    };
-    add_op(op);
+    auto bias_elements = GetTotalElements(bias->shape);
+    if (bias_elements == N) {
+      dnnl::memory::desc bias_md({1, N}, dt, dnnl::memory::format_tag::ab);
+      auto bias_mem =
+          dnnl::memory(bias_md, g_comp->eng, bias->mem.get_data_handle());
+      dnnl::matmul::desc md(lhs_md, rhs_md, bias_md, ret_md);
+      dnnl::matmul::primitive_desc pd(md, g_comp->eng);
+      dnnl::primitive prim = dnnl::matmul(pd);
+      op = [lhs_mem, rhs_mem, bias_mem, ret_mem, rhs, lhs, bias, prim, s]() {
+        lhs_mem.set_data_handle(lhs->mem.get_data_handle());
+        rhs_mem.set_data_handle(rhs->mem.get_data_handle());
+        bias_mem.set_data_handle(bias->mem.get_data_handle());
+        prim.execute(s, {{DNNL_ARG_SRC, lhs_mem},
+                        {DNNL_ARG_WEIGHTS, rhs_mem},
+                        {DNNL_ARG_BIAS, bias_mem},
+                        {DNNL_ARG_DST, ret_mem}});
+      };
+      add_op(op);
+    } else if (bias_elements == 1) {
+      dnnl::post_ops ops;
+      dnnl::primitive_attr gemm_attr;
+      float beta = ((float*)bias->mem.get_data_handle())[0];
+      ops.append_eltwise(1.f, dnnl::algorithm::eltwise_linear, 0.f, beta);
+      gemm_attr.set_post_ops(ops);
+      dnnl::matmul::desc md(lhs_md, rhs_md, ret_md);
+      dnnl::matmul::primitive_desc pd(md, gemm_attr, g_comp->eng);
+      dnnl::primitive prim = dnnl::matmul(pd);
+      add_op(prim, {{DNNL_ARG_SRC, rhs_mem},
+                    {DNNL_ARG_WEIGHTS, rhs_mem},
+                    {DNNL_ARG_DST, ret_mem}});
+    } else
+      is_elements_add = true;
   } else {
     dnnl::matmul::desc md(lhs_md, rhs_md, ret_md);
     dnnl::matmul::primitive_desc pd(md, g_comp->eng);
@@ -1296,18 +1313,18 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
     op = [lhs_mem, rhs_mem, ret_mem, rhs, lhs, prim, s]() {
       lhs_mem.set_data_handle(lhs->mem.get_data_handle());
       rhs_mem.set_data_handle(rhs->mem.get_data_handle());
-      prim.execute(s, {{DNNL_ARG_SRC, lhs->mem},
-                       {DNNL_ARG_WEIGHTS, rhs->mem},
+      prim.execute(s, {{DNNL_ARG_SRC, lhs_mem},
+                       {DNNL_ARG_WEIGHTS, rhs_mem},
                        {DNNL_ARG_DST, ret_mem}});
     };
     add_op(op);
   }
-
-  odla_value v = CreateValue(ret_mem, output_dims, id);
+  odla_value v =
+      CreateValue(ret_mem, output_dims, is_elements_add ? nullptr : id);
 
   InterpretIfNeeded();
 
-  return v;
+  return is_elements_add ? odla_Add(v, bias, id) : v;
 }
 
 odla_value odla_Erf(odla_value input, const odla_value_id value_id) {
