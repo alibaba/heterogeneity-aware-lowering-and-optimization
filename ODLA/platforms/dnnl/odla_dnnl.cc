@@ -822,15 +822,14 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
   auto pd = dnnl::convolution_forward::primitive_desc(conv_desc, g_comp->eng);
 
   auto ret_mem = dnnl::memory(pd.dst_desc(), g_comp->eng);
+  dnnl::stream s(g_comp->eng);
 
   if (pd.weights_desc() != kernel_md_src) {
     auto reordered_w = dnnl::memory(pd.weights_desc(), g_comp->eng);
     auto rec = dnnl::reorder(
         dnnl::memory(kernel_md_src, g_comp->eng, kernel->mem.get_data_handle()),
         reordered_w);
-    dnnl::stream s(g_comp->eng);
-    rec.execute(s, {{DNNL_ARG_FROM, kernel->mem}, {DNNL_ARG_TO, reordered_w}});
-    s.wait();
+    add_op(rec, {{DNNL_ARG_FROM, kernel->mem}, {DNNL_ARG_TO, reordered_w}});
     kernel->mem = reordered_w;
   }
 
@@ -939,9 +938,7 @@ odla_value odla_DeConv(odla_value input, odla_memory_layout input_layout,
     auto rec = dnnl::reorder(
         dnnl::memory(kernel_md_src, g_comp->eng, kernel->mem.get_data_handle()),
         reordered_w);
-    dnnl::stream s(g_comp->eng);
-    rec.execute(s, {{DNNL_ARG_FROM, kernel->mem}, {DNNL_ARG_TO, reordered_w}});
-    s.wait();
+    add_op(rec, {{DNNL_ARG_FROM, kernel->mem}, {DNNL_ARG_TO, reordered_w}});
     kernel->mem = reordered_w;
   }
 
