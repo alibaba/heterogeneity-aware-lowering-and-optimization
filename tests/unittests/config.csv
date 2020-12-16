@@ -1771,11 +1771,11 @@ pow_types_int64_int64,dnnl,0.0001,FALSE,FALSE,no,FALSE
 pow_types_int64_int64,eigen,0.0001,FALSE,FALSE,no,FALSE
 pow_types_int64_int64,tensorrt,0.0001,FALSE,FALSE,no,FALSE
 pow_types_int64_int64,xnnpack,0.0001,FALSE,FALSE,no,FALSE
-prelu_broadcast,dnnl,0.0001,FALSE,FALSE,no,FALSE
+prelu_broadcast,dnnl,0.0001,FALSE,FALSE,yes,PASS
 prelu_broadcast,eigen,0.0001,FALSE,FALSE,no,FALSE
 prelu_broadcast,tensorrt,0.0001,FALSE,FALSE,no,FALSE
 prelu_broadcast,xnnpack,0.0001,FALSE,FALSE,no,FALSE
-prelu_example,dnnl,0.0001,FALSE,FALSE,no,FALSE
+prelu_example,dnnl,0.0001,FALSE,FALSE,yes,PASS
 prelu_example,eigen,0.0001,FALSE,FALSE,no,FALSE
 prelu_example,tensorrt,0.0001,FALSE,FALSE,no,FALSE
 prelu_example,xnnpack,0.0001,FALSE,FALSE,no,FALSE
