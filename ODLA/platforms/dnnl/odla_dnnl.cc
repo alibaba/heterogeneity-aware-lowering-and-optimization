@@ -1287,9 +1287,9 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
         rhs_mem.set_data_handle(rhs->mem.get_data_handle());
         bias_mem.set_data_handle(bias->mem.get_data_handle());
         prim.execute(s, {{DNNL_ARG_SRC, lhs_mem},
-                        {DNNL_ARG_WEIGHTS, rhs_mem},
-                        {DNNL_ARG_BIAS, bias_mem},
-                        {DNNL_ARG_DST, ret_mem}});
+                         {DNNL_ARG_WEIGHTS, rhs_mem},
+                         {DNNL_ARG_BIAS, bias_mem},
+                         {DNNL_ARG_DST, ret_mem}});
       };
       add_op(op);
     } else if (bias_elements == 1) {
