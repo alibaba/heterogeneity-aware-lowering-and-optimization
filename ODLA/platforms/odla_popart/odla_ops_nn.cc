@@ -137,7 +137,6 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
                      const odla_uint32* paddings_back, odla_value bias,
                      odla_value_shape output_dims,
                      const odla_value_id value_id) {
-  assert(bias == nullptr);
   const auto& name =
       value_id ? std::string(reinterpret_cast<const char*>(value_id)) : "Conv";
 
@@ -164,6 +163,11 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
   auto result = g_comp->builder->aiOnnxOpset10().conv(
       {input->tensor_id, kernel->tensor_id}, dim_dilations, group, kernel_shape,
       pads, dim_strides);
+
+  if (bias != nullptr) {
+    result = g_comp->builder->aiOnnxOpset10().add({result, bias->tensor_id});
+  }
+
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -178,7 +182,6 @@ odla_value odla_DeConv(odla_value input, odla_memory_layout input_layout,
                        const odla_uint32* paddings_back, odla_value bias,
                        odla_value_shape output_dims,
                        const odla_value_id value_id) {
-  assert(bias == nullptr);
   const auto& name = value_id
                          ? std::string(reinterpret_cast<const char*>(value_id))
                          : "DeConv";
@@ -207,6 +210,11 @@ odla_value odla_DeConv(odla_value input, odla_memory_layout input_layout,
       std::vector<int64_t>(), // output_padding
       std::vector<int64_t>(), // output_shape
       pads, dim_strides);
+
+  if (bias != nullptr) {
+    result = g_comp->builder->aiOnnxOpset10().add({result, bias->tensor_id});
+  }
+
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
