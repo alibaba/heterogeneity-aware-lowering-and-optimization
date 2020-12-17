@@ -15,6 +15,11 @@
 // limitations under the License.
 // =============================================================================
 
+template <typename T>
+static bool is_nan(const T& x) {
+  return x != x;
+}
+
 FileExtension UnitTests::GetFileExtension(string test_case_name) {
   FileExtension file_ext = FE_END;
   size_t name_size = test_case_name.size();
@@ -128,11 +133,13 @@ void UnitTests::CheckResult(size_t num_out,
                           test_case_dir.find_last_of("/") + 1);
   string report_file_name = "tmp/" + test_case_name
                            + "_" + device_name + ".txt";
+#if DEBUG_PRINT
   ostringstream oss;
   ofstream outfile(report_file_name);
 
   oss << "time: " << times;
-
+  }
+#endif
   size_t i = 0;
   for (; i < num_out; ++i) {
     T* out_data = reinterpret_cast<T*>(out[i]);
@@ -141,18 +148,24 @@ void UnitTests::CheckResult(size_t num_out,
     for (size_t j = 0; j < elem_size; ++j) {
       bool nan_mismatch = (isnan(out_data[j]) ^ isnan(out_ref_data[j]));
       if (nan_mismatch || fabs(out_data[j] - out_ref_data[j]) > thre) {
+#if DEBUG_PRINT
         oss << " result: FAIL  [" << i <<", "<< j << "]: " << out_data[j]
             << " expects: " << out_ref_data[j] << "\n";
         outfile << oss.str();
         outfile.close();
+#endif
+        std::cout << " Result: Fail  [" << i <<", "<< j << "]: " << out_data[j]
+                  << " expects: " << out_ref_data[j] << " threshold: "<< thre <<"\n";
         return;
       }
     }
   }
-
+#if DEBUG_PRINT
   oss << " result: PASS";
   outfile << oss.str();
   outfile.close();
+#endif
+  std::cout << "Result Pass\n";
 }
 
 void UnitTests::TimeBegin() {
