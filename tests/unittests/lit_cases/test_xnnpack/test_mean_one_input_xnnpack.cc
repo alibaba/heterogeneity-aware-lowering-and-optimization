@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_mean_one_input_xnnpack.cc.tmp.main.cc.in"

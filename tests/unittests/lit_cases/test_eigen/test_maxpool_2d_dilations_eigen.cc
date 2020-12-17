@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_maxpool_2d_dilations_eigen.cc.tmp.main.cc.in"

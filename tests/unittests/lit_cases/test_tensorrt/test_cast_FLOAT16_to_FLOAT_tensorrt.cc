@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_cast_FLOAT16_to_FLOAT_tensorrt.cc.tmp.main.cc.in"

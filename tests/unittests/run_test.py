@@ -22,6 +22,7 @@ import os
 import argparse
 import threading
 import csv
+import contextlib
 
 build_dir = os.environ.get('HALO_BUILD_DIR')
 if not os.path.exists(build_dir):
@@ -129,6 +130,7 @@ def print_results():
     print('Total tests: {0}'.format(len(results)))
     print('Passed: {0}'.format(len(passed)))
     print('Failed: {0}'.format(len(failed)))
+
 
 # single case test
 def single_test(test_case, device, error_thr, enable_timeperf, data_path):
@@ -242,7 +244,7 @@ def add_single_litcase(lit_path, test_case, device, error_threshold, data_path):
     lit_header.append(exec_check_str)
     lit_header.append('// clang-format on\n')
 
-    lit_body = '\n#include "' + test_case + '_' + device +'.cc.tmp.main.cc.in"\n'
+    lit_body = '#include "' + test_case + '_' + device +'.cc.tmp.main.cc.in"\n'
     lit_excepted_fail = "// XFAIL: *\n"
 
     if ret[-2].decode("utf-8") == 'Result Pass\n':

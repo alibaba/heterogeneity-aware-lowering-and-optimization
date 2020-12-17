@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_flatten_axis1_xnnpack.cc.tmp.main.cc.in"

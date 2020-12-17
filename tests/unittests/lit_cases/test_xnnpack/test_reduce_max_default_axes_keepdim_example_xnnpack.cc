@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_reduce_max_default_axes_keepdim_example_xnnpack.cc.tmp.main.cc.in"

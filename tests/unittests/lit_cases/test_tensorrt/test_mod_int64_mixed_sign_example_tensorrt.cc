@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_mod_int64_mixed_sign_example_tensorrt.cc.tmp.main.cc.in"

@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_softmax_axis_1_dnnl.cc.tmp.main.cc.in"

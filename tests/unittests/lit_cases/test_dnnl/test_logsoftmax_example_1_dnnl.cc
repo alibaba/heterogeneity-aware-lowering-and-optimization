@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_logsoftmax_example_1_dnnl.cc.tmp.main.cc.in"

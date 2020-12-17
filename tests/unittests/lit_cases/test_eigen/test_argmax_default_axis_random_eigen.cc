@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_argmax_default_axis_random_eigen.cc.tmp.main.cc.in"

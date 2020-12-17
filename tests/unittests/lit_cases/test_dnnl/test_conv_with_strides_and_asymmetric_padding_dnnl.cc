@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_conv_with_strides_and_asymmetric_padding_dnnl.cc.tmp.main.cc.in"

@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_tfidfvectorizer_tf_batch_onlybigrams_skip0_tensorrt.cc.tmp.main.cc.in"

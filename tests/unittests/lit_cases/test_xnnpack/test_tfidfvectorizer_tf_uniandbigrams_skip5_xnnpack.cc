@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_tfidfvectorizer_tf_uniandbigrams_skip5_xnnpack.cc.tmp.main.cc.in"

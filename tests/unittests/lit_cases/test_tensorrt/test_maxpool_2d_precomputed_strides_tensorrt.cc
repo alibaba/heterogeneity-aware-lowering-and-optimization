@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 
-
 #include "test_maxpool_2d_precomputed_strides_tensorrt.cc.tmp.main.cc.in"

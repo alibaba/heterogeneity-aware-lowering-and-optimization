@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_reduce_sum_square_keepdims_example_tensorrt.cc.tmp.main.cc.in"

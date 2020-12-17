@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_nonmaxsuppression_two_batches_dnnl.cc.tmp.main.cc.in"

@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_split_equal_parts_default_axis_xnnpack.cc.tmp.main.cc.in"

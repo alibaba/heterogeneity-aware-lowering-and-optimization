@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_split_variable_parts_1d_xnnpack.cc.tmp.main.cc.in"

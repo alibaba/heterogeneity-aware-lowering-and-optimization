@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_averagepool_3d_default_xnnpack.cc.tmp.main.cc.in"

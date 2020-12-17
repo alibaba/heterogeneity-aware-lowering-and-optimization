@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 
-
 #include "test_mul_bcast_tensorrt.cc.tmp.main.cc.in"

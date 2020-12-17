@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_reduce_l1_keep_dims_random_xnnpack.cc.tmp.main.cc.in"

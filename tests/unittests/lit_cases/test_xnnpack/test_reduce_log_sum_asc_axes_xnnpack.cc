@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_reduce_log_sum_asc_axes_xnnpack.cc.tmp.main.cc.in"

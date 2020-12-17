@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_logsoftmax_default_axis_xnnpack.cc.tmp.main.cc.in"

@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_convinteger_with_padding_dnnl.cc.tmp.main.cc.in"

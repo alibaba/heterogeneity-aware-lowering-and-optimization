@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 
-
 #include "test_concat_2d_axis_0_dnnl.cc.tmp.main.cc.in"

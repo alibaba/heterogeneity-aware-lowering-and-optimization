@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_strnormalizer_nostopwords_nochangecase_eigen.cc.tmp.main.cc.in"

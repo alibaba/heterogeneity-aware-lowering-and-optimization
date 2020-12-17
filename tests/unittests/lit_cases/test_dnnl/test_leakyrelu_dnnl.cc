@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 
-
 #include "test_leakyrelu_dnnl.cc.tmp.main.cc.in"

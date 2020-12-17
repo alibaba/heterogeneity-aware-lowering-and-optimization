@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_slice_end_out_of_bounds_eigen.cc.tmp.main.cc.in"

@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_cosh_example_eigen.cc.tmp.main.cc.in"

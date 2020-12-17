@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_nonmaxsuppression_single_box_eigen.cc.tmp.main.cc.in"

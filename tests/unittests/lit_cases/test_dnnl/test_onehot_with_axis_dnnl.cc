@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_onehot_with_axis_dnnl.cc.tmp.main.cc.in"

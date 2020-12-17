@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_hardmax_default_axis_dnnl.cc.tmp.main.cc.in"

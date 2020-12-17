@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 
-
 #include "test_softmax_large_number_tensorrt.cc.tmp.main.cc.in"

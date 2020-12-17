@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_averagepool_2d_pads_count_include_pad_dnnl.cc.tmp.main.cc.in"

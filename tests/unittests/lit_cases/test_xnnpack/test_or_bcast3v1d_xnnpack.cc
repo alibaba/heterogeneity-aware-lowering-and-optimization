@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_or_bcast3v1d_xnnpack.cc.tmp.main.cc.in"

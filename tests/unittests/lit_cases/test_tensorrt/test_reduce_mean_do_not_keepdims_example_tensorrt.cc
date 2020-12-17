@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 
-
 #include "test_reduce_mean_do_not_keepdims_example_tensorrt.cc.tmp.main.cc.in"

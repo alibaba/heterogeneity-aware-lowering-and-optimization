@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 
-
 #include "test_flatten_axis2_tensorrt.cc.tmp.main.cc.in"

@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_concat_3d_axis_1_eigen.cc.tmp.main.cc.in"

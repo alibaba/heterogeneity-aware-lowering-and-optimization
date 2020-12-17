@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_qlinearmatmul_2D_dnnl.cc.tmp.main.cc.in"

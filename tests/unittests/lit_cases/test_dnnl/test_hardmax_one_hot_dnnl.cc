@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_hardmax_one_hot_dnnl.cc.tmp.main.cc.in"

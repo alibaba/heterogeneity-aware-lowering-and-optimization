@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_equal_bcast_dnnl.cc.tmp.main.cc.in"

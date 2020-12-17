@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_atanh_example_xnnpack.cc.tmp.main.cc.in"

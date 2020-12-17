@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_mod_float_mixed_sign_example_eigen.cc.tmp.main.cc.in"

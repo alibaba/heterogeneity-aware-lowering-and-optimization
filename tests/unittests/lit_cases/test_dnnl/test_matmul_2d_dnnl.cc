@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_matmul_2d_dnnl.cc.tmp.main.cc.in"

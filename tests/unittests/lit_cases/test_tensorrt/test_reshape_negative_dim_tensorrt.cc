@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_reshape_negative_dim_tensorrt.cc.tmp.main.cc.in"

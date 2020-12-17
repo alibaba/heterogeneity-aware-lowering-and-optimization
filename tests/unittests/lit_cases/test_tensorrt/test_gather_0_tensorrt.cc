@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 
-
 #include "test_gather_0_tensorrt.cc.tmp.main.cc.in"

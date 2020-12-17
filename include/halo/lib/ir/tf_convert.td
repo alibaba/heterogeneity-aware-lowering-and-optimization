@@ -132,6 +132,8 @@ def TF_EQ : OpMapping<"Equal", Cmp> {
 
 def TF_Erf : OpMapping<"Erf", Erf>;
 
+def TF_Exp : OpMapping<"Exp", Exp>;
+
 def TF_Floor : OpMapping<"Floor", Floor>;
 
 def TF_Round: OpMapping<"Round", Round>;

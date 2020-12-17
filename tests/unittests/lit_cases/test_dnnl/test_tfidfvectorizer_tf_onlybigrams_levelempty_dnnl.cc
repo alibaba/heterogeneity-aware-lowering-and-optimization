@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_tfidfvectorizer_tf_onlybigrams_levelempty_dnnl.cc.tmp.main.cc.in"

@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_shrink_hard_xnnpack.cc.tmp.main.cc.in"

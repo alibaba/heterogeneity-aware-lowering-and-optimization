@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_split_variable_parts_2d_eigen.cc.tmp.main.cc.in"

@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_mod_fmod_mixed_sign_example_dnnl.cc.tmp.main.cc.in"

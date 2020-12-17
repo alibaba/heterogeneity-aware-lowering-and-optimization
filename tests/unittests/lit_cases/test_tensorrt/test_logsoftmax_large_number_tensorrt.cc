@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_logsoftmax_large_number_tensorrt.cc.tmp.main.cc.in"

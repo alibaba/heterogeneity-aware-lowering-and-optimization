@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 
-
 #include "test_matmul_4d_tensorrt.cc.tmp.main.cc.in"

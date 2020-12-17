@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 
-
 #include "test_sum_two_inputs_dnnl.cc.tmp.main.cc.in"

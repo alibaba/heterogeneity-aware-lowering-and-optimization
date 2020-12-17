@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_transpose_all_permutations_0_tensorrt.cc.tmp.main.cc.in"

@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_onehot_without_axis_tensorrt.cc.tmp.main.cc.in"

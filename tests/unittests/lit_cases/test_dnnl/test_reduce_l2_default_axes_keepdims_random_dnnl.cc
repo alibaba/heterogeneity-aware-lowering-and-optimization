@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_reduce_l2_default_axes_keepdims_random_dnnl.cc.tmp.main.cc.in"

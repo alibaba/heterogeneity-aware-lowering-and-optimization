@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_reduce_prod_keepdims_example_tensorrt.cc.tmp.main.cc.in"

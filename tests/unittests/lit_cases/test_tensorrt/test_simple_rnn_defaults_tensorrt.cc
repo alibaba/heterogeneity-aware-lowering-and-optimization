@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_simple_rnn_defaults_tensorrt.cc.tmp.main.cc.in"

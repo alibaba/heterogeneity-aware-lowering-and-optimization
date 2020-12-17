@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_xor_bcast3v1d_eigen.cc.tmp.main.cc.in"

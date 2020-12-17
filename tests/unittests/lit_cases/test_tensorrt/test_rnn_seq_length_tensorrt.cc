@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_rnn_seq_length_tensorrt.cc.tmp.main.cc.in"

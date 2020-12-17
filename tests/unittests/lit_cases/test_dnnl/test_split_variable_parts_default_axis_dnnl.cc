@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_split_variable_parts_default_axis_dnnl.cc.tmp.main.cc.in"

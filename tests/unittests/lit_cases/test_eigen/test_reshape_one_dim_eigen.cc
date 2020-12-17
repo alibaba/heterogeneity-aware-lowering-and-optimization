@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_reshape_one_dim_eigen.cc.tmp.main.cc.in"

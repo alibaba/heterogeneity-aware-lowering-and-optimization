@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_leakyrelu_eigen.cc.tmp.main.cc.in"

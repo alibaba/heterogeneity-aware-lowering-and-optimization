@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 
-
 #include "test_squeeze_tensorrt.cc.tmp.main.cc.in"

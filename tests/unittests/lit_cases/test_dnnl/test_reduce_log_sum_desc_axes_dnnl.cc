@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_reduce_log_sum_desc_axes_dnnl.cc.tmp.main.cc.in"

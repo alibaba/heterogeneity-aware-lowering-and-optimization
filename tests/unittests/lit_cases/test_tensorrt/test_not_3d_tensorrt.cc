@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_not_3d_tensorrt.cc.tmp.main.cc.in"

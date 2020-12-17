@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_qlinearmatmul_3D_xnnpack.cc.tmp.main.cc.in"

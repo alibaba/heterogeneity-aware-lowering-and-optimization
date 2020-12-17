@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_gru_with_initial_bias_eigen.cc.tmp.main.cc.in"

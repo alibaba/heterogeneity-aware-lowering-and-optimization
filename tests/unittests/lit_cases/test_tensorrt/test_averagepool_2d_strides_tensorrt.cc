@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 
-
 #include "test_averagepool_2d_strides_tensorrt.cc.tmp.main.cc.in"

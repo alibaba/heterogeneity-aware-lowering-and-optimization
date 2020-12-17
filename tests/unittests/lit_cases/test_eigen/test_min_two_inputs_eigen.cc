@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_min_two_inputs_eigen.cc.tmp.main.cc.in"

@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_reduce_log_sum_exp_default_axes_keepdims_example_eigen.cc.tmp.main.cc.in"

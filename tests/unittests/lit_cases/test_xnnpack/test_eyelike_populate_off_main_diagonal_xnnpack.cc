@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_eyelike_populate_off_main_diagonal_xnnpack.cc.tmp.main.cc.in"

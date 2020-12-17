@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_reduce_sum_do_not_keepdims_random_eigen.cc.tmp.main.cc.in"

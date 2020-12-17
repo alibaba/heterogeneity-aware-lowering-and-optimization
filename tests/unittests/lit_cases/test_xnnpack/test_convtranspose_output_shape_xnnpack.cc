@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_convtranspose_output_shape_xnnpack.cc.tmp.main.cc.in"

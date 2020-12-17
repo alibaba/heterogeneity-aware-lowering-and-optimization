@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_cast_FLOAT_to_STRING_eigen.cc.tmp.main.cc.in"

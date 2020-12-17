@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_max_one_input_eigen.cc.tmp.main.cc.in"

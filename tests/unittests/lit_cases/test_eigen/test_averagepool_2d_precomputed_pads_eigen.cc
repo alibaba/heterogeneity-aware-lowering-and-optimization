@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_averagepool_2d_precomputed_pads_eigen.cc.tmp.main.cc.in"

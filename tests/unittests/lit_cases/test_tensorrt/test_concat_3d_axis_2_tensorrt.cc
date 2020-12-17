@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 
-
 #include "test_concat_3d_axis_2_tensorrt.cc.tmp.main.cc.in"

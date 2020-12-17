@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 
-
 #include "test_averagepool_2d_precomputed_pads_dnnl.cc.tmp.main.cc.in"

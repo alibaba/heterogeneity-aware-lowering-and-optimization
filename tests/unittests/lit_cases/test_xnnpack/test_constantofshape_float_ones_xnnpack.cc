@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_constantofshape_float_ones_xnnpack.cc.tmp.main.cc.in"

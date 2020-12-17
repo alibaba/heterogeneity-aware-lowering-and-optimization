@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_reduce_min_keepdims_random_tensorrt.cc.tmp.main.cc.in"

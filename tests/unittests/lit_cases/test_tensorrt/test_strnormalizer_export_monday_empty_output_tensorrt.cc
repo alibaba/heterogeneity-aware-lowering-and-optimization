@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_strnormalizer_export_monday_empty_output_tensorrt.cc.tmp.main.cc.in"

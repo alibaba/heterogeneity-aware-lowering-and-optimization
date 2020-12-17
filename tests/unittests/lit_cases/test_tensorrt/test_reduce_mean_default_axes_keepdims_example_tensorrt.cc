@@ -25,5 +25,4 @@
 // CHECK: Result Pass
 // clang-format on
 
-
 #include "test_reduce_mean_default_axes_keepdims_example_tensorrt.cc.tmp.main.cc.in"

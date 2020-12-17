@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_compress_0_eigen.cc.tmp.main.cc.in"

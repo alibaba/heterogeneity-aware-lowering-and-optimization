@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_maxunpool_export_with_output_shape_tensorrt.cc.tmp.main.cc.in"

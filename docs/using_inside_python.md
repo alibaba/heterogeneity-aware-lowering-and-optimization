@@ -30,5 +30,5 @@ ind = ret.argsort()[-3:][::-1]
 #...
 ```
 
-CaffeNet example can be found [here](models/vision/classification/caffenet).
+CaffeNet example can be found [here](../models/vision/classification/caffenet).
 

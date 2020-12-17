@@ -23,21 +23,28 @@ Software packages for some demos and examples:
   * [TensorRT](https://developer.nvidia.com/tensorrt)
 
 NVIDIA® GPU environment:
-* CUDA® (>= 10.0) 
+* CUDA® (>= 10.0)
 * CUDA® Deep Neural Network library™ (cuDNN) (>= 7.6.0)
 * TensorRT™ (7.0.0)
 
 ## Docker Environment <a name="docker-environment"/>
 
 For convenience, the above system requirements are also prepared and packed as a docker environment,
-which is under [utils/docker](utils/docker):
+which is under [utils/docker](../utils/docker):
 
-* [Dockerfile](utils/docker/Dockerfile): contains all necessary software.
-* [build_image.sh](utils/docker/build_image.sh): it builds two docker images:
+* [Dockerfile](../utils/docker/Dockerfile): contains all necessary software.
+* [build_image.sh](../utils/docker/build_image.sh): it builds two docker images:
   * CPU-only: [ubuntu 18.04](https://hub.docker.com/_/ubuntu) based image;
   * CPU + GPU: [nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04](https://hub.docker.com/r/nvidia/cuda) based image.
-* [start_docker_cpu.sh](utils/docker/start_docker_cpu.sh): starts the CPU-only container.
-* [start_docker_gpu.sh](utils/docker/start_docker_gpu.sh): starts the container for CPU-only and CUDA® supported environments.
+* [start_docker_cpu.sh](../utils/docker/start_docker_cpu.sh): starts the CPU-only container.
+* [start_docker_gpu.sh](../utils/docker/start_docker_gpu.sh): starts the container for CPU-only and CUDA® supported environments.
+
+You can also pull the Docker images for development from aliyun:
+```bash
+docker pull registry-intl.us-west-1.aliyuncs.com/computation/halo:0.5-cuda10.0-cudnn7-ubuntu18.04 # Ubuntu 18.04 with CUDA 10.0
+
+docker pull registry-intl.us-west-1.aliyuncs.com/computation/halo:0.5-x86_64-ubuntu18.04 # Ubuntu 18.04
+```
 
 ## Build From Scratch <a name="build-from-scratch"/>
 
@@ -57,7 +64,7 @@ Some CMAKE options:
 * CMAKE_BUILD_TYPE=[Release|Debug]: select the build type.
 * -DHALO_USE_GLOG=[ON]: use glob library for logging by default.
 * -DHALO_CCACHE_BUILD=[ON] : enable or disable ccache for build.
- 
+
 ### Unit Tests <a name="unit-tests"/>
 
 HALO uses [llvm-lit](https://llvm.org/docs/CommandGuide/lit.html) test tools for unit testing. To run all unit tests, simply by

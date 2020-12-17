@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_and_bcast4v2d_dnnl.cc.tmp.main.cc.in"

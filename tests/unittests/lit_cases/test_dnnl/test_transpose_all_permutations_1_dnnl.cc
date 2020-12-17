@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 
-
 #include "test_transpose_all_permutations_1_dnnl.cc.tmp.main.cc.in"

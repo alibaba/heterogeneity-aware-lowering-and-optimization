@@ -24,5 +24,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_flatten_axis0_eigen.cc.tmp.main.cc.in"
