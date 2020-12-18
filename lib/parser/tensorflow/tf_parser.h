@@ -88,6 +88,9 @@ class TFParser : public Parser {
   Status ConvertConstNode(const tensorflow::NodeDef& node_def);
   Status ConvertPlaceholderNode(const tensorflow::NodeDef& node_def);
   Status ConvertDummyNode(const tensorflow::NodeDef& node_def);
+  Status SetAttributes(tensorflow::NodeDef* cur_node);
+  Status ConvertToIpuGraphDef(const tensorflow::GraphDef& graph_def,
+                              const std::string& filename);
 
   std::vector<Def> GetInputOperands(const tensorflow::NodeDef& node_def);
 

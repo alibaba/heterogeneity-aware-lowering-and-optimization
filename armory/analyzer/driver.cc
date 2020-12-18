@@ -68,6 +68,8 @@ int main(int argc, char** argv) {
   Module m(ctx, "analyzer_module");
 
   armory::Opts opts;
+  opts.convert_to_ipu_graphdef = ConvertToIpuGraphDef;
+  opts.output_graphdef_filename = OutputGraphDefFile;
   Parser::Format format = Parser::Format::INVALID;
   if (ParseModels(ModelFiles, ModelFormat, EntryFunctionName, opts, &m,
                   &format) != Status::SUCCESS) {
