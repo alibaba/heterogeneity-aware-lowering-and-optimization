@@ -32,6 +32,8 @@ struct Opts {
       : print_diagnostic_report(print_diagnostic) {}
   Opts() = default;
   bool print_diagnostic_report = false;
+  bool convert_to_ipu_graphdef = false;
+  std::string output_graphdef_filename;
 };
 
 } // namespace armory
