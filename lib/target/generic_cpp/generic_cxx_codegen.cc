@@ -612,6 +612,10 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
 
   os_ << "}\n"; // End of computation build function.
 
+  if (opts_.check_model) {
+    dynamic_check_os_ << GenerateTestFunc(function, func_decl, *return_inst);
+  }
+
   if (emit_builder_func) {
     // Emit function for launching computation.
     if (opts_.exec_mode == CodeGen::ExecMode::Compile) {
@@ -636,20 +640,24 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
         os_ << "  " << init_func_name << "();\n";
       }
     }
-
     if (opts_.exec_mode == CodeGen::ExecMode::Interpret) {
       os_ << "  " << helper_func_name;
       if (opts_.emit_inference_func_sig) {
         os_ << "(";
         bool is_first = true;
-        for (int i = 0, e = function.Args().size(); i < e; ++i) {
+        int i = 0;
+        for (const auto& arg : function.Args()) {
           os_ << (is_first ? "" : ", ");
-          os_ << "(const float*)inputs[" << i << "]";
+          CXXType ty = TensorTypeToCXXType(arg->GetResultType(), true);
+          os_ << "(" << ty.Str(false) << ")inputs[" << i << "]";
           is_first = false;
+          ++i;
         }
         for (int i = 0, e = return_inst->GetNumOfOperands(); i < e; ++i) {
           os_ << (is_first ? "" : ", ");
-          os_ << "(float*)outputs[" << i << "]";
+          CXXType ty =
+              TensorTypeToCXXType(return_inst->GetOperand(i).GetType(), false);
+          os_ << "(" << ty.Str(false) << ")outputs[" << i << "]";
           is_first = false;
         }
         os_ << ")";
@@ -684,9 +692,6 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
         << Join("(const odla_value_id)\"" + arg->GetName() + "\"", arg_name,
                 "Ctx")
         << ");\n";
-  }
-  if (opts_.check_model) {
-    dynamic_check_os_ << GenerateTestFunc(function, func_decl, *return_inst);
   }
   index = 0;
   // Pre-launch binding.

@@ -23,5 +23,5 @@
 // RUN: %t_xnnpack.exe 0.0001 0 xnnpack %data_path/test_averagepool_2d_default | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_averagepool_2d_default_xnnpack.cc.tmp.main.cc.in"

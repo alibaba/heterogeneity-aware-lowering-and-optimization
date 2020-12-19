@@ -23,5 +23,5 @@
 // RUN: %t_xnnpack.exe 0.0001 0 xnnpack %data_path/test_convtranspose | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_convtranspose_xnnpack.cc.tmp.main.cc.in"
