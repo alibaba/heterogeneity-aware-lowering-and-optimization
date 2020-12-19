@@ -91,7 +91,7 @@ static void EmitMatcher(llvm::raw_ostream* os, const llvm::Record* rec) {
   if (auto src = rec->getValueAsString("copy_attrs_from_"); !src.empty()) {
     *os << "  " << fused << "->CopyAttrsFrom(" << src << ");\n";
   }
-  *os << "  " << fused << "->GetResultsTypes() = inst->GetResultsTypes();";
+  *os << "  " << fused << "->GetResultsTypes() = inst->GetResultsTypes();\n";
   *os << "  ret.second = Def(" << fused << ", 0);\n";
   *os << "  return ret; \n}\n";
 }

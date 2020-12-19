@@ -21,4 +21,3 @@ target_include_directories(ODLA INTERFACE include)
 add_subdirectory(platforms)
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ODLA DESTINATION include)
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/legacy/0.4/include/odla.h DESTINATION include/legacy/0.4)

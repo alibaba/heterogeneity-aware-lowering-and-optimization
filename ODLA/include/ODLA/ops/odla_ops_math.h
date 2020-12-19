@@ -476,6 +476,78 @@ odla_Pow(odla_value base, odla_value exponent, const odla_value_id value_id);
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Reciprocal(odla_value input, const odla_value_id value_id);
 
+//! \brief Compute the L1 norm alone axes
+/*!
+  ReduceL1 returns the L1 norm of \p input alone \p axes.
+
+  \param input the input value
+  \param num_of_axes nubmer of axes to reduce
+  \param axes the axes to reduce
+  \param keep_dims keep the reduced dimension or not
+  \param output_dims the optional output shape (can be undefined)
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_ReduceL1(odla_value input, odla_size_t num_of_axes,
+              const odla_uint32* axes, odla_bool keep_dims,
+              odla_value_shape output_dims, const odla_value_id value_id);
+
+//! \brief Compute the L2 norm alone axes
+/*!
+  ReduceL2 returns the L2 norm of \p input alone \p axes.
+
+  \param input the input value
+  \param num_of_axes nubmer of axes to reduce
+  \param axes the axes to reduce
+  \param keep_dims keep the reduced dimension or not
+  \param output_dims the optional output shape (can be undefined)
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_ReduceL2(odla_value input, odla_size_t num_of_axes,
+              const odla_uint32* axes, odla_bool keep_dims,
+              odla_value_shape output_dims, const odla_value_id value_id);
+
+//! \brief Compute the log sum alone axes
+/*!
+  ReduceLogSum returns the log sum of \p input alone \p axes.
+
+  \param input the input value
+  \param num_of_axes nubmer of axes to reduce
+  \param axes the axes to reduce
+  \param keep_dims keep the reduced dimension or not
+  \param output_dims the optional output shape (can be undefined)
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_ReduceLogSum(odla_value input, odla_size_t num_of_axes,
+                  const odla_uint32* axes, odla_bool keep_dims,
+                  odla_value_shape output_dims, const odla_value_id value_id);
+
+//! \brief Compute the log sum exponent alone axes
+/*!
+  ReduceLogSumExp returns the log sum exponent of \p input alone \p axes.
+
+  \param input the input value
+  \param num_of_axes nubmer of axes to reduce
+  \param axes the axes to reduce
+  \param keep_dims keep the reduced dimension or not
+  \param output_dims the optional output shape (can be undefined)
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_ReduceLogSumExp(
+    odla_value input, odla_size_t num_of_axes, const odla_uint32* axes,
+    odla_bool keep_dims, odla_value_shape output_dims,
+    const odla_value_id value_id);
+
 //! \brief Compute the max alone axes
 /*!
   ReduceMax returns the max of \p input alone \p axes.
@@ -561,6 +633,24 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_ReduceSum(odla_value input, odla_size_t num_of_axes,
                const odla_uint32* axes, odla_bool keep_dims,
                odla_value_shape output_dims, const odla_value_id value_id);
+
+//! \brief Compute the sum square alone axes
+/*!
+  ReduceSumSquare returns the sum square of \p input alone \p axes.
+
+  \param input the input value
+  \param num_of_axes nubmer of axes to reduce
+  \param axes the axes to reduce
+  \param keep_dims keep the reduced dimension or not
+  \param output_dims the optional output shape (can be undefined)
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_ReduceSumSquare(
+    odla_value input, odla_size_t num_of_axes, const odla_uint32* axes,
+    odla_bool keep_dims, odla_value_shape output_dims,
+    const odla_value_id value_id);
 
 //! \brief Round to nearest
 /*!

@@ -162,6 +162,15 @@ auto process_new_shape = [](const flatbuffers::Vector<int32_t>* shape) {
   return ProcessTensorShape<int32_t>(shape);
 };
 
+auto process_squeeze_dims =
+    [](const flatbuffers::Vector<int32_t>* squeeze_dims) {
+      std::vector<int32_t> ret(squeeze_dims->size());
+      for (size_t i = 0; i < squeeze_dims->size(); ++i) {
+        ret[i] = squeeze_dims->Get(i);
+      }
+      return ret;
+    };
+
 } // end anonymous namespace
 
 Status TFLITEParser::Parse(Function* function,

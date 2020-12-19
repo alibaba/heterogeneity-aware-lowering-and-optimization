@@ -26,6 +26,7 @@ let is_integer_ = 1 in {
   def Integer : ValueType<32, "int">;
   def BoolList : ValueType<1, "std::vector<bool>"> { let is_array_ = 1; }
   def IntegerList : ValueType<32, "std::vector<int>"> { let is_array_ = 1; }
+  def IntegerListList : ValueType<64, "std::vector<std::vector<int64_t>>"> { let is_2d_array_ = 1;}
 }
 
 def Float : ValueType<32, "float">;
@@ -33,6 +34,11 @@ def FloatList : ValueType<32, "std::vector<float>"> { let is_array_ = 1; }
 
 def String : ValueType<0, "std::string"> {
   let is_string_ = 1;
+}
+
+def StringList : ValueType<0, "std::vector<std::string>"> {
+  let is_string_ = 1;
+  let is_array_ = 1;
 }
 
 def FunctionPtr : ValueType<0, "halo::Function*"> {

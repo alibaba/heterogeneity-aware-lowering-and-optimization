@@ -92,6 +92,11 @@ def TFLITE_RELU : OpMapping<"RELU", Relu>;
 
 def TFLITE_RELU6 : OpMapping<"RELU6", Relu6>;
 
+def TFLITE_SQUEEZE : TFLITEExtension<"SQUEEZE"> {
+  let param_name_ = "builtin_options_as_SqueezeOptions";
+  let extension_attr_ = [ ExtensionAttr<"squeeze_dims", IntegerList, "{}"> ];
+}
+
 def TFLITE_TANH: OpMapping<"TANH", Tanh>;
 
 def TFLITE_RESHAPE : OpMapping<"RESHAPE", Reshape> {

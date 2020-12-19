@@ -26,6 +26,7 @@ namespace halo {
 static const char* RecordTypeName = "ValueType";
 static const char* CppType = "cpp_type_";
 static const char* IsArray = "is_array_";
+static const char* Is2DArray = "is_2d_array_";
 static const char* IsPointer = "is_pointer_";
 static const char* EnumTypeName = "EnumValueType";
 
@@ -129,6 +130,21 @@ void EmitAttrDef(const llvm::RecordKeeper& records, llvm::raw_ostream& os) {
       os << "      os << value_.at(0);\n";
       os << "      for (size_t i = 1; i < num_of_elements; ++i) {\n";
       os << "        os << \", \" << value_.at(i);\n";
+      os << "      }\n";
+      os << "    }\n";
+      os << "    os << \"]>\";\n";
+    } else if (c->getValueAsBit(Is2DArray)) {
+      os << "    os << \"[\";\n";
+      os << "    size_t num_of_lists = value_.size();\n";
+      os << "    if (num_of_lists > 0) {\n";
+      os << "      for (size_t i = 0; i < num_of_lists; ++i) {\n";
+      os << "        size_t num_of_elements = value_.at(i).size();\n";
+      os << "        if (num_of_elements > 0) {\n";
+      os << "          os << value_.at(i).at(0);\n";
+      os << "          for (size_t j = 1; j < num_of_elements; ++j) {\n";
+      os << "            os << \", \" << value_.at(i).at(j);\n";
+      os << "          }\n";
+      os << "        }\n";
       os << "      }\n";
       os << "    }\n";
       os << "    os << \"]>\";\n";

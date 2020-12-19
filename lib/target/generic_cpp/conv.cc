@@ -28,8 +28,6 @@ void GenericCXXCodeGen::RunOnInstruction(Conv2DInst* inst) {
   CXXValue op0 = ir_mapping_[lhs];
   CXXValue op1 = ir_mapping_[rhs];
 
-  const halo::Type& lhs_type = lhs.GetType();
-  const halo::Type& rhs_type = rhs.GetType();
   const halo::Type& ret_type = inst->GetResultType();
 
   const auto& info = ImageAxisInfo::GetImageAxisInfo(inst->GetDataFormat(),
@@ -81,28 +79,6 @@ void GenericCXXCodeGen::RunOnInstruction(Conv2DInst* inst) {
                std::vector<uint32_t>{padding_top, padding_left},
                std::vector<uint32_t>{padding_bottom, padding_right}, bias_name,
                EmitShape(ret_type));
-  ir_mapping_[*inst] = ret;
-  return;
-
-  const auto& axis_info = ImageAxisInfo::GetImageAxisInfo(
-      inst->GetDataFormat(), inst->GetFilterFormat());
-
-  if (group > 1) {
-    HLCHECK(group ==
-            ret_type.GetNumOfElementsInDim(axis_info.data_channel_axis));
-    HLCHECK(group ==
-            lhs_type.GetNumOfElementsInDim(axis_info.data_channel_axis));
-    EmitODLACall(ret, "odla_DepthwiseConvolution", lhs_type.GetDataType(),
-                 EmitShape(lhs_type), data_layout, op0, EmitShape(rhs_type),
-                 kernel_layout, op1, strides, dilations, paddings_front,
-                 paddings_back, group, EmitShape(ret_type));
-  } else {
-    EmitODLACall(ret, "odla_Convolution", lhs_type.GetDataType(),
-                 EmitShape(lhs_type), data_layout, op0, EmitShape(rhs_type),
-                 kernel_layout, op1, strides, dilations, paddings_front,
-                 paddings_back, bias_name, EmitShape(bias_ty),
-                 EmitShape(ret_type));
-  }
   ir_mapping_[*inst] = ret;
 }
 

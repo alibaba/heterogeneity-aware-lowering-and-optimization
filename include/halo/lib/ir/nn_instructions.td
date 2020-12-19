@@ -27,7 +27,7 @@ let cat_ = cat_nn in {
          Attr<"scaling parameter.", Float, "alpha", "1">,
          Attr<"exponent.", Float, "beta", "0.5">,
          Attr<"bias.", Float, "bias", "1.0">,
-         Attr<"Input data format.", 
+         Attr<"Input data format.",
               EnumDataFormat, "data_format", "NCHW">
      ];
 
