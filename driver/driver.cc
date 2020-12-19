@@ -519,7 +519,7 @@ int main(int argc, char** argv) {
   if (CheckModel) {
     llvm::StringRef name(OutputFile);
     llvm::SmallString<128> filename(name);
-    llvm::sys::path::replace_extension(filename, ".main.cc");
+    llvm::sys::path::replace_extension(filename, ".main.cc.in");
     of_dynamic_check.open(filename.str(), std::ofstream::binary);
     out_dynamic_check = &of_dynamic_check;
   }
