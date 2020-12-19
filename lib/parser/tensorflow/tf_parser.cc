@@ -63,12 +63,7 @@ Status TFParser::Parse(Function* function,
 Status TFParser::Parse(BasicBlock* bb, const tensorflow::GraphDef& graph_def,
                        const armory::Opts& opts) {
   Init(bb, bb->GetParent(), opts);
-  if (opts_.convert_to_ipu_graphdef) {
-    tensorflow::GraphDef graph_def_copy = graph_def;
-    return ConvertToIpuGraphDef(graph_def_copy, opts_.output_graphdef_filename);
-  } else {
-    return ConvertToHaloIR(graph_def);
-  }
+  return ConvertToHaloIR(graph_def);
 }
 
 /// register op and create ir builder
@@ -79,64 +74,6 @@ void TFParser::Init(BasicBlock* bb, Function* function,
   arg_builder_ = std::make_unique<ArgumentBuilder>(function);
   c_builder_ = std::make_unique<ConstantBuilder>(function);
   opts_ = opts;
-}
-
-Status TFParser::SetAttributes(tensorflow::NodeDef* cur_node) {
-  std::set<std::string> whitelists = {"Placeholder"};
-  if (whitelists.count(cur_node->op())) {
-    return Status::SUCCESS;
-  }
-
-  cur_node->set_device("/device:IPU:0");
-  {
-    tensorflow::AttrValue attr;
-    attr.set_b("true");
-    (*(cur_node->mutable_attr()))["_XlaCompile"] = attr;
-  }
-  {
-    tensorflow::AttrValue attr;
-    attr.set_s("jit_scope_ipu_0");
-    (*(cur_node->mutable_attr()))["_XlaScope"] = attr;
-  }
-  {
-    tensorflow::AttrValue attr;
-    attr.set_b("false");
-    (*(cur_node->mutable_attr()))["_XlaSeparateCompiledGradients"] = attr;
-  }
-
-  return Status::SUCCESS;
-}
-
-Status TFParser::ConvertToIpuGraphDef(const tensorflow::GraphDef& graph_def,
-                                      const std::string& filename) {
-  Status s = Status::SUCCESS;
-  for (auto& cur_node : graph_def.node()) {
-    s = SetAttributes(const_cast<tensorflow::NodeDef*>(&cur_node));
-    if (s != Status::SUCCESS) {
-      return s;
-    }
-  }
-
-  // Serialization ipu format graphdef
-  std::fstream ofs(opts_.output_graphdef_filename,
-                   std::ios::out | std::ios::binary);
-  HLCHECK(!ofs.fail());
-  if (!graph_def.SerializeToOstream(&ofs)) {
-    LOG(ERROR) << "Serialization output pb file error";
-    return Status::ASSERTION;
-  }
-#if 0
-  {
-    // Serialization to text file
-    std::fstream ofs("./converted_model.pbtxt", std::ios::out);
-    HLCHECK(!ofs.fail());
-    google::protobuf::io::OstreamOutputStream* output =
-        new google::protobuf::io::OstreamOutputStream(&ofs);
-    google::protobuf::TextFormat::Print(graph_def, output);
-    delete output;
-  }
-#endif
-  return Status::SUCCESS;
 }
 
 Status TFParser::ConvertToHaloIR(const tensorflow::GraphDef& graph_def) {
@@ -930,6 +867,68 @@ Status TFParser::ConvertDummyNode(const tensorflow::NodeDef& node_def) {
   auto inst = ir_builder_->CreateDummy(node_def.name(), operands,
                                        max_num_outputs, node_def.op());
   InsertIDToInstMap(node_def, inst);
+  return Status::SUCCESS;
+}
+
+Status IPUParser::Parse(BasicBlock* bb, const tensorflow::GraphDef& graph_def,
+                        const armory::Opts& opts) {
+  return ConvertToIpuGraphDef(graph_def, opts.output_graphdef_filename);
+}
+
+Status IPUParser::SetAttributes(tensorflow::NodeDef* cur_node) {
+  std::set<std::string> whitelists = {"Placeholder"};
+  if (whitelists.count(cur_node->op())) {
+    return Status::SUCCESS;
+  }
+
+  cur_node->set_device("/device:IPU:0");
+  {
+    tensorflow::AttrValue attr;
+    attr.set_b("true");
+    (*(cur_node->mutable_attr()))["_XlaCompile"] = attr;
+  }
+  {
+    tensorflow::AttrValue attr;
+    attr.set_s("jit_scope_ipu_0");
+    (*(cur_node->mutable_attr()))["_XlaScope"] = attr;
+  }
+  {
+    tensorflow::AttrValue attr;
+    attr.set_b("false");
+    (*(cur_node->mutable_attr()))["_XlaSeparateCompiledGradients"] = attr;
+  }
+
+  return Status::SUCCESS;
+}
+
+Status IPUParser::ConvertToIpuGraphDef(const tensorflow::GraphDef& graph_def,
+                                       const std::string& filename) {
+  Status s = Status::SUCCESS;
+  for (auto& cur_node : graph_def.node()) {
+    s = SetAttributes(const_cast<tensorflow::NodeDef*>(&cur_node));
+    if (s != Status::SUCCESS) {
+      return s;
+    }
+  }
+
+  // Serialization ipu format graphdef
+  std::fstream ofs(filename, std::ios::out | std::ios::binary);
+  HLCHECK(!ofs.fail());
+  if (!graph_def.SerializeToOstream(&ofs)) {
+    LOG(ERROR) << "Serialization output pb file error";
+    return Status::ASSERTION;
+  }
+#if 0
+  {
+    // Serialization to text file
+    std::fstream ofs("./converted_model.pbtxt", std::ios::out);
+    HLCHECK(!ofs.fail());
+    google::protobuf::io::OstreamOutputStream* output =
+        new google::protobuf::io::OstreamOutputStream(&ofs);
+    google::protobuf::TextFormat::Print(graph_def, output);
+    delete output;
+  }
+#endif
   return Status::SUCCESS;
 }
 

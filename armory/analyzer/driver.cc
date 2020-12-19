@@ -37,6 +37,18 @@
 
 using namespace halo;
 
+static llvm::cl::opt<bool> PrintAnalysisReport(
+    "print-analysis-report", llvm::cl::desc("Print analysis report"),
+    llvm::cl::init(false));
+
+static llvm::cl::opt<bool> ConvertToIpuGraphDef(
+    "convert-to-ipu-graphdef", llvm::cl::desc("Convert to IPU style graphdef"),
+    llvm::cl::init(false));
+
+static llvm::cl::opt<std::string> OutputGraphDefFile(
+    "graphdef-file-name", llvm::cl::desc("output graphdef file name."),
+    llvm::cl::init("./converted_model.pb"));
+
 static void PopulatePassesAndRun(GlobalContext& ctx, Module& m,
                                  const llvm::cl::opt<signed>& batch,
                                  Parser::Format format) {
