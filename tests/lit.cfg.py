@@ -14,6 +14,16 @@ for url, filename in urls.items():
     if not os.path.isfile(filename):
         urllib.urlretrieve(url, filename)
 
+# Download onnx op data
+unittest_build_path = os.path.join(config.halo_build_dir, 'tests/unittests')
+if not os.path.exists(unittest_build_path):
+    os.makedirs(unittest_build_path)
+data_path = os.path.join(config.halo_build_dir, 'tests/unittests/data')
+if not os.path.exists(data_path):
+    os.system('git clone -b rel-1.5.0 https://github.com/onnx/onnx.git')
+    os.system('cp -r onnx/onnx/backend/test/data/node ' + data_path)
+    os.system('rm -rf onnx')
+
 config.name = "Halo Tests"
 
 # Setup source root.
@@ -65,6 +75,11 @@ config.substitutions.append(('%dnnl_path', dnnl_dir))
 config.substitutions.append(('%xnnpack_path', xnnpack_dir))
 config.substitutions.append(('%odla_link', link_path))
 config.substitutions.append(('%models_dir', model_path))
+config.substitutions.append(('%unittests_path',
+                              os.path.join(config.halo_src_dir, 'tests/unittests')))
+config.substitutions.append(('%onnx_path',
+                              os.path.join(config.halo_build_dir, 'lib/parser/onnx')))
+config.substitutions.append(('%data_path', data_path))
 
 path = config.halo_lib_dir
 if 'LD_LIBRARY_PATH' in config.environment:
