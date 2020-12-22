@@ -45,10 +45,6 @@ static llvm::cl::opt<std::string> EntryFunctionName(
     "entry-func-name", llvm::cl::desc("name of entry function"),
     llvm::cl::init(""));
 
-static llvm::cl::opt<bool> PrintAnalysisReport(
-    "print-analysis-report", llvm::cl::desc("Print analysis report"),
-    llvm::cl::init(false));
-
 static llvm::cl::list<std::string> InputsShape(
     "input-shape",
     llvm::cl::desc("Specify input names like -input-shape=foo:1x3x100x100 "

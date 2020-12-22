@@ -51,7 +51,11 @@ Status Parser::Parse(Function* function, Format format,
   std::unique_ptr<Parser> parser(nullptr);
   switch (format) {
     case Format::TENSORFLOW: {
-      parser = std::make_unique<TFParser>(variant);
+      if (opts.convert_to_ipu_graphdef) {
+        parser = std::make_unique<IPUParser>(variant);
+      } else {
+        parser = std::make_unique<TFParser>(variant);
+      }
       break;
     }
     case Format::ONNX: {
