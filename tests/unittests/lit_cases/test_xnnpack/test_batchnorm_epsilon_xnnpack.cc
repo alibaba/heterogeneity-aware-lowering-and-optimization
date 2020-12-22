@@ -23,5 +23,5 @@
 // RUN: %t_xnnpack.exe 0.0001 0 xnnpack %data_path/test_batchnorm_epsilon | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_batchnorm_epsilon_xnnpack.cc.tmp.main.cc.in"

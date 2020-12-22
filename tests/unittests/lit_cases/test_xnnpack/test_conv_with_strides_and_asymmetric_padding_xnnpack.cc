@@ -23,5 +23,5 @@
 // RUN: %t_xnnpack.exe 0.0001 0 xnnpack %data_path/test_conv_with_strides_and_asymmetric_padding | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_conv_with_strides_and_asymmetric_padding_xnnpack.cc.tmp.main.cc.in"
