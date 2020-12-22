@@ -37,6 +37,18 @@
 
 using namespace halo;
 
+static llvm::cl::opt<bool> PrintAnalysisReport(
+    "print-analysis-report", llvm::cl::desc("Print analysis report"),
+    llvm::cl::init(false));
+
+static llvm::cl::opt<bool> ConvertToIpuGraphDef(
+    "convert-to-ipu-graphdef", llvm::cl::desc("Convert to IPU style graphdef"),
+    llvm::cl::init(false));
+
+static llvm::cl::opt<std::string> OutputGraphDefFile(
+    "graphdef-file-name", llvm::cl::desc("output graphdef file name."),
+    llvm::cl::init("./converted_model.pb"));
+
 static void PopulatePassesAndRun(GlobalContext& ctx, Module& m,
                                  const llvm::cl::opt<signed>& batch,
                                  Parser::Format format) {
@@ -68,6 +80,8 @@ int main(int argc, char** argv) {
   Module m(ctx, "analyzer_module");
 
   armory::Opts opts;
+  opts.convert_to_ipu_graphdef = ConvertToIpuGraphDef;
+  opts.output_graphdef_filename = OutputGraphDefFile;
   Parser::Format format = Parser::Format::INVALID;
   if (ParseModels(ModelFiles, ModelFormat, EntryFunctionName, opts, &m,
                   &format) != Status::SUCCESS) {
