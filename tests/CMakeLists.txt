@@ -32,10 +32,6 @@ configure_lit_site_cfg(
     ${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg
 )
 
-configure_lit_site_cfg(
-    ${CMAKE_CURRENT_SOURCE_DIR}/unittests/lit.site.cfg.in
-    ${CMAKE_CURRENT_BINARY_DIR}/unittests/lit.site.cfg
-)
 add_lit_testsuite(check-halo "Running Halo regression tests"
   ${CMAKE_CURRENT_BINARY_DIR}
   DEPENDS ${HALO_TEST_DEPENDS}

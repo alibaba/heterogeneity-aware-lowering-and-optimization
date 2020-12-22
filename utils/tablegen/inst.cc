@@ -131,9 +131,7 @@ void Attr::EmitInit() {
   } else {
     std::string init_value;
     Type vt(type_record);
-    if (vt.IsArray) {
-      init_value = "{}";
-    } else if (vt.Is2DArray) {
+    if (vt.IsArray || vt.Is2DArray) {
       init_value = "{}";
     } else if (vt.IsBool) {
       init_value = "false";

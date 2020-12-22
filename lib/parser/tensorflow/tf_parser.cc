@@ -870,6 +870,68 @@ Status TFParser::ConvertDummyNode(const tensorflow::NodeDef& node_def) {
   return Status::SUCCESS;
 }
 
+Status IPUParser::Parse(BasicBlock* bb, const tensorflow::GraphDef& graph_def,
+                        const armory::Opts& opts) {
+  return ConvertToIpuGraphDef(graph_def, opts.output_graphdef_filename);
+}
+
+Status IPUParser::SetAttributes(tensorflow::NodeDef* cur_node) {
+  std::set<std::string> whitelists = {"Placeholder"};
+  if (whitelists.count(cur_node->op())) {
+    return Status::SUCCESS;
+  }
+
+  cur_node->set_device("/device:IPU:0");
+  {
+    tensorflow::AttrValue attr;
+    attr.set_b("true");
+    (*(cur_node->mutable_attr()))["_XlaCompile"] = attr;
+  }
+  {
+    tensorflow::AttrValue attr;
+    attr.set_s("jit_scope_ipu_0");
+    (*(cur_node->mutable_attr()))["_XlaScope"] = attr;
+  }
+  {
+    tensorflow::AttrValue attr;
+    attr.set_b("false");
+    (*(cur_node->mutable_attr()))["_XlaSeparateCompiledGradients"] = attr;
+  }
+
+  return Status::SUCCESS;
+}
+
+Status IPUParser::ConvertToIpuGraphDef(const tensorflow::GraphDef& graph_def,
+                                       const std::string& filename) {
+  Status s = Status::SUCCESS;
+  for (auto& cur_node : graph_def.node()) {
+    s = SetAttributes(const_cast<tensorflow::NodeDef*>(&cur_node));
+    if (s != Status::SUCCESS) {
+      return s;
+    }
+  }
+
+  // Serialization ipu format graphdef
+  std::fstream ofs(filename, std::ios::out | std::ios::binary);
+  HLCHECK(!ofs.fail());
+  if (!graph_def.SerializeToOstream(&ofs)) {
+    LOG(ERROR) << "Serialization output pb file error";
+    return Status::ASSERTION;
+  }
+#if 0
+  {
+    // Serialization to text file
+    std::fstream ofs("./converted_model.pbtxt", std::ios::out);
+    HLCHECK(!ofs.fail());
+    google::protobuf::io::OstreamOutputStream* output =
+        new google::protobuf::io::OstreamOutputStream(&ofs);
+    google::protobuf::TextFormat::Print(graph_def, output);
+    delete output;
+  }
+#endif
+  return Status::SUCCESS;
+}
+
 // convert to halo ir def func
 #include "tf_convert.cc.inc"
 
