@@ -23,5 +23,5 @@
 // RUN: %t_xnnpack.exe 0.0001 0 xnnpack %data_path/test_mul_bcast | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_mul_bcast_xnnpack.cc.tmp.main.cc.in"
