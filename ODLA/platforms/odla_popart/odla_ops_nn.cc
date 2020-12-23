@@ -108,15 +108,15 @@ odla_value odla_BatchNormalization(odla_value input,
   odla_element_type input_type = GetOdlaType(input_popart_type);
   std::vector<float> scale_tmp(channel_dim, scalar_scale);
   if (scale == nullptr) {
-    scale =
-        odla_CreateConstant({input_type, {.size = 1, .dims = {channel_dim}}},
-                            scale_tmp.data(), (const odla_value_id)((name + "scale").c_str()));
+    scale = odla_CreateConstant(
+        {input_type, {.size = 1, .dims = {channel_dim}}}, scale_tmp.data(),
+        (const odla_value_id)(name + "scale").c_str());
   }
   std::vector<float> offset_tmp(channel_dim, scalar_offset);
   if (offset == nullptr) {
-    offset =
-        odla_CreateConstant({input_type, {.size = 1, .dims = {channel_dim}}},
-                            offset_tmp.data(), (const odla_value_id)(name + "offset").c_str());
+    offset = odla_CreateConstant(
+        {input_type, {.size = 1, .dims = {channel_dim}}}, offset_tmp.data(),
+        (const odla_value_id)(name + "offset").c_str());
   }
 
   auto outs = g_comp->builder->aiOnnxOpset10().batchnormalization(
@@ -413,9 +413,9 @@ odla_value odla_MaxPool(odla_value input, odla_memory_layout input_layout,
 
   padding.insert(padding.end(), padding_from_back.begin(),
                  padding_from_back.end());
-  std::vector<popart::TensorId> result = 
+  std::vector<popart::TensorId> result =
       g_comp->builder->aiOnnxOpset10().maxpool(
-          {input->tensor_id}, 1, kernel_shape, 0, std::vector<int64_t>(), 
+          {input->tensor_id}, 1, kernel_shape, 0, std::vector<int64_t>(),
           padding, 0, dim_strides);
   return new _odla_value(result[0],
                          {g_comp->builder->getTensorDataType(result[0]),
