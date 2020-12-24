@@ -644,8 +644,26 @@ odla_value odla_PRelu(odla_value input, odla_value slope,
   //                     = relue(input) - relu(mul(input, mul(-1, slope))
 
   auto relu_v = odla_Relu(input, nullptr);
-  auto neg_slop = unary_eltwise_op(dnnl::algorithm::eltwise_linear, slope, -1.f,
-                                   0.f, nullptr);
+
+  const auto& dims_input = input->shape;
+  const auto& dims_slope = slope->shape;
+  odla_value new_slope = slope;
+
+  // workaround: the slope shape may be different from input shape
+  // and input shape is not nhwc. so we change slope shape to {1, c, 1, 1}
+  if (dims_input.size != dims_slope.size && dims_slope.size == 1) {
+    odla_value_shape slope_shape = dims_input;
+    for (int i = 0; i < dims_input.size; i++) {
+      if (dims_input.dims[i] == dims_slope.dims[0]) {
+        slope_shape.dims[i] = dims_slope.dims[0];
+      }
+      slope_shape.dims[i] = 1;
+    }
+    new_slope = CreateValue(slope->mem, slope_shape, value_id);
+  }
+
+  auto neg_slop = unary_eltwise_op(dnnl::algorithm::eltwise_linear, new_slope,
+                                   -1.f, 0.f, nullptr);
   auto neg_relu_mul = odla_Mul(input, neg_slop, nullptr);
   dnnl::post_ops po;
   po.append_eltwise(1.f, dnnl::algorithm::eltwise_linear, -1.f, 0.f);
