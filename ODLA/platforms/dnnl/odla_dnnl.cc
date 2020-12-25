@@ -670,11 +670,18 @@ static odla_value_shape getNCHWDims(const odla_value_shape& src_dims) {
       {src_dims.dims[0], src_dims.dims[3], src_dims.dims[1], src_dims.dims[2]}};
 }
 
-static odla_value_shape getOIHWDims(const odla_value_shape& src_dims) {
+static odla_value_shape getOIHWDims(const odla_value_shape& src_dims,
+                                    bool is_conv = true) {
   assert(src_dims.size == 4);
-  return {
-      src_dims.size,
-      {src_dims.dims[3], src_dims.dims[2], src_dims.dims[0], src_dims.dims[1]}};
+  if (is_conv == true) {
+    return {src_dims.size,
+            {src_dims.dims[3], src_dims.dims[2], src_dims.dims[0],
+             src_dims.dims[1]}};
+  } else {
+    return {src_dims.size,
+            {src_dims.dims[2], src_dims.dims[3], src_dims.dims[0],
+             src_dims.dims[1]}};
+  }
 }
 
 static odla_value_shape getGOIHWDims(const odla_value_shape& src_dims,
@@ -856,9 +863,12 @@ odla_value odla_DeConv(odla_value input, odla_memory_layout input_layout,
     output_dims = getNCHWDims(output_dims);
   }
 
-  if (kernel_layout == ODLA_SIO) {
-    kernel_dims = getOIHWDims(kernel_dims);
-  } else if (kernel_layout == odla_memory_layout::ODLA_IOS) {
+  // change kernel layout to NCHW,
+  // is the same as dnnl::memory::format_tag::oihw
+  // and ODLA_IOS in DeConv's kernel & ODLA_OIS in Conv's kernel
+  if (kernel_layout == odla_memory_layout::ODLA_SOI) {
+    kernel_dims = getOIHWDims(kernel_dims, false);
+  } else if (kernel_layout == odla_memory_layout::ODLA_OIS) {
     std::swap(kernel_dims.dims[0], kernel_dims.dims[1]);
   }
 
@@ -885,7 +895,7 @@ odla_value odla_DeConv(odla_value input, odla_memory_layout input_layout,
                                           dnnl::memory::format_tag::any);
   auto kernel_md_src = dnnl::memory::desc(
       getDims(kernel_dims), dt,
-      /*dnnl::memory::format_tag::iohw */ getFormatTag(kernel_layout, group));
+      /*dnnl::memory::format_tag::iohw */ getFormatTag(ODLA_OIS, group));
 
   assert(dilations[0] == 1 && dilations[1] == 1);
   auto conv_desc = dnnl::deconvolution_forward::desc(
