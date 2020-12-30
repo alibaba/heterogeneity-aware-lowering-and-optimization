@@ -32,6 +32,7 @@
 #include "halo/lib/transforms/tfextension_legalizer.h"
 #include "halo/lib/transforms/type_legalizer.h"
 #include "halo/utils/cl_options.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
 
@@ -44,6 +45,11 @@ static llvm::cl::opt<bool> PrintAnalysisReport(
 static llvm::cl::opt<bool> ConvertToIpuGraphDef(
     "convert-to-ipu-graphdef", llvm::cl::desc("Convert to IPU style graphdef"),
     llvm::cl::init(false));
+
+static llvm::cl::opt<std::string> SplitNames(
+    "split-names", llvm::cl::desc("Split names."),
+    llvm::cl::desc(
+        "Specify split names like -split-name=xxx:yyy,aaa:bbb,mmm:nnn"));
 
 static llvm::cl::opt<std::string> OutputGraphDefFile(
     "graphdef-file-name", llvm::cl::desc("output graphdef file name."),
@@ -82,6 +88,23 @@ int main(int argc, char** argv) {
   armory::Opts opts;
   opts.convert_to_ipu_graphdef = ConvertToIpuGraphDef;
   opts.output_graphdef_filename = OutputGraphDefFile;
+
+  llvm::SmallVector<llvm::StringRef, 4> splitted;
+  llvm::StringRef(SplitNames).split(splitted, ',');
+  opts.split_names.reserve(splitted.size());
+  for (size_t i = 0; i < splitted.size(); ++i) {
+    if (!splitted[i].empty()) {
+      llvm::SmallVector<llvm::StringRef, 4> name;
+      llvm::StringRef(splitted[i]).split(name, ':');
+      opts.split_names.emplace_back();
+      for (auto& n : name) {
+        if (!n.empty()) {
+          opts.split_names[i].push_back(n.str());
+        }
+      }
+    }
+  }
+
   Parser::Format format = Parser::Format::INVALID;
   if (ParseModels(ModelFiles, ModelFormat, EntryFunctionName, opts, &m,
                   &format) != Status::SUCCESS) {
