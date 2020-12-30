@@ -30,14 +30,14 @@ NVIDIA® GPU environment:
 ## Docker Environment <a name="docker-environment"/>
 
 For convenience, the above system requirements are also prepared and packed as a docker environment,
-which is under [utils/docker](utils/docker):
+which is under [utils/docker](../utils/docker):
 
-* [Dockerfile](utils/docker/Dockerfile): contains all necessary software.
-* [build_image.sh](utils/docker/build_image.sh): it builds two docker images:
+* [Dockerfile](../utils/docker/Dockerfile): contains all necessary software.
+* [build_image.sh](../utils/docker/build_image.sh): it builds two docker images:
   * CPU-only: [ubuntu 18.04](https://hub.docker.com/_/ubuntu) based image;
   * CPU + GPU: [nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04](https://hub.docker.com/r/nvidia/cuda) based image.
-* [start_docker_cpu.sh](utils/docker/start_docker_cpu.sh): starts the CPU-only container.
-* [start_docker_gpu.sh](utils/docker/start_docker_gpu.sh): starts the container for CPU-only and CUDA® supported environments.
+* [start_docker_cpu.sh](../utils/docker/start_docker_cpu.sh): starts the CPU-only container.
+* [start_docker_gpu.sh](../utils/docker/start_docker_gpu.sh): starts the container for CPU-only and CUDA® supported environments.
 
 You can also pull the Docker images for development from aliyun:
 ```bash

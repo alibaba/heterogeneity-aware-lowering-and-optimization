@@ -66,12 +66,10 @@ void GenericCXXCodeGen::RunOnInstruction(Conv2DInst* inst) {
                                                    : std::string("OIS"));
 
   std::string bias_name = EmitNull();
-  halo::Type bias_ty;
   if (inst->GetOperands().size() == 3) {
     const Def& bias = inst->GetOperand(2);
     CXXValue op2 = ir_mapping_[bias];
     bias_name = op2.name;
-    bias_ty = bias.GetType();
   }
   EmitODLACall(ret, "odla_Conv", op0, data_layout, group, op1, kernel_layout,
                std::vector<uint32_t>{stride_h, stride_w},

@@ -63,7 +63,7 @@ class ONNXParser : public Parser {
   ~ONNXParser();
 
   template <typename T>
-  static const Tensor<T> ProcessTensor(const onnx::TensorProto& tensor_proto);
+  static Tensor<T> ProcessTensor(const onnx::TensorProto& tensor_proto);
 
   ONNXParser(const ONNXParser&) = delete;
   ONNXParser& operator=(const ONNXParser&) = delete;

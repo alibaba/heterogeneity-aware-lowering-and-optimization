@@ -177,11 +177,13 @@ CXXType GenericCXXCodeGen::TensorTypeToCXXType(const halo::Type& type,
 std::string GenericCXXCodeGen::GetFunctionDecl(const Function& func,
                                                const Instruction& ret_inst,
                                                bool with_func_name,
-                                               bool with_type) {
+                                               bool with_type,
+                                               bool public_function) {
   const static std::string inference_func_decl =
       "void model_run(int num_inputs, const void* inputs[],"
       "int num_outputs, void* outputs[], int batch_size)";
-  if (opts_.emit_inference_func_sig && func.IsEntryFunction()) {
+  if (opts_.emit_inference_func_sig && func.IsEntryFunction() &&
+      public_function) {
     return inference_func_decl;
   }
 
@@ -416,7 +418,7 @@ void GenericCXXCodeGen::RunOnHostFunction(Function& function) {
   Instruction* return_inst = function.GetReturnInst();
   HLCHECK(return_inst && "No Return Instruction found");
 
-  auto func_decl = GetFunctionDecl(function, *return_inst, true, true);
+  auto func_decl = GetFunctionDecl(function, *return_inst, true, true, true);
 
   if (opts_.dialect == Dialect::CXX_11) {
     os_ << DeclAsExtern(func_decl);
@@ -486,7 +488,7 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
                                      ? function.GetName() + "_helper"
                                      : "run_" + function.GetName();
   // Emit function for launching computation.
-  auto func_decl = GetFunctionDecl(function, *return_inst, true, true);
+  auto func_decl = GetFunctionDecl(function, *return_inst, true, true, true);
 
   // contents in oss will be write to c file and header file.
   std::ostringstream oss;
@@ -508,8 +510,8 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
   header_os_ << oss.str();
 
   if (emit_builder_func) {
-    os_ << "  static odla_computation Comp;\n";
     if (is_compile_mode) {
+      os_ << "static odla_computation Comp;\n";
       os_ << "static void " << helper_func_name << "() {\n";
       os_ << "  odla_CreateComputation(&Comp);\n";
       if (opts_.enable_ipu_device) {
@@ -539,9 +541,9 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
                "(odla_item_value) &opt_batch_size);\n";
       }
     } else {
-      os_ << "static odla_computation comp;\n"; // only for legacy odla
       os_ << "static void " << helper_func_name
-          << GetFunctionDecl(function, *return_inst, false, true) << " {\n";
+          << GetFunctionDecl(function, *return_inst, false, true, false)
+          << " {\n";
     }
   } else { // emit single function
     os_ << func_decl << " {\n";
@@ -610,6 +612,10 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
 
   os_ << "}\n"; // End of computation build function.
 
+  if (opts_.check_model) {
+    dynamic_check_os_ << GenerateTestFunc(function, func_decl, *return_inst);
+  }
+
   if (emit_builder_func) {
     // Emit function for launching computation.
     if (opts_.exec_mode == CodeGen::ExecMode::Compile) {
@@ -620,22 +626,45 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
 
         os_ << "void " << init_func_name << "(){\n";
       } else {
-        os_ << GetFunctionDecl(function, *return_inst, true, true) << " {\n";
+        os_ << GetFunctionDecl(function, *return_inst, true, true, true)
+            << " {\n";
       }
       os_ << "  if (Comp == " << EmitNull() << ") { " << helper_func_name
           << "(); }\n";
       os_ << "}\n";
     }
     if (function.IsEntryFunction()) {
-      os_ << GetFunctionDecl(function, *return_inst, true, true) << " {\n";
+      os_ << GetFunctionDecl(function, *return_inst, true, true, true)
+          << " {\n";
       if (opts_.exec_mode == CodeGen::ExecMode::Compile) {
         os_ << "  " << init_func_name << "();\n";
       }
     }
-
     if (opts_.exec_mode == CodeGen::ExecMode::Interpret) {
-      os_ << "  " << helper_func_name
-          << GetFunctionDecl(function, *return_inst, false, false) << ";\n";
+      os_ << "  " << helper_func_name;
+      if (opts_.emit_inference_func_sig) {
+        os_ << "(";
+        bool is_first = true;
+        int i = 0;
+        for (const auto& arg : function.Args()) {
+          os_ << (is_first ? "" : ", ");
+          CXXType ty = TensorTypeToCXXType(arg->GetResultType(), true);
+          os_ << "(" << ty.Str(false) << ")inputs[" << i << "]";
+          is_first = false;
+          ++i;
+        }
+        for (int i = 0, e = return_inst->GetNumOfOperands(); i < e; ++i) {
+          os_ << (is_first ? "" : ", ");
+          CXXType ty =
+              TensorTypeToCXXType(return_inst->GetOperand(i).GetType(), false);
+          os_ << "(" << ty.Str(false) << ")outputs[" << i << "]";
+          is_first = false;
+        }
+        os_ << ")";
+      } else {
+        os_ << GetFunctionDecl(function, *return_inst, false, false, false);
+      }
+      os_ << ";\n";
       os_ << "}\n";
       return;
     }
@@ -663,9 +692,6 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
         << Join("(const odla_value_id)\"" + arg->GetName() + "\"", arg_name,
                 "Ctx")
         << ");\n";
-  }
-  if (opts_.check_model) {
-    dynamic_check_os_ << GenerateTestFunc(function, func_decl, *return_inst);
   }
   index = 0;
   // Pre-launch binding.
