@@ -40,9 +40,14 @@ struct _odla_value {
   bool is_const;
   odla_value_shape shape;
   std::string name;
-  _odla_value(const dnnl::memory& m, const odla_value_shape& shape,
+  _odla_value(const dnnl::memory& m, const odla_value_shape& shape_,
               const std::string& id)
-      : mem(m), is_const(false), shape(shape), name(id) {}
+      : mem(m), is_const(false), shape(shape_), name(id) {
+    if (shape.size == 0) {
+      shape.size = 1;
+      shape.dims[0] = 1;
+    }
+  }
 };
 
 typedef struct TargetOpts {
@@ -275,8 +280,16 @@ static void InterpretIfNeeded() {
 #endif
 }
 
+void rewrite_scalar_type(odla_value_type& type) {
+  if (type.shape.size == 0) {
+    type.shape.size = 1;
+    type.shape.dims[0] = 1;
+  }
+}
+
 odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
   const char* name = (const char*)id;
+  rewrite_scalar_type(type);
   dnnl::memory::desc md = getMemoryDesc(type.shape, type.element_type);
   dnnl::memory mem = dnnl::memory(md, g_comp->eng);
   odla_value v = CreateValue(mem, type.shape, id);
@@ -286,6 +299,7 @@ odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
 
 odla_value odla_CreateValue(odla_value_type type, const odla_value_id id) {
   assert(g_interpret_mode);
+  rewrite_scalar_type(type);
   auto v = odla_CreateArgument(type, id);
   return v;
 }
@@ -329,6 +343,7 @@ odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
   // TODO:
   // dnnl::memory::desc md(getDims(dims), getDataType(type),
   //                      dnnl::memory::format_tag::hwio);
+  rewrite_scalar_type(type);
   dnnl::memory::desc md = getMemoryDesc(type);
 
   dnnl::memory mem = dnnl::memory(md, g_comp->eng, const_cast<void*>(ptr));
@@ -507,6 +522,23 @@ odla_value odla_Cast(odla_value input, odla_element_type target_type,
   return CreateValue(ret_mem, input->shape, id);
 }
 
+static odla_value unary_eltwise_op(
+    dnnl::algorithm algo, odla_value input, odla_float32 alpha,
+    odla_float32 beta, const odla_value_id id,
+    dnnl::primitive_attr attr = dnnl::primitive_attr()) {
+  auto eltwise_d =
+      dnnl::eltwise_forward::desc(dnnl::prop_kind::forward_inference, algo,
+                                  input->mem.get_desc(), alpha, beta);
+  auto pd = dnnl::eltwise_forward::primitive_desc(eltwise_d, attr, g_comp->eng);
+
+  dnnl::primitive prim = dnnl::eltwise_forward(pd);
+  auto ret_mem = dnnl::memory(input->mem.get_desc(), g_comp->eng);
+  odla_value v = CreateValue(ret_mem, input->shape, id);
+  add_op(prim, {{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, ret_mem}});
+  InterpretIfNeeded();
+  return v;
+}
+
 static odla_value binary_eltwise_s32(dnnl::algorithm alg, dnnl::memory lhs_mem,
                                      dnnl::memory rhs_mem,
                                      odla_value_shape shape,
@@ -640,21 +672,14 @@ odla_value odla_Mul(odla_value lhs, odla_value rhs, const odla_value_id id) {
   return binary_eltwise(dnnl::algorithm::binary_mul, lhs, rhs, id);
 }
 
-static odla_value unary_eltwise_op(
-    dnnl::algorithm algo, odla_value input, odla_float32 alpha,
-    odla_float32 beta, const odla_value_id id,
-    dnnl::primitive_attr attr = dnnl::primitive_attr()) {
-  auto eltwise_d =
-      dnnl::eltwise_forward::desc(dnnl::prop_kind::forward_inference, algo,
-                                  input->mem.get_desc(), alpha, beta);
-  auto pd = dnnl::eltwise_forward::primitive_desc(eltwise_d, attr, g_comp->eng);
+odla_value odla_Sub(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  auto v = unary_eltwise_op(dnnl::algorithm::eltwise_linear, rhs, -1.f, 0.f,
+                            nullptr);
+  return binary_eltwise(dnnl::algorithm::binary_add, lhs, v, id);
+}
 
-  dnnl::primitive prim = dnnl::eltwise_forward(pd);
-  auto ret_mem = dnnl::memory(input->mem.get_desc(), g_comp->eng);
-  odla_value v = CreateValue(ret_mem, input->shape, id);
-  add_op(prim, {{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, ret_mem}});
-  InterpretIfNeeded();
-  return v;
+odla_value odla_Div(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  return binary_eltwise(dnnl::algorithm::binary_div, lhs, rhs, id);
 }
 
 odla_value odla_Round(odla_value input, const odla_value_id id) {
@@ -664,6 +689,12 @@ odla_value odla_Round(odla_value input, const odla_value_id id) {
 odla_value odla_Exp(odla_value input, const odla_value_id value_id) {
   return unary_eltwise_op(dnnl::algorithm::eltwise_exp, input, 0.f, 0.f,
                           value_id);
+}
+
+odla_value odla_Sqrt(odla_value input, const odla_value_id value_id) {
+  auto v = unary_eltwise_op(dnnl::algorithm::eltwise_sqrt, input, 0.f, 0.f,
+                            value_id);
+  return v;
 }
 
 odla_value odla_Sigmoid(odla_value input, const odla_value_id id) {
@@ -837,7 +868,6 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
   auto pd = dnnl::convolution_forward::primitive_desc(conv_desc, g_comp->eng);
 
   auto ret_mem = dnnl::memory(pd.dst_desc(), g_comp->eng);
-  dnnl::stream s(g_comp->eng);
 
   if (pd.weights_desc() != kernel_md_src) {
     auto reordered_w = dnnl::memory(pd.weights_desc(), g_comp->eng);
