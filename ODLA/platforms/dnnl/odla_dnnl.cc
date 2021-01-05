@@ -524,23 +524,23 @@ static odla_value binary_eltwise_s32(dnnl::algorithm alg, dnnl::memory lhs_mem,
   return v;
 }
 
-void expand_dims(odla_value& from, odla_value& to) {
-  // from_shape is [1, 5], to_shape is [1,4,1], we expand from_shape to [1,1,5]
-  int from_n = from->shape.size;
-  int to_n = to->shape.size;
+static void expand_dims(odla_value& src, odla_value& dst) {
+  // src shape is [1, 5], dst shape is [1,4,1], we expand src shape to [1,1,5]
+  int src_n = src->shape.size;
+  int dst_n = dst->shape.size;
   odla_value_shape new_shape;
   // fill new shape [*,1,5] -->[1,1,5]
-  for (int i = 0; i < from_n; i++) {
-    new_shape.dims[to_n - 1 - i] = from->shape.dims[from_n - 1 - i];
+  for (int i = 0; i < src_n; i++) {
+    new_shape.dims[dst_n - 1 - i] = src->shape.dims[src_n - 1 - i];
   }
-  for (int i = 0; i < to_n - from_n; i++) {
+  for (int i = 0; i < dst_n - src_n; i++) {
     new_shape.dims[i] = 1;
   }
-  new_shape.size = to_n;
-  from->shape = new_shape;
+  new_shape.size = dst_n;
+  src->shape = new_shape;
 }
 
-odla_value broadcast_func(odla_value& input, odla_value_shape shape) {
+static odla_value broadcast_func(odla_value& input, odla_value_shape shape) {
   bool skip_broadcast = true;
   for (int i = 0; i < shape.size; i++) {
     skip_broadcast &= (input->shape.dims[i] == shape.dims[i]);
@@ -580,7 +580,7 @@ odla_value broadcast_func(odla_value& input, odla_value_shape shape) {
   return CreateValue(ret_mem, shape, nullptr);
 }
 
-void broadcast_op(odla_value& lhs, odla_value& rhs) {
+static void broadcast_op(odla_value& lhs, odla_value& rhs) {
   auto dims_lhs = lhs->shape;
   auto dims_rhs = rhs->shape;
   if (dims_lhs.size != dims_rhs.size) {
