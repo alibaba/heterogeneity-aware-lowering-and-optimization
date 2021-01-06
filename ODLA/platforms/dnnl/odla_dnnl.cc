@@ -715,9 +715,11 @@ odla_value odla_Relu(odla_value input, const odla_value_id value_id) {
 odla_value odla_PRelu(odla_value input, odla_value slope,
                       const odla_value_id value_id) {
   // current dnnl is not support prelu primitive, so we use below equation to
-  // get prelu() prelu(input, slope) = relue(input) - relu(mul(mul(input, -1),
-  // slope))
-  //                     = relue(input) - relu(mul(input, mul(-1, slope))
+  // get prelu():
+  // prelu(input, slope) = (input < 0 ? input * slope : input)
+  //                     = relu(input) - relu(-input) * slope
+  //                     = relu(input) - relu(mul(mul(input, -1),  slope))
+  //                     = relu(input) - relu(mul(input, -slope))
 
   auto relu_v = odla_Relu(input, nullptr);
   auto neg_slop = unary_eltwise_op(dnnl::algorithm::eltwise_linear, slope, -1.f,
