@@ -226,7 +226,7 @@ inline void rsqrtbf_func(int len, int16_t* src, float* dst) {
   }
 }
 #elif defined(__GNUC__) && (__GNUC__ > 8)
-inline void rsqrtbf_func(int len, float* src, float* dst) {
+inline void rsqrtbf_func(int len, int16_t* src, float* dst) {
   int i = 0;
   int vec_size = 512 / 32;
   __mmask16 mask16 = 0xFFFF;
@@ -246,7 +246,7 @@ inline void rsqrtbf_func(int len, float* src, float* dst) {
   }
 }
 #else
-inline void rsqrtbf_func(int len, float* src, float* dst) {}
+inline void rsqrtbf_func(int len, int16_t* src, float* dst) {}
 #endif
 
 #if defined(__GNUC__) && (__GNUC__ > 9)
