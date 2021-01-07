@@ -136,7 +136,7 @@ inline void floorbf_func(int len, int16_t* src, float* dst) {
   }
 }
 #elif defined(__GNUC__) && (__GNUC__ > 8)
-inline void floorbf_func(int len, float* src, float* dst) {
+inline void floorbf_func(int len, int16_t* src, float* dst) {
   int i = 0;
   int vec_size = 512 / 32;
   __mmask16 mask16 = 0xFFFF;
@@ -156,7 +156,7 @@ inline void floorbf_func(int len, float* src, float* dst) {
   }
 }
 #else
-inline void floorbf_func(int len, float* src, float* dst) { assert(0); }
+inline void floorbf_func(int len, int16_t* src, float* dst) { assert(0); }
 #endif
 
 inline void floorf_func(int len, float* src, float* dst) {
@@ -946,7 +946,7 @@ static void erf_bf16_func(int16_t* src, float* dst, size_t len) {
   return;
 }
 #else
-static void erf_bffunc(int16_t* src, float* dst, size_t len) { assert(0); }
+static void erf_bf16_func(int16_t* src, float* dst, size_t len) { assert(0); }
 #endif
 
 // nms function related
