@@ -587,7 +587,7 @@ static std::vector<Def> ConvertDeConvolution(const CAFFEExtensionInst* ext,
   // deconv_inst->SetNumOutput(num_output);
   deconv_inst->SetPadding(Padding::EXPLICIT);
   deconv_inst->SetDataFormat(DataFormat::NCHW);
-  deconv_inst->SetFilterFormat(DataFormat::NCHW);
+  deconv_inst->SetFilterFormat(DataFormat::CNHW);
 
   if (bias_term) {
     auto bias = ext->GetOperand(2);
