@@ -363,8 +363,8 @@ static std::vector<Def> ConvertScale(const CAFFEExtensionInst* ext,
     auto op2 = ext->GetOperand(2);
     if (bn_without_scale && op1.GetType().GetTotalNumOfElements() == ch &&
         op2.GetType().GetTotalNumOfElements() == ch) {
-      std::vector<Def> new_ops{bn->GetOperand(0), op1, op2, bn->GetOperand(2),
-                               bn->GetOperand(3)};
+      std::vector<Def> new_ops{bn->GetOperand(0), op1, op2, bn->GetOperand(1),
+                               bn->GetOperand(2)};
       Instruction* new_bn = builder->Clone(*bn, new_ops);
       return {*new_bn};
     }
