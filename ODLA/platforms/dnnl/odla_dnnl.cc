@@ -893,6 +893,10 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
                 {DNNL_ARG_WEIGHTS, kernel->mem},
                 {DNNL_ARG_DST, conv_ret_mem}});
 
+  if (bias != nullptr) {
+    g_comp->ops.back().args[DNNL_ARG_BIAS] = bias->mem;
+  }
+
   if (need_reorder_src) {
     input->mem = orig_mem;
   }
