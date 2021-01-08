@@ -497,11 +497,21 @@ odla_value odla_Gather(odla_value params, const odla_value indices,
 }
 
 dnnl::memory cast_op(odla_value& input, dnnl::memory::data_type dt) {
+  auto src_md = dnnl::memory::desc(getDims(input->shape),
+                                   input->mem.get_desc().data_type(),
+                                   getFormatTag(input->shape));
+  auto src_mem =
+      dnnl::memory(src_md, g_comp->eng, input->mem.get_data_handle());
   auto dst_md =
       dnnl::memory::desc(getDims(input->shape), dt, getFormatTag(input->shape));
   auto dst_mem = dnnl::memory(dst_md, g_comp->eng);
   auto r = dnnl::reorder(input->mem, dst_mem);
-  add_op(r, {{DNNL_ARG_FROM, input->mem}, {DNNL_ARG_TO, dst_mem}});
+  if (input->is_const) {
+    r.execute(dnnl::stream(g_comp->eng),
+              {{DNNL_ARG_FROM, src_mem}, {DNNL_ARG_TO, dst_mem}});
+  } else {
+    add_op(r, {{DNNL_ARG_FROM, src_mem}, {DNNL_ARG_TO, dst_mem}});
+  }
   return dst_mem;
 }
 
@@ -1119,6 +1129,24 @@ odla_value odla_BatchNormalization(odla_value input,
                                    odla_value offset, odla_float32 scalar_scale,
                                    odla_float32 scalar_offset,
                                    const odla_value_id value_id) {
+  dnnl::memory oring_mem;
+  dnnl::memory::data_type dtype = input->mem.get_desc().data_type();
+  bool bf16_mode =
+      (dtype != dnnl::memory::data_type::f32 && g_comp->opts.enable_bf16)
+          ? true
+          : false;
+  if (bf16_mode) {
+    auto f32_input_mem = cast_op(input, dnnl::memory::data_type::f32);
+    mean->mem = cast_op(mean, dnnl::memory::data_type::f32);
+    var->mem = cast_op(var, dnnl::memory::data_type::f32);
+    if (scale != nullptr && offset != nullptr) {
+      scale->mem = cast_op(scale, dnnl::memory::data_type::f32);
+      offset->mem = cast_op(offset, dnnl::memory::data_type::f32);
+    }
+    oring_mem = input->mem;
+    input->mem = f32_input_mem;
+  }
+
   dnnl::normalization_flags flags = dnnl::normalization_flags::use_global_stats;
   auto input_md = input->mem.get_desc();
   auto input_dims = input->shape;
@@ -1137,16 +1165,22 @@ odla_value odla_BatchNormalization(odla_value input,
 
   if (scale != nullptr && offset != nullptr) {
     flags |= dnnl::normalization_flags::use_scale_shift;
-
-    size_t bytes = weight_md.get_size() / 2;
-    assert(bytes == scale->mem.get_desc().get_size() &&
-           bytes == offset->mem.get_desc().get_size());
-    char* weight_data = static_cast<char*>(weight_mem.get_data_handle());
-    std::memcpy(weight_data, scale->mem.get_data_handle(), bytes);
-    std::memcpy(weight_data + bytes, offset->mem.get_data_handle(), bytes);
+    auto scale_md =
+        dnnl::memory::desc({1, channels}, type, dnnl::memory::format_tag::nc);
+    auto scale_mem =
+        dnnl::memory(scale_md, g_comp->eng, scale->mem.get_data_handle());
+    auto offset_md =
+        dnnl::memory::desc({1, channels}, type, dnnl::memory::format_tag::nc);
+    auto c_pd = dnnl::concat::primitive_desc(
+        weight_md, 0, {scale_md, offset_md}, g_comp->eng);
+    auto c = dnnl::concat(c_pd);
+    c.execute(dnnl::stream(g_comp->eng),
+              {{DNNL_ARG_MULTIPLE_SRC, scale->mem},
+               {DNNL_ARG_MULTIPLE_SRC + 1, offset->mem},
+               {DNNL_ARG_DST, weight_mem}});
   }
   auto op_desc = dnnl::batch_normalization_forward::desc(
-      dnnl::prop_kind::forward_inference, input_md, epsilon, flags);
+      dnnl::prop_kind::forward, input_md, epsilon, flags);
   auto pd =
       dnnl::batch_normalization_forward::primitive_desc(op_desc, g_comp->eng);
   auto prim = dnnl::batch_normalization_forward(pd);
@@ -1158,6 +1192,11 @@ odla_value odla_BatchNormalization(odla_value input,
                 {DNNL_ARG_VARIANCE, var->mem},
                 {DNNL_ARG_SCALE_SHIFT, weight_mem},
                 {DNNL_ARG_DST, ret_mem}});
+  if (bf16_mode) {
+    v->mem = cast_op(v, dnnl::memory::data_type::bf16);
+    input->mem = oring_mem;
+  }
+
   InterpretIfNeeded();
 
   return v;
