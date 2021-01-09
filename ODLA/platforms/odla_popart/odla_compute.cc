@@ -141,6 +141,8 @@ odla_status odla_CreateContext(odla_context* context) {
   (*context)->session->setRandomSeed(0);
   // Copy weights from host to IPU
   (*context)->session->weightsFromHost();
+
+  return ODLA_SUCCESS;
 }
 
 odla_status odla_DestroyContext(odla_context ctx) {
