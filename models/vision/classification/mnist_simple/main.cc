@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 
-#include "model.h"
+#include "mnist_simple.h"
 
 int main(int argc, char** argv) {
   struct ImageFileHead {

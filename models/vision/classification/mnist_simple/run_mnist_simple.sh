@@ -1,4 +1,5 @@
 #!/bin/bash -xe
+# RUN: %s
 
 curr_dir=`dirname $0`
 out=$TEST_TEMP_DIR/mnist

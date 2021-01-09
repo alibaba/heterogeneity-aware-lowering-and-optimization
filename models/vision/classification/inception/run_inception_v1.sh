@@ -1,4 +1,5 @@
 #!/bin/bash
+# RUN: %s
 model_name="inception_v1"
 model_file="$TEST_TEMP_DIR/$model_name.onnx"
 image_dir="$TEST_TEMP_DIR/images"

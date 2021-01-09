@@ -333,10 +333,9 @@ Tensor<T> ONNXParser::ProcessTensor(const onnx::TensorProto& tensor_proto) {
     LOG(ERROR) << "Unsupported external data storage.";
   }
 
-  if (shape.empty() && !v.empty()) {
+  if (shape.empty() && v.size() > 1) {
     shape.push_back(v.size());
   }
-
   return Tensor<T>(data_type, shape, v);
 }
 
