@@ -230,6 +230,8 @@ static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
   int stride = FindAttributeValue(ext, "stride", 1);
   int kernel_size_h = FindAttributeValue(ext, "kernel_size", -1);
   int kernel_size_w = kernel_size_h;
+  int pool = FindAttributeValue(ext, "pool", 0);
+  HLCHECK(pool == 0 || pool == 1);
 
   int pad = FindAttributeValue(ext, "pad", 0);
 
@@ -244,17 +246,25 @@ static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
     pad = 0;
   }
 
-  PoolingMaxInst* inst =
-      builder->CreatePoolingMax(ext->GetName(), ext->GetOperand(0));
-  inst->SetKsize({1, 1, kernel_size_h, kernel_size_w});
-  inst->SetPaddingLeft(pad);
-  inst->SetPaddingRight(pad);
-  inst->SetPaddingTop(pad);
-  inst->SetPaddingBottom(pad);
-  inst->SetStrides({1, 1, stride, stride});
-  inst->SetPadding(Padding::EXPLICIT);
-  inst->SetDataFormat(DataFormat::NCHW);
+  auto set_pooling_attributes = [&](auto inst) {
+    inst->SetKsize({1, 1, kernel_size_h, kernel_size_w});
+    inst->SetPaddingLeft(pad);
+    inst->SetPaddingRight(pad);
+    inst->SetPaddingTop(pad);
+    inst->SetPaddingBottom(pad);
+    inst->SetStrides({1, 1, stride, stride});
+    inst->SetPadding(Padding::EXPLICIT);
+    inst->SetDataFormat(DataFormat::NCHW);
+  };
 
+  Instruction* inst = nullptr;
+  if (pool == 0) {
+    inst = builder->CreatePoolingMax(ext->GetName(), ext->GetOperand(0));
+    set_pooling_attributes(DynCast<PoolingMaxInst>(inst));
+  } else {
+    inst = builder->CreatePoolingAvg(ext->GetName(), ext->GetOperand(0));
+    set_pooling_attributes(DynCast<PoolingAvgInst>(inst));
+  }
   return {*inst};
 }
 
