@@ -14,12 +14,6 @@
 # limitations under the License
 # ==============================================================================
 
-#add_odla_library(custom_ops SHARED custom_ops/rsqrt.cc custom_ops/erf.cc)
-#set(POPART_CUSTOM_OP_PATH ${CMAKE_CURRENT_SOURCE_DIR}/custom_ops)
-#target_include_directories(custom_ops PRIVATE ${POPART_CUSTOM_OP_PATH}/include )
-#target_link_libraries(custom_ops ODLA poplar popart popops)
-#target_compile_options(custom_ops PRIVATE ${CUSTOM_OP_CXX_FLAGS})
-
 set(POPLAR_ROOT ${POPLAR_SDK_ROOT}/poplar-${POPLAR_VERSION})
 set(POPART_ROOT ${POPLAR_SDK_ROOT}/popart-${POPART_VERSION})
 
