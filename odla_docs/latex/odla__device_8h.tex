@@ -1,4 +1,4 @@
-\hypertarget{odla__device_8h}{}\doxysection{O\+D\+L\+A/odla\+\_\+device.h File Reference}
+\hypertarget{odla__device_8h}{}\doxysection{ODLA/odla\+\_\+device.h File Reference}
 \label{odla__device_8h}\index{ODLA/odla\_device.h@{ODLA/odla\_device.h}}
 \doxysubsection*{Typedefs}
 \begin{DoxyCompactItemize}
@@ -20,88 +20,88 @@ typedef struct \+\_\+odla\+\_\+device\+\_\+config\+\_\+item $\ast$ \mbox{\hyperl
 \item 
 \mbox{\Hypertarget{odla__device_8h_acc70b5ac70bcbc281da55d04741cafe1}\label{odla__device_8h_acc70b5ac70bcbc281da55d04741cafe1}} 
 enum \mbox{\hyperlink{odla__device_8h_acc70b5ac70bcbc281da55d04741cafe1}{odla\+\_\+vendor\+\_\+name}} \{ \newline
-{\bfseries O\+D\+L\+A\+\_\+\+V\+E\+N\+D\+O\+R\+\_\+\+D\+E\+F\+A\+U\+LT}, 
-{\bfseries O\+D\+L\+A\+\_\+\+V\+E\+N\+D\+O\+R\+\_\+\+A\+L\+I\+B\+A\+BA}, 
-{\bfseries O\+D\+L\+A\+\_\+\+V\+E\+N\+D\+O\+R\+\_\+\+A\+RM}, 
-{\bfseries O\+D\+L\+A\+\_\+\+V\+E\+N\+D\+O\+R\+\_\+\+C\+A\+M\+B\+R\+I\+C\+ON}, 
-\newline
-{\bfseries O\+D\+L\+A\+\_\+\+V\+E\+N\+D\+O\+R\+\_\+\+G\+R\+A\+P\+H\+C\+O\+RE}, 
-{\bfseries O\+D\+L\+A\+\_\+\+V\+E\+N\+D\+O\+R\+\_\+\+H\+A\+B\+A\+NA}, 
-{\bfseries O\+D\+L\+A\+\_\+\+V\+E\+N\+D\+O\+R\+\_\+\+I\+N\+T\+EL}, 
-{\bfseries O\+D\+L\+A\+\_\+\+V\+E\+N\+D\+O\+R\+\_\+\+N\+V\+I\+D\+IA}, 
-\newline
-{\bfseries O\+D\+L\+A\+\_\+\+V\+E\+N\+D\+O\+R\+\_\+\+Q\+U\+A\+L\+C\+O\+MM}
+{\bfseries ODLA\+\_\+\+VENDOR\+\_\+\+DEFAULT}
+, {\bfseries ODLA\+\_\+\+VENDOR\+\_\+\+ALIBABA}
+, {\bfseries ODLA\+\_\+\+VENDOR\+\_\+\+ARM}
+, {\bfseries ODLA\+\_\+\+VENDOR\+\_\+\+CAMBRICON}
+, \newline
+{\bfseries ODLA\+\_\+\+VENDOR\+\_\+\+GRAPHCORE}
+, {\bfseries ODLA\+\_\+\+VENDOR\+\_\+\+HABANA}
+, {\bfseries ODLA\+\_\+\+VENDOR\+\_\+\+INTEL}
+, {\bfseries ODLA\+\_\+\+VENDOR\+\_\+\+NVIDIA}
+, \newline
+{\bfseries ODLA\+\_\+\+VENDOR\+\_\+\+QUALCOMM}
  \}
 \begin{DoxyCompactList}\small\item\em Supported vendors. \end{DoxyCompactList}\item 
 \mbox{\Hypertarget{odla__device_8h_a5ee336a2ef2c35a0dcc57e64dbde0271}\label{odla__device_8h_a5ee336a2ef2c35a0dcc57e64dbde0271}} 
-enum \mbox{\hyperlink{odla__device_8h_a5ee336a2ef2c35a0dcc57e64dbde0271}{odla\+\_\+vendor\+\_\+info}} \{ {\bfseries O\+V\+I\+\_\+\+D\+E\+S\+C\+R\+I\+P\+T\+I\+ON}, 
-{\bfseries O\+V\+I\+\_\+\+F\+E\+A\+T\+U\+R\+E\+\_\+\+S\+ET}
+enum \mbox{\hyperlink{odla__device_8h_a5ee336a2ef2c35a0dcc57e64dbde0271}{odla\+\_\+vendor\+\_\+info}} \{ {\bfseries OVI\+\_\+\+DESCRIPTION}
+, {\bfseries OVI\+\_\+\+FEATURE\+\_\+\+SET}
  \}
 \begin{DoxyCompactList}\small\item\em Vendor info. \end{DoxyCompactList}\item 
 \mbox{\Hypertarget{odla__device_8h_aa752c9d7d8ae4aca3037f9c6dccd68b2}\label{odla__device_8h_aa752c9d7d8ae4aca3037f9c6dccd68b2}} 
 enum \mbox{\hyperlink{odla__device_8h_aa752c9d7d8ae4aca3037f9c6dccd68b2}{odla\+\_\+device\+\_\+name}} \{ \newline
-{\bfseries O\+D\+L\+A\+\_\+\+D\+E\+V\+I\+C\+E\+\_\+\+D\+E\+F\+A\+U\+LT}, 
-{\bfseries O\+D\+L\+A\+\_\+\+D\+E\+V\+I\+C\+E\+\_\+\+A\+L\+I\+B\+A\+B\+A\+\_\+\+H\+A\+N\+G\+U\+A\+NG}, 
-{\bfseries O\+D\+L\+A\+\_\+\+D\+E\+V\+I\+C\+E\+\_\+\+A\+R\+M\+\_\+\+C\+O\+R\+T\+E\+X\+\_\+M}, 
-{\bfseries O\+D\+L\+A\+\_\+\+D\+E\+V\+I\+C\+E\+\_\+\+C\+A\+M\+B\+R\+I\+C\+O\+N\+\_\+\+M\+L\+U220}, 
-\newline
-{\bfseries O\+D\+L\+A\+\_\+\+D\+E\+V\+I\+C\+E\+\_\+\+C\+A\+M\+B\+R\+I\+C\+O\+N\+\_\+\+M\+L\+U270}, 
-{\bfseries O\+D\+L\+A\+\_\+\+D\+E\+V\+I\+C\+E\+\_\+\+G\+R\+A\+P\+H\+C\+O\+R\+E\+\_\+\+I\+PU}, 
-{\bfseries O\+D\+L\+A\+\_\+\+D\+E\+V\+I\+C\+E\+\_\+\+H\+A\+B\+A\+N\+A\+\_\+\+G\+A\+U\+DI}, 
-{\bfseries O\+D\+L\+A\+\_\+\+D\+E\+V\+I\+C\+E\+\_\+\+H\+A\+B\+A\+N\+A\+\_\+\+G\+O\+YA}, 
-\newline
-{\bfseries O\+D\+L\+A\+\_\+\+D\+E\+V\+I\+C\+E\+\_\+\+I\+N\+T\+E\+L\+\_\+\+X86}, 
-{\bfseries O\+D\+L\+A\+\_\+\+D\+E\+V\+I\+C\+E\+\_\+\+I\+N\+T\+E\+L\+\_\+\+D\+N\+NL}, 
-{\bfseries O\+D\+L\+A\+\_\+\+D\+E\+V\+I\+C\+E\+\_\+\+N\+V\+I\+D\+I\+A\+\_\+\+G\+PU}, 
-{\bfseries O\+D\+L\+A\+\_\+\+D\+E\+V\+I\+C\+E\+\_\+\+N\+V\+I\+D\+I\+A\+\_\+\+T\+E\+N\+S\+O\+R\+RT}, 
-\newline
-{\bfseries O\+D\+L\+A\+\_\+\+D\+E\+V\+I\+C\+E\+\_\+\+Q\+U\+A\+L\+C\+O\+M\+M\+\_\+\+A\+I\+C100}
+{\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+DEFAULT}
+, {\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+ALIBABA\+\_\+\+HANGUANG}
+, {\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+ARM\+\_\+\+CORTEX\+\_\+M}
+, {\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+CAMBRICON\+\_\+\+MLU220}
+, \newline
+{\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+CAMBRICON\+\_\+\+MLU270}
+, {\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+GRAPHCORE\+\_\+\+IPU}
+, {\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+HABANA\+\_\+\+GAUDI}
+, {\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+HABANA\+\_\+\+GOYA}
+, \newline
+{\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+INTEL\+\_\+\+X86}
+, {\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+INTEL\+\_\+\+DNNL}
+, {\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+NVIDIA\+\_\+\+GPU}
+, {\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+NVIDIA\+\_\+\+TENSORRT}
+, \newline
+{\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+QUALCOMM\+\_\+\+AIC100}
  \}
 \begin{DoxyCompactList}\small\item\em Supported devices. \end{DoxyCompactList}\item 
 \mbox{\Hypertarget{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}\label{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}} 
 enum \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}{odla\+\_\+device\+\_\+info}} \{ \newline
-{\bfseries O\+D\+L\+A\+\_\+\+D\+E\+V\+I\+C\+E\+\_\+\+I\+N\+F\+O\+\_\+\+D\+E\+S\+C\+R\+I\+P\+T\+I\+ON}, 
-{\bfseries O\+D\+L\+A\+\_\+\+D\+E\+V\+I\+C\+E\+\_\+\+I\+N\+F\+O\+\_\+\+O\+D\+L\+A\+\_\+\+V\+E\+R\+S\+I\+ON}, 
-{\bfseries O\+D\+L\+A\+\_\+\+D\+E\+V\+I\+C\+E\+\_\+\+I\+N\+F\+O\+\_\+\+N\+U\+M\+\_\+\+C\+O\+R\+ES}, 
-{\bfseries O\+D\+L\+A\+\_\+\+D\+E\+V\+I\+C\+E\+\_\+\+I\+N\+F\+O\+\_\+\+T\+O\+T\+A\+L\+\_\+\+M\+E\+M\+\_\+\+S\+I\+ZE}, 
-\newline
-{\bfseries O\+D\+L\+A\+\_\+\+D\+E\+V\+I\+C\+E\+\_\+\+I\+N\+F\+O\+\_\+\+C\+O\+R\+E\+\_\+\+M\+E\+M\+\_\+\+S\+I\+ZE}
+{\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+INFO\+\_\+\+DESCRIPTION}
+, {\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+INFO\+\_\+\+ODLA\+\_\+\+VERSION}
+, {\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+INFO\+\_\+\+NUM\+\_\+\+CORES}
+, {\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+INFO\+\_\+\+TOTAL\+\_\+\+MEM\+\_\+\+SIZE}
+, \newline
+{\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+INFO\+\_\+\+CORE\+\_\+\+MEM\+\_\+\+SIZE}
  \}
 \begin{DoxyCompactList}\small\item\em Device info. \end{DoxyCompactList}\end{DoxyCompactItemize}
 \doxysubsection*{Functions}
 \begin{DoxyCompactItemize}
 \item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__device_8h_a22ae9fedb1f37be5687e57745c76dacb}{odla\+\_\+\+Get\+Vendor}} (const \mbox{\hyperlink{odla__device_8h_acc70b5ac70bcbc281da55d04741cafe1}{odla\+\_\+vendor\+\_\+name}} vendor\+\_\+name, \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\+\_\+vendor}} $\ast$vendor)
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__device_8h_a22ae9fedb1f37be5687e57745c76dacb}{odla\+\_\+\+Get\+Vendor}} (const \mbox{\hyperlink{odla__device_8h_acc70b5ac70bcbc281da55d04741cafe1}{odla\+\_\+vendor\+\_\+name}} vendor\+\_\+name, \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\+\_\+vendor}} $\ast$vendor)
 \begin{DoxyCompactList}\small\item\em Get the vendor object. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__device_8h_aa80672b818da14472d90705528431c1a}{odla\+\_\+\+Get\+Vendor\+Info}} (const \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\+\_\+vendor}} vendor, const \mbox{\hyperlink{odla__device_8h_a5ee336a2ef2c35a0dcc57e64dbde0271}{odla\+\_\+vendor\+\_\+info}} info\+\_\+name, const \mbox{\hyperlink{odla__common_8h_a3579cace9c3247094d82fd2a6b09fa84}{odla\+\_\+size\+\_\+t}} allocated\+\_\+info\+\_\+value\+\_\+size, \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$info\+\_\+value, \mbox{\hyperlink{odla__common_8h_a3579cace9c3247094d82fd2a6b09fa84}{odla\+\_\+size\+\_\+t}} $\ast$retrieved\+\_\+info\+\_\+value\+\_\+size)
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__device_8h_aa80672b818da14472d90705528431c1a}{odla\+\_\+\+Get\+Vendor\+Info}} (const \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\+\_\+vendor}} vendor, const \mbox{\hyperlink{odla__device_8h_a5ee336a2ef2c35a0dcc57e64dbde0271}{odla\+\_\+vendor\+\_\+info}} info\+\_\+name, const \mbox{\hyperlink{odla__common_8h_a3579cace9c3247094d82fd2a6b09fa84}{odla\+\_\+size\+\_\+t}} allocated\+\_\+info\+\_\+value\+\_\+size, \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$info\+\_\+value, \mbox{\hyperlink{odla__common_8h_a3579cace9c3247094d82fd2a6b09fa84}{odla\+\_\+size\+\_\+t}} $\ast$retrieved\+\_\+info\+\_\+value\+\_\+size)
 \begin{DoxyCompactList}\small\item\em Get the vendor info. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__device_8h_aff291966c0f22cd35f20b1dd0b2a83be}{odla\+\_\+\+Allocate\+Device}} (const \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\+\_\+vendor}} vendor, const \mbox{\hyperlink{odla__device_8h_aa752c9d7d8ae4aca3037f9c6dccd68b2}{odla\+\_\+device\+\_\+name}} device\+\_\+name, \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} $\ast$device)
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__device_8h_aff291966c0f22cd35f20b1dd0b2a83be}{odla\+\_\+\+Allocate\+Device}} (const \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\+\_\+vendor}} vendor, const \mbox{\hyperlink{odla__device_8h_aa752c9d7d8ae4aca3037f9c6dccd68b2}{odla\+\_\+device\+\_\+name}} device\+\_\+name, \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} $\ast$device)
 \begin{DoxyCompactList}\small\item\em Allocate a device. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__device_8h_a04cba41bee90172253efc94561a20e74}{odla\+\_\+\+Get\+Device\+Info}} (const \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} device, const \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}{odla\+\_\+device\+\_\+info}} info\+\_\+name, const \mbox{\hyperlink{odla__common_8h_a3579cace9c3247094d82fd2a6b09fa84}{odla\+\_\+size\+\_\+t}} allocated\+\_\+info\+\_\+value\+\_\+size, \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$info\+\_\+value, \mbox{\hyperlink{odla__common_8h_a3579cace9c3247094d82fd2a6b09fa84}{odla\+\_\+size\+\_\+t}} $\ast$retrieved\+\_\+info\+\_\+value\+\_\+size)
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__device_8h_a04cba41bee90172253efc94561a20e74}{odla\+\_\+\+Get\+Device\+Info}} (const \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} device, const \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}{odla\+\_\+device\+\_\+info}} info\+\_\+name, const \mbox{\hyperlink{odla__common_8h_a3579cace9c3247094d82fd2a6b09fa84}{odla\+\_\+size\+\_\+t}} allocated\+\_\+info\+\_\+value\+\_\+size, \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$info\+\_\+value, \mbox{\hyperlink{odla__common_8h_a3579cace9c3247094d82fd2a6b09fa84}{odla\+\_\+size\+\_\+t}} $\ast$retrieved\+\_\+info\+\_\+value\+\_\+size)
 \begin{DoxyCompactList}\small\item\em Get the device info. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__device_8h_a3d5955591890ff2437fbdfe8fa6e5ef1}{odla\+\_\+\+Init\+Device}} (\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} device, const \mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\+\_\+device\+\_\+config}} config)
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__device_8h_a3d5955591890ff2437fbdfe8fa6e5ef1}{odla\+\_\+\+Init\+Device}} (\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} device, const \mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\+\_\+device\+\_\+config}} config)
 \begin{DoxyCompactList}\small\item\em Initialize an allocated device. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__device_8h_af2ce8f8b0cba3b3382a30b5adf34eb0f}{odla\+\_\+\+Set\+Current\+Device}} (\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} device)
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__device_8h_af2ce8f8b0cba3b3382a30b5adf34eb0f}{odla\+\_\+\+Set\+Current\+Device}} (\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} device)
 \begin{DoxyCompactList}\small\item\em Set an allocated device as the current device. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__device_8h_aae5090077f6c6173687c9c32b82a7e57}{odla\+\_\+\+Destroy\+Device}} (\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} device)
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__device_8h_aae5090077f6c6173687c9c32b82a7e57}{odla\+\_\+\+Destroy\+Device}} (\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} device)
 \begin{DoxyCompactList}\small\item\em Destroy an allocated device. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__device_8h_a218cc769dbccaeceed3579078e6de0dd}{odla\+\_\+\+Create\+Device\+Config}} (\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\+\_\+device\+\_\+config}} $\ast$device\+\_\+config)
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__device_8h_a218cc769dbccaeceed3579078e6de0dd}{odla\+\_\+\+Create\+Device\+Config}} (\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\+\_\+device\+\_\+config}} $\ast$device\+\_\+config)
 \begin{DoxyCompactList}\small\item\em Create a device config object. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__device_8h_a9c2b18144d3a094ff560e10c06fc150d}{odla\+\_\+\+Set\+Device\+Config\+Item}} (\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\+\_\+device\+\_\+config}} device\+\_\+config, \mbox{\hyperlink{odla__device_8h_a643162987c9d516257f0926bd5c6a1ba}{odla\+\_\+device\+\_\+config\+\_\+item}} device\+\_\+config\+\_\+item,...)
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__device_8h_a9c2b18144d3a094ff560e10c06fc150d}{odla\+\_\+\+Set\+Device\+Config\+Item}} (\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\+\_\+device\+\_\+config}} device\+\_\+config, \mbox{\hyperlink{odla__device_8h_a643162987c9d516257f0926bd5c6a1ba}{odla\+\_\+device\+\_\+config\+\_\+item}} device\+\_\+config\+\_\+item,...)
 \begin{DoxyCompactList}\small\item\em Set the device config with a property item. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL \mbox{\hyperlink{odla__device_8h_aa75c96d077e56bd22c05bcef89f0b7b5}{odla\+\_\+\+Destroy\+Device\+Config}} (\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\+\_\+device\+\_\+config}} device\+\_\+config)
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__device_8h_aa75c96d077e56bd22c05bcef89f0b7b5}{odla\+\_\+\+Destroy\+Device\+Config}} (\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\+\_\+device\+\_\+config}} device\+\_\+config)
 \begin{DoxyCompactList}\small\item\em Destroy a device config object. \end{DoxyCompactList}\end{DoxyCompactItemize}
 
 
 \doxysubsection{Detailed Description}
-This file defines the O\+D\+LA device related A\+P\+Is. 
+This file defines the ODLA device related APIs. 
 
 \doxysubsection{Function Documentation}
 \mbox{\Hypertarget{odla__device_8h_aff291966c0f22cd35f20b1dd0b2a83be}\label{odla__device_8h_aff291966c0f22cd35f20b1dd0b2a83be}} 
 \index{odla\_device.h@{odla\_device.h}!odla\_AllocateDevice@{odla\_AllocateDevice}}
 \index{odla\_AllocateDevice@{odla\_AllocateDevice}!odla\_device.h@{odla\_device.h}}
 \doxysubsubsection{\texorpdfstring{odla\_AllocateDevice()}{odla\_AllocateDevice()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Allocate\+Device (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\+\_\+vendor}}}]{vendor,  }\item[{const \mbox{\hyperlink{odla__device_8h_aa752c9d7d8ae4aca3037f9c6dccd68b2}{odla\+\_\+device\+\_\+name}}}]{device\+\_\+name,  }\item[{\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} $\ast$}]{device }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Allocate\+Device (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\+\_\+vendor}}}]{vendor,  }\item[{const \mbox{\hyperlink{odla__device_8h_aa752c9d7d8ae4aca3037f9c6dccd68b2}{odla\+\_\+device\+\_\+name}}}]{device\+\_\+name,  }\item[{\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} $\ast$}]{device }\end{DoxyParamCaption})}
 
 
 
@@ -109,7 +109,7 @@ Allocate a device.
 
 
 \begin{DoxyParams}{Parameters}
-{\em vendor} & the vendor object (can be N\+U\+LL) \\
+{\em vendor} & the vendor object (can be NULL) \\
 \hline
 {\em device\+\_\+name} & the device name \\
 \hline
@@ -123,7 +123,7 @@ odla\+\_\+status
 \index{odla\_device.h@{odla\_device.h}!odla\_CreateDeviceConfig@{odla\_CreateDeviceConfig}}
 \index{odla\_CreateDeviceConfig@{odla\_CreateDeviceConfig}!odla\_device.h@{odla\_device.h}}
 \doxysubsubsection{\texorpdfstring{odla\_CreateDeviceConfig()}{odla\_CreateDeviceConfig()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Create\+Device\+Config (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\+\_\+device\+\_\+config}} $\ast$}]{device\+\_\+config }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Create\+Device\+Config (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\+\_\+device\+\_\+config}} $\ast$}]{device\+\_\+config }\end{DoxyParamCaption})}
 
 
 
@@ -141,7 +141,7 @@ odla\+\_\+status
 \index{odla\_device.h@{odla\_device.h}!odla\_DestroyDevice@{odla\_DestroyDevice}}
 \index{odla\_DestroyDevice@{odla\_DestroyDevice}!odla\_device.h@{odla\_device.h}}
 \doxysubsubsection{\texorpdfstring{odla\_DestroyDevice()}{odla\_DestroyDevice()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Destroy\+Device (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}}]{device }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Destroy\+Device (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}}]{device }\end{DoxyParamCaption})}
 
 
 
@@ -159,7 +159,7 @@ odla\+\_\+status
 \index{odla\_device.h@{odla\_device.h}!odla\_DestroyDeviceConfig@{odla\_DestroyDeviceConfig}}
 \index{odla\_DestroyDeviceConfig@{odla\_DestroyDeviceConfig}!odla\_device.h@{odla\_device.h}}
 \doxysubsubsection{\texorpdfstring{odla\_DestroyDeviceConfig()}{odla\_DestroyDeviceConfig()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Destroy\+Device\+Config (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\+\_\+device\+\_\+config}}}]{device\+\_\+config }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Destroy\+Device\+Config (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\+\_\+device\+\_\+config}}}]{device\+\_\+config }\end{DoxyParamCaption})}
 
 
 
@@ -177,7 +177,7 @@ odla\+\_\+status
 \index{odla\_device.h@{odla\_device.h}!odla\_GetDeviceInfo@{odla\_GetDeviceInfo}}
 \index{odla\_GetDeviceInfo@{odla\_GetDeviceInfo}!odla\_device.h@{odla\_device.h}}
 \doxysubsubsection{\texorpdfstring{odla\_GetDeviceInfo()}{odla\_GetDeviceInfo()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Get\+Device\+Info (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}}]{device,  }\item[{const \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}{odla\+\_\+device\+\_\+info}}}]{info\+\_\+name,  }\item[{const \mbox{\hyperlink{odla__common_8h_a3579cace9c3247094d82fd2a6b09fa84}{odla\+\_\+size\+\_\+t}}}]{allocated\+\_\+info\+\_\+value\+\_\+size,  }\item[{\mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$}]{info\+\_\+value,  }\item[{\mbox{\hyperlink{odla__common_8h_a3579cace9c3247094d82fd2a6b09fa84}{odla\+\_\+size\+\_\+t}} $\ast$}]{retrieved\+\_\+info\+\_\+value\+\_\+size }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Get\+Device\+Info (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}}]{device,  }\item[{const \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}{odla\+\_\+device\+\_\+info}}}]{info\+\_\+name,  }\item[{const \mbox{\hyperlink{odla__common_8h_a3579cace9c3247094d82fd2a6b09fa84}{odla\+\_\+size\+\_\+t}}}]{allocated\+\_\+info\+\_\+value\+\_\+size,  }\item[{\mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$}]{info\+\_\+value,  }\item[{\mbox{\hyperlink{odla__common_8h_a3579cace9c3247094d82fd2a6b09fa84}{odla\+\_\+size\+\_\+t}} $\ast$}]{retrieved\+\_\+info\+\_\+value\+\_\+size }\end{DoxyParamCaption})}
 
 
 
@@ -203,7 +203,7 @@ odla\+\_\+status
 \index{odla\_device.h@{odla\_device.h}!odla\_GetVendor@{odla\_GetVendor}}
 \index{odla\_GetVendor@{odla\_GetVendor}!odla\_device.h@{odla\_device.h}}
 \doxysubsubsection{\texorpdfstring{odla\_GetVendor()}{odla\_GetVendor()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Get\+Vendor (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__device_8h_acc70b5ac70bcbc281da55d04741cafe1}{odla\+\_\+vendor\+\_\+name}}}]{vendor\+\_\+name,  }\item[{\mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\+\_\+vendor}} $\ast$}]{vendor }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Get\+Vendor (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__device_8h_acc70b5ac70bcbc281da55d04741cafe1}{odla\+\_\+vendor\+\_\+name}}}]{vendor\+\_\+name,  }\item[{\mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\+\_\+vendor}} $\ast$}]{vendor }\end{DoxyParamCaption})}
 
 
 
@@ -223,7 +223,7 @@ odla\+\_\+status
 \index{odla\_device.h@{odla\_device.h}!odla\_GetVendorInfo@{odla\_GetVendorInfo}}
 \index{odla\_GetVendorInfo@{odla\_GetVendorInfo}!odla\_device.h@{odla\_device.h}}
 \doxysubsubsection{\texorpdfstring{odla\_GetVendorInfo()}{odla\_GetVendorInfo()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Get\+Vendor\+Info (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\+\_\+vendor}}}]{vendor,  }\item[{const \mbox{\hyperlink{odla__device_8h_a5ee336a2ef2c35a0dcc57e64dbde0271}{odla\+\_\+vendor\+\_\+info}}}]{info\+\_\+name,  }\item[{const \mbox{\hyperlink{odla__common_8h_a3579cace9c3247094d82fd2a6b09fa84}{odla\+\_\+size\+\_\+t}}}]{allocated\+\_\+info\+\_\+value\+\_\+size,  }\item[{\mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$}]{info\+\_\+value,  }\item[{\mbox{\hyperlink{odla__common_8h_a3579cace9c3247094d82fd2a6b09fa84}{odla\+\_\+size\+\_\+t}} $\ast$}]{retrieved\+\_\+info\+\_\+value\+\_\+size }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Get\+Vendor\+Info (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\+\_\+vendor}}}]{vendor,  }\item[{const \mbox{\hyperlink{odla__device_8h_a5ee336a2ef2c35a0dcc57e64dbde0271}{odla\+\_\+vendor\+\_\+info}}}]{info\+\_\+name,  }\item[{const \mbox{\hyperlink{odla__common_8h_a3579cace9c3247094d82fd2a6b09fa84}{odla\+\_\+size\+\_\+t}}}]{allocated\+\_\+info\+\_\+value\+\_\+size,  }\item[{\mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$}]{info\+\_\+value,  }\item[{\mbox{\hyperlink{odla__common_8h_a3579cace9c3247094d82fd2a6b09fa84}{odla\+\_\+size\+\_\+t}} $\ast$}]{retrieved\+\_\+info\+\_\+value\+\_\+size }\end{DoxyParamCaption})}
 
 
 
@@ -249,7 +249,7 @@ odla\+\_\+status
 \index{odla\_device.h@{odla\_device.h}!odla\_InitDevice@{odla\_InitDevice}}
 \index{odla\_InitDevice@{odla\_InitDevice}!odla\_device.h@{odla\_device.h}}
 \doxysubsubsection{\texorpdfstring{odla\_InitDevice()}{odla\_InitDevice()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Init\+Device (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}}]{device,  }\item[{const \mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\+\_\+device\+\_\+config}}}]{config }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Init\+Device (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}}]{device,  }\item[{const \mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\+\_\+device\+\_\+config}}}]{config }\end{DoxyParamCaption})}
 
 
 
@@ -269,7 +269,7 @@ odla\+\_\+status
 \index{odla\_device.h@{odla\_device.h}!odla\_SetCurrentDevice@{odla\_SetCurrentDevice}}
 \index{odla\_SetCurrentDevice@{odla\_SetCurrentDevice}!odla\_device.h@{odla\_device.h}}
 \doxysubsubsection{\texorpdfstring{odla\_SetCurrentDevice()}{odla\_SetCurrentDevice()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Set\+Current\+Device (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}}]{device }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Set\+Current\+Device (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}}]{device }\end{DoxyParamCaption})}
 
 
 
@@ -287,7 +287,7 @@ odla\+\_\+status
 \index{odla\_device.h@{odla\_device.h}!odla\_SetDeviceConfigItem@{odla\_SetDeviceConfigItem}}
 \index{odla\_SetDeviceConfigItem@{odla\_SetDeviceConfigItem}!odla\_device.h@{odla\_device.h}}
 \doxysubsubsection{\texorpdfstring{odla\_SetDeviceConfigItem()}{odla\_SetDeviceConfigItem()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL odla\+\_\+\+Set\+Device\+Config\+Item (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\+\_\+device\+\_\+config}}}]{device\+\_\+config,  }\item[{\mbox{\hyperlink{odla__device_8h_a643162987c9d516257f0926bd5c6a1ba}{odla\+\_\+device\+\_\+config\+\_\+item}}}]{device\+\_\+config\+\_\+item,  }\item[{}]{... }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Set\+Device\+Config\+Item (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\+\_\+device\+\_\+config}}}]{device\+\_\+config,  }\item[{\mbox{\hyperlink{odla__device_8h_a643162987c9d516257f0926bd5c6a1ba}{odla\+\_\+device\+\_\+config\+\_\+item}}}]{device\+\_\+config\+\_\+item,  }\item[{}]{... }\end{DoxyParamCaption})}
 
 
 

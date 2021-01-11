@@ -1,13 +1,13 @@
-\hypertarget{odla__common_8h}{}\doxysection{O\+D\+L\+A/odla\+\_\+common.h File Reference}
+\hypertarget{odla__common_8h}{}\doxysection{ODLA/odla\+\_\+common.h File Reference}
 \label{odla__common_8h}\index{ODLA/odla\_common.h@{ODLA/odla\_common.h}}
 \doxysubsection*{Macros}
 \begin{DoxyCompactItemize}
 \item 
 \mbox{\Hypertarget{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}\label{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}} 
-\#define \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+E\+X\+P\+O\+RT}}
-\begin{DoxyCompactList}\small\item\em A\+PI export directives. \end{DoxyCompactList}\item 
+\#define \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}}
+\begin{DoxyCompactList}\small\item\em API export directives. \end{DoxyCompactList}\item 
 \mbox{\Hypertarget{odla__common_8h_a115004e03b7bafa9bd7ab433afc7ac5f}\label{odla__common_8h_a115004e03b7bafa9bd7ab433afc7ac5f}} 
-\#define {\bfseries O\+D\+L\+A\+\_\+\+A\+P\+I\+\_\+\+C\+A\+LL}
+\#define {\bfseries ODLA\+\_\+\+API\+\_\+\+CALL}
 \end{DoxyCompactItemize}
 \doxysubsection*{Typedefs}
 \begin{DoxyCompactItemize}
@@ -68,43 +68,43 @@ typedef void \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}
 \item 
 \mbox{\Hypertarget{odla__common_8h_a6218e6a4a89e7525ee0506df9bf2d934}\label{odla__common_8h_a6218e6a4a89e7525ee0506df9bf2d934}} 
 enum {\bfseries odla\+\_\+element\+\_\+type} \{ \newline
-{\bfseries O\+D\+L\+A\+\_\+\+I\+N\+T8}, 
-{\bfseries O\+D\+L\+A\+\_\+\+I\+N\+T16}, 
-{\bfseries O\+D\+L\+A\+\_\+\+I\+N\+T32}, 
-{\bfseries O\+D\+L\+A\+\_\+\+I\+N\+T64}, 
-\newline
-{\bfseries O\+D\+L\+A\+\_\+\+U\+I\+N\+T8}, 
-{\bfseries O\+D\+L\+A\+\_\+\+U\+I\+N\+T16}, 
-{\bfseries O\+D\+L\+A\+\_\+\+U\+I\+N\+T32}, 
-{\bfseries O\+D\+L\+A\+\_\+\+U\+I\+N\+T64}, 
-\newline
-{\bfseries O\+D\+L\+A\+\_\+\+Q\+I\+N\+T8}, 
-{\bfseries O\+D\+L\+A\+\_\+\+Q\+I\+N\+T16}, 
-{\bfseries O\+D\+L\+A\+\_\+\+Q\+I\+N\+T32}, 
-{\bfseries O\+D\+L\+A\+\_\+\+Q\+I\+N\+T64}, 
-\newline
-{\bfseries O\+D\+L\+A\+\_\+\+Q\+U\+I\+N\+T8}, 
-{\bfseries O\+D\+L\+A\+\_\+\+Q\+U\+I\+N\+T16}, 
-{\bfseries O\+D\+L\+A\+\_\+\+Q\+U\+I\+N\+T32}, 
-{\bfseries O\+D\+L\+A\+\_\+\+Q\+U\+I\+N\+T64}, 
-\newline
-{\bfseries O\+D\+L\+A\+\_\+\+F\+L\+O\+A\+T16}, 
-{\bfseries O\+D\+L\+A\+\_\+\+B\+F\+L\+O\+A\+T16}, 
-{\bfseries O\+D\+L\+A\+\_\+\+F\+L\+O\+A\+T32}, 
-{\bfseries O\+D\+L\+A\+\_\+\+F\+L\+O\+A\+T64}, 
-\newline
-{\bfseries O\+D\+L\+A\+\_\+\+B\+O\+OL}
+{\bfseries ODLA\+\_\+\+INT8}
+, {\bfseries ODLA\+\_\+\+INT16}
+, {\bfseries ODLA\+\_\+\+INT32}
+, {\bfseries ODLA\+\_\+\+INT64}
+, \newline
+{\bfseries ODLA\+\_\+\+UINT8}
+, {\bfseries ODLA\+\_\+\+UINT16}
+, {\bfseries ODLA\+\_\+\+UINT32}
+, {\bfseries ODLA\+\_\+\+UINT64}
+, \newline
+{\bfseries ODLA\+\_\+\+QINT8}
+, {\bfseries ODLA\+\_\+\+QINT16}
+, {\bfseries ODLA\+\_\+\+QINT32}
+, {\bfseries ODLA\+\_\+\+QINT64}
+, \newline
+{\bfseries ODLA\+\_\+\+QUINT8}
+, {\bfseries ODLA\+\_\+\+QUINT16}
+, {\bfseries ODLA\+\_\+\+QUINT32}
+, {\bfseries ODLA\+\_\+\+QUINT64}
+, \newline
+{\bfseries ODLA\+\_\+\+FLOAT16}
+, {\bfseries ODLA\+\_\+\+BFLOAT16}
+, {\bfseries ODLA\+\_\+\+FLOAT32}
+, {\bfseries ODLA\+\_\+\+FLOAT64}
+, \newline
+{\bfseries ODLA\+\_\+\+BOOL}
  \}
 \item 
 \mbox{\Hypertarget{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}\label{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}} 
-enum \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} \{ {\bfseries O\+D\+L\+A\+\_\+\+S\+U\+C\+C\+E\+SS}, 
-{\bfseries O\+D\+L\+A\+\_\+\+F\+A\+I\+L\+U\+RE}
+enum \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} \{ {\bfseries ODLA\+\_\+\+SUCCESS}
+, {\bfseries ODLA\+\_\+\+FAILURE}
  \}
 \begin{DoxyCompactList}\small\item\em Return status. \end{DoxyCompactList}\end{DoxyCompactItemize}
 
 
 \doxysubsection{Detailed Description}
-This file defines the O\+D\+LA basic common types. 
+This file defines the ODLA basic common types. 
 
 \doxysubsection{Typedef Documentation}
 \mbox{\Hypertarget{odla__common_8h_a27c4357b8c5162df40fd1e5b03b45d06}\label{odla__common_8h_a27c4357b8c5162df40fd1e5b03b45d06}} 
