@@ -492,8 +492,12 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
 
   // contents in oss will be write to c file and header file.
   std::ostringstream oss;
-  const std::string init_func_name = function.GetName() + "_init";
-  const std::string fini_func_name = function.GetName() + "_fini";
+  bool emit_triton_style =
+      (function.IsEntryFunction() && opts_.emit_inference_func_sig);
+  const std::string init_func_name =
+      emit_triton_style ? "model_init" : function.GetName() + "_init";
+  const std::string fini_func_name =
+      emit_triton_style ? "model_fini" : function.GetName() + "_fini";
 
   if (function.IsEntryFunction()) {
     if (opts_.dialect == Dialect::CXX_11) {

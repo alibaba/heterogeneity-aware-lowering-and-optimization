@@ -70,10 +70,6 @@ void TritonConfigWriter::PrintUseProtobuf(const Module& module,
     auto const& type = arg->GetResultType();
     input->set_name(arg->GetName());
     input->set_data_type(GetTritonType(type));
-    if (type.GetNumOfDims() == 4) {
-      input->set_format(::nvidia::inferenceserver::ModelInput_Format::
-                            ModelInput_Format_FORMAT_NCHW);
-    }
     if (max_batch_size_ > 0) {
       for (size_t i = 1; i < type.GetNumOfDims(); ++i) {
         input->add_dims(type.GetDimSizes()[i]);
