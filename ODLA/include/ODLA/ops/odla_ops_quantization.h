@@ -33,8 +33,11 @@ extern "C" {
 typedef struct {
   // value id of odla_value
   odla_value_id value_id;
+  int ch_idx;
   odla_float32 scale;
   odla_float32 offset;
+  odla_float32 min;
+  odla_float32 max;
 } odla_value_quant_info;
 
 #ifdef __cplusplus
