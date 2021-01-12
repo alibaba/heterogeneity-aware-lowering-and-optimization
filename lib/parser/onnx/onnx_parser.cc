@@ -58,6 +58,8 @@ Status ONNXParser::Parse(Function* function,
     onnx::TensorProto tensor_def;
     if (tensor_def.ParsePartialFromIstream(&ifs)) {
       c_builder_ = std::make_unique<ConstantBuilder>(function->GetParent());
+      // Use the function name as data for testing purpose.
+      tensor_def.set_name(function->GetName());
       ConvertConstNode(tensor_def);
       return Status::SUCCESS;
     } else {
