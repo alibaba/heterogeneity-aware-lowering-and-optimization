@@ -230,6 +230,8 @@ static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
   int stride = FindAttributeValue(ext, "stride", 1);
   int kernel_size_h = FindAttributeValue(ext, "kernel_size", -1);
   int kernel_size_w = kernel_size_h;
+  int pool = FindAttributeValue(ext, "pool", 0);
+  HLCHECK(pool == 0 || pool == 1);
 
   int pad = FindAttributeValue(ext, "pad", 0);
 
@@ -244,17 +246,25 @@ static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
     pad = 0;
   }
 
-  PoolingMaxInst* inst =
-      builder->CreatePoolingMax(ext->GetName(), ext->GetOperand(0));
-  inst->SetKsize({1, 1, kernel_size_h, kernel_size_w});
-  inst->SetPaddingLeft(pad);
-  inst->SetPaddingRight(pad);
-  inst->SetPaddingTop(pad);
-  inst->SetPaddingBottom(pad);
-  inst->SetStrides({1, 1, stride, stride});
-  inst->SetPadding(Padding::EXPLICIT);
-  inst->SetDataFormat(DataFormat::NCHW);
+  auto set_pooling_attributes = [&](auto inst) {
+    inst->SetKsize({1, 1, kernel_size_h, kernel_size_w});
+    inst->SetPaddingLeft(pad);
+    inst->SetPaddingRight(pad);
+    inst->SetPaddingTop(pad);
+    inst->SetPaddingBottom(pad);
+    inst->SetStrides({1, 1, stride, stride});
+    inst->SetPadding(Padding::EXPLICIT);
+    inst->SetDataFormat(DataFormat::NCHW);
+  };
 
+  Instruction* inst = nullptr;
+  if (pool == 0) {
+    inst = builder->CreatePoolingMax(ext->GetName(), ext->GetOperand(0));
+    set_pooling_attributes(DynCast<PoolingMaxInst>(inst));
+  } else {
+    inst = builder->CreatePoolingAvg(ext->GetName(), ext->GetOperand(0));
+    set_pooling_attributes(DynCast<PoolingAvgInst>(inst));
+  }
   return {*inst};
 }
 
@@ -363,8 +373,8 @@ static std::vector<Def> ConvertScale(const CAFFEExtensionInst* ext,
     auto op2 = ext->GetOperand(2);
     if (bn_without_scale && op1.GetType().GetTotalNumOfElements() == ch &&
         op2.GetType().GetTotalNumOfElements() == ch) {
-      std::vector<Def> new_ops{bn->GetOperand(0), op1, op2, bn->GetOperand(2),
-                               bn->GetOperand(3)};
+      std::vector<Def> new_ops{bn->GetOperand(0), op1, op2, bn->GetOperand(1),
+                               bn->GetOperand(2)};
       Instruction* new_bn = builder->Clone(*bn, new_ops);
       return {*new_bn};
     }
@@ -587,7 +597,7 @@ static std::vector<Def> ConvertDeConvolution(const CAFFEExtensionInst* ext,
   // deconv_inst->SetNumOutput(num_output);
   deconv_inst->SetPadding(Padding::EXPLICIT);
   deconv_inst->SetDataFormat(DataFormat::NCHW);
-  deconv_inst->SetFilterFormat(DataFormat::NCHW);
+  deconv_inst->SetFilterFormat(DataFormat::CNHW);
 
   if (bias_term) {
     auto bias = ext->GetOperand(2);

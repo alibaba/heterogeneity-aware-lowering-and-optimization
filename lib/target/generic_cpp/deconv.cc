@@ -61,13 +61,18 @@ void GenericCXXCodeGen::RunOnInstruction(Conv2DTransposeInst* inst) {
       enum_ns + enum_prefix +
       (inst->GetDataFormat() == DataFormat::NHWC ? "CHANNELS_LAST"
                                                  : "CHANNELS_FIRST");
-  const std::string sio = enum_ns + enum_prefix + "SIO";
+  const std::string soi = enum_ns + enum_prefix + "SOI";
   const std::string ois = enum_ns + enum_prefix + "OIS";
   const std::string ios = enum_ns + enum_prefix + "IOS";
+  // the shape of deconv's filter is [height, width, output_channels,
+  // input_channels] that is diffrent from conv's filter [height, width,
+  // input_channels, output_channels] that means C is output_channels, N is
+  // input_channels in deconv's filter, but C is input_channels, N is
+  // output_channels in conv's filter
   const std::string kernel_layout =
       inst->GetFilterFormat() == DataFormat::HWCN
-          ? sio
-          : (inst->GetFilterFormat() == DataFormat::CNHW ? ios : ois);
+          ? soi
+          : (inst->GetFilterFormat() == DataFormat::CNHW ? ois : ios);
   std::string bias_name = EmitNull();
   halo::Type bias_ty;
   if (inst->GetOperands().size() == 3) {

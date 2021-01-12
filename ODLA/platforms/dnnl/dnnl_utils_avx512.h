@@ -48,7 +48,7 @@ inline void binary_s32_func(dnnl::algorithm alg, int32_t* lhs, int32_t* rhs,
   int i = 0;
   int vec_size = 512 / 32;
   __mmask16 mask16 = 0xFFFF;
-  std::function<__m512i(__m512i, __m512i)> __mm512_binary_op;
+  __m512i (*__mm512_binary_op)(__m512i, __m512i);
   switch (alg) {
     case dnnl::algorithm::binary_add:
       __mm512_binary_op = [](__m512i a, __m512i b) {
