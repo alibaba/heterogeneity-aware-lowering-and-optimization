@@ -1,4 +1,6 @@
 #!/bin/bash
+# RUN: %s
+
 model_url="https://github.com/onnx/models/raw/master/vision/classification/resnet/model/resnet18-v1-7.onnx"
 model_file="$TEST_TEMP_DIR/resnet18-v1-7.onnx"
 image_dir="$TEST_TEMP_DIR/images"
