@@ -52,8 +52,18 @@ Status ONNXParser::Parse(Function* function,
   google::protobuf::io::CodedInputStream coded_stream(&input_stream);
   coded_stream.SetTotalBytesLimit((2048LL << 20) - 1, 512LL << 20);
   if (!model_def.ParseFromCodedStream(&coded_stream)) {
-    LOG(ERROR) << "Encountered error(s) when parsing " << file_list.front();
-    return Status::ASSERTION;
+    // Try to parse it as data file.
+    ifs.clear();
+    ifs.seekg(0);
+    onnx::TensorProto tensor_def;
+    if (tensor_def.ParsePartialFromIstream(&ifs)) {
+      c_builder_ = std::make_unique<ConstantBuilder>(function->GetParent());
+      ConvertConstNode(tensor_def);
+      return Status::SUCCESS;
+    } else {
+      LOG(ERROR) << "Encountered error(s) when parsing " << file_list.front();
+      return Status::ASSERTION;
+    }
   }
   if (!model_def.has_graph()) {
     LOG(ERROR) << "No graph is defined in onnx file.";
