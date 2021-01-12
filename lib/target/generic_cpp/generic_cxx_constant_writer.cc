@@ -39,6 +39,9 @@ bool GenericCXXConstantWriter::RunOnModule(Module* module) {
          "---------------------------------------===//\n\n";
   os_ << "#include <stdint.h>\n";
 
+  for (auto& c : module->Constants()) {
+    RunOnConstant(*c, &os_);
+  }
   for (auto& func : *module) {
     for (auto& constant : func->Constants()) {
       RunOnConstant(*constant, &os_);
