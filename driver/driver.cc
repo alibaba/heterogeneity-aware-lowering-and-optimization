@@ -493,7 +493,9 @@ int main(int argc, char** argv) {
     header_file_name = name;
     is_binary_output = name.endswith(".bc") || name.endswith(".o");
     if (EmitDataAsC) {
-      llvm::sys::path::replace_extension(data_file_name, "data.cc");
+      std::string ext =
+          llvm::StringRef(Target).startswith_lower("cc") ? "data.c" : "data.cc";
+      llvm::sys::path::replace_extension(data_file_name, ext);
     } else {
       llvm::sys::path::replace_extension(data_file_name, ".bin");
     }
