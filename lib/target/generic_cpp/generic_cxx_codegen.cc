@@ -476,6 +476,11 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
     RunOnConstant(*constant, true);
   }
 
+  if (function.empty() || (function.BasicBlocks().size() == 1 &&
+                           function.BasicBlocks().front()->empty())) {
+    return;
+  }
+
   Instruction* return_inst = function.GetReturnInst();
   HLCHECK(return_inst && "No Return Instruction found");
 
