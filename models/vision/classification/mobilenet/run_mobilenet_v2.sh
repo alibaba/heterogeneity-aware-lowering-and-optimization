@@ -1,4 +1,8 @@
 #!/bin/bash
+# RUN: %s
+
+set -xv
+
 model_name="mobilenet_v2"
 model_file="$TEST_TEMP_DIR/$model_name.onnx"
 image_dir="$TEST_TEMP_DIR/images"

@@ -1,4 +1,6 @@
 #!/bin/bash
+# RUN: %s
+
 #model_name="shufflenet_v2_x1_0"
 model_name="shufflenet"
 model_file="$TEST_TEMP_DIR/$model_name.onnx"
