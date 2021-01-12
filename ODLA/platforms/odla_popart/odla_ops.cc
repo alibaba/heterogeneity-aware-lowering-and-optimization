@@ -55,7 +55,6 @@ extern thread_local odla_computation g_comp;
 odla_value odla_Add(odla_value lhs, const odla_value rhs,
                     const odla_value_id id) {
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
-
   popart::TensorId result =
       g_comp->builder->aiOnnxOpset10().add({lhs->tensor_id, rhs->tensor_id});
   return new _odla_value(result,

@@ -38,7 +38,7 @@ bool DCE::RunOnBasicBlock(BasicBlock* bb) {
     dead_instrs.insert(inst);
   }
 
-  // Delete the instruction.
+  // Delete the dead instructions.
   for (auto it = bb->begin(), e = bb->end(); it != e;) {
     Instruction* inst = it->get();
     if (dead_instrs.count(inst) > 0) {
