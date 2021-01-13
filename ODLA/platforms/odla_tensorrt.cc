@@ -280,6 +280,8 @@ static nvinfer1::DataType GetNVDataType(odla_element_type type) {
       return nvinfer1::DataType::kINT32;
     case ODLA_INT8:
       return nvinfer1::DataType::kINT8;
+    case ODLA_BOOL:
+      return nvinfer1::DataType::kBOOL;
     default:
       return nvinfer1::DataType::kFLOAT;
   }
@@ -295,6 +297,7 @@ static unsigned GetElementSize(odla_element_type type) {
     case ODLA_INT64:
       return sizeof(int32_t);
     case ODLA_INT8:
+    case ODLA_BOOL:
       return 1;
     default:
       return 0;
@@ -658,12 +661,28 @@ static odla_value unary_op(nvinfer1::UnaryOperation op, odla_value input,
   return CreateValue(layer, input->type, id);
 }
 
+odla_value odla_Log(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kLOG, input, id);
+}
+
 odla_value odla_Not(odla_value input, const odla_value_id id) {
   return unary_op(nvinfer1::UnaryOperation::kNOT, input, id);
 }
 
 odla_value odla_Abs(odla_value input, const odla_value_id id) {
   return unary_op(nvinfer1::UnaryOperation::kABS, input, id);
+}
+
+odla_value odla_Max(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  return binary_op(nvinfer1::ElementWiseOperation::kMAX, lhs, rhs, id);
+}
+
+odla_value odla_Min(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  return binary_op(nvinfer1::ElementWiseOperation::kMIN, lhs, rhs, id);
+}
+
+odla_value odla_Ceil(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kCEIL, input, id);
 }
 
 odla_value odla_Floor(odla_value input, const odla_value_id id) {
@@ -747,6 +766,10 @@ odla_value odla_ATanh(odla_value input, const odla_value_id id) {
   return unary_op(nvinfer1::UnaryOperation::kATANH, input, id);
 }
 
+odla_value odla_Neg(odla_value input, const odla_value_id id) {
+  return unary_op(nvinfer1::UnaryOperation::kNEG, input, id);
+}
+
 odla_value odla_Pad(odla_value input, const odla_uint32* padding_front,
                     const odla_uint32* padding_back,
                     odla_value_shape output_dims, const odla_value_id id) {
@@ -807,6 +830,14 @@ odla_value odla_Selu(odla_value input, odla_float32 alpha, odla_float32 beta,
   return CreateValue(relu, input->type, id);
 }
 
+odla_value odla_Elu(odla_value input, odla_float32 alpha,
+                    const odla_value_id id) {
+  auto elu =
+      g_comp->network->addActivation(*input, nvinfer1::ActivationType::kELU);
+  elu->setAlpha(alpha);
+  return CreateValue(elu, input->type, id);
+}
+
 odla_value odla_Resize(odla_value input, odla_interpolation_mode interpolation,
                        odla_resize_coordinate_mode mode, odla_uint32 axes_mask,
                        odla_value_shape output_dims,
@@ -846,8 +877,59 @@ static odla_value reduce(odla_value input, nvinfer1::ReduceOperation op,
     reduce_axes |= (1 << axes[i]);
   }
 
-  auto mean = g_comp->network->addReduce(*input, op, reduce_axes, keep_dims);
-  return CreateValue(mean, {input->type.element_type, output_dims}, id);
+  auto ret = g_comp->network->addReduce(*input, op, reduce_axes, keep_dims);
+  return CreateValue(ret, {input->type.element_type, output_dims}, id);
+}
+
+odla_value odla_ReduceL1(odla_value input, odla_size_t num_of_axes,
+                         const odla_uint32* axes, odla_bool keep_dims,
+                         odla_value_shape output_dims, const odla_value_id id) {
+  const auto& name = std::string(reinterpret_cast<const char*>(id)) + "_extra";
+  return reduce(odla_Abs(input, (const odla_value_id)name.c_str()),
+                nvinfer1::ReduceOperation::kSUM, num_of_axes, axes, keep_dims,
+                output_dims, id);
+}
+
+odla_value odla_ReduceL2(odla_value input, odla_size_t num_of_axes,
+                         const odla_uint32* axes, odla_bool keep_dims,
+                         odla_value_shape output_dims, const odla_value_id id) {
+  const auto& name = std::string(reinterpret_cast<const char*>(id)) + "_extra";
+  return odla_Sqrt(
+      odla_ReduceSumSquare(input, num_of_axes, axes, keep_dims, output_dims,
+                           (const odla_value_id)name.c_str()),
+      id);
+}
+
+odla_value odla_ReduceLogSum(odla_value input, odla_size_t num_of_axes,
+                             const odla_uint32* axes, odla_bool keep_dims,
+                             odla_value_shape output_dims,
+                             const odla_value_id id) {
+  const auto& name = std::string(reinterpret_cast<const char*>(id)) + "_extra";
+  return odla_Log(
+      odla_ReduceSum(input, num_of_axes, axes, keep_dims, output_dims,
+                     (const odla_value_id)name.c_str()),
+      id);
+}
+
+odla_value odla_ReduceLogSumExp(odla_value input, odla_size_t num_of_axes,
+                                const odla_uint32* axes, odla_bool keep_dims,
+                                odla_value_shape output_dims,
+                                const odla_value_id id) {
+  const auto& name = std::string(reinterpret_cast<const char*>(id));
+  auto reduce_max =
+      odla_ReduceMax(input, num_of_axes, axes, true, output_dims,
+                     (const odla_value_id)(name + "_extra_1").c_str());
+  auto exp_delta =
+      odla_Exp(odla_Sub(input, reduce_max,
+                        (const odla_value_id)(name + "_extra2").c_str()),
+               (const odla_value_id)(name + "_extra3").c_str());
+  auto reduce_max_keep_dims =
+      odla_ReduceMax(input, num_of_axes, axes, keep_dims, output_dims,
+                     (const odla_value_id)(name + "_extra4").c_str());
+  return odla_Add(
+      odla_ReduceLogSum(exp_delta, num_of_axes, axes, keep_dims, output_dims,
+                        (const odla_value_id)(name + "_extra5").c_str()),
+      reduce_max_keep_dims, id);
 }
 
 odla_value odla_ReduceMean(odla_value input, odla_size_t num_of_axes,
@@ -872,6 +954,24 @@ odla_value odla_ReduceMax(odla_value input, odla_size_t num_of_axes,
                           const odla_value_id id) {
   return reduce(input, nvinfer1::ReduceOperation::kMAX, num_of_axes, axes,
                 keep_dims, output_dims, id);
+}
+
+odla_value odla_ReduceSum(odla_value input, odla_size_t num_of_axes,
+                          const odla_uint32* axes, odla_bool keep_dims,
+                          odla_value_shape output_dims,
+                          const odla_value_id id) {
+  return reduce(input, nvinfer1::ReduceOperation::kSUM, num_of_axes, axes,
+                keep_dims, output_dims, id);
+}
+
+odla_value odla_ReduceSumSquare(odla_value input, odla_size_t num_of_axes,
+                                const odla_uint32* axes, odla_bool keep_dims,
+                                odla_value_shape output_dims,
+                                const odla_value_id id) {
+  const auto& name = std::string(reinterpret_cast<const char*>(id)) + "_extra";
+  return reduce(odla_Mul(input, input, (const odla_value_id)name.c_str()),
+                nvinfer1::ReduceOperation::kSUM, num_of_axes, axes, keep_dims,
+                output_dims, id);
 }
 
 odla_value odla_LRN(odla_value input, odla_memory_layout input_layout,
