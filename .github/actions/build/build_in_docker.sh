@@ -20,7 +20,7 @@ CONTAINER_NAME="halo.ci-$VER-$VARIANT"
 
 docker_run_flag=""
 cmake_flags=""
-check_cmds="ninja check-halo"
+check_cmds="ninja check-halo && ninja check-halo-models"
 
 if [[ "$VARIANT" =~ cuda ]]; then
   docker_run_flag="--runtime=nvidia"

@@ -1,4 +1,6 @@
 #!/bin/bash
+# RUN: %s
+
 model_file="$TEST_TEMP_DIR/squeezenet_1_1.onnx"
 image_dir="$TEST_TEMP_DIR/images"
 curr_dir=`dirname $0`

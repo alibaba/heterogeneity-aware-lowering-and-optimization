@@ -1,4 +1,6 @@
 #!/bin/bash
+# RUN: %s
+
 model_name="caffenet"
 image_dir="$TEST_TEMP_DIR/images"
 curr_dir=`dirname $0`

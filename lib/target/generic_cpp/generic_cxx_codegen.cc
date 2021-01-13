@@ -735,10 +735,13 @@ void GenericCXXCodeGen::RunOnConstant(Constant& constant, bool decl) {
   auto& type = constant.GetResultType();
   if (decl) {
     CXXValue value(constant.GetName(), TensorTypeToCXXType(type, true));
-
-    os_ << "extern const " << value.type.name << " " << value.name << "["
-        << Join(type.GetDimSizes(), '*') << "];\n";
-
+    if (constant.IsScalarOne()) {
+      os_ << "extern const " << value.type.name << " " << value.name
+          << "[1];\n";
+    } else {
+      os_ << "extern const " << value.type.name << " " << value.name << "["
+          << Join(type.GetDimSizes(), '*') << "];\n";
+    }
     ir_mapping_[constant] = value;
     return;
   }

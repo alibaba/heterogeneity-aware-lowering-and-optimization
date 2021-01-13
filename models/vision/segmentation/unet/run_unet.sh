@@ -1,4 +1,6 @@
 #!/bin/bash
+# RUN: %s
+
 curr_dir=`dirname $0`
 model_file="$TEST_TEMP_DIR/unet.onnx"
 image_dir="$TEST_TEMP_DIR/images/unet"
