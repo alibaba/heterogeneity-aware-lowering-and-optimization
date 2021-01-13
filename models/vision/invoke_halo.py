@@ -196,7 +196,11 @@ if __name__ == "__main__":
             res_info.append(path + ' ==> ' + clsidx[ind[0]])
         else:
             res_info.append(ind)
-    resfile = model_file[0].split('.onnx')[0] + '_' +args.odla + '.txt'
+    resfile = []
+    if ".onnx" in model_file[0]:
+        resfile = model_file[0].split('.onnx')[0] + '_' +args.odla + '.txt'
+    else:
+        resfile = model_file[1].split('.caffemodel')[0] + '_' +args.odla + '.txt'
     with open(resfile, 'w') as f:
         f.write(''.join(str(i) for i in res_info))
     print("======== Testing Done ========")

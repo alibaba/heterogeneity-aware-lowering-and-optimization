@@ -22,7 +22,7 @@ if [[ $TEST_WITH_GPU -eq 1 ]]; then
     --label-file $curr_dir/../1000_labels.txt --input_h=227 --input_w=227 \
     --input-shape=data:1x3x227x227 \
     --image-dir $image_dir --odla tensorrt --img-preprocess=minus_128
-# RUN: FileCheck --input-file /tmp/caffenet_tensorrt.txt %s
+# RUN: FileCheck --input-file /tmp/bvlc_reference_caffenet_tensorrt.txt %s
 else
 	echo "This tests uses ODLA TensorRT"
 fi
