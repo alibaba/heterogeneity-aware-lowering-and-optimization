@@ -34,3 +34,4 @@ def cat_nn_rnn : Category;
 def cat_nn_activation : Category;
 def cat_objectDetection : Category;
 def cat_quantization : Category;
+def cat_customize : Category;
