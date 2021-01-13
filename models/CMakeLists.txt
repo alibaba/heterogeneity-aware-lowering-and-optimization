@@ -13,7 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License
 # ==============================================================================
-
+set(HALO_TEST_DEPENDS
+  FileCheck
+)
 configure_lit_site_cfg(
     ${CMAKE_CURRENT_SOURCE_DIR}/lit.site.cfg.in
     ${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg

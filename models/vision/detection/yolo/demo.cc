@@ -95,7 +95,7 @@ static Mat detect(Mat& src_image, bool print_image_info) {
     if (print_image_info)
       std::cout << "[" << obj.first << "], pos:[" << obj.second[0] << ", "
                 << obj.second[1] << ", " << obj.second[2] << ", "
-                << obj.second[3] << "] score:" << obj.second[4] << "\n";
+                << obj.second[3] << "] score:" << obj.second[4] << std::endl;
     if (ClassColor.find(obj.first) == ClassColor.end()) {
       int n = (ClassColor.size() + 1) % 10;
       ClassColor[obj.first] = Scalar(n * 255 / 10, n * 255 / 10, n * 255 / 10);
@@ -159,7 +159,7 @@ int main(int argc, char** argv) {
     vid.release();
   } else {
     const std::string output_file{"out/result.jpg"};
-    std::cout << "Detecting for image, output: " << output_file << "\n";
+    std::cout << "Detecting for image, output: " << output_file << std::endl;
 
     Mat src_image = imread(argv[1], CV_LOAD_IMAGE_COLOR); // Read the file
     if (!src_image.data) {

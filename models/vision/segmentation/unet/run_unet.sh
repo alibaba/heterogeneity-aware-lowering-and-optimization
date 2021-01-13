@@ -18,3 +18,6 @@ fi
 
 echo "======== Testing with ODLA XNNPACK ========"
 python3 $curr_dir/../../invoke_halo.py --model $model_file --image-dir $image_dir --input_h 256 --input_w 256 --output_size 65536 --odla xnnpack --convert-layout-to=nhwc
+# RUN: FileCheck --input-file /tmp/unet_xnnpack.txt %s
+
+# CHECK: [40859 40860 41114]
