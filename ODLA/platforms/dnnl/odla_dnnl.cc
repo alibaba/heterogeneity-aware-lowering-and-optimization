@@ -375,11 +375,21 @@ odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
   v->is_const = true;
   return v;
 }
+
 odla_status odla_SetValueAsOutput(const odla_value val) {
   g_comp->outputs[val->name] = val;
+  if (g_comp->opts.enable_bf16 &&
+      val->mem.get_desc().data_type() == dnnl::memory::data_type::bf16) {
+    auto dst_md =
+        dnnl::memory::desc(getDims(val->shape), getDataType(ODLA_FLOAT32),
+                           getFormatTag(val->shape));
+    auto dst_mem = dnnl::memory(dst_md, g_comp->eng);
+    auto r = dnnl::reorder(val->mem, dst_mem);
+    add_op(r, {{DNNL_ARG_FROM, val->mem}, {DNNL_ARG_TO, dst_mem}});
+    val->mem = dst_mem;
+  }
   return ODLA_SUCCESS;
 }
-
 odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
                               odla_context context) {
   // Handle the case of output is constant due to compile-time optimization.
@@ -387,23 +397,10 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
     memcpy(data_ptr, value->mem.get_data_handle(),
            value->mem.get_desc().get_size());
   } else {
-    if (g_comp->opts.enable_bf16 &&
-        value->mem.get_desc().data_type() == dnnl::memory::data_type::bf16) {
-      auto dst_md =
-          dnnl::memory::desc(getDims(value->shape), getDataType(ODLA_FLOAT32),
-                             getStrides(value->shape));
-      auto dst_mem =
-          dnnl::memory(dst_md, g_comp->eng, const_cast<void*>(data_ptr));
-      auto r = dnnl::reorder(value->mem, dst_mem);
-      add_op([value, r, dst_mem]() {
-        r.execute(dnnl::stream(g_comp->eng),
-                  {{DNNL_ARG_FROM, value->mem}, {DNNL_ARG_TO, dst_mem}});
-      });
-    } else {
-      value->mem.set_data_handle(data_ptr);
-    }
+    value->mem.set_data_handle(data_ptr);
   }
-  return ODLA_SUCCESS;
+}
+return ODLA_SUCCESS;
 }
 
 odla_status odla_BindToOutputById(const odla_value_id value_id,
@@ -675,6 +672,9 @@ odla_value odla_Add(odla_value lhs, odla_value rhs, const odla_value_id id) {
 }
 
 odla_value odla_Mul(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  if (lhs == rhs) {
+    return unary_eltwise_op(dnnl::algorithm::eltwise_square, lhs, 1.f, 0.f, id);
+  }
   return binary_eltwise(dnnl::algorithm::binary_mul, lhs, rhs, id);
 }
 
