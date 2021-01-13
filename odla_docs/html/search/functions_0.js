@@ -44,7 +44,7 @@ var searchData=
   ['odla_5fcreateexecutable_334',['odla_CreateExecutable',['../odla__compute_8h.html#acc4b0259d59d784d145f8d82e169aaec',1,'odla_compute.h']]],
   ['odla_5fcreatevalue_335',['odla_CreateValue',['../odla__ops__basic_8h.html#a415b63efb8e56a96cf24e108eb70d8e1',1,'odla_ops_basic.h']]],
   ['odla_5fcreatevariable_336',['odla_CreateVariable',['../odla__ops__basic_8h.html#a95aa6bd3fbe00ced1721aa43294b9f3b',1,'odla_ops_basic.h']]],
-  ['odla_5fcustomop_337',['odla_CustomOp',['../odla__ops__custom_8h.html#af3070b1fedd73a5459325cc9eaacd0fb',1,'odla_ops_custom.h']]],
+  ['odla_5fcustomop_337',['odla_CustomOp',['../odla__ops__custom_8h.html#adb5183292f48555f4e00aaa0eab74578',1,'odla_ops_custom.h']]],
   ['odla_5fdeconv_338',['odla_DeConv',['../odla__ops__nn_8h.html#a22d453236e1b9c3e725dc28a7a5b6a02',1,'odla_ops_nn.h']]],
   ['odla_5fdestroycomputation_339',['odla_DestroyComputation',['../odla__compute_8h.html#afeac3628599c4806a3c1fe73d6fd6339',1,'odla_compute.h']]],
   ['odla_5fdestroyconstantsarray_340',['odla_DestroyConstantsArray',['../odla__compute_8h.html#a93dd6a6215574b2ace5be8d698c87637',1,'odla_compute.h']]],

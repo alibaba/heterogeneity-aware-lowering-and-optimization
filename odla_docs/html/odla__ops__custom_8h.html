@@ -76,24 +76,30 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:af3070b1fedd73a5459325cc9eaacd0fb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__custom_8h.html#af3070b1fedd73a5459325cc9eaacd0fb">odla_CustomOp</a> (const <a class="el" href="odla__common_8h.html#a70ab5c97f8e2150ab1c252e6fa33d38b">odla_char</a> *op_name, const <a class="el" href="odla__common_8h.html#a70ab5c97f8e2150ab1c252e6fa33d38b">odla_char</a> *function_name, const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> id,...)</td></tr>
-<tr class="memdesc:af3070b1fedd73a5459325cc9eaacd0fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">CustomOp.  <a href="odla__ops__custom_8h.html#af3070b1fedd73a5459325cc9eaacd0fb">More...</a><br /></td></tr>
-<tr class="separator:af3070b1fedd73a5459325cc9eaacd0fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb5183292f48555f4e00aaa0eab74578"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="structodla__values.html">odla_values</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__custom_8h.html#adb5183292f48555f4e00aaa0eab74578">odla_CustomOp</a> (<a class="el" href="structodla__values.html">odla_values</a> inputs, const <a class="el" href="odla__common_8h.html#a70ab5c97f8e2150ab1c252e6fa33d38b">odla_char</a> *op_name, const <a class="el" href="odla__common_8h.html#a70ab5c97f8e2150ab1c252e6fa33d38b">odla_char</a> *function_name, const <a class="el" href="structodla__value__ids.html">odla_value_ids</a> ids,...)</td></tr>
+<tr class="memdesc:adb5183292f48555f4e00aaa0eab74578"><td class="mdescLeft">&#160;</td><td class="mdescRight">CustomOp.  <a href="odla__ops__custom_8h.html#adb5183292f48555f4e00aaa0eab74578">More...</a><br /></td></tr>
+<tr class="separator:adb5183292f48555f4e00aaa0eab74578"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This file defines the ODLA custom operator. </p>
 
 <p class="definition">Definition in file <a class="el" href="odla__ops__custom_8h_source.html">odla_ops_custom.h</a>.</p>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="af3070b1fedd73a5459325cc9eaacd0fb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af3070b1fedd73a5459325cc9eaacd0fb">&#9670;&nbsp;</a></span>odla_CustomOp()</h2>
+<a id="adb5183292f48555f4e00aaa0eab74578"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adb5183292f48555f4e00aaa0eab74578">&#9670;&nbsp;</a></span>odla_CustomOp()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL odla_CustomOp </td>
+          <td class="memname"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="structodla__values.html">odla_values</a> ODLA_API_CALL odla_CustomOp </td>
           <td>(</td>
+          <td class="paramtype"><a class="el" href="structodla__values.html">odla_values</a>&#160;</td>
+          <td class="paramname"><em>inputs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">const <a class="el" href="odla__common_8h.html#a70ab5c97f8e2150ab1c252e6fa33d38b">odla_char</a> *&#160;</td>
           <td class="paramname"><em>op_name</em>, </td>
         </tr>
@@ -106,8 +112,8 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a>&#160;</td>
-          <td class="paramname"><em>id</em>, </td>
+          <td class="paramtype">const <a class="el" href="structodla__value__ids.html">odla_value_ids</a>&#160;</td>
+          <td class="paramname"><em>ids</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -126,14 +132,15 @@ Functions</h2></td></tr>
 <p>CustomOp. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
+    <tr><td class="paramname">inputs</td><td>the inputs value </td></tr>
     <tr><td class="paramname">op_name</td><td>a pointer to the name string of the custom operator </td></tr>
     <tr><td class="paramname">function_name</td><td>a pointer to the name string of the impl function </td></tr>
-    <tr><td class="paramname">value_id</td><td>a unique value id (can be NULL) </td></tr>
+    <tr><td class="paramname">value_ids</td><td>unique value ids </td></tr>
     <tr><td class="paramname">Variadic</td><td></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>odla_value </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="structodla__values.html" title="Multiple values.">odla_values</a> </dd></dl>
 
 </div>
 </div>
