@@ -399,8 +399,7 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
   } else {
     value->mem.set_data_handle(data_ptr);
   }
-}
-return ODLA_SUCCESS;
+  return ODLA_SUCCESS;
 }
 
 odla_status odla_BindToOutputById(const odla_value_id value_id,
