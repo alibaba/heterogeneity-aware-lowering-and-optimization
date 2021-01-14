@@ -23,7 +23,7 @@ if [[ $TEST_WITH_GPU -eq 1 ]]; then
     -L$ODLA_LIB -lodla_tensorrt -Wl,-rpath=$ODLA_LIB
   res_tensorrt_info=`$out/test $out/test_image $out/test_label`
   echo ${res_tensorrt_info} >> $out/mnist_tensorrt.txt
-# RUN: FileCheck --input-file /tmp/mnist/mnist_tensorrt.txt %s
+# RUN: FileCheck --input-file %test_temp_dir/mnist/mnist_tensorrt.txt %s
 fi
 
 echo "Using DNNL-based ODLA implementation"
@@ -32,5 +32,5 @@ g++ -o $out/test $out/main.o $out/mnist_simple.o $out/mnist_simple.bin \
 
 res_dnnl_info=`$out/test $out/test_image $out/test_label`
 echo ${res_dnnl_info} >> $out/mnist_dnnl.txt
-# RUN: FileCheck --input-file /tmp/mnist/mnist_dnnl.txt %s
+# RUN: FileCheck --input-file %test_temp_dir/mnist/mnist_dnnl.txt %s
 # CHECK: Accuracy 9190/10000 (91.9%)

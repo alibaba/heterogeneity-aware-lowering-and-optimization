@@ -20,12 +20,12 @@ if [[ $TEST_WITH_GPU -eq 1 ]]; then
   python3 $curr_dir/../../invoke_halo.py --model $model_file \
     --label-file $curr_dir/../1000_labels.txt --image-dir $image_dir \
     --odla tensorrt --img-preprocess=minus_128
-# RUN: FileCheck --input-file /tmp/caffenet_tensorrt.txt %s
+# RUN: FileCheck --input-file %test_temp_dir/caffenet_tensorrt.txt %s
 else
 	echo "This tests uses ODLA TensorRT"
 fi
 
-# CHECK: /tmp/images/dog.jpg ==> "Samoyed, Samoyede",
-# CHECK-NEXT: /tmp/images/sport.jpg ==> "ski",
-# CHECK-NEXT: /tmp/images/food.jpg ==> "ice cream, icecream",
-# CHECK-NEXT: /tmp/images/plane.jpg ==> "airliner",
+# CHECK: dog.jpg ==> "Samoyed, Samoyede",
+# CHECK-NEXT: sport.jpg ==> "ski",
+# CHECK-NEXT: food.jpg ==> "ice cream, icecream",
+# CHECK-NEXT: plane.jpg ==> "airliner",

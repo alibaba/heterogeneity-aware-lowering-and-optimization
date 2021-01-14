@@ -25,7 +25,7 @@ echo "======== Testing with ODLA DNNL ========"
 python3 $curr_dir/../../invoke_halo.py --model $model_file --label-file $curr_dir/../1000_labels.txt --image-dir $image_dir --odla dnnl
 # RUN: FileCheck --input-file /tmp/alexnet_dnnl.txt %s
 
-# CHECK: /tmp/images/dog.jpg ==> "wallaby, brush kangaroo",
-# CHECK-NEXT: /tmp/images/sport.jpg ==> "ski",
-# CHECK-NEXT: /tmp/images/food.jpg ==> "ice cream, icecream",
-# CHECK-NEXT: /tmp/images/plane.jpg ==> "airliner",
+# CHECK: dog.jpg ==> "wallaby, brush kangaroo",
+# CHECK-NEXT: sport.jpg ==> "ski",
+# CHECK-NEXT: food.jpg ==> "ice cream, icecream",
+# CHECK-NEXT: plane.jpg ==> "airliner",

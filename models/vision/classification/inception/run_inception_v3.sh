@@ -18,12 +18,12 @@ $curr_dir/../../get_images.sh $image_dir
 if [[ $TEST_WITH_GPU -eq 1 ]]; then
   echo "======== Testing with ODLA TensorRT ========"
   python3 $curr_dir/../../invoke_halo.py --model $model_file --label-file $curr_dir/../1000_labels.txt --image-dir $image_dir --odla tensorrt --input_h 299 --input_w 299
-# RUN: FileCheck --input-file /tmp/inception_v3_tensorrt.txt %s
+# RUN: FileCheck --input-file %test_temp_dir/inception_v3_tensorrt.txt %s
 else
 	echo "This tests uses ODLA TensorRT"
 fi
 
-# CHECK: /tmp/images/dog.jpg ==> "Samoyed, Samoyede",
-# CHECK-NEXT: /tmp/images/sport.jpg ==> "ski",
-# CHECK-NEXT: /tmp/images/food.jpg ==> "ice cream, icecream",
-# CHECK-NEXT: /tmp/images/plane.jpg ==> "airliner",
+# CHECK: dog.jpg ==> "Samoyed, Samoyede",
+# CHECK-NEXT: sport.jpg ==> "ski",
+# CHECK-NEXT: food.jpg ==> "ice cream, icecream",
+# CHECK-NEXT: plane.jpg ==> "airliner",

@@ -193,7 +193,7 @@ if __name__ == "__main__":
 
         if clsidx:
             print(path, '==>', clsidx[ind[0]])
-            res_info.append(path + ' ==> ' + clsidx[ind[0]])
+            res_info.append(path.split('/')[-1] + ' ==> ' + clsidx[ind[0]])
         else:
             res_info.append(ind)
     resfile = []

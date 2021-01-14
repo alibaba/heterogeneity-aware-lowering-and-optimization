@@ -28,6 +28,8 @@ config.environment['PATH'] = os.path.pathsep.join(
     (config.environment['PATH'],
      os.path.sep.join((config.halo_build_dir, 'llvm', 'bin'))))
 
+config.substitutions.append(('%test_temp_dir', config.environment['TEST_TEMP_DIR']))
+
 lit_config.parallelism_groups['modeltest'] = 7
 config.parallelism_group = 'modeltest'
 
