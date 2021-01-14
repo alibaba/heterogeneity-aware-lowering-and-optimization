@@ -825,6 +825,7 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
   dnnl::memory::dims paddings_before{paddings_front[0], paddings_front[1]};
   dnnl::memory::dims paddings_after{paddings_back[0], paddings_back[1]};
   odla_value_shape orig_output_dims = output_dims;
+
   if (input_layout == ODLA_CHANNELS_LAST) {
     input_dims = getNCHWDims(input_dims);
     output_dims = getNCHWDims(output_dims);
@@ -846,6 +847,8 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
                                        dnnl::memory::format_tag::any);
   auto input_md_any = dnnl::memory::desc(getDims(input_dims), dt,
                                          dnnl::memory::format_tag::any);
+  auto input_md_src =
+      dnnl::memory::desc(getDims(input_dims), dt, getFormatTag(input_layout));
 
   auto kernel_md_any = dnnl::memory::desc(getDims(kernel_dims), dt,
                                           dnnl::memory::format_tag::any);
@@ -870,14 +873,16 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
   auto ret_md_exp =
       dnnl::memory::desc(getDims(output_dims), dt, getFormatTag(input_layout));
 
-  bool need_reorder_src = pd.src_desc() != input->mem.get_desc();
+  bool need_reorder_src = pd.src_desc() != input_md_src;
   bool need_reorder_kernel = pd.weights_desc() != kernel_mem.get_desc();
   bool need_reorder_dst = pd.dst_desc() != ret_md_exp;
 
   dnnl::memory orig_mem;
   if (need_reorder_src) {
     auto conv_src_mem = dnnl::memory(pd.src_desc(), g_comp->eng);
-    auto r = dnnl::reorder(input->mem, conv_src_mem);
+    auto r = dnnl::reorder(
+        dnnl::memory(input_md_src, g_comp->eng, input->mem.get_data_handle()),
+        conv_src_mem);
     orig_mem = input->mem;
     add_op(r, {{DNNL_ARG_FROM, input->mem}, {DNNL_ARG_TO, conv_src_mem}});
     input->mem = conv_src_mem;
