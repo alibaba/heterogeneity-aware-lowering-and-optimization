@@ -19,10 +19,6 @@ set(HALO_TEST_DEPENDS
   RTLIB
   halolib
   halo
-  #odla_tensorrt
-  #odla_dnnl
-  #odla_eigen
-  #odla_xnnpack
   analyzer
   diagnostic
 )
