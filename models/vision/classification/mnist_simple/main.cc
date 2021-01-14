@@ -81,6 +81,6 @@ int main(int argc, char** argv) {
     correct += (pred == labels[i]);
   }
   mnist_simple_fini();
-  std::cout << "Accuracy: " << correct << "/" << nr_tests << " ("
+  std::cout << "Accuracy " << correct << "/" << nr_tests << " ("
             << correct * 100.0 / nr_tests << "%) \n";
 }
