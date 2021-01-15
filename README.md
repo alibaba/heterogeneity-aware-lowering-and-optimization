@@ -69,10 +69,14 @@ We appreciate the support of ODLA runtimes from the following partners:
 <a href=https://www.graphcore.ai>
   <img src="./docs/partners/graphcore.png" width=24% align="center" border=0></a>
 <img src="./docs/partners/padding.png" width=10%>
-<a href=https://www.intel.com><img src="./docs/partners/intel.png" align="center" width=16%></a>
+ <a href=https://www.intel.com>
+  <img src="./docs/partners/intel.png" align="center" width=16%></a>
 </p>
 
 <p align="left">
+<a href=https://www.intellif.com>
+  <img src="./docs/partners/intellif.png" align="center" width=20%></a>
+ <img src="./docs/partners/padding.png" width=15%>
   <a href=https://www.nvidia.com><img src="./docs/partners/nvidia.png" align="center" border=0 width=12%></a>
   <img src="./docs/partners/padding.png" width=18%>
   <a href=https://www.qualcomm.com/products/cloud-artificial-intelligence>
@@ -104,12 +108,12 @@ The diagram below shows the overall workflow:
 
 Brief explanations:
 
-HALO generates 3 files: 
+HALO generates 3 files:
 * mnist.h : the header file to be used by application.
 * mnist.cc : the ODLA C++ file that represents the model.
 * mnist.bin : the weights in ELF format.
 
-To application, the inference is simply viewed as a function call ``mnist()``. 
+To application, the inference is simply viewed as a function call ``mnist()``.
 
 Note that, for portability purpose, HALO always exports functions in the C convention even though the output file model.cc is in the C++ format.
 

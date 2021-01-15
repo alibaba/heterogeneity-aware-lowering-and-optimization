@@ -476,6 +476,11 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
     RunOnConstant(*constant, true);
   }
 
+  if (function.empty() || (function.BasicBlocks().size() == 1 &&
+                           function.BasicBlocks().front()->empty())) {
+    return;
+  }
+
   Instruction* return_inst = function.GetReturnInst();
   HLCHECK(return_inst && "No Return Instruction found");
 
@@ -492,8 +497,12 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
 
   // contents in oss will be write to c file and header file.
   std::ostringstream oss;
-  const std::string init_func_name = function.GetName() + "_init";
-  const std::string fini_func_name = function.GetName() + "_fini";
+  bool emit_triton_style =
+      (function.IsEntryFunction() && opts_.emit_inference_func_sig);
+  const std::string init_func_name =
+      emit_triton_style ? "model_init" : function.GetName() + "_init";
+  const std::string fini_func_name =
+      emit_triton_style ? "model_fini" : function.GetName() + "_fini";
 
   if (function.IsEntryFunction()) {
     if (opts_.dialect == Dialect::CXX_11) {
@@ -731,10 +740,13 @@ void GenericCXXCodeGen::RunOnConstant(Constant& constant, bool decl) {
   auto& type = constant.GetResultType();
   if (decl) {
     CXXValue value(constant.GetName(), TensorTypeToCXXType(type, true));
-
-    os_ << "extern const " << value.type.name << " " << value.name << "["
-        << Join(type.GetDimSizes(), '*') << "];\n";
-
+    if (constant.IsScalarOne()) {
+      os_ << "extern const " << value.type.name << " " << value.name
+          << "[1];\n";
+    } else {
+      os_ << "extern const " << value.type.name << " " << value.name << "["
+          << Join(type.GetDimSizes(), '*') << "];\n";
+    }
     ir_mapping_[constant] = value;
     return;
   }

@@ -13,39 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License
 # ==============================================================================
-
 set(HALO_TEST_DEPENDS
   FileCheck
-  RTLIB
-  halolib
-  halo
-  analyzer
-  diagnostic
 )
-
-if (ODLA_BUILD_TRT)
-  list(APPEND HALO_TEST_DEPENDS odla_tensorrt)
-endif()
-
-if (ODLA_BUILD_DNNL)
-  list(APPEND HALO_TEST_DEPENDS odla_dnnl)
-endif()
-
-if (ODLA_BUILD_EIGEN)
-  list(APPEND HALO_TEST_DEPENDS odla_eigen)
-endif()
-
-if (ODLA_BUILD_XNNPACK)
-  list(APPEND HALO_TEST_DEPENDS odla_xnnpack)
-endif()
-
-
 configure_lit_site_cfg(
     ${CMAKE_CURRENT_SOURCE_DIR}/lit.site.cfg.in
     ${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg
 )
 
-add_lit_testsuite(check-halo "Running Halo regression tests"
+add_lit_testsuite(check-halo-models "Running Halo models tests"
   ${CMAKE_CURRENT_BINARY_DIR}
   DEPENDS ${HALO_TEST_DEPENDS}
 )
