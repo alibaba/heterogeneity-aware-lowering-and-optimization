@@ -323,6 +323,14 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
                                                 const Instruction& ret_inst) {
   std::ostringstream oss;
   oss << "#include \"unittests.h\"\n\n";
+  for (unsigned i = 0; i < func.Args().size(); i++) {
+    oss << " #include \""
+        << "input_" << i << ".data.cc\"\n";
+  }
+  for (unsigned i = 0; i < ret_inst.GetOperands().size(); i++) {
+    oss << " #include \""
+        << "output_" << i << ".data.cc\"\n";
+  }
 
   auto convert_data_type = [](DataType dtype) {
     std::string data_type_str;
@@ -363,12 +371,12 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
     // load input data
     for (auto& arg : func.Args()) {
       auto& type = arg->GetResultType();
+      const auto elem_nums = type.GetTotalNumOfElements();
       data_type.clear();
       data_type = convert_data_type(type.GetDataType());
-      oss << "  std::vector<" << data_type << "> in_" << i
-          << " = unittests.LoadInData<" << data_type << ">("
-          << "test_case_dir, data_set_id, " << i << ");\n";
-      oss << "  inputs.push_back(in_" << i << ".data());\n";
+      oss << "  extern const " << data_type;
+      oss << " input_" << i << "[" << elem_nums << "];\n";
+      oss << "  inputs.push_back(input_" << i << ");\n";
       i++;
     }
 
@@ -379,10 +387,9 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
       const auto elem_nums = type.GetTotalNumOfElements();
       data_type.clear();
       data_type = convert_data_type(type.GetDataType());
-      oss << "  std::vector<" << data_type << "> out_ref_" << i
-          << " = unittests.LoadOutData<" << data_type << ">("
-          << "test_case_dir, data_set_id, " << i << ");\n";
-      oss << "  output_refs.push_back(out_ref_" << i << ".data());\n";
+      oss << "  extern const " << data_type;
+      oss << " output_" << i << "[" << elem_nums << "];\n";
+      oss << "  output_refs.push_back(output_" << i << ");\n";
       oss << "  " << data_type << " out_" << i << "[" << elem_nums
           << "] = {};\n";
       oss << "  outputs.push_back(out_" << i++ << ");\n";

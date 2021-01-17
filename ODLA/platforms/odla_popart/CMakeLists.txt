@@ -17,7 +17,9 @@
 set(POPLAR_ROOT ${POPLAR_SDK_ROOT}/poplar-${POPLAR_VERSION})
 set(POPART_ROOT ${POPLAR_SDK_ROOT}/popart-${POPART_VERSION})
 
-add_odla_library(odla_popart SHARED odla_compute.cc odla_ops.cc common.cc)
+add_odla_library(odla_popart SHARED common.cc odla_compute.cc
+                               odla_ops_math.cc odla_ops_nn.cc
+                               odla_ops_process.cc odla_ops.cc)
 find_library(popart NAMES popart PATHS ${POPART_ROOT} PATH_SUFFIXES lib
              NO_DEFAULT_PATH)
 find_library(custom_ops NAMES custom_ops PATHS ${CMAKE_CURRENT_SOURCE_DIR}/custom_ops

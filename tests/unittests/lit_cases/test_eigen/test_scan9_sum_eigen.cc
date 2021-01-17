@@ -17,9 +17,13 @@
 
 // clang-format off
 // Testing CXX Code Gen using ODLA API on eigen
+// RUN: %halo_compiler -target cxx -o %data_path/test_scan9_sum/test_data_set_0/input_0.cc -x onnx -emit-data-as-c %data_path/test_scan9_sum/test_data_set_0/input_0.pb
+// RUN: %halo_compiler -target cxx -o %data_path/test_scan9_sum/test_data_set_0/output_0.cc -x onnx -emit-data-as-c %data_path/test_scan9_sum/test_data_set_0/output_0.pb
+// RUN: %halo_compiler -target cxx -o %data_path/test_scan9_sum/test_data_set_0/output_1.cc -x onnx -emit-data-as-c %data_path/test_scan9_sum/test_data_set_0/output_1.pb
+// RUN: %halo_compiler -target cxx -o %data_path/test_scan9_sum/test_data_set_0/input_1.cc -x onnx -emit-data-as-c %data_path/test_scan9_sum/test_data_set_0/input_1.pb
 // RUN: %halo_compiler -target cxx -batch-size 1 %halo_compile_flags %data_path/test_scan9_sum/model.onnx -o %t.cc
 // RUN: %cxx -c -fPIC -o %t.o %t.cc -I%odla_path/include
-// RUN: %cxx -g %s %onnx_path/onnx.pb.cc %t.o %t.bin -I%T -I%odla_path/include -I%unittests_path -I%onnx_path -L/usr/local/lib/ -lprotobuf %odla_link -lodla_eigen -o %t_eigen.exe -Wno-deprecated-declarations
+// RUN: %cxx -g %s %t.o %t.bin -I%T -I%odla_path/include -I%unittests_path -I%data_path/test_scan9_sum/test_data_set_0 %odla_link %device_link -lodla_eigen -o %t_eigen.exe -Wno-deprecated-declarations
 // RUN: %t_eigen.exe 0.0001 0 eigen %data_path/test_scan9_sum | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
