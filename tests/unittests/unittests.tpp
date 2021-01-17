@@ -133,7 +133,7 @@ vector<T> UnitTests::LoadOutData(string test_case_dir,
 #endif
 
 template <typename T>
-void UnitTests::CheckResult(size_t num_out,
+void UnitTests::CheckResult(const std::vector<size_t>& num_elems,
                               void* out[],
                               const void* out_ref[],
                               string test_case_dir,
@@ -151,11 +151,10 @@ void UnitTests::CheckResult(size_t num_out,
   oss << "time: " << times;
   }
 #endif
-  size_t i = 0;
-  for (; i < num_out; ++i) {
+  for (size_t i = 0; i < num_elems.size(); ++i) {
     T* out_data = reinterpret_cast<T*>(out[i]);
     const T* out_ref_data = reinterpret_cast<const T*>(out_ref[i]);
-    size_t elem_size = sizeof(out_data) / sizeof(T);
+    size_t elem_size = num_elems[i];
     for (size_t j = 0; j < elem_size; ++j) {
       bool nan_mismatch = (isnan(out_data[j]) ^ isnan(out_ref_data[j]));
       if (nan_mismatch || fabs(out_data[j] - out_ref_data[j]) > thre) {

@@ -375,12 +375,13 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
       data_type.clear();
       data_type = convert_data_type(type.GetDataType());
       oss << "  extern const " << data_type;
-      oss << " input_" << i << "[" << elem_nums << "];\n";
+      oss << "  input_" << i << "[" << elem_nums << "];\n";
       oss << "  inputs.push_back(input_" << i << ");\n";
       i++;
     }
 
     i = 0;
+    oss << "  std::vector<size_t> output_elems;\n";
     // load reference data and declare output
     for (auto& out : ret_inst.GetOperands()) {
       const auto& type = out.GetType();
@@ -388,10 +389,11 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
       data_type.clear();
       data_type = convert_data_type(type.GetDataType());
       oss << "  extern const " << data_type;
-      oss << " output_" << i << "[" << elem_nums << "];\n";
+      oss << "  output_" << i << "[" << elem_nums << "];\n";
       oss << "  output_refs.push_back(output_" << i << ");\n";
       oss << "  " << data_type << " out_" << i << "[" << elem_nums
           << "] = {};\n";
+      oss << "  output_elems.push_back(" << elem_nums << ");\n";
       oss << "  outputs.push_back(out_" << i++ << ");\n";
     }
 
@@ -412,7 +414,7 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
     oss << "#endif\n";
     // verify output data
     oss << "  unittests.CheckResult<" << data_type << ">("
-        << ret_inst.GetOperands().size() << ", outputs.data()"
+        << "output_elems, outputs.data()"
         << ", output_refs.data()"
         << ", test_case_dir, device_name, times, thre);\n";
     oss << "  return 0;\n}\n";
