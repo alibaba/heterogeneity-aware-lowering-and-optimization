@@ -85,8 +85,7 @@ odla_value odla_Concat(odla_values inputs, odla_int32 axis,
                          name);
 }
 
-odla_value odla_ExpandDims(odla_value input, odla_int32 axis,
-                           odla_value_shape output_dims,
+odla_value odla_ExpandDims(odla_value input, odla_value_shape output_dims,
                            const odla_value_id value_id) {
   const auto& name = value_id
                          ? std::string(reinterpret_cast<const char*>(value_id))

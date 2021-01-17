@@ -33,7 +33,7 @@ config.test_source_root = os.path.dirname(__file__)
 config.suffixes = ['.cc']
 
 tensorrt_dir = os.path.dirname(config.lib_cudart_path)
-dnnl_dir = os.path.join(os.path.dirname(config.lib_dnnl_path), os.path.pardir)
+dnnl_dir = os.path.dirname(config.lib_dnnl_path)
 xnnpack_dir = os.path.join(os.path.dirname(
     config.lib_xnnpack_path), os.path.pardir)
 
@@ -42,6 +42,13 @@ if len(tensorrt_dir):
     tensorrt_dir = os.path.join(tensorrt_dir, os.path.pardir)
 
 print(tensorrt_dir)
+
+if len(dnnl_dir):
+    config.available_features.add('odla_dnnl')
+    dnnl_dir = os.path.join(dnnl_dir, os.path.pardir)
+
+print(dnnl_dir)
+
 test_include = os.path.sep.join((config.test_source_root, 'include'))
 
 include_path = '-I %s -I %s -I %s -I %s -I %s' % (config.halo_header_src_dir,

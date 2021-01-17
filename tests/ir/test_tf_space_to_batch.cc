@@ -7,6 +7,8 @@
 
 // clang-format on
 
+// REQUIRES: odla_dnnl
+
 #ifdef CG_TEST
 #include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/ir/values.h"

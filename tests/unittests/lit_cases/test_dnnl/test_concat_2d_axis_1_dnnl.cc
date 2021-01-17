@@ -17,11 +17,13 @@
 
 // clang-format off
 // Testing CXX Code Gen using ODLA API on dnnl
+// RUN: %halo_compiler -target cxx -o %data_path/test_concat_2d_axis_1/test_data_set_0/input_0.cc -x onnx -emit-data-as-c %data_path/test_concat_2d_axis_1/test_data_set_0/input_0.pb
+// RUN: %halo_compiler -target cxx -o %data_path/test_concat_2d_axis_1/test_data_set_0/output_0.cc -x onnx -emit-data-as-c %data_path/test_concat_2d_axis_1/test_data_set_0/output_0.pb
+// RUN: %halo_compiler -target cxx -o %data_path/test_concat_2d_axis_1/test_data_set_0/input_1.cc -x onnx -emit-data-as-c %data_path/test_concat_2d_axis_1/test_data_set_0/input_1.pb
 // RUN: %halo_compiler -target cxx -batch-size 1 %halo_compile_flags %data_path/test_concat_2d_axis_1/model.onnx -o %t.cc
 // RUN: %cxx -c -fPIC -o %t.o %t.cc -I%odla_path/include
-// RUN: %cxx -g %s %onnx_path/onnx.pb.cc %t.o %t.bin -I%T -I%odla_path/include -I%unittests_path -I%onnx_path -L/usr/local/lib/ -lprotobuf %odla_link -lodla_dnnl -o %t_dnnl.exe -Wno-deprecated-declarations
+// RUN: %cxx -g %s %t.o %t.bin -I%T -I%odla_path/include -I%unittests_path -I%data_path/test_concat_2d_axis_1/test_data_set_0 %odla_link %device_link -lodla_dnnl -o %t_dnnl.exe -Wno-deprecated-declarations
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_concat_2d_axis_1 | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-
 #include "test_concat_2d_axis_1_dnnl.cc.tmp.main.cc.in"

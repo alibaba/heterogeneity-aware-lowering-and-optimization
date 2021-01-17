@@ -17,6 +17,8 @@
 
 // clang-format off
 
+// REQUIRES: odla_dnnl
+
 // RUN: %cxx %s -DCG_TEST -o %t %flags %include %link
 // RUN: %t > %t.gen.cc
 // RUN: cat %t.gen.cc | FileCheck %s --check-prefix=GEN
