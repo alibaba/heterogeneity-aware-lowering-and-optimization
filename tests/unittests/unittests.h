@@ -55,9 +55,9 @@ class UnitTests {
   long long GetMicroSeconds();
   // verify function
   template <typename T>
-  void CheckResult(size_t num_out, void* out[], const void* out_ref[],
-                   string test_case_dir, string device_namne, long long times,
-                   double thre);
+  void CheckResult(const std::vector<size_t>& num_elems, void* out[],
+                   const void* out_ref[], string test_case_dir,
+                   string device_namne, long long times, double thre);
 
  private:
 #if LOAD_DATA

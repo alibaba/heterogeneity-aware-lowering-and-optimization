@@ -38,6 +38,7 @@
 struct _odla_value {
   dnnl::memory mem;
   bool is_const;
+  uint8_t elem_size;
   odla_value_shape shape;
   std::string name;
   _odla_value(const dnnl::memory& m, const odla_value_shape& shape_,
@@ -296,6 +297,9 @@ odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
   dnnl::memory::desc md = getMemoryDesc(type);
   dnnl::memory mem = dnnl::memory(md, g_comp->eng);
   odla_value v = CreateValue(mem, type.shape, id);
+  if (type.element_type == ODLA_INT64) {
+    v->elem_size = 8;
+  }
   g_comp->inputs[name] = v;
   return v;
 }
@@ -373,6 +377,10 @@ odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
 
   odla_value v = CreateValue(mem, type.shape, id);
   v->is_const = true;
+  if (type.element_type == ODLA_INT64) {
+    v->elem_size = 8;
+  }
+
   return v;
 }
 
@@ -394,8 +402,11 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
                               odla_context context) {
   // Handle the case of output is constant due to compile-time optimization.
   if (value->is_const) {
-    memcpy(data_ptr, value->mem.get_data_handle(),
-           value->mem.get_desc().get_size());
+    size_t len = value->mem.get_desc().get_size();
+    if (value->elem_size == 8) {
+      len *= 2;
+    }
+    memcpy(data_ptr, value->mem.get_data_handle(), len);
   } else {
     value->mem.set_data_handle(data_ptr);
   }
@@ -468,6 +479,9 @@ odla_value odla_Gather(odla_value params, const odla_value indices,
     idx_size = indices->shape.dims[1];
   } else {
     batch_size = 1;
+    for (int i = 0; i < axis; ++i) {
+      batch_size *= params->shape.dims[i];
+    }
     idx_size = indices->shape.dims[0];
   }
   size_t inner_size = 1;
@@ -480,11 +494,18 @@ odla_value odla_Gather(odla_value params, const odla_value indices,
   int byte_size =
       params->mem.get_desc().get_size() / GetTotalElements(params->shape);
 
-  op = [params, indices, batch_size, idx_size, inner_size, byte_size,
-        ret_mem]() {
-    dnnl_utils::gather_func((char*)params->mem.get_data_handle(),
-                            (int32_t*)indices->mem.get_data_handle(),
-                            batch_size, idx_size, inner_size, byte_size,
+  op = [params, indices, batch_size, idx_size, inner_size, byte_size, ret_mem,
+        axis]() {
+    int32_t* indices_ptr = (int32_t*)indices->mem.get_data_handle();
+    std::vector<int> indices_i32;
+    if (indices->elem_size == 8) {
+      int64_t* src = (int64_t*)indices_ptr;
+      indices_i32.insert(indices_i32.begin(), src, src + idx_size);
+      indices_ptr = indices_i32.data();
+    }
+    dnnl_utils::gather_func((char*)params->mem.get_data_handle(), indices_ptr,
+                            batch_size, idx_size, params->shape.dims[axis],
+                            inner_size, byte_size,
                             (char*)ret_mem.get_data_handle());
   };
   add_op(op);
