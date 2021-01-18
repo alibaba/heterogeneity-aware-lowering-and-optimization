@@ -1,7 +1,7 @@
-.PHONY: run clean
+.PHONY: demo clean
 
 out_dir := ${TEST_TEMP_DIR}/yolo
-run : ${out_dir}/demo
+demo : ${out_dir}/demo
 
 SHELL := /bin/bash
 
@@ -32,8 +32,7 @@ ${out_dir}/demo: ${out_dir}/demo.o ${out_dir}/yolo_postproc.o ${out_dir}/yolo.o 
 ${out_dir}/test.jpg:
 	wget -O $@ http://images.cocodataset.org/test2017/000000133861.jpg
 
-run: ${out_dir}/demo ${out_dir}/test.jpg
-	$< ${out_dir}/test.jpg
+demo: ${out_dir}/demo ${out_dir}/test.jpg
 
 clean:
 	rm -fr ${out_dir}

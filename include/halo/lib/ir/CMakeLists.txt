@@ -37,6 +37,7 @@ list(APPEND INST_TDS
   nn_cnn_instructions.td
   nn_instructions.td
   object_detection_instructions.td
+  customize_instructions.td
 )
 tblgen_instructions(${INST_TDS})
 

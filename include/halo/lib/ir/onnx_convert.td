@@ -154,7 +154,7 @@ def ONNX_Greater: OpMapping<"Greater", Greater>;
 def ONNX_Identity : ONNXExtension<"Identity">;
 
 def ONNX_LeakyRelu : OpMapping<"LeakyRelu", LeakyRelu> {
-  let attr_mapping_ = [ AttributeMapping<"alpha", "alpha", "0.2"> ];
+  let attr_mapping_ = [ AttributeMapping<"alpha", "alpha", "0.01"> ];
 }
 
 def ONNX_Log : OpMapping<"Log", Log>;

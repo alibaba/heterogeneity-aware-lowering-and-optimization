@@ -141,6 +141,8 @@ odla_status odla_CreateContext(odla_context* context) {
   (*context)->session->setRandomSeed(0);
   // Copy weights from host to IPU
   (*context)->session->weightsFromHost();
+
+  return ODLA_SUCCESS;
 }
 
 odla_status odla_DestroyContext(odla_context ctx) {
@@ -167,7 +169,7 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
   }
 
   popart::StepIO stepio(inputs, outputs);
-  // Run on IPU
+  // Run on ipu
   context->session->run(stepio);
   return ODLA_SUCCESS;
 }
@@ -185,18 +187,6 @@ odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
 
 odla_value odla_CreateConstant(odla_value_type type, const void* data_ptr,
                                const odla_value_id id) {
-  const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
-  popart::TensorInfo tensor_info(GetPopartType(type),
-                                 GetPopartShape(type.shape));
-  popart::ConstVoidData data = {
-      data_ptr, {GetPopartType(type), GetPopartShape(type.shape)}};
-  popart::TensorId tensor_id =
-      g_comp->builder->aiOnnxOpset10().constant(data, name);
-  return new _odla_value(tensor_id, tensor_info, name);
-}
-
-odla_value odla_CreateConstant_10(odla_value_type type, const void* data_ptr,
-                                  const odla_value_id id) {
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
   popart::TensorInfo tensor_info(GetPopartType(type),
                                  GetPopartShape(type.shape));

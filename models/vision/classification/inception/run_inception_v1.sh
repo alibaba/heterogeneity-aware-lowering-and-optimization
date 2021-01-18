@@ -1,4 +1,5 @@
 #!/bin/bash
+# RUN: %s
 model_name="inception_v1"
 model_file="$TEST_TEMP_DIR/$model_name.onnx"
 image_dir="$TEST_TEMP_DIR/images"
@@ -18,6 +19,11 @@ if [[ $TEST_WITH_GPU -eq 1 ]]; then
   python3 $curr_dir/../../invoke_halo.py --model $model_file \
     --label-file $curr_dir/../1000_labels.txt --image-dir $image_dir \
     --odla tensorrt --img-preprocess=minus_128
+# RUN: FileCheck --input-file %test_temp_dir/inception_v1_tensorrt.txt --check-prefix CHECK-TENSORRT %s
+# CHECK-TENSORRT: dog.jpg ==> "Samoyed, Samoyede",
+# CHECK-TENSORRT: sport.jpg ==> "ski",
+# CHECK-TENSORRT: food.jpg ==> "jellyfish",
+# CHECK-TENSORRT: plane.jpg ==> "airliner",
 fi
 
 # Using HALO to compile and run inference with ODLA DNNL
@@ -25,3 +31,8 @@ echo "======== Testing with ODLA DNNL (NHWC)========"
 python3 $curr_dir/../../invoke_halo.py --model $model_file \
   --label-file $curr_dir/../1000_labels.txt --image-dir $image_dir \
   --odla dnnl --img-preprocess=minus_128 --convert-layout-to=nhwc
+# RUN: FileCheck --input-file %test_temp_dir/inception_v1_dnnl.txt --check-prefix CHECK-DNNL %s
+# CHECK-DNNL: dog.jpg ==> "Samoyed, Samoyede",
+# CHECK-DNNL: sport.jpg ==> "ski",
+# CHECK-DNNL: food.jpg ==> "bubble",
+# CHECK-DNNL: plane.jpg ==> "jigsaw puzzle",

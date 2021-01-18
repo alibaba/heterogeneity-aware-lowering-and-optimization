@@ -174,14 +174,6 @@ std::string&& GetTypeName(odla_element_type type_value) {
       return std::move(std::string("UINT32"));
     case ODLA_UINT64:
       return std::move(std::string("UINT64"));
-    // case ODLA_QINT8:
-    // case ODLA_QINT16,
-    // case ODLA_QINT32,
-    // case ODLA_QINT64,
-    // case ODLA_QUINT8,
-    // case ODLA_QUINT16,
-    // case ODLA_QUINT32,
-    // case ODLA_QUINT64,
     case ODLA_FLOAT16:
       return std::move(std::string("FLOAT16"));
     case ODLA_BFLOAT16:

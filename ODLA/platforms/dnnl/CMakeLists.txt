@@ -15,11 +15,6 @@
 # ==============================================================================
 
 set(DNNL_ROOT /opt/dnnl)
-add_odla_library(odla_dnnl SHARED odla_dnnl.cc)
-find_library(dnnl NAMES dnnl PATHS ${DNNL_ROOT} PATH_SUFFIXES lib NO_DEFAULT_PATH)
-target_include_directories(odla_dnnl PRIVATE ${DNNL_ROOT}/include)
-target_link_libraries(odla_dnnl ODLA ${dnnl})
-
 set(DNNL_CXX_FLAGS -flax-vector-conversions -mavx512f -mavx512bw -mavx512dq -mavx512vl -Wno-error)
 if(NOT DNNL_COMPILER)
   message(STATUS "GCC10 path ${DNNL_COMPILER} not found, skip enable bf16 on odla_dnnl")
@@ -30,6 +25,12 @@ else()
   set(DNNL_CXX_FLAGS ${DNNL_CXX_FLAGS} -mavx512bf16)
   message(STATUS "Found GCC10: ${DNNL_COMPILER}, build odla_dnnl with bf16 support!")
 endif()
+
+add_odla_library(odla_dnnl SHARED odla_dnnl.cc)
+find_library(dnnl NAMES dnnl PATHS ${DNNL_ROOT} PATH_SUFFIXES lib NO_DEFAULT_PATH)
+target_include_directories(odla_dnnl PRIVATE ${DNNL_ROOT}/include)
+target_link_libraries(odla_dnnl ODLA ${dnnl})
+target_compile_options(odla_dnnl PRIVATE ${DNNL_CXX_FLAGS})
 
 add_odla_library(odla_dnnl_interpreter SHARED odla_dnnl.cc)
 target_include_directories(odla_dnnl_interpreter PRIVATE ${DNNL_ROOT}/include)

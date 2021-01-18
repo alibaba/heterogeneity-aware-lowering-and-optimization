@@ -323,6 +323,14 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
                                                 const Instruction& ret_inst) {
   std::ostringstream oss;
   oss << "#include \"unittests.h\"\n\n";
+  for (unsigned i = 0; i < func.Args().size(); i++) {
+    oss << " #include \""
+        << "input_" << i << ".data.cc\"\n";
+  }
+  for (unsigned i = 0; i < ret_inst.GetOperands().size(); i++) {
+    oss << " #include \""
+        << "output_" << i << ".data.cc\"\n";
+  }
 
   auto convert_data_type = [](DataType dtype) {
     std::string data_type_str;
@@ -363,28 +371,29 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
     // load input data
     for (auto& arg : func.Args()) {
       auto& type = arg->GetResultType();
+      const auto elem_nums = type.GetTotalNumOfElements();
       data_type.clear();
       data_type = convert_data_type(type.GetDataType());
-      oss << "  std::vector<" << data_type << "> in_" << i
-          << " = unittests.LoadInData<" << data_type << ">("
-          << "test_case_dir, data_set_id, " << i << ");\n";
-      oss << "  inputs.push_back(in_" << i << ".data());\n";
+      oss << "  extern const " << data_type;
+      oss << "  input_" << i << "[" << elem_nums << "];\n";
+      oss << "  inputs.push_back(input_" << i << ");\n";
       i++;
     }
 
     i = 0;
+    oss << "  std::vector<size_t> output_elems;\n";
     // load reference data and declare output
     for (auto& out : ret_inst.GetOperands()) {
       const auto& type = out.GetType();
       const auto elem_nums = type.GetTotalNumOfElements();
       data_type.clear();
       data_type = convert_data_type(type.GetDataType());
-      oss << "  std::vector<" << data_type << "> out_ref_" << i
-          << " = unittests.LoadOutData<" << data_type << ">("
-          << "test_case_dir, data_set_id, " << i << ");\n";
-      oss << "  output_refs.push_back(out_ref_" << i << ".data());\n";
+      oss << "  extern const " << data_type;
+      oss << "  output_" << i << "[" << elem_nums << "];\n";
+      oss << "  output_refs.push_back(output_" << i << ");\n";
       oss << "  " << data_type << " out_" << i << "[" << elem_nums
           << "] = {};\n";
+      oss << "  output_elems.push_back(" << elem_nums << ");\n";
       oss << "  outputs.push_back(out_" << i++ << ");\n";
     }
 
@@ -405,7 +414,7 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
     oss << "#endif\n";
     // verify output data
     oss << "  unittests.CheckResult<" << data_type << ">("
-        << ret_inst.GetOperands().size() << ", outputs.data()"
+        << "output_elems, outputs.data()"
         << ", output_refs.data()"
         << ", test_case_dir, device_name, times, thre);\n";
     oss << "  return 0;\n}\n";
@@ -476,6 +485,11 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
     RunOnConstant(*constant, true);
   }
 
+  if (function.empty() || (function.BasicBlocks().size() == 1 &&
+                           function.BasicBlocks().front()->empty())) {
+    return;
+  }
+
   Instruction* return_inst = function.GetReturnInst();
   HLCHECK(return_inst && "No Return Instruction found");
 
@@ -492,8 +506,12 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
 
   // contents in oss will be write to c file and header file.
   std::ostringstream oss;
-  const std::string init_func_name = function.GetName() + "_init";
-  const std::string fini_func_name = function.GetName() + "_fini";
+  bool emit_triton_style =
+      (function.IsEntryFunction() && opts_.emit_inference_func_sig);
+  const std::string init_func_name =
+      emit_triton_style ? "model_init" : function.GetName() + "_init";
+  const std::string fini_func_name =
+      emit_triton_style ? "model_fini" : function.GetName() + "_fini";
 
   if (function.IsEntryFunction()) {
     if (opts_.dialect == Dialect::CXX_11) {
@@ -731,10 +749,13 @@ void GenericCXXCodeGen::RunOnConstant(Constant& constant, bool decl) {
   auto& type = constant.GetResultType();
   if (decl) {
     CXXValue value(constant.GetName(), TensorTypeToCXXType(type, true));
-
-    os_ << "extern const " << value.type.name << " " << value.name << "["
-        << Join(type.GetDimSizes(), '*') << "];\n";
-
+    if (constant.IsScalarOne()) {
+      os_ << "extern const " << value.type.name << " " << value.name
+          << "[1];\n";
+    } else {
+      os_ << "extern const " << value.type.name << " " << value.name << "["
+          << Join(type.GetDimSizes(), '*') << "];\n";
+    }
     ir_mapping_[constant] = value;
     return;
   }
