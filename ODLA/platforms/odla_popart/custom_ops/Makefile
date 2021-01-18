@@ -16,11 +16,11 @@ create_build_dir:
 rsqrt_custom_op: rsqrt.cc erf.cc
 	$(CXX) $(SOURCES)  $(LDLIBS) $(CXXFLAGS) $(INCLUDES) -o $(TARGET)
 
-rsqrt_test: rsqrt_test.cc rsqrt_custom_op
-	$(CXX) -std=c++14 rsqrt_test.cc -lpopart -lpoplar -lpopops -ldl -DONNX_NAMESPACE=onnx -o rsqrt_test
+rsqrt_test: rsqrt_test.cc 
+	$(CXX) -std=c++14 -Wl,--no-as-needed rsqrt_test.cc -lpopart -lpoplar -lpopops -ldl -DONNX_NAMESPACE=onnx -o rsqrt_test -Wno-deprecated-declarations
 
-erf_test: erf_test.cc rsqrt_custom_op
-	$(CXX) -std=c++14 erf_test.cc -lpopart -lpoplar -lpopops -ldl -DONNX_NAMESPACE=onnx -o erf_test
+erf_test: erf_test.cc
+	$(CXX) -std=c++14 -Wl,--no-as-needed erf_test.cc -lpopart -lpoplar -lpopops -ldl -DONNX_NAMESPACE=onnx -o erf_test -Wno-deprecated-declarations
 
 .PHONY: clean
 clean:
