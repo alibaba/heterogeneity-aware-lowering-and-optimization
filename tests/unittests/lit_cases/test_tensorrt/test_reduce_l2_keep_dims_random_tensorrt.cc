@@ -25,5 +25,5 @@
 // RUN: %t_tensorrt.exe 0.0001 0 tensorrt %data_path/test_reduce_l2_keep_dims_random | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_reduce_l2_keep_dims_random_tensorrt.cc.tmp.main.cc.in"

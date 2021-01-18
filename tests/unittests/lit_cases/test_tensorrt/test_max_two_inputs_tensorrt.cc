@@ -26,5 +26,5 @@
 // RUN: %t_tensorrt.exe 0.0001 0 tensorrt %data_path/test_max_two_inputs | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_max_two_inputs_tensorrt.cc.tmp.main.cc.in"
