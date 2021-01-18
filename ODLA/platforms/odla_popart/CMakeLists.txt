@@ -24,10 +24,11 @@ find_library(popart NAMES popart PATHS ${POPART_ROOT} PATH_SUFFIXES lib
              NO_DEFAULT_PATH)
 find_library(custom_ops NAMES custom_ops PATHS ${CMAKE_CURRENT_SOURCE_DIR}/custom_ops
              PATH_SUFFIXES lib NO_DEFAULT_PATH)
+find_package(popart CONFIG REQUIRED)
 set_property(TARGET odla_popart PROPERTY CXX_STANDARD 14)
 target_include_directories(odla_popart PRIVATE ${POPART_ROOT}/include )
 target_include_directories(odla_popart PRIVATE ${POPLAR_ROOT}/include )
 
 target_compile_definitions(odla_popart PRIVATE ONNX_NAMESPACE=onnx)
-target_link_libraries(odla_popart ODLA ${custom_ops})
+target_link_libraries(odla_popart ODLA ${custom_ops} popart-only)
 target_link_options(odla_popart PRIVATE -Wl,-rpath=${POPLAR_ROOT}/lib:${POPART_ROOT}/lib)
