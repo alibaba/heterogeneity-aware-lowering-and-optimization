@@ -304,7 +304,8 @@ static Type ComputeKernelWiseType(
     const Type& data_type, const std::vector<int64_t>& kernel_shape,
     const std::vector<int>& strides, Padding padding_mode,
     std::vector<int>* input_paddings, const std::vector<int>& dilations,
-    DataFormat data_format, DataFormat kernel_format, int group, OpCode op) {
+    DataFormat data_format, DataFormat kernel_format, int group, OpCode op,
+    bool ceil_mode = false) {
   std::vector<int>& explicit_paddings = *input_paddings;
   switch (op) {
     case OpCode::CONV2D:
@@ -370,13 +371,20 @@ static Type ComputeKernelWiseType(
                              explicit_paddings[3];
       } else {
         ret_shape[index_h] = (data_shape[index_h] + explicit_paddings[0] +
-                              explicit_paddings[1] - kernel_h) /
-                                 strides[index_h] +
-                             1;
+                              explicit_paddings[1] - kernel_h);
         ret_shape[index_w] = (data_shape[index_w] + explicit_paddings[2] +
-                              explicit_paddings[3] - kernel_w) /
-                                 strides[index_w] +
-                             1;
+                              explicit_paddings[3] - kernel_w);
+        if (ceil_mode) {
+          ret_shape[index_h] =
+              (ret_shape[index_h] + strides[index_h] - 1) / strides[index_h] +
+              1;
+          ret_shape[index_w] =
+              (ret_shape[index_w] + strides[index_w] - 1) / strides[index_w] +
+              1;
+        } else {
+          ret_shape[index_h] = ret_shape[index_h] / strides[index_h] + 1;
+          ret_shape[index_w] = ret_shape[index_w] / strides[index_w] + 1;
+        }
       }
       break;
     }
@@ -384,6 +392,7 @@ static Type ComputeKernelWiseType(
       HLCHECK(0 && "unsupported padding type");
     }
   }
+
   auto paddings = std::max(
       0L, (ret_shape[index_h] - 1) * strides[index_h] + kernel_h +
               (dilations[index_h] - 1) * (kernel_h - 1) - data_shape[index_h]);
@@ -395,6 +404,7 @@ static Type ComputeKernelWiseType(
               (dilations[index_w] - 1) * (kernel_w - 1) - data_shape[index_w]);
   explicit_paddings[2] = paddings / 2;
   explicit_paddings[3] = paddings - explicit_paddings[2];
+
   if (padding_mode == Padding::SAME_LOWER) {
     std::swap(explicit_paddings[0], explicit_paddings[1]);
     std::swap(explicit_paddings[2], explicit_paddings[3]);
@@ -560,12 +570,22 @@ static void RunOnInstruction(ArgmaxInst* inst) {
   RunOnCommonReductionInstruction(inst, axis, inst->GetKeepDims());
 }
 
-static void RunOnInstruction(PoolingMaxInst* inst) {
+template <typename T>
+static void RunOnPoolingInstruction(Instruction* pooling_inst) {
   std::vector<int> paddings;
+  auto inst = DynCast<T>(pooling_inst);
   auto& data_type = inst->GetOperand(0).GetType();
   if (!data_type.IsValid()) {
     return;
   }
+  bool ceil_mode = false;
+  for (const auto& it : inst->GetAttributes()) {
+    if (it->GetName() == "ceil_mode") {
+      ceil_mode = (it->GetValueAsInteger() == 1);
+      break;
+    }
+  }
+
   std::vector<int> explicit_paddings{
       inst->GetPaddingTop(), inst->GetPaddingBottom(), inst->GetPaddingLeft(),
       inst->GetPaddingRight()};
@@ -577,7 +597,7 @@ static void RunOnInstruction(PoolingMaxInst* inst) {
   auto ret_type = ComputeKernelWiseType(
       data_type, kernel_shape, inst->GetStrides(), inst->GetPadding(),
       &explicit_paddings, {1, 1, 1, 1}, inst->GetDataFormat(),
-      inst->GetDataFormat(), 1 /*group*/, inst->GetOpCode());
+      inst->GetDataFormat(), 1 /*group*/, inst->GetOpCode(), ceil_mode);
   inst->GetResultsTypes()[0] = ret_type;
   if (inst->GetPadding() != Padding::EXPLICIT) {
     inst->SetPaddingTop(explicit_paddings[0]);
@@ -587,31 +607,12 @@ static void RunOnInstruction(PoolingMaxInst* inst) {
   }
 }
 
+static void RunOnInstruction(PoolingMaxInst* inst) {
+  RunOnPoolingInstruction<PoolingMaxInst>(inst);
+}
+
 static void RunOnInstruction(PoolingAvgInst* inst) {
-  std::vector<int> paddings;
-  auto& data_type = inst->GetOperand(0).GetType();
-  if (!data_type.IsValid()) {
-    return;
-  }
-  std::vector<int> explicit_paddings{
-      inst->GetPaddingTop(), inst->GetPaddingBottom(), inst->GetPaddingLeft(),
-      inst->GetPaddingRight()};
-  std::vector<int64_t> kernel_shape;
-  kernel_shape.reserve(4);
-  for (auto dim : inst->GetKsize()) {
-    kernel_shape.push_back(dim);
-  }
-  auto ret_type = ComputeKernelWiseType(
-      data_type, kernel_shape, inst->GetStrides(), inst->GetPadding(),
-      &explicit_paddings, {1, 1, 1, 1}, inst->GetDataFormat(),
-      inst->GetDataFormat(), 1 /*group*/, inst->GetOpCode());
-  inst->GetResultsTypes()[0] = ret_type;
-  if (inst->GetPadding() != Padding::EXPLICIT) {
-    inst->SetPaddingTop(explicit_paddings[0]);
-    inst->SetPaddingBottom(explicit_paddings[1]);
-    inst->SetPaddingLeft(explicit_paddings[2]);
-    inst->SetPaddingRight(explicit_paddings[3]);
-  }
+  RunOnPoolingInstruction<PoolingAvgInst>(inst);
 }
 
 static void RunOnMatrixMultiplyInstruction(Instruction* inst, bool trans_a,
