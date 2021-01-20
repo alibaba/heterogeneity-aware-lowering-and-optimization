@@ -147,6 +147,7 @@ static void RunOnInstruction(BatchMatMulInst* inst,
                           ? matrixa_type.GetNumOfElementsInDim(dims - 1)
                           : matrixa_type.GetNumOfElementsInDim(dims - 2);
 
+
   node_info.flops = row * (2 * node_info.weight - col) * batch;
   node_info.activation = static_cast<float>(
       batch * (Dl->Bytes(weight_type) + Dl->Bytes(inst->GetResultType())));
@@ -158,6 +159,7 @@ static void RunOnInstruction(BatchNormInst* inst,
   // z = gamma * (y - mean) / sqrt(variance + epsilon) + beta
   // BatchNorm computational estimator: Cin * 4
   const auto& input_type = inst->GetOperand(0).GetType();
+
   node_info.flops =
       GetNumOfOperators(inst) * input_type.GetTotalNumOfElements();
   node_info.activation = Dl->Bytes(inst->GetResultType());
@@ -201,6 +203,7 @@ static void RunOnInstruction(Conv2DInst* inst,
       HLCHECK(0 && "Invalid format");
     }
   }
+
   node_info.activation = static_cast<float>(Dl->Bytes(weight_inst.GetType()) +
                                             Dl->Bytes(out_type));
 }
@@ -259,6 +262,7 @@ static void RunOnInstruction(MatMulInst* inst,
   const int64_t row = inst->GetTransposeA()
                           ? matrixa_type.GetNumOfElementsInDim(dims - 1)
                           : matrixa_type.GetNumOfElementsInDim(dims - 2);
+
 
   node_info.activation = static_cast<float>(Dl->Bytes(weight_type) +
                                             Dl->Bytes(inst->GetResultType()));
