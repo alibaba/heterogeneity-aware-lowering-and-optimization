@@ -820,6 +820,11 @@ void GenericCXXCodeGen::EmitODLAArgs(const std::vector<uint32_t>& arg) {
   os_ << '{' << Join(arg) << '}';
 }
 
+void GenericCXXCodeGen::EmitODLAArgs(const std::vector<float>& arg) {
+  os_ << "(const odla_float32[])";
+  os_ << '{' << Join(arg) << '}';
+}
+
 void GenericCXXCodeGen::EmitODLAArgs(const std::vector<CXXValue>& arg) {
   os_ << "(odla_values){.size = " << arg.size() << ", .values = {";
   for (const auto& v : arg) {
@@ -845,6 +850,25 @@ void GenericCXXCodeGen::EmitODLAArgs(const DataFormat& arg) {
   }
   os_ << "ODLA_";
   os_ << (arg == DataFormat::NHWC ? "CHANNELS_LAST" : "CHANNELS_FIRST");
+}
+
+void GenericCXXCodeGen::EmitODLAArgs(const std::vector<halo::Type>& arg) {
+  os_ << "(odla_types){.size = " << arg.size() << ", .types = {";
+  for (const auto& v : arg) {
+    EmitODLAArgs(v);
+    os_ << ", ";
+  }
+  os_ << "}}";
+}
+
+void GenericCXXCodeGen::EmitODLAArgs(const std::vector<std::string>& arg) {
+  os_ << "(const odla_char* const[])"
+      << "{ ";
+  for (const auto& v : arg) {
+    os_ << "\"" << v << "\"";
+    os_ << ", ";
+  }
+  os_ << '}';
 }
 
 } // namespace halo
