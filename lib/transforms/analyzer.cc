@@ -55,8 +55,7 @@ Analyzer::NodeInfo& GenerateCommonInfo(
   node_info.name = inst->GetName();
   node_info.type = inst->GetOpCode();
   node_info.data_type = inst->GetOperand(0).GetType().GetDataType();
-  // node_info.input_shape =
-  // inst->GetOperand(0).GetType().GetDimSizes();
+  node_info.input_shape = inst->GetOperand(0).GetType().GetDimSizes();
   node_info.output_shape = inst->GetResultType().GetDimSizes();
   return node_info;
 }
@@ -104,6 +103,8 @@ static void RunOnInstruction(Instruction* inst,
     case OpCode::CMP: {
       auto& node_info = GenerateCommonInfo(inst, node_infos);
       node_info.flops = inst->GetResultType().GetTotalNumOfElements();
+      DefaultDataLayout dl; 
+      node_info.activation = node_info.flops * dl.Bytes(inst->GetResultType().GetDataType());
       break;
     }
     default: {
@@ -140,6 +141,8 @@ static void RunOnInstruction(BatchMatMulInst* inst,
                           : weight_type.GetNumOfElementsInDim(dims - 1);
 
   node_info.flops = batch * (GetNumOfOperators(inst) * node_info.weight - col);
+  node_info.activation = 
+      node_info.sizeof_dt * node_info.weight + inst->GetResultType().GetTotalNumOfElements();
 }
 
 static void RunOnInstruction(BatchNormInst* inst,
@@ -148,8 +151,9 @@ static void RunOnInstruction(BatchNormInst* inst,
   // z = gamma * (y - mean) / sqrt(variance + epsilon) + beta
   // BatchNorm computational estimator: Cin * 4
   const auto& input_type = inst->GetOperand(0).GetType();
-  node_info.flops =
-      GetNumOfOperators(inst) * input_type.GetTotalNumOfElements();
+  node_info.flops = GetNumOfOperators(inst) * input_type.GetTotalNumOfElements();
+  node_info.activation = 
+      static_cast<float>(node_info.sizeof_dt * inst->GetResultType().GetTotalNumOfElements());
 }
 
 static void RunOnInstruction(ConcatInst* inst,
@@ -191,16 +195,43 @@ static void RunOnInstruction(Conv2DInst* inst,
       HLCHECK(0 && "Invalid format");
     }
   }
+  node_info.activation = 
+     node_info.sizeof_dt * (node_info.weight + inst->GetResultType().GetTotalNumOfElements());
 }
 
 static void RunOnInstruction(GatherInst* inst,
                              std::vector<Analyzer::NodeInfo>* node_infos) {
-  HLCHECK(0 && "Unimplemented");
+  //HLCHECK(0 && "Unimplemented");
+  auto& node_info = GenerateCommonInfo(inst, node_infos); 
+  DefaultDataLayout dl; 
+  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
+  node_info.activation = node_info.flops * dl.Bytes(inst->GetResultType().GetDataType());
 }
 
 static void RunOnInstruction(GemmInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  HLCHECK(0 && "Unimplemented");
+                             std::vector<Analyzer::NodeInfo>* node_infos) { 
+  auto& node_info = GenerateCommonInfo(inst, node_infos);
+
+  //const auto& matrix_a = inst->GetOperand(0); 
+  const auto& matrix_b = inst->GetOperand(1); 
+  const auto& matrix_c = inst->GetOperand(2);
+
+  //const size_t matrixa_sz = static_cast<float>(matrix_a.GetType().GetTotalNumOfElements()); 
+  const size_t matrixb_sz = static_cast<float>(matrix_b.GetType().GetTotalNumOfElements()); 
+  const size_t matrixc_sz = static_cast<float>(matrix_c.GetType().GetTotalNumOfElements());   
+  
+  const Constant* b = DynCast<Constant>(matrix_b);
+  node_info.sizeof_dt = b->GetElementSizeInBytes();
+
+  // GEMM computational estimator: out = alpha * A' * B' + beta * C
+  const size_t dims = matrix_b.GetType().GetNumOfDims();
+  const int64_t row_a = matrix_c.GetType().GetNumOfElementsInDim(0); 
+  const int64_t col_b = inst->GetTransposeB()
+                          ? matrix_b.GetType().GetNumOfElementsInDim(dims - 2)
+                          : matrix_b.GetType().GetNumOfElementsInDim(dims - 1);
+  
+  node_info.flops = static_cast<float>(row_a * (2 * matrixb_sz - col_b) + 2 * matrixc_sz);
+  node_info.activation = node_info.sizeof_dt * static_cast<float>(matrixb_sz + matrixc_sz);
 }
 
 static void RunOnInstruction(MatMulInst* inst,
@@ -216,12 +247,18 @@ static void RunOnInstruction(MatMulInst* inst,
   node_info.sizeof_dt = weight->GetElementSizeInBytes();
 
   // matmul computational estimator: (2 * Cin - 1) * Cout
-  const size_t dims = weight_type.GetNumOfDims();
+  size_t dims = weight_type.GetNumOfDims();
   const int64_t col = inst->GetTransposeB()
                           ? weight_type.GetNumOfElementsInDim(dims - 2)
                           : weight_type.GetNumOfElementsInDim(dims - 1);
+  const auto& matrixa_type = inst->GetOperand(0).GetType();
+  dims = matrixa_type.GetNumOfDims();
+  const int64_t row = inst->GetTransposeA()
+                          ? matrixa_type.GetNumOfElementsInDim(dims - 1)
+                          : matrixa_type.GetNumOfElementsInDim(dims - 2);
 
-  node_info.flops = GetNumOfOperators(inst) * node_info.weight - col;
+  node_info.activation = node_info.sizeof_dt * (node_info.weight + inst->GetResultType().GetTotalNumOfElements());
+  node_info.flops = row * (2 * node_info.weight - col);
 }
 
 static void RunOnInstruction(OneHotInst* inst,
@@ -276,6 +313,12 @@ static void RunOnInstruction(ReduceProductInst* inst,
 }
 
 static void RunOnInstruction(ReluInst* inst,
+                             std::vector<Analyzer::NodeInfo>* node_infos) {
+  auto& node_info = GenerateCommonInfo(inst, node_infos);
+  node_info.flops = inst->GetOperand(0).GetType().GetTotalNumOfElements();
+}
+
+static void RunOnInstruction(Relu6Inst* inst,
                              std::vector<Analyzer::NodeInfo>* node_infos) {
   auto& node_info = GenerateCommonInfo(inst, node_infos);
   node_info.flops = inst->GetOperand(0).GetType().GetTotalNumOfElements();
@@ -355,10 +398,12 @@ void Analyzer::WriteCSVReport(std::ostream& os) const {
   }
 
   os << "Analysis Report\n"
-     << "name, "
+     << "layerID, "
+     << "layerName, "
+     << "opName, "
      << "type, "
-     << "input shape, "
-     << "output shape, "
+     << "input-shape, "
+     << "output-shape, "
      << "MFLOPs, "
      << "weight(MB), "
      << "activation(MB), "
