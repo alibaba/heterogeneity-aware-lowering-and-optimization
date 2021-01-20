@@ -160,6 +160,9 @@ CXXType GenericCXXCodeGen::SNTypeToCXXType(DataType dt) {
     case DataType::INT64: {
       return (CXXType("int64_t"));
     }
+    case DataType::BOOL: {
+      return (CXXType("bool"));
+    }
     default: {
       HLCHECK(0 && "Unhandled Type");
     }
@@ -287,6 +290,12 @@ std::string GenericCXXCodeGen::EmitShape(const halo::Type& type) {
 
 std::string GenericCXXCodeGen::GetODLAType(DataType type) const noexcept {
   switch (type) {
+    case DataType::INT8: {
+      return "ODLA_INT8";
+    }
+    case DataType::UINT8: {
+      return "ODLA_UINT8";
+    }
     case DataType::FLOAT32: {
       return "ODLA_FLOAT32";
     }
