@@ -429,15 +429,15 @@ static std::pair<Def, Def> RunOnCommonReductionInstruction(Instruction* inst) {
       Instruction* ret = nullptr;
       switch (opcode) {
         case OpCode::REDUCEMEAN: {
-          ReduceMeanInst* new_inst =
-              builder.CreateReduceMean(inst->GetName(), {inst->GetOperand(0)});
+          ReduceMeanInst* new_inst = DynCast<ReduceMeanInst>(
+              builder.Clone(*inst, {inst->GetOperand(0)}));
           new_inst->SetAxis(axis);
           ret = new_inst;
           break;
         }
         case OpCode::ARGMAX: {
           ArgmaxInst* new_inst =
-              builder.CreateArgmax(inst->GetName(), {inst->GetOperand(0)});
+              DynCast<ArgmaxInst>(builder.Clone(*inst, {inst->GetOperand(0)}));
           new_inst->SetAxis(axis.at(0));
           ret = new_inst;
           break;
