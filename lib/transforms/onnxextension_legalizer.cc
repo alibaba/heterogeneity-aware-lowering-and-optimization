@@ -33,6 +33,29 @@
 
 namespace halo {
 
+template <typename T>
+static const T& GetAttributeValue(const Attribute& attr) {
+  return T();
+}
+
+template <>
+const std::vector<int>& GetAttributeValue(const Attribute& attr) {
+  return attr.GetValueAsIntegerList();
+}
+
+template <typename T>
+static const T& FindAttributeValue(const ExtensionInst* ext,
+                                   const std::string& name,
+                                   const T& default_val) {
+  T ret_val = default_val;
+  for (const auto& it : ext->GetAttributes()) {
+    if (it->GetName() == name) {
+      return GetAttributeValue<T>(*it);
+    }
+  }
+  return default_val;
+}
+
 static std::vector<Def> ConvertUnsqueeze(const ONNXExtensionInst* ext,
                                          IRBuilder* builder) {
   HLCHECK(ext->GetNumOfOperands() == 1);
@@ -348,6 +371,39 @@ static std::vector<Def> ConvertCast(const ONNXExtensionInst* ext,
 
 static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
                                      IRBuilder* builder) {
+  // Operands: input [begin] [end] [axes] [step]
+  // For opset 1, begn/end/axes are attributs.
+  auto op_num = ext->GetNumOfOperands();
+  HLCHECK(op_num >= 1 && op_num != 2 && op_num <= 5);
+  builder->SetInsertAfter(ext);
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+
+  // Normalize Slice-1 to Slice.
+  if (op_num == 1) {
+    HLCHECK(ext->GetNumOfAttributes() >= 2);
+    std::vector<int> empty;
+    const auto& starts = FindAttributeValue(ext, "starts", empty);
+    const auto& ends = FindAttributeValue(ext, "ends", empty);
+    const auto& axes = FindAttributeValue(ext, "axes", empty);
+    HLCHECK(!starts.empty() && starts.size() == ends.size());
+    auto ops = ext->GetOperands();
+    int s = starts.size();
+    Constant* c_starts = cb.CreateConstant(
+        ext->GetName() + "_starts", Type{DataType::INT32, {s}}, starts.data());
+    Constant* c_ends = cb.CreateConstant(
+        ext->GetName() + "_ends", Type{DataType::INT32, {s}}, ends.data());
+
+    ops.push_back(*c_starts);
+    ops.push_back(*c_ends);
+    if (!axes.empty()) {
+      int s = axes.size();
+      Constant* c = cb.CreateConstant(ext->GetName() + "_axes",
+                                      Type{DataType::INT32, {s}}, axes.data());
+      ops.push_back(*c);
+    }
+    auto new_inst = builder->Clone(*ext, ops);
+    return {*new_inst};
+  }
   auto op0 = ext->GetOperand(0);
   auto op1 = ext->GetOperand(1); // starts
   auto op2 = ext->GetOperand(2); // ends
@@ -372,18 +428,17 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
 
   std::unordered_set<int32_t> axes;
 
-  ConstantBuilder cb(ext->GetParent()->GetParent());
   // If no axes operand, assumes all axes are sliced and steps are 1.
   Def op3 = Def::GetUndefined();
   Def op4 = Def::GetUndefined();
 
-  if ((ext->GetNumOfOperands() == 3) || (ext->GetNumOfOperands() == 4)) {
+  if ((op_num == 3) || (op_num == 4)) {
     std::vector<int> steps(input_dims, 1);
     Constant* c_steps =
         cb.CreateConstant(ext->GetName() + "_steps",
                           Type{DataType::INT32, {input_dims}}, steps.data());
     op4 = *c_steps;
-    if (ext->GetNumOfOperands() == 3) {
+    if (op_num == 3) {
       std::vector<int> data(input_dims);
       for (int i = 0; i < input_dims; ++i) {
         axes.insert(i);
@@ -396,13 +451,13 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
     }
   }
 
-  if (ext->GetNumOfOperands() >= 4) {
+  if (op_num >= 4) {
     op3 = ext->GetOperand(3); // axes
     if (!IsA<Constant>(op3)) {
       return {};
     }
 
-    if (ext->GetNumOfOperands() > 4) {
+    if (op_num > 4) {
       op4 = ext->GetOperand(4); // steps
       if (!IsA<Constant>(op4)) {
         return {};
@@ -574,9 +629,9 @@ static std::vector<Def> ConvertGatherElements(const ONNXExtensionInst* ext,
   int axis = attr->GetValueAsInteger();
   axis = axis < 0 ? static_cast<int>(idx_shape.size()) + axis : axis;
 
-  // if idx_shape[i] and input_shape[i] are 1 for all dims except for "axis", it
-  // can be converted to Gather. Otherwise, if idx_shape is a result of
-  // broadcasting, the input of broadcasting might be converted.
+  // if idx_shape[i] and input_shape[i] are 1 for all dims except for
+  // "axis", it can be converted to Gather. Otherwise, if idx_shape is a
+  // result of broadcasting, the input of broadcasting might be converted.
   bool can_be_gather = input_shape.size() == idx_shape.size();
   for (unsigned i = 0, e = input_shape.size(); can_be_gather && i < e; ++i) {
     can_be_gather &= (input_shape[i] == idx_shape[i] && input_shape[i] == 1) ||
@@ -596,13 +651,13 @@ static std::vector<Def> ConvertGatherElements(const ONNXExtensionInst* ext,
     ConstantBuilder cb(ext->GetParent()->GetParent());
     std::vector<int64_t> new_dims{idx_shape[axis]};
     Constant* c = cb.CreateConstant(
-        idx_op.GetDef()->GetName() + "_shape",
+        ext->GetName() + "_shape",
         Type{DataType::INT64, {static_cast<int64_t>(new_dims.size())}},
         new_dims.data());
 
     builder->SetInsertAfter(ext);
-    auto reshape = builder->CreateReshape(
-        idx_op.GetDef()->GetName() + "_reshape", idx_op, *c);
+    auto reshape =
+        builder->CreateReshape(ext->GetName() + "_reshape", idx_op, *c);
     auto new_inst = builder->CreateGather(ext->GetName(), {input_op, *reshape});
     new_inst->SetAxis(axis);
     return {*new_inst};
