@@ -27,6 +27,8 @@ bool AppendReturnInst(BasicBlock* bb);
 
 std::vector<int64_t> GetExtends(const std::vector<int64_t>& dims);
 
+void SplitStringToInt64List(const std::string& src, std::vector<int64_t>* dst,
+                            const std::string& delimiter);
 template <typename T>
 std::vector<Def> ConvertSqueezeImpl(const T* ext, IRBuilder* builder,
                                     const std::string& attr_name) {
