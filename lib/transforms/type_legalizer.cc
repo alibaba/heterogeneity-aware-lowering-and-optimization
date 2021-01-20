@@ -411,7 +411,6 @@ static void RunOnInstruction(Conv2DInst* inst) {
   if (!data_type.IsValid() || !kernel_type.IsValid()) {
     return;
   }
-
   if (inst->GetGroup() == -1) {
     auto input = inst->GetOperand(0);
     int in_channel = static_cast<int>(input.GetType().GetNumOfElementsInDim(
