@@ -512,11 +512,8 @@ static void RunOnCommonReductionInstruction(Instruction* inst,
       inst->GetOpCode() == OpCode::ARGMIN) {
     dt = DataType::INT32;
   }
-  if (!keep_dims && ret_shape.size() == 1) {
-    inst->GetResultsTypes()[0] = halo::Type{dt};
-  } else {
-    inst->GetResultsTypes()[0] = halo::Type{dt, ret_shape};
-  }
+
+  inst->GetResultsTypes()[0] = halo::Type{dt, ret_shape};
 }
 
 static void RunOnInstruction(ReduceL1Inst* inst) {
@@ -1001,8 +998,9 @@ static void RunOnInstruction(NonMaxSuppressionInst* inst) {
 
 static void RunOnInstruction(TopKInst* inst) {
   HLCHECK(inst->GetNumOfOperands() == 2);
+  const auto& input_type = inst->GetOperand(0).GetType();
   const auto& op1 = inst->GetOperand(1);
-  if (!IsA<Constant>(op1)) {
+  if (!input_type.IsValid() || !IsA<Constant>(op1)) {
     return;
   }
 
@@ -1016,7 +1014,6 @@ static void RunOnInstruction(TopKInst* inst) {
     k = c_k->GetData<int64_t>(0);
   }
 
-  const auto& input_type = inst->GetOperand(0).GetType();
   const auto dims = input_type.GetNumOfDims();
   // Normalize axis.
   auto axis = inst->GetAxis();
@@ -1029,7 +1026,6 @@ static void RunOnInstruction(TopKInst* inst) {
 
   auto ret_shape = input_type.GetDimSizes();
   ret_shape[axis] = k;
-
   inst->GetResultsTypes()[0] = Type{input_type.GetDataType(), ret_shape};
   inst->GetResultsTypes()[1] = Type{inst->GetIndexType(), ret_shape};
 }
