@@ -160,6 +160,9 @@ CXXType GenericCXXCodeGen::SNTypeToCXXType(DataType dt) {
     case DataType::INT64: {
       return (CXXType("int64_t"));
     }
+    case DataType::BOOL: {
+      return (CXXType("bool"));
+    }
     default: {
       HLCHECK(0 && "Unhandled Type");
     }
@@ -177,11 +180,13 @@ CXXType GenericCXXCodeGen::TensorTypeToCXXType(const halo::Type& type,
 std::string GenericCXXCodeGen::GetFunctionDecl(const Function& func,
                                                const Instruction& ret_inst,
                                                bool with_func_name,
-                                               bool with_type) {
+                                               bool with_type,
+                                               bool public_function) {
   const static std::string inference_func_decl =
       "void model_run(int num_inputs, const void* inputs[],"
       "int num_outputs, void* outputs[], int batch_size)";
-  if (opts_.emit_inference_func_sig && func.IsEntryFunction()) {
+  if (opts_.emit_inference_func_sig && func.IsEntryFunction() &&
+      public_function) {
     return inference_func_decl;
   }
 
@@ -285,6 +290,12 @@ std::string GenericCXXCodeGen::EmitShape(const halo::Type& type) {
 
 std::string GenericCXXCodeGen::GetODLAType(DataType type) const noexcept {
   switch (type) {
+    case DataType::INT8: {
+      return "ODLA_INT8";
+    }
+    case DataType::UINT8: {
+      return "ODLA_UINT8";
+    }
     case DataType::FLOAT32: {
       return "ODLA_FLOAT32";
     }
@@ -321,6 +332,14 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
                                                 const Instruction& ret_inst) {
   std::ostringstream oss;
   oss << "#include \"unittests.h\"\n\n";
+  for (unsigned i = 0; i < func.Args().size(); i++) {
+    oss << " #include \""
+        << "input_" << i << ".data.cc\"\n";
+  }
+  for (unsigned i = 0; i < ret_inst.GetOperands().size(); i++) {
+    oss << " #include \""
+        << "output_" << i << ".data.cc\"\n";
+  }
 
   auto convert_data_type = [](DataType dtype) {
     std::string data_type_str;
@@ -361,28 +380,29 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
     // load input data
     for (auto& arg : func.Args()) {
       auto& type = arg->GetResultType();
+      const auto elem_nums = type.GetTotalNumOfElements();
       data_type.clear();
       data_type = convert_data_type(type.GetDataType());
-      oss << "  std::vector<" << data_type << "> in_" << i
-          << " = unittests.LoadInData<" << data_type << ">("
-          << "test_case_dir, data_set_id, " << i << ");\n";
-      oss << "  inputs.push_back(in_" << i << ".data());\n";
+      oss << "  extern const " << data_type;
+      oss << "  input_" << i << "[" << elem_nums << "];\n";
+      oss << "  inputs.push_back(input_" << i << ");\n";
       i++;
     }
 
     i = 0;
+    oss << "  std::vector<size_t> output_elems;\n";
     // load reference data and declare output
     for (auto& out : ret_inst.GetOperands()) {
       const auto& type = out.GetType();
       const auto elem_nums = type.GetTotalNumOfElements();
       data_type.clear();
       data_type = convert_data_type(type.GetDataType());
-      oss << "  std::vector<" << data_type << "> out_ref_" << i
-          << " = unittests.LoadOutData<" << data_type << ">("
-          << "test_case_dir, data_set_id, " << i << ");\n";
-      oss << "  output_refs.push_back(out_ref_" << i << ".data());\n";
+      oss << "  extern const " << data_type;
+      oss << "  output_" << i << "[" << elem_nums << "];\n";
+      oss << "  output_refs.push_back(output_" << i << ");\n";
       oss << "  " << data_type << " out_" << i << "[" << elem_nums
           << "] = {};\n";
+      oss << "  output_elems.push_back(" << elem_nums << ");\n";
       oss << "  outputs.push_back(out_" << i++ << ");\n";
     }
 
@@ -403,7 +423,7 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
     oss << "#endif\n";
     // verify output data
     oss << "  unittests.CheckResult<" << data_type << ">("
-        << ret_inst.GetOperands().size() << ", outputs.data()"
+        << "output_elems, outputs.data()"
         << ", output_refs.data()"
         << ", test_case_dir, device_name, times, thre);\n";
     oss << "  return 0;\n}\n";
@@ -416,7 +436,7 @@ void GenericCXXCodeGen::RunOnHostFunction(Function& function) {
   Instruction* return_inst = function.GetReturnInst();
   HLCHECK(return_inst && "No Return Instruction found");
 
-  auto func_decl = GetFunctionDecl(function, *return_inst, true, true);
+  auto func_decl = GetFunctionDecl(function, *return_inst, true, true, true);
 
   if (opts_.dialect == Dialect::CXX_11) {
     os_ << DeclAsExtern(func_decl);
@@ -474,6 +494,11 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
     RunOnConstant(*constant, true);
   }
 
+  if (function.empty() || (function.BasicBlocks().size() == 1 &&
+                           function.BasicBlocks().front()->empty())) {
+    return;
+  }
+
   Instruction* return_inst = function.GetReturnInst();
   HLCHECK(return_inst && "No Return Instruction found");
 
@@ -486,12 +511,16 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
                                      ? function.GetName() + "_helper"
                                      : "run_" + function.GetName();
   // Emit function for launching computation.
-  auto func_decl = GetFunctionDecl(function, *return_inst, true, true);
+  auto func_decl = GetFunctionDecl(function, *return_inst, true, true, true);
 
   // contents in oss will be write to c file and header file.
   std::ostringstream oss;
-  const std::string init_func_name = function.GetName() + "_init";
-  const std::string fini_func_name = function.GetName() + "_fini";
+  bool emit_triton_style =
+      (function.IsEntryFunction() && opts_.emit_inference_func_sig);
+  const std::string init_func_name =
+      emit_triton_style ? "model_init" : function.GetName() + "_init";
+  const std::string fini_func_name =
+      emit_triton_style ? "model_fini" : function.GetName() + "_fini";
 
   if (function.IsEntryFunction()) {
     if (opts_.dialect == Dialect::CXX_11) {
@@ -508,8 +537,8 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
   header_os_ << oss.str();
 
   if (emit_builder_func) {
-    os_ << "  static odla_computation Comp;\n";
     if (is_compile_mode) {
+      os_ << "static odla_computation Comp;\n";
       os_ << "static void " << helper_func_name << "() {\n";
       os_ << "  odla_CreateComputation(&Comp);\n";
       if (opts_.enable_ipu_device) {
@@ -523,12 +552,11 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
         os_ << "odla_SetComputationItem(Comp, ODLA_BATCHES_PER_STEP, "
                "(odla_item_value) &batches_per_step);\n";
       }
-
       if (opts_.emit_dynamic_batch) {
         os_ << "bool is_dynamic_batch = true;\n";
-        os_ << "int min_batch_size = 1;\n";
-        os_ << "int max_batch_size = 8;\n";
-        os_ << "int opt_batch_size = 4;\n";
+        os_ << "int min_batch_size = " << opts_.min_batch_size << ";\n";
+        os_ << "int max_batch_size = " << opts_.max_batch_size << ";\n";
+        os_ << "int opt_batch_size = " << opts_.opt_batch_size << ";\n";
         os_ << "odla_SetComputationItem(Comp, ODLA_DYNAMIC_BATCH, "
                "(odla_item_value) &is_dynamic_batch);\n";
         os_ << "odla_SetComputationItem(Comp, ODLA_MIN_BATCH_SIZE, "
@@ -539,9 +567,9 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
                "(odla_item_value) &opt_batch_size);\n";
       }
     } else {
-      os_ << "static odla_computation comp;\n"; // only for legacy odla
       os_ << "static void " << helper_func_name
-          << GetFunctionDecl(function, *return_inst, false, true) << " {\n";
+          << GetFunctionDecl(function, *return_inst, false, true, false)
+          << " {\n";
     }
   } else { // emit single function
     os_ << func_decl << " {\n";
@@ -567,9 +595,9 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
 
       if (opts_.emit_dynamic_batch) {
         os_ << "bool is_dynamic_batch = true;\n";
-        os_ << "int min_batch_size = 1;\n";
-        os_ << "int max_batch_size = 8;\n";
-        os_ << "int opt_batch_size = 4;\n";
+        os_ << "int min_batch_size = " << opts_.min_batch_size << ";\n";
+        os_ << "int max_batch_size = " << opts_.max_batch_size << ";\n";
+        os_ << "int opt_batch_size = " << opts_.opt_batch_size << ";\n";
         os_ << "odla_SetComputationItem(Comp, ODLA_DYNAMIC_BATCH, "
                "(odla_item_value) &is_dynamic_batch);\n";
         os_ << "odla_SetComputationItem(Comp, ODLA_MIN_BATCH_SIZE, "
@@ -610,6 +638,10 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
 
   os_ << "}\n"; // End of computation build function.
 
+  if (opts_.check_model) {
+    dynamic_check_os_ << GenerateTestFunc(function, func_decl, *return_inst);
+  }
+
   if (emit_builder_func) {
     // Emit function for launching computation.
     if (opts_.exec_mode == CodeGen::ExecMode::Compile) {
@@ -620,22 +652,45 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
 
         os_ << "void " << init_func_name << "(){\n";
       } else {
-        os_ << GetFunctionDecl(function, *return_inst, true, true) << " {\n";
+        os_ << GetFunctionDecl(function, *return_inst, true, true, true)
+            << " {\n";
       }
       os_ << "  if (Comp == " << EmitNull() << ") { " << helper_func_name
           << "(); }\n";
       os_ << "}\n";
     }
     if (function.IsEntryFunction()) {
-      os_ << GetFunctionDecl(function, *return_inst, true, true) << " {\n";
+      os_ << GetFunctionDecl(function, *return_inst, true, true, true)
+          << " {\n";
       if (opts_.exec_mode == CodeGen::ExecMode::Compile) {
         os_ << "  " << init_func_name << "();\n";
       }
     }
-
     if (opts_.exec_mode == CodeGen::ExecMode::Interpret) {
-      os_ << "  " << helper_func_name
-          << GetFunctionDecl(function, *return_inst, false, false) << ";\n";
+      os_ << "  " << helper_func_name;
+      if (opts_.emit_inference_func_sig) {
+        os_ << "(";
+        bool is_first = true;
+        int i = 0;
+        for (const auto& arg : function.Args()) {
+          os_ << (is_first ? "" : ", ");
+          CXXType ty = TensorTypeToCXXType(arg->GetResultType(), true);
+          os_ << "(" << ty.Str(false) << ")inputs[" << i << "]";
+          is_first = false;
+          ++i;
+        }
+        for (int i = 0, e = return_inst->GetNumOfOperands(); i < e; ++i) {
+          os_ << (is_first ? "" : ", ");
+          CXXType ty =
+              TensorTypeToCXXType(return_inst->GetOperand(i).GetType(), false);
+          os_ << "(" << ty.Str(false) << ")outputs[" << i << "]";
+          is_first = false;
+        }
+        os_ << ")";
+      } else {
+        os_ << GetFunctionDecl(function, *return_inst, false, false, false);
+      }
+      os_ << ";\n";
       os_ << "}\n";
       return;
     }
@@ -663,9 +718,6 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
         << Join("(const odla_value_id)\"" + arg->GetName() + "\"", arg_name,
                 "Ctx")
         << ");\n";
-  }
-  if (opts_.check_model) {
-    dynamic_check_os_ << GenerateTestFunc(function, func_decl, *return_inst);
   }
   index = 0;
   // Pre-launch binding.
@@ -705,10 +757,13 @@ void GenericCXXCodeGen::RunOnConstant(Constant& constant, bool decl) {
   auto& type = constant.GetResultType();
   if (decl) {
     CXXValue value(constant.GetName(), TensorTypeToCXXType(type, true));
-
-    os_ << "extern const " << value.type.name << " " << value.name << "["
-        << Join(type.GetDimSizes(), '*') << "];\n";
-
+    if (constant.IsScalarOne()) {
+      os_ << "extern const " << value.type.name << " " << value.name
+          << "[1];\n";
+    } else {
+      os_ << "extern const " << value.type.name << " " << value.name << "["
+          << Join(type.GetDimSizes(), '*') << "];\n";
+    }
     ir_mapping_[constant] = value;
     return;
   }
@@ -765,6 +820,11 @@ void GenericCXXCodeGen::EmitODLAArgs(const std::vector<uint32_t>& arg) {
   os_ << '{' << Join(arg) << '}';
 }
 
+void GenericCXXCodeGen::EmitODLAArgs(const std::vector<float>& arg) {
+  os_ << "(const odla_float32[])";
+  os_ << '{' << Join(arg) << '}';
+}
+
 void GenericCXXCodeGen::EmitODLAArgs(const std::vector<CXXValue>& arg) {
   os_ << "(odla_values){.size = " << arg.size() << ", .values = {";
   for (const auto& v : arg) {
@@ -790,6 +850,25 @@ void GenericCXXCodeGen::EmitODLAArgs(const DataFormat& arg) {
   }
   os_ << "ODLA_";
   os_ << (arg == DataFormat::NHWC ? "CHANNELS_LAST" : "CHANNELS_FIRST");
+}
+
+void GenericCXXCodeGen::EmitODLAArgs(const std::vector<halo::Type>& arg) {
+  os_ << "(odla_types){.size = " << arg.size() << ", .types = {";
+  for (const auto& v : arg) {
+    EmitODLAArgs(v);
+    os_ << ", ";
+  }
+  os_ << "}}";
+}
+
+void GenericCXXCodeGen::EmitODLAArgs(const std::vector<std::string>& arg) {
+  os_ << "(const odla_char* const[])"
+      << "{ ";
+  for (const auto& v : arg) {
+    os_ << "\"" << v << "\"";
+    os_ << ", ";
+  }
+  os_ << '}';
 }
 
 } // namespace halo

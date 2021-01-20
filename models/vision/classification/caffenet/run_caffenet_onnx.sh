@@ -1,4 +1,6 @@
 #!/bin/bash
+# RUN: %s
+
 model_name="caffenet"
 model_file="$TEST_TEMP_DIR/$model_name.onnx"
 image_dir="$TEST_TEMP_DIR/images"
@@ -18,6 +20,12 @@ if [[ $TEST_WITH_GPU -eq 1 ]]; then
   python3 $curr_dir/../../invoke_halo.py --model $model_file \
     --label-file $curr_dir/../1000_labels.txt --image-dir $image_dir \
     --odla tensorrt --img-preprocess=minus_128
+# RUN: FileCheck --input-file %test_temp_dir/caffenet_tensorrt.txt %s
 else
 	echo "This tests uses ODLA TensorRT"
 fi
+
+# CHECK: dog.jpg ==> "Samoyed, Samoyede",
+# CHECK-NEXT: sport.jpg ==> "ski",
+# CHECK-NEXT: food.jpg ==> "ice cream, icecream",
+# CHECK-NEXT: plane.jpg ==> "airliner",

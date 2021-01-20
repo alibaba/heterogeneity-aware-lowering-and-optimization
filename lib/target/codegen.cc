@@ -17,6 +17,8 @@
 
 #include "halo/lib/target/codegen.h"
 
+#include <set>
+
 #include "halo/lib/ir/all_instructions.h"
 
 namespace halo {
@@ -40,10 +42,54 @@ const std::string& CodeGen::GetRTLibFuncName(const Instruction& inst) {
 
 std::string CodeGen::NormalizeVariableName(const std::string& name) {
   std::string ret(name);
-  std::transform(name.begin(), name.end(), ret.begin(),
-                 [](char c) { return std::isalnum(c) != 0 ? c : '_'; });
+  static std::set<std::string> keywords{"asm",          "auto",
+                                        "bool",         "break",
+                                        "case",         "catch",
+                                        "char",         "const",
+                                        "continue",     "do",
+                                        "default",      "delete",
+                                        "do",           "double",
+                                        "dynamic_cast", "else",
+                                        "enum",         "explicit",
+                                        "false",        "float",
+                                        "for",          "friend",
+                                        "goto",         "if",
+                                        "inline",       "int",
+                                        "long",         "namespace",
+                                        "new",          "private",
+                                        "protected",    "public",
+                                        "register",     "reinterpret_cast",
+                                        "return",       "short",
+                                        "signed",       "sizeof",
+                                        "static",       "std",
+                                        "switch",       "template",
+                                        "this",         "throw",
+                                        "true",         "try",
+                                        "typedef",      "typeid",
+                                        "typename",     "union",
+                                        "unsigned",     "using",
+                                        "virtual",      "void",
+                                        "volatile",     "while"};
+  std::transform(name.begin(), name.end(), ret.begin(), [](char c) {
+    switch (c) {
+      case '\'':
+      case '/':
+      case ' ':
+      case '.':
+      case '>':
+      case '<':
+      case '-': {
+        return '_';
+      }
+      default:
+        return c;
+    }
+  });
   if (std::isdigit(name[0]) != 0) {
     ret = "val_" + ret;
+  }
+  if (keywords.count(ret) != 0) {
+    ret = "v_" + ret;
   }
   return ret;
 }

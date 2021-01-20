@@ -106,17 +106,17 @@ odla_value odla_BatchNormalization(odla_value input,
 
   auto input_popart_type = g_comp->builder->getTensorDataType(input->tensor_id);
   odla_element_type input_type = GetOdlaType(input_popart_type);
-  if (scale == NULL) {
-    std::vector<float> scale_tmp(channel_dim, scalar_scale);
-    scale =
-        odla_CreateConstant({input_type, {.size = 1, .dims = {channel_dim}}},
-                            scale_tmp.data(), (const odla_value_id) "scale");
+  std::vector<float> scale_tmp(channel_dim, scalar_scale);
+  if (scale == nullptr) {
+    scale = odla_CreateConstant(
+        {input_type, {.size = 1, .dims = {channel_dim}}}, scale_tmp.data(),
+        (const odla_value_id)(name + "scale").c_str());
   }
-  if (offset == NULL) {
-    std::vector<float> offset_tmp(channel_dim, scalar_offset);
-    offset =
-        odla_CreateConstant({input_type, {.size = 1, .dims = {channel_dim}}},
-                            offset_tmp.data(), (const odla_value_id) "offset");
+  std::vector<float> offset_tmp(channel_dim, scalar_offset);
+  if (offset == nullptr) {
+    offset = odla_CreateConstant(
+        {input_type, {.size = 1, .dims = {channel_dim}}}, offset_tmp.data(),
+        (const odla_value_id)(name + "offset").c_str());
   }
 
   auto outs = g_comp->builder->aiOnnxOpset10().batchnormalization(
@@ -160,6 +160,10 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
     kernel_shape.erase(kernel_shape.begin(), kernel_shape.begin() + 2);
   }
 
+  std::vector<popart::TensorId> inputs = {input->tensor_id, kernel->tensor_id};
+  if (bias != nullptr) {
+    inputs.push_back(bias->tensor_id);
+  }
   auto result = g_comp->builder->aiOnnxOpset10().conv(
       {input->tensor_id, kernel->tensor_id}, dim_dilations, group, kernel_shape,
       pads, dim_strides);
@@ -200,6 +204,10 @@ odla_value odla_DeConv(odla_value input, odla_memory_layout input_layout,
     kernel_shape.erase(kernel_shape.begin(), kernel_shape.begin() + 2);
   }
 
+  std::vector<popart::TensorId> inputs = {input->tensor_id, kernel->tensor_id};
+  if (bias != nullptr) {
+    inputs.push_back(bias->tensor_id);
+  }
   auto result = g_comp->builder->aiOnnxOpset10().convtranspose(
       {input->tensor_id, kernel->tensor_id}, dim_dilations, group, kernel_shape,
       std::vector<int64_t>(), // output_padding
@@ -223,43 +231,6 @@ odla_value odla_Elu(odla_value input, odla_float32 alpha,
                           g_comp->builder->getTensorShape(result)},
                          name);
 }
-
-// odla_values odla_GRU(odla_value input, odla_value_shape weight_dims,
-// odla_value W,
-//          odla_value R, odla_value B, odla_uint32 seq_len,
-//          odla_int32 hidden_size, odla_rnn_direction direction,
-//          odla_rnn_outputs outputs, const odla_value_id value_id) {
-//   const auto& name = value_id ? std::string(reinterpret_cast<const
-//   char*>(value_id)) : "GRU"; std::string direction_name =
-//   GetDirectionName(direction); int linear_before_reset = 0;
-
-//   auto outs = g_comp->builder->aiOnnxOpset10().gru({input->tensor_id,
-//   W->tensor_id, R->tensor_id, B->tensor_id}
-//                                                    ,2                   //
-//                                                    num_outputs
-//                                                    ,std::vector<float> ()
-//                                                    //activation_alpha
-//                                                    ,std::vector<float> ()
-//                                                    //activation beta
-//                                                    ,std::vector<std::string>
-//                                                    () //activations
-//                                                    ,nonstd::optional<float>()
-//                                                    //clip ,direction_name
-//                                                    ,hidden_size
-//                                                    ,linear_before_reset);
-
-//   odla_value value_1 = new _odla_value(outs[0],
-//                                        {g_comp->builder->getTensorDataType(outs[0]),
-//                                         g_comp->builder->getTensorShape(outs[0])},
-//                                        name + "1");
-//   odla_value value_2 = new _odla_value(outs[1],
-//                                        {g_comp->builder->getTensorDataType(outs[1]),
-//                                         g_comp->builder->getTensorShape(outs[1])},
-//                                        name + "2");
-
-//   return std::move(odla_values{2, {value_1, value_2}});
-
-// }
 
 odla_value odla_HardSigmoid(odla_value input, odla_float32 alpha,
                             odla_float32 beta, const odla_value_id value_id) {
@@ -404,11 +375,13 @@ odla_value odla_MaxPool(odla_value input, odla_memory_layout input_layout,
 
   padding.insert(padding.end(), padding_from_back.begin(),
                  padding_from_back.end());
-  popart::TensorId result = g_comp->builder->aiOnnxOpset10().averagepool(
-      {input->tensor_id}, kernel_shape, 0, 0, padding, dim_strides);
-  return new _odla_value(result,
-                         {g_comp->builder->getTensorDataType(result),
-                          g_comp->builder->getTensorShape(result)},
+  std::vector<popart::TensorId> result =
+      g_comp->builder->aiOnnxOpset10().maxpool(
+          {input->tensor_id}, 1, kernel_shape, 0, std::vector<int64_t>(),
+          padding, 0, dim_strides);
+  return new _odla_value(result[0],
+                         {g_comp->builder->getTensorDataType(result[0]),
+                          g_comp->builder->getTensorShape(result[0])},
                          name);
 }
 
@@ -438,60 +411,6 @@ odla_value odla_PRelu(odla_value input, odla_float32 slope,
                           g_comp->builder->getTensorShape(result)},
                          name);
 }
-
-// odla_value odla_ROIAlign(odla_value input, odla_memory_layout input_layout,
-//               odla_value rois, odla_int32 sampling_ratio, odla_float32 scale,
-//               odla_value_shape output_dim, const odla_value_id value_id) {
-//   const auto& name = value_id ? std::string(reinterpret_cast<const
-//   char*>(value_id)) : "ROIAlign";
-
-//   // output_dims suppose to be 2 * 2
-//   std::vector<int64_t> output_shape(2, 0);
-//   for (int i = 0; i < output_dim.size; ++i) {
-//     output_shape[i] = output_dim.dims[i];
-//   }
-//   auto rois_shape = g_comp->builder->getTensorShape(rois->tensor_id);
-//   int nums_rois = 0;
-//   if (rois_shape.size() > 1) {
-//     nums_rois = rois_shape[0];
-//   }
-
-//   std::vector<int64_t> batch_indices_tmp(nums_rois, 0);   // batch_indices
-//   default is all 0 auto batch_indices = odla_CreateConstant_10({ODLA_INT32,
-//   {.size = 1, .dims = {nums_rois}}}, batch_indices_tmp.data(), (const
-//   odla_value_id)"batch_indices"); std::string pooling_mode = "avg";
-//   popart::TensorId result =
-//       g_comp->builder->aiOnnxOpset10().roialign({input->tensor_id,
-//       rois->tensor_id, batch_indices->tensor_id},
-//                                                 pooling_mode,
-//                                                 output_shape[0],
-//                                                 output_shape[1],
-//                                                 sampling_ratio,
-//                                                 scale);
-//   return new _odla_value(result,
-//                          {g_comp->builder->getTensorDataType(result),
-//                           g_comp->builder->getTensorShape(result)},
-//                          name);
-// }
-
-// odla_value ODLA_API_CALL odla_ROIMaxPool(
-//     odla_value input, odla_memory_layout input_layout, odla_value rois,
-//     odla_int32 win_h, odla_int32 win_w, odla_float32 scale,
-//     odla_value_shape output_dim, const odla_value_id value_id) {
-//   const auto& name = value_id ? std::string(reinterpret_cast<const
-//   char*>(value_id)) : "ROIMaxPool"; std::vector<int64_t> pool_shape{win_h,
-//   win_w};
-
-//   popart::TensorId result =
-//       g_comp->builder->aiOnnxOpset10().maxroipool({input->tensor_id,
-//       rois->tensor_id},
-//                                                   pool_shape,
-//                                                   scale);
-//   return new _odla_value(result,
-//                          {g_comp->builder->getTensorDataType(result),
-//                           g_comp->builder->getTensorShape(result)},
-//                          name);
-// }
 
 odla_value odla_Selu(odla_value input, odla_float32 alpha, odla_float32 gamma,
                      const odla_value_id value_id) {

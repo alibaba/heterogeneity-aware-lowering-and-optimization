@@ -1,5 +1,7 @@
 // clang-format off
 
+// REQUIRES: odla_dnnl
+
 // RUN: %cxx -DCG_TEST %s -o %t.gen %flags %include %link -DOUTPUT=%t.cc
 // RUN: %t.gen
 // RUN: %cxx -O2 %t.cc %t.cc.bin %odla_link %s -I%odla_path/include -o %t.dnnl.exe -lodla_dnnl

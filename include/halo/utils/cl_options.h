@@ -30,10 +30,14 @@ static llvm::cl::list<std::string> ModelFiles(
 
 static llvm::cl::opt<Parser::Format> ModelFormat(
     "x",
-    llvm::cl::desc(
-        "format of the following input model files. Permissible formats "
-        "include: TENSORFLOW CAFFE ONNX MXNET. If unspecified, the format is "
-        "guessed base on file's extension."),
+    llvm::cl::values(clEnumValN(Parser::Format::CAFFE, "caffe", "CAFFE format"),
+                     clEnumValN(Parser::Format::ONNX, "onnx", "ONNX format"),
+                     clEnumValN(Parser::Format::TENSORFLOW, "tensorflow",
+                                "Tensorflow format"),
+                     clEnumValN(Parser::Format::TFLITE, "tflite",
+                                "TFLite format")),
+    llvm::cl::desc("format of input model files. If unspecified, the format is "
+                   "guessed base on file's extension."),
     llvm::cl::init(Parser::Format::INVALID));
 
 static llvm::cl::opt<signed> Batch(
@@ -44,10 +48,6 @@ static llvm::cl::opt<signed> Batch(
 static llvm::cl::opt<std::string> EntryFunctionName(
     "entry-func-name", llvm::cl::desc("name of entry function"),
     llvm::cl::init(""));
-
-static llvm::cl::opt<bool> PrintAnalysisReport(
-    "print-analysis-report", llvm::cl::desc("Print analysis report"),
-    llvm::cl::init(false));
 
 static llvm::cl::list<std::string> InputsShape(
     "input-shape",

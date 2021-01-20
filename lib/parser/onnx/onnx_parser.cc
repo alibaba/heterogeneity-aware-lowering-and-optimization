@@ -52,8 +52,20 @@ Status ONNXParser::Parse(Function* function,
   google::protobuf::io::CodedInputStream coded_stream(&input_stream);
   coded_stream.SetTotalBytesLimit((2048LL << 20) - 1, 512LL << 20);
   if (!model_def.ParseFromCodedStream(&coded_stream)) {
-    LOG(ERROR) << "Encountered error(s) when parsing " << file_list.front();
-    return Status::ASSERTION;
+    // Try to parse it as data file.
+    ifs.clear();
+    ifs.seekg(0);
+    onnx::TensorProto tensor_def;
+    if (tensor_def.ParsePartialFromIstream(&ifs)) {
+      c_builder_ = std::make_unique<ConstantBuilder>(function->GetParent());
+      // Use the function name as data for testing purpose.
+      tensor_def.set_name(function->GetName());
+      ConvertConstNode(tensor_def);
+      return Status::SUCCESS;
+    } else {
+      LOG(ERROR) << "Encountered error(s) when parsing " << file_list.front();
+      return Status::ASSERTION;
+    }
   }
   if (!model_def.has_graph()) {
     LOG(ERROR) << "No graph is defined in onnx file.";
@@ -75,19 +87,6 @@ Status ONNXParser::Parse(BasicBlock* bb, const onnx::GraphProto& graph_def,
   opts_ = opts;
   return ConvertToHaloIR(graph_def);
 }
-
-template <>
-const Tensor<float> ONNXParser::ProcessTensor<float>(
-    const onnx::TensorProto& tensor_proto);
-template <>
-const Tensor<int32_t> ONNXParser::ProcessTensor<int32_t>(
-    const onnx::TensorProto& tensor_proto);
-template <>
-const Tensor<int64_t> ONNXParser::ProcessTensor<int64_t>(
-    const onnx::TensorProto& tensor_proto);
-template <>
-const Tensor<int8_t> ONNXParser::ProcessTensor<int8_t>(
-    const onnx::TensorProto& tensor_proto);
 
 Status ONNXParser::ConvertToHaloIR(const onnx::GraphProto& graph_def) {
   Status s = Status::SUCCESS;
@@ -272,96 +271,84 @@ static void ProcessTensorShape(const onnx::TensorProto& tensor_def,
   }
 }
 
-template <>
-const Tensor<float> ONNXParser::ProcessTensor<float>(
-    const onnx::TensorProto& tensor_proto) {
-  const DataType& data_type = ProcessDataType(tensor_proto.data_type());
-  std::vector<int64_t> shape;
-  ProcessTensorShape(tensor_proto, shape);
-
-  std::vector<float> v;
-  const int v_size = tensor_proto.float_data_size();
-  if (v_size) {
-    for (int i = 0; i < v_size; ++i) {
-      v.emplace_back(tensor_proto.float_data(i));
-    }
-  } else if (!tensor_proto.raw_data().empty()) {
-    v = Tensor<float>::DecodeTensorContent(tensor_proto.raw_data());
-  } else {
-    // TODO(unknown): handle external storage
-    LOG(ERROR) << "Unsupported external data storage.";
+static size_t GetTensorDataSize(const onnx::TensorProto& tensor_proto) {
+  switch (tensor_proto.data_type()) {
+    case onnx::TensorProto::FLOAT:
+      return tensor_proto.float_data_size();
+    case onnx::TensorProto::INT64:
+      return tensor_proto.int64_data_size();
+    case onnx::TensorProto::INT32:
+      return tensor_proto.int32_data_size();
+    case onnx::TensorProto::INT8:
+    case onnx::TensorProto::UINT8:
+    case onnx::TensorProto::STRING:
+      return tensor_proto.string_data_size();
+    default:
+      LOG(ERROR) << "Unsupported DataType.";
+      return 0;
   }
+}
 
-  return Tensor<float>(data_type, shape, v);
+template <typename T>
+static void GetTensorData(const onnx::TensorProto& tensor_proto,
+                          std::vector<T>& v, size_t size) {
+  LOG(ERROR) << "Unsupported DataType.";
 }
 
 template <>
-const Tensor<int> ONNXParser::ProcessTensor<int>(
-    const onnx::TensorProto& tensor_proto) {
-  const DataType& data_type = ProcessDataType(tensor_proto.data_type());
-  std::vector<int64_t> shape;
-  ProcessTensorShape(tensor_proto, shape);
-
-  std::vector<int> v;
-  const int v_size = tensor_proto.int32_data_size();
-  if (v_size) {
-    for (int i = 0; i < v_size; ++i) {
-      v.emplace_back(tensor_proto.int32_data(i));
-    }
-  } else if (!tensor_proto.raw_data().empty()) {
-    v = Tensor<int>::DecodeTensorContent(tensor_proto.raw_data());
-  } else {
-    // TODO(unknown): handle external storage
-    LOG(ERROR) << "Unsupported external data storage.";
+void GetTensorData(const onnx::TensorProto& tensor, std::vector<float>& v,
+                   size_t size) {
+  for (size_t i = 0; i < size; ++i) {
+    v.push_back(tensor.float_data(i));
   }
-
-  return Tensor<int>(data_type, shape, v);
 }
 
 template <>
-const Tensor<int64_t> ONNXParser::ProcessTensor<int64_t>(
-    const onnx::TensorProto& tensor_proto) {
-  const DataType& data_type = ProcessDataType(tensor_proto.data_type());
-  std::vector<int64_t> shape;
-  ProcessTensorShape(tensor_proto, shape);
-
-  std::vector<int64_t> v;
-  const int v_size = tensor_proto.int64_data_size();
-  if (v_size) {
-    for (int i = 0; i < v_size; ++i) {
-      v.emplace_back(tensor_proto.int64_data(i));
-    }
-  } else if (!tensor_proto.raw_data().empty()) {
-    v = Tensor<int64_t>::DecodeTensorContent(tensor_proto.raw_data());
-  } else {
-    // TODO(unknown): handle external storage
-    LOG(ERROR) << "Unsupported external data storage.";
+void GetTensorData(const onnx::TensorProto& tensor, std::vector<int64_t>& v,
+                   size_t size) {
+  for (size_t i = 0; i < size; ++i) {
+    v.push_back(tensor.int64_data(i));
   }
-
-  return Tensor<int64_t>(data_type, shape, v);
 }
 
 template <>
-const Tensor<int8_t> ONNXParser::ProcessTensor<int8_t>(
-    const onnx::TensorProto& tensor_proto) {
+void GetTensorData(const onnx::TensorProto& tensor, std::vector<int32_t>& v,
+                   size_t size) {
+  for (size_t i = 0; i < size; ++i) {
+    v.push_back(tensor.int32_data(i));
+  }
+}
+
+template <>
+void GetTensorData(const onnx::TensorProto& tensor, std::vector<int8_t>& v,
+                   size_t size) {
+  for (size_t i = 0; i < size; ++i) {
+    v.push_back(tensor.raw_data()[i]);
+  }
+}
+
+template <typename T>
+Tensor<T> ONNXParser::ProcessTensor(const onnx::TensorProto& tensor_proto) {
   const DataType& data_type = ProcessDataType(tensor_proto.data_type());
   std::vector<int64_t> shape;
   ProcessTensorShape(tensor_proto, shape);
 
-  std::vector<int8_t> v;
-  const int v_size = tensor_proto.string_data_size();
-  if (v_size > 0) {
-    for (int i = 0; i < v_size; ++i) {
-      v.emplace_back(tensor_proto.raw_data()[i]);
-    }
+  std::vector<T> v;
+  const int v_size = GetTensorDataSize(tensor_proto);
+  if (v_size != 0) {
+    v.reserve(v_size);
+    GetTensorData(tensor_proto, v, v_size);
   } else if (!tensor_proto.raw_data().empty()) {
-    v = Tensor<int8_t>::DecodeTensorContent(tensor_proto.raw_data());
+    v = Tensor<T>::DecodeTensorContent(tensor_proto.raw_data());
   } else {
     // TODO(unknown): handle external storage
     LOG(ERROR) << "Unsupported external data storage.";
   }
 
-  return Tensor<int8_t>(data_type, shape, v);
+  if (shape.empty() && v.size() > 1) {
+    shape.push_back(v.size());
+  }
+  return Tensor<T>(data_type, shape, v);
 }
 
 IRObject* ONNXParser::ConvertConstNode(const onnx::TensorProto& tensor_def) {

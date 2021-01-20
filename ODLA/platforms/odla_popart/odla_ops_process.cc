@@ -85,8 +85,7 @@ odla_value odla_Concat(odla_values inputs, odla_int32 axis,
                          name);
 }
 
-odla_value odla_ExpandDims(odla_value input, odla_int32 axis,
-                           odla_value_shape output_dims,
+odla_value odla_ExpandDims(odla_value input, odla_value_shape output_dims,
                            const odla_value_id value_id) {
   const auto& name = value_id
                          ? std::string(reinterpret_cast<const char*>(value_id))
@@ -148,7 +147,7 @@ odla_value odla_Resize(odla_value input, odla_interpolation_mode interpolation,
   for (int i = 0; i < output_dims.size; ++i) {
     shape_data.emplace_back(output_dims.dims[i] / (float)input_shape[i]);
   }
-  auto scales = odla_CreateConstant_10(
+  auto scales = odla_CreateConstant(
       {ODLA_FLOAT32, {.size = 1, .dims = {output_dims.size}}},
       shape_data.data(), (const odla_value_id) "Scale_shape");
   popart::TensorId result = g_comp->builder->aiOnnxOpset10().resize(

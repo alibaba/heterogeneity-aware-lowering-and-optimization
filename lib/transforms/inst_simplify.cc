@@ -429,15 +429,15 @@ static std::pair<Def, Def> RunOnCommonReductionInstruction(Instruction* inst) {
       Instruction* ret = nullptr;
       switch (opcode) {
         case OpCode::REDUCEMEAN: {
-          ReduceMeanInst* new_inst =
-              builder.CreateReduceMean(inst->GetName(), {inst->GetOperand(0)});
+          ReduceMeanInst* new_inst = DynCast<ReduceMeanInst>(
+              builder.Clone(*inst, {inst->GetOperand(0)}));
           new_inst->SetAxis(axis);
           ret = new_inst;
           break;
         }
         case OpCode::ARGMAX: {
           ArgmaxInst* new_inst =
-              builder.CreateArgmax(inst->GetName(), {inst->GetOperand(0)});
+              DynCast<ArgmaxInst>(builder.Clone(*inst, {inst->GetOperand(0)}));
           new_inst->SetAxis(axis.at(0));
           ret = new_inst;
           break;
@@ -711,12 +711,12 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Conv2DInst* inst) {
   // Convert conv(pad(x, amt), kernel) to conv(x, kernel) to eliminate
   // pad op.
   if (IsA<Instruction>(op_input) &&
-      DynCast<Instruction>(op_input.GetOwner())->GetOpCode() == OpCode::PAD) {
-    const PadInst* pad = DynCast<PadInst>(op_input.GetOwner());
+      DynCast<Instruction>(op_input)->GetOpCode() == OpCode::PAD) {
+    const PadInst* pad = DynCast<PadInst>(op_input);
     Def pad_op0 = pad->GetOperand(0);
     Def pad_op1 = pad->GetOperand(1);
     if (IsA<Constant>(pad_op1.GetOwner())) {
-      const Constant* pad_amt = DynCast<Constant>(pad_op1.GetOwner());
+      const Constant* pad_amt = DynCast<Constant>(pad_op1);
       unsigned dims = pad_amt->GetResultType().GetNumOfDims();
       if (dims == 2 &&
           pad_amt->GetResultType().GetTotalNumOfElements() == 4 * dims) {

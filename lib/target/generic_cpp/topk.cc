@@ -38,16 +38,19 @@ void GenericCXXCodeGen::RunOnInstruction(TopKInst* inst) {
       k = static_cast<uint32_t>(c_k->GetData<int64_t>(0));
     }
   }
-  CXXValue ret(inst->GetName(), op0.type);
-  // CXXValue ret_indices(inst->GetName() + "_second", op0.type);
+  std::vector<CXXValue> rets;
+  rets.emplace_back(inst->GetName(), op0.type);
+  rets.emplace_back(inst->GetName() + "_index",
+                    TensorTypeToCXXType(inst->GetResultType(1), false));
+
   const auto& axis = inst->GetAxis();
   const auto& largest = inst->GetLargest();
   const auto& sorted = inst->GetSorted();
 
-  // only values up to 25 are supported in tensorrt 7
-  EmitODLACall(ret, "odla_TopK", op0, k >= max_topk_num ? k : max_topk_num,
-               axis, largest, sorted, ret_type);
-  ir_mapping_[*inst] = ret;
+  EmitODLACall(rets, "odla_TopK", op0, k, largest, sorted, axis, ret_type,
+               inst->GetResultType(1));
+  ir_mapping_[*inst] = rets[0];
+  ir_mapping_[Def(inst, 1)] = rets[1];
 }
 
 } // namespace halo

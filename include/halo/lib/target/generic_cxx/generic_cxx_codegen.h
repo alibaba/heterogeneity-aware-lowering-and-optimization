@@ -52,6 +52,7 @@ struct Opts {
   bool emit_value_id_as_int = false;
   CodeGen::ExecMode exec_mode = CodeGen::ExecMode::Compile;
   bool emit_inference_func_sig = false;
+  bool emit_model_info_apis = false;
   bool emit_dynamic_batch = false;
   bool fp16_mode = false;
   int max_batch_size = 0;
@@ -193,7 +194,8 @@ class GenericCXXCodeGen : public CodeGen {
 
   virtual CXXValue AllocateBuffer(const Def& def, bool on_stack);
   std::string GetFunctionDecl(const Function& func, const Instruction& ret_inst,
-                              bool with_func_name, bool with_type);
+                              bool with_func_name, bool with_type,
+                              bool public_function);
   std::string GenerateTestFunc(const Function& func,
                                const std::string& func_decl,
                                const Instruction& ret_inst);
@@ -211,6 +213,8 @@ class GenericCXXCodeGen : public CodeGen {
   void EmitODLAArgs(const CXXValue& arg);
   void EmitODLAArgs(const bool& arg);
   void EmitODLAArgs(const DataFormat& arg);
+  void EmitODLAArgs(const std::vector<halo::Type>& arg);
+  void EmitODLAArgs(const std::vector<std::string>& arg);
 
   template <typename T>
   void EmitODLAArgs(const T& arg) {
@@ -224,6 +228,14 @@ class GenericCXXCodeGen : public CodeGen {
     EmitODLAArgs(args...);
   }
 
+  inline void EmitODLAVauleId(const CXXValue& lhs, std::ostream& os) {
+    if (opts_.emit_value_id_as_int) {
+      os << lhs.id;
+    } else {
+      os << "\"" << (lhs.str_id.empty() ? lhs.name : lhs.str_id) << "\"";
+    }
+  }
+
   template <int indent = 2, bool is_op = true, typename... Targs>
   void EmitODLACall(const CXXValue& lhs, const char* func_name, Targs... args) {
     os_ << std::string(indent, ' ');
@@ -232,13 +244,39 @@ class GenericCXXCodeGen : public CodeGen {
     EmitODLAArgs(args...);
     if (is_op) {
       os_ << ", (const odla_value_id)";
-      if (opts_.emit_value_id_as_int) {
-        os_ << lhs.id;
-      } else {
-        os_ << "\"" << (lhs.str_id.empty() ? lhs.name : lhs.str_id) << "\"";
-      }
+      EmitODLAVauleId(lhs, os_);
     }
     os_ << ");\n";
+  }
+
+  template <int indent = 2, bool is_op = true, typename... Targs>
+  void EmitODLACall(const std::vector<CXXValue>& lhs, const char* func_name,
+                    Targs... args) {
+    os_ << std::string(indent, ' ');
+    auto ret_array = lhs[0].name + "_array";
+    os_ << EmitLValues(ret_array) << " = ";
+    os_ << func_name << "(";
+    EmitODLAArgs(args...);
+    if (is_op) {
+      unsigned int id = 0;
+      os_ << ", {.size = " << lhs.size() << ", .value_ids = {";
+      for (auto& one : lhs) {
+        os_ << "(const odla_value_id)";
+        EmitODLAVauleId(one, os_);
+        if (++id != lhs.size()) {
+          os_ << ", ";
+        }
+      }
+      os_ << "}}";
+    }
+    os_ << ");\n";
+
+    unsigned int id = 0;
+    for (auto& one : lhs) {
+      os_ << std::string(indent, ' ');
+      os_ << EmitLValue(one.name) << " = " << ret_array << ".values[" << id++
+          << "];";
+    }
   }
 
   virtual const std::string& EmitNull() const noexcept;

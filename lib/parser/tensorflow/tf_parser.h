@@ -60,8 +60,8 @@ class TFParser : public Parser {
   explicit TFParser(const std::string& variant) : variant_(variant) {}
   Status Parse(Function* function, const std::vector<std::string>& file_list,
                const armory::Opts& opts) override;
-  Status Parse(BasicBlock* bb, const tensorflow::GraphDef& graph_def,
-               const armory::Opts& opts);
+  virtual Status Parse(BasicBlock* bb, const tensorflow::GraphDef& graph_def,
+                       const armory::Opts& opts);
   ~TFParser();
 
   static std::vector<int64_t> ProcessShape(
@@ -102,16 +102,38 @@ class TFParser : public Parser {
   static void WriteCSVReport(const tensorflow::NodeDef& cur_node,
                              const size_t index, std::ostream& os);
 
- private:
+ protected:
   const std::string& variant_;
+  armory::Opts opts_;
+
+ private:
   std::unique_ptr<IRBuilder> ir_builder_;
   std::unique_ptr<ArgumentBuilder> arg_builder_;
   std::unique_ptr<ConstantBuilder> c_builder_;
-  armory::Opts opts_;
   std::unordered_map<std::string, IRObject*> inst_name_to_ptr_;
   std::unordered_map<std::string,
                      std::function<Status(const tensorflow::NodeDef&)>>
       func_lists_;
+};
+
+/// Convert pb tp ipu graphdef
+class IPUParser : public TFParser {
+ public:
+  explicit IPUParser(const std::string& variant) : TFParser(variant) {}
+  ~IPUParser(){};
+
+  Status Parse(BasicBlock* bb, const tensorflow::GraphDef& graph_def,
+               const armory::Opts& opts) override;
+
+  IPUParser(const IPUParser&) = delete;
+  IPUParser& operator=(const IPUParser&) = delete;
+
+ private:
+  Status SetAttributes(tensorflow::NodeDef* cur_node);
+  Status ManualSharding(tensorflow::NodeDef* cur_node,
+                        const armory::Opts& opts);
+  Status ConvertToIpuGraphDef(const tensorflow::GraphDef& graph_def,
+                              const armory::Opts& opts);
 };
 
 } // namespace halo

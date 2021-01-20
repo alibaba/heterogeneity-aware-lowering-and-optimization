@@ -32,6 +32,9 @@ struct Opts {
       : print_diagnostic_report(print_diagnostic) {}
   Opts() = default;
   bool print_diagnostic_report = false;
+  bool convert_to_ipu_graphdef = false;
+  std::string output_graphdef_filename;
+  std::vector<std::vector<std::string>> split_names;
 };
 
 } // namespace armory
@@ -83,9 +86,9 @@ class Tensor {
 
   const DataType& GetDataType() const noexcept { return data_type_; }
   const std::vector<int64_t>& GetShape() const noexcept { return shape_; }
-  void SetShape(std::vector<int64_t> shape) noexcept { shape_ = shape; }
+  void SetShape(const std::vector<int64_t>& shape) noexcept { shape_ = shape; }
   const std::vector<T>& GetData() const noexcept { return data_; }
-  const bool GetNeedDecode() const noexcept { return need_decode_; }
+  bool GetNeedDecode() const noexcept { return need_decode_; }
   inline static std::vector<T> DecodeTensorContent(const std::string& buf) {
     std::vector<T> output;
     output.resize(buf.size() / sizeof(T));
