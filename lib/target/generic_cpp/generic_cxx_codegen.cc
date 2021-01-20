@@ -552,12 +552,11 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
         os_ << "odla_SetComputationItem(Comp, ODLA_BATCHES_PER_STEP, "
                "(odla_item_value) &batches_per_step);\n";
       }
-
       if (opts_.emit_dynamic_batch) {
         os_ << "bool is_dynamic_batch = true;\n";
-        os_ << "int min_batch_size = 1;\n";
-        os_ << "int max_batch_size = 8;\n";
-        os_ << "int opt_batch_size = 4;\n";
+        os_ << "int min_batch_size = " << opts_.min_batch_size << ";\n";
+        os_ << "int max_batch_size = " << opts_.max_batch_size << ";\n";
+        os_ << "int opt_batch_size = " << opts_.opt_batch_size << ";\n";
         os_ << "odla_SetComputationItem(Comp, ODLA_DYNAMIC_BATCH, "
                "(odla_item_value) &is_dynamic_batch);\n";
         os_ << "odla_SetComputationItem(Comp, ODLA_MIN_BATCH_SIZE, "
@@ -596,9 +595,9 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
 
       if (opts_.emit_dynamic_batch) {
         os_ << "bool is_dynamic_batch = true;\n";
-        os_ << "int min_batch_size = 1;\n";
-        os_ << "int max_batch_size = 8;\n";
-        os_ << "int opt_batch_size = 4;\n";
+        os_ << "int min_batch_size = " << opts_.min_batch_size << ";\n";
+        os_ << "int max_batch_size = " << opts_.max_batch_size << ";\n";
+        os_ << "int opt_batch_size = " << opts_.opt_batch_size << ";\n";
         os_ << "odla_SetComputationItem(Comp, ODLA_DYNAMIC_BATCH, "
                "(odla_item_value) &is_dynamic_batch);\n";
         os_ << "odla_SetComputationItem(Comp, ODLA_MIN_BATCH_SIZE, "
