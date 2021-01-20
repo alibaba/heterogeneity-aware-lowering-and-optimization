@@ -33,29 +33,6 @@
 
 namespace halo {
 
-template <typename T>
-static const T& GetAttributeValue(const Attribute& attr) {
-  return T();
-}
-
-template <>
-const std::vector<int>& GetAttributeValue(const Attribute& attr) {
-  return attr.GetValueAsIntegerList();
-}
-
-template <typename T>
-static const T& FindAttributeValue(const ExtensionInst* ext,
-                                   const std::string& name,
-                                   const T& default_val) {
-  T ret_val = default_val;
-  for (const auto& it : ext->GetAttributes()) {
-    if (it->GetName() == name) {
-      return GetAttributeValue<T>(*it);
-    }
-  }
-  return default_val;
-}
-
 static std::vector<Def> ConvertUnsqueeze(const ONNXExtensionInst* ext,
                                          IRBuilder* builder) {
   HLCHECK(ext->GetNumOfOperands() == 1);
