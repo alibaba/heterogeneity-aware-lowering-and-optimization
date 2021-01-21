@@ -55,11 +55,12 @@ build_and_run_test="cd /host && rm -fr build && mkdir -p build && cd build && \
 if [[ "$VARIANT" =~ graphcore ]]; then
   extra_cmd="source /opt/poplar_sdk-ubuntu_18_04-1.4.0+365-665f971c8f/poplar-ubuntu_18_04-1.4.0+71819-c5c0c8ebab/enable.sh \
          && source /opt/poplar_sdk-ubuntu_18_04-1.4.0+365-665f971c8f/popart-ubuntu_18_04-1.4.0+5352-e86081acc9/enable.sh"
-  build_and_run_test="$extra_cmd && $build_and_run_test"
+
+  docker exec --user $USER $CONTAINER_NAME bash -c \
+    "$extra_cmd && cd /host && rm -fr build && mkdir -p build && cd build && \
+    cmake -G Ninja $cmake_flags ../halo && ninja && $check_cmds"
+else
+  docker exec --user $USER $CONTAINER_NAME bash -c \
+    "cd /host && rm -fr build && mkdir -p build && cd build && \
+     cmake -G Ninja $cmake_flags ../halo && ninja && $check_cmds"
 fi
-
-
-
-docker exec --user $USER $CONTAINER_NAME bash -c $build_and_run_test
-#  "cd /host && rm -fr build && mkdir -p build && cd build && \
-#   cmake -G Ninja $cmake_flags ../halo && ninja && $check_cmds"
