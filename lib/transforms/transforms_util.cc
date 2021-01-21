@@ -63,4 +63,13 @@ void SplitStringToInt64List(const std::string& src, std::vector<int64_t>* dst,
   }
 }
 
+bool HasAttribute(const ExtensionInst* ext, const std::string& name) {
+  for (const auto& attr : ext->GetAttributes()) {
+    if (attr->GetName() == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
 } // end namespace halo

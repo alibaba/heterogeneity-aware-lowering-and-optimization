@@ -86,7 +86,7 @@ if (ODLA_BUILD_XNNPACK)
 endif()
 
 option(ODLA_BUILD_Profiler "Build ODLA Profiler Library" ON)
-if (ODLA_BUILD_Proflier)
+if (ODLA_BUILD_Profiler)
   add_odla_library(odla_profiler SHARED odla_profiler.cc)
   target_link_libraries(odla_profiler ODLA dl)
 endif()
