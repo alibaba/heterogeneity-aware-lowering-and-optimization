@@ -26,7 +26,6 @@ set_property(TARGET odla_popart PROPERTY CXX_STANDARD 14)
 
 target_compile_definitions(odla_popart PRIVATE ONNX_NAMESPACE=onnx)
 target_link_libraries(odla_popart ODLA ${custom_ops} popart-only)
-#target_link_options(odla_popart PRIVATE -Wl,-rpath=${POPLAR_ROOT}/lib:${POPART_ROOT}/lib)
 add_custom_command(TARGET odla_popart
 	  POST_BUILD
 	  COMMAND ${CMAKE_COMMAND} -E 
