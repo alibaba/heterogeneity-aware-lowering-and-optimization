@@ -147,7 +147,6 @@ static void RunOnInstruction(BatchMatMulInst* inst,
                           ? matrixa_type.GetNumOfElementsInDim(dims - 1)
                           : matrixa_type.GetNumOfElementsInDim(dims - 2);
 
-
   node_info.flops = row * (2 * node_info.weight - col) * batch;
   node_info.activation = static_cast<float>(
       batch * (Dl->Bytes(weight_type) + Dl->Bytes(inst->GetResultType())));
@@ -162,6 +161,7 @@ static void RunOnInstruction(BatchNormInst* inst,
 
   node_info.flops =
       GetNumOfOperators(inst) * input_type.GetTotalNumOfElements();
+
   node_info.activation = Dl->Bytes(inst->GetResultType());
 }
 
@@ -224,6 +224,9 @@ static void RunOnInstruction(GemmInst* inst,
 
   const size_t matrixb_sz = matrix_b.GetType().GetTotalNumOfElements();
   const size_t matrixc_sz = matrix_c.GetType().GetTotalNumOfElements();
+  
+  const Constant* b = DynCast<Constant>(matrix_b);
+  node_info.sizeof_dt = b->GetElementSizeInBytes();
 
   // GEMM computational estimator: out = alpha * A' * B' + beta * C
   const size_t dims = matrix_b.GetType().GetNumOfDims();
@@ -263,7 +266,6 @@ static void RunOnInstruction(MatMulInst* inst,
   const int64_t row = inst->GetTransposeA()
                           ? matrixa_type.GetNumOfElementsInDim(dims - 1)
                           : matrixa_type.GetNumOfElementsInDim(dims - 2);
-
 
   node_info.activation = static_cast<float>(Dl->Bytes(weight_type) +
                                             Dl->Bytes(inst->GetResultType()));
