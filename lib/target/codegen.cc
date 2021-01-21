@@ -72,9 +72,12 @@ std::string CodeGen::NormalizeVariableName(const std::string& name) {
                                         "volatile",     "while"};
   std::transform(name.begin(), name.end(), ret.begin(), [](char c) {
     switch (c) {
+      case '\'':
       case '/':
       case ' ':
       case '.':
+      case '>':
+      case '<':
       case '-': {
         return '_';
       }

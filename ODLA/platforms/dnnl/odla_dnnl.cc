@@ -38,6 +38,7 @@
 struct _odla_value {
   dnnl::memory mem;
   bool is_const;
+  uint8_t elem_size;
   odla_value_shape shape;
   std::string name;
   _odla_value(const dnnl::memory& m, const odla_value_shape& shape_,
@@ -296,6 +297,9 @@ odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
   dnnl::memory::desc md = getMemoryDesc(type);
   dnnl::memory mem = dnnl::memory(md, g_comp->eng);
   odla_value v = CreateValue(mem, type.shape, id);
+  if (type.element_type == ODLA_INT64) {
+    v->elem_size = 8;
+  }
   g_comp->inputs[name] = v;
   return v;
 }
@@ -373,6 +377,10 @@ odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
 
   odla_value v = CreateValue(mem, type.shape, id);
   v->is_const = true;
+  if (type.element_type == ODLA_INT64) {
+    v->elem_size = 8;
+  }
+
   return v;
 }
 
@@ -394,8 +402,11 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
                               odla_context context) {
   // Handle the case of output is constant due to compile-time optimization.
   if (value->is_const) {
-    memcpy(data_ptr, value->mem.get_data_handle(),
-           value->mem.get_desc().get_size());
+    size_t len = value->mem.get_desc().get_size();
+    if (value->elem_size == 8) {
+      len *= 2;
+    }
+    memcpy(data_ptr, value->mem.get_data_handle(), len);
   } else {
     value->mem.set_data_handle(data_ptr);
   }
@@ -468,6 +479,9 @@ odla_value odla_Gather(odla_value params, const odla_value indices,
     idx_size = indices->shape.dims[1];
   } else {
     batch_size = 1;
+    for (int i = 0; i < axis; ++i) {
+      batch_size *= params->shape.dims[i];
+    }
     idx_size = indices->shape.dims[0];
   }
   size_t inner_size = 1;
@@ -480,11 +494,18 @@ odla_value odla_Gather(odla_value params, const odla_value indices,
   int byte_size =
       params->mem.get_desc().get_size() / GetTotalElements(params->shape);
 
-  op = [params, indices, batch_size, idx_size, inner_size, byte_size,
-        ret_mem]() {
-    dnnl_utils::gather_func((char*)params->mem.get_data_handle(),
-                            (int32_t*)indices->mem.get_data_handle(),
-                            batch_size, idx_size, inner_size, byte_size,
+  op = [params, indices, batch_size, idx_size, inner_size, byte_size, ret_mem,
+        axis]() {
+    int32_t* indices_ptr = (int32_t*)indices->mem.get_data_handle();
+    std::vector<int> indices_i32;
+    if (indices->elem_size == 8) {
+      int64_t* src = (int64_t*)indices_ptr;
+      indices_i32.insert(indices_i32.begin(), src, src + idx_size);
+      indices_ptr = indices_i32.data();
+    }
+    dnnl_utils::gather_func((char*)params->mem.get_data_handle(), indices_ptr,
+                            batch_size, idx_size, params->shape.dims[axis],
+                            inner_size, byte_size,
                             (char*)ret_mem.get_data_handle());
   };
   add_op(op);
@@ -597,14 +618,7 @@ static odla_value broadcast_func(odla_value& input, odla_value_shape shape) {
   auto reorder_pd =
       dnnl::reorder::primitive_desc(g_comp->eng, src_md, g_comp->eng, ret_md);
   auto reorder_prim = dnnl::reorder(reorder_pd);
-  dnnl::stream s(g_comp->eng);
-  op = [reorder_prim, input, src_md, ret_mem]() {
-    auto src_mem =
-        dnnl::memory(src_md, g_comp->eng, input->mem.get_data_handle());
-    reorder_prim.execute(dnnl::stream(g_comp->eng),
-                         {{DNNL_ARG_SRC, src_mem}, {DNNL_ARG_DST, ret_mem}});
-  };
-  add_op(op);
+  add_op(reorder_prim, {{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, ret_mem}});
   return CreateValue(ret_mem, shape, nullptr);
 }
 
@@ -1303,18 +1317,12 @@ static odla_value reduce_op(dnnl::algorithm alg, odla_value input,
   auto input_md = dnnl::memory::desc(getDims(input->shape),
                                      input->mem.get_desc().data_type(),
                                      getFormatTag(input->shape));
-  auto input_mem = dnnl::memory(input_md, g_comp->eng);
   auto ret_mem = dnnl::memory(output_md, g_comp->eng);
   auto reduction_desc =
       dnnl::reduction::desc(alg, input_md, output_md, 0.f, 0.f);
   auto pd = dnnl::reduction::primitive_desc(reduction_desc, g_comp->eng);
   auto prim = dnnl::reduction(pd);
-  auto s = dnnl::stream(g_comp->eng);
-  op = [input, input_mem, ret_mem, prim, s]() {
-    input_mem.set_data_handle(input->mem.get_data_handle());
-    prim.execute(s, {{DNNL_ARG_SRC, input_mem}, {DNNL_ARG_DST, ret_mem}});
-  };
-  add_op(op);
+  add_op(prim, {{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, ret_mem}});
   InterpretIfNeeded();
   odla_value v = CreateValue(ret_mem, output_dims, id);
   return v;
@@ -1374,15 +1382,7 @@ odla_value gemm_op(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
 
   dnnl::memory::desc ret_md({M, N}, dt, {ldc, 1});
   auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
-  auto lhs_mem = dnnl::memory(lhs_md, g_comp->eng);
-  auto rhs_mem = dnnl::memory(rhs_md, g_comp->eng);
-  auto op = [lhs_mem, rhs_mem, lhs, rhs, ret_mem]() {
-    lhs_mem.set_data_handle(lhs->mem.get_data_handle());
-    rhs_mem.set_data_handle(rhs->mem.get_data_handle());
-  };
-  add_op(op);
   bool is_elements_add = false;
-  auto s = dnnl::stream(g_comp->eng);
   if (bias) {
     auto bias_elements = GetTotalElements(bias->shape);
     if (bias_elements == N) {
@@ -1392,8 +1392,8 @@ odla_value gemm_op(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
       dnnl::matmul::desc md(lhs_md, rhs_md, bias_md, ret_md);
       dnnl::matmul::primitive_desc pd(md, g_comp->eng);
       dnnl::primitive prim = dnnl::matmul(pd);
-      add_op(prim, {{DNNL_ARG_SRC, lhs_mem},
-                    {DNNL_ARG_WEIGHTS, rhs_mem},
+      add_op(prim, {{DNNL_ARG_SRC, lhs->mem},
+                    {DNNL_ARG_WEIGHTS, rhs->mem},
                     {DNNL_ARG_BIAS, bias_mem},
                     {DNNL_ARG_DST, ret_mem}});
     } else if (bias_elements == 1) {
@@ -1405,8 +1405,8 @@ odla_value gemm_op(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
       dnnl::matmul::desc md(lhs_md, rhs_md, ret_md);
       dnnl::matmul::primitive_desc pd(md, gemm_attr, g_comp->eng);
       dnnl::primitive prim = dnnl::matmul(pd);
-      add_op(prim, {{DNNL_ARG_SRC, rhs_mem},
-                    {DNNL_ARG_WEIGHTS, rhs_mem},
+      add_op(prim, {{DNNL_ARG_SRC, lhs->mem},
+                    {DNNL_ARG_WEIGHTS, rhs->mem},
                     {DNNL_ARG_DST, ret_mem}});
     } else
       is_elements_add = true;
@@ -1414,8 +1414,8 @@ odla_value gemm_op(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
     dnnl::matmul::desc md(lhs_md, rhs_md, ret_md);
     dnnl::matmul::primitive_desc pd(md, g_comp->eng);
     dnnl::primitive prim = dnnl::matmul(pd);
-    add_op(prim, {{DNNL_ARG_SRC, lhs_mem},
-                  {DNNL_ARG_WEIGHTS, rhs_mem},
+    add_op(prim, {{DNNL_ARG_SRC, lhs->mem},
+                  {DNNL_ARG_WEIGHTS, rhs->mem},
                   {DNNL_ARG_DST, ret_mem}});
   }
   odla_value v =
@@ -1464,13 +1464,6 @@ odla_value batch_gemm_op(odla_value lhs, odla_bool transpose_lhs,
 
   dnnl::memory::desc ret_md(ret_dims, dt, ret_strides);
   auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
-  auto lhs_mem = dnnl::memory(lhs_md, g_comp->eng);
-  auto rhs_mem = dnnl::memory(rhs_md, g_comp->eng);
-  auto op = [lhs_mem, rhs_mem, lhs, rhs, ret_mem]() {
-    lhs_mem.set_data_handle(lhs->mem.get_data_handle());
-    rhs_mem.set_data_handle(rhs->mem.get_data_handle());
-  };
-  add_op(op);
   bool is_elements_add = false;
   int64_t N = ret_dims[output_dims.size - 1];
   if (bias) {
@@ -1482,8 +1475,8 @@ odla_value batch_gemm_op(odla_value lhs, odla_bool transpose_lhs,
       dnnl::matmul::desc md(lhs_md, rhs_md, bias_md, ret_md);
       dnnl::matmul::primitive_desc pd(md, g_comp->eng);
       dnnl::primitive prim = dnnl::matmul(pd);
-      add_op(prim, {{DNNL_ARG_SRC, lhs_mem},
-                    {DNNL_ARG_WEIGHTS, rhs_mem},
+      add_op(prim, {{DNNL_ARG_SRC, lhs->mem},
+                    {DNNL_ARG_WEIGHTS, rhs->mem},
                     {DNNL_ARG_BIAS, bias_mem},
                     {DNNL_ARG_DST, ret_mem}});
     } else if (bias_elements == 1) {
@@ -1495,8 +1488,8 @@ odla_value batch_gemm_op(odla_value lhs, odla_bool transpose_lhs,
       dnnl::matmul::desc md(lhs_md, rhs_md, ret_md);
       dnnl::matmul::primitive_desc pd(md, gemm_attr, g_comp->eng);
       dnnl::primitive prim = dnnl::matmul(pd);
-      add_op(prim, {{DNNL_ARG_SRC, rhs_mem},
-                    {DNNL_ARG_WEIGHTS, rhs_mem},
+      add_op(prim, {{DNNL_ARG_SRC, lhs->mem},
+                    {DNNL_ARG_WEIGHTS, rhs->mem},
                     {DNNL_ARG_DST, ret_mem}});
     } else
       is_elements_add = true;
@@ -1504,8 +1497,8 @@ odla_value batch_gemm_op(odla_value lhs, odla_bool transpose_lhs,
     dnnl::matmul::desc md(lhs_md, rhs_md, ret_md);
     dnnl::matmul::primitive_desc pd(md, g_comp->eng);
     dnnl::primitive prim = dnnl::matmul(pd);
-    add_op(prim, {{DNNL_ARG_SRC, lhs_mem},
-                  {DNNL_ARG_WEIGHTS, rhs_mem},
+    add_op(prim, {{DNNL_ARG_SRC, lhs->mem},
+                  {DNNL_ARG_WEIGHTS, rhs->mem},
                   {DNNL_ARG_DST, ret_mem}});
   }
   odla_value v =

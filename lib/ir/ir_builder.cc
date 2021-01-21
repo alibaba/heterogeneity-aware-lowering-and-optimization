@@ -162,16 +162,10 @@ CAFFEExtensionInst* IRBuilder::CreateCAFFEExtension(const std::string& name,
 Instruction* IRBuilder::Clone(const Instruction& from,
                               const std::vector<Def>& ops) {
   auto inst = from.Clone();
+  inst->DropAllOperands();
   inst->parent_basic_block_ = GetParent();
   auto ret = inst.get();
-  int orig_op_n = inst->GetNumOfOperands();
-  for (int i = 0, e = ops.size(); i < e; ++i) {
-    if (i >= orig_op_n) {
-      inst->AddOneOperand(ops[i]);
-    } else {
-      inst->ReplaceOperandWith(i, ops[i]);
-    }
-  }
+  inst->AddOperands(ops);
   Insert(std::move(inst));
   return ret;
 }
