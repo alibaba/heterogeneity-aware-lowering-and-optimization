@@ -134,6 +134,14 @@ typedef enum {
   ODLA_FAILURE,
 } odla_status;
 
+//! \brief BF16 mode
+typedef enum {
+  BF16_DISABLE,
+  BF16_ACCURACY_MODE,
+  BF16_PERFORMACE_MODE,
+  BF16_AUTO_MODE,
+} odla_bf16_mode;
+
 //! \brief API export directives
 #if defined(_WIN32)
 #define ODLA_API_EXPORT __declspec(dllexport)
