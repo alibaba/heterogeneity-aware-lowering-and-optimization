@@ -26,10 +26,6 @@ if (ODLA_BUILD_DNNL)
   add_subdirectory(dnnl)
 endif()
 
-set(POPLAR_SDK_ROOT /opt/poplar_sdk-ubuntu_18_04-1.4.0+365-665f971c8f)
-set(POPLAR_VERSION ubuntu_18_04-1.4.0+71819-c5c0c8ebab)
-set(POPART_VERSION ubuntu_18_04-1.4.0+5352-e86081acc9)
-
 option(ODLA_BUILD_POPART "Build ODLA Runtime Library for POPART" ON)
 if (ODLA_BUILD_POPART)
   find_library(poplar NAMES poplar PATHS ${POPLAR_SDK_ROOT}/poplar-${POPLAR_VERSION}
