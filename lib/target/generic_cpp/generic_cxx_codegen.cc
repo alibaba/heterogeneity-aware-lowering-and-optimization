@@ -566,6 +566,20 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
         os_ << "odla_SetComputationItem(Comp, ODLA_OPT_BATCH_SIZE, "
                "(odla_item_value) &opt_batch_size);\n";
       }
+      if (opts_.bf16_mode == CodeGen::BF16Mode::Accuracy) {
+        os_ << "odla_bf16_mode mode = BF16_ACCURACY_MODE;\n";
+        os_ << "odla_SetComputationItem(Comp, ODLA_BF16_MODE, "
+               "(odla_item_value) &mode);\n";
+      } else if (opts_.bf16_mode == CodeGen::BF16Mode::Performace ) {
+        os_ << "odla_bf16_mode mode = BF16_PERFORMACE_MODE;\n";
+        os_ << "odla_SetComputationItem(Comp, ODLA_BF16_MODE, "
+               "(odla_item_value) &mode);\n";        
+      } else if (opts_.bf16_mode == CodeGen::BF16Mode::Auto ) {
+        os_ << "odla_bf16_mode mode = BF16_AUTO_MODE;\n";
+        os_ << "odla_SetComputationItem(Comp, ODLA_BF16_MODE, "
+               "(odla_item_value) &mode);\n";        
+      } else {}
+
     } else {
       os_ << "static void " << helper_func_name
           << GetFunctionDecl(function, *return_inst, false, true, false)
@@ -607,6 +621,20 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
         os_ << "odla_SetComputationItem(Comp, ODLA_OPT_BATCH_SIZE, "
                "(odla_item_value) &opt_batch_size);\n";
       }
+      if (opts_.bf16_mode == CodeGen::BF16Mode::Accuracy) {
+        os_ << "odla_bf16_mode mode = BF16_ACCURACY_MODE;\n";
+        os_ << "odla_SetComputationItem(Comp, ODLA_BF16_MODE, "
+               "(odla_item_value) &mode);\n";
+      } else if (opts_.bf16_mode == CodeGen::BF16Mode::Performace ) {
+        os_ << "odla_bf16_mode mode = BF16_PERFORMACE_MODE;\n";
+        os_ << "odla_SetComputationItem(Comp, ODLA_BF16_MODE, "
+               "(odla_item_value) &mode);\n";        
+      } else if (opts_.bf16_mode == CodeGen::BF16Mode::Auto ) {
+        os_ << "odla_bf16_mode mode = BF16_AUTO_MODE;\n";
+        os_ << "odla_SetComputationItem(Comp, ODLA_BF16_MODE, "
+               "(odla_item_value) &mode);\n";        
+      } else {}
+      
     }
   }
 

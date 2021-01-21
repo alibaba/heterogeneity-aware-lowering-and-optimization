@@ -117,9 +117,18 @@ static llvm::cl::opt<bool> RISCVOpt(
     "riscv-opt", llvm::cl::desc("Enable optimizations for RISC-V only"),
     llvm::cl::init(false));
 
-static llvm::cl::opt<bool> EnableBF16("enable-bf16",
-                                      llvm::cl::desc("Enable BF16"),
-                                      llvm::cl::init(false));
+static llvm::cl::opt<CodeGen::BF16Mode> BF16Mode(
+    llvm::cl::values(clEnumValN(CodeGen::BF16Mode::Disable, "disable",
+                                "disable bf16 mode"),
+                     clEnumValN(CodeGen::BF16Mode::Accuracy, "accuracy",
+                                "white list Model"),
+                     clEnumValN(CodeGen::BF16Mode::Performace, "performace",
+                                "global enable bf16,excepte black list"),
+                     clEnumValN(CodeGen::BF16Mode::Auto, "auto",
+                                "automixprecision")),
+    "bf16-mode", llvm::cl::desc("Enable BF16 with acc/perf/auto mode"),
+    llvm::cl::init(CodeGen::BF16Mode::Disable));
+
 static llvm::cl::opt<bool> EnableFP16("enable-fp16",
                                       llvm::cl::desc("Enable FP16 mode"),
                                       llvm::cl::init(false));
@@ -256,7 +265,7 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
 
   CodeGen* cg = nullptr;
   if (is_c_or_cxx_output) {
-    Opts opts(EnableBF16 ? true : false);
+    Opts opts(BF16Mode);
     if (llvm::StringRef(Target).startswith_lower("cc")) {
       opts.dialect = Dialect::C99;
     }
