@@ -118,14 +118,12 @@ static llvm::cl::opt<bool> RISCVOpt(
     llvm::cl::init(false));
 
 static llvm::cl::opt<CodeGen::BF16Mode> BF16Mode(
-    llvm::cl::values(clEnumValN(CodeGen::BF16Mode::Disable, "disable",
-                                "disable bf16 mode"),
-                     clEnumValN(CodeGen::BF16Mode::Accuracy, "accuracy",
-                                "white list Model"),
-                     clEnumValN(CodeGen::BF16Mode::Performace, "performace",
-                                "global enable bf16,excepte black list"),
-                     clEnumValN(CodeGen::BF16Mode::Auto, "auto",
-                                "automixprecision")),
+    llvm::cl::values(
+        clEnumValN(CodeGen::BF16Mode::Disable, "disable", "disable bf16 mode"),
+        clEnumValN(CodeGen::BF16Mode::Accuracy, "accuracy", "white list Model"),
+        clEnumValN(CodeGen::BF16Mode::Performace, "performace",
+                   "global enable bf16,excepte black list"),
+        clEnumValN(CodeGen::BF16Mode::Auto, "auto", "automixprecision")),
     "bf16-mode", llvm::cl::desc("Enable BF16 with acc/perf/auto mode"),
     llvm::cl::init(CodeGen::BF16Mode::Disable));
 

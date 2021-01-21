@@ -570,15 +570,16 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
         os_ << "odla_bf16_mode mode = BF16_ACCURACY_MODE;\n";
         os_ << "odla_SetComputationItem(Comp, ODLA_BF16_MODE, "
                "(odla_item_value) &mode);\n";
-      } else if (opts_.bf16_mode == CodeGen::BF16Mode::Performace ) {
+      } else if (opts_.bf16_mode == CodeGen::BF16Mode::Performace) {
         os_ << "odla_bf16_mode mode = BF16_PERFORMACE_MODE;\n";
         os_ << "odla_SetComputationItem(Comp, ODLA_BF16_MODE, "
-               "(odla_item_value) &mode);\n";        
-      } else if (opts_.bf16_mode == CodeGen::BF16Mode::Auto ) {
+               "(odla_item_value) &mode);\n";
+      } else if (opts_.bf16_mode == CodeGen::BF16Mode::Auto) {
         os_ << "odla_bf16_mode mode = BF16_AUTO_MODE;\n";
         os_ << "odla_SetComputationItem(Comp, ODLA_BF16_MODE, "
-               "(odla_item_value) &mode);\n";        
-      } else {}
+               "(odla_item_value) &mode);\n";
+      } else {
+      }
 
     } else {
       os_ << "static void " << helper_func_name
@@ -625,16 +626,16 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
         os_ << "odla_bf16_mode mode = BF16_ACCURACY_MODE;\n";
         os_ << "odla_SetComputationItem(Comp, ODLA_BF16_MODE, "
                "(odla_item_value) &mode);\n";
-      } else if (opts_.bf16_mode == CodeGen::BF16Mode::Performace ) {
+      } else if (opts_.bf16_mode == CodeGen::BF16Mode::Performace) {
         os_ << "odla_bf16_mode mode = BF16_PERFORMACE_MODE;\n";
         os_ << "odla_SetComputationItem(Comp, ODLA_BF16_MODE, "
-               "(odla_item_value) &mode);\n";        
-      } else if (opts_.bf16_mode == CodeGen::BF16Mode::Auto ) {
+               "(odla_item_value) &mode);\n";
+      } else if (opts_.bf16_mode == CodeGen::BF16Mode::Auto) {
         os_ << "odla_bf16_mode mode = BF16_AUTO_MODE;\n";
         os_ << "odla_SetComputationItem(Comp, ODLA_BF16_MODE, "
-               "(odla_item_value) &mode);\n";        
-      } else {}
-      
+               "(odla_item_value) &mode);\n";
+      } else {
+      }
     }
   }
 
