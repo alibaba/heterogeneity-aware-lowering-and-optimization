@@ -33,8 +33,6 @@ if [[ "$VARIANT" =~ graphcore ]]; then
 	            -DODLA_BUILD_DNNL=OFF -DODLA_BUILD_TRT=OFF \
               -DODLA_BUILD_EIGEN=OFF -DODLA_BUILD_XNNPACK=OFF"
   check_cmds="ninja check-halo"
-  extra_cmd="source /opt/poplar_sdk-ubuntu_18_04-1.4.0+365-665f971c8f/poplar-ubuntu_18_04-1.4.0+71819-c5c0c8ebab/enable.sh \
-         && source /opt/poplar_sdk-ubuntu_18_04-1.4.0+365-665f971c8f/popart-ubuntu_18_04-1.4.0+5352-e86081acc9/enable.sh"
 fi
 
 DOCKER_ID=`docker ps -aq -f name=$CONTAINER_NAME -f status=running`
@@ -51,6 +49,12 @@ if [ -z "$DOCKER_ID" ]; then
     --disabled-password --home /home/$USER $USER"
 fi
 
+if [[ "$VARIANT" =~ graphcore ]]; then
+  extra_cmd="source /opt/poplar_sdk-ubuntu_18_04-1.4.0+365-665f971c8f/poplar-ubuntu_18_04-1.4.0+71819-c5c0c8ebab/enable.sh \
+         && source /opt/poplar_sdk-ubuntu_18_04-1.4.0+365-665f971c8f/popart-ubuntu_18_04-1.4.0+5352-e86081acc9/enable.sh"
+  docker exec --user $USER $CONTAINER_NAME bash -c "$extra_cmd"
+fi
+
 docker exec --user $USER $CONTAINER_NAME bash -c \
-  "$extra_cmd && cd /host && rm -fr build && mkdir -p build && cd build && \
+  "cd /host && rm -fr build && mkdir -p build && cd build && \
    cmake -G Ninja $cmake_flags ../halo && ninja && $check_cmds"
