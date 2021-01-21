@@ -30,6 +30,9 @@
 
 namespace halo {
 
+static DefaultDataLayout Ddl;
+static DataLayout* Dl = &Ddl;
+
 namespace {
 
 float GetNumOfOperators(halo::Instruction* inst) {
@@ -103,9 +106,8 @@ static void RunOnInstruction(Instruction* inst,
     case OpCode::CMP: {
       auto& node_info = GenerateCommonInfo(inst, node_infos);
       node_info.flops = inst->GetResultType().GetTotalNumOfElements();
-      DefaultDataLayout dl;
       node_info.activation =
-          node_info.flops * dl.Bytes(inst->GetResultType().GetDataType());
+          static_cast<float>(Dl->Bytes(inst->GetResultType()));
       break;
     }
     default: {
@@ -136,14 +138,19 @@ static void RunOnInstruction(BatchMatMulInst* inst,
   const Constant* weight = DynCast<Constant>(weight_inst);
   node_info.sizeof_dt = weight->GetElementSizeInBytes();
 
-  const size_t dims = weight_type.GetNumOfDims();
+  size_t dims = weight_type.GetNumOfDims();
   const int64_t col = inst->GetTransposeB()
                           ? weight_type.GetNumOfElementsInDim(dims - 2)
                           : weight_type.GetNumOfElementsInDim(dims - 1);
+  const auto& matrixa_type = inst->GetOperand(0).GetType();
+  dims = matrixa_type.GetNumOfDims();
+  const int64_t row = inst->GetTransposeA()
+                          ? matrixa_type.GetNumOfElementsInDim(dims - 1)
+                          : matrixa_type.GetNumOfElementsInDim(dims - 2);
 
-  node_info.flops = batch * (GetNumOfOperators(inst) * node_info.weight - col);
-  node_info.activation = node_info.sizeof_dt * node_info.weight +
-                         inst->GetResultType().GetTotalNumOfElements();
+  node_info.flops = row * (2 * node_info.weight - col) * batch;
+  node_info.activation = static_cast<float>(
+      batch * (Dl->Bytes(weight_type) + Dl->Bytes(inst->GetResultType())));
 }
 
 static void RunOnInstruction(BatchNormInst* inst,
@@ -154,8 +161,7 @@ static void RunOnInstruction(BatchNormInst* inst,
   const auto& input_type = inst->GetOperand(0).GetType();
   node_info.flops =
       GetNumOfOperators(inst) * input_type.GetTotalNumOfElements();
-  node_info.activation = static_cast<float>(
-      node_info.sizeof_dt * inst->GetResultType().GetTotalNumOfElements());
+  node_info.activation = static_cast<float>(Dl->Bytes(inst->GetResultType()));
 }
 
 static void RunOnInstruction(ConcatInst* inst,
@@ -204,12 +210,9 @@ static void RunOnInstruction(Conv2DInst* inst,
 
 static void RunOnInstruction(GatherInst* inst,
                              std::vector<Analyzer::NodeInfo>* node_infos) {
-  // HLCHECK(0 && "Unimplemented");
   auto& node_info = GenerateCommonInfo(inst, node_infos);
-  DefaultDataLayout dl;
   node_info.flops = inst->GetResultType().GetTotalNumOfElements();
-  node_info.activation =
-      node_info.flops * dl.Bytes(inst->GetResultType().GetDataType());
+  node_info.activation = Dl->Bytes(inst->GetResultType());
 }
 
 static void RunOnInstruction(GemmInst* inst,
@@ -219,10 +222,8 @@ static void RunOnInstruction(GemmInst* inst,
   const auto& matrix_b = inst->GetOperand(1);
   const auto& matrix_c = inst->GetOperand(2);
 
-  const size_t matrixb_sz =
-      static_cast<float>(matrix_b.GetType().GetTotalNumOfElements());
-  const size_t matrixc_sz =
-      static_cast<float>(matrix_c.GetType().GetTotalNumOfElements());
+  const size_t matrixb_sz = matrix_b.GetType().GetTotalNumOfElements();
+  const size_t matrixc_sz = matrix_c.GetType().GetTotalNumOfElements();
 
   const Constant* b = DynCast<Constant>(matrix_b);
   node_info.sizeof_dt = b->GetElementSizeInBytes();
@@ -238,7 +239,8 @@ static void RunOnInstruction(GemmInst* inst,
   node_info.flops =
       static_cast<float>(row_a * (2 * matrixb_sz - col_b) + 2 * matrixc_sz);
   node_info.activation =
-      node_info.sizeof_dt * static_cast<float>(matrixb_sz + matrixc_sz);
+      static_cast<float>(node_info.sizeof_dt * (matrixb_sz + matrixc_sz) +
+                         Dl->Bytes(inst->GetResultType()));
 }
 
 static void RunOnInstruction(MatMulInst* inst,
@@ -264,9 +266,8 @@ static void RunOnInstruction(MatMulInst* inst,
                           ? matrixa_type.GetNumOfElementsInDim(dims - 1)
                           : matrixa_type.GetNumOfElementsInDim(dims - 2);
 
-  node_info.activation =
-      node_info.sizeof_dt *
-      (node_info.weight + inst->GetResultType().GetTotalNumOfElements());
+  node_info.activation = static_cast<float>(Dl->Bytes(weight_type) +
+                                            Dl->Bytes(inst->GetResultType()));
   node_info.flops = row * (2 * node_info.weight - col);
 }
 
