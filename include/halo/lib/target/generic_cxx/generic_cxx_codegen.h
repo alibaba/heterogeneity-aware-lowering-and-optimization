@@ -42,14 +42,14 @@ enum class Dialect {
 };
 
 struct Opts {
-  Opts(const bool& en_bf16) : enable_bf16(en_bf16) {}
+  Opts(const CodeGen::BF16Mode& mode) : bf16_mode(mode) {}
   Opts() = default;
-  bool enable_bf16 = false;
   Dialect dialect = Dialect::CXX_11;
   bool print_mem_stats = false;
   bool emit_value_reset = false;
   bool emit_value_init = false;
   bool emit_value_id_as_int = false;
+  CodeGen::BF16Mode bf16_mode = CodeGen::BF16Mode::Disable;
   CodeGen::ExecMode exec_mode = CodeGen::ExecMode::Compile;
   bool emit_inference_func_sig = false;
   bool emit_model_info_apis = false;
