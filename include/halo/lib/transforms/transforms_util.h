@@ -23,6 +23,49 @@
 
 namespace halo {
 
+template <typename T>
+inline const T& GetAttributeValue(const Attribute& attr) {
+  return T();
+}
+
+template <>
+inline const std::vector<int>& GetAttributeValue(const Attribute& attr) {
+  return attr.GetValueAsIntegerList();
+}
+
+template <>
+inline const std::vector<float>& GetAttributeValue(const Attribute& attr) {
+  return attr.GetValueAsFloatList();
+}
+
+template <>
+inline const float& GetAttributeValue(const Attribute& attr) {
+  return attr.GetValueAsFloat();
+}
+
+template <>
+inline const bool& GetAttributeValue(const Attribute& attr) {
+  return attr.GetValueAsBool();
+}
+
+template <>
+inline const int& GetAttributeValue(const Attribute& attr) {
+  return attr.GetValueAsInteger();
+}
+
+template <typename T>
+const T& FindAttributeValue(const ExtensionInst* ext, const std::string& name,
+                            const T& default_val) {
+  for (const auto& it : ext->GetAttributes()) {
+    if (it->GetName() == name) {
+      return GetAttributeValue<T>(*it);
+    }
+  }
+  return default_val;
+}
+
+bool HasAttribute(const ExtensionInst* ext, const std::string& name);
+
 bool AppendReturnInst(BasicBlock* bb);
 
 std::vector<int64_t> GetExtends(const std::vector<int64_t>& dims);

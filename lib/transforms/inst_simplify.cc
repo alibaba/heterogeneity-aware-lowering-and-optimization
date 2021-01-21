@@ -1080,8 +1080,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(BatchNormInst* inst) {
   if (disable_conv_bn_ || !is_profitable || num_inputs <= 4 ||
       !input_type.IsValid() || input_type.GetNumOfDims() != 4 ||
       !IsA<Constant>(inst->GetOperand(3)) ||
-      !IsA<Constant>(inst->GetOperand(4)) ||
-      input_type.GetDataType() != DataType::FLOAT32) {
+      !IsA<Constant>(inst->GetOperand(4))) {
     return {orig_def, orig_def};
   }
   auto scale = DynCast<Constant>(inst->GetOperand(1));
@@ -1091,8 +1090,10 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(BatchNormInst* inst) {
 
   int ch_dim = inst->GetDataFormat() == DataFormat::NCHW ? 1 : 3;
   auto ch_num = input_type.GetNumOfElementsInDim(ch_dim);
-  if (mean->GetResultType().GetTotalNumOfElements() != ch_num ||
-      variance->GetResultType().GetTotalNumOfElements() != ch_num) {
+  const auto& mean_type = mean->GetResultType();
+  if (mean_type.GetTotalNumOfElements() != ch_num ||
+      variance->GetResultType().GetTotalNumOfElements() != ch_num ||
+      mean_type.GetDataType() != DataType::FLOAT32) {
     return {orig_def, orig_def};
   }
 
@@ -1110,7 +1111,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(BatchNormInst* inst) {
   }
   std::vector<int64_t> shape(input_type.GetNumOfDims(), 1);
   shape[ch_dim] = ch_num;
-  halo::Type ty{input_type.GetDataType(), shape};
+  halo::Type ty{mean_type.GetDataType(), shape};
   ConstantBuilder cb(inst->GetParent()->GetParent());
   auto new_scale =
       cb.CreateConstant(inst->GetName() + "_0", ty, mul_buf.data());
