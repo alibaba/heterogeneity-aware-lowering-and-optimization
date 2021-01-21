@@ -55,5 +55,5 @@ if [[ "$VARIANT" =~ graphcore ]]; then
 fi
 
 docker exec --user $USER $CONTAINER_NAME bash -c \
-  "extra_cmd && cd /host && rm -fr build && mkdir -p build && cd build && \
+  "$extra_cmd && cd /host && rm -fr build && mkdir -p build && cd build && \
    cmake -G Ninja $cmake_flags ../halo && ninja && $check_cmds"
