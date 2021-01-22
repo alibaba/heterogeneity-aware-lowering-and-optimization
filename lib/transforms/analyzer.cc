@@ -203,9 +203,8 @@ static void RunOnInstruction(Conv2DInst* inst,
       HLCHECK(0 && "Invalid format");
     }
   }
-  node_info.activation =
-      node_info.sizeof_dt *
-      (node_info.weight + inst->GetResultType().GetTotalNumOfElements());
+  node_info.activation = static_cast<float>(Dl->Bytes(weight_inst.GetType()) +
+                                            Dl->Bytes(out_type));
 }
 
 static void RunOnInstruction(GatherInst* inst,
@@ -225,9 +224,6 @@ static void RunOnInstruction(GemmInst* inst,
   const size_t matrixb_sz = matrix_b.GetType().GetTotalNumOfElements();
   const size_t matrixc_sz = matrix_c.GetType().GetTotalNumOfElements();
 
-  const Constant* b = DynCast<Constant>(matrix_b);
-  node_info.sizeof_dt = b->GetElementSizeInBytes();
-
   // GEMM computational estimator: out = alpha * A' * B' + beta * C
   const size_t dims = matrix_b.GetType().GetNumOfDims();
   const int64_t row_a = matrix_c.GetType().GetNumOfElementsInDim(0);
@@ -238,9 +234,9 @@ static void RunOnInstruction(GemmInst* inst,
 
   node_info.flops =
       static_cast<float>(row_a * (2 * matrixb_sz - col_b) + 2 * matrixc_sz);
-  node_info.activation =
-      static_cast<float>(node_info.sizeof_dt * (matrixb_sz + matrixc_sz) +
-                         Dl->Bytes(inst->GetResultType()));
+  node_info.activation = static_cast<float>(Dl->Bytes(matrix_b.GetType()) +
+                                            Dl->Bytes(matrix_c.GetType()) +
+                                            Dl->Bytes(inst->GetResultType()));
 }
 
 static void RunOnInstruction(MatMulInst* inst,
