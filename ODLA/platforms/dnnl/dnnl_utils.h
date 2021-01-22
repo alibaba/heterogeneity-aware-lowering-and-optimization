@@ -38,8 +38,8 @@ inline void topk_func(float* src, float* dst_data, int* dst_idx,
 }
 
 inline void gather_func(char* params, int32_t* idx, size_t batch_size,
-                        size_t idx_size, size_t inner_size, size_t byte_size,
-                        char* dst) {
+                        size_t idx_size, size_t axis_size, size_t inner_size,
+                        size_t byte_size, char* dst) {
   assert(0);
 }
 
