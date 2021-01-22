@@ -708,6 +708,9 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Conv2DInst* inst) {
   Def op_input = inst->GetOperand(0);
   Def op_kernel = inst->GetOperand(1);
 
+  IRBuilder builder(inst->GetParent());
+  builder.SetInsertAfter(inst);
+
   // Convert conv(pad(x, amt), kernel) to conv(x, kernel) to eliminate
   // pad op.
   if (IsA<Instruction>(op_input) &&
@@ -742,8 +745,6 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Conv2DInst* inst) {
             info.data_height_axis * 2, info.data_height_axis * 2 + 1,
             info.data_width_axis * 2, info.data_width_axis + 1};
 
-        IRBuilder builder(inst->GetParent());
-        builder.SetInsertAfter(inst);
         Conv2DInst* new_inst =
             builder.CreateConv2D(inst->GetName(), {pad_op0, op_kernel});
         new_inst->SetDataFormat(inst->GetDataFormat());
@@ -760,6 +761,119 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Conv2DInst* inst) {
         new_inst->SetPadding(Padding::EXPLICIT);
         ret.second = Def(new_inst, 0);
       }
+    }
+  }
+
+  // Convert Conv(add(x, c), k) => Conv(x, k') or  Conv(mul(x, c), k) ==>
+  // Conv(x, k') where k is a constant of scalar or channel-wise vector.
+  if (IsA<Instruction>(op_input) && IsA<Constant>(op_kernel) &&
+      inst->GetGroup() == 1 && inst->GetResultType().IsValid() &&
+      (DynCast<Instruction>(op_input)->GetOpCode() == OpCode::ADD ||
+       DynCast<Instruction>(op_input)->GetOpCode() == OpCode::MUL)) {
+    Instruction* binary_inst = DynCast<Instruction>(op_input);
+    auto binary_op0 = binary_inst->GetOperand(0);
+    if (IsA<Instruction>(binary_op0) &&
+        DynCast<Instruction>(binary_op0)->GetOpCode() == OpCode::CONV2D) {
+      // For pattens like a = conv(); b = a + c; d = conv(b), prefer to fuse a
+      // and b.
+      return ret;
+    }
+
+    auto binary_op1 = binary_inst->GetOperand(1);
+    if (!IsA<Constant>(binary_op1)) {
+      return ret;
+    }
+    const auto& kernel_type = op_kernel.GetType();
+    Constant* c = DynCast<Constant>(binary_op1);
+    if (kernel_type.GetDataType() != DataType::FLOAT32 ||
+        kernel_type.GetDataType() != c->GetResultType().GetDataType()) {
+      return ret;
+    }
+
+    // match shape of C: expect [..,in_chs, 1, 1].
+    auto n_elems = c->GetResultType().GetTotalNumOfElements();
+    auto dims = c->GetResultType().GetDimSizes();
+    auto kernel_shape = kernel_type.GetDimSizes();
+    const auto& info = ImageAxisInfo::GetImageAxisInfo(inst->GetDataFormat(),
+                                                       inst->GetFilterFormat());
+    auto in_chs = kernel_shape[info.kernel_input_axis];
+
+    auto in_chs_dim_r =
+        info.kernel_input_axis - kernel_shape.size(); // Dims in backwards.
+    if (!(n_elems == in_chs &&
+          (dims.size() == 1 || (-in_chs_dim_r <= dims.size() &&
+                                dims[dims.size() + in_chs_dim_r] == in_chs)))) {
+      return ret;
+    }
+
+    bool has_padding =
+        inst->GetPaddingBottom() != 0 || inst->GetPaddingLeft() != 0 ||
+        inst->GetPaddingTop() != 0 || inst->GetPaddingRight() != 0;
+
+    Constant* kernel = DynCast<Constant>(op_kernel);
+    ConstantBuilder cb(inst->GetParent()->GetParent());
+
+    std::vector<float> new_kernel_data(kernel_type.GetTotalNumOfElements());
+    auto operands = inst->GetOperands();
+    operands[0] = binary_op0;
+
+    std::vector<size_t> strides(kernel_shape.size(), 1);
+    for (int64_t i = kernel_shape.size() - 2; i >= 0; --i) {
+      strides[i] = strides[i + 1] * kernel_shape[i + 1];
+    }
+
+    if (binary_inst->GetOpCode() == OpCode::MUL) {
+      for (size_t i = 0, e = kernel_type.GetTotalNumOfElements(); i < e; ++i) {
+        size_t ch = (i / strides[info.kernel_input_axis]) % in_chs;
+        new_kernel_data[i] =
+            kernel->GetDataAsFloat32(i) * c->GetDataAsFloat32(ch);
+      }
+      auto new_kernel =
+          cb.CreateConstant(kernel->GetName(), kernel_type, new_kernel_data);
+      operands[1] = *new_kernel;
+      ret.second = *builder.Clone(*inst, operands);
+    } else if (!has_padding && (inst->GetNumOfOperands() == 2 ||
+                                (inst->GetNumOfOperands() == 3 &&
+                                 IsA<Constant>(inst->GetOperand(2))))) {
+      auto out_chs = kernel_shape[info.kernel_output_axis];
+      // Conv(x + c), k) ==> Conv(x, k) + c * k)
+      // C is vector (len = in_chs), reshape k to (H * W, out_chs, in_chs)
+      std::vector<float> new_bias(out_chs);
+      std::string bias_name = inst->GetName() + "_bias";
+      if (inst->GetNumOfOperands() == 3) {
+        auto orig_bias = DynCast<Constant>(inst->GetOperand(2));
+        bias_name = orig_bias->GetName() + "_fused";
+        HLCHECK(orig_bias->GetResultType().GetTotalNumOfElements() == out_chs);
+        for (int i = 0; i < out_chs; ++i) {
+          new_bias[i] = orig_bias->GetDataAsFloat32(i);
+        }
+      }
+      auto hw = kernel_type.GetTotalNumOfElements() / in_chs / out_chs;
+      auto stride_s = strides[info.kernel_width_axis];
+      auto stride_o = strides[info.kernel_output_axis];
+      auto stride_i = strides[info.kernel_input_axis];
+      for (int s = 0; s < hw; ++s) {
+        for (int och = 0; och < out_chs; ++och) {
+          std::vector<float> m(in_chs);
+          float t = 0;
+          for (int i = 0; i < in_chs; ++i) {
+            t += kernel->GetDataAsFloat32(s * stride_s + och * stride_o +
+                                          i * stride_i) *
+                 c->GetDataAsFloat32(i);
+          }
+          new_bias[och] += t;
+        }
+      }
+      halo::Type type{kernel_type.GetDataType(), {out_chs}};
+
+      auto new_bias_op = cb.CreateConstant(bias_name, type, new_bias);
+      if (operands.size() >= 3) {
+        operands[2] = *new_bias_op;
+      } else {
+        operands.push_back(*new_bias_op);
+      }
+
+      ret.second = *builder.Clone(*inst, operands);
     }
   }
   return ret;
@@ -966,8 +1080,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(BatchNormInst* inst) {
   if (disable_conv_bn_ || !is_profitable || num_inputs <= 4 ||
       !input_type.IsValid() || input_type.GetNumOfDims() != 4 ||
       !IsA<Constant>(inst->GetOperand(3)) ||
-      !IsA<Constant>(inst->GetOperand(4)) ||
-      input_type.GetDataType() != DataType::FLOAT32) {
+      !IsA<Constant>(inst->GetOperand(4))) {
     return {orig_def, orig_def};
   }
   auto scale = DynCast<Constant>(inst->GetOperand(1));
@@ -977,8 +1090,10 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(BatchNormInst* inst) {
 
   int ch_dim = inst->GetDataFormat() == DataFormat::NCHW ? 1 : 3;
   auto ch_num = input_type.GetNumOfElementsInDim(ch_dim);
-  if (mean->GetResultType().GetTotalNumOfElements() != ch_num ||
-      variance->GetResultType().GetTotalNumOfElements() != ch_num) {
+  const auto& mean_type = mean->GetResultType();
+  if (mean_type.GetTotalNumOfElements() != ch_num ||
+      variance->GetResultType().GetTotalNumOfElements() != ch_num ||
+      mean_type.GetDataType() != DataType::FLOAT32) {
     return {orig_def, orig_def};
   }
 
@@ -996,7 +1111,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(BatchNormInst* inst) {
   }
   std::vector<int64_t> shape(input_type.GetNumOfDims(), 1);
   shape[ch_dim] = ch_num;
-  halo::Type ty{input_type.GetDataType(), shape};
+  halo::Type ty{mean_type.GetDataType(), shape};
   ConstantBuilder cb(inst->GetParent()->GetParent());
   auto new_scale =
       cb.CreateConstant(inst->GetName() + "_0", ty, mul_buf.data());
