@@ -60,7 +60,7 @@ static std::shared_ptr<popart::DeviceInfo> AcquireAvailableDevice(
 static std::shared_ptr<popart::DeviceInfo> CreateIpuModelDevice(
     int num_devices) {
   std::map<std::string, std::string> deviceOpts{
-      {"numIPUs", std::to_string(num_devices)}};
+      {"numIPUs", std::to_string(num_devices)}, {"tilesPerIPU", "1216"}};
   return popart::DeviceManager::createDeviceManager().createIpuModelDevice(
       deviceOpts);
 }

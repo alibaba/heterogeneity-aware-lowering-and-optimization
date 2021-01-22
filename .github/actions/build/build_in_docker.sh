@@ -27,9 +27,9 @@ if [[ "$VARIANT" =~ cuda ]]; then
 fi
 
 if [[ "$VARIANT" =~ graphcore ]]; then
-  cmake_flags="-DPOPLAR_SDK_ROOT=/opt/poplar_sdk-ubuntu_18_04-1.2.0+131-495c1aa368 \
-              -DPOPLAR_VERSION=ubuntu_18_04-1.2.100+9677-c27b85b309 \
-              -DPOPART_VERSION=ubuntu_18_04-1.2.100-63af2bbaea \
+  cmake_flags="-DPOPLAR_SDK_ROOT=/opt/poplar_sdk-ubuntu_18_04-1.4.0+365-665f971c8f \
+              -DPOPLAR_VERSION=ubuntu_18_04-1.4.0+71819-c5c0c8ebab \
+              -DPOPART_VERSION=popart-ubuntu_18_04-1.4.0+5352-e86081acc9 \
 	            -DODLA_BUILD_DNNL=OFF -DODLA_BUILD_TRT=OFF \
               -DODLA_BUILD_EIGEN=OFF -DODLA_BUILD_XNNPACK=OFF"
   check_cmds="ninja check-halo"
@@ -49,6 +49,15 @@ if [ -z "$DOCKER_ID" ]; then
     --disabled-password --home /home/$USER $USER"
 fi
 
-docker exec --user $USER $CONTAINER_NAME bash -c \
-  "cd /host && rm -fr build && mkdir -p build && cd build && \
-   cmake -G Ninja $cmake_flags ../halo && ninja && $check_cmds"
+if [[ "$VARIANT" =~ graphcore ]]; then
+  extra_cmd="source /opt/poplar_sdk-ubuntu_18_04-1.4.0+365-665f971c8f/poplar-ubuntu_18_04-1.4.0+71819-c5c0c8ebab/enable.sh \
+         && source /opt/poplar_sdk-ubuntu_18_04-1.4.0+365-665f971c8f/popart-ubuntu_18_04-1.4.0+5352-e86081acc9/enable.sh"
+
+  docker exec --user $USER $CONTAINER_NAME bash -c \
+    "$extra_cmd && cd /host && rm -fr build && mkdir -p build && cd build && \
+    cmake -G Ninja $cmake_flags ../halo && ninja && $check_cmds"
+else
+  docker exec --user $USER $CONTAINER_NAME bash -c \
+    "cd /host && rm -fr build && mkdir -p build && cd build && \
+     cmake -G Ninja $cmake_flags ../halo && ninja && $check_cmds"
+fi
