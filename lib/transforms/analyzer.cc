@@ -161,7 +161,6 @@ static void RunOnInstruction(BatchNormInst* inst,
 
   node_info.flops =
       GetNumOfOperators(inst) * input_type.GetTotalNumOfElements();
-
   node_info.activation = Dl->Bytes(inst->GetResultType());
 }
 
