@@ -618,14 +618,7 @@ static odla_value broadcast_func(odla_value& input, odla_value_shape shape) {
   auto reorder_pd =
       dnnl::reorder::primitive_desc(g_comp->eng, src_md, g_comp->eng, ret_md);
   auto reorder_prim = dnnl::reorder(reorder_pd);
-  dnnl::stream s(g_comp->eng);
-  op = [reorder_prim, input, src_md, ret_mem]() {
-    auto src_mem =
-        dnnl::memory(src_md, g_comp->eng, input->mem.get_data_handle());
-    reorder_prim.execute(dnnl::stream(g_comp->eng),
-                         {{DNNL_ARG_SRC, src_mem}, {DNNL_ARG_DST, ret_mem}});
-  };
-  add_op(op);
+  add_op(reorder_prim, {{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, ret_mem}});
   return CreateValue(ret_mem, shape, nullptr);
 }
 
@@ -1324,18 +1317,12 @@ static odla_value reduce_op(dnnl::algorithm alg, odla_value input,
   auto input_md = dnnl::memory::desc(getDims(input->shape),
                                      input->mem.get_desc().data_type(),
                                      getFormatTag(input->shape));
-  auto input_mem = dnnl::memory(input_md, g_comp->eng);
   auto ret_mem = dnnl::memory(output_md, g_comp->eng);
   auto reduction_desc =
       dnnl::reduction::desc(alg, input_md, output_md, 0.f, 0.f);
   auto pd = dnnl::reduction::primitive_desc(reduction_desc, g_comp->eng);
   auto prim = dnnl::reduction(pd);
-  auto s = dnnl::stream(g_comp->eng);
-  op = [input, input_mem, ret_mem, prim, s]() {
-    input_mem.set_data_handle(input->mem.get_data_handle());
-    prim.execute(s, {{DNNL_ARG_SRC, input_mem}, {DNNL_ARG_DST, ret_mem}});
-  };
-  add_op(op);
+  add_op(prim, {{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, ret_mem}});
   InterpretIfNeeded();
   odla_value v = CreateValue(ret_mem, output_dims, id);
   return v;
@@ -1395,15 +1382,7 @@ odla_value gemm_op(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
 
   dnnl::memory::desc ret_md({M, N}, dt, {ldc, 1});
   auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
-  auto lhs_mem = dnnl::memory(lhs_md, g_comp->eng);
-  auto rhs_mem = dnnl::memory(rhs_md, g_comp->eng);
-  auto op = [lhs_mem, rhs_mem, lhs, rhs, ret_mem]() {
-    lhs_mem.set_data_handle(lhs->mem.get_data_handle());
-    rhs_mem.set_data_handle(rhs->mem.get_data_handle());
-  };
-  add_op(op);
   bool is_elements_add = false;
-  auto s = dnnl::stream(g_comp->eng);
   if (bias) {
     auto bias_elements = GetTotalElements(bias->shape);
     if (bias_elements == N) {
@@ -1413,8 +1392,8 @@ odla_value gemm_op(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
       dnnl::matmul::desc md(lhs_md, rhs_md, bias_md, ret_md);
       dnnl::matmul::primitive_desc pd(md, g_comp->eng);
       dnnl::primitive prim = dnnl::matmul(pd);
-      add_op(prim, {{DNNL_ARG_SRC, lhs_mem},
-                    {DNNL_ARG_WEIGHTS, rhs_mem},
+      add_op(prim, {{DNNL_ARG_SRC, lhs->mem},
+                    {DNNL_ARG_WEIGHTS, rhs->mem},
                     {DNNL_ARG_BIAS, bias_mem},
                     {DNNL_ARG_DST, ret_mem}});
     } else if (bias_elements == 1) {
@@ -1426,8 +1405,8 @@ odla_value gemm_op(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
       dnnl::matmul::desc md(lhs_md, rhs_md, ret_md);
       dnnl::matmul::primitive_desc pd(md, gemm_attr, g_comp->eng);
       dnnl::primitive prim = dnnl::matmul(pd);
-      add_op(prim, {{DNNL_ARG_SRC, rhs_mem},
-                    {DNNL_ARG_WEIGHTS, rhs_mem},
+      add_op(prim, {{DNNL_ARG_SRC, lhs->mem},
+                    {DNNL_ARG_WEIGHTS, rhs->mem},
                     {DNNL_ARG_DST, ret_mem}});
     } else
       is_elements_add = true;
@@ -1435,8 +1414,8 @@ odla_value gemm_op(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
     dnnl::matmul::desc md(lhs_md, rhs_md, ret_md);
     dnnl::matmul::primitive_desc pd(md, g_comp->eng);
     dnnl::primitive prim = dnnl::matmul(pd);
-    add_op(prim, {{DNNL_ARG_SRC, lhs_mem},
-                  {DNNL_ARG_WEIGHTS, rhs_mem},
+    add_op(prim, {{DNNL_ARG_SRC, lhs->mem},
+                  {DNNL_ARG_WEIGHTS, rhs->mem},
                   {DNNL_ARG_DST, ret_mem}});
   }
   odla_value v =
@@ -1485,13 +1464,6 @@ odla_value batch_gemm_op(odla_value lhs, odla_bool transpose_lhs,
 
   dnnl::memory::desc ret_md(ret_dims, dt, ret_strides);
   auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
-  auto lhs_mem = dnnl::memory(lhs_md, g_comp->eng);
-  auto rhs_mem = dnnl::memory(rhs_md, g_comp->eng);
-  auto op = [lhs_mem, rhs_mem, lhs, rhs, ret_mem]() {
-    lhs_mem.set_data_handle(lhs->mem.get_data_handle());
-    rhs_mem.set_data_handle(rhs->mem.get_data_handle());
-  };
-  add_op(op);
   bool is_elements_add = false;
   int64_t N = ret_dims[output_dims.size - 1];
   if (bias) {
@@ -1503,8 +1475,8 @@ odla_value batch_gemm_op(odla_value lhs, odla_bool transpose_lhs,
       dnnl::matmul::desc md(lhs_md, rhs_md, bias_md, ret_md);
       dnnl::matmul::primitive_desc pd(md, g_comp->eng);
       dnnl::primitive prim = dnnl::matmul(pd);
-      add_op(prim, {{DNNL_ARG_SRC, lhs_mem},
-                    {DNNL_ARG_WEIGHTS, rhs_mem},
+      add_op(prim, {{DNNL_ARG_SRC, lhs->mem},
+                    {DNNL_ARG_WEIGHTS, rhs->mem},
                     {DNNL_ARG_BIAS, bias_mem},
                     {DNNL_ARG_DST, ret_mem}});
     } else if (bias_elements == 1) {
@@ -1516,8 +1488,8 @@ odla_value batch_gemm_op(odla_value lhs, odla_bool transpose_lhs,
       dnnl::matmul::desc md(lhs_md, rhs_md, ret_md);
       dnnl::matmul::primitive_desc pd(md, gemm_attr, g_comp->eng);
       dnnl::primitive prim = dnnl::matmul(pd);
-      add_op(prim, {{DNNL_ARG_SRC, rhs_mem},
-                    {DNNL_ARG_WEIGHTS, rhs_mem},
+      add_op(prim, {{DNNL_ARG_SRC, lhs->mem},
+                    {DNNL_ARG_WEIGHTS, rhs->mem},
                     {DNNL_ARG_DST, ret_mem}});
     } else
       is_elements_add = true;
@@ -1525,8 +1497,8 @@ odla_value batch_gemm_op(odla_value lhs, odla_bool transpose_lhs,
     dnnl::matmul::desc md(lhs_md, rhs_md, ret_md);
     dnnl::matmul::primitive_desc pd(md, g_comp->eng);
     dnnl::primitive prim = dnnl::matmul(pd);
-    add_op(prim, {{DNNL_ARG_SRC, lhs_mem},
-                  {DNNL_ARG_WEIGHTS, rhs_mem},
+    add_op(prim, {{DNNL_ARG_SRC, lhs->mem},
+                  {DNNL_ARG_WEIGHTS, rhs->mem},
                   {DNNL_ARG_DST, ret_mem}});
   }
   odla_value v =

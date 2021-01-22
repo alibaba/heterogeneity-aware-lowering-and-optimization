@@ -160,6 +160,9 @@ CXXType GenericCXXCodeGen::SNTypeToCXXType(DataType dt) {
     case DataType::INT64: {
       return (CXXType("int64_t"));
     }
+    case DataType::BOOL: {
+      return (CXXType("bool"));
+    }
     default: {
       HLCHECK(0 && "Unhandled Type");
     }
@@ -287,6 +290,12 @@ std::string GenericCXXCodeGen::EmitShape(const halo::Type& type) {
 
 std::string GenericCXXCodeGen::GetODLAType(DataType type) const noexcept {
   switch (type) {
+    case DataType::INT8: {
+      return "ODLA_INT8";
+    }
+    case DataType::UINT8: {
+      return "ODLA_UINT8";
+    }
     case DataType::FLOAT32: {
       return "ODLA_FLOAT32";
     }
@@ -543,12 +552,11 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
         os_ << "odla_SetComputationItem(Comp, ODLA_BATCHES_PER_STEP, "
                "(odla_item_value) &batches_per_step);\n";
       }
-
       if (opts_.emit_dynamic_batch) {
         os_ << "bool is_dynamic_batch = true;\n";
-        os_ << "int min_batch_size = 1;\n";
-        os_ << "int max_batch_size = 8;\n";
-        os_ << "int opt_batch_size = 4;\n";
+        os_ << "int min_batch_size = " << opts_.min_batch_size << ";\n";
+        os_ << "int max_batch_size = " << opts_.max_batch_size << ";\n";
+        os_ << "int opt_batch_size = " << opts_.opt_batch_size << ";\n";
         os_ << "odla_SetComputationItem(Comp, ODLA_DYNAMIC_BATCH, "
                "(odla_item_value) &is_dynamic_batch);\n";
         os_ << "odla_SetComputationItem(Comp, ODLA_MIN_BATCH_SIZE, "
@@ -587,9 +595,9 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
 
       if (opts_.emit_dynamic_batch) {
         os_ << "bool is_dynamic_batch = true;\n";
-        os_ << "int min_batch_size = 1;\n";
-        os_ << "int max_batch_size = 8;\n";
-        os_ << "int opt_batch_size = 4;\n";
+        os_ << "int min_batch_size = " << opts_.min_batch_size << ";\n";
+        os_ << "int max_batch_size = " << opts_.max_batch_size << ";\n";
+        os_ << "int opt_batch_size = " << opts_.opt_batch_size << ";\n";
         os_ << "odla_SetComputationItem(Comp, ODLA_DYNAMIC_BATCH, "
                "(odla_item_value) &is_dynamic_batch);\n";
         os_ << "odla_SetComputationItem(Comp, ODLA_MIN_BATCH_SIZE, "
@@ -812,6 +820,11 @@ void GenericCXXCodeGen::EmitODLAArgs(const std::vector<uint32_t>& arg) {
   os_ << '{' << Join(arg) << '}';
 }
 
+void GenericCXXCodeGen::EmitODLAArgs(const std::vector<float>& arg) {
+  os_ << "(const odla_float32[])";
+  os_ << '{' << Join(arg) << '}';
+}
+
 void GenericCXXCodeGen::EmitODLAArgs(const std::vector<CXXValue>& arg) {
   os_ << "(odla_values){.size = " << arg.size() << ", .values = {";
   for (const auto& v : arg) {
@@ -837,6 +850,25 @@ void GenericCXXCodeGen::EmitODLAArgs(const DataFormat& arg) {
   }
   os_ << "ODLA_";
   os_ << (arg == DataFormat::NHWC ? "CHANNELS_LAST" : "CHANNELS_FIRST");
+}
+
+void GenericCXXCodeGen::EmitODLAArgs(const std::vector<halo::Type>& arg) {
+  os_ << "(odla_types){.size = " << arg.size() << ", .types = {";
+  for (const auto& v : arg) {
+    EmitODLAArgs(v);
+    os_ << ", ";
+  }
+  os_ << "}}";
+}
+
+void GenericCXXCodeGen::EmitODLAArgs(const std::vector<std::string>& arg) {
+  os_ << "(const odla_char* const[])"
+      << "{ ";
+  for (const auto& v : arg) {
+    os_ << "\"" << v << "\"";
+    os_ << ", ";
+  }
+  os_ << '}';
 }
 
 } // namespace halo

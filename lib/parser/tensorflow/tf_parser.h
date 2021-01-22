@@ -130,8 +130,10 @@ class IPUParser : public TFParser {
 
  private:
   Status SetAttributes(tensorflow::NodeDef* cur_node);
+  Status ManualSharding(tensorflow::NodeDef* cur_node,
+                        const armory::Opts& opts);
   Status ConvertToIpuGraphDef(const tensorflow::GraphDef& graph_def,
-                              const std::string& filename);
+                              const armory::Opts& opts);
 };
 
 } // namespace halo

@@ -144,7 +144,10 @@ static bool Reorder(T* inst, bool target_is_ch_first) {
         continue;
       }
       if (Cache.count(op.GetDef())) {
-        inst->ReplaceOperandWith(i, *Cache[op.GetDef()]);
+        auto cached = Cache[op.GetDef()];
+        if (cached->GetNumberOfUses()) {
+          inst->ReplaceOperandWith(i, *cached);
+        }
       } else {
         TransposeInst* trans = builder.CreateTranspose(
             get_prefix(target_is_ch_first) + op.GetOwner()->GetName(), {op});
