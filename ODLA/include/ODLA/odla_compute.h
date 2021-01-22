@@ -44,12 +44,21 @@ typedef enum {
   ODLA_MAX_BATCH_SIZE,
   ODLA_OPT_BATCH_SIZE,
   ODLA_RUN_BATCH_SIZE,
+  ODLA_BF16_MODE,
   ODLA_FP16_MODE,
   ODLA_USE_SIM_MODE,
   ODLA_PROCESSOR_NUM,
   ODLA_BATCHES_PER_STEP,
   ODLA_USE_DATA_TYPE,
 } odla_item_type;
+
+//! \brief BF16 mode
+typedef enum {
+  BF16_DISABLE,
+  BF16_ACCURACY_MODE,
+  BF16_PERFORMACE_MODE,
+  BF16_AUTO_MODE,
+} odla_bf16_mode;
 
 //! \brief Computation object
 typedef struct _odla_computation* odla_computation;
