@@ -203,7 +203,7 @@ static void RunOnInstruction(Conv2DInst* inst,
       HLCHECK(0 && "Invalid format");
     }
   }
-
+  
   node_info.activation = static_cast<float>(Dl->Bytes(weight_inst.GetType()) +
                                             Dl->Bytes(out_type));
 }
@@ -238,7 +238,7 @@ static void RunOnInstruction(GemmInst* inst,
 
   node_info.flops =
       static_cast<float>(row_a * (2 * matrixb_sz - col_b) + 2 * matrixc_sz);
-
+  
   node_info.activation = static_cast<float>(Dl->Bytes(matrix_b.GetType()) +
                                             Dl->Bytes(matrix_c.GetType()) +
                                             Dl->Bytes(inst->GetResultType()));
