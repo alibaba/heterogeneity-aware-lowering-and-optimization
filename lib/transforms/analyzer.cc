@@ -106,8 +106,7 @@ static void RunOnInstruction(Instruction* inst,
     case OpCode::CMP: {
       auto& node_info = GenerateCommonInfo(inst, node_infos);
       node_info.flops = inst->GetResultType().GetTotalNumOfElements();
-      node_info.activation =
-          static_cast<float>(Dl->Bytes(inst->GetResultType()));
+      node_info.activation = Dl->Bytes(inst->GetResultType());
       break;
     }
     default: {
@@ -133,7 +132,7 @@ static void RunOnInstruction(BatchMatMulInst* inst,
   const auto& weight_inst = inst->GetOperand(1);
   HLCHECK(IsA<Constant>(weight_inst));
   const auto& weight_type = weight_inst.GetType();
-  node_info.weight = static_cast<float>(weight_type.GetTotalNumOfElements());
+  node_info.weight = weight_type.GetTotalNumOfElements();
 
   const Constant* weight = DynCast<Constant>(weight_inst);
   node_info.sizeof_dt = weight->GetElementSizeInBytes();
@@ -161,7 +160,7 @@ static void RunOnInstruction(BatchNormInst* inst,
   const auto& input_type = inst->GetOperand(0).GetType();
   node_info.flops =
       GetNumOfOperators(inst) * input_type.GetTotalNumOfElements();
-  node_info.activation = static_cast<float>(Dl->Bytes(inst->GetResultType()));
+  node_info.activation = Dl->Bytes(inst->GetResultType());
 }
 
 static void RunOnInstruction(ConcatInst* inst,
@@ -175,8 +174,7 @@ static void RunOnInstruction(Conv2DInst* inst,
 
   const auto& weight_inst = inst->GetOperand(1);
   HLCHECK(IsA<Constant>(weight_inst));
-  node_info.weight =
-      static_cast<float>(weight_inst.GetType().GetTotalNumOfElements());
+  node_info.weight = weight_inst.GetType().GetTotalNumOfElements();
   const Constant* weight = DynCast<Constant>(weight_inst);
   node_info.sizeof_dt = weight->GetElementSizeInBytes();
 
@@ -246,7 +244,7 @@ static void RunOnInstruction(MatMulInst* inst,
   const auto& weight_inst = inst->GetOperand(1);
   HLCHECK(IsA<Constant>(weight_inst));
   const auto& weight_type = weight_inst.GetType();
-  node_info.weight = static_cast<float>(weight_type.GetTotalNumOfElements());
+  node_info.weight = weight_type.GetTotalNumOfElements();
 
   const Constant* weight = DynCast<Constant>(weight_inst);
   node_info.sizeof_dt = weight->GetElementSizeInBytes();
