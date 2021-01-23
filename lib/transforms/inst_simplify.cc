@@ -603,7 +603,7 @@ static std::pair<Def, Def> SinkTranspose(InstType& inst, Builder build) {
   if (IsA<Instruction>(inst.GetOperand(0))) {
     // Inst(transpose(x)) -> transpose(Inst(x)), this exposes opportunites
     // to cancel out transposes.
-    Instruction* op0_inst = DynCast<Instruction>(inst.GetOperand(0).GetOwner());
+    Instruction* op0_inst = DynCast<Instruction>(inst.GetOperand(0));
     if (op0_inst->GetOpCode() == OpCode::TRANSPOSE) {
       const TransposeInst* orig_trans = DynCast<TransposeInst>(op0_inst);
       IRBuilder builder(inst.GetParent());
@@ -627,6 +627,15 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(LeakyReluInst* inst) {
     new_inst->SetAlpha(inst->GetAlpha());
     return new_inst;
   });
+}
+
+std::pair<Def, Def> InstSimplify::RunOnInstruction(PReluInst* inst) {
+  auto op1 = inst->GetOperand(1);
+  return SinkTranspose(
+      *inst,
+      [inst, &op1](IRBuilder& builder, const std::string& name, const Def& op) {
+        return DynCast<PReluInst>(builder.Clone(*inst, {op, op1}));
+      });
 }
 
 template <typename T>
