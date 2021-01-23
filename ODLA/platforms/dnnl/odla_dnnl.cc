@@ -629,33 +629,31 @@ static void expand_dims(odla_value& src, odla_value& dst) {
   const int dst_n = dst->shape.size;
   odla_value_shape new_shape;
 
-  auto CompareDims = [src, dst, src_n](int loc) -> bool {
+  auto CompareDims = [src, dst, src_n](int loc,
+                                       odla_value_shape& new_shape) -> bool {
     int src_idx = src_n - 1;
     int dst_idx = loc;
     for (int k = 0; k < src_n; k++) {
       if (dst->shape.dims[dst_idx - k] != src->shape.dims[src_idx - k] &&
           dst->shape.dims[dst_idx - k] != 1 &&
-          src->shape.dims[src_idx - k] != 1)
-        ;
-      return false;
+          src->shape.dims[src_idx - k] != 1) {
+        return false;
+      }
+      new_shape.dims[dst_idx - k] = src->shape.dims[src_idx - k];
     }
     return true;
   };
 
   // slide from the last item in dst
   for (int j = dst_n - 1; j >= 0; j--) {
-    if (CompareDims(j)) {
+    if (CompareDims(j, new_shape)) {
       // the src shape cannot be expanded
       assert(j + 1 >= src_n);
-      // copy the src dims to new_shape
-      int k = 0;
-      int sub_array_start = j + 1 - src_n;
-      for (int i = sub_array_start; i <= j; i++) {
-        new_shape.dims[i] = src->shape.dims[k++];
-      }
+      const int sub_array_start = j + 1 - src_n;
       for (int i = 0; i < sub_array_start; i++) {
         new_shape.dims[i] = 1;
       }
+      break;
     } else {
       new_shape.dims[j] = 1;
     }
