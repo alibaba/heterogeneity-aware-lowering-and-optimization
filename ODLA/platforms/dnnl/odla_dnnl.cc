@@ -632,15 +632,15 @@ static void expand_dims(odla_value& src, odla_value& dst) {
   auto CompareDims = [src, dst, src_n](int loc) -> bool {
     int src_idx = src_n - 1;
     int dst_idx = loc;
-    for (int k = 0; k < src_n; k++;) {
+    for (int k = 0; k < src_n; k++) {
       if (dst->shape.dims[dst_idx - k] != src->shape.dims[src_idx - k] &&
           dst->shape.dims[dst_idx - k] != 1 &&
           src->shape.dims[src_idx - k] != 1)
         ;
-      return false
+      return false;
     }
-    return true
-  }
+    return true;
+  };
 
   // slide from the last item in dst
   for (int j = dst_n - 1; j >= 0; j--) {
