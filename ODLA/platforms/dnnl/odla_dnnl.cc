@@ -1196,8 +1196,27 @@ odla_value odla_MaxPool(odla_value input, odla_memory_layout input_layout,
                         const odla_uint32* paddings_back,
                         odla_value_shape output_dims,
                         const odla_value_id value_id) {
+  odla_uint32 new_paddings_back[2];
+  int start_id = 2;
+  int end_id = input->shape.size;
+  if (input_layout == ODLA_CHANNELS_LAST) {
+    start_id -= 1;
+    end_id -= 1;
+  }
+  for (int i = start_id; i < end_id; ++i) {
+    const int src = input->shape.dims[i];
+    const int dst = output_dims.dims[i];
+    const int ker = window_dims[i - start_id];
+    const int pad_l = paddings_front[i - start_id];
+    const int pad_r = paddings_back[i - start_id];
+    const int str = strides[i - start_id];
+    new_paddings_back[i - start_id] = pad_r;
+    if ((src - ker + pad_l + pad_r) / str + 1 != dst) {
+      new_paddings_back[i - start_id] += ker - 1;
+    }
+  }
   return BasePool(input, input_layout, window_dims, strides, paddings_front,
-                  paddings_back, output_dims, value_id,
+                  new_paddings_back, output_dims, value_id,
                   dnnl::algorithm::pooling_max);
 }
 
