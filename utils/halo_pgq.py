@@ -137,6 +137,10 @@ if __name__ == "__main__":
                         action='store_true', default=False, help='Enable channel-wise profiling')
     parser.add_argument('-a', '--chs-axis', dest='chs_axis', type=int,
                         help='axis of channel (e.g.: 1 for NCHW, 3 for NHWC)', default=1)
+    parser.add_argument('-min-dim-chs-prof', '--min-dim-chs-prof', dest='min_dim_chs_prof', type=int,
+                        help='minimum dimension of tensors for channel-wise profiling', default=0)
+    parser.add_argument('-max-dim-chs-prof', '--max-dim-chs-prof', dest='max_dim_chs_prof', type=int,
+                        help='maximum dimension of tensors for channel-wise profiling', default=sys.maxsize)
     parser.add_argument('-v', '--verbose', dest='verbose',
                         action='store_true', default=False)
     args = parser.parse_args()
@@ -264,20 +268,28 @@ if __name__ == "__main__":
 
     # Output C code, assumes quant
     output_file = os.path.splitext(model_lib)[0] + '.c'
+    nr_recs = 0
     with open(output_file, 'w') as cf:
         cf.write('#include <ODLA/ops/odla_ops_quantization.h>\n')
-        cf.write('const int quant_infos_size = {};\n'.format(
-            len(consolidated.items())))
         cf.write('const odla_value_quant_info quant_infos[] = {\n')
         fmt = '  {{.value_id = (const odla_value_id) "{}", .ch_idx = {}, .scale = {}, .offset = {}, .min = {}, .max = {}}},\n'
         for name, data in consolidated.items():
             chs = data['channels']
+            shape = data['shape']
+            dims = len(shape)
             cf.write(fmt.format(
                 name, -chs, data['scale'], data['zp'], data['min_value'], data['max_value']))
+            nr_recs += 1
+            if dims < args.min_dim_chs_prof or dims > args.max_dim_chs_prof:
+                continue
             for ch in range(0, chs):
                 cf.write(fmt.format(
                     name, ch, 0, 0, data['channels_min'][ch], data['channels_max'][ch]))
-        cf.write('};')
+                nr_recs += 1
+        cf.write('};\n')
+        cf.write('const int quant_infos_size = {};\n'.format(
+            nr_recs))
+
     print('ODLA Quantization info file:{}'.format(output_file))
 
     # Output csv
