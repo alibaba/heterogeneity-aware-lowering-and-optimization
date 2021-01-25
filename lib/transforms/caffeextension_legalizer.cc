@@ -597,6 +597,7 @@ static std::vector<Def> ConvertPower(const CAFFEExtensionInst* ext,
                                     Type{DataType::FLOAT32, {1}}, &shift);
     input = *(builder->CreatePow(ext->GetName() + "_power", {input, *c}));
   }
+  input.GetDef()->SetName(ext->GetName());
   return {input};
 }
 
