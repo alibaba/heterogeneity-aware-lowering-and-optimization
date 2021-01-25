@@ -277,10 +277,12 @@ if __name__ == "__main__":
             chs = data['channels']
             shape = data['shape']
             dims = len(shape)
+            output_per_ch_info = dims >= args.min_dim_chs_prof and dims <= args.max_dim_chs_prof
             cf.write(fmt.format(
-                name, -chs, data['scale'], data['zp'], data['min_value'], data['max_value']))
+                name, -chs if output_per_ch_info else chs,
+                data['scale'], data['zp'], data['min_value'], data['max_value']))
             nr_recs += 1
-            if dims < args.min_dim_chs_prof or dims > args.max_dim_chs_prof:
+            if not output_per_ch_info:
                 continue
             for ch in range(0, chs):
                 cf.write(fmt.format(
