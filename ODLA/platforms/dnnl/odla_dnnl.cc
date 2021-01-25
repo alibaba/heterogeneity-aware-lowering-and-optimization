@@ -815,20 +815,18 @@ odla_value odla_PRelu(odla_value input, odla_value slope,
   // get prelu():
   // prelu(input, slope) = (input < 0 ? input * slope : input)
   //                     = relu(input) - relu(-input) * slope
-  //                     = relu(input) - relu(mul(mul(input, -1),  slope))
-  //                     = relu(input) - relu(mul(input, -slope))
+  //                     = relu(input) - mul(relu(mul(input, -1)),  slope)
+  //                     = relu(input) + mul(-slope,relu(mul(input,-1)))
 
   auto relu_v = odla_Relu(input, nullptr);
-  auto neg_slop = unary_eltwise_op(dnnl::algorithm::eltwise_linear, slope, -1.f,
-                                   0.f, nullptr);
-  auto neg_relu_mul = odla_Mul(input, neg_slop, nullptr);
-  dnnl::post_ops po;
-  po.append_eltwise(1.f, dnnl::algorithm::eltwise_linear, -1.f, 0.f);
-  dnnl::primitive_attr attr;
-  attr.set_post_ops(po);
-  auto neg_relu_v = unary_eltwise_op(dnnl::algorithm::eltwise_relu,
-                                     neg_relu_mul, -1.f, 0.f, nullptr, attr);
-  auto v = odla_Add(neg_relu_v, relu_v, value_id);
+
+  auto neg_input = unary_eltwise_op(dnnl::algorithm::eltwise_linear, input,
+                                    -1.f, 0.f, nullptr);
+  auto neg_relu_v = odla_Relu(neg_input, nullptr);
+  auto neg_slope = unary_eltwise_op(dnnl::algorithm::eltwise_linear, slope,
+                                    -1.f, 0.f, nullptr);
+  auto neg_relu_v_mul = odla_Mul(neg_relu_v, neg_slope, nullptr);
+  auto v = odla_Add(neg_relu_v_mul, relu_v, value_id);
   InterpretIfNeeded();
   return v;
 }
