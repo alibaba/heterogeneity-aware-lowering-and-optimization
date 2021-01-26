@@ -489,6 +489,9 @@ static std::vector<Def> ConvertInnerProduct(const CAFFEExtensionInst* ext,
 
 static std::vector<Def> ConvertScale(const CAFFEExtensionInst* ext,
                                      IRBuilder* builder) {
+  if (ext->GetNumOfOperands() == 1) {
+    return {ext->GetOperand(0)};
+  }
   HLCHECK(ext->GetNumOfOperands() > 1);
   auto input = ext->GetOperand(0);
   const auto& input_type = input.GetType();
