@@ -67,6 +67,7 @@ set(SRCS
   topk.cc
   transpose.cc
   hgengine.cc
+  quant.cc
 )
 
 set(LLVM_LINK_COMPONENTS Support)
