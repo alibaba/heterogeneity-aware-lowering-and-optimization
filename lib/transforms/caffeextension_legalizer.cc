@@ -555,6 +555,29 @@ static std::vector<Def> ConvertTile(const CAFFEExtensionInst* ext,
   return {*new_inst};
 }
 
+static std::vector<Def> ConvertRelu(const CAFFEExtensionInst* ext,
+                                    IRBuilder* builder) {
+  HLCHECK(ext->GetNumOfOperands() == 1);
+  auto input = ext->GetOperand(0);
+  const auto& input_type = input.GetType();
+
+  if (!input_type.IsValid()) {
+    return {};
+  }
+  builder->SetInsertAfter(ext);
+
+  if (ext->GetNumOfAttributes() != 0) {
+    auto alpha = ext->GetAttributes()[0]->GetValueAsFloat();
+    auto leakly_relu =
+        builder->CreateLeakyRelu(ext->GetName(), ext->GetOperands());
+    leakly_relu->SetAlpha(alpha);
+    return {*leakly_relu};
+  }
+
+  auto relu = builder->CreateRelu(ext->GetName(), ext->GetOperands());
+  return {*relu};
+}
+
 static std::vector<Def> ConvertCAFFEExtension(
     const CAFFEExtensionInst* caffe_inst, IRBuilder* builder) {
   builder->SetInsertAfter(caffe_inst);
@@ -591,6 +614,9 @@ static std::vector<Def> ConvertCAFFEExtension(
     }
     case CAFFEExtOpCode::TILE: {
       return ConvertTile(caffe_inst, builder);
+    }
+    case CAFFEExtOpCode::RELU: {
+      return ConvertRelu(caffe_inst, builder);
     }
     default: {
       HLCHECK(0 && "Unhandled");
