@@ -22,7 +22,7 @@ include "instruction_base.td"
 
 let cat_ = cat_customize in {
 
-  def HgEngine : Inst<"Alinpu engine op."> {
+  def HgEngine : Inst<"Hg engine op."> {
     let attrs_ = [Attr<"serialized engine string", String, "serialized_engine", "\"NHWC\"">,
                   Attr<"model name", String, "model_name", "\"\"">,
                   Attr<"op name", String, "op_name", "\"\"">,
@@ -38,6 +38,33 @@ let cat_ = cat_customize in {
                  ];
     let ins_ = [Arg<"Input data.", ArgType<[I8, I16]> >];
     let outs_ = [Arg<"The result value.", MatchArgType<0>>];
+  }
+
+  def HgQuant : Inst<"Hg Quant op."> {
+    let attrs_ = [Attr<"in_scale", String, "in_scale", "\"1.0\"">,
+                  Attr<"in_bias", String, "in_bias", "\"0.0\"">,
+                  Attr<"qtype", String, "qtype", "\"int8\"">,
+                  Attr<"is_per_channel", Integer, "is_per_channel", "0">,
+                  Attr<"int data format, default is NHWC", String, "in_data_format", "\"NCHW\"" >,
+                  Attr<"out data format, default is NHWC", String, "out_data_format", "\"NCHW\"" >,
+                  Attr<"in_type", String, "in_type", "\"FLOAT32\"" >,
+                  Attr<"out_type", String, "out_type", "\"INT8\"" >,
+                 ];
+    let ins_ = [Arg<"Input data.", ArgType<[F16,F32]> >];
+    let outs_ = [Arg<"The result Quantized value.", ArgType<[I8,I16]> >];
+  }
+
+  def HgDequant : Inst<"Hg Dequant op."> {
+    let attrs_ = [Attr<"in_scale", String, "in_scale", "\"1.0\"">,
+                  Attr<"in_bias", String, "in_bias", "\"0.0\"">,
+                  Attr<"is_per_channel", Integer, "is_per_channel", "0">,
+                  Attr<"int data format, default is NHWC", String, "in_data_format", "\"NCHW\"" >,
+                  Attr<"out data format, default is NHWC", String, "out_data_format", "\"NCHW\"" >,
+                  Attr<"in_type", String, "in_type", "\"INT8\"" >,
+                  Attr<"out_type", String, "out_type", "\"FLOAT32\"" >,
+                 ];
+    let ins_ = [Arg<"Input data.", ArgType<[I8,I16]> >];
+    let outs_ = [Arg<"The result DeQuantized value.", ArgType<[F16,F32]> >];
   }
 
 }
