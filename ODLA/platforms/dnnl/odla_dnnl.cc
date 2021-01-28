@@ -909,18 +909,11 @@ static odla_value_shape getNCHWDims(const odla_value_shape& src_dims) {
       {src_dims.dims[0], src_dims.dims[3], src_dims.dims[1], src_dims.dims[2]}};
 }
 
-static odla_value_shape getOIHWDims(const odla_value_shape& src_dims,
-                                    bool is_conv = true) {
+static odla_value_shape getOIHWDims(const odla_value_shape& src_dims) {
   assert(src_dims.size == 4);
-  if (is_conv == true) {
-    return {src_dims.size,
-            {src_dims.dims[3], src_dims.dims[2], src_dims.dims[0],
-             src_dims.dims[1]}};
-  } else {
-    return {src_dims.size,
-            {src_dims.dims[2], src_dims.dims[3], src_dims.dims[0],
-             src_dims.dims[1]}};
-  }
+  return {
+      src_dims.size,
+      {src_dims.dims[3], src_dims.dims[2], src_dims.dims[0], src_dims.dims[1]}};
 }
 
 static odla_value_shape getGOIHWDims(const odla_value_shape& src_dims,
@@ -1114,12 +1107,10 @@ odla_value odla_DeConv(odla_value input, odla_memory_layout input_layout,
     output_dims = getNCHWDims(output_dims);
   }
 
-  // change kernel layout to NCHW,
-  // is the same as dnnl::memory::format_tag::oihw
-  // and ODLA_IOS in DeConv's kernel & ODLA_OIS in Conv's kernel
-  if (kernel_layout == odla_memory_layout::ODLA_SOI) {
-    kernel_dims = getOIHWDims(kernel_dims, false);
-  } else if (kernel_layout == odla_memory_layout::ODLA_OIS) {
+  // change kernel layout to NCHW
+  if (kernel_layout == odla_memory_layout::ODLA_SIO) {
+    kernel_dims = getOIHWDims(kernel_dims);
+  } else if (kernel_layout == odla_memory_layout::ODLA_IOS) {
     std::swap(kernel_dims.dims[0], kernel_dims.dims[1]);
   }
 
@@ -1140,22 +1131,22 @@ odla_value odla_DeConv(odla_value input, odla_memory_layout input_layout,
                                           dnnl::memory::format_tag::any);
   auto kernel_md_src = dnnl::memory::desc(
       getDims(kernel_dims), dt,
-      /*dnnl::memory::format_tag::iohw */ getFormatTag(ODLA_OIS, group));
+      /*dnnl::memory::format_tag::iohw */ getFormatTag(kernel_layout, group));
+  auto kernel_mem =
+      dnnl::memory(kernel_md_src, g_comp->eng, kernel->mem.get_data_handle());
 
   assert(dilations[0] == 1 && dilations[1] == 1);
   auto conv_desc = dnnl::deconvolution_forward::desc(
-      dnnl::prop_kind::forward, dnnl::algorithm::deconvolution_direct,
+      dnnl::prop_kind::forward_inference, dnnl::algorithm::deconvolution_direct,
       input_md_any, kernel_md_any, ret_md_any, stride_dims, paddings_before,
       paddings_after);
   auto pd = dnnl::deconvolution_forward::primitive_desc(conv_desc, g_comp->eng);
 
   auto ret_mem = dnnl::memory(pd.dst_desc(), g_comp->eng);
   bool needs_reorder_input = pd.src_desc() != input_md_src;
-  if (pd.weights_desc() != kernel_md_src) {
+  if (pd.weights_desc() != kernel_mem.get_desc()) {
     auto reordered_w = dnnl::memory(pd.weights_desc(), g_comp->eng);
-    auto rec = dnnl::reorder(
-        dnnl::memory(kernel_md_src, g_comp->eng, kernel->mem.get_data_handle()),
-        reordered_w);
+    auto rec = dnnl::reorder(kernel_mem, reordered_w);
     add_op(rec, {{DNNL_ARG_FROM, kernel->mem}, {DNNL_ARG_TO, reordered_w}});
     kernel->mem = reordered_w;
   }
