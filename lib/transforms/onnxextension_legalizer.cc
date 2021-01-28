@@ -1060,7 +1060,7 @@ static std::vector<Def> ConvertHgEngine(const ONNXExtensionInst* ext,
 
   return {*hg_engine};
 }
-
+#ifdef NotFuseQuantOP
 static std::vector<Def> ConvertHgQuant(const ONNXExtensionInst* ext,
                                        IRBuilder* builder) {
   auto input = ext->GetOperand(0);
@@ -1757,10 +1757,6 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     case ONNXExtOpCode::GLOBALMAXPOOL: {
       return ConvertGlobalMaxPooling(onnx_inst, builder);
     }
-    // Todo: DNNl and ODLA should support quant/dequant op, for performace
-    // considerations; Now split the Hgai quant op to
-    // Mul+Add+Round+Cast+Max+Min+Transpose; Split Hgai dequant op to
-    // Cast+Mul+Add+Tranpose;
     case ONNXExtOpCode::HGQUANT: {
       return ConvertHgQuant(onnx_inst, builder);
     }

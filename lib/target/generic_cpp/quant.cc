@@ -23,13 +23,11 @@
 
 namespace halo {
 
-void GenericCXXCodeGen::RunOnInstruction(ONNXExtensionInst* inst) {
+void GenericCXXCodeGen::RunOnInstruction(HgQuantInst* inst) {
 
   const Def& input = inst->GetOperand(0);
 
   CXXValue op0 = ir_mapping_[input];
-  const auto& ret_type = inst->GetResultType();
-
   CXXValue ret(inst->GetName(), op0.type);
   
   const std::string& enum_ns_layout = "odla_memory_layout::";
@@ -37,26 +35,23 @@ void GenericCXXCodeGen::RunOnInstruction(ONNXExtensionInst* inst) {
   const std::string& enum_ns =
       opts_.dialect == Dialect::CXX_11 ? enum_ns_layout : "";
 
-  /// By now the Hgai onnx interfce set in_scale/in_bias to sting
-  int attr_idx = 0;
+  /// By now the Hgai onnx interfce set in_scale/in_bias to string
   std::vector<float> in_scale;
   std::vector<float> in_bias;
   in_scale.reserve(1);
   in_bias.reserve(1);
-  in_scale.emplace_back(
-      std::stof(inst->GetAttributes()[attr_idx++]->GetValueAsString()));
-  in_bias.emplace_back(
-      std::stof(inst->GetAttributes()[attr_idx++]->GetValueAsString()));
-  std::string qtype = inst->GetAttributes()[attr_idx++]->GetValueAsString();
-  int is_per_channel = inst->GetAttributes()[attr_idx++]->GetValueAsInteger();
-  attr_idx += 1;
+
+  in_scale.emplace_back(std::stof(inst->GetInScale()));
+  in_bias.emplace_back(std::stof(inst->GetInBias()));
+  std::string qtype = inst->GetQtype();
+  int is_per_channel = inst->GetIsPerChannel();
 
   const std::string& input_layout =
       enum_ns + enum_prefix +
-      (inst->GetAttributes()[attr_idx++]->GetValueAsString() == "NHWC" ? "CHANNELS_LAST" : "CHANNELS_FIRST");
+      (inst->GetInDataFormat() == "NHWC" ? "CHANNELS_LAST" : "CHANNELS_FIRST");
   const std::string& output_layout =
       enum_ns + enum_prefix +
-      (inst->GetAttributes()[attr_idx++]->GetValueAsString() == "NHWC" ? "CHANNELS_LAST" : "CHANNELS_FIRST");
+      (inst->GetOutDataFormat() == "NHWC" ? "CHANNELS_LAST" : "CHANNELS_FIRST");
 
   // Todo : transpose support, per_channel support, int16/fp16 support
   HLCHECK(input_layout == output_layout);  
@@ -90,7 +85,7 @@ void GenericCXXCodeGen::RunOnInstruction(ONNXExtensionInst* inst) {
   EmitODLACall<2, false>(rets, "odla_CustomOp", inputs, "\"HgaiQuant\"",
                          "\"" + inst->GetName() + "\"", os.str(), input_layout,
                          output_layout, is_per_channel,
-                         qtype, in_scale[0], in_bias[0]);
+                          "\"" + qtype + "\"", in_scale[0], in_bias[0]);
 }
 
 } // namespace halo
