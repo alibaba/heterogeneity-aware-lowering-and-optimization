@@ -400,15 +400,15 @@ odla_status odla_GetValueType(const odla_value value,
 
 odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                 odla_context context) {
-  if (g_comp->opts.bf16_mode == BF16_PERFORMACE_MODE &&
+  if (context->comp->opts.bf16_mode == BF16_PERFORMACE_MODE &&
       value->mem.get_desc().data_type() == dnnl::memory::data_type::bf16) {
     auto src_md = dnnl::memory::desc(value->mem.get_desc().dims(),
                                      getDataType(ODLA_FLOAT32),
                                      getFormatTag(value->shape));
     auto src_mem =
-        dnnl::memory(src_md, g_comp->eng, const_cast<void*>(data_ptr));
+        dnnl::memory(src_md, context->comp->eng, const_cast<void*>(data_ptr));
     auto r = dnnl::reorder(src_mem, value->mem);
-    r.execute(dnnl::stream(g_comp->eng),
+    r.execute(dnnl::stream(context->comp->eng),
               {{DNNL_ARG_FROM, src_mem}, {DNNL_ARG_TO, value->mem}});
   } else {
     value->mem.set_data_handle(const_cast<void*>(data_ptr));
