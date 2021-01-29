@@ -22,11 +22,6 @@
 #include <set>
 #include <variant>
 
-#include "caffe/caffe_parser.h"
-#include "onnx/onnx_parser.h"
-#include "tensorflow/tf_parser.h"
-#include "tflite/tflite_parser.h"
-
 namespace halo {
 
 static bool ValidateFiles(const std::vector<std::string>& file_list) {
@@ -52,22 +47,22 @@ Status Parser::Parse(Function* function, Format format,
   switch (format) {
     case Format::TENSORFLOW: {
       if (opts.convert_to_ipu_graphdef) {
-        parser = std::make_unique<IPUParser>(variant);
+        parser = CreateIPUParser(variant);
       } else {
-        parser = std::make_unique<TFParser>(variant);
+        parser = CreateTFParser(variant);
       }
       break;
     }
     case Format::ONNX: {
-      parser = std::make_unique<ONNXParser>();
+      parser = CreateONNXParser();
       break;
     }
     case Format::TFLITE: {
-      parser = std::make_unique<TFLITEParser>();
+      parser = CreateTFLITEParser();
       break;
     }
     case Format::CAFFE: {
-      parser = std::make_unique<CAFFEParser>();
+      parser = CreateCAFFEParser();
       break;
     }
     default:
