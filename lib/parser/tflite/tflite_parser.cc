@@ -477,4 +477,9 @@ void TFLITEParser::InsertIDToInstMap(const tflite::Operator& node_def,
 
 // convert to halo ir def func
 #include "tflite_convert.cc.inc"
+
+std::unique_ptr<Parser> CreateTFLITEParser() {
+  return std::make_unique<TFLITEParser>();
+}
+
 } // end namespace halo

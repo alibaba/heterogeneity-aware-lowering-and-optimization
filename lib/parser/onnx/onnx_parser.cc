@@ -653,4 +653,8 @@ Status ONNXParser::ConvertDummyNode(const onnx::NodeProto& node_def) {
 // convert to halo ir def func
 #include "onnx_convert.cc.inc"
 
+std::unique_ptr<Parser> CreateONNXParser() {
+  return std::make_unique<ONNXParser>();
+}
+
 } // end namespace halo

@@ -62,6 +62,12 @@ class Parser {
                       const armory::Opts& opts);
 };
 
+extern std::unique_ptr<Parser> CreateIPUParser(const std::string& variant);
+extern std::unique_ptr<Parser> CreateTFParser(const std::string& variant);
+extern std::unique_ptr<Parser> CreateONNXParser();
+extern std::unique_ptr<Parser> CreateTFLITEParser();
+extern std::unique_ptr<Parser> CreateCAFFEParser();
+
 template <typename T>
 class Tensor {
  public:
