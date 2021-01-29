@@ -423,6 +423,8 @@ odla_status odla_SetValueData(odla_value value, const void* ptr) {
 
 odla_status odla_GetValueData(const odla_value value, odla_void* data_ptr) {
   assert(g_interpret_mode == true);
+  value->mem = cast_odla_mem(value->mem, value->shape,
+                             value->mem.get_desc().data_type(), true);
   memcpy(data_ptr, value->mem.get_data_handle(),
          value->mem.get_desc().get_size());
   return ODLA_SUCCESS;
