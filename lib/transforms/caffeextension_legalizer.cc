@@ -566,14 +566,15 @@ static std::vector<Def> ConvertRelu(const CAFFEExtensionInst* ext,
   }
   builder->SetInsertAfter(ext);
 
-  if (ext->GetNumOfAttributes() != 0) {
-    auto alpha = ext->GetAttributes()[0]->GetValueAsFloat();
+  float alpha = ext->GetNumOfAttributes() != 0
+                    ? ext->GetAttributes()[0]->GetValueAsFloat()
+                    : 0;
+  if (alpha != 0) {
     auto leakly_relu =
         builder->CreateLeakyRelu(ext->GetName(), ext->GetOperands());
     leakly_relu->SetAlpha(alpha);
     return {*leakly_relu};
   }
-
   auto relu = builder->CreateRelu(ext->GetName(), ext->GetOperands());
   return {*relu};
 }
