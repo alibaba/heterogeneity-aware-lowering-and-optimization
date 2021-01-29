@@ -42,7 +42,7 @@ create_halo_object(TARGET_NAME ${NAME}
 )
 
 target_include_directories(${NAME} PRIVATE
-  ${LLVM_SRC_DIR}/include 
+  ${LLVM_SRC_DIR}/include
   ${CMAKE_BINARY_DIR}/llvm/include
 )
 

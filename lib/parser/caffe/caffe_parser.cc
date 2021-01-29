@@ -362,4 +362,8 @@ Status CAFFEParser::ConvertDummyNode(
 // convert to halo ir def func
 #include "caffe_convert.cc.inc"
 
+std::unique_ptr<Parser> CreateCAFFEParser() {
+  return std::make_unique<CAFFEParser>();
+}
+
 } // end namespace halo
