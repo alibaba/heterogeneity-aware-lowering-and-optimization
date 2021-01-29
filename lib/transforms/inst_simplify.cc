@@ -701,6 +701,13 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Relu6Inst* inst) {
       });
 }
 
+std::pair<Def, Def> InstSimplify::RunOnInstruction(SigmoidInst* inst) {
+  return SinkTranspose(
+      *inst, [](IRBuilder& builder, const std::string& name, const Def& op) {
+        return builder.CreateSigmoid(name, op);
+      });
+}
+
 std::pair<Def, Def> InstSimplify::RunOnInstruction(ReluInst* inst) {
   return SinkTranspose(
       *inst, [](IRBuilder& builder, const std::string& name, const Def& op) {
