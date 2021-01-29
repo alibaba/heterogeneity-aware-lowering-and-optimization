@@ -1820,6 +1820,7 @@ odla_value odla_Tile(odla_value input, const odla_uint32* repeat,
       concat_args.insert({DNNL_ARG_MULTIPLE_SRC + j, src_mem});
     }
     concat_pd = dnnl::concat::primitive_desc(i, src_mds, g_comp->eng);
+
     auto dst_mem = dnnl::memory(concat_pd.dst_desc(), g_comp->eng);
     concat_args.insert({DNNL_ARG_DST, dst_mem});
     auto concat_prim = dnnl::concat(concat_pd);
