@@ -843,8 +843,7 @@ static odla_value_shape getNCHWDims(const odla_value_shape& src_dims) {
       {src_dims.dims[0], src_dims.dims[3], src_dims.dims[1], src_dims.dims[2]}};
 }
 
-static odla_value_shape getOIHWDims(const odla_value_shape& src_dims,
-                                    bool is_conv = true) {
+static odla_value_shape getOIHWDims(const odla_value_shape& src_dims) {
   assert(src_dims.size == 4);
   return {
       src_dims.size,
@@ -1032,8 +1031,7 @@ odla_value odla_DeConv(odla_value input, odla_memory_layout input_layout,
     output_dims = getNCHWDims(output_dims);
   }
 
-  // change kernel layout to NCHW,
-  auto orig_kernel_dims = kernel_dims;
+  // change kernel layout to NCHW
   if (kernel_layout == odla_memory_layout::ODLA_SIO) {
     kernel_dims = getOIHWDims(kernel_dims);
   } else if (kernel_layout == odla_memory_layout::ODLA_IOS) {
