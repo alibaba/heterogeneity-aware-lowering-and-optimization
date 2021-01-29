@@ -106,10 +106,10 @@ def run(exe):
     return proc.stdout
 
 
-def get_image_ndarray(path):
+def get_image_ndarray(path, width, height):
     if use_pillow:
         image = Image.open(path)
-        image = image.resize((112, 112))
+        image = image.resize((width, height))
         mode = image.mode
         image = np.array(image)  # type uint8
         if mode == 'L':
@@ -121,7 +121,7 @@ def get_image_ndarray(path):
             print('image mode has to be either L or RGB, but got {}'.format(mode))
     else:
         image = cv2.imread(path)
-        # image = cv2.resize()
+        image = cv2.resize(image, (width, height))
     return image
 
 
@@ -132,15 +132,25 @@ if __name__ == "__main__":
     parser.add_argument('-i', '--image-dir', required=True,
                         type=str, help='image directory')
     parser.add_argument('-s', '--skip-weights-prof',
-                        dest='skip_weights_prof', action='store_true', default=False, help='No profiling for weights')
+                        dest='skip_weights_prof', action='store_true', default=False,
+                        help='No profiling for weights')
+    parser.add_argument('-width', dest='img_w', type=int, default=112)
+    parser.add_argument('-height', dest='img_h', type=int, default=112)
     parser.add_argument('-c', '--chs-prof', dest='chs_prof',
-                        action='store_true', default=False, help='Enable channel-wise profiling')
+                        action='store_true', default=False,
+                        help='Enable channel-wise profiling')
     parser.add_argument('-a', '--chs-axis', dest='chs_axis', type=int,
                         help='axis of channel (e.g.: 1 for NCHW, 3 for NHWC)', default=1)
-    parser.add_argument('-min-dim-chs-prof', '--min-dim-chs-prof', dest='min_dim_chs_prof', type=int,
-                        help='minimum dimension of tensors for channel-wise profiling', default=0)
-    parser.add_argument('-max-dim-chs-prof', '--max-dim-chs-prof', dest='max_dim_chs_prof', type=int,
-                        help='maximum dimension of tensors for channel-wise profiling', default=sys.maxsize)
+    parser.add_argument('-q', '--quantize-scheme', dest='q_scheme', required=True,
+                        choices=['sym', 'asym', 'asym_max_zp_255',
+                                 'sym_unsigned', 'sym_power2_scale'],
+                        type=str.lower, help='quantization scheme')
+    parser.add_argument('-min-dim-chs-prof', '--min-dim-chs-prof',
+                        dest='min_dim_chs_prof', type=int, default=0,
+                        help='minimum dimension of tensors for channel-wise profiling')
+    parser.add_argument('-max-dim-chs-prof', '--max-dim-chs-prof',
+                        dest='max_dim_chs_prof', type=int, default=sys.maxsize,
+                        help='maximum dimension of tensors for channel-wise profiling')
     parser.add_argument('-v', '--verbose', dest='verbose',
                         action='store_true', default=False)
     args = parser.parse_args()
@@ -161,6 +171,7 @@ if __name__ == "__main__":
         print('halo not found. Please add it to PATH')
         exit(1)
 
+    print("Quantization Scheme: " + args.q_scheme)
     print("Halo: " + halo_exe)
     halo_home = os.path.dirname(halo_exe) + '/..'
     halo_lib = halo_home + '/lib'
@@ -194,7 +205,7 @@ if __name__ == "__main__":
 
     ### preprocessing ###
     for i, path in enumerate(files):
-        image = get_image_ndarray(path)
+        image = get_image_ndarray(path, args.img_w, args.img_h)
         image = image.transpose([2, 0, 1]).flatten()  # TO CHW
         image = image.astype(ctypes.c_float)
         # np.savetxt('image_' + str(i) + '.inc', image.flatten(),
@@ -251,11 +262,18 @@ if __name__ == "__main__":
     for data in consolidated.values():
         valid_range = 255
         scale = (data['max_value'] - data['min_value']) / valid_range
-        if scale == 0:
-            scale = abs(data['max_value'])
-        if scale == 0:
-            scale = 1
-        zp = min(255, max(0, round(0 - data['min_value'] / scale)))
+        zp = 0
+        if args.q_scheme == 'asym_max_zp_255':
+            if scale == 0:
+                scale = abs(data['max_value'])
+            if scale == 0:
+                scale = 1
+            zp = min(255, max(0, round(0 - data['min_value'] / scale)))
+        elif args.q_scheme == 'asym':
+            zp = round(-((data['min_value'] / scale)) if scale != 0 else 0)
+        else:
+            print("Unsupported quantization scheme")
+            exit(1)
         data['scale'] = scale
         data['zp'] = round(zp)
 
