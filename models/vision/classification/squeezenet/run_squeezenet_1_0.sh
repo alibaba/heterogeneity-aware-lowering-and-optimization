@@ -28,4 +28,4 @@ python3 $curr_dir/../../invoke_halo.py --model $model_file --label-file $curr_di
 # CHECK: dog.jpg ==> "Samoyed, Samoyede",
 # CHECK-NEXT: sport.jpg ==> "ski",
 # CHECK-NEXT: food.jpg ==> "ice cream, icecream",
-# CHECK-NEXT: plane.jpg ==> "liner, ocean liner",
+# CHECK-NEXT: plane.jpg ==> "airliner",
