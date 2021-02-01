@@ -43,7 +43,7 @@ struct _odla_value {
   std::string name;
   _odla_value(const dnnl::memory& m, const odla_value_shape& shape_,
               const std::string& id)
-      : mem(m), is_const(false), shape(shape_), name(id) {
+      : mem(m), is_const(false), shape(shape_), name(id), elem_size(4) {
     if (shape.size == 0) {
       shape.size = 1;
       shape.dims[0] = 1;
@@ -69,12 +69,11 @@ struct operation {
 
 struct _odla_computation {
   dnnl::engine eng;
-  // std::vector<dnnl::primitive> primitives;
-  // std::vector<std::unordered_map<int, dnnl::memory>> args;
   std::vector<operation> ops;
   std::vector<std::unique_ptr<_odla_value>> vals;
   std::unordered_map<std::string, odla_value> inputs;
   std::unordered_map<std::string, odla_value> outputs;
+  std::unordered_map<std::string, std::pair<odla_value, void*>> outputs_v;
   target_opts opts;
 
   _odla_computation() : eng(dnnl::engine::kind::cpu, 0), opts({BF16_DISABLE}) {}
@@ -336,6 +335,16 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     op.execute(*context->stream);
   }
   context->stream->wait();
+  // copy memory to outputs
+  auto outputs_v = context->comp->outputs_v;
+  for (auto& output_pair : outputs_v) {
+    auto& src_val = output_pair.second.first;
+    auto& dst_ptr = output_pair.second.second;
+    memcpy(
+        dst_ptr, src_val->mem.get_data_handle(),
+        src_val->mem.get_desc().get_size() * (src_val->elem_size == 8 ? 2 : 1));
+  }
+
   return ODLA_SUCCESS;
 }
 
@@ -410,7 +419,8 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
     r.execute(dnnl::stream(g_comp->eng),
               {{DNNL_ARG_FROM, src_mem}, {DNNL_ARG_TO, value->mem}});
   } else {
-    value->mem.set_data_handle(const_cast<void*>(data_ptr));
+    memcpy(value->mem.get_data_handle(), data_ptr,
+           value->mem.get_desc().get_size() * (value->elem_size == 8 ? 2 : 1));
   }
   return ODLA_SUCCESS;
 }
@@ -501,8 +511,14 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
 odla_status odla_BindToOutputById(const odla_value_id value_id,
                                   odla_void* data_ptr, odla_context context) {
   std::string name((const char*)value_id);
+  auto& outputs_v = context->comp->outputs_v;
   auto val = context->comp->outputs[name];
-  return odla_BindToOutput(val, data_ptr, context);
+  if (outputs_v.find(name) != outputs_v.end()) {
+    outputs_v[name].second = data_ptr;
+  } else {
+    outputs_v[name] = {val, data_ptr};
+  }
+  return ODLA_SUCCESS;
 }
 
 odla_value odla_Floor(odla_value input, const odla_value_id id) {
@@ -959,9 +975,11 @@ odla_value odla_Reshape(odla_value input, odla_value_shape output_dims,
                         const odla_value_id id) {
   auto dt = input->mem.get_desc().data_type();
   auto normal_mem = cast_op(input, dt);
-  auto reshaped_md = dnnl::memory::desc(getDims(output_dims), dt, getFormatTag(output_dims));
-  auto reshaped_mem = dnnl::memory(reshaped_md, g_comp->eng, normal_mem.get_data_handle());
-  return CreateValue(normal_mem, output_dims, id);
+  auto reshaped_md =
+      dnnl::memory::desc(getDims(output_dims), dt, getFormatTag(output_dims));
+  auto reshaped_mem =
+      dnnl::memory(reshaped_md, g_comp->eng, normal_mem.get_data_handle());
+  return CreateValue(reshaped_mem, output_dims, id);
 }
 
 odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
