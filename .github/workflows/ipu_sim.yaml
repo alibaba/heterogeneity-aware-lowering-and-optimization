@@ -21,4 +21,4 @@ jobs:
       - name: Build
         uses: ./halo/.github/actions/build
         with:
-          docker_image_variant: graphcore1.2.0.131-x86_64
+          docker_image_variant: graphcore1.4.0-x86_64

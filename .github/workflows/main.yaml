@@ -9,8 +9,8 @@ on:
       - "web"
 
 jobs:
-  build:
-    runs-on: [self-hosted, gpu]
+  check:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -32,6 +32,15 @@ jobs:
           exclude: |
             external/
             .github/
+
+  build:
+    runs-on: [self-hosted, gpu]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: halo
+          submodules: true
       - name: Build
         uses: ./halo/.github/actions/build
         with:

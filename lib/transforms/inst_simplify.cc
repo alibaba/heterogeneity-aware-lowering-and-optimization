@@ -603,7 +603,7 @@ static std::pair<Def, Def> SinkTranspose(InstType& inst, Builder build) {
   if (IsA<Instruction>(inst.GetOperand(0))) {
     // Inst(transpose(x)) -> transpose(Inst(x)), this exposes opportunites
     // to cancel out transposes.
-    Instruction* op0_inst = DynCast<Instruction>(inst.GetOperand(0).GetOwner());
+    Instruction* op0_inst = DynCast<Instruction>(inst.GetOperand(0));
     if (op0_inst->GetOpCode() == OpCode::TRANSPOSE) {
       const TransposeInst* orig_trans = DynCast<TransposeInst>(op0_inst);
       IRBuilder builder(inst.GetParent());
@@ -627,6 +627,15 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(LeakyReluInst* inst) {
     new_inst->SetAlpha(inst->GetAlpha());
     return new_inst;
   });
+}
+
+std::pair<Def, Def> InstSimplify::RunOnInstruction(PReluInst* inst) {
+  auto op1 = inst->GetOperand(1);
+  return SinkTranspose(
+      *inst,
+      [inst, &op1](IRBuilder& builder, const std::string& name, const Def& op) {
+        return DynCast<PReluInst>(builder.Clone(*inst, {op, op1}));
+      });
 }
 
 template <typename T>
@@ -689,6 +698,13 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Relu6Inst* inst) {
   return SinkTranspose(
       *inst, [](IRBuilder& builder, const std::string& name, const Def& op) {
         return builder.CreateRelu6(name, op);
+      });
+}
+
+std::pair<Def, Def> InstSimplify::RunOnInstruction(SigmoidInst* inst) {
+  return SinkTranspose(
+      *inst, [](IRBuilder& builder, const std::string& name, const Def& op) {
+        return builder.CreateSigmoid(name, op);
       });
 }
 
@@ -1080,8 +1096,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(BatchNormInst* inst) {
   if (disable_conv_bn_ || !is_profitable || num_inputs <= 4 ||
       !input_type.IsValid() || input_type.GetNumOfDims() != 4 ||
       !IsA<Constant>(inst->GetOperand(3)) ||
-      !IsA<Constant>(inst->GetOperand(4)) ||
-      input_type.GetDataType() != DataType::FLOAT32) {
+      !IsA<Constant>(inst->GetOperand(4))) {
     return {orig_def, orig_def};
   }
   auto scale = DynCast<Constant>(inst->GetOperand(1));
@@ -1091,8 +1106,10 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(BatchNormInst* inst) {
 
   int ch_dim = inst->GetDataFormat() == DataFormat::NCHW ? 1 : 3;
   auto ch_num = input_type.GetNumOfElementsInDim(ch_dim);
-  if (mean->GetResultType().GetTotalNumOfElements() != ch_num ||
-      variance->GetResultType().GetTotalNumOfElements() != ch_num) {
+  const auto& mean_type = mean->GetResultType();
+  if (mean_type.GetTotalNumOfElements() != ch_num ||
+      variance->GetResultType().GetTotalNumOfElements() != ch_num ||
+      mean_type.GetDataType() != DataType::FLOAT32) {
     return {orig_def, orig_def};
   }
 
@@ -1110,7 +1127,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(BatchNormInst* inst) {
   }
   std::vector<int64_t> shape(input_type.GetNumOfDims(), 1);
   shape[ch_dim] = ch_num;
-  halo::Type ty{input_type.GetDataType(), shape};
+  halo::Type ty{mean_type.GetDataType(), shape};
   ConstantBuilder cb(inst->GetParent()->GetParent());
   auto new_scale =
       cb.CreateConstant(inst->GetName() + "_0", ty, mul_buf.data());

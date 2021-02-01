@@ -115,7 +115,11 @@ def CAFFE_Concat : OpMapping<"Concat", Concat> {
                        AttributeMapping<"", "N", "0">];
 }
 
-def CAFFE_Relu : OpMapping<"ReLU", Relu>;
+def CAFFE_Relu : CAFFEExtension<"ReLU"> {
+  let param_name_ = "relu_param";
+  let optional_attrs_ = ["negative_slope"];
+  let extension_attr_ = [ExtensionAttr<"negative_slope", Float, "0.0">];
+}
 
 def CAFFE_Softmax : OpMapping<"Softmax", Softmax> {
   let param_name_ = "softmax_param";
