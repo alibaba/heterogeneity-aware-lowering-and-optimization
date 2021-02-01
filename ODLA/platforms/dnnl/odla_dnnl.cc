@@ -959,9 +959,15 @@ odla_value odla_Reshape(odla_value input, odla_value_shape output_dims,
                         const odla_value_id id) {
   auto dt = input->mem.get_desc().data_type();
   auto normal_mem = cast_op(input, dt);
-  auto reshaped_md = dnnl::memory::desc(getDims(output_dims), dt, getFormatTag(output_dims));
-  auto reshaped_mem = dnnl::memory(reshaped_md, g_comp->eng, normal_mem.get_data_handle());
-  return CreateValue(normal_mem, output_dims, id);
+  auto reshaped_md =
+      dnnl::memory::desc(getDims(output_dims), dt, getFormatTag(output_dims));
+  auto reshaped_mem =
+      dnnl::memory(reshaped_md, g_comp->eng, normal_mem.get_data_handle());
+  add_op([normal_mem, reshaped_mem]() {
+    memcpy(reshaped_mem.get_data_handle(), normal_mem.get_data_handle(),
+           normal_mem.get_desc().get_size());
+  });
+  return CreateValue(reshaped_mem, output_dims, id);
 }
 
 odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
