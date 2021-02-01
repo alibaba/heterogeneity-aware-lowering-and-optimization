@@ -121,9 +121,15 @@ static T* FuseToConvDeConv(const T* conv, OpCode opc, const Constant* c) {
   const auto& kernel_type = kernel->GetResultType();
   const auto& info = ImageAxisInfo::GetImageAxisInfo(conv->GetDataFormat(),
                                                      conv->GetFilterFormat());
-
+  auto group = conv->GetGroup();
+  if (group < 1 || !conv->GetResultType().IsValid()) {
+    return nullptr;
+  }
   unsigned output_dim = info.kernel_output_axis;
-  auto output_ch = kernel_type.GetNumOfElementsInDim(output_dim);
+
+  auto output_ch =
+      conv->GetResultType().GetNumOfElementsInDim(info.data_channel_axis);
+
   bool has_valid_bias =
       conv->GetNumOfOperands() == 2 ||
       (conv->GetNumOfOperands() == 3 && IsA<Constant>(conv->GetOperand(2)) &&
@@ -136,7 +142,7 @@ static T* FuseToConvDeConv(const T* conv, OpCode opc, const Constant* c) {
   builder.SetInsertAfter(conv);
 
   auto n = c->GetResultType().GetTotalNumOfElements();
-  if (conv->GetGroup() < 1 || !has_valid_bias || output_ch != n) {
+  if (!has_valid_bias || output_ch != n) {
     return nullptr;
   }
 
