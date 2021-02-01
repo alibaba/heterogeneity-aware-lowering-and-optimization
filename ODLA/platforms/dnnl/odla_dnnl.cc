@@ -468,12 +468,11 @@ odla_status odla_SetValueAsOutput(const odla_value val) {
   auto out_desc =
       dnnl::memory::desc(val_desc.dims(), val->mem.get_desc().data_type(),
                          getFormatTag(val_desc.dims()));
-  if (val_desc != out_desc) {
-    auto out_mem = dnnl::memory(out_desc, g_comp->eng);
-    auto r = dnnl::reorder(val->mem, out_mem);
-    add_op(r, {{DNNL_ARG_FROM, val->mem}, {DNNL_ARG_TO, out_mem}});
-    val->mem = out_mem;
-  }
+  auto out_mem = dnnl::memory(out_desc, g_comp->eng);
+  // copy result to output
+  auto r = dnnl::reorder(val->mem, out_mem);
+  add_op(r, {{DNNL_ARG_FROM, val->mem}, {DNNL_ARG_TO, out_mem}});
+  val->mem = out_mem;
   // convert output to float32
   if (g_comp->opts.bf16_mode != BF16_DISABLE &&
       val->mem.get_desc().data_type() == dnnl::memory::data_type::bf16) {
@@ -963,10 +962,6 @@ odla_value odla_Reshape(odla_value input, odla_value_shape output_dims,
       dnnl::memory::desc(getDims(output_dims), dt, getFormatTag(output_dims));
   auto reshaped_mem =
       dnnl::memory(reshaped_md, g_comp->eng, normal_mem.get_data_handle());
-  add_op([normal_mem, reshaped_mem]() {
-    memcpy(reshaped_mem.get_data_handle(), normal_mem.get_data_handle(),
-           normal_mem.get_desc().get_size());
-  });
   return CreateValue(reshaped_mem, output_dims, id);
 }
 
