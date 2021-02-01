@@ -957,7 +957,10 @@ odla_value odla_Transpose(odla_value input, odla_value_shape permutations,
 
 odla_value odla_Reshape(odla_value input, odla_value_shape output_dims,
                         const odla_value_id id) {
-  auto normal_mem = cast_op(input, input->mem.get_desc().data_type());
+  auto dt = input->mem.get_desc().data_type();
+  auto normal_mem = cast_op(input, dt);
+  auto reshaped_md = dnnl::memory::desc(getDims(output_dims), dt, getFormatTag(output_dims));
+  auto reshaped_mem = dnnl::memory(reshaped_md, g_comp->eng, normal_mem.get_data_handle());
   return CreateValue(normal_mem, output_dims, id);
 }
 
