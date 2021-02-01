@@ -20,9 +20,11 @@
 #include <iterator>
 #include <unordered_set>
 
+#include "halo/api/halo_data.h"
 #include "halo/lib/framework/common.h"
 #include "halo/lib/ir/common_instructions.h"
 #include "halo/lib/ir/ir_builder.h"
+#include "halo/lib/ir/math_instructions.h"
 #include "halo/lib/ir/nn_cnn_instructions.h"
 #include "halo/lib/ir/nn_instructions.h"
 
@@ -56,9 +58,6 @@ const std::vector<int>& GetPerm(
   }
   return target_is_ch_first ? ndhwc2ncdhw : ncdhw2ndhwc;
 }
-
-static std::unordered_map<IRObject*, IRObject*>
-    Cache; // FIXME: use def,idx pair
 
 static void UpdateFilterFormat(Conv2DTransposeInst* inst, DataFormat format) {
   if (format == DataFormat::NCHW) {
@@ -143,23 +142,35 @@ static bool Reorder(T* inst, bool target_is_ch_first) {
           ty.IsValid() && ty.GetNumOfDims() == 1) {
         continue;
       }
-      if (Cache.count(op.GetDef())) {
-        auto cached = Cache[op.GetDef()];
-        if (cached->GetNumberOfUses()) {
-          inst->ReplaceOperandWith(i, *cached);
+      // if (op.GetDef()->GetName() == "relu0") {
+      //  std::cout << "XXXX\n";
+      // }
+      IRObject* cached = nullptr;
+      auto weight_format = DataFormat::INVALID;
+      if constexpr (has_filter) { // NOLINT
+        weight_format = inst->GetFilterFormat();
+      }
+      const auto& perm =
+          GetPerm(is_2d, target_is_ch_first, i == 1, weight_format);
+
+      for (auto& u : op.GetUses()) {
+        auto user = u.GetUse();
+        if (IsA<Instruction>(user) &&
+            DynCast<Instruction>(user)->GetOpCode() == OpCode::TRANSPOSE) {
+          TransposeInst* tr = DynCast<TransposeInst>(user);
+          if (tr->GetPermutation() == perm) {
+            cached = user;
+            break;
+          }
         }
+      }
+      if (cached != nullptr) {
+        inst->ReplaceOperandWith(i, *cached);
       } else {
         TransposeInst* trans = builder.CreateTranspose(
             get_prefix(target_is_ch_first) + op.GetOwner()->GetName(), {op});
-        auto weight_format = DataFormat::INVALID;
-        if constexpr (has_filter) { // NOLINT
-          weight_format = inst->GetFilterFormat();
-        }
-        const auto& perm =
-            GetPerm(is_2d, target_is_ch_first, i == 1, weight_format);
         trans->SetPermutation(perm);
         inst->ReplaceOperandWith(i, *trans);
-        Cache[op.GetDef()] = trans;
       }
       // For BN, only insert transpose on the first input.
       if (is_bn) {
@@ -196,7 +207,7 @@ static bool Reorder(T* inst, bool target_is_ch_first) {
     return true;
   }
   return false;
-}
+} // namespace halo
 
 bool ReorderChannel::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;

@@ -143,11 +143,10 @@ Status CAFFEParser::ConvertToHaloIR(
 
   for (int i = 0, layer_size = net_param.layer_size(); i < layer_size; ++i) {
     VLOG(3) << "====layer====" << i << "=========";
-    if (net_param.layer(i).type() == "Input") {
-      ++i;
-    }
-
     auto& net_layer = net_param.layer(i);
+    if (is_input_type(net_layer.type())) {
+      continue;
+    }
 
     int weight_layer_id = -1;
     caffe::LayerParameter weight_layer;
@@ -254,12 +253,12 @@ Status
     } else {
       auto layer = input_layer_params[input_idx];
       const caffe::InputParameter& input_param = layer->input_param();
-      cur_node_name = layer->name();
+      cur_node_name = layer->top(0);
       shape_blob_to_shape(input_param.shape(input_idx));
     }
     auto arg =
         arg_builder_->CreateArgument(cur_node_name, Type(data_type, shape));
-    inst_name_to_ptr_.emplace(cur_node_name, arg);
+    inst_name_to_ptr_[cur_node_name] = arg;
   }
   return Status::SUCCESS;
 }
@@ -361,5 +360,9 @@ Status CAFFEParser::ConvertDummyNode(
 
 // convert to halo ir def func
 #include "caffe_convert.cc.inc"
+
+std::unique_ptr<Parser> CreateCAFFEParser() {
+  return std::make_unique<CAFFEParser>();
+}
 
 } // end namespace halo

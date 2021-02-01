@@ -972,4 +972,12 @@ Status IPUParser::ConvertToIpuGraphDef(const tensorflow::GraphDef& graph_def,
 // convert to halo ir def func
 #include "tf_convert.cc.inc"
 
+std::unique_ptr<Parser> CreateTFParser(const std::string& variant) {
+  return std::make_unique<TFParser>(variant);
+}
+
+std::unique_ptr<Parser> CreateIPUParser(const std::string& variant) {
+  return std::make_unique<IPUParser>(variant);
+}
+
 } // namespace halo
