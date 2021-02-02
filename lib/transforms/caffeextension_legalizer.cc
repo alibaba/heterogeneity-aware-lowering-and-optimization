@@ -178,7 +178,7 @@ static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
   int pad_h = FindAttributeValue(ext, "pad_h", pad);
   int pad_w = FindAttributeValue(ext, "pad_w", pad);
 
-  int round_mode = FindAttributeValue(ext, "round_mode", -1);
+  int round_mode = FindAttributeValue(ext, "round_mode", 0);
 
   if (global_pooling) {
     if (!input_type.IsValid()) {
@@ -194,7 +194,7 @@ static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
     pad_w = 0;
   }
 
-  auto set_pooling_attributes = [&](auto inst, int round_mode) {
+  auto set_pooling_attributes = [&](auto inst) {
     inst->SetKsize({1, 1, kernel_size_h, kernel_size_w});
     inst->SetPaddingLeft(pad_w);
     inst->SetPaddingRight(pad_w);
@@ -203,9 +203,7 @@ static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
     inst->SetStrides({1, 1, stride_h, stride_w});
     inst->SetPadding(Padding::EXPLICIT);
     inst->SetDataFormat(DataFormat::NCHW);
-    if (round_mode == -1) {
-      inst->AddOneAttribute(Attribute::CreateInteger("round_mode", 0));
-    }
+    inst->SetRoundMode(round_mode == 0 ? 1 : 0);
   };
 
   Instruction* inst = nullptr;

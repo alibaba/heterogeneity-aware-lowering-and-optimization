@@ -578,16 +578,8 @@ static void RunOnPoolingInstruction(Instruction* pooling_inst) {
   if (!data_type.IsValid()) {
     return;
   }
-  bool ceil_mode = false;
-  for (const auto& it : inst->GetAttributes()) {
-    if (it->GetName() == "ceil_mode") {
-      ceil_mode = (it->GetValueAsInteger() == 1);
-      break;
-    }
-    if (it->GetName() == "round_mode") {
-      ceil_mode = (it->GetValueAsInteger() == 0);
-    }
-  }
+
+  bool ceil_mode = inst->GetRoundMode() == 1;
 
   std::vector<int> explicit_paddings{
       inst->GetPaddingTop(), inst->GetPaddingBottom(), inst->GetPaddingLeft(),
