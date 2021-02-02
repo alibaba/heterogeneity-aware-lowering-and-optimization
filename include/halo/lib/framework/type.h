@@ -81,6 +81,12 @@ class Type final {
     return (data_type_id_ != DataType::INVALID && total_num_of_elements_ >= 0);
   }
 
+  /// Returns true if this type can be broadcasted to `to`.
+  bool BroadcastableTo(const Type& to) const noexcept;
+
+  /// Return the number of non-one dimensions.
+  size_t GetSqueezedNumOfDims() const noexcept;
+
   /// Print out the info.
   void Print(std::ostream& os) const;
 
