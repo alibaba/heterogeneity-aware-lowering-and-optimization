@@ -102,6 +102,8 @@ let cat_ = cat_nn_cnn in {
                        Integer, "padding_top", "0">,
                   Attr<"The explicit padding to the bottom of the input.",
                        Integer, "padding_bottom", "0">,
+                  Attr<"The round mode to compute the output shape.",
+                       Integer, "round_mode", "0">,
                   Attr<"The input data format.",
                        EnumDataFormat, "data_format", "NHWC">,
                   Attr<"The constant padding value",
@@ -129,6 +131,8 @@ let cat_ = cat_nn_cnn in {
                        Integer, "padding_top", "0">,
                   Attr<"The explicit padding to the bottom of the input.",
                        Integer, "padding_bottom", "0">,
+                  Attr<"The round mode to compute the output shape.",
+                       Integer, "round_mode", "0">,
                   Attr<"The input data format.",
                        EnumDataFormat, "data_format", "NHWC">,
                   Attr<"The constant padding value", Float, "pad_value", "0">];
