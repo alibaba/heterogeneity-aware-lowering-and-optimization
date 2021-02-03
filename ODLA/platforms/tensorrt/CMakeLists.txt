@@ -14,9 +14,9 @@
 # limitations under the License
 # ==============================================================================
 
-#find_package(Threads REQUIRED)
-set(CUDA_VERSION 10.0)
-set(CUDNN_VERSION 7.6)
+find_package(Threads REQUIRED)
+set(CUDA_VERSION 10.0 CACHE STRING "Version of CUDA tool-kit.")
+set(CUDNN_VERSION 7.6 CACHE STRING "Version of Cudnn.")
 set(CUDA_ROOT /usr/local/cuda-${CUDA_VERSION}/targets/x86_64-linux)
 find_library(CUDART_LIB NAMES cudart PATHS ${CUDA_ROOT} PATH_SUFFIXES lib NO_DEFAULT_PATH)
 find_library(nvinfer NAMES nvinfer)
