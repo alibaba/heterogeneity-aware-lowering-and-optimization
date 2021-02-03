@@ -1398,6 +1398,36 @@ static void RunOnInstruction(HgEngineInst* inst) {
   }
 }
 
+static void RunOnInstruction(HgQuantInst* inst) {
+  HLCHECK(inst->GetNumOfOperands() == 1);
+  const auto& input_type = inst->GetOperand(0).GetType();
+  auto qtype = inst->GetQtype();
+  auto type = DataType::INT8;
+  if (qtype == "int8") {
+    type = DataType::INT8;
+  } else if (qtype == "int16") {
+    type = DataType::INT16;
+  } else {
+    HLCHECK(false && "Wrong output type");
+  }
+  halo::Type new_type{type, input_type.GetDimSizes()};
+  inst->GetResultsTypes()[0] = new_type;
+}
+
+static void RunOnInstruction(HgDequantInst* inst) {
+  HLCHECK(inst->GetNumOfOperands() == 1);
+  const auto& input_type = inst->GetOperand(0).GetType();
+  auto dqtype = inst->GetOutType();
+  auto type = DataType::FLOAT32;
+  if (dqtype == "float32") {
+    type = DataType::FLOAT32;
+  } else {
+    HLCHECK(false && "Wrong output type");
+  }
+  halo::Type new_type{type, input_type.GetDimSizes()};
+  inst->GetResultsTypes()[0] = new_type;
+}
+
 static void RunOnInstruction(IfInst* inst) {
   auto& ret_types = inst->GetResultsTypes();
   if (inst->GetNumOfOperands() == 1) {
@@ -1556,6 +1586,7 @@ static void RunOnInstruction(SelectInst* inst) {
     inst->GetResultsTypes()[0] = Type{ty_x.GetDataType(), ret_shape};
     return;
   }
+
   auto rank_xy = rank_r;
   rank_r = std::max(rank_r, rank_c);
   ret_shape.resize(rank_r);

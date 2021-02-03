@@ -47,8 +47,8 @@ let cat_ = cat_customize in {
                   Attr<"is_per_channel", Integer, "is_per_channel", "0">,
                   Attr<"int data format, default is NHWC", String, "in_data_format", "\"NCHW\"" >,
                   Attr<"out data format, default is NHWC", String, "out_data_format", "\"NCHW\"" >,
-                  Attr<"in_type", String, "in_type", "\"FLOAT32\"" >,
-                  Attr<"out_type", String, "out_type", "\"INT8\"" >,
+                  Attr<"in_type", String, "in_type", "\"float32\"" >,
+                  Attr<"out_type", String, "out_type", "\"int8\"" >,
                  ];
     let ins_ = [Arg<"Input data.", ArgType<[F16,F32]> >];
     let outs_ = [Arg<"The result Quantized value.", ArgType<[I8,I16]> >];
@@ -60,11 +60,11 @@ let cat_ = cat_customize in {
                   Attr<"is_per_channel", Integer, "is_per_channel", "0">,
                   Attr<"int data format, default is NHWC", String, "in_data_format", "\"NCHW\"" >,
                   Attr<"out data format, default is NHWC", String, "out_data_format", "\"NCHW\"" >,
-                  Attr<"in_type", String, "in_type", "\"INT8\"" >,
-                  Attr<"out_type", String, "out_type", "\"FLOAT32\"" >,
+                  Attr<"in_type", String, "in_type", "\"int8\"" >,
+                  Attr<"out_type", String, "out_type", "\"float32\"" >,
                  ];
     let ins_ = [Arg<"Input data.", ArgType<[I8,I16]> >];
-    let outs_ = [Arg<"The result DeQuantized value.", ArgType<[F16,F32]> >];
+    let outs_ = [Arg<"The result DeQuantized value.", ArgType<[F32,F16]> >];
   }
 
 }

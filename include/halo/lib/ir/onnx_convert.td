@@ -531,7 +531,7 @@ def ONNX_HgQuant : ONNXExtension<"HgQuant"> {
     ExtensionAttr<"out_type", String, "\"INT8\"">
   ];
 }
-*/
+
 
 def ONNX_HgDequant : ONNXExtension<"HgDequant"> {
   let extension_attr_ = [

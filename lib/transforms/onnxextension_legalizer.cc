@@ -1034,10 +1034,18 @@ static std::vector<Def> ConvertHgEngine(const ONNXExtensionInst* ext,
   auto n = ext->GetNumOfOperands();
   HLCHECK(n >= 1);
   int attr_idx = 0;
-  auto hg_engine = builder->CreateHgEngine(ext->GetName(), ext->GetOperands());
+  // Convert serializedEngine to constant input
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  auto engine = ext->GetAttributes()[attr_idx++]->GetValueAsString();
+  Type type{DataType::INT8, {static_cast<int64_t>(engine.size())}};
+  Constant* serialized_engine = cb.CreateConstant(
+      ext->GetName() + "_serialized_engine", type,
+      reinterpret_cast<const int8_t*>(engine.c_str())); // NOLINT.
 
-  hg_engine->SetSerializedEngine(
-      ext->GetAttributes()[attr_idx++]->GetValueAsString());
+  auto ops = ext->GetOperands();
+  ops.push_back(*serialized_engine);
+  auto hg_engine = builder->CreateHgEngine(ext->GetName(), ops);
+
   hg_engine->SetInDataFormat(
       ext->GetAttributes()[attr_idx++]->GetValueAsString());
   hg_engine->SetOutDataFormat(
