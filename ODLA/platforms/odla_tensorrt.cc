@@ -840,6 +840,21 @@ odla_value odla_Elu(odla_value input, odla_float32 alpha,
   return CreateValue(elu, input->type, id);
 }
 
+odla_value odla_PRelu(odla_value input, odla_value slope,
+                      const odla_value_id value_id) {
+  // prelu(input, slope) = (input < 0 ? input * slope : input)
+  //                     = relu(input) + min(max(input,0), -INF) * slope
+  std::string name_stem = std::string(reinterpret_cast<const char*>(value_id));
+  auto name = name_stem + "_relu";
+  auto relu = odla_Relu(input, (odla_value_id)name.data());
+  name = name_stem + "_neg";
+  auto neg_input = odla_Clamp(input, std::numeric_limits<float>::lowest(), 0,
+                              (odla_value_id)name.data());
+  name = name_stem + "_rhs";
+  auto neg_prelu = odla_Mul(neg_input, slope, (odla_value_id)name.data());
+  return odla_Add(relu, neg_prelu, value_id);
+}
+
 odla_value odla_Resize(odla_value input, odla_interpolation_mode interpolation,
                        odla_resize_coordinate_mode mode, odla_uint32 axes_mask,
                        odla_value_shape output_dims,
