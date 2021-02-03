@@ -28,7 +28,6 @@ void GenericCXXCodeGen::RunOnInstruction(HgQuantInst* inst) {
   const Def& input = inst->GetOperand(0);
 
   CXXValue op0 = ir_mapping_[input];
-  CXXValue ret(inst->GetName(), op0.type);
   
   const std::string& enum_ns_layout = "odla_memory_layout::";
   const std::string& enum_prefix = "ODLA_";
@@ -36,8 +35,8 @@ void GenericCXXCodeGen::RunOnInstruction(HgQuantInst* inst) {
       opts_.dialect == Dialect::CXX_11 ? enum_ns_layout : "";
 
   /// By now the Hgai onnx interfce set in_scale/in_bias to string
-  std::vector<float> in_scale;
-  std::vector<float> in_bias;
+  std::vector<double> in_scale;
+  std::vector<double> in_bias;
   in_scale.reserve(1);
   in_bias.reserve(1);
 
