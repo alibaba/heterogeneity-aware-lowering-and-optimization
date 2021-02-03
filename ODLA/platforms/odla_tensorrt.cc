@@ -397,6 +397,8 @@ odla_status odla_SetComputationItem(odla_computation computation,
       computation->fp16_mode = *(reinterpret_cast<bool*>(value));
       break;
 
+    case ODLA_BF16_MODE:
+      break;
     default:
       std::cerr << "Unsupported property type: " << type << std::endl;
       return ODLA_FAILURE;
