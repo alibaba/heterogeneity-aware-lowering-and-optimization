@@ -2,3 +2,8 @@
 	path = external/llvm-project
 	url = https://github.com/llvm/llvm-project.git
 	branch = release/9.x
+
+[submodule "tensorrt"]
+	path = ODLA/external/tensorrt-7.0.0
+	url = https://github.com/NVIDIA/TensorRT.git
+	branch = release/7.0
