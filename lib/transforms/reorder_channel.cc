@@ -135,7 +135,6 @@ static bool Reorder(T* inst, bool target_is_ch_first) {
     auto get_prefix = [](bool ch_first) {
       return ch_first ? std::string("ncs_") : std::string("nsc_");
     };
-
     for (size_t i = 0, e = inst->GetNumOfOperands(); i < e; ++i) {
       const auto& op = inst->GetOperand(i);
       if (const auto& ty = op.GetDef()->GetResultType();

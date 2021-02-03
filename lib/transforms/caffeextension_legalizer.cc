@@ -166,12 +166,19 @@ static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
   const auto& input_type = input.GetType();
   bool global_pooling = FindAttributeValue<bool>(ext, "global_pooling", false);
   int stride = FindAttributeValue(ext, "stride", 1);
-  int kernel_size_h = FindAttributeValue(ext, "kernel_size", -1);
-  int kernel_size_w = kernel_size_h;
+  int stride_h = FindAttributeValue(ext, "stride_h", stride);
+  int stride_w = FindAttributeValue(ext, "stride_w", stride);
+  int kernel_size = FindAttributeValue(ext, "kernel_size", -1);
+  int kernel_size_h = FindAttributeValue(ext, "kernel_h", kernel_size);
+  int kernel_size_w = FindAttributeValue(ext, "kernel_w", kernel_size);
   int pool = FindAttributeValue(ext, "pool", 0);
   HLCHECK(pool == 0 || pool == 1);
 
   int pad = FindAttributeValue(ext, "pad", 0);
+  int pad_h = FindAttributeValue(ext, "pad_h", pad);
+  int pad_w = FindAttributeValue(ext, "pad_w", pad);
+
+  int round_mode = FindAttributeValue(ext, "round_mode", 0);
 
   if (global_pooling) {
     if (!input_type.IsValid()) {
@@ -180,19 +187,23 @@ static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
     kernel_size_h = input_type.GetNumOfElementsInDim(2);
     kernel_size_w = input_type.GetNumOfElementsInDim(3);
 
-    stride = 1;
-    pad = 0;
+    stride_h = 1;
+    stride_w = 1;
+
+    pad_h = 0;
+    pad_w = 0;
   }
 
   auto set_pooling_attributes = [&](auto inst) {
     inst->SetKsize({1, 1, kernel_size_h, kernel_size_w});
-    inst->SetPaddingLeft(pad);
-    inst->SetPaddingRight(pad);
-    inst->SetPaddingTop(pad);
-    inst->SetPaddingBottom(pad);
-    inst->SetStrides({1, 1, stride, stride});
+    inst->SetPaddingLeft(pad_w);
+    inst->SetPaddingRight(pad_w);
+    inst->SetPaddingTop(pad_h);
+    inst->SetPaddingBottom(pad_h);
+    inst->SetStrides({1, 1, stride_h, stride_w});
     inst->SetPadding(Padding::EXPLICIT);
     inst->SetDataFormat(DataFormat::NCHW);
+    inst->SetRoundMode(round_mode == 0 ? 1 : 0);
   };
 
   Instruction* inst = nullptr;

@@ -192,9 +192,10 @@ def ONNX_MaxPool : OpMapping<"MaxPool", PoolingMax> {
     AttributeMapping<"pads", "padding_top", "{0,0,0,0}", 1>,
     AttributeMapping<"pads", "padding_right", "{0,0,0,0}", 2>,
     AttributeMapping<"pads", "padding_bottom", "{0,0,0,0}", 3>,
-    AttributeMapping<"group", "group", "1">];
+    AttributeMapping<"group", "group", "1">,
+    AttributeMapping<"ceil_mode", "round_mode", "0">];
+
   let extension_attr_ = [
-    ExtensionAttr<"ceil_mode", Integer, "0">,
     ExtensionAttr<"dilations", IntegerList, "{1,1}">,
     ExtensionAttr<"storage_order", Integer, "0">];
 }
