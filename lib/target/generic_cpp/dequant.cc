@@ -35,16 +35,8 @@ void GenericCXXCodeGen::RunOnInstruction(HgDequantInst* inst) {
   const std::string& enum_ns =
       opts_.dialect == Dialect::CXX_11 ? enum_ns_layout : "";
 
-  /// By now the Hgai onnx interfce set in_scale/in_bias to string
-  std::vector<double> in_scale;
-  std::vector<double> in_bias;
-  in_scale.reserve(1);
-  in_bias.reserve(1);
 
-  in_scale.emplace_back(std::stof(inst->GetInScale()));
-  in_bias.emplace_back(std::stof(inst->GetInBias()));
   int is_per_channel = inst->GetIsPerChannel();
-
   const std::string& input_layout =
       enum_ns + enum_prefix +
       (inst->GetInDataFormat() == "NHWC" ? "CHANNELS_LAST" : "CHANNELS_FIRST");
@@ -57,12 +49,14 @@ void GenericCXXCodeGen::RunOnInstruction(HgDequantInst* inst) {
   HLCHECK(is_per_channel == false);
 
   std::vector<CXXValue> inputs;
-  const Def& op = inst->GetOperand(0);
-  CXXValue op_v = ir_mapping_[op];
-  inputs.push_back(op_v);
+  for (size_t i = 0; i < inst->GetNumOfOperands(); ++i) {
+    const Def& op = inst->GetOperand(i);
+    CXXValue op_v = ir_mapping_[op];
+    inputs.push_back(op_v);
+  }
 
   std::vector<CXXValue> rets;
-  rets.emplace_back(inst->GetName() + std::to_string(0),
+  rets.emplace_back(inst->GetName(),
                       TensorTypeToCXXType(inst->GetResultType(0), false));
   ir_mapping_[Def(inst, 0)] = rets[0];
 
@@ -82,8 +76,7 @@ void GenericCXXCodeGen::RunOnInstruction(HgDequantInst* inst) {
 
   EmitODLACall<2, false>(rets, "odla_CustomOp", inputs, "\"HgaiDequant\"",
                          "\"" + inst->GetName() + "\"", os.str(), input_layout,
-                         output_layout, is_per_channel,
-                         in_scale[0], in_bias[0]);
+                         output_layout, is_per_channel);
 }
 
 } // namespace halo

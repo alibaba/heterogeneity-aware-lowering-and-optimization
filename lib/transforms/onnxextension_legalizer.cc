@@ -1068,7 +1068,7 @@ static std::vector<Def> ConvertHgEngine(const ONNXExtensionInst* ext,
 
   return {*hg_engine};
 }
-#ifdef NotFuseQuantOP
+
 static std::vector<Def> ConvertHgQuant(const ONNXExtensionInst* ext,
                                        IRBuilder* builder) {
   auto input = ext->GetOperand(0);
@@ -1077,42 +1077,21 @@ static std::vector<Def> ConvertHgQuant(const ONNXExtensionInst* ext,
     return {};
   }
   /// By now the Hgai onnx interfce set in_scale/in_bias to sting
-  int attr_idx = 0;
   std::vector<float> in_scale;
   std::vector<float> in_bias;
   in_scale.reserve(1);
   in_bias.reserve(1);
-  in_scale.emplace_back(
-      std::stof(ext->GetAttributes()[attr_idx++]->GetValueAsString()));
-  in_bias.emplace_back(
-      std::stof(ext->GetAttributes()[attr_idx++]->GetValueAsString()));
-  std::string qtype = ext->GetAttributes()[attr_idx++]->GetValueAsString();
-  int is_per_channel = ext->GetAttributes()[attr_idx++]->GetValueAsInteger();
-
-  attr_idx += 1;
-  std::string in_data_format =
-      ext->GetAttributes()[attr_idx++]->GetValueAsString();
-  std::string out_data_format =
-      ext->GetAttributes()[attr_idx++]->GetValueAsString();
-
-  // get output channel size
-  int channel_idx = 3;
-  if (in_data_format == "NC" || in_data_format == "NCHW") {
-    channel_idx = 1;
-  }
-  int channel_size = input_type.GetDimSizes()[channel_idx];
+  in_scale.emplace_back(std::stof(ext->GetAttributes()[0]->GetValueAsString()));
+  in_bias.emplace_back(std::stof(ext->GetAttributes()[1]->GetValueAsString()));
+  int is_per_channel = ext->GetAttributes()[3]->GetValueAsInteger();
 
   ConstantBuilder cb(ext->GetParent()->GetParent());
   Constant* c_scale = nullptr;
   Constant* c_bias = nullptr;
 
   if (is_per_channel != 0) {
-    HLCHECK(in_scale.size() == static_cast<size_t>(channel_size));
-    HLCHECK(in_bias.size() == static_cast<size_t>(channel_size));
-    Type type{DataType::FLOAT32, std::vector<int64_t>{channel_size}};
-    c_scale =
-        cb.CreateConstant(ext->GetName() + "_const_scale", type, in_scale);
-    c_bias = cb.CreateConstant(ext->GetName() + "_const_bias", type, in_bias);
+    // Now support per layer quantize, due to the hgai onnx string format
+    HLCHECK(0);
   } else {
     HLCHECK(in_scale.size() == 1);
     HLCHECK(in_bias.size() == 1);
@@ -1124,73 +1103,9 @@ static std::vector<Def> ConvertHgQuant(const ONNXExtensionInst* ext,
     c_bias = cb.CreateConstant(ext->GetName() + "_const_bias", scalar_type,
                                bias_data);
   }
-
-  // convert to mul+bias+round+cast+clip
-  // Mul
-  input = *(builder->CreateMul(ext->GetName() + "_scale", {input, *c_scale}));
-  input = *(builder->CreateAdd(ext->GetName() + "_bias", {input, *c_bias}));
-  // round
-  input = *(builder->CreateRound(ext->GetName() + "_round", {input}));
-  // cast
-  DataType dst_type;
-  int num_bits = halo::kEightBits;
-  if (qtype == "int8") {
-    dst_type = DataType::INT8;
-  } else if (qtype == "uint8") {
-    dst_type = DataType::UINT8;
-  } else if (qtype == "int16") {
-    dst_type = DataType::INT16;
-    num_bits = kSixteenBits;
-  } else if (qtype == "uint16") {
-    dst_type = DataType::UINT16;
-    num_bits = kSixteenBits;
-  } else {
-    HLCHECK(0 && "Wrong qtype");
-  }
-
-  FPtoSIInst* cast_inst =
-      builder->CreateFPtoSI(ext->GetName() + "_cast", {input});
-  cast_inst->SetDataType(dst_type);
-
-  // clip = Minimum(Maximum(op, hi), lo)
-  int hi = 0;
-  int lo = 0;
-  // get data range.
-  if (qtype == "int8" || qtype == "int16") {
-    hi = static_cast<int>(std::pow(2, num_bits - 1)) - 1;
-    lo = -hi;
-  } else {
-    hi = static_cast<int>(std::pow(2, num_bits)) - 1;
-    lo = 0;
-  }
-
-  Type type_int{DataType::INT32, std::vector<int64_t>{1}};
-  std::vector<int> hi_data(1, hi);
-  std::vector<int> lo_data(1, lo);
-  Constant* c_hi = cb.CreateConstant(ext->GetName() + "_hi", type_int, hi_data);
-  Constant* c_lo = cb.CreateConstant(ext->GetName() + "_lo", type_int, lo_data);
-  // Maximum
-  input = *(builder->CreateBinary(ext->GetName() + "_max", *cast_inst, *c_hi,
-                                  OpCode::MAXIMUM));
-  // Minimumåå
-  input = *(builder->CreateBinary(ext->GetName() + "_min", input, *c_lo,
-                                  OpCode::MINIMUM));
-
-  if (in_data_format != out_data_format) {
-    // transpose
-    TransposeInst* new_transpose =
-        builder->CreateTranspose(ext->GetName() + "_transpose", {input});
-    if ((in_data_format == "NCHW") && (out_data_format == "NHWC")) {
-      std::vector<int> nchw2nhwc{0, 2, 3, 1};
-      new_transpose->SetPermutation(nchw2nhwc);
-    } else if ((in_data_format == "NHWC") && (out_data_format == "NCHW")) {
-      std::vector<int> nhwc2nchw{0, 3, 1, 2};
-      new_transpose->SetPermutation(nhwc2nchw);
-    }
-    return {*new_transpose};
-  }
-
-  return {input};
+  auto hg_quant =
+      builder->CreateHgQuant(ext->GetName(), {input, *c_scale, *c_bias});
+  return {*hg_quant};
 }
 
 static std::vector<Def> ConvertIpuOp(const ONNXExtensionInst* ext,
@@ -1239,28 +1154,13 @@ static std::vector<Def> ConvertHgDeQuant(const ONNXExtensionInst* ext,
   in_bias.emplace_back(
       std::stof(ext->GetAttributes()[attr_idx++]->GetValueAsString()));
   int is_per_channel = ext->GetAttributes()[attr_idx++]->GetValueAsInteger();
-  std::string in_data_format =
-      ext->GetAttributes()[attr_idx++]->GetValueAsString();
-  std::string out_data_format =
-      ext->GetAttributes()[attr_idx++]->GetValueAsString();
 
-  // get output channel size
-  int channel_idx = 3;
-  if (in_data_format == "NC" || in_data_format == "NCHW" ||
-      (input_type.GetDimSizes().size() <= 2)) {
-    channel_idx = 1;
-  }
-  int channel_size = input_type.GetDimSizes()[channel_idx];
+  builder->SetInsertAfter(ext);
   ConstantBuilder cb(ext->GetParent()->GetParent());
   Constant* c_scale = nullptr;
   Constant* c_bias = nullptr;
-  Type type{DataType::FLOAT32, std::vector<int64_t>{channel_size}};
   if (is_per_channel != 0) {
-    HLCHECK(in_scale.size() == static_cast<size_t>(channel_size));
-    HLCHECK(in_bias.size() == static_cast<size_t>(channel_size));
-    c_scale =
-        cb.CreateConstant(ext->GetName() + "_const_scale", type, in_scale);
-    c_bias = cb.CreateConstant(ext->GetName() + "_const_bias", type, in_bias);
+    HLCHECK(0);
   } else {
     HLCHECK(in_scale.size() == 1);
     HLCHECK(in_bias.size() == 1);
@@ -1273,34 +1173,9 @@ static std::vector<Def> ConvertHgDeQuant(const ONNXExtensionInst* ext,
                                bias_data);
   }
 
-  // convert to cast+mul+bias
-
-  // cast
-  SItoFPInst* cast_inst =
-      builder->CreateSItoFP(ext->GetName() + "_cast", {input});
-  cast_inst->SetDataType(DataType::FLOAT32);
-
-  // Mul
-  input =
-      *(builder->CreateMul(ext->GetName() + "_scale", {*cast_inst, *c_scale}));
-  // bias_add
-  input = *(builder->CreateAdd(ext->GetName() + "_bias", {input, *c_bias}));
-
-  if (in_data_format != out_data_format) {
-    // transpose
-    TransposeInst* new_transpose =
-        builder->CreateTranspose(ext->GetName() + "_transpose", {input});
-    if ((in_data_format == "NCHW") && (out_data_format == "NHWC")) {
-      std::vector<int> nchw2nhwc{0, 2, 3, 1};
-      new_transpose->SetPermutation(nchw2nhwc);
-    } else if ((in_data_format == "NHWC") && (out_data_format == "NCHW")) {
-      std::vector<int> nhwc2nchw{0, 3, 1, 2};
-      new_transpose->SetPermutation(nhwc2nchw);
-    }
-    return {*new_transpose};
-  }
-
-  return {input};
+  auto hg_dequant =
+      builder->CreateHgDequant(ext->GetName(), {input, *c_scale, *c_bias});
+  return {*hg_dequant};
 }
 
 static std::vector<Def> ConvertTFIDFVec(const ONNXExtensionInst* ext,
