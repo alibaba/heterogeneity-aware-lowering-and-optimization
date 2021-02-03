@@ -41,9 +41,7 @@ let cat_ = cat_customize in {
   }
 
   def HgQuant : Inst<"Hg Quant op."> {
-    let attrs_ = [Attr<"in_scale", String, "in_scale", "\"1.0\"">,
-                  Attr<"in_bias", String, "in_bias", "\"0.0\"">,
-                  Attr<"qtype", String, "qtype", "\"int8\"">,
+    let attrs_ = [Attr<"qtype", String, "qtype", "\"int8\"">,
                   Attr<"is_per_channel", Integer, "is_per_channel", "0">,
                   Attr<"int data format, default is NHWC", String, "in_data_format", "\"NCHW\"" >,
                   Attr<"out data format, default is NHWC", String, "out_data_format", "\"NCHW\"" >,
@@ -55,9 +53,7 @@ let cat_ = cat_customize in {
   }
 
   def HgDequant : Inst<"Hg Dequant op."> {
-    let attrs_ = [Attr<"in_scale", String, "in_scale", "\"1.0\"">,
-                  Attr<"in_bias", String, "in_bias", "\"0.0\"">,
-                  Attr<"is_per_channel", Integer, "is_per_channel", "0">,
+    let attrs_ = [Attr<"is_per_channel", Integer, "is_per_channel", "0">,
                   Attr<"int data format, default is NHWC", String, "in_data_format", "\"NCHW\"" >,
                   Attr<"out data format, default is NHWC", String, "out_data_format", "\"NCHW\"" >,
                   Attr<"in_type", String, "in_type", "\"int8\"" >,

@@ -1399,7 +1399,7 @@ static void RunOnInstruction(HgEngineInst* inst) {
 }
 
 static void RunOnInstruction(HgQuantInst* inst) {
-  HLCHECK(inst->GetNumOfOperands() == 1);
+  HLCHECK(inst->GetNumOfOperands() == 3);
   const auto& input_type = inst->GetOperand(0).GetType();
   auto qtype = inst->GetQtype();
   auto type = DataType::INT8;
@@ -1415,7 +1415,7 @@ static void RunOnInstruction(HgQuantInst* inst) {
 }
 
 static void RunOnInstruction(HgDequantInst* inst) {
-  HLCHECK(inst->GetNumOfOperands() == 1);
+  HLCHECK(inst->GetNumOfOperands() == 3);
   const auto& input_type = inst->GetOperand(0).GetType();
   auto dqtype = inst->GetOutType();
   auto type = DataType::FLOAT32;
