@@ -209,10 +209,10 @@ static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
   Instruction* inst = nullptr;
   if (pool == 0) {
     inst = builder->CreatePoolingMax(ext->GetName(), ext->GetOperand(0));
-    set_pooling_attributes(DynCast<PoolingMaxInst>(inst), round_mode);
+    set_pooling_attributes(DynCast<PoolingMaxInst>(inst));
   } else {
     inst = builder->CreatePoolingAvg(ext->GetName(), ext->GetOperand(0));
-    set_pooling_attributes(DynCast<PoolingAvgInst>(inst), round_mode);
+    set_pooling_attributes(DynCast<PoolingAvgInst>(inst));
   }
   return {*inst};
 }
