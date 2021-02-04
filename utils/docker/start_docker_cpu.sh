@@ -1,6 +1,6 @@
 #!/bin/bash -xe
 
-VER="0.5"
+VER="latest"
 NAMESPACE="registry-intl.us-west-1.aliyuncs.com/computation"
 
 if [[ "$0" =~ "start_docker_gpu.sh" ]]; then
