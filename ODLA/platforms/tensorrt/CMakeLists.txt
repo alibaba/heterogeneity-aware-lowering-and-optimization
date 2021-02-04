@@ -14,8 +14,6 @@
 # limitations under the License
 # ==============================================================================
 
-find_package(Threads REQUIRED)
-
 enable_language(CUDA)
 
 set(CUDA_VERSION 10.0 CACHE STRING "Version of CUDA tool-kit.")
