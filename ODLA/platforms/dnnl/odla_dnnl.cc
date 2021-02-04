@@ -335,7 +335,7 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     auto& src_val = output_pair.second.first;
     auto& dst_ptr = output_pair.second.second;
     memcpy(dst_ptr, src_val->mem.get_data_handle(),
-           src_val->mem.get_desc().get_size() * (src_val->elem_size / 4));
+           GetTotalElements(src_val->shape) * src_val->elem_size);
   }
   return ODLA_SUCCESS;
 }
