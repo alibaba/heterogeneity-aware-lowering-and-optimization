@@ -22,7 +22,7 @@ jobs:
         uses: DoozyX/clang-format-lint-action@v0.11
         with:
           source: "./halo"
-          exclude: "./halo/third_party ./halo/external"
+          exclude: "./halo/third_party ./halo/external ./halo/ODLA/external"
           clangFormatVersion: 9
           style: file
       - name: Check markdown for broken links
