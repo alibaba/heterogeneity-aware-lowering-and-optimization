@@ -491,11 +491,7 @@ odla_status odla_BindToOutputById(const odla_value_id value_id,
   std::string name((const char*)value_id);
   auto& outputs_v = context->comp->outputs_v;
   auto val = context->comp->outputs[name];
-  if (outputs_v.find(name) != outputs_v.end()) {
-    outputs_v[name].second = data_ptr;
-  } else {
-    outputs_v[name] = {val, data_ptr};
-  }
+  outputs_v[name] = {val, data_ptr};
   return ODLA_SUCCESS;
 }
 
