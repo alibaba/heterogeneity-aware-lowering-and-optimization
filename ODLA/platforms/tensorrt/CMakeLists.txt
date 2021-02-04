@@ -15,6 +15,9 @@
 # ==============================================================================
 
 find_package(Threads REQUIRED)
+
+enable_language(CUDA)
+
 set(CUDA_VERSION 10.0 CACHE STRING "Version of CUDA tool-kit.")
 set(CUDNN_VERSION 7.6 CACHE STRING "Version of Cudnn.")
 set(CUDA_ROOT /usr/local/cuda-${CUDA_VERSION}/targets/x86_64-linux)
