@@ -1,6 +1,6 @@
 #!/bin/bash -xe
 
-VER="0.5"
+VER="latest"
 
 MOUNT_DIR="$PWD"
 if [ ! -z "$1" ]; then
