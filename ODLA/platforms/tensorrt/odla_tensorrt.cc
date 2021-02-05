@@ -1,6 +1,6 @@
 //===- odla_tensorrt.cc ---------------------------------------------------===//
 //
-// Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+// Copyright (C) 2019-2021 Alibaba Group Holding Limited.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 
 #include <NvInfer.h>
 #include <NvInferPlugin.h>
-//#include "plugin/nmsPlugin/nmsPlugin.h"
 #include <ODLA/odla.h>
 #include <bits/stdint-intn.h>
 #include <cuda_runtime.h>
@@ -30,6 +29,8 @@
 #include <numeric>
 #include <unordered_map>
 #include <vector>
+
+#include "plugins/initPlugin.h"
 
 using namespace nvinfer1;
 
@@ -141,9 +142,7 @@ struct _odla_computation {
     builder->setMaxWorkspaceSize(max_workspace_size);
     network = builder->createNetwork();
 #else
-#ifdef USE_PLUGIN
-    initLibNvInferPlugins(static_cast<void*>(&Logger), "");
-#endif
+    initODLAPlugin(&Logger, "");
     nvinfer1::NetworkDefinitionCreationFlags flags = 0;
     network = builder->createNetworkV2(flags);
 #endif
@@ -1056,7 +1055,6 @@ odla_value odla_BatchNormalization(odla_value input,
   return CreateValue(bn, input->type, value_id);
 }
 
-#ifdef USE_PLUGIN
 odla_value odla_InstanceNormalization(
     odla_value input, odla_memory_layout input_layout, odla_value mean,
     odla_value var, odla_float32 epsilon, odla_value scale, odla_value offset,
@@ -1077,7 +1075,6 @@ odla_value odla_InstanceNormalization(
       &inputs[0], static_cast<int>(inputs.size()), *plugin);
   return CreateValue(norm->getOutput(0), input->type, value_id);
 }
-#endif
 
 odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
                      odla_uint32 group, odla_value kernel,
@@ -1384,7 +1381,8 @@ odla_value odla_NMS(odla_value boxes, odla_value scores,
 #if NV_TENSORRT_MAJOR < 7
   auto nms_plugin = createBatchedNMSPlugin(param);
 #else
-  auto creator = getPluginRegistry()->getPluginCreator("BatchedNMS_TRT", "1");
+  auto creator =
+      getPluginRegistry()->getPluginCreator("BatchedNMS_TRT_V2", "1");
   nvinfer1::PluginFieldCollection pluginData;
   std::vector<nvinfer1::PluginField> f;
   f.emplace_back("shareLocation", &param.shareLocation,

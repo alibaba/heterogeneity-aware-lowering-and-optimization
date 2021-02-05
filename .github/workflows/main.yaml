@@ -16,13 +16,12 @@ jobs:
         uses: actions/checkout@v2
         with:
           path: halo
-          submodules: true
-
+          submodules: recursive
       - name: Lint
         uses: DoozyX/clang-format-lint-action@v0.11
         with:
           source: "./halo"
-          exclude: "./halo/third_party ./halo/external"
+          exclude: "./halo/third_party ./halo/external ./halo/ODLA/external"
           clangFormatVersion: 9
           style: file
       - name: Check markdown for broken links
@@ -40,7 +39,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           path: halo
-          submodules: true
+          submodules: recursive
       - name: Build
         uses: ./halo/.github/actions/build
         with:
