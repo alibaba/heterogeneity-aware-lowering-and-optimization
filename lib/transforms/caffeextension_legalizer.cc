@@ -178,7 +178,9 @@ static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
   int pad_h = FindAttributeValue(ext, "pad_h", pad);
   int pad_w = FindAttributeValue(ext, "pad_w", pad);
 
-  int round_mode = FindAttributeValue(ext, "round_mode", 0);
+  bool ceil_mode = FindAttributeValue<bool>(ext, "ceil_mode", true);
+  // If ceil_mode is set to false (non-default), we always use it.
+  int round_mode = !ceil_mode ? 1 : FindAttributeValue(ext, "round_mode", 0);
 
   if (global_pooling) {
     if (!input_type.IsValid()) {

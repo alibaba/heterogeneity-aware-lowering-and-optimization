@@ -74,7 +74,7 @@ def CAFFE_Pooling: CAFFEExtension<"Pooling"> {
   let param_name_ = "pooling_param";
   let optional_attrs_ = [
     "pad_h", "pad_w", "stride_h", "stride_w", "kernel_h", "kernel_w",
-    "global_pooling", "round_mode"
+    "global_pooling", "round_mode", "ceil_mode"
   ];
   let extension_attr_ = [
     ExtensionAttr<"pool", Integer, "0">,
@@ -88,6 +88,7 @@ def CAFFE_Pooling: CAFFEExtension<"Pooling"> {
     ExtensionAttr<"kernel_h", Integer, "0">,
     ExtensionAttr<"kernel_w", Integer, "0">,
     ExtensionAttr<"round_mode", Integer, "0">,
+    ExtensionAttr<"ceil_mode", Bool, "true">,
     ExtensionAttr<"global_pooling", Bool, "false">
   ];
 }
