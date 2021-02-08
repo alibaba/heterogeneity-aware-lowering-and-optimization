@@ -48,18 +48,18 @@ def TFLITE_DEPTHWISE_CONV_2D : TFLITEExtension<"DEPTHWISE_CONV_2D"> {
   ];
 }
 
-//def TFLITE_MAX_POOL_2D : OpMapping<"MAX_POOL_2D", PoolingMax> {
-//  let param_name_ = "builtin_options_as_Pool2DOptions";
-//  let attr_mapping_ = [ AttributeMapping<"", "data_format", "NHWC"> ];
-//  let extension_attr_ = [
-//    ExtensionAttr<"filter_height", Integer, "1">,
-//    ExtensionAttr<"filter_width", Integer, "1">,
-//    ExtensionAttr<"fused_activation_function", EnumActivationType, "NONE">,
-//    ExtensionAttr<"padding", EnumPadding, "VALID">,
-//    ExtensionAttr<"stride_h", Integer, "1">,
-//    ExtensionAttr<"stride_w", Integer, "1">
-//  ];
-//}
+def TFLITE_MAX_POOL_2D : OpMapping<"MAX_POOL_2D", PoolingMax> {
+  let param_name_ = "builtin_options_as_Pool2DOptions";
+  let attr_mapping_ = [ AttributeMapping<"", "data_format", "NHWC"> ];
+  let extension_attr_ = [
+    ExtensionAttr<"filter_height", Integer, "1">,
+    ExtensionAttr<"filter_width", Integer, "1">,
+    ExtensionAttr<"fused_activation_function", EnumActivationType, "NONE">,
+    ExtensionAttr<"padding", EnumPadding, "VALID">,
+    ExtensionAttr<"stride_h", Integer, "1">,
+    ExtensionAttr<"stride_w", Integer, "1">
+  ];
+}
 
 def TFLITE_AVERAGE_POOL_2D : TFLITEExtension<"AVERAGE_POOL_2D"> {
   let param_name_ = "builtin_options_as_Pool2DOptions";
@@ -81,12 +81,14 @@ def TFLITE_CONCATENATION : OpMapping<"CONCATENATION", Concat> {
   ];
 }
 
-//def TFLITE_FULLY_CONNECTED : OpMapping<"FULLY_CONNECTED", InnerProduct> {
-//  let param_name_ = "builtin_options_as_FullyConnectedOptions";
-//  let extension_attr_ = [
-//    ExtensionAttr<"fused_activation_function", EnumActivationType, "NONE">
-//  ];
-//}
+def TFLITE_FULLY_CONNECTED : OpMapping<"FULLY_CONNECTED", MatMul> {
+  let param_name_ = "builtin_options_as_FullyConnectedOptions";
+ let extension_attr_ = [
+    ExtensionAttr<"fused_activation_function", EnumActivationType, "NONE">,
+    ExtensionAttr<"keep_num_dims", Bool, "false">,
+    ExtensionAttr<"weights_format", String, "\"default\"">,
+  ];
+}
 
 def TFLITE_RELU : OpMapping<"RELU", Relu>;
 
