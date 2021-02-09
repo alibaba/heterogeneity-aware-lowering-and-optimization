@@ -373,7 +373,8 @@ static void PopulatePasses(PassManager* pm, std::ostream* out_code,
                            bool is_c_or_cxx_output, bool is_binary_output,
                            Parser::Format format) {
   std::vector<std::string> input_shapes(InputsShape.begin(), InputsShape.end());
-  pm->AddPass<InputLegalizer>(Batch.getValue(), input_shapes);
+  pm->AddPass<InputLegalizer>(Batch.getValue(), input_shapes,
+                              PreprocessScale.getValue());
   if (!Outputs.empty()) {
     std::vector<std::string> outputs(Outputs.begin(), Outputs.end());
     pm->AddPass<OutputRewriter>(outputs);

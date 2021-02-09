@@ -17,6 +17,11 @@
 
 #include "halo/lib/transforms/input_legalizer.h"
 
+#include <functional>
+#include <numeric>
+
+#include "halo/lib/ir/ir_builder.h"
+
 namespace halo {
 
 static std::unordered_map<std::string, halo::Type> ParseInputShapes(
@@ -79,6 +84,20 @@ static std::unordered_map<std::string, halo::Type> ParseInputShapes(
   return results;
 }
 
+static std::vector<float> ParsePreprocessScale(const std::string& str) {
+  std::istringstream iss(str);
+  std::vector<float> values;
+  constexpr int n = 6;
+  values.reserve(n);
+  float v;
+  char comma;
+  while (iss >> v && values.size() < n) {
+    values.push_back(v);
+    iss >> comma;
+  }
+  return values;
+}
+
 bool InputLegalizer::RunOnFunction(Function* func) {
   bool changed = false;
   auto specified_shapes = ParseInputShapes(
@@ -112,6 +131,68 @@ bool InputLegalizer::RunOnFunction(Function* func) {
 
   HLCHECK(specified_shapes.empty() && "Unclaimed specified shapes");
 
+  if (!scale_str_.empty()) {
+    constexpr int n = 6;
+    auto v = ParsePreprocessScale(scale_str_);
+    if (func->Args().size() != 1) {
+      std::cerr << "Preprocess only works for model with exactly one input. "
+                   "Ignore preprocessing.\n";
+    } else if (v.size() != n) {
+      std::cerr << "Invalid number of scale parameters (" << v.size()
+                << " != " << n << ") Ignore preprocessing.\n";
+    } else {
+      // Insert scale.
+      auto arg = func->Args().begin()->get();
+      std::vector<float> bias(v.begin(), v.begin() + n / 2);
+      std::vector<float> scale(v.begin() + n / 2, v.end());
+      ConstantBuilder cb(func->GetParent());
+      std::vector<int64_t> shape{n / 2};
+      const auto& arg_type = arg->GetResultType();
+      for (int64_t i = arg_type.GetNumOfDims() - 1; i >= 0; --i) {
+        if (arg_type.GetNumOfElementsInDim(i) != n / 2) {
+          shape.push_back(1);
+        }
+      }
+      // prepand ones.
+      for (int64_t i = 0, e = arg_type.GetNumOfDims() - shape.size(); i < e;
+           ++i) {
+        shape.insert(shape.begin(), 1);
+      }
+      if (std::accumulate(shape.begin(), shape.end(), 1,
+                          std::multiplies<int64_t>()) != n / 2) {
+        std::cerr << "Preprocess element number does not match with input "
+                     "type. Ignore preprocessing.\n";
+        scale_str_.clear();
+        return changed;
+      }
+
+      halo::Type dt{DataType::FLOAT32, shape};
+      BasicBlock* bb = func->begin()->get();
+      IRBuilder builder(bb);
+      if (!bb->empty()) {
+        builder.SetInsertBefore(bb->begin()->get());
+      }
+      Def input = *arg;
+      auto addend = cb.CreateConstant("_pp_addend", dt, bias.data());
+      if (!addend->HasSameValueOf(0)) {
+        Def new_def = *builder.CreateAdd("pp_add", input, *addend);
+        input.GetOwner()->ReplaceAllUsesWith(0, new_def);
+        input = new_def;
+        changed = true;
+      }
+      auto coeff = cb.CreateConstant("_pp_scale", dt, scale.data());
+      if (!coeff->HasSameValueOf(1)) {
+        Def new_def = *builder.CreateMul("_pp_scale", input, *coeff);
+        input.GetOwner()->ReplaceAllUsesWith(0, new_def);
+        changed = true;
+      }
+    }
+    std::cout << v.size() << std::endl;
+    for (auto x : v) {
+      std::cout << x << "\n";
+    }
+    scale_str_.clear(); // Prevent re-entry.
+  }
   return changed;
 }
 
