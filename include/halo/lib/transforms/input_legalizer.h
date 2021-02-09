@@ -25,16 +25,19 @@ namespace halo {
 /// This pass eliminates dead IRs.
 class InputLegalizer final : public FunctionPass {
  public:
-  InputLegalizer(int batch_size, const std::vector<std::string>& inputs_shapes)
+  InputLegalizer(int batch_size, const std::vector<std::string>& inputs_shapes,
+                 const std::string& scale_str)
       : FunctionPass("Legalize inputs"),
         batch_size_(batch_size),
-        inputs_shapes_(inputs_shapes) {}
+        inputs_shapes_(inputs_shapes),
+        scale_str_(scale_str) {}
 
   bool RunOnFunction(Function* func) override;
 
  private:
   int batch_size_;
   std::vector<std::string> inputs_shapes_;
+  std::string scale_str_;
 };
 
 } // end namespace halo.

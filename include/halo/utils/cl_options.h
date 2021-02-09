@@ -54,6 +54,16 @@ static llvm::cl::list<std::string> InputsShape(
     llvm::cl::desc("Specify input names like -input-shape=foo:1x3x100x100 "
                    "-input-shape=bar:int8:-1x3x200x200"));
 
+static llvm::cl::opt<std::string> PreprocessScale(
+    "preproc-scale",
+    llvm::cl::desc(
+        "Insert scale operation to input. E.g. "
+        "`-preproc-scale:1.0,-2.0,3.0,10,20,30`."
+        "The number of values are comma separated and should be "
+        "even. The first n values are for addition, the next n "
+        "values are for multiplication. It should be broadcasting "
+        "to input shape. Invalid if there are more than one inputs. "));
+
 /// Guess the model format based on input file extension.gg
 static Parser::Format InferFormat(
     const llvm::cl::list<std::string>& model_files, size_t file_idx) {
