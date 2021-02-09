@@ -149,18 +149,17 @@ bool InputLegalizer::RunOnFunction(Function* func) {
       std::vector<float> bias(v.begin(), v.begin() + n / 2);
       std::vector<float> scale(v.begin() + n / 2, v.end());
       ConstantBuilder cb(func);
-      std::vector<int64_t> shape{n / 2};
       const auto& arg_type = arg->GetResultType();
-      for (int64_t i = arg_type.GetNumOfDims() - 1; i >= 0; --i) {
-        if (arg_type.GetNumOfElementsInDim(i) != n / 2) {
-          shape.push_back(1);
+      size_t arg_dims = arg_type.GetNumOfDims();
+      std::vector<int64_t> shape(arg_dims, 1);
+      // FIXME if h=c or w =c, it not work
+      for (int64_t i = arg_dims - 1; i >= 0; --i) {
+        if (arg_type.GetNumOfElementsInDim(i) == n / 2) {
+          shape[i] = n / 2;
+          break;
         }
       }
-      // prepand ones.
-      for (int64_t i = 0, e = arg_type.GetNumOfDims() - shape.size(); i < e;
-           ++i) {
-        shape.insert(shape.begin(), 1);
-      }
+
       if (std::accumulate(shape.begin(), shape.end(), 1,
                           std::multiplies<int64_t>()) != n / 2) {
         std::cerr << "Preprocess element number does not match with input "
@@ -183,7 +182,9 @@ bool InputLegalizer::RunOnFunction(Function* func) {
         input = new_def;
         changed = true;
       }
-      auto coeff = cb.CreateConstant("_pp_scale", dt, scale.data());
+
+      // it may be fused with conv
+      auto coeff = cb.CreateConstant("_pp_coeff", dt, scale.data());
       if (!coeff->HasSameValueOf(1)) {
         Def new_def = *builder.CreateMul("_pp_scale", input, *coeff);
         input.GetOwner()->ReplaceAllUsesWith(0, new_def);
