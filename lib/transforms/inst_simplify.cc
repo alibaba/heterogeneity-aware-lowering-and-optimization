@@ -308,9 +308,7 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
   }
 
   if (op0_type.IsValid() && IsA<Constant>(op1) && IsA<Instruction>(op0) &&
-      (op0_type.GetTotalNumOfElements() == op1_type.GetTotalNumOfElements() ||
-       op1_type.GetNumOfDims() == op0_type.GetNumOfDims() ||
-       op1_type.GetNumOfDims() == 1)) {
+      op1_type.BroadcastableTo(op0_type)) {
     Instruction* op0_inst = DynCast<Instruction>(op0.GetDef());
     if (op0_inst->GetOpCode() == OpCode::TRANSPOSE &&
         !IsA<Argument>(op0_inst->GetOperand(0))) {
@@ -319,18 +317,17 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
       IRBuilder builder(binary_inst->GetParent());
       builder.SetInsertAfter(binary_inst);
       const auto& orig_perm = orig_transpose->GetPermutation();
-      auto reverse_perm = orig_perm;
-      for (int i = 0, e = orig_perm.size(); i < e; ++i) {
-        reverse_perm[orig_perm[i]] = i;
-      }
-
       Instruction* new_op1 = nullptr;
-      if (op1_type.GetNumOfDims() == 1) {
-        auto dims = op0_type.GetDimSizes();
-        for (auto& d : dims) {
-          d = 1;
+      if (op1_type.GetSqueezedNumOfDims() == 1) {
+        auto dims = std::vector<int64_t>(op0_type.GetNumOfDims(), 1);
+        int64_t op1_vector_axis = op0_type.GetNumOfDims() - 1;
+        for (auto n = op1_type.GetTotalNumOfElements(); op1_vector_axis >= 0;
+             --op1_vector_axis) {
+          if (op0_type.GetNumOfElementsInDim(op1_vector_axis) == n) {
+            break;
+          }
         }
-        dims[orig_perm.back()] = op1_type.GetNumOfElementsInDim(0);
+        dims[orig_perm[op1_vector_axis]] = op1_type.GetTotalNumOfElements();
         ConstantBuilder cb(binary_inst->GetParent()->GetParent());
         Constant* c_shape = cb.CreateConstant(
             op1.GetDef()->GetName() + "_shape",
@@ -342,6 +339,10 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
         new_addend->GetResultsTypes()[0] =
             Type{op1.GetType().GetDataType(), dims};
       } else {
+        auto reverse_perm = orig_perm;
+        for (int i = 0, e = orig_perm.size(); i < e; ++i) {
+          reverse_perm[orig_perm[i]] = i;
+        }
         auto new_addend =
             builder.CreateTranspose(op1.GetDef()->GetName() + "_t", {op1});
         new_addend->SetPermutation(reverse_perm);
@@ -600,6 +601,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Instruction* inst) {
 template <typename InstType, typename Builder>
 static std::pair<Def, Def> SinkTranspose(InstType& inst, Builder build) {
   std::pair<Def, Def> ret{Def{&inst, 0}, Def{&inst, 0}};
+
   if (IsA<Instruction>(inst.GetOperand(0))) {
     // Inst(transpose(x)) -> transpose(Inst(x)), this exposes opportunites
     // to cancel out transposes.
