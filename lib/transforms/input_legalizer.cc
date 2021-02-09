@@ -145,7 +145,7 @@ bool InputLegalizer::RunOnFunction(Function* func) {
       auto arg = func->Args().begin()->get();
       std::vector<float> bias(v.begin(), v.begin() + n / 2);
       std::vector<float> scale(v.begin() + n / 2, v.end());
-      ConstantBuilder cb(func->GetParent());
+      ConstantBuilder cb(func);
       std::vector<int64_t> shape{n / 2};
       const auto& arg_type = arg->GetResultType();
       for (int64_t i = arg_type.GetNumOfDims() - 1; i >= 0; --i) {
