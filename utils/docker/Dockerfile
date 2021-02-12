@@ -1,7 +1,7 @@
 # Build this image:  docker build -t halo:[version] .
 
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE} 
+FROM ${BASE_IMAGE}
 
 # Redeclare the argument
 ARG BASE_IMAGE
@@ -73,7 +73,7 @@ RUN apt-get update -y && \
       ninja-build \
       libopencv-core-dev \
       libopencv-highgui-dev \
-      libopencv-videoio-dev \ 
+      libopencv-videoio-dev \
       libmpc-dev \
       libmpfr-dev \
       libgmp-dev\
@@ -220,8 +220,20 @@ RUN cd /tmp && \
     git clone --depth=1 https://github.com/google/flatbuffers.git -b v1.12.0 && \
     cd flatbuffers && \
     cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release  -DFLATBUFFERS_BUILD_SHAREDLIB=ON && make -j && make install && \
-    rm -fr /tmp/flatbuffers 
+    rm -fr /tmp/flatbuffers
 
+# Install SGX SDK
+RUN wget https://download.01.org/intel-sgx/sgx-linux/2.12/distro/ubuntu18.04-server/sgx_linux_x64_sdk_2.12.100.3.bin \
+      -O /tmp/sgx.bin && bash /tmp/sgx.bin -prefix=/opt/intel && \
+    rm /tmp/sgx.bin
+
+# Install DNNL SGX
+RUN cd /tmp && \
+    git clone https://github.com/intel/linux-sgx.git --recursive --depth 1 \
+      --shallow-submodules -b sgx_2.13  && \
+    cd linux-sgx/external/dnnl && sed -i -e 's/git am/git apply/' Makefile && \
+    make -j && cp -r sgx_dnnl /opt/intel && \
+    rm -fr /tmp/linux-sgx
 
 RUN mkdir -p /var/run/sshd
 RUN sed -i 's/prohibit-password/yes/' /etc/ssh/sshd_config
