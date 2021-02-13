@@ -359,6 +359,7 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     op.execute(*context->stream);
   }
   context->stream->wait();
+  /*
   // copy to outputs
   auto outputs_v = context->comp->outputs_v;
   for (auto& output_pair : outputs_v) {
@@ -367,6 +368,7 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     memcpy(dst_ptr, src_val->mem.get_data_handle(),
            GetTotalElements(src_val->shape) * src_val->elem_size);
   }
+  */
   return ODLA_SUCCESS;
 }
 
@@ -501,6 +503,7 @@ odla_status odla_SetValueAsOutput(const odla_value val) {
   }
   return ODLA_SUCCESS;
 }
+
 odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
                               odla_context context) {
   // Handle the case of output is constant due to compile-time optimization.
@@ -522,10 +525,8 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
 odla_status odla_BindToOutputById(const odla_value_id value_id,
                                   odla_void* data_ptr, odla_context context) {
   std::string name((const char*)value_id);
-  auto& outputs_v = context->comp->outputs_v;
   auto val = context->comp->outputs[name];
-  outputs_v[name] = {val, data_ptr};
-  return ODLA_SUCCESS;
+  return odla_BindToOutput(val, data_ptr, context);
 }
 
 odla_value odla_Floor(odla_value input, const odla_value_id id) {
