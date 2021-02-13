@@ -18,6 +18,8 @@
 #include <immintrin.h>
 #include <omp.h>
 
+#include "dnnl_threadpool_iface.hpp"
+
 namespace dnnl_utils {
 
 static int calculat_offset(int len, int vec_size) {

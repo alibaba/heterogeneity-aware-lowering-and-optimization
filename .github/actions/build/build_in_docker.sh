@@ -31,7 +31,7 @@ if [[ "$VARIANT" =~ graphcore ]]; then
   cmake_flags="-DPOPLAR_SDK_ROOT=/opt/poplar_sdk-ubuntu_18_04-1.4.0+365-665f971c8f \
               -DPOPLAR_VERSION=ubuntu_18_04-1.4.0+71819-c5c0c8ebab \
               -DPOPART_VERSION=popart-ubuntu_18_04-1.4.0+5352-e86081acc9 \
-	            -DODLA_BUILD_DNNL=OFF -DODLA_BUILD_TRT=OFF \
+	            -DODLA_BUILD_DNNL=OFF -DODLA_BUILD_SGX_DNNL=OFF -DODLA_BUILD_TRT=OFF \
               -DODLA_BUILD_EIGEN=OFF -DODLA_BUILD_XNNPACK=OFF"
   check_cmds="ninja check-halo"
 fi

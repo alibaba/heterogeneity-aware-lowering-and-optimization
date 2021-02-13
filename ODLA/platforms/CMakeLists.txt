@@ -22,6 +22,7 @@ endmacro(add_odla_library)
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
 
 option(ODLA_BUILD_DNNL "Build ODLA Runtime Library for DNNL" ON)
+option(ODLA_BUILD_SGX_DNNL "Build ODLA Runtime Library for SGX DNNL" ON)
 if (ODLA_BUILD_DNNL)
   add_subdirectory(dnnl)
 endif()
