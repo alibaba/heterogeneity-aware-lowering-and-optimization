@@ -24,17 +24,15 @@
 namespace halo {
 
 void GenericCXXCodeGen::RunOnInstruction(HgDequantInst* inst) {
-
   const Def& input = inst->GetOperand(0);
 
   CXXValue op0 = ir_mapping_[input];
   CXXValue ret(inst->GetName(), op0.type);
-  
+
   const std::string& enum_ns_layout = "odla_memory_layout::";
   const std::string& enum_prefix = "ODLA_";
   const std::string& enum_ns =
       opts_.dialect == Dialect::CXX_11 ? enum_ns_layout : "";
-
 
   int is_per_channel = inst->GetIsPerChannel();
   const std::string& input_layout =
@@ -45,7 +43,7 @@ void GenericCXXCodeGen::RunOnInstruction(HgDequantInst* inst) {
       (inst->GetOutDataFormat() == "NHWC" ? "CHANNELS_LAST" : "CHANNELS_FIRST");
 
   // Todo : transpose support, per_channel support, int16/fp16 support
-  HLCHECK(input_layout == output_layout);  
+  HLCHECK(input_layout == output_layout);
   HLCHECK(is_per_channel == false);
 
   std::vector<CXXValue> inputs;
@@ -57,9 +55,8 @@ void GenericCXXCodeGen::RunOnInstruction(HgDequantInst* inst) {
 
   std::vector<CXXValue> rets;
   rets.emplace_back(inst->GetName(),
-                      TensorTypeToCXXType(inst->GetResultType(0), false));
+                    TensorTypeToCXXType(inst->GetResultType(0), false));
   ir_mapping_[Def(inst, 0)] = rets[0];
-
 
   // construct the odla_value_ids string
   unsigned int id = 0;
