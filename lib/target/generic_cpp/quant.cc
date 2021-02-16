@@ -65,11 +65,11 @@ void GenericCXXCodeGen::RunOnInstruction(HgQuantInst* inst) {
   // construct the odla_value_ids string
   unsigned int id = 0;
   std::ostringstream os;
-  os << "{.size = " << inputs.size() << ", .value_ids = {";
-  for (auto& one : inputs) {
+  os << "{.size = " << rets.size() << ", .value_ids = {";
+  for (auto& one : rets) {
     os << "(const odla_value_id)";
     EmitODLAVauleId(one, os);
-    if (++id != inputs.size()) {
+    if (++id != rets.size()) {
       os << ", ";
     }
   }
