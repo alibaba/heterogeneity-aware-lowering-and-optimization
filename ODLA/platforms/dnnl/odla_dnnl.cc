@@ -481,7 +481,10 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
     }
     memcpy(data_ptr, value->mem.get_data_handle(), len);
   } else {
-    value->mem.set_data_handle(data_ptr);
+    auto name = value->name;
+    auto& outputs_v = context->comp->outputs_v;
+    auto val = context->comp->outputs[name];
+    outputs_v[name] = {val, data_ptr};
   }
   return ODLA_SUCCESS;
 }
