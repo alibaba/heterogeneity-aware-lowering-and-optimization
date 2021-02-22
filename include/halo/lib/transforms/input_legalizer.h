@@ -17,6 +17,7 @@
 
 #ifndef HALO_LIB_TRANSFORMS_INPUT_LEGALIZER_H_
 #define HALO_LIB_TRANSFORMS_INPUT_LEGALIZER_H_
+#include <unordered_set>
 
 #include "halo/lib/pass/pass.h"
 
@@ -38,6 +39,7 @@ class InputLegalizer final : public FunctionPass {
   int batch_size_;
   std::vector<std::string> inputs_shapes_;
   std::string scale_str_;
+  std::unordered_set<const Function*> handled_func_;
 };
 
 } // end namespace halo.

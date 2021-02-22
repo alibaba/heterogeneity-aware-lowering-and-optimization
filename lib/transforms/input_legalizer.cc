@@ -100,6 +100,9 @@ static std::vector<float> ParsePreprocessScale(const std::string& str) {
 
 bool InputLegalizer::RunOnFunction(Function* func) {
   bool changed = false;
+  if (handled_func_.count(func) != 0) {
+    return false;
+  }
   auto specified_shapes = ParseInputShapes(
       inputs_shapes_,
       (func->Args().size() == 1) ? (*func->Args().begin())->GetName() : "");
@@ -193,6 +196,7 @@ bool InputLegalizer::RunOnFunction(Function* func) {
     }
     scale_str_.clear(); // Prevent re-entry.
   }
+  handled_func_.insert(func);
   return changed;
 }
 
