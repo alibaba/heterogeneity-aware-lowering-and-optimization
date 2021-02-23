@@ -591,6 +591,25 @@ bool ONNXAttrs::Process<std::vector<float>>(const std::string& key,
   return true;
 }
 
+/// Get Attr for Shape
+template <>
+bool ONNXAttrs::Process<std::vector<std::vector<int64_t>>>(
+    const std::string& key, std::vector<std::vector<int64_t>>* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+  value->clear();
+  const auto& attr_value = attr_map_.at(key);
+  HLCHECK(attr_value.type() == onnx::AttributeProto::STRINGS);
+  /// HgEngine only support single optput in onnx
+  int size = attr_value.strings_size();
+  (*value).reserve(size);
+  for (int i = 0; i < size; ++i) {
+    (*value).emplace_back(std::stol(attr_value.strings(i)));
+  }
+  return true;
+}
+
 template <>
 bool ONNXAttrs::Process<Padding>(const std::string& key, Padding* padding) {
   if (!attr_map_.count(key)) {
