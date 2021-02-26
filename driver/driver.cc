@@ -448,6 +448,12 @@ static bool FormatCode(const std::string& filename) {
 static void PrintVersion(llvm::raw_ostream& os) {
   os << "  Version:\t" << HALO_MAJOR << '.' << HALO_MINOR << '.' << HALO_PATCH
      << '\n';
+#ifdef HALO_REVISION
+  os << "  HALO Repo:" << HALO_REPOSITORY << " Rev:" << HALO_REVISION << '\n';
+#endif
+#ifdef ODLA_REVISION
+  os << "  ODLA Repo:" << ODLA_REPOSITORY << " Rev:" << ODLA_REVISION << '\n';
+#endif
 #ifndef NDEBUG
   os << "  Build:\tDebug\n";
 #else
