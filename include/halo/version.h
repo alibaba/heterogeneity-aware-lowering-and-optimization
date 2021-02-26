@@ -25,4 +25,6 @@
 //! \brief HALO version number.
 #define HALO_VERSION_NUMBER ((HALO_MAJOR)*100 + (HALO_MINOR)*10 + (OLDA_PATCH))
 
+#include "halo/version.inc"
+
 #endif // HALO_VERSION_H_

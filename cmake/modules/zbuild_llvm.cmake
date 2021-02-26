@@ -26,7 +26,7 @@ add_subdirectory(${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm EXCLUDE_FROM_ALL)
 set(CMAKE_MODULE_PATH ${LLVM_SRC_DIR}/cmake/modules)
 include(DetermineGCCCompatible)
 
-function(halo_tblgen ofn) 
+function(halo_tblgen ofn)
   tablegen(HALO ${ARGV} "-I${CMAKE_SOURCE_DIR}/include/halo/lib/ir")
   set(TABLEGEN_OUTPUT ${TABLEGEN_OUTPUT}
     ${CMAKE_CURRENT_BINARY_DIR}/${ofn} PARENT_SCOPE
