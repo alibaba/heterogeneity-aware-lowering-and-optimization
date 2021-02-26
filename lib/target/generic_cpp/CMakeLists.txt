@@ -38,6 +38,7 @@ set(SRCS
   onehot.cc
   pad.cc
   pooling.cc
+  random.cc
   reduce_mean.cc
   relu.cc
   reshape.cc
