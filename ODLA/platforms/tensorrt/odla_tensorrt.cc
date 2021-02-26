@@ -1238,6 +1238,19 @@ odla_value odla_AveragePool(odla_value input, odla_memory_layout input_layout,
   return CreateValue(pooling, output_type, value_id);
 }
 
+odla_value odla_Fill(odla_value_type type, odla_fill_method method,
+                     odla_float32 p0, odla_float32 p1, odla_float32 seed,
+                     const odla_value_id value_id) {
+  if (method == ODLA_RandomUniform) {
+    auto fill = g_comp->network->addFill(
+        GetNVDims(type.shape), nvinfer1::FillOperation::kRANDOM_UNIFORM);
+    fill->setAlpha(p0);
+    fill->setBeta(p1);
+    return CreateValue(fill, type, value_id);
+  }
+  assert(0 && "Unsupported fill method");
+}
+
 odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
                      odla_bool transpose_rhs, odla_float32 alpha,
                      odla_float32 beta, odla_value bias,
