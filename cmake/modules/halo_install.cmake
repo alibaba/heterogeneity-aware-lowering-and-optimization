@@ -34,3 +34,6 @@ install(DIRECTORY ${CMAKE_BINARY_DIR}/odla_docs/html
         DESTINATION docs/odla OPTIONAL)
 install(FILES ${CMAKE_BINARY_DIR}/odla_docs/latex/refman.pdf
         DESTINATION docs/odla RENAME ODLA_reference.pdf OPTIONAL)
+
+set(CPACK_GENERATOR "TBZ2")
+include(CPack)
