@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 
-#include "model.h"
+#include "mnist_simple.h"
 
 int main(int argc, char** argv) {
   struct ImageFileHead {
@@ -81,6 +81,6 @@ int main(int argc, char** argv) {
     correct += (pred == labels[i]);
   }
   mnist_simple_fini();
-  std::cout << "Accuracy: " << correct << "/" << nr_tests << " ("
+  std::cout << "Accuracy " << correct << "/" << nr_tests << " ("
             << correct * 100.0 / nr_tests << "%) \n";
 }

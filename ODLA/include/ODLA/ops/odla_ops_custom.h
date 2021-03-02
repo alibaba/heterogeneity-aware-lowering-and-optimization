@@ -31,16 +31,17 @@ extern "C" {
 
 //! \brief CustomOp
 /*!
+  \param inputs the inputs value
   \param op_name a pointer to the name string of the custom operator
   \param function_name a pointer to the name string of the impl function
-  \param value_id a unique value id (can be NULL)
+  \param value_ids unique value ids
   \param Variadic
 
-  \return odla_value
+  \return odla_values
 */
-extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_CustomOp(const odla_char* op_name, const odla_char* function_name,
-              const odla_value_id id, ...);
+extern ODLA_API_EXPORT odla_values ODLA_API_CALL
+odla_CustomOp(odla_values inputs, const odla_char* op_name,
+              const odla_char* function_name, const odla_value_ids ids, ...);
 
 #ifdef __cplusplus
 } // C extern

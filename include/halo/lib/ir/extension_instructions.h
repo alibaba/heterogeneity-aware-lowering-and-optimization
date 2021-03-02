@@ -24,6 +24,9 @@
 
 namespace halo {
 
+const int kEightBits = 8;
+const int kSixteenBits = 16;
+
 /// This is a base Extension instruction class
 /// It defines either a user op or an op defined in other frameworks yet
 /// not in Halo IR.

@@ -38,6 +38,7 @@ set(SRCS
   onehot.cc
   pad.cc
   pooling.cc
+  random.cc
   reduce_mean.cc
   relu.cc
   reshape.cc
@@ -49,6 +50,7 @@ set(SRCS
   tile.cc
   topk.cc
   transpose.cc
+  hgengine.cc
 )
 
 # dependences which need to be built first.

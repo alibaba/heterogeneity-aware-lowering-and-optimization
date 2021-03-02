@@ -48,7 +48,7 @@ inline void binary_s32_func(dnnl::algorithm alg, int32_t* lhs, int32_t* rhs,
   int i = 0;
   int vec_size = 512 / 32;
   __mmask16 mask16 = 0xFFFF;
-  std::function<__m512i(__m512i, __m512i)> __mm512_binary_op;
+  __m512i (*__mm512_binary_op)(__m512i, __m512i);
   switch (alg) {
     case dnnl::algorithm::binary_add:
       __mm512_binary_op = [](__m512i a, __m512i b) {
@@ -90,48 +90,22 @@ inline __m512 _mm512_cvtbf16f32_load(__mmask16 mask, void* mem_addr) {
   return _mm512_castsi512_ps(dst);
 }
 
-inline void gather_byte1_func(int8_t* params, int32_t* idx, size_t batch_size,
-                              size_t idx_size, size_t inner_size, int8_t* dst) {
-  size_t slice_bytes = inner_size;
+inline void gather_func(char* params, int32_t* idx, size_t batch_size,
+                        size_t idx_size, size_t axis_size, size_t inner_size,
+                        size_t byte_size, char* dst) {
+  size_t slice_bytes = inner_size * byte_size;
 #pragma omp parallel for
   for (int i = 0; i < batch_size; i++) {
     for (int j = 0; j < idx_size; j++) {
-      int32_t curr_idx = idx[i * batch_size + j];
-      memcpy(dst + (i * idx_size + j) * inner_size,
-             params + (curr_idx)*inner_size, slice_bytes);
-    }
-  }
-}
-
-inline void gather_byte2_func(int16_t* params, int32_t* idx, size_t batch_size,
-                              size_t idx_size, size_t inner_size,
-                              int16_t* dst) {
-  size_t slice_bytes = inner_size * 2;
-#pragma omp parallel for
-  for (int i = 0; i < batch_size; i++) {
-    for (int j = 0; j < idx_size; j++) {
-      int32_t curr_idx = idx[i * batch_size + j];
-      memcpy(dst + (i * idx_size + j) * inner_size,
-             params + (curr_idx)*inner_size, slice_bytes);
-    }
-  }
-}
-
-inline void gather_byte4_func(float* params, int32_t* idx, size_t batch_size,
-                              size_t idx_size, size_t inner_size, float* dst) {
-  size_t slice_bytes = inner_size * 4;
-#pragma omp parallel for
-  for (int i = 0; i < batch_size; i++) {
-    for (int j = 0; j < idx_size; j++) {
-      int32_t curr_idx = idx[i * batch_size + j];
-      memcpy(dst + (i * idx_size + j) * inner_size,
-             params + (curr_idx)*inner_size, slice_bytes);
+      int32_t curr_idx = idx[j];
+      memcpy(dst + (i * idx_size + j) * slice_bytes,
+             params + (i * axis_size + curr_idx) * slice_bytes, slice_bytes);
     }
   }
 }
 
 #if defined(__GNUC__) && (__GNUC__ > 9)
-inline void floorbf_func(int len, float* src, float* dst) {
+inline void floorbf_func(int len, int16_t* src, float* dst) {
   int i = 0;
   int vec_size = 512 / 16;
   __mmask16 mask16 = 0xFFFF;
@@ -144,14 +118,14 @@ inline void floorbf_func(int len, float* src, float* dst) {
     auto out1 = _mm512_floor_ps(a1);
 
     auto C_bf16 = _mm512_cvtne2ps_pbh(out1, out0);
-    _mm512_mask_storeu_ps(dst + i, mask16, _mm512_castsi512_ps(C_bf16));
+    _mm512_mask_storeu_ps(dst + i / 2, mask16, _mm512_castsi512_ps(C_bf16));
   }
   if ((len - i) > 16) {
     auto a0 = _mm512_cvtbf16f32_load(mask16, src + i);
     auto out0 = _mm512_floor_ps(a0);
     auto C_bf16 = _mm512_cvtneps_pbh(out0);
-    _mm256_storeu_ps(dst + i, _mm256_castsi256_ps(C_bf16));
-    i += vec_size;
+    _mm256_storeu_ps(dst + i / 2, _mm256_castsi256_ps(C_bf16));
+    i += vec_size / 2;
   }
   if (len - i) {
     __mmask16 tail_mask = calculat_offset(i, vec_size);
@@ -162,7 +136,7 @@ inline void floorbf_func(int len, float* src, float* dst) {
   }
 }
 #elif defined(__GNUC__) && (__GNUC__ > 8)
-inline void floorbf_func(int len, float* src, float* dst) {
+inline void floorbf_func(int len, int16_t* src, float* dst) {
   int i = 0;
   int vec_size = 512 / 32;
   __mmask16 mask16 = 0xFFFF;
@@ -182,7 +156,7 @@ inline void floorbf_func(int len, float* src, float* dst) {
   }
 }
 #else
-inline void floorbf_func(int len, float* src, float* dst) { assert(0); }
+inline void floorbf_func(int len, int16_t* src, float* dst) { assert(0); }
 #endif
 
 inline void floorf_func(int len, float* src, float* dst) {
@@ -221,7 +195,7 @@ inline void rsqrtf_func(int len, float* src, float* dst) {
 }
 
 #if defined(__GNUC__) && (__GNUC__ > 9)
-inline void rsqrtbf_func(int len, float* src, float* dst) {
+inline void rsqrtbf_func(int len, int16_t* src, float* dst) {
   int i = 0;
   int vec_size = 512 / 16;
   __mmask16 mask16 = 0xFFFF;
@@ -234,14 +208,14 @@ inline void rsqrtbf_func(int len, float* src, float* dst) {
     auto out1 = _mm512_rsqrt14_ps(a1);
 
     auto C_bf16 = _mm512_cvtne2ps_pbh(out1, out0);
-    _mm512_mask_storeu_ps(dst + i, mask16, _mm512_castsi512_ps(C_bf16));
+    _mm512_mask_storeu_ps(dst + i / 2, mask16, _mm512_castsi512_ps(C_bf16));
   }
   if ((len - i) > 16) {
     auto a0 = _mm512_cvtbf16f32_load(mask16, src + i);
     auto out0 = _mm512_rsqrt14_ps(a0);
     auto C_bf16 = _mm512_cvtneps_pbh(out0);
-    _mm256_storeu_ps(dst + i, _mm256_castsi256_ps(C_bf16));
-    i += vec_size;
+    _mm256_storeu_ps(dst + i / 2, _mm256_castsi256_ps(C_bf16));
+    i += 16;
   }
   if (len - i) {
     auto tail_mask = calculat_offset(len - i, vec_size);
@@ -252,7 +226,7 @@ inline void rsqrtbf_func(int len, float* src, float* dst) {
   }
 }
 #elif defined(__GNUC__) && (__GNUC__ > 8)
-inline void rsqrtbf_func(int len, float* src, float* dst) {
+inline void rsqrtbf_func(int len, int16_t* src, float* dst) {
   int i = 0;
   int vec_size = 512 / 32;
   __mmask16 mask16 = 0xFFFF;
@@ -272,7 +246,7 @@ inline void rsqrtbf_func(int len, float* src, float* dst) {
   }
 }
 #else
-inline void rsqrtbf_func(int len, float* src, float* dst) {}
+inline void rsqrtbf_func(int len, int16_t* src, float* dst) {}
 #endif
 
 #if defined(__GNUC__) && (__GNUC__ > 9)
@@ -424,76 +398,6 @@ static inline __m512 erfc_avx512(const __m512& src512) {
   return y;
 }
 #endif
-
-inline void cast_fp32int32_func(int len, float* src, int* dst) {
-  int i = 0;
-  int vec_size = 512 / 32;
-  __mmask16 mask16 = 0xFFFF;
-  auto tail_mask = calculat_offset(len, vec_size);
-  for (; i <= len - vec_size; i += vec_size) {
-    auto a1 = _mm512_loadu_ps(src + i);
-    auto out1 = _mm512_cvtps_epi32(a1);
-    _mm512_storeu_si512(dst + i, out1);
-  }
-  if (len - i) {
-    auto a1 = _mm512_maskz_loadu_ps(tail_mask, src + i);
-    auto out1 = _mm512_cvtps_epi32(a1);
-    _mm512_mask_storeu_epi32(dst + i, tail_mask, out1);
-  }
-}
-
-inline void cast_int32fp32_func(int len, int* src, float* dst) {
-  int i = 0;
-  int vec_size = 512 / 32;
-  __mmask16 mask16 = 0xFFFF;
-  auto tail_mask = calculat_offset(len, vec_size);
-  for (; i <= len - vec_size; i += vec_size) {
-    auto a1 = _mm512_load_epi32(src + i);
-    auto out1 = _mm512_cvtepi32_ps(a1);
-    _mm512_mask_storeu_ps(dst + i, mask16, out1);
-  }
-  if (len - i) {
-    auto a1 = _mm512_maskz_load_epi32(tail_mask, src + i);
-    auto out1 = _mm512_cvtepi32_ps(a1);
-    _mm512_mask_storeu_ps(dst + i, tail_mask, out1);
-  }
-}
-
-inline void cast_fp32int8_func(int len, float* src, int8_t* dst) {
-  int i = 0;
-  int vec_size = 512 / 32;
-  __mmask16 mask16 = 0xFFFF;
-  auto tail_mask = calculat_offset(len, vec_size);
-  for (; i <= len - vec_size; i += vec_size) {
-    auto a1 = _mm512_loadu_ps(src + i);
-    auto out1 = _mm512_cvtps_epi32(a1);
-    _mm512_mask_cvtepi32_storeu_epi8(dst + i, mask16, out1);
-  }
-  if (len - i) {
-    auto a1 = _mm512_maskz_loadu_ps(tail_mask, src + i);
-    auto out1 = _mm512_cvtps_epi32(a1);
-    _mm512_mask_cvtepi32_storeu_epi8(dst + i, tail_mask, out1);
-  }
-}
-
-inline void cast_int8fp32_func(int len, int8_t* src, float* dst) {
-  int i = 0;
-  int vec_size = 512 / 32;
-  __mmask16 mask16 = 0xFFFF;
-  auto tail_mask = calculat_offset(len, vec_size);
-  for (; i <= len - vec_size; i += vec_size) {
-    auto a1 = _mm_maskz_loadu_epi8(mask16, src + i);
-    auto out1 = _mm512_cvtepi8_epi32(a1);
-    auto out2 = _mm512_cvtepi32_ps(out1);
-    _mm512_mask_storeu_ps(dst + i, mask16, out2);
-  }
-  if (len - i) {
-    auto a1 = _mm_maskz_loadu_epi8(tail_mask, src + i);
-    auto out1 = _mm512_cvtepi8_epi32(a1);
-    auto out2 = _mm512_cvtepi32_ps(out1);
-    _mm512_mask_storeu_ps(dst + i, tail_mask, out2);
-  }
-}
 
 template <typename T, typename Q>
 inline void splitter(const T& n, const Q& team, const Q& tid, T& n_start,
@@ -974,7 +878,15 @@ void topk_func(float* src, float* dst_data, int* dst_idx,
 }
 
 #if defined(__GNUC__) && (__GNUC__ > 9)
-static void erf_p(float* src, float* dst, size_t len) {
+static __m512 __mm512_fake_erf(__m512 src) {
+  auto abssrc = _mm512_abs_ps(src);
+  __mmask16 erf_mask =
+      _mm512_cmp_ps_mask(abssrc, _mm512_set1_ps(1.0), _CMP_LT_OQ); // < 1
+  __m512 dst512 = erf_avx512(src);
+  __m512 dstc512 = erfc_avx512(src);
+  return _mm512_mask_blend_ps(erf_mask, dstc512, dst512);
+}
+static void erf_func(float* src, float* dst, size_t len) {
   int i;
   for (i = 0; i + 16 <= len; i += 16) {
     __m512 src512 = _mm512_loadu_ps(src + i);
@@ -982,17 +894,8 @@ static void erf_p(float* src, float* dst, size_t len) {
     __mmask16 erf_mask =
         _mm512_cmp_ps_mask(abssrc, _mm512_set1_ps(1.0), _CMP_LT_OQ); // < 1
     __mmask16 erfc_mask = ~erf_mask;
-    // printf("erf_mask:%x, erfc_mask=%x\n", erf_mask, erfc_mask);
-
-    if (erf_mask) { // call erf
-      __m512 dst512 = erf_avx512(src512);
-      _mm512_mask_storeu_ps(dst + i, erf_mask, dst512);
-    }
-    if (erfc_mask) { // call erfc
-      __m512 dst512 = erfc_avx512(src512);
-      _mm512_mask_storeu_ps(dst + i, erfc_mask, dst512);
-    }
-    // printf("erf_p main...\n");
+    auto dst512 = __mm512_fake_erf(src512);
+    _mm512_storeu_ps(dst + i, dst512);
   }
 
   int remain = len - i;
@@ -1003,21 +906,47 @@ static void erf_p(float* src, float* dst, size_t len) {
     __mmask16 erf_mask =
         _mm512_cmp_ps_mask(src512, _mm512_set1_ps(1.0), _CMP_LT_OQ); // < 1
     __mmask16 erfc_mask = ~erf_mask;
-
-    if (erf_mask) {
-      __m512 dst512 = erf_avx512(src512);
-      _mm512_mask_store_ps(dst + i, mask, dst512);
-    }
-    if (erfc_mask) {
-      __m512 dst512 = erfc_avx512(src512);
-      _mm512_mask_storeu_ps(dst + i, mask, dst512);
-    }
+    auto dst512 = __mm512_fake_erf(src512);
+    _mm512_mask_storeu_ps(dst + i, mask, dst512);
     // printf("erf_p remain...\n");
   }
   return;
 }
 #else
-static void erf_p(float* src, float* dst, size_t len) { assert(0); }
+static void erf_func(float* src, float* dst, size_t len) { assert(0); }
+#endif
+
+#if defined(__GNUC__) && (__GNUC__ > 9)
+static void erf_bf16_func(int16_t* src, float* dst, size_t len) {
+  int i = 0;
+  int vec_size = 512 / 16;
+  __mmask16 mask16 = 0xFFFF;
+  for (; i <= len - vec_size; i += vec_size) {
+    auto a0 = _mm512_cvtbf16f32_load(mask16, src + i);
+    auto a1 = _mm512_cvtbf16f32_load(mask16, src + i + 16);
+    auto erf_dst_a0 = __mm512_fake_erf(a0);
+    auto erf_dst_a1 = __mm512_fake_erf(a1);
+    auto C_bf16 = _mm512_cvtne2ps_pbh(erf_dst_a1, erf_dst_a0);
+    _mm512_mask_storeu_ps(dst + i / 2, mask16, _mm512_castsi512_ps(C_bf16));
+  }
+  if ((len - i) > 16) {
+    auto a0 = _mm512_cvtbf16f32_load(mask16, src + i);
+    auto out0 = __mm512_fake_erf(a0);
+    auto C_bf16 = _mm512_cvtneps_pbh(out0);
+    _mm256_storeu_ps(dst + i / 2, _mm256_castsi256_ps(C_bf16));
+    i += 16;
+  }
+  if (len - i) {
+    auto tail_mask = calculat_offset(len - i, vec_size);
+    auto a0 = _mm512_cvtbf16f32_load(tail_mask, src + i);
+    auto out0 = __mm512_fake_erf(a0);
+    auto C_bf16 = _mm512_cvtneps_pbh(out0);
+    _mm256_mask_storeu_ps(dst + i, tail_mask, _mm256_castsi256_ps(C_bf16));
+  }
+  return;
+}
+#else
+static void erf_bf16_func(int16_t* src, float* dst, size_t len) { assert(0); }
 #endif
 
 // nms function related

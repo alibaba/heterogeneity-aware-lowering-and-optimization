@@ -18,6 +18,7 @@
 #include "halo/lib/transforms/onnxextension_legalizer.h"
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <numeric>
 #include <unordered_set>
@@ -348,6 +349,39 @@ static std::vector<Def> ConvertCast(const ONNXExtensionInst* ext,
 
 static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
                                      IRBuilder* builder) {
+  // Operands: input [begin] [end] [axes] [step]
+  // For opset 1, begn/end/axes are attributs.
+  auto op_num = ext->GetNumOfOperands();
+  HLCHECK(op_num >= 1 && op_num != 2 && op_num <= 5);
+  builder->SetInsertAfter(ext);
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+
+  // Normalize Slice-1 to Slice.
+  if (op_num == 1) {
+    HLCHECK(ext->GetNumOfAttributes() >= 2);
+    std::vector<int> empty;
+    const auto& starts = FindAttributeValue(ext, "starts", empty);
+    const auto& ends = FindAttributeValue(ext, "ends", empty);
+    const auto& axes = FindAttributeValue(ext, "axes", empty);
+    HLCHECK(!starts.empty() && starts.size() == ends.size());
+    auto ops = ext->GetOperands();
+    int s = starts.size();
+    Constant* c_starts = cb.CreateConstant(
+        ext->GetName() + "_starts", Type{DataType::INT32, {s}}, starts.data());
+    Constant* c_ends = cb.CreateConstant(
+        ext->GetName() + "_ends", Type{DataType::INT32, {s}}, ends.data());
+
+    ops.push_back(*c_starts);
+    ops.push_back(*c_ends);
+    if (!axes.empty()) {
+      int s = axes.size();
+      Constant* c = cb.CreateConstant(ext->GetName() + "_axes",
+                                      Type{DataType::INT32, {s}}, axes.data());
+      ops.push_back(*c);
+    }
+    auto new_inst = builder->Clone(*ext, ops);
+    return {*new_inst};
+  }
   auto op0 = ext->GetOperand(0);
   auto op1 = ext->GetOperand(1); // starts
   auto op2 = ext->GetOperand(2); // ends
@@ -372,18 +406,17 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
 
   std::unordered_set<int32_t> axes;
 
-  ConstantBuilder cb(ext->GetParent()->GetParent());
   // If no axes operand, assumes all axes are sliced and steps are 1.
   Def op3 = Def::GetUndefined();
   Def op4 = Def::GetUndefined();
 
-  if ((ext->GetNumOfOperands() == 3) || (ext->GetNumOfOperands() == 4)) {
+  if ((op_num == 3) || (op_num == 4)) {
     std::vector<int> steps(input_dims, 1);
     Constant* c_steps =
         cb.CreateConstant(ext->GetName() + "_steps",
                           Type{DataType::INT32, {input_dims}}, steps.data());
     op4 = *c_steps;
-    if (ext->GetNumOfOperands() == 3) {
+    if (op_num == 3) {
       std::vector<int> data(input_dims);
       for (int i = 0; i < input_dims; ++i) {
         axes.insert(i);
@@ -396,13 +429,13 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
     }
   }
 
-  if (ext->GetNumOfOperands() >= 4) {
+  if (op_num >= 4) {
     op3 = ext->GetOperand(3); // axes
     if (!IsA<Constant>(op3)) {
       return {};
     }
 
-    if (ext->GetNumOfOperands() > 4) {
+    if (op_num > 4) {
       op4 = ext->GetOperand(4); // steps
       if (!IsA<Constant>(op4)) {
         return {};
@@ -574,9 +607,9 @@ static std::vector<Def> ConvertGatherElements(const ONNXExtensionInst* ext,
   int axis = attr->GetValueAsInteger();
   axis = axis < 0 ? static_cast<int>(idx_shape.size()) + axis : axis;
 
-  // if idx_shape[i] and input_shape[i] are 1 for all dims except for "axis", it
-  // can be converted to Gather. Otherwise, if idx_shape is a result of
-  // broadcasting, the input of broadcasting might be converted.
+  // if idx_shape[i] and input_shape[i] are 1 for all dims except for
+  // "axis", it can be converted to Gather. Otherwise, if idx_shape is a
+  // result of broadcasting, the input of broadcasting might be converted.
   bool can_be_gather = input_shape.size() == idx_shape.size();
   for (unsigned i = 0, e = input_shape.size(); can_be_gather && i < e; ++i) {
     can_be_gather &= (input_shape[i] == idx_shape[i] && input_shape[i] == 1) ||
@@ -596,13 +629,13 @@ static std::vector<Def> ConvertGatherElements(const ONNXExtensionInst* ext,
     ConstantBuilder cb(ext->GetParent()->GetParent());
     std::vector<int64_t> new_dims{idx_shape[axis]};
     Constant* c = cb.CreateConstant(
-        idx_op.GetDef()->GetName() + "_shape",
+        ext->GetName() + "_shape",
         Type{DataType::INT64, {static_cast<int64_t>(new_dims.size())}},
         new_dims.data());
 
     builder->SetInsertAfter(ext);
-    auto reshape = builder->CreateReshape(
-        idx_op.GetDef()->GetName() + "_reshape", idx_op, *c);
+    auto reshape =
+        builder->CreateReshape(ext->GetName() + "_reshape", idx_op, *c);
     auto new_inst = builder->CreateGather(ext->GetName(), {input_op, *reshape});
     new_inst->SetAxis(axis);
     return {*new_inst};
@@ -714,6 +747,265 @@ static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
   return ret_v;
 }
 
+void SplitString(const std::string& s, std::vector<int64_t>* v,
+                 const std::string& c) {
+  std::string::size_type pos2 = s.find(c);
+  std::string::size_type pos1 = 0;
+
+  while (std::string::npos != pos2) {
+    v->push_back(std::stol(s.substr(pos1, pos2 - pos1)));
+
+    pos1 = pos2 + c.size();
+    pos2 = s.find(c, pos1);
+  }
+  if (pos1 != s.length()) {
+    v->push_back(std::stol(s.substr(pos1)));
+  }
+}
+
+static std::vector<Def> ConvertHgEngine(const ONNXExtensionInst* ext,
+                                        IRBuilder* builder) {
+  auto n = ext->GetNumOfOperands();
+  HLCHECK(n >= 1);
+  builder->SetInsertAfter(ext);
+  int attr_idx = 0;
+  auto hg_engine = builder->CreateHgEngine(ext->GetName(), ext->GetOperands());
+
+  hg_engine->SetSerializedEngine(
+      ext->GetAttributes()[attr_idx++]->GetValueAsString());
+  hg_engine->SetInDataFormat(
+      ext->GetAttributes()[attr_idx++]->GetValueAsString());
+  hg_engine->SetOutDataFormat(
+      ext->GetAttributes()[attr_idx++]->GetValueAsString());
+  /// Hgai should define the stringlist to support output_shapes,
+  /// Now support one output
+  std::string shape_str = ext->GetAttributes()[attr_idx++]->GetValueAsString();
+  std::vector<std::vector<int64_t>> output_shapes;
+  output_shapes.resize(1);
+  SplitString(shape_str, &(output_shapes[0]), ",");
+  hg_engine->SetOutputShapes(output_shapes);
+  hg_engine->SetInBindingList(
+      {ext->GetAttributes()[attr_idx++]->GetValueAsString()});
+  hg_engine->SetOutBindingList(
+      {ext->GetAttributes()[attr_idx++]->GetValueAsString()});
+  hg_engine->SetInTypeList(
+      {ext->GetAttributes()[attr_idx++]->GetValueAsString()});
+  hg_engine->SetOutTypeList(
+      {ext->GetAttributes()[attr_idx++]->GetValueAsString()});
+
+  return {*hg_engine};
+}
+
+static std::vector<Def> ConvertHgQuant(const ONNXExtensionInst* ext,
+                                       IRBuilder* builder) {
+  auto input = ext->GetOperand(0);
+  const auto& input_type = input.GetType();
+  if (!input_type.IsValid()) {
+    return {};
+  }
+  /// By now the Hgai onnx interfce set in_scale/in_bias to sting
+  int attr_idx = 0;
+  std::vector<float> in_scale;
+  std::vector<float> in_bias;
+  in_scale.reserve(1);
+  in_bias.reserve(1);
+  in_scale.emplace_back(
+      std::stof(ext->GetAttributes()[attr_idx++]->GetValueAsString()));
+  in_bias.emplace_back(
+      std::stof(ext->GetAttributes()[attr_idx++]->GetValueAsString()));
+  std::string qtype = ext->GetAttributes()[attr_idx++]->GetValueAsString();
+  int is_per_channel = ext->GetAttributes()[attr_idx++]->GetValueAsInteger();
+
+  attr_idx += 1;
+  std::string in_data_format =
+      ext->GetAttributes()[attr_idx++]->GetValueAsString();
+  std::string out_data_format =
+      ext->GetAttributes()[attr_idx++]->GetValueAsString();
+
+  // get output channel size
+  int channel_idx = 3;
+  if (in_data_format == "NC" || in_data_format == "NCHW") {
+    channel_idx = 1;
+  }
+  int channel_size = input_type.GetDimSizes()[channel_idx];
+
+  builder->SetInsertAfter(ext);
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  Constant* c_scale = nullptr;
+  Constant* c_bias = nullptr;
+
+  if (is_per_channel != 0) {
+    HLCHECK(in_scale.size() == static_cast<size_t>(channel_size));
+    HLCHECK(in_bias.size() == static_cast<size_t>(channel_size));
+    Type type{DataType::FLOAT32, std::vector<int64_t>{channel_size}};
+    c_scale =
+        cb.CreateConstant(ext->GetName() + "_const_scale", type, in_scale);
+    c_bias = cb.CreateConstant(ext->GetName() + "_const_bias", type, in_bias);
+  } else {
+    HLCHECK(in_scale.size() == 1);
+    HLCHECK(in_bias.size() == 1);
+    std::vector<float> scale_data(1, in_scale[0]);
+    std::vector<float> bias_data(1, in_bias[0]);
+    Type scalar_type{DataType::FLOAT32, std::vector<int64_t>{1}};
+    c_scale = cb.CreateConstant(ext->GetName() + "_const_scale", scalar_type,
+                                scale_data);
+    c_bias = cb.CreateConstant(ext->GetName() + "_const_bias", scalar_type,
+                               bias_data);
+  }
+
+  // convert to mul+bias+round+cast+clip
+  // Mul
+  input = *(builder->CreateMul(ext->GetName() + "_scale", {input, *c_scale}));
+  input = *(builder->CreateAdd(ext->GetName() + "_bias", {input, *c_bias}));
+  // round
+  input = *(builder->CreateRound(ext->GetName() + "_round", {input}));
+  // cast
+  DataType dst_type;
+  int num_bits = halo::kEightBits;
+  if (qtype == "int8") {
+    dst_type = DataType::INT8;
+  } else if (qtype == "uint8") {
+    dst_type = DataType::UINT8;
+  } else if (qtype == "int16") {
+    dst_type = DataType::INT16;
+    num_bits = kSixteenBits;
+  } else if (qtype == "uint16") {
+    dst_type = DataType::UINT16;
+    num_bits = kSixteenBits;
+  } else {
+    HLCHECK(0 && "Wrong qtype");
+  }
+
+  FPtoSIInst* cast_inst =
+      builder->CreateFPtoSI(ext->GetName() + "_cast", {input});
+  cast_inst->SetDataType(dst_type);
+
+  // clip = Minimum(Maximum(op, hi), lo)
+  int hi = 0;
+  int lo = 0;
+  // get data range.
+  if (qtype == "int8" || qtype == "int16") {
+    hi = static_cast<int>(std::pow(2, num_bits - 1)) - 1;
+    lo = -hi;
+  } else {
+    hi = static_cast<int>(std::pow(2, num_bits)) - 1;
+    lo = 0;
+  }
+
+  Type type_int{DataType::INT32, std::vector<int64_t>{1}};
+  std::vector<int> hi_data(1, hi);
+  std::vector<int> lo_data(1, lo);
+  Constant* c_hi = cb.CreateConstant(ext->GetName() + "_hi", type_int, hi_data);
+  Constant* c_lo = cb.CreateConstant(ext->GetName() + "_lo", type_int, lo_data);
+  // Maximum
+  input = *(builder->CreateBinary(ext->GetName() + "_max", *cast_inst, *c_hi,
+                                  OpCode::MAXIMUM));
+  // Minimumåå
+  input = *(builder->CreateBinary(ext->GetName() + "_min", input, *c_lo,
+                                  OpCode::MINIMUM));
+
+  if (in_data_format != out_data_format) {
+    // transpose
+    TransposeInst* new_transpose =
+        builder->CreateTranspose(ext->GetName() + "_transpose", {input});
+    if ((in_data_format == "NCHW") && (out_data_format == "NHWC")) {
+      std::vector<int> nchw2nhwc{0, 2, 3, 1};
+      new_transpose->SetPermutation(nchw2nhwc);
+    } else if ((in_data_format == "NHWC") && (out_data_format == "NCHW")) {
+      std::vector<int> nhwc2nchw{0, 3, 1, 2};
+      new_transpose->SetPermutation(nhwc2nchw);
+    }
+    return {*new_transpose};
+  }
+
+  return {input};
+}
+
+static std::vector<Def> ConvertHgDeQuant(const ONNXExtensionInst* ext,
+                                         IRBuilder* builder) {
+  // HLCHECK(0 && "Wrong ConvertHgDeQuant");
+  auto input = ext->GetOperand(0);
+
+  const auto& input_type = input.GetType();
+  if (!input_type.IsValid()) {
+    return {};
+  }
+
+  int attr_idx = 0;
+  std::vector<float> in_scale;
+  std::vector<float> in_bias;
+  in_scale.reserve(1);
+  in_bias.reserve(1);
+  in_scale.emplace_back(
+      std::stof(ext->GetAttributes()[attr_idx++]->GetValueAsString()));
+  in_bias.emplace_back(
+      std::stof(ext->GetAttributes()[attr_idx++]->GetValueAsString()));
+  int is_per_channel = ext->GetAttributes()[attr_idx++]->GetValueAsInteger();
+  std::string in_data_format =
+      ext->GetAttributes()[attr_idx++]->GetValueAsString();
+  std::string out_data_format =
+      ext->GetAttributes()[attr_idx++]->GetValueAsString();
+
+  // get output channel size
+  int channel_idx = 3;
+  if (in_data_format == "NC" || in_data_format == "NCHW" ||
+      (input_type.GetDimSizes().size() <= 2)) {
+    channel_idx = 1;
+  }
+  int channel_size = input_type.GetDimSizes()[channel_idx];
+  builder->SetInsertAfter(ext);
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  Constant* c_scale = nullptr;
+  Constant* c_bias = nullptr;
+  Type type{DataType::FLOAT32, std::vector<int64_t>{channel_size}};
+  if (is_per_channel != 0) {
+    HLCHECK(in_scale.size() == static_cast<size_t>(channel_size));
+    HLCHECK(in_bias.size() == static_cast<size_t>(channel_size));
+    c_scale =
+        cb.CreateConstant(ext->GetName() + "_const_scale", type, in_scale);
+    c_bias = cb.CreateConstant(ext->GetName() + "_const_bias", type, in_bias);
+  } else {
+    HLCHECK(in_scale.size() == 1);
+    HLCHECK(in_bias.size() == 1);
+    std::vector<float> scale_data(1, in_scale[0]);
+    std::vector<float> bias_data(1, in_bias[0]);
+    Type scalar_type{DataType::FLOAT32, std::vector<int64_t>{1}};
+    c_scale = cb.CreateConstant(ext->GetName() + "_const_scale", scalar_type,
+                                scale_data);
+    c_bias = cb.CreateConstant(ext->GetName() + "_const_bias", scalar_type,
+                               bias_data);
+  }
+
+  // convert to cast+mul+bias
+
+  // cast
+  SItoFPInst* cast_inst =
+      builder->CreateSItoFP(ext->GetName() + "_cast", {input});
+  cast_inst->SetDataType(DataType::FLOAT32);
+
+  // Mul
+  input =
+      *(builder->CreateMul(ext->GetName() + "_scale", {*cast_inst, *c_scale}));
+  // bias_add
+  input = *(builder->CreateAdd(ext->GetName() + "_bias", {input, *c_bias}));
+
+  if (in_data_format != out_data_format) {
+    // transpose
+    TransposeInst* new_transpose =
+        builder->CreateTranspose(ext->GetName() + "_transpose", {input});
+    if ((in_data_format == "NCHW") && (out_data_format == "NHWC")) {
+      std::vector<int> nchw2nhwc{0, 2, 3, 1};
+      new_transpose->SetPermutation(nchw2nhwc);
+    } else if ((in_data_format == "NHWC") && (out_data_format == "NCHW")) {
+      std::vector<int> nhwc2nchw{0, 3, 1, 2};
+      new_transpose->SetPermutation(nhwc2nchw);
+    }
+    return {*new_transpose};
+  }
+
+  return {input};
+}
+
 static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
                                              IRBuilder* builder) {
   switch (onnx_inst->GetExtOpCode()) {
@@ -764,6 +1056,19 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::SPLIT: {
       return ConvertSplit(onnx_inst, builder);
+    }
+    // Todo: DNNl and ODLA should support quant/dequant op, for performace
+    // considerations; Now split the Hgai quant op to
+    // Mul+Add+Round+Cast+Max+Min+Transpose; Split Hgai dequant op to
+    // Cast+Mul+Add+Tranpose;
+    case ONNXExtOpCode::HGQUANT: {
+      return ConvertHgQuant(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::HGDEQUANT: {
+      return ConvertHgDeQuant(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::HGENGINE: {
+      return ConvertHgEngine(onnx_inst, builder);
     }
     default: {
       HLCHECK(0 && "Unhandled");

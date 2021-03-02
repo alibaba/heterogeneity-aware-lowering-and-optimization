@@ -39,9 +39,9 @@ def ONNX_AveragePool : OpMapping<"AveragePool", PoolingAvg> {
     AttributeMapping<"pads", "padding_top", "{0,0,0,0}", 1>,
     AttributeMapping<"pads", "padding_right", "{0,0,0,0}", 2>,
     AttributeMapping<"pads", "padding_bottom", "{0,0,0,0}", 3>,
+    AttributeMapping<"ceil_mode", "round_mode", "0">,
     AttributeMapping<"group", "group", "1">];
   let extension_attr_ = [
-    ExtensionAttr<"ceil_mode", Integer, "0">,
     ExtensionAttr<"dilations", IntegerList, "{1,1}">,
     ExtensionAttr<"storage_order", Integer, "0">];
 }
@@ -154,7 +154,7 @@ def ONNX_Greater: OpMapping<"Greater", Greater>;
 def ONNX_Identity : ONNXExtension<"Identity">;
 
 def ONNX_LeakyRelu : OpMapping<"LeakyRelu", LeakyRelu> {
-  let attr_mapping_ = [ AttributeMapping<"alpha", "alpha", "0.2"> ];
+  let attr_mapping_ = [ AttributeMapping<"alpha", "alpha", "0.01"> ];
 }
 
 def ONNX_Log : OpMapping<"Log", Log>;
@@ -192,9 +192,10 @@ def ONNX_MaxPool : OpMapping<"MaxPool", PoolingMax> {
     AttributeMapping<"pads", "padding_top", "{0,0,0,0}", 1>,
     AttributeMapping<"pads", "padding_right", "{0,0,0,0}", 2>,
     AttributeMapping<"pads", "padding_bottom", "{0,0,0,0}", 3>,
-    AttributeMapping<"group", "group", "1">];
+    AttributeMapping<"group", "group", "1">,
+    AttributeMapping<"ceil_mode", "round_mode", "0">];
+
   let extension_attr_ = [
-    ExtensionAttr<"ceil_mode", Integer, "0">,
     ExtensionAttr<"dilations", IntegerList, "{1,1}">,
     ExtensionAttr<"storage_order", Integer, "0">];
 }
@@ -354,5 +355,47 @@ def ONNX_Upsample : OpMapping<"Upsample", Resize> {
   let attr_mapping_ = [
     AttributeMapping<"", "axes_mask", "-1">,
     AttributeMapping<"", "explicit_shape", "false">
+  ];
+}
+
+def ONNX_HgEngine : TFExtension<"HgEngine"> {
+  let extension_attr_ = [
+    ExtensionAttr<"serialized_engine", String, "{}">,
+    ExtensionAttr<"in_data_format", String, "{}">,
+    ExtensionAttr<"out_data_format", String, "{}">,
+    ExtensionAttr<"_output_shapes", String, "{}">,
+    ExtensionAttr<"in_binding_list", String, "{}">,
+    ExtensionAttr<"out_binding_list", String, "{}">,
+    ExtensionAttr<"in_type_list", String, "{}">,
+    ExtensionAttr<"out_type_list", String, "{}">,];
+}
+
+def ONNX_HgQuant : TFExtension<"HgQuant"> {
+  let extension_attr_ = [
+    ExtensionAttr<"in_scale", String, "\"1.0\"">,
+    ExtensionAttr<"in_bias", String, "\"0.0\"">,
+    ExtensionAttr<"qtype", String, "\"int8\"">,
+    ExtensionAttr<"is_per_channel", Integer, "0">,
+    ExtensionAttr<"round_mode", Integer, "0">,
+    ExtensionAttr<"in_data_format", String, "\"NHWC\"">,
+    ExtensionAttr<"out_data_format", String, "\"NHWC\"">,
+    ExtensionAttr<"model_name", String, "\"\"">,
+    ExtensionAttr<"op_name", String, "\"\"">,
+    ExtensionAttr<"in_type", String, "\"FLOAT32\"">,
+    ExtensionAttr<"out_type", String, "\"INT8\"">
+  ];
+}
+
+def ONNX_HgDequant : TFExtension<"HgDequant"> {
+  let extension_attr_ = [
+    ExtensionAttr<"in_scale", String, "\"1.0\"">,
+    ExtensionAttr<"in_bias", String, "\"0.0\"">,
+    ExtensionAttr<"is_per_channel", Integer, "0">,
+    ExtensionAttr<"in_data_format", String, "\"NHWC\"">,
+    ExtensionAttr<"out_data_format", String, "\"NHWC\"">,
+    ExtensionAttr<"model_name", String, "\"\"">,
+    ExtensionAttr<"op_name", String, "\"\"">,
+    ExtensionAttr<"in_type", String, "\"INT8\"">,
+    ExtensionAttr<"out_type", String, "\"FLOAT32\"">
   ];
 }

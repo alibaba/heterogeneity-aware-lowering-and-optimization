@@ -52,8 +52,20 @@ Status ONNXParser::Parse(Function* function,
   google::protobuf::io::CodedInputStream coded_stream(&input_stream);
   coded_stream.SetTotalBytesLimit((2048LL << 20) - 1, 512LL << 20);
   if (!model_def.ParseFromCodedStream(&coded_stream)) {
-    LOG(ERROR) << "Encountered error(s) when parsing " << file_list.front();
-    return Status::ASSERTION;
+    // Try to parse it as data file.
+    ifs.clear();
+    ifs.seekg(0);
+    onnx::TensorProto tensor_def;
+    if (tensor_def.ParsePartialFromIstream(&ifs)) {
+      c_builder_ = std::make_unique<ConstantBuilder>(function->GetParent());
+      // Use the function name as data for testing purpose.
+      tensor_def.set_name(function->GetName());
+      ConvertConstNode(tensor_def);
+      return Status::SUCCESS;
+    } else {
+      LOG(ERROR) << "Encountered error(s) when parsing " << file_list.front();
+      return Status::ASSERTION;
+    }
   }
   if (!model_def.has_graph()) {
     LOG(ERROR) << "No graph is defined in onnx file.";
@@ -333,10 +345,9 @@ Tensor<T> ONNXParser::ProcessTensor(const onnx::TensorProto& tensor_proto) {
     LOG(ERROR) << "Unsupported external data storage.";
   }
 
-  if (shape.empty() && !v.empty()) {
+  if (shape.empty() && v.size() > 1) {
     shape.push_back(v.size());
   }
-
   return Tensor<T>(data_type, shape, v);
 }
 
@@ -580,6 +591,25 @@ bool ONNXAttrs::Process<std::vector<float>>(const std::string& key,
   return true;
 }
 
+/// Get Attr for Shape
+template <>
+bool ONNXAttrs::Process<std::vector<std::vector<int64_t>>>(
+    const std::string& key, std::vector<std::vector<int64_t>>* value) {
+  if (!attr_map_.count(key)) {
+    return false;
+  }
+  value->clear();
+  const auto& attr_value = attr_map_.at(key);
+  HLCHECK(attr_value.type() == onnx::AttributeProto::STRINGS);
+  /// HgEngine only support single optput in onnx
+  int size = attr_value.strings_size();
+  (*value).reserve(size);
+  for (int i = 0; i < size; ++i) {
+    (*value).emplace_back(std::stol(attr_value.strings(i)));
+  }
+  return true;
+}
+
 template <>
 bool ONNXAttrs::Process<Padding>(const std::string& key, Padding* padding) {
   if (!attr_map_.count(key)) {
@@ -641,5 +671,9 @@ Status ONNXParser::ConvertDummyNode(const onnx::NodeProto& node_def) {
 
 // convert to halo ir def func
 #include "onnx_convert.cc.inc"
+
+std::unique_ptr<Parser> CreateONNXParser() {
+  return std::make_unique<ONNXParser>();
+}
 
 } // end namespace halo

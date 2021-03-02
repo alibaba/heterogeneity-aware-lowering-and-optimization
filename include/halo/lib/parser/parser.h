@@ -34,6 +34,7 @@ struct Opts {
   bool print_diagnostic_report = false;
   bool convert_to_ipu_graphdef = false;
   std::string output_graphdef_filename;
+  std::vector<std::vector<std::string>> split_names;
 };
 
 } // namespace armory
@@ -60,6 +61,12 @@ class Parser {
                       const std::vector<std::string>& file_list,
                       const armory::Opts& opts);
 };
+
+extern std::unique_ptr<Parser> CreateIPUParser(const std::string& variant);
+extern std::unique_ptr<Parser> CreateTFParser(const std::string& variant);
+extern std::unique_ptr<Parser> CreateONNXParser();
+extern std::unique_ptr<Parser> CreateTFLITEParser();
+extern std::unique_ptr<Parser> CreateCAFFEParser();
 
 template <typename T>
 class Tensor {

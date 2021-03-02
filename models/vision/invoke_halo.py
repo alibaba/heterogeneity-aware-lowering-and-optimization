@@ -173,6 +173,7 @@ if __name__ == "__main__":
         exit(1)
 
     c_lib = ctypes.CDLL(model_lib)
+    res_info = []
     ### preprocessing ###
     for i, path in enumerate(files):
         image = get_image_as_ndarray(path, args.input_h, args.input_w)
@@ -189,6 +190,17 @@ if __name__ == "__main__":
         c_lib.model(ctypes.c_void_p(image.ctypes.data), ret)
         ret = np.array(ret)
         ind = ret.argsort()[-3:][::-1]
+
         if clsidx:
             print(path, '==>', clsidx[ind[0]])
+            res_info.append(path.split('/')[-1] + ' ==> ' + clsidx[ind[0]])
+        else:
+            res_info.append(ind)
+    resfile = []
+    if ".onnx" in model_file[0]:
+        resfile = model_file[0].split('.onnx')[0] + '_' +args.odla + '.txt'
+    else:
+        resfile = model_file[1].split('.caffemodel')[0] + '_' +args.odla + '.txt'
+    with open(resfile, 'w') as f:
+        f.write(''.join(str(i) for i in res_info))
     print("======== Testing Done ========")

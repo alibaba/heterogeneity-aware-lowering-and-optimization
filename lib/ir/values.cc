@@ -249,7 +249,9 @@ void IRObject::ReplaceAllUsesWith(size_t result_idx, const Def& new_def) {
 }
 
 void IRObject::ReplaceAllUsesWith(const std::vector<Def>& new_defs) {
-  HLCHECK(new_defs.size() == results_types_.size());
+  for (size_t i = new_defs.size(); i < results_types_.size(); ++i) {
+    HLCHECK(GetResultsUses()[i].empty());
+  }
   for (size_t i = 0, e = new_defs.size(); i < e; ++i) {
     ReplaceAllUsesWith(i, new_defs[i]);
   }

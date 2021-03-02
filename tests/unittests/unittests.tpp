@@ -1,4 +1,4 @@
-//===- test_util.tpp --------------------------------------------------------===//
+//===- unittests.tpp --------------------------------------------------------===//
 //
 // Copyright (C) 2019-2020 Alibaba Group Holding Limited.
 //
@@ -19,7 +19,7 @@ template <typename T>
 static bool is_nan(const T& x) {
   return x != x;
 }
-
+#if LOAD_DATA
 FileExtension UnitTests::GetFileExtension(string test_case_name) {
   FileExtension file_ext = FE_END;
   size_t name_size = test_case_name.size();
@@ -53,7 +53,16 @@ vector<T> UnitTests::ConvertPbToVec(string test_case_name) {
 
   vector<T> res_data;
   onnx::TensorProto tensor_def;
-  if (!tensor_def.ParseFromIstream(&inputfile)) {
+
+  std::string data{std::istreambuf_iterator<char>{inputfile},
+                   std::istreambuf_iterator<char>{}};
+  google::protobuf::io::ArrayInputStream input_stream(
+      data.c_str(), static_cast<int>(data.size()));
+  google::protobuf::io::CodedInputStream coded_stream(&input_stream);
+  coded_stream.SetTotalBytesLimit((2048LL << 20) - 1, 512LL << 20);
+
+  //if (!tensor_def.ParseFromIstream(&inputfile)) {
+  if (!tensor_def.ParseFromCodedStream(&coded_stream)) {
     cerr << "Encountered error(s) when parsing" << test_case_name;
     res_data.clear();
     return res_data;
@@ -69,6 +78,7 @@ vector<T> UnitTests::ConvertPbToVec(string test_case_name) {
   for (size_t i = 0; i < raw_data_size; ++i) {
     res_data.push_back(*ptr++);
   }
+  google::protobuf::ShutdownProtobufLibrary();
   return res_data;
 }
 
@@ -120,9 +130,10 @@ vector<T> UnitTests::LoadOutData(string test_case_dir,
       <<  data_set_id << "/output_" << output_id << ".pb";
   return LoadSingleData<T>(oss.str());
 }
+#endif
 
 template <typename T>
-void UnitTests::CheckResult(size_t num_out,
+void UnitTests::CheckResult(const std::vector<size_t>& num_elems,
                               void* out[],
                               const void* out_ref[],
                               string test_case_dir,
@@ -140,11 +151,10 @@ void UnitTests::CheckResult(size_t num_out,
   oss << "time: " << times;
   }
 #endif
-  size_t i = 0;
-  for (; i < num_out; ++i) {
+  for (size_t i = 0; i < num_elems.size(); ++i) {
     T* out_data = reinterpret_cast<T*>(out[i]);
     const T* out_ref_data = reinterpret_cast<const T*>(out_ref[i]);
-    size_t elem_size = sizeof(out_data) / sizeof(T);
+    size_t elem_size = num_elems[i];
     for (size_t j = 0; j < elem_size; ++j) {
       bool nan_mismatch = (isnan(out_data[j]) ^ isnan(out_ref_data[j]));
       if (nan_mismatch || fabs(out_data[j] - out_ref_data[j]) > thre) {

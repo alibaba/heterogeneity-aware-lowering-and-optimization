@@ -30,10 +30,14 @@ static llvm::cl::list<std::string> ModelFiles(
 
 static llvm::cl::opt<Parser::Format> ModelFormat(
     "x",
-    llvm::cl::desc(
-        "format of the following input model files. Permissible formats "
-        "include: TENSORFLOW CAFFE ONNX MXNET. If unspecified, the format is "
-        "guessed base on file's extension."),
+    llvm::cl::values(clEnumValN(Parser::Format::CAFFE, "caffe", "CAFFE format"),
+                     clEnumValN(Parser::Format::ONNX, "onnx", "ONNX format"),
+                     clEnumValN(Parser::Format::TENSORFLOW, "tensorflow",
+                                "Tensorflow format"),
+                     clEnumValN(Parser::Format::TFLITE, "tflite",
+                                "TFLite format")),
+    llvm::cl::desc("format of input model files. If unspecified, the format is "
+                   "guessed base on file's extension."),
     llvm::cl::init(Parser::Format::INVALID));
 
 static llvm::cl::opt<signed> Batch(
@@ -49,6 +53,16 @@ static llvm::cl::list<std::string> InputsShape(
     "input-shape",
     llvm::cl::desc("Specify input names like -input-shape=foo:1x3x100x100 "
                    "-input-shape=bar:int8:-1x3x200x200"));
+
+static llvm::cl::opt<std::string> PreprocessScale(
+    "preproc-scale",
+    llvm::cl::desc(
+        "Insert scale operation to input. E.g. "
+        "`-preproc-scale:1.0,-2.0,3.0,10,20,30`."
+        "The number of values are comma separated and should be "
+        "even. The first n values are for addition, the next n "
+        "values are for multiplication. It should be broadcasting "
+        "to input shape. Invalid if there are more than one inputs. "));
 
 /// Guess the model format based on input file extension.gg
 static Parser::Format InferFormat(

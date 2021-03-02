@@ -42,16 +42,17 @@ enum class Dialect {
 };
 
 struct Opts {
-  Opts(const bool& en_bf16) : enable_bf16(en_bf16) {}
+  Opts(const CodeGen::BF16Mode& mode) : bf16_mode(mode) {}
   Opts() = default;
-  bool enable_bf16 = false;
   Dialect dialect = Dialect::CXX_11;
   bool print_mem_stats = false;
   bool emit_value_reset = false;
   bool emit_value_init = false;
   bool emit_value_id_as_int = false;
+  CodeGen::BF16Mode bf16_mode = CodeGen::BF16Mode::Disable;
   CodeGen::ExecMode exec_mode = CodeGen::ExecMode::Compile;
   bool emit_inference_func_sig = false;
+  bool emit_model_info_apis = false;
   bool emit_dynamic_batch = false;
   bool fp16_mode = false;
   int max_batch_size = 0;
@@ -159,6 +160,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(PoolingMaxInst*) override;
   virtual void RunOnInstruction(PoolingAvgInst*) override;
   virtual void RunOnInstruction(PReluInst*) override;
+  virtual void RunOnInstruction(RandomUniformInst*) override;
   virtual void RunOnInstruction(ReduceL1Inst*) override;
   virtual void RunOnInstruction(ReduceL2Inst*) override;
   virtual void RunOnInstruction(ReduceLogSumInst*) override;
@@ -182,6 +184,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(TransposeInst*) override;
   virtual void RunOnInstruction(TileInst*) override;
   virtual void RunOnInstruction(ZExtInst*) override;
+  virtual void RunOnInstruction(HgEngineInst*) override;
 
   virtual void RunOnBinaryInstruction(Instruction*);
   virtual void RunOnCastInstruction(Instruction*);
@@ -212,6 +215,8 @@ class GenericCXXCodeGen : public CodeGen {
   void EmitODLAArgs(const CXXValue& arg);
   void EmitODLAArgs(const bool& arg);
   void EmitODLAArgs(const DataFormat& arg);
+  void EmitODLAArgs(const std::vector<halo::Type>& arg);
+  void EmitODLAArgs(const std::vector<std::string>& arg);
 
   template <typename T>
   void EmitODLAArgs(const T& arg) {
@@ -225,6 +230,14 @@ class GenericCXXCodeGen : public CodeGen {
     EmitODLAArgs(args...);
   }
 
+  inline void EmitODLAVauleId(const CXXValue& lhs, std::ostream& os) {
+    if (opts_.emit_value_id_as_int) {
+      os << lhs.id;
+    } else {
+      os << "\"" << (lhs.str_id.empty() ? lhs.name : lhs.str_id) << "\"";
+    }
+  }
+
   template <int indent = 2, bool is_op = true, typename... Targs>
   void EmitODLACall(const CXXValue& lhs, const char* func_name, Targs... args) {
     os_ << std::string(indent, ' ');
@@ -233,13 +246,39 @@ class GenericCXXCodeGen : public CodeGen {
     EmitODLAArgs(args...);
     if (is_op) {
       os_ << ", (const odla_value_id)";
-      if (opts_.emit_value_id_as_int) {
-        os_ << lhs.id;
-      } else {
-        os_ << "\"" << (lhs.str_id.empty() ? lhs.name : lhs.str_id) << "\"";
-      }
+      EmitODLAVauleId(lhs, os_);
     }
     os_ << ");\n";
+  }
+
+  template <int indent = 2, bool is_op = true, typename... Targs>
+  void EmitODLACall(const std::vector<CXXValue>& lhs, const char* func_name,
+                    Targs... args) {
+    os_ << std::string(indent, ' ');
+    auto ret_array = lhs[0].name + "_array";
+    os_ << EmitLValues(ret_array) << " = ";
+    os_ << func_name << "(";
+    EmitODLAArgs(args...);
+    if (is_op) {
+      unsigned int id = 0;
+      os_ << ", {.size = " << lhs.size() << ", .value_ids = {";
+      for (auto& one : lhs) {
+        os_ << "(const odla_value_id)";
+        EmitODLAVauleId(one, os_);
+        if (++id != lhs.size()) {
+          os_ << ", ";
+        }
+      }
+      os_ << "}}";
+    }
+    os_ << ");\n";
+
+    unsigned int id = 0;
+    for (auto& one : lhs) {
+      os_ << std::string(indent, ' ');
+      os_ << EmitLValue(one.name) << " = " << ret_array << ".values[" << id++
+          << "];";
+    }
   }
 
   virtual const std::string& EmitNull() const noexcept;

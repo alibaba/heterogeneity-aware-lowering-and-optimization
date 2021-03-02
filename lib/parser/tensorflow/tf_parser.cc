@@ -1,4 +1,4 @@
-///===- tf_parser.cc ------------------------------------------------------===//
+//===- tf_parser.cc -------------------------------------------------------===//
 //
 // Copyright (C) 2019-2020 Alibaba Group Holding Limited.
 //
@@ -29,6 +29,7 @@
 #include "halo/lib/framework/common.h"
 #include "halo/lib/framework/type.h"
 #include "halo/lib/ir/ir_builder.h"
+#include "xla.pb.h"
 
 namespace halo {
 
@@ -872,7 +873,7 @@ Status TFParser::ConvertDummyNode(const tensorflow::NodeDef& node_def) {
 
 Status IPUParser::Parse(BasicBlock* bb, const tensorflow::GraphDef& graph_def,
                         const armory::Opts& opts) {
-  return ConvertToIpuGraphDef(graph_def, opts.output_graphdef_filename);
+  return ConvertToIpuGraphDef(graph_def, opts);
 }
 
 Status IPUParser::SetAttributes(tensorflow::NodeDef* cur_node) {
@@ -901,18 +902,54 @@ Status IPUParser::SetAttributes(tensorflow::NodeDef* cur_node) {
   return Status::SUCCESS;
 }
 
+Status IPUParser::ManualSharding(tensorflow::NodeDef* cur_node,
+                                 const armory::Opts& opts) {
+  auto set_sharding_attr = [&](int64_t value) {
+    ::xla::OpSharding op_sharding;
+    op_sharding.set_type(::xla::OpSharding_Type::OpSharding_Type_MAXIMAL);
+    op_sharding.add_tile_assignment_devices(value);
+    tensorflow::AttrValue attr;
+    std::string s;
+    op_sharding.SerializeToString(&s);
+    attr.set_s(s);
+    (*(cur_node->mutable_attr()))["_XlaSharding"] = attr;
+  };
+
+  for (size_t i = 0, sharding_num = opts.split_names.size(); i < sharding_num;
+       ++i) {
+    bool founded = false;
+    for (size_t j = 0; j < opts.split_names[i].size(); ++j) {
+      if (auto it = cur_node->name().find(opts.split_names[i][j]);
+          it != std::string::npos) {
+        set_sharding_attr(i);
+        founded = true;
+      }
+    }
+    if (!founded) {
+      set_sharding_attr(sharding_num);
+    }
+  }
+
+  return Status::SUCCESS;
+}
+
 Status IPUParser::ConvertToIpuGraphDef(const tensorflow::GraphDef& graph_def,
-                                       const std::string& filename) {
+                                       const armory::Opts& opts) {
   Status s = Status::SUCCESS;
   for (auto& cur_node : graph_def.node()) {
     s = SetAttributes(const_cast<tensorflow::NodeDef*>(&cur_node));
     if (s != Status::SUCCESS) {
       return s;
     }
+    s = ManualSharding(const_cast<tensorflow::NodeDef*>(&cur_node), opts);
+    if (s != Status::SUCCESS) {
+      return s;
+    }
   }
 
   // Serialization ipu format graphdef
-  std::fstream ofs(filename, std::ios::out | std::ios::binary);
+  std::fstream ofs(opts.output_graphdef_filename,
+                   std::ios::out | std::ios::binary);
   HLCHECK(!ofs.fail());
   if (!graph_def.SerializeToOstream(&ofs)) {
     LOG(ERROR) << "Serialization output pb file error";
@@ -934,5 +971,13 @@ Status IPUParser::ConvertToIpuGraphDef(const tensorflow::GraphDef& graph_def,
 
 // convert to halo ir def func
 #include "tf_convert.cc.inc"
+
+std::unique_ptr<Parser> CreateTFParser(const std::string& variant) {
+  return std::make_unique<TFParser>(variant);
+}
+
+std::unique_ptr<Parser> CreateIPUParser(const std::string& variant) {
+  return std::make_unique<IPUParser>(variant);
+}
 
 } // namespace halo

@@ -27,92 +27,35 @@
 
 namespace halo {
 
-static void CreateAttributeMap(const CAFFEExtensionInst* ext,
-                               std::unordered_map<std::string, int>* attr_map) {
-  int idx = 0;
-  for (const auto& it : ext->GetAttributes()) {
-    attr_map->emplace(it->GetName(), idx++);
-  }
-}
-
-static void GetAttributeValue(float* value, const Attribute& attr) {
-  *value = attr.GetValueAsFloat();
-}
-
-static void GetAttributeValue(bool* value, const Attribute& attr) {
-  *value = attr.GetValueAsBool();
-}
-
-static void GetAttributeValue(int* value, const Attribute& attr) {
-  *value = attr.GetValueAsInteger();
-}
-
-template <typename T>
-static T FindAttributeValue(const CAFFEExtensionInst* ext,
-                            const std::string& name, const T& default_val) {
-  T ret_val = default_val;
-  for (const auto& it : ext->GetAttributes()) {
-    if (it->GetName() == name) {
-      GetAttributeValue(&ret_val, *it);
-    }
-  }
-  return ret_val;
-}
-
 static std::vector<Def> ConvertConvolution(const CAFFEExtensionInst* ext,
                                            IRBuilder* builder) {
-  std::unordered_map<std::string, int> attr_map;
-  CreateAttributeMap(ext, &attr_map);
-
   std::vector<int> pad(2, 0);
-  if (const auto& it = attr_map.find("pad"); it != attr_map.end()) {
-    const auto& pad_list =
-        ext->GetAttributes()[it->second].get()->GetValueAsIntegerList();
-    if (!pad_list.empty()) {
-      pad[0] = pad_list.front();
-      pad[1] = pad_list.back();
-    }
+  pad = FindAttributeValue(ext, "pad", pad);
+  if (pad.size() == 1) {
+    pad.push_back(pad.front());
   }
-  if (const auto& it = attr_map.find("pad_h"); it != attr_map.end()) {
-    pad[0] = ext->GetAttributes()[it->second].get()->GetValueAsInteger();
-  }
-  if (const auto& it = attr_map.find("pad_w"); it != attr_map.end()) {
-    pad[1] = ext->GetAttributes()[it->second].get()->GetValueAsInteger();
-  }
-
+  pad[0] = FindAttributeValue(ext, "pad_h", pad[0]);
+  pad[1] = FindAttributeValue(ext, "pad_w", pad[1]);
   std::vector<int> stride(4, 1);
-  if (const auto& it = attr_map.find("stride_h"); it != attr_map.end()) {
-    stride[2] = ext->GetAttributes()[it->second].get()->GetValueAsInteger();
-  } else if (const auto& it = attr_map.find("stride"); it != attr_map.end()) {
-    const auto& value =
-        ext->GetAttributes()[it->second].get()->GetValueAsIntegerList();
-    stride[2] = value.empty() ? 1 : value[0];
+  stride = FindAttributeValue(ext, "stride", stride);
+  if (stride.size() == 1) {
+    stride.push_back(stride.front());
   }
-  if (const auto& it = attr_map.find("stride_w"); it != attr_map.end()) {
-    stride[3] = ext->GetAttributes()[it->second].get()->GetValueAsInteger();
-  } else if (const auto& it = attr_map.find("stride"); it != attr_map.end()) {
-    const auto& value =
-        ext->GetAttributes()[it->second].get()->GetValueAsIntegerList();
-    stride[3] = value.empty() ? 1 : value.back();
+  while (stride.size() < 4) {
+    stride.insert(stride.begin(), 1);
   }
+  stride[2] = FindAttributeValue(ext, "stride_h", stride[2]);
+  stride[3] = FindAttributeValue(ext, "stride_w", stride[3]);
 
   std::vector<int> dilation(4, 1);
-  if (const auto& it = attr_map.find("dilation"); it != attr_map.end()) {
-    const auto& value =
-        ext->GetAttributes()[it->second].get()->GetValueAsIntegerList();
-    // N and C set to 1
-    dilation[2] = value.empty() ? 1 : value[0];
-    dilation[3] = (value.size() > 1) ? value[1] : dilation[2];
-  }
-  int group = 1;
-  if (const auto& it = attr_map.find("group"); it != attr_map.end()) {
-    group = ext->GetAttributes()[it->second].get()->GetValueAsInteger();
-  }
+  const auto value = FindAttributeValue(ext, "dilation", dilation);
+  // N and C set to 1
+  dilation[2] = value.empty() ? 1 : value[0];
+  dilation[3] = (value.size() > 1) ? value[1] : dilation[2];
 
-  bool bias_term = true;
-  if (const auto& it = attr_map.find("bias_term"); it != attr_map.end()) {
-    bias_term = ext->GetAttributes()[it->second].get()->GetValueAsBool();
-  }
+  int group = FindAttributeValue(ext, "group", 1);
+
+  bool bias_term = FindAttributeValue(ext, "bias_term", true);
 
   HLCHECK(ext->GetNumOfOperands() == 2 || ext->GetNumOfOperands() == 3);
   auto input = ext->GetOperand(0);
@@ -200,17 +143,12 @@ static std::vector<Def> ConvertEltwise(const CAFFEExtensionInst* ext,
   auto rhs = ext->GetOperand(1);
 
   std::unordered_map<std::string, int> attr_map;
-  CreateAttributeMap(ext, &attr_map);
   std::vector<OpCode> ops = {OpCode::MUL, OpCode::ADD, OpCode::MAXIMUM};
-  OpCode op_code = OpCode::ADD;
-  if (auto it = attr_map.find("operation"); it != attr_map.end()) {
-    int value = ext->GetAttributes()[it->second].get()->GetValueAsInteger();
-    op_code = ops[value];
-  }
-  if (auto it = attr_map.find("coeff");
-      it != attr_map.end() && op_code == OpCode::ADD) {
-    const auto& coeff =
-        ext->GetAttributes()[it->second].get()->GetValueAsFloatList();
+  OpCode op_code = ops[FindAttributeValue(ext, "operation", 1)];
+
+  if (HasAttribute(ext, "coeff") && op_code == OpCode::ADD) {
+    std::vector<float> coeff;
+    coeff = FindAttributeValue(ext, "coeff", coeff);
     if (coeff.size() == 2) {
       // TODO (unknown) support more case
       HLCHECK(coeff[0] == 1.0 && coeff[1] == -1.0);
@@ -228,10 +166,21 @@ static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
   const auto& input_type = input.GetType();
   bool global_pooling = FindAttributeValue<bool>(ext, "global_pooling", false);
   int stride = FindAttributeValue(ext, "stride", 1);
-  int kernel_size_h = FindAttributeValue(ext, "kernel_size", -1);
-  int kernel_size_w = kernel_size_h;
+  int stride_h = FindAttributeValue(ext, "stride_h", stride);
+  int stride_w = FindAttributeValue(ext, "stride_w", stride);
+  int kernel_size = FindAttributeValue(ext, "kernel_size", -1);
+  int kernel_size_h = FindAttributeValue(ext, "kernel_h", kernel_size);
+  int kernel_size_w = FindAttributeValue(ext, "kernel_w", kernel_size);
+  int pool = FindAttributeValue(ext, "pool", 0);
+  HLCHECK(pool == 0 || pool == 1);
 
   int pad = FindAttributeValue(ext, "pad", 0);
+  int pad_h = FindAttributeValue(ext, "pad_h", pad);
+  int pad_w = FindAttributeValue(ext, "pad_w", pad);
+
+  bool ceil_mode = FindAttributeValue<bool>(ext, "ceil_mode", true);
+  // If ceil_mode is set to false (non-default), we always use it.
+  int round_mode = !ceil_mode ? 1 : FindAttributeValue(ext, "round_mode", 0);
 
   if (global_pooling) {
     if (!input_type.IsValid()) {
@@ -240,21 +189,33 @@ static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
     kernel_size_h = input_type.GetNumOfElementsInDim(2);
     kernel_size_w = input_type.GetNumOfElementsInDim(3);
 
-    stride = 1;
-    pad = 0;
+    stride_h = 1;
+    stride_w = 1;
+
+    pad_h = 0;
+    pad_w = 0;
   }
 
-  PoolingMaxInst* inst =
-      builder->CreatePoolingMax(ext->GetName(), ext->GetOperand(0));
-  inst->SetKsize({1, 1, kernel_size_h, kernel_size_w});
-  inst->SetPaddingLeft(pad);
-  inst->SetPaddingRight(pad);
-  inst->SetPaddingTop(pad);
-  inst->SetPaddingBottom(pad);
-  inst->SetStrides({1, 1, stride, stride});
-  inst->SetPadding(Padding::EXPLICIT);
-  inst->SetDataFormat(DataFormat::NCHW);
+  auto set_pooling_attributes = [&](auto inst) {
+    inst->SetKsize({1, 1, kernel_size_h, kernel_size_w});
+    inst->SetPaddingLeft(pad_w);
+    inst->SetPaddingRight(pad_w);
+    inst->SetPaddingTop(pad_h);
+    inst->SetPaddingBottom(pad_h);
+    inst->SetStrides({1, 1, stride_h, stride_w});
+    inst->SetPadding(Padding::EXPLICIT);
+    inst->SetDataFormat(DataFormat::NCHW);
+    inst->SetRoundMode(round_mode == 0 ? 1 : 0);
+  };
 
+  Instruction* inst = nullptr;
+  if (pool == 0) {
+    inst = builder->CreatePoolingMax(ext->GetName(), ext->GetOperand(0));
+    set_pooling_attributes(DynCast<PoolingMaxInst>(inst));
+  } else {
+    inst = builder->CreatePoolingAvg(ext->GetName(), ext->GetOperand(0));
+    set_pooling_attributes(DynCast<PoolingAvgInst>(inst));
+  }
   return {*inst};
 }
 
@@ -363,8 +324,8 @@ static std::vector<Def> ConvertScale(const CAFFEExtensionInst* ext,
     auto op2 = ext->GetOperand(2);
     if (bn_without_scale && op1.GetType().GetTotalNumOfElements() == ch &&
         op2.GetType().GetTotalNumOfElements() == ch) {
-      std::vector<Def> new_ops{bn->GetOperand(0), op1, op2, bn->GetOperand(2),
-                               bn->GetOperand(3)};
+      std::vector<Def> new_ops{bn->GetOperand(0), op1, op2, bn->GetOperand(1),
+                               bn->GetOperand(2)};
       Instruction* new_bn = builder->Clone(*bn, new_ops);
       return {*new_bn};
     }
@@ -446,20 +407,11 @@ static std::vector<Def> ConvertReshape(const CAFFEExtensionInst* ext,
     return {};
   }
 
-  std::unordered_map<std::string, int> attr_map;
-  CreateAttributeMap(ext, &attr_map);
-  int axis = 0;
-  int num_axes = -1;
-  if (auto it = attr_map.find("axis"); it != attr_map.end()) {
-    axis = ext->GetAttributes()[it->second].get()->GetValueAsInteger();
-  }
-  if (auto it = attr_map.find("num_axes"); it != attr_map.end()) {
-    num_axes = ext->GetAttributes()[it->second].get()->GetValueAsInteger();
-  }
+  int axis = FindAttributeValue(ext, "axis", 0);
+  int num_axes = FindAttributeValue(ext, "num_axes", -1);
 
-  if (auto it = attr_map.find("shape"); it != attr_map.end()) {
-    const auto& shape =
-        ext->GetAttributes()[it->second].get()->GetValueAsIntegerList();
+  if (HasAttribute(ext, "shape")) {
+    const auto& shape = FindAttributeValue(ext, "shape", std::vector<int>{});
     // TODO(unknown) : handle general cases to reshape in the range of [axis,
     // axis + num_axes]
     HLCHECK(num_axes == -1);
@@ -501,44 +453,30 @@ static std::vector<Def> ConvertReshape(const CAFFEExtensionInst* ext,
 
 static std::vector<Def> ConvertDeConvolution(const CAFFEExtensionInst* ext,
                                              IRBuilder* builder) {
-  std::unordered_map<std::string, int> attr_map;
-  CreateAttributeMap(ext, &attr_map);
   std::vector<int> pad(2, 0);
-  if (const auto& it = attr_map.find("pad_h"); it != attr_map.end()) {
-    pad[0] = ext->GetAttributes()[it->second].get()->GetValueAsInteger();
-  } else if (const auto& it = attr_map.find("pad"); it != attr_map.end()) {
-    pad[0] = ext->GetAttributes()[it->second].get()->GetValueAsIntegerList()[0];
+  pad = FindAttributeValue(ext, "pad", pad);
+  if (pad.size() == 1) {
+    pad.push_back(pad.front());
   }
-  if (const auto& it = attr_map.find("pad_w"); it != attr_map.end()) {
-    pad[1] = ext->GetAttributes()[it->second].get()->GetValueAsInteger();
-  } else if (const auto& it = attr_map.find("pad"); it != attr_map.end()) {
-    const auto& value =
-        ext->GetAttributes()[it->second].get()->GetValueAsIntegerList();
-    pad[1] = value.size() > 1 ? value[1] : value[0];
-  }
+  pad[0] = FindAttributeValue(ext, "pad_h", pad[0]);
+  pad[1] = FindAttributeValue(ext, "pad_w", pad[1]);
 
   std::vector<int> stride(4, 1);
-  if (const auto& it = attr_map.find("stride_h"); it != attr_map.end()) {
-    stride[2] = ext->GetAttributes()[it->second].get()->GetValueAsInteger();
-  } else if (const auto& it = attr_map.find("stride"); it != attr_map.end()) {
-    stride[2] =
-        ext->GetAttributes()[it->second].get()->GetValueAsIntegerList()[0];
+  stride = FindAttributeValue(ext, "stride", stride);
+  if (stride.size() == 1) {
+    stride.push_back(stride.front());
   }
-  if (const auto& it = attr_map.find("stride_w"); it != attr_map.end()) {
-    stride[3] = ext->GetAttributes()[it->second].get()->GetValueAsInteger();
-  } else if (const auto& it = attr_map.find("stride"); it != attr_map.end()) {
-    stride[3] =
-        ext->GetAttributes()[it->second].get()->GetValueAsIntegerList()[0];
+  while (stride.size() < 4) {
+    stride.insert(stride.begin(), 1);
   }
-
+  stride[2] = FindAttributeValue(ext, "stride_h", stride[2]);
+  stride[3] = FindAttributeValue(ext, "stride_w", stride[3]);
   std::vector<int> dilation(4, 1);
-  if (const auto& it = attr_map.find("dilation"); it != attr_map.end()) {
-    const auto& value =
-        ext->GetAttributes()[it->second].get()->GetValueAsIntegerList();
-    // N and C set to 1
-    dilation[2] = value.empty() ? 1 : value[0];
-    dilation[3] = (value.size() > 1) ? value[1] : dilation[2];
-  }
+  const auto& value =
+      FindAttributeValue(ext, "dilation", std::vector<int>{1, 1});
+  dilation[2] = value.empty() ? 1 : value[0];
+  dilation[3] = (value.size() > 1) ? value[1] : dilation[2];
+
 #if 0
   std::vector<int> kernel_size(4, 1);
   if (const auto& it = attr_map.find("kernel_h"); it != attr_map.end()) {
@@ -560,15 +498,8 @@ static std::vector<Def> ConvertDeConvolution(const CAFFEExtensionInst* ext,
   }
 #endif
   // TODO (unknown) ignore group param in deconv
-  int group = 1;
-  if (const auto& it = attr_map.find("group"); it != attr_map.end()) {
-    group = ext->GetAttributes()[it->second].get()->GetValueAsInteger();
-  }
-
-  bool bias_term = true;
-  if (const auto& it = attr_map.find("bias_term"); it != attr_map.end()) {
-    bias_term = ext->GetAttributes()[it->second].get()->GetValueAsBool();
-  }
+  int group = FindAttributeValue(ext, "group", 1);
+  bool bias_term = FindAttributeValue(ext, "bias_term", true);
 
   HLCHECK(ext->GetNumOfOperands() == 2 || ext->GetNumOfOperands() == 3);
   auto input = ext->GetOperand(0);
@@ -587,7 +518,7 @@ static std::vector<Def> ConvertDeConvolution(const CAFFEExtensionInst* ext,
   // deconv_inst->SetNumOutput(num_output);
   deconv_inst->SetPadding(Padding::EXPLICIT);
   deconv_inst->SetDataFormat(DataFormat::NCHW);
-  deconv_inst->SetFilterFormat(DataFormat::NCHW);
+  deconv_inst->SetFilterFormat(DataFormat::CNHW);
 
   if (bias_term) {
     auto bias = ext->GetOperand(2);
@@ -637,6 +568,30 @@ static std::vector<Def> ConvertTile(const CAFFEExtensionInst* ext,
   return {*new_inst};
 }
 
+static std::vector<Def> ConvertRelu(const CAFFEExtensionInst* ext,
+                                    IRBuilder* builder) {
+  HLCHECK(ext->GetNumOfOperands() == 1);
+  auto input = ext->GetOperand(0);
+  const auto& input_type = input.GetType();
+
+  if (!input_type.IsValid()) {
+    return {};
+  }
+  builder->SetInsertAfter(ext);
+
+  float alpha = ext->GetNumOfAttributes() != 0
+                    ? ext->GetAttributes()[0]->GetValueAsFloat()
+                    : 0;
+  if (alpha != 0) {
+    auto leakly_relu =
+        builder->CreateLeakyRelu(ext->GetName(), ext->GetOperands());
+    leakly_relu->SetAlpha(alpha);
+    return {*leakly_relu};
+  }
+  auto relu = builder->CreateRelu(ext->GetName(), ext->GetOperands());
+  return {*relu};
+}
+
 static std::vector<Def> ConvertCAFFEExtension(
     const CAFFEExtensionInst* caffe_inst, IRBuilder* builder) {
   builder->SetInsertAfter(caffe_inst);
@@ -673,6 +628,9 @@ static std::vector<Def> ConvertCAFFEExtension(
     }
     case CAFFEExtOpCode::TILE: {
       return ConvertTile(caffe_inst, builder);
+    }
+    case CAFFEExtOpCode::RELU: {
+      return ConvertRelu(caffe_inst, builder);
     }
     default: {
       HLCHECK(0 && "Unhandled");

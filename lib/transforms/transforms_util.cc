@@ -47,4 +47,29 @@ std::vector<int64_t> GetExtends(const std::vector<int64_t>& dims) {
   return extends;
 }
 
+void SplitStringToInt64List(const std::string& src, std::vector<int64_t>* dst,
+                            const std::string& delimiter) {
+  std::string::size_type pos2 = src.find(delimiter);
+  std::string::size_type pos1 = 0;
+
+  while (std::string::npos != pos2) {
+    dst->push_back(std::stol(src.substr(pos1, pos2 - pos1)));
+
+    pos1 = pos2 + delimiter.size();
+    pos2 = src.find(delimiter, pos1);
+  }
+  if (pos1 != src.length()) {
+    dst->push_back(std::stol(src.substr(pos1)));
+  }
+}
+
+bool HasAttribute(const ExtensionInst* ext, const std::string& name) {
+  for (const auto& attr : ext->GetAttributes()) {
+    if (attr->GetName() == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
 } // end namespace halo

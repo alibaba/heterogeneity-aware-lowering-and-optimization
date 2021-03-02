@@ -244,10 +244,44 @@ def TF_RandomUniform : OpMapping<"RandomUniform", RandomUniform> {
     AttributeMapping<"", "maxval", "1.0">];
 }
 
-def TF_TopK  : OpMapping<"TopKV2", TopK>;
+def TF_HgEngine : OpMapping<"HgEngine", HgEngine> {
+  let attr_mapping_ = [
+    AttributeMapping<"serialized_engine", "serialized_engine", "{}">,
+    AttributeMapping<"in_data_format", "in_data_format", "\"NHWC\"">,
+    AttributeMapping<"out_data_format", "out_data_format", "\"NHWC\"">,
+    AttributeMapping<"in_binding_list", "in_binding_list", "{}">,
+    AttributeMapping<"out_binding_list", "out_binding_list", "{}">,
+    AttributeMapping<"output_shapes", "output_shapes", "{}">,
+    AttributeMapping<"device_id", "device_id", "-1">
+  ];
+}
 
-def TF_Range : OpMapping<"Range", Range>;
+def TF_HgQuant : TFExtension<"HgQuant"> {
+  let extension_attr_ = [
+    ExtensionAttr<"in_scale", FloatList, "{1.0}">,
+    ExtensionAttr<"in_bias", FloatList, "{0.0}">,
+    ExtensionAttr<"qtype", String, "\"int8\"">,
+    ExtensionAttr<"is_per_channel", Bool, "false">,
+    ExtensionAttr<"round_mode", Integer, "0">,
+    ExtensionAttr<"in_data_format", String, "\"NHWC\"">,
+    ExtensionAttr<"out_data_format", String, "\"NHWC\"">,
+    ExtensionAttr<"model_name", String, "\"\"">,
+    ExtensionAttr<"op_name", String, "\"\"">,
+    ExtensionAttr<"in_type", EnumDataType, "FLOAT32">,
+    ExtensionAttr<"out_type", EnumDataType, "INT8">
+  ];
+}
 
-def TF_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
-
-def TF_Tile : OpMapping<"Tile", Tile>;
+def TF_HgDequant : TFExtension<"HgDequant"> {
+  let extension_attr_ = [
+    ExtensionAttr<"in_scale", FloatList, "{1.0}">,
+    ExtensionAttr<"in_bias", FloatList, "{0.0}">,
+    ExtensionAttr<"is_per_channel", Bool, "false">,
+    ExtensionAttr<"in_data_format", String, "\"NHWC\"">,
+    ExtensionAttr<"out_data_format", String, "\"NHWC\"">,
+    ExtensionAttr<"model_name", String, "\"\"">,
+    ExtensionAttr<"op_name", String, "\"\"">,
+    ExtensionAttr<"in_type", EnumDataType, "INT8">,
+    ExtensionAttr<"out_type", EnumDataType, "FLOAT32">
+  ];
+}

@@ -10,6 +10,8 @@ config.cc = "@CMAKE_C_COMPILER@ @CMAKE_C_FLAGS@"
 config.build_type = "@CMAKE_BUILD_TYPE@"
 config.lib_cudart_path = "@cudart@"
 config.lib_dnnl_path = "@dnnl@"
+config.lib_eigen_path = "@eigen@"
 config.lib_xnnpack_path = "@xnnpack@"
+config.lib_popart_path = "@poplar@"
 
 lit_config.load_config(config, "@CMAKE_CURRENT_SOURCE_DIR@/lit.cfg.py")

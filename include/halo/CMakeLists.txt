@@ -15,3 +15,31 @@
 # ==============================================================================
 
 add_subdirectory(lib)
+
+# Generate VCS info.
+set(version_inc "${CMAKE_CURRENT_BINARY_DIR}/version.inc")
+
+find_first_existing_vc_file("${CMAKE_SOURCE_DIR}" halo_vc)
+
+if (halo_vc)
+  set(LLVM_SRC_DIR ${CMAKE_SOURCE_DIR}/external/llvm-project/llvm)
+  set(LLVM_CMAKE_PATH ${LLVM_SRC_DIR}/cmake/modules)
+  set(get_version_script "${LLVM_CMAKE_PATH}/GenerateVersionFromVCS.cmake")
+
+  add_custom_command(OUTPUT "${version_inc}"
+    DEPENDS "${halo_vc}" "${get_version_script}"
+    COMMAND
+    ${CMAKE_COMMAND} "-DHALO_SOURCE_DIR=${CMAKE_SOURCE_DIR}"
+                     "-DODLA_SOURCE_DIR=${CMAKE_SOURCE_DIR}/ODLA"
+                     "-DNAMES=\"HALO;ODLA\""
+                     "-DHEADER_FILE=${version_inc}"
+                     -P "${get_version_script}")
+  set_source_files_properties("${version_inc}"
+    PROPERTIES GENERATED TRUE
+    HEADER_FILE_ONLY TRUE)
+else()
+  message(WARNING "revision info unavailable")
+  file(WRITE "${version_inc}" "")
+endif()
+
+add_custom_target(halo_version_h DEPENDS "${version_inc}")

@@ -19,10 +19,12 @@
 #define HALO_VERSION_H_
 
 #define HALO_MAJOR 0 // !< HALO major version.
-#define HALO_MINOR 5 // !< HALO minor version.
+#define HALO_MINOR 6 // !< HALO minor version.
 #define HALO_PATCH 0 // !< HALO patch version.
 
 //! \brief HALO version number.
 #define HALO_VERSION_NUMBER ((HALO_MAJOR)*100 + (HALO_MINOR)*10 + (OLDA_PATCH))
+
+#include "halo/version.inc"
 
 #endif // HALO_VERSION_H_

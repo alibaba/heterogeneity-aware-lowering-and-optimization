@@ -21,6 +21,7 @@
 #include <limits.h>
 #include <math.h>
 
+#include <algorithm>
 #include <fstream>
 
 #include "halo/lib/ir/ir_builder.h"
@@ -78,6 +79,7 @@ void WeightsQuantizer::RunOnConstant(Constant* val) {
     return IsA<Constant>(&obj) ? ret + "_" : ret;
   };
   std::string emitted_name = get_odla_name(*val);
+
   auto it = quant_info_.find(emitted_name);
   if (!quant_info_.empty() && it == quant_info_.end()) {
     std::cerr << "Quant info not found for " << emitted_name << "\n";
@@ -91,15 +93,24 @@ void WeightsQuantizer::RunOnConstant(Constant* val) {
   if (min_val > 0) {
     min_val = 0;
   }
-  float scale = (max_val - min_val) / range;
+  float scale;
   float zp;
-  if (scale != 0) {
-    zp = 0 - min_val / scale;
+  if (it != quant_info_.end()) {
+    scale = it->second.scale;
+    zp = round(it->second.zp);
   } else {
-    scale = 1;
-    zp = max_val;
+    scale = (max_val - min_val) / range;
+    if (scale != 0) {
+      zp = 0 - min_val / scale;
+    } else {
+      scale = 1;
+      zp = max_val;
+    }
+    zp = round(zp);
+    constexpr float min_zp = 0;
+    constexpr float max_zp = 255;
+    zp = std::clamp(zp, min_zp, max_zp);
   }
-  zp = round(zp);
 
   if (!quant_info_.empty()) {
     // Check if a constant is a bias of conv/matmul.
