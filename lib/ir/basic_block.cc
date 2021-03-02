@@ -20,7 +20,19 @@
 namespace halo {
 
 void BasicBlock::Print(std::ostream& os) const {
-  os << "BasicBlock: " << GetName() << "\n";
+  os << "BasicBlock: " << GetName() << "(";
+  int arg_idx = 0;
+  for (auto& arg : Args()) {
+    if (arg_idx++ != 0) {
+      os << ", ";
+    }
+    arg->Print(os);
+  }
+  os << ")\n";
+
+  for (auto& c : Constants()) {
+    c->Print(os);
+  }
   for (const auto& inst : *this) {
     inst->Print(os);
   }

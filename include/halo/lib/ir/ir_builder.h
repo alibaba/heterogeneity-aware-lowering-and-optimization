@@ -154,11 +154,13 @@ class FunctionBuilder final
 
 /// This class provides the APIs to create arguments for the current function.
 class ArgumentBuilder final
-    : public IRObjectBuilder<Function, Function::ArgumentList> {
+    : public IRObjectBuilder<IRObject, Function::ArgumentList> {
  public:
   explicit ArgumentBuilder(Function* function)
       : IRObjectBuilder(function->GetGlobalContext(), function,
                         function->Args()) {}
+  explicit ArgumentBuilder(BasicBlock* bb)
+      : IRObjectBuilder(bb->GetGlobalContext(), bb, bb->Args()) {}
 
   /// Create a new argument and insert it to the end of current argument list.
   Argument* CreateArgument(const std::string& name);
@@ -187,6 +189,9 @@ class ConstantBuilder final
       : IRObjectBuilder(parent->GetGlobalContext(), parent,
                         parent->Constants()) {}
   explicit ConstantBuilder(Module* parent)
+      : IRObjectBuilder(parent->GetGlobalContext(), parent,
+                        parent->Constants()) {}
+  explicit ConstantBuilder(BasicBlock* parent)
       : IRObjectBuilder(parent->GetGlobalContext(), parent,
                         parent->Constants()) {}
 
