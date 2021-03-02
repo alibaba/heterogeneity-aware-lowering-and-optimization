@@ -159,9 +159,9 @@ def ONNX_LeakyRelu : OpMapping<"LeakyRelu", LeakyRelu> {
 
 def ONNX_Log : OpMapping<"Log", Log>;
 
-def ONNX_Loop : ONNXExtension<"Loop"> {
-  let num_outputs_= 2;
-}
+// def ONNX_Loop : ONNXExtension<"Loop"> {
+//  let num_outputs_= 2;
+// }
 
 def ONNX_LRN : OpMapping<"LRN", LRN> {
   let attr_mapping_ = [

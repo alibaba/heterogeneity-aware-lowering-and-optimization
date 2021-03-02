@@ -77,7 +77,8 @@ class TFParser : public Parser {
   void Init(BasicBlock* bb, Function* function, const armory::Opts& opts);
   void RegisterOp();
   Status ConvertToHaloIR(const tensorflow::GraphDef& graph_def);
-  Status ConvertOneNode(const tensorflow::NodeDef& cur_node, size_t index);
+  Status ConvertOneNode(std::unique_ptr<IRBuilder>& ir_builder,
+                        const tensorflow::NodeDef& cur_node, size_t index);
   template <typename T>
   Constant* CreateConstant(TFAttrs* attrs, DataType data_type,
                            const tensorflow::NodeDef& node_def);
@@ -85,9 +86,12 @@ class TFParser : public Parser {
 /// create node function auto generatered by tablegen
 #include "tf_convert.h.inc"
 
-  Status ConvertConstNode(const tensorflow::NodeDef& node_def);
-  Status ConvertPlaceholderNode(const tensorflow::NodeDef& node_def);
-  Status ConvertDummyNode(const tensorflow::NodeDef& node_def);
+  Status ConvertConstNode(std::unique_ptr<IRBuilder>& ir_builder,
+                          const tensorflow::NodeDef& node_def);
+  Status ConvertPlaceholderNode(std::unique_ptr<IRBuilder>& ir_builder,
+                                const tensorflow::NodeDef& node_def);
+  Status ConvertDummyNode(std::unique_ptr<IRBuilder>& ir_builder,
+                          const tensorflow::NodeDef& node_def);
 
   std::vector<Def> GetInputOperands(const tensorflow::NodeDef& node_def);
 
@@ -111,12 +115,12 @@ class TFParser : public Parser {
   std::unique_ptr<ArgumentBuilder> arg_builder_;
   std::unique_ptr<ConstantBuilder> c_builder_;
   std::unordered_map<std::string, IRObject*> inst_name_to_ptr_;
-  std::unordered_map<std::string,
-                     std::function<Status(const tensorflow::NodeDef&)>>
-      func_lists_;
+  using CallBack = std::function<Status(std::unique_ptr<IRBuilder>&,
+                                        const tensorflow::NodeDef&)>;
+  std::unordered_map<std::string, CallBack> func_lists_;
 };
 
-/// Convert pb tp ipu graphdef
+/// Convert pb to ipu graphdef
 class IPUParser : public TFParser {
  public:
   explicit IPUParser(const std::string& variant) : TFParser(variant) {}

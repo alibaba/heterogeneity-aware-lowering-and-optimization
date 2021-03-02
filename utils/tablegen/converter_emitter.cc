@@ -132,9 +132,9 @@ void Converter::EmitRegisterOp(llvm::raw_ostream& os) {
     llvm::StringRef extern_op_name = c->getValueAsString(ExternOpName);
     os << "func_lists_.emplace(\"" << extern_op_name << "\", std::bind(&"
        << parser << "::Convert" << extern_op_name
-       << "Node, this, std::placeholders::_1";
+       << "Node, this, std::placeholders::_1, std::placeholders::_2";
     if (framework_kind_ == Framework::FRAMEWORK_CAFFE) {
-      os << ", std::placeholders::_2));\n";
+      os << ", std::placeholders::_3));\n";
     } else {
       os << "));\n";
     }
@@ -147,7 +147,8 @@ void Converter::EmitConverterDecl(llvm::raw_ostream& os) {
       records_.getAllDerivedDefinitions(RecordTypeName);
   for (const auto& c : classes) {
     llvm::StringRef extern_op_name = c->getValueAsString(ExternOpName);
-    os << "Status Convert" << extern_op_name << "Node(const "
+    os << "Status Convert" << extern_op_name
+       << "Node(std::unique_ptr<IRBuilder>& ir_builder, const "
        << framework_namespace_ << "::" << pb_node_ << "& node_def";
     if (framework_kind_ == Framework::FRAMEWORK_CAFFE) {
       os << ", const " << framework_namespace_ << "::" << pb_node_
@@ -203,7 +204,8 @@ void Converter::EmitHaloInstDefForCaffe(llvm::Record* record,
   }
 
   const std::string parser = framework_name_ + "Parser";
-  os << "Status " << parser << "::Convert" << extern_op_name << "Node(const "
+  os << "Status " << parser << "::Convert" << extern_op_name
+     << "Node(std::unique_ptr<IRBuilder>& ir_builder, const "
      << framework_namespace_ << "::" << pb_node_ << "& node_def, const "
      << framework_namespace_ << "::" << pb_node_ << "& layer_param_weight) {\n";
 
@@ -216,7 +218,7 @@ void Converter::EmitHaloInstDefForCaffe(llvm::Record* record,
 
   os << "  std::vector<Def> operands = "
         "GetInputOperands(node_def, layer_param_weight);\n";
-  os << "  auto inst = ir_builder_->Create" << sn_inst_name
+  os << "  auto inst = ir_builder->Create" << sn_inst_name
      << "(node_def.name(), operands);\n";
   ProcessAttributesForCaffe(sn_inst, need_mapping, param_name.str(), attrs_set,
                             os);
@@ -229,7 +231,8 @@ void Converter::EmitHaloInstDef(llvm::Record* record, llvm::raw_ostream& os) {
   llvm::StringRef sn_inst_name = sn_inst->getName();
   llvm::StringRef extern_op_name = record->getValueAsString(ExternOpName);
   const std::string parser = framework_name_ + "Parser";
-  os << "Status " << parser << "::Convert" << extern_op_name << "Node(const "
+  os << "Status " << parser << "::Convert" << extern_op_name
+     << "Node(std::unique_ptr<IRBuilder>& ir_builder, const "
      << framework_namespace_ << "::" << pb_node_ << "& node_def) {\n";
 
   std::unordered_map<std::string, llvm::Record*> need_mapping;
@@ -244,7 +247,7 @@ void Converter::EmitHaloInstDef(llvm::Record* record, llvm::raw_ostream& os) {
     os << "  " << framework_name_ << "Attrs attrs(node_def);\n";
   }
   os << "  std::vector<Def> operands = GetInputOperands(node_def);\n";
-  os << "  auto inst = ir_builder_->Create" << sn_inst_name;
+  os << "  auto inst = ir_builder->Create" << sn_inst_name;
   if (framework_name_ == "TFLITE") {
     os << "(\"\", operands);\n"; // Instruction constructor auto set inst name
   } else {
@@ -272,13 +275,13 @@ void Converter::EmitExtensionInstDef(llvm::Record* record,
   int num_outputs = record->getValueAsInt(NumOutputs);
 
   os << "Status " << framework_name_ << "Parser::Convert" << extern_op_name
-     << "Node(const " << framework_namespace_ << "::" << pb_node_
-     << "& node_def) {\n";
+     << "Node(std::unique_ptr<IRBuilder>& ir_builder, const "
+     << framework_namespace_ << "::" << pb_node_ << "& node_def) {\n";
   std::vector<llvm::Record*> extension_attrs =
       record->getValueAsListOfDefs("extension_attr_");
 
   os << "  std::vector<Def> operands = GetInputOperands(node_def);\n";
-  os << "  auto inst = ir_builder_->Create" << framework_name_ << sn_inst_name;
+  os << "  auto inst = ir_builder->Create" << framework_name_ << sn_inst_name;
   if (framework_name_ == "TFLITE") {
     os << "(\"\""; // Instruction constructor auto set inst name
   } else {
@@ -306,15 +309,15 @@ void Converter::EmitExtensionInstDefForCaffe(llvm::Record* record,
     attrs_set.insert(ref.str());
   }
   os << "Status " << framework_name_ << "Parser::Convert" << extern_op_name
-     << "Node(const " << framework_namespace_ << "::" << pb_node_
-     << "& node_def, const " << framework_namespace_ << "::" << pb_node_
-     << "& layer_param_weight) {\n";
+     << "Node(std::unique_ptr<IRBuilder>& ir_builder, const "
+     << framework_namespace_ << "::" << pb_node_ << "& node_def, const "
+     << framework_namespace_ << "::" << pb_node_ << "& layer_param_weight) {\n";
   std::vector<llvm::Record*> extension_attrs =
       record->getValueAsListOfDefs("extension_attr_");
 
   os << "  std::vector<Def> operands = GetInputOperands(node_def, "
         "layer_param_weight);\n";
-  os << "  auto inst = ir_builder_->Create" << framework_name_ << sn_inst_name
+  os << "  auto inst = ir_builder->Create" << framework_name_ << sn_inst_name
      << "(node_def.name(), operands, 1, \"" << extern_op_name << "\");\n";
 
   ProcessExtensionAttributesForCaffe(extension_attrs, param_name.str(),
