@@ -33,7 +33,7 @@ Function* FunctionBuilder::CreateFunction(const std::string& name) {
 
 BasicBlock* BasicBlockBuilder::CreateBasicBlock(const std::string& name) {
   auto bb = std::make_unique<BasicBlock>(GetContext(), name);
-  bb->parent_function_ = GetParent();
+  bb->parent_ = GetParent();
   return Insert(std::move(bb));
 }
 
@@ -44,7 +44,7 @@ Argument* ArgumentBuilder::CreateArgument(const std::string& name) {
 Argument* ArgumentBuilder::CreateArgument(const std::string& name,
                                           const Type& type) {
   auto arg = std::make_unique<Argument>(GetContext(), name, type);
-  arg->parent_function_ = GetParent();
+  arg->parent_ = GetParent();
   return Insert(std::move(arg));
 }
 

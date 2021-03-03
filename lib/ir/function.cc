@@ -22,11 +22,10 @@
 namespace halo {
 
 ReturnInst* Function::GetReturnInst() const {
-  for (auto& bb : basic_blocks_) {
-    for (auto& inst : *bb) {
-      if (inst->GetOpCode() == OpCode::RETURN) {
-        return DynCast<ReturnInst>(inst.get());
-      }
+  HLCHECK(!basic_blocks_.empty());
+  for (auto& inst : *basic_blocks_.front()) {
+    if (inst->GetOpCode() == OpCode::RETURN) {
+      return DynCast<ReturnInst>(inst.get());
     }
   }
   return nullptr;
