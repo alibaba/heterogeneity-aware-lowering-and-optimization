@@ -77,7 +77,7 @@ class TFParser : public Parser {
   void Init(BasicBlock* bb, Function* function, const armory::Opts& opts);
   void RegisterOp();
   Status ConvertToHaloIR(const tensorflow::GraphDef& graph_def);
-  Status ConvertOneNode(std::unique_ptr<IRBuilder>& ir_builder,
+  Status ConvertOneNode(IRBuilder* ir_builder,
                         const tensorflow::NodeDef& cur_node, size_t index);
   template <typename T>
   Constant* CreateConstant(TFAttrs* attrs, DataType data_type,
@@ -86,11 +86,11 @@ class TFParser : public Parser {
 /// create node function auto generatered by tablegen
 #include "tf_convert.h.inc"
 
-  Status ConvertConstNode(std::unique_ptr<IRBuilder>& ir_builder,
+  Status ConvertConstNode(IRBuilder* ir_builder,
                           const tensorflow::NodeDef& node_def);
-  Status ConvertPlaceholderNode(std::unique_ptr<IRBuilder>& ir_builder,
+  Status ConvertPlaceholderNode(IRBuilder* ir_builder,
                                 const tensorflow::NodeDef& node_def);
-  Status ConvertDummyNode(std::unique_ptr<IRBuilder>& ir_builder,
+  Status ConvertDummyNode(IRBuilder* ir_builder,
                           const tensorflow::NodeDef& node_def);
 
   std::vector<Def> GetInputOperands(const tensorflow::NodeDef& node_def);
@@ -115,8 +115,8 @@ class TFParser : public Parser {
   std::unique_ptr<ArgumentBuilder> arg_builder_;
   std::unique_ptr<ConstantBuilder> c_builder_;
   std::unordered_map<std::string, IRObject*> inst_name_to_ptr_;
-  using CallBack = std::function<Status(std::unique_ptr<IRBuilder>&,
-                                        const tensorflow::NodeDef&)>;
+  using CallBack =
+      std::function<Status(IRBuilder*, const tensorflow::NodeDef&)>;
   std::unordered_map<std::string, CallBack> func_lists_;
 };
 

@@ -82,7 +82,7 @@ Status TFParser::ConvertToHaloIR(const tensorflow::GraphDef& graph_def) {
   Status s = Status::SUCCESS;
   for (const auto& cur_node : graph_def.node()) {
     VLOG(4) << "==========layer[" << i << "]==========";
-    s = ConvertOneNode(ir_builder_, cur_node, i++);
+    s = ConvertOneNode(ir_builder_.get(), cur_node, i++);
     if (s != Status::SUCCESS) {
       return s;
     }
@@ -93,7 +93,7 @@ Status TFParser::ConvertToHaloIR(const tensorflow::GraphDef& graph_def) {
   return Status::SUCCESS;
 }
 
-Status TFParser::ConvertOneNode(std::unique_ptr<IRBuilder>& ir_builder,
+Status TFParser::ConvertOneNode(IRBuilder* ir_builder,
                                 const tensorflow::NodeDef& cur_node,
                                 size_t index) {
   Status s = Status::SUCCESS;
@@ -735,7 +735,7 @@ void TFParser::InsertIDToInstMap(const tensorflow::NodeDef& node_def,
 }
 
 // Define convert function
-Status TFParser::ConvertPlaceholderNode(std::unique_ptr<IRBuilder>& ir_builder,
+Status TFParser::ConvertPlaceholderNode(IRBuilder* ir_builder,
                                         const tensorflow::NodeDef& node_def) {
   TFAttrs attrs(node_def);
   DataType data_type = DataType::INVALID;
@@ -773,7 +773,7 @@ Constant* TFParser::CreateConstant(TFAttrs* attrs, DataType data_type,
   return nullptr;
 }
 
-Status TFParser::ConvertConstNode(std::unique_ptr<IRBuilder>& ir_builder,
+Status TFParser::ConvertConstNode(IRBuilder* ir_builder,
                                   const tensorflow::NodeDef& node_def) {
   TFAttrs attrs(node_def);
   DataType data_type = DataType::INVALID;
@@ -867,7 +867,7 @@ Status TFParser::ConvertConstNode(std::unique_ptr<IRBuilder>& ir_builder,
   return Status::SUCCESS;
 }
 
-Status TFParser::ConvertDummyNode(std::unique_ptr<IRBuilder>& ir_builder,
+Status TFParser::ConvertDummyNode(IRBuilder* ir_builder,
                                   const tensorflow::NodeDef& node_def) {
   std::vector<Def> operands = GetInputOperands(node_def);
   static const int max_num_outputs = 128;

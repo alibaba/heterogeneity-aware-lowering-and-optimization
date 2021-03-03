@@ -20,7 +20,6 @@
 
 #include <functional>
 #include <stack>
-#include <tuple>
 #include <unordered_map>
 
 #include "halo/lib/ir/ir_builder.h"
@@ -76,21 +75,19 @@ class ONNXParser : public Parser {
  private:
   void RegisterOp();
   Status ConvertToHaloIR(const onnx::GraphProto& graph_def);
-  Status ConvertOneNode(std::unique_ptr<IRBuilder>& ir_builder,
-                        const onnx::NodeProto& node_def);
-  IRObject* ConvertConstNode(std::unique_ptr<ConstantBuilder>& c_builder,
+  Status ConvertOneNode(IRBuilder* ir_builder, const onnx::NodeProto& node_def);
+  IRObject* ConvertConstNode(ConstantBuilder* c_builder,
                              const onnx::TensorProto& tensor_def);
-  Status ConvertConstNode(std::unique_ptr<ConstantBuilder>& c_builder,
+  Status ConvertConstNode(ConstantBuilder* c_builder,
                           const onnx::NodeProto& cur_node);
-  Status ConvertDummyNode(std::unique_ptr<IRBuilder>& ir_builder,
+  Status ConvertDummyNode(IRBuilder* ir_builder,
                           const onnx::NodeProto& cur_node);
-  Status ConvertLoopNode(std::unique_ptr<IRBuilder>& ir_builder,
+  Status ConvertLoopNode(IRBuilder* ir_builder,
                          const onnx::NodeProto& cur_node);
-  Status ConvertPlaceholderNode(std::unique_ptr<ArgumentBuilder>& arg_builder,
+  Status ConvertPlaceholderNode(ArgumentBuilder* arg_builder,
                                 const onnx::ValueInfoProto& value_info_def);
-  Status ConvertSubPlaceholderNode(
-      std::unique_ptr<ArgumentBuilder>& arg_builder,
-      const onnx::ValueInfoProto& value_info_def);
+  Status ConvertSubPlaceholderNode(ArgumentBuilder* arg_builder,
+                                   const onnx::ValueInfoProto& value_info_def);
   std::vector<Def> GetInputOperands(const onnx::NodeProto& node_def);
   void InsertIDToInstMap(const onnx::NodeProto& node_def, IRObject* inst);
   Type GetType(const onnx::ValueInfoProto& value_info_def);
@@ -105,10 +102,10 @@ class ONNXParser : public Parser {
   std::unique_ptr<ConstantBuilder> c_builder_;
   armory::Opts opts_;
   std::unordered_map<std::string, std::pair<IRObject*, int>> inst_name_to_ptr_;
-  using CallBack = std::function<Status(std::unique_ptr<IRBuilder>& ir_builder,
-                                        const onnx::NodeProto&)>;
+  using CallBack =
+      std::function<Status(IRBuilder* ir_builder, const onnx::NodeProto&)>;
   std::unordered_map<std::string, CallBack> func_lists_;
-  std::stack<Type> var_args_;
+  std::stack<Type> loop_arg_types_;
 };
 
 } // namespace halo

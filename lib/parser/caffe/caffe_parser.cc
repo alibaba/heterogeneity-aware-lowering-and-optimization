@@ -171,7 +171,7 @@ Status CAFFEParser::ConvertToHaloIR(
     auto& weight = (weight_v1 || weight_layer_id < 0)
                        ? weight_layer
                        : net_param_weight.layer(weight_layer_id);
-    s = ConvertOneNode(ir_builder_, net_layer, weight);
+    s = ConvertOneNode(ir_builder_.get(), net_layer, weight);
     if (s != Status::SUCCESS) {
       return s;
     }
@@ -181,8 +181,7 @@ Status CAFFEParser::ConvertToHaloIR(
 }
 
 Status CAFFEParser::ConvertOneNode(
-    std::unique_ptr<IRBuilder>& ir_builder,
-    const caffe::LayerParameter& layer_param,
+    IRBuilder* ir_builder, const caffe::LayerParameter& layer_param,
     const caffe::LayerParameter& layer_param_weight) {
   Status s = Status::SUCCESS;
   auto fp = func_lists_.find(layer_param.type());
