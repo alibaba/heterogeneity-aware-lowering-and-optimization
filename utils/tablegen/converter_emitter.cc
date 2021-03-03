@@ -148,8 +148,8 @@ void Converter::EmitConverterDecl(llvm::raw_ostream& os) {
   for (const auto& c : classes) {
     llvm::StringRef extern_op_name = c->getValueAsString(ExternOpName);
     os << "Status Convert" << extern_op_name
-       << "Node(std::unique_ptr<IRBuilder>& ir_builder, const "
-       << framework_namespace_ << "::" << pb_node_ << "& node_def";
+       << "Node(IRBuilder* ir_builder, const " << framework_namespace_
+       << "::" << pb_node_ << "& node_def";
     if (framework_kind_ == Framework::FRAMEWORK_CAFFE) {
       os << ", const " << framework_namespace_ << "::" << pb_node_
          << "& layer_param_weight);\n";
@@ -205,9 +205,9 @@ void Converter::EmitHaloInstDefForCaffe(llvm::Record* record,
 
   const std::string parser = framework_name_ + "Parser";
   os << "Status " << parser << "::Convert" << extern_op_name
-     << "Node(std::unique_ptr<IRBuilder>& ir_builder, const "
-     << framework_namespace_ << "::" << pb_node_ << "& node_def, const "
-     << framework_namespace_ << "::" << pb_node_ << "& layer_param_weight) {\n";
+     << "Node(IRBuilder* ir_builder, const " << framework_namespace_
+     << "::" << pb_node_ << "& node_def, const " << framework_namespace_
+     << "::" << pb_node_ << "& layer_param_weight) {\n";
 
   std::unordered_map<std::string, llvm::Record*> need_mapping;
   std::vector<llvm::Record*> attr_mapping =
@@ -232,8 +232,8 @@ void Converter::EmitHaloInstDef(llvm::Record* record, llvm::raw_ostream& os) {
   llvm::StringRef extern_op_name = record->getValueAsString(ExternOpName);
   const std::string parser = framework_name_ + "Parser";
   os << "Status " << parser << "::Convert" << extern_op_name
-     << "Node(std::unique_ptr<IRBuilder>& ir_builder, const "
-     << framework_namespace_ << "::" << pb_node_ << "& node_def) {\n";
+     << "Node(IRBuilder* ir_builder, const " << framework_namespace_
+     << "::" << pb_node_ << "& node_def) {\n";
 
   std::unordered_map<std::string, llvm::Record*> need_mapping;
   std::vector<llvm::Record*> attr_mapping =
@@ -275,8 +275,8 @@ void Converter::EmitExtensionInstDef(llvm::Record* record,
   int num_outputs = record->getValueAsInt(NumOutputs);
 
   os << "Status " << framework_name_ << "Parser::Convert" << extern_op_name
-     << "Node(std::unique_ptr<IRBuilder>& ir_builder, const "
-     << framework_namespace_ << "::" << pb_node_ << "& node_def) {\n";
+     << "Node(IRBuilder* ir_builder, const " << framework_namespace_
+     << "::" << pb_node_ << "& node_def) {\n";
   std::vector<llvm::Record*> extension_attrs =
       record->getValueAsListOfDefs("extension_attr_");
 
@@ -309,9 +309,9 @@ void Converter::EmitExtensionInstDefForCaffe(llvm::Record* record,
     attrs_set.insert(ref.str());
   }
   os << "Status " << framework_name_ << "Parser::Convert" << extern_op_name
-     << "Node(std::unique_ptr<IRBuilder>& ir_builder, const "
-     << framework_namespace_ << "::" << pb_node_ << "& node_def, const "
-     << framework_namespace_ << "::" << pb_node_ << "& layer_param_weight) {\n";
+     << "Node(IRBuilder* ir_builder, const " << framework_namespace_
+     << "::" << pb_node_ << "& node_def, const " << framework_namespace_
+     << "::" << pb_node_ << "& layer_param_weight) {\n";
   std::vector<llvm::Record*> extension_attrs =
       record->getValueAsListOfDefs("extension_attr_");
 

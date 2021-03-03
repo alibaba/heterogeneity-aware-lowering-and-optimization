@@ -50,8 +50,7 @@ class TFLITEParser : public Parser {
  private:
   void RegisterOp();
   Status ConvertToHaloIR(const tflite::Model& model);
-  Status ConvertOneNode(std::unique_ptr<IRBuilder>& ir_builder,
-                        const tflite::Operator& cur_node,
+  Status ConvertOneNode(IRBuilder* ir_builder, const tflite::Operator& cur_node,
                         const tflite::BuiltinOperator& cur_op_type);
   IRObject* ConvertConstNode(
       const flatbuffers::Vector<flatbuffers::Offset<tflite::Buffer>>& buffers,
@@ -69,8 +68,7 @@ class TFLITEParser : public Parser {
   std::unique_ptr<ArgumentBuilder> arg_builder_;
   std::unique_ptr<ConstantBuilder> c_builder_;
   std::unordered_map<int32_t, IRObject*> inst_id_to_ptr_;
-  using CallBack = std::function<Status(std::unique_ptr<IRBuilder>&,
-                                        const tflite::Operator&)>;
+  using CallBack = std::function<Status(IRBuilder*, const tflite::Operator&)>;
   std::unordered_map<std::string, CallBack> func_lists_;
 };
 

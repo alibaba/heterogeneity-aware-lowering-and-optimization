@@ -77,7 +77,7 @@ class CAFFEParser : public Parser {
   Status ConvertPlaceholderNode(const caffe::NetParameter& net_param);
   Status ConvertDummyNode(const caffe::LayerParameter& layer_param,
                           const caffe::LayerParameter& layer_param_weight);
-  Status ConvertOneNode(std::unique_ptr<IRBuilder>& ir_builder,
+  Status ConvertOneNode(IRBuilder* ir_builder,
                         const caffe::LayerParameter& layer_param,
                         const caffe::LayerParameter& layer_param_weight);
   std::vector<Def> GetInputOperands(
@@ -97,9 +97,8 @@ class CAFFEParser : public Parser {
   armory::Opts opts_;
   std::unordered_map<std::string, IRObject*> inst_name_to_ptr_;
   std::unordered_map<std::string, std::string> input_to_layer_;
-  using CallBack = std::function<Status(std::unique_ptr<IRBuilder>&,
-                                        const caffe::LayerParameter&,
-                                        const caffe::LayerParameter&)>;
+  using CallBack = std::function<Status(
+      IRBuilder*, const caffe::LayerParameter&, const caffe::LayerParameter&)>;
   std::unordered_map<std::string, CallBack> func_lists_;
 };
 

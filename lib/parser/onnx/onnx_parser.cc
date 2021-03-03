@@ -21,7 +21,6 @@
 #include <google/protobuf/text_format.h>
 
 #include <fstream>
-#include <numeric>
 
 #include "halo/lib/framework/common.h"
 #include "halo/lib/framework/type.h"
@@ -61,7 +60,7 @@ Status ONNXParser::Parse(Function* function,
       c_builder_ = std::make_unique<ConstantBuilder>(function->GetParent());
       // Use the function name as data for testing purpose.
       tensor_def.set_name(function->GetName());
-      ConvertConstNode(c_builder_, tensor_def);
+      ConvertConstNode(c_builder_.get(), tensor_def);
       return Status::SUCCESS;
     } else {
       LOG(ERROR) << "Encountered error(s) when parsing " << file_list.front();
@@ -96,7 +95,7 @@ Status ONNXParser::ConvertToHaloIR(const onnx::GraphProto& graph_def) {
   auto const_inputs_size = graph_def.initializer_size();
   for (int i = 0; i < const_inputs_size; ++i) {
     const_input_names.emplace(graph_def.initializer(i).name());
-    ConvertConstNode(c_builder_, graph_def.initializer(i));
+    ConvertConstNode(c_builder_.get(), graph_def.initializer(i));
   }
 
   // Convert input
@@ -108,7 +107,7 @@ Status ONNXParser::ConvertToHaloIR(const onnx::GraphProto& graph_def) {
     // const node may appear in the input list
     auto it = const_input_names.find(name);
     if (it == const_input_names.end()) {
-      s = ConvertPlaceholderNode(arg_builder_, graph_def.input(i));
+      s = ConvertPlaceholderNode(arg_builder_.get(), graph_def.input(i));
       if (s != Status::SUCCESS) {
         return s;
       }
@@ -120,7 +119,7 @@ Status ONNXParser::ConvertToHaloIR(const onnx::GraphProto& graph_def) {
   for (int i = 0; i < node_size; ++i) {
     // 1.Constant input not appear in graph constant inputs initializer list
     if (graph_def.node(i).op_type() == "Constant") {
-      s = ConvertConstNode(c_builder_, graph_def.node(i));
+      s = ConvertConstNode(c_builder_.get(), graph_def.node(i));
       if (s != Status::SUCCESS) {
         return s;
       }
@@ -128,7 +127,7 @@ Status ONNXParser::ConvertToHaloIR(const onnx::GraphProto& graph_def) {
     }
     if (graph_def.node(i).op_type() == "ConstantOfShape") {
       const auto& node = graph_def.node(i);
-      s = ConvertOneNode(ir_builder_, node);
+      s = ConvertOneNode(ir_builder_.get(), node);
       if (s != Status::SUCCESS) {
         return s;
       }
@@ -176,7 +175,7 @@ Status ONNXParser::ConvertToHaloIR(const onnx::GraphProto& graph_def) {
       continue;
     }
 
-    s = ConvertOneNode(ir_builder_, graph_def.node(i));
+    s = ConvertOneNode(ir_builder_.get(), graph_def.node(i));
     if (s != Status::SUCCESS) {
       return s;
     }
@@ -205,7 +204,7 @@ Status ONNXParser::ConvertToHaloIR(const onnx::GraphProto& graph_def) {
   return Status::SUCCESS;
 }
 
-Status ONNXParser::ConvertOneNode(std::unique_ptr<IRBuilder>& ir_builder,
+Status ONNXParser::ConvertOneNode(IRBuilder* ir_builder,
                                   const onnx::NodeProto& cur_node) {
   Status s = Status::SUCCESS;
   auto fp = func_lists_.find(cur_node.op_type());
@@ -358,9 +357,8 @@ Tensor<T> ONNXParser::ProcessTensor(const onnx::TensorProto& tensor_proto) {
   return Tensor<T>(data_type, shape, v);
 }
 
-IRObject* ONNXParser::ConvertConstNode(
-    std::unique_ptr<ConstantBuilder>& c_builder,
-    const onnx::TensorProto& tensor_def) {
+IRObject* ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
+                                       const onnx::TensorProto& tensor_def) {
   DataType data_type = ProcessDataType(tensor_def.data_type());
   IRObject* inst = nullptr;
   switch (data_type) {
@@ -399,7 +397,7 @@ IRObject* ONNXParser::ConvertConstNode(
   return inst;
 }
 
-Status ONNXParser::ConvertConstNode(std::unique_ptr<ConstantBuilder>& c_builder,
+Status ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
                                     const onnx::NodeProto& cur_node) {
   for (const auto& attr : cur_node.attribute()) {
     HLCHECK(attr.type() == onnx::AttributeProto::TENSOR);
@@ -434,22 +432,20 @@ Type ONNXParser::GetType(const onnx::ValueInfoProto& value_info_def) {
 }
 
 Status ONNXParser::ConvertSubPlaceholderNode(
-    std::unique_ptr<ArgumentBuilder>& arg_builder,
-    const onnx::ValueInfoProto& value_info_def) {
-  HLCHECK(!var_args_.empty());
-  auto& type = var_args_.top();
+    ArgumentBuilder* arg_builder, const onnx::ValueInfoProto& value_info_def) {
+  HLCHECK(!loop_arg_types_.empty());
+  auto& type = loop_arg_types_.top();
   if (!type.IsValid()) {
     type = GetType(value_info_def);
   }
   auto arg = arg_builder->CreateArgument(value_info_def.name(), type);
   inst_name_to_ptr_.emplace(value_info_def.name(), std::make_pair(arg, 0));
-  var_args_.pop();
+  loop_arg_types_.pop();
   return Status::SUCCESS;
 }
 
 Status ONNXParser::ConvertPlaceholderNode(
-    std::unique_ptr<ArgumentBuilder>& arg_builder,
-    const onnx::ValueInfoProto& value_info_def) {
+    ArgumentBuilder* arg_builder, const onnx::ValueInfoProto& value_info_def) {
   auto arg = arg_builder->CreateArgument(value_info_def.name(),
                                          GetType(value_info_def));
   inst_name_to_ptr_.emplace(value_info_def.name(), std::make_pair(arg, 0));
@@ -699,7 +695,7 @@ bool ONNXAttrs::Process<PadMode>(const std::string& key, PadMode* pad_mode) {
   return true;
 }
 
-Status ONNXParser::ConvertDummyNode(std::unique_ptr<IRBuilder>& ir_builder,
+Status ONNXParser::ConvertDummyNode(IRBuilder* ir_builder,
                                     const onnx::NodeProto& node_def) {
   std::vector<Def> operands = GetInputOperands(node_def);
   auto inst = ir_builder->CreateDummy(
@@ -715,24 +711,23 @@ std::unique_ptr<Parser> CreateONNXParser() {
   return std::make_unique<ONNXParser>();
 }
 
-Status ONNXParser::ConvertLoopNode(std::unique_ptr<IRBuilder>& ir_builder,
+Status ONNXParser::ConvertLoopNode(IRBuilder* ir_builder,
                                    const onnx::NodeProto& cur_node) {
   std::string cur_node_name = cur_node.name();
   if (cur_node_name.empty()) {
     // TODO(unknown) current node name must unique
-    cur_node_name = "unkonwn";
+    cur_node_name = "unknown";
   }
-  std::vector<Def> operands = GetInputOperands(cur_node);
+  const auto& operands = GetInputOperands(cur_node);
   // first 2 inputs(loop_cnt/loop_cond) is optional
-  for (int i = 0, n = operands.size(); i < n; ++i) {
-    var_args_.push(operands[i].GetType());
+  for (int i = operands.size() - 1; i >= 0; --i) {
+    loop_arg_types_.push(operands[i].GetType());
   }
 
   ONNXAttrs attrs(cur_node);
   onnx::GraphProto subgraph;
   attrs.Process<onnx::GraphProto>("body", &subgraph);
   auto loop_body = bb_builder_->CreateBasicBlock("bb_" + cur_node_name);
-  // TODO(unkonwn) is there exist memory problem ?
   auto _ir_builder = std::make_unique<IRBuilder>(loop_body);
   auto _arg_builder = std::make_unique<ArgumentBuilder>(loop_body);
   auto _c_builder = std::make_unique<ConstantBuilder>(loop_body);
@@ -740,27 +735,27 @@ Status ONNXParser::ConvertLoopNode(std::unique_ptr<IRBuilder>& ir_builder,
   for (int i = 0, const_inputs_size = subgraph.initializer_size();
        i < const_inputs_size; ++i) {
     const_input_names.emplace(subgraph.initializer(i).name());
-    ConvertConstNode(_c_builder, subgraph.initializer(i));
+    ConvertConstNode(_c_builder.get(), subgraph.initializer(i));
   }
 
   // Convert input
   auto input_infos_size = subgraph.input_size();
   for (int i = 0; i < input_infos_size; ++i) {
-    auto name = subgraph.input(i).name();
-    // var_args_name_.emplace(name, cur_node.input(i));
-    auto it = const_input_names.find(name);
-    if (it == const_input_names.end()) {
-      ConvertSubPlaceholderNode(_arg_builder, subgraph.input(i));
+    if (!const_input_names.count(subgraph.input(i).name())) {
+      ConvertSubPlaceholderNode(_arg_builder.get(), subgraph.input(i));
     }
   }
 
   for (int i = 0, node_size = subgraph.node_size(); i < node_size; ++i) {
     VLOG(1) << "sub node name: " << subgraph.node(i).name();
-    ConvertOneNode(_ir_builder, subgraph.node(i));
+    if (subgraph.node(i).op_type() == "Constant") {
+      ConvertConstNode(_c_builder.get(), subgraph.node(i));
+      continue;
+    }
+    ConvertOneNode(_ir_builder.get(), subgraph.node(i));
   }
 
   // Convert output
-#if USE_DEFINE_OUTPUT
   std::vector<Def> outputs;
   for (int i = 0, output_infos_size = subgraph.output_size();
        i < output_infos_size; ++i) {
@@ -780,7 +775,6 @@ Status ONNXParser::ConvertLoopNode(std::unique_ptr<IRBuilder>& ir_builder,
   if (!outputs.empty()) {
     _ir_builder->CreateReturn("output", outputs);
   }
-#endif
 
   auto loop = ir_builder->CreateLoop(cur_node.name(), operands);
   loop->SetBody(loop_body);
