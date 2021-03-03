@@ -52,7 +52,7 @@ if odla_lib not in ld_libpath.split(':'):
 # download onnx op data
 def download_data(localdir):
     if not os.path.exists(localdir):
-        os.system('git clone -b rel-1.5.0 https://github.com/onnx/onnx.git')
+        os.system('git clone -b rel-1.8.0 https://github.com/onnx/onnx.git')
         os.system('cp -r onnx/onnx/backend/test/data/node ' + localdir)
         os.system('rm -rf onnx')
 
@@ -375,8 +375,8 @@ if __name__ == "__main__":
     data_path = os.path.join(build_dir, 'tests/unittests/data')
     download_data(data_path)
 
-    #devices = ['tensorrt']
-    devices = []
+    devices = ['tensorrt']
+    #devices = []
     devices.append('dnnl')
     devices.append('eigen')
     devices.append('xnnpack')
