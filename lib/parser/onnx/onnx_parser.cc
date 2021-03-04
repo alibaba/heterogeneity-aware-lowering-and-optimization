@@ -755,9 +755,9 @@ Status ONNXParser::ConvertLoopNode(IRBuilder* ir_builder,
     ConvertOneNode(_ir_builder.get(), subgraph.node(i));
   }
 
-  // Convert output
+  // Convert output. Skip the first operand as "cond" is not a real output.
   std::vector<Def> outputs;
-  for (int i = 0, output_infos_size = subgraph.output_size();
+  for (int i = 1, output_infos_size = subgraph.output_size();
        i < output_infos_size; ++i) {
     auto name = subgraph.output(i).name();
     VLOG(1) << "output node name: " << name;
@@ -778,6 +778,9 @@ Status ONNXParser::ConvertLoopNode(IRBuilder* ir_builder,
 
   auto loop = ir_builder->CreateLoop(cur_node.name(), operands);
   loop->SetBody(loop_body);
+  loop->GetResultsUses().resize(cur_node.output_size());
+  loop->GetResultsTypes().resize(cur_node.output_size());
+
   InsertIDToInstMap(cur_node, loop);
   return Status::SUCCESS;
 }
