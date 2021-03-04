@@ -25,5 +25,4 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_transpose_all_permutations_5 | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_transpose_all_permutations_5_popart.cc.tmp.main.cc.in"
