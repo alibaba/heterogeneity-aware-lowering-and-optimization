@@ -42,7 +42,8 @@ void build() {
   Argument* arg_input_data = arg_builder.CreateArgument(
       "arg_input_data", Type(DataType::FLOAT32, {2, 3}));
   Instruction* add =
-      ir_builder1.CreateAdd("add", *arg_loop_cnt, *arg_input_data);
+      ir_builder1.CreateAdd("add", *arg_input_data, *arg_input_data);
+  ir_builder1.CreateReturn("loop_out", *add);
   loop0->SetBody(loop_body);
 
   ir_builder0.CreateReturn("ret", std::vector<Def>{*loop0});
@@ -59,10 +60,10 @@ void build() {
 // CHECK: Constant loop_range([BOOL: 1]) = [true]
 // CHECK: Constant input_data([FLOAT32: 2x3]) = [1, 2, 3, 4, 5, 6]
 // CHECK: BasicBlock: bb0
-// CHECK: Inst: loop0([INT64: 1]) = loop(<loop_cnt, 0>:[INT64: 1], <loop_range, 0>:[BOOL: 1], <input_data, 0>:[FLOAT32: 2x3]) {Attrs: <body: {{.*}}>}
-// CHECK: Inst: ret() = return(<loop0, 0>:[INT64: 1])
+// CHECK: Inst: loop0([FLOAT32: 2x3]) = loop(<loop_cnt, 0>:[INT64: 1], <loop_range, 0>:[BOOL: 1], <input_data, 0>:[FLOAT32: 2x3]) {Attrs: <body: {{.*}}>}
+// CHECK: Inst: ret() = return(<loop0, 0>:[FLOAT32: 2x3])
 // CHECK: BasicBlock: loop_body
-// CHECK: Inst: add([INT64: 2x3]) = add(<arg_loop_cnt, 0>:[INT64: 1], <arg_input_data, 0>:[FLOAT32: 2x3])
+// CHECK: Inst: add([FLOAT32: 2x3]) = add(<arg_input_data, 0>:[FLOAT32: 2x3], <arg_input_data, 0>:[FLOAT32: 2x3])
   // clang-format on
 }
 

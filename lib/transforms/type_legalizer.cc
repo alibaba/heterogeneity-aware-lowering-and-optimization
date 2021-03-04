@@ -1077,6 +1077,17 @@ static void RunOnInstruction(HgEngineInst* inst) {
   }
 }
 
+static void RunOnInstruction(LoopInst* inst) {
+  auto& ret_types = inst->GetResultsTypes();
+  auto ret_inst = inst->GetBody()->GetReturnInst();
+  if (ret_inst != nullptr) {
+    HLCHECK(ret_types.size() == ret_inst->GetNumOfOperands());
+    for (int i = 0, e = ret_types.size(); i < e; ++i) {
+      ret_types[i] = ret_inst->GetOperand(i).GetType();
+    }
+  }
+}
+
 bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
   for (auto& it : *bb) {
