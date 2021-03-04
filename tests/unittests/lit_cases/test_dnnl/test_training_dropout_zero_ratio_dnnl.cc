@@ -27,5 +27,4 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_training_dropout_zero_ratio | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_training_dropout_zero_ratio_dnnl.cc.tmp.main.cc.in"

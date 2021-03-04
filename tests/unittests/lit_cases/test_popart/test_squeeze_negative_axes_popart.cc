@@ -26,5 +26,4 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_squeeze_negative_axes | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_squeeze_negative_axes_popart.cc.tmp.main.cc.in"

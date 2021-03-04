@@ -26,5 +26,4 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_prelu_broadcast | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-
 #include "test_prelu_broadcast_dnnl.cc.tmp.main.cc.in"
