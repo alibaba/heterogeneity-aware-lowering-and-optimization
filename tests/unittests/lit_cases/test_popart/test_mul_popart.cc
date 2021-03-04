@@ -26,4 +26,5 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_mul | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
+// XFAIL: *
 #include "test_mul_popart.cc.tmp.main.cc.in"

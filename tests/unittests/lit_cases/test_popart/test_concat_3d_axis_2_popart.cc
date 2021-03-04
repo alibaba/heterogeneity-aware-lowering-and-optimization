@@ -26,4 +26,5 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_concat_3d_axis_2 | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
+// XFAIL: *
 #include "test_concat_3d_axis_2_popart.cc.tmp.main.cc.in"

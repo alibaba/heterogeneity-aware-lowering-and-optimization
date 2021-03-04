@@ -25,4 +25,5 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_globalaveragepool | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
+// XFAIL: *
 #include "test_globalaveragepool_popart.cc.tmp.main.cc.in"

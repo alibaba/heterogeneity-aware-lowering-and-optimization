@@ -27,5 +27,4 @@
 // RUN: %t_tensorrt.exe 0.0001 0 tensorrt %data_path/test_gemm_default_zero_bias | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_gemm_default_zero_bias_tensorrt.cc.tmp.main.cc.in"

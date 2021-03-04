@@ -25,4 +25,5 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_softmax_large_number | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
+// XFAIL: *
 #include "test_softmax_large_number_popart.cc.tmp.main.cc.in"

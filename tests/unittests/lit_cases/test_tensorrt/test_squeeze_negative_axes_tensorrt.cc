@@ -26,5 +26,4 @@
 // RUN: %t_tensorrt.exe 0.0001 0 tensorrt %data_path/test_squeeze_negative_axes | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_squeeze_negative_axes_tensorrt.cc.tmp.main.cc.in"

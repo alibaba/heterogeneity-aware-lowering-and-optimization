@@ -25,5 +25,4 @@
 // RUN: %t_tensorrt.exe 0.0001 0 tensorrt %data_path/test_ceil_example | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-
 #include "test_ceil_example_tensorrt.cc.tmp.main.cc.in"

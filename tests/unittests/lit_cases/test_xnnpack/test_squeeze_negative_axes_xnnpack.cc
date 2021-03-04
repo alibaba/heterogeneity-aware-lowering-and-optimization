@@ -26,5 +26,4 @@
 // RUN: %t_xnnpack.exe 0.0001 0 xnnpack %data_path/test_squeeze_negative_axes | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_squeeze_negative_axes_xnnpack.cc.tmp.main.cc.in"
