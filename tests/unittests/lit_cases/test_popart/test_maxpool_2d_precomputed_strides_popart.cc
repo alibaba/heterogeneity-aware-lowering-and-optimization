@@ -25,5 +25,4 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_maxpool_2d_precomputed_strides | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_maxpool_2d_precomputed_strides_popart.cc.tmp.main.cc.in"

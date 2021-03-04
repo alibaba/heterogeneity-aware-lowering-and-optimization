@@ -25,5 +25,4 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_relu | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_relu_popart.cc.tmp.main.cc.in"

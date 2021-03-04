@@ -26,5 +26,4 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_conv_with_strides_and_asymmetric_padding | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_conv_with_strides_and_asymmetric_padding_popart.cc.tmp.main.cc.in"
