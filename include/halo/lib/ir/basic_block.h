@@ -29,6 +29,7 @@ namespace halo {
 
 class Argument;
 class Function;
+class ReturnInst;
 
 /// This class defines a basic block in IR.
 /// A basic block is simply a list of instructions without terminating in
@@ -113,6 +114,8 @@ class BasicBlock final : public IRObject {
   Function* GetParent() noexcept { return parent_; }
 
   Kind GetKind() const noexcept override { return Kind::BasicBlock; }
+
+  ReturnInst* GetReturnInst() const;
 
   static inline bool Classof(const BasicBlock* bb) { return true; }
   static inline bool Classof(const IRObject* obj) {
