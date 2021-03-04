@@ -25,5 +25,5 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_reduce_mean_default_axes_keepdims_random | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_reduce_mean_default_axes_keepdims_random_popart.cc.tmp.main.cc.in"
