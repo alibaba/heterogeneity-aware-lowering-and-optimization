@@ -20,7 +20,7 @@ if not os.path.exists(unittest_build_path):
     os.makedirs(unittest_build_path)
 data_path = os.path.join(config.halo_build_dir, 'tests/unittests/data')
 if not os.path.exists(data_path):
-    os.system('git clone -b rel-1.8.0 https://github.com/onnx/onnx.git')
+    os.system('git clone --depth 1 -b rel-1.8.0 https://github.com/onnx/onnx.git')
     os.system('cp -r onnx/onnx/backend/test/data/node ' + data_path)
     os.system('rm -rf onnx')
 

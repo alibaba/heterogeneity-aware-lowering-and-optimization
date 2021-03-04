@@ -52,7 +52,7 @@ if odla_lib not in ld_libpath.split(':'):
 # download onnx op data
 def download_data(localdir):
     if not os.path.exists(localdir):
-        os.system('git clone -b rel-1.8.0 https://github.com/onnx/onnx.git')
+        os.system('git clone --depth 1 -b rel-1.8.0 https://github.com/onnx/onnx.git')
         os.system('cp -r onnx/onnx/backend/test/data/node ' + localdir)
         os.system('rm -rf onnx')
 
