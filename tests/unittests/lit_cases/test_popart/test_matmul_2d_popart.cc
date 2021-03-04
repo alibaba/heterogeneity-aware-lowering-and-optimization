@@ -26,4 +26,5 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_matmul_2d | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
+// XFAIL: *
 #include "test_matmul_2d_popart.cc.tmp.main.cc.in"

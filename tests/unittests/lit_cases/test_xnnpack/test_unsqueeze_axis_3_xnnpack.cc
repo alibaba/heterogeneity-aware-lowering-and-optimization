@@ -25,5 +25,4 @@
 // RUN: %t_xnnpack.exe 0.0001 0 xnnpack %data_path/test_unsqueeze_axis_3 | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_unsqueeze_axis_3_xnnpack.cc.tmp.main.cc.in"
