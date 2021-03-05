@@ -25,4 +25,5 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_averagepool_1d_default | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-#include "test_averagepool_1d_default_popart.cc.tmp.main.cc.in"
+// XFAIL: *
+#include "test_averagepool_1d_default_popart.cc.tmp.main.cc.in" q
