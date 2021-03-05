@@ -296,12 +296,6 @@ static std::vector<Def> ConvertShape(const ONNXExtensionInst* ext,
   return {*c};
 }
 
-static std::vector<Def> ConvertLoop(const ONNXExtensionInst* ext,
-                                    IRBuilder* builder) {
-  // TODO(unknown)
-  return {};
-}
-
 static std::vector<Def> ConvertSqueeze(const ONNXExtensionInst* ext,
                                        IRBuilder* builder) {
   return ConvertSqueezeImpl<ONNXExtensionInst>(ext, builder, "axes");
@@ -1023,9 +1017,6 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::GATHERELEMENTS: {
       return ConvertGatherElements(onnx_inst, builder);
-    }
-    case ONNXExtOpCode::LOOP: {
-      return ConvertLoop(onnx_inst, builder);
     }
     case ONNXExtOpCode::UNSQUEEZE: {
       return ConvertUnsqueeze(onnx_inst, builder);

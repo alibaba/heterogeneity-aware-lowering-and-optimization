@@ -82,7 +82,7 @@ Status TFParser::ConvertToHaloIR(const tensorflow::GraphDef& graph_def) {
   Status s = Status::SUCCESS;
   for (const auto& cur_node : graph_def.node()) {
     VLOG(4) << "==========layer[" << i << "]==========";
-    s = ConvertOneNode(cur_node, i++);
+    s = ConvertOneNode(ir_builder_.get(), cur_node, i++);
     if (s != Status::SUCCESS) {
       return s;
     }
@@ -93,19 +93,20 @@ Status TFParser::ConvertToHaloIR(const tensorflow::GraphDef& graph_def) {
   return Status::SUCCESS;
 }
 
-Status TFParser::ConvertOneNode(const tensorflow::NodeDef& cur_node,
+Status TFParser::ConvertOneNode(IRBuilder* ir_builder,
+                                const tensorflow::NodeDef& cur_node,
                                 size_t index) {
   Status s = Status::SUCCESS;
   auto fp = func_lists_.find(cur_node.op());
   if (fp != func_lists_.end()) {
-    s = (fp->second)(cur_node);
+    s = (fp->second)(ir_builder, cur_node);
     if (s != Status::SUCCESS) {
       return s;
     }
   } else {
     if (opts_.print_diagnostic_report) {
       TFParser::WriteCSVReport(cur_node, index, std::cout);
-      ConvertDummyNode(cur_node);
+      ConvertDummyNode(ir_builder, cur_node);
     } else {
       LOG(ERROR)
           << "Convert function not found, Please check if it is supported: "
@@ -126,11 +127,12 @@ void TFParser::WriteCSVReport(const tensorflow::NodeDef& cur_node,
 }
 
 void TFParser::RegisterOp() {
-  func_lists_.emplace("Const", std::bind(&TFParser::ConvertConstNode, this,
-                                         std::placeholders::_1));
+  func_lists_.emplace("Const",
+                      std::bind(&TFParser::ConvertConstNode, this,
+                                std::placeholders::_1, std::placeholders::_2));
   func_lists_.emplace("Placeholder",
                       std::bind(&TFParser::ConvertPlaceholderNode, this,
-                                std::placeholders::_1));
+                                std::placeholders::_1, std::placeholders::_2));
 #include "tf_regist_op.h.inc"
 }
 
@@ -532,7 +534,7 @@ bool TFAttrs::Process<std::vector<bool>>(const std::string& key,
   (*value).reserve(attr_value.list().b_size());
   for (const auto& it : attr_value.list().b()) {
     (*value).push_back(it);
-  };
+  }
   return true;
 }
 
@@ -733,10 +735,12 @@ void TFParser::InsertIDToInstMap(const tensorflow::NodeDef& node_def,
 }
 
 // Define convert function
-Status TFParser::ConvertPlaceholderNode(const tensorflow::NodeDef& node_def) {
+Status TFParser::ConvertPlaceholderNode(IRBuilder* ir_builder,
+                                        const tensorflow::NodeDef& node_def) {
   TFAttrs attrs(node_def);
   DataType data_type = DataType::INVALID;
-  // TODO(unknown): This is a temp solution to handl dynamic shape of BERT.
+  // TODO(unknown): This is a temp solution to handle dynamic shape of BERT.
+  // pay attention to this when need to support controlflow parser
   if (node_def.name() == "sequence_lengths") {
     Constant* inst = c_builder_->CreateConstant<int>(
         node_def.name(), Type{DataType::INT32, {1}}, {15});
@@ -769,7 +773,8 @@ Constant* TFParser::CreateConstant(TFAttrs* attrs, DataType data_type,
   return nullptr;
 }
 
-Status TFParser::ConvertConstNode(const tensorflow::NodeDef& node_def) {
+Status TFParser::ConvertConstNode(IRBuilder* ir_builder,
+                                  const tensorflow::NodeDef& node_def) {
   TFAttrs attrs(node_def);
   DataType data_type = DataType::INVALID;
   if (attrs.Process<DataType>("dtype", &data_type)) {
@@ -862,11 +867,12 @@ Status TFParser::ConvertConstNode(const tensorflow::NodeDef& node_def) {
   return Status::SUCCESS;
 }
 
-Status TFParser::ConvertDummyNode(const tensorflow::NodeDef& node_def) {
+Status TFParser::ConvertDummyNode(IRBuilder* ir_builder,
+                                  const tensorflow::NodeDef& node_def) {
   std::vector<Def> operands = GetInputOperands(node_def);
   static const int max_num_outputs = 128;
-  auto inst = ir_builder_->CreateDummy(node_def.name(), operands,
-                                       max_num_outputs, node_def.op());
+  auto inst = ir_builder->CreateDummy(node_def.name(), operands,
+                                      max_num_outputs, node_def.op());
   InsertIDToInstMap(node_def, inst);
   return Status::SUCCESS;
 }

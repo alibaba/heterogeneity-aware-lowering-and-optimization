@@ -240,7 +240,7 @@ Status TFLITEParser::ConvertToHaloIR(const tflite::Model& model) {
     const auto cur_op = op_codes->Get(cur_node_def->opcode_index());
     tflite::BuiltinOperator cur_op_type =
         static_cast<tflite::BuiltinOperator>(cur_op->builtin_code());
-    s = ConvertOneNode(*cur_node_def, cur_op_type);
+    s = ConvertOneNode(ir_builder_.get(), *cur_node_def, cur_op_type);
     if (s != Status::SUCCESS) {
       return s;
     }
@@ -268,13 +268,13 @@ Status TFLITEParser::ConvertToHaloIR(const tflite::Model& model) {
 }
 
 Status TFLITEParser::ConvertOneNode(
-    const tflite::Operator& cur_node,
+    IRBuilder* ir_builder, const tflite::Operator& cur_node,
     const tflite::BuiltinOperator& cur_op_type) {
   Status s = Status::SUCCESS;
   const std::string op_type(tflite::EnumNameBuiltinOperator(cur_op_type));
   auto fp = func_lists_.find(op_type);
   if (fp != func_lists_.end()) {
-    s = (fp->second)(cur_node);
+    s = (fp->second)(ir_builder, cur_node);
     if (s != Status::SUCCESS) {
       return s;
     }

@@ -26,5 +26,4 @@
 // RUN: %t_tensorrt.exe 0.0001 0 tensorrt %data_path/test_gather_1 | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-
 #include "test_gather_1_tensorrt.cc.tmp.main.cc.in"

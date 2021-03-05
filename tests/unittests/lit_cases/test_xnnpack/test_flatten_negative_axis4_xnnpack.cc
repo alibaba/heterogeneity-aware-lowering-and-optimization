@@ -25,5 +25,4 @@
 // RUN: %t_xnnpack.exe 0.0001 0 xnnpack %data_path/test_flatten_negative_axis4 | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_flatten_negative_axis4_xnnpack.cc.tmp.main.cc.in"
