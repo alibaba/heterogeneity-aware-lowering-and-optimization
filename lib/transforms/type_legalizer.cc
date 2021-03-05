@@ -324,6 +324,7 @@ static Type ComputeKernelWiseType(
       ImageAxisInfo::GetImageAxisInfo(data_format, kernel_format);
   auto& data_shape = data_type.GetDimSizes();
   auto ret_shape = data_shape;
+  HLCHECK(data_type.GetNumOfDims() == 4);
 
   int kernel_h = kernel_shape[info.kernel_height_axis];
   int kernel_w = kernel_shape[info.kernel_width_axis];
