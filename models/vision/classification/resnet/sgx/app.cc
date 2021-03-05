@@ -1,6 +1,6 @@
 
 #define TEST_SET 0
-#define TEST_BN_0
+//#define TEST_BN_0
 #include <vector>
 
 #include "resnet_data.h"
@@ -9,6 +9,9 @@
 #define COMPARE_ERROR 1e-3
 #endif
 
+#ifdef NOSGX
+#include "model.h"
+#else
 // === SGX
 #include <sgx_defs.h>
 #include <sgx_eid.h>
@@ -17,9 +20,13 @@
 
 #include "resnet50_v2_u.h"
 // ===
+#endif
 
-static float out[3 * 224 * 224];
+static float out[1000];
 int main(int argc, char** argv) {
+#ifdef NOSGX
+  resnet50_v2(test_input, out);
+#else
   // === SGX
   sgx_enclave_id_t eid;
   auto ret = sgx_create_enclave("model.signed.so", SGX_DEBUG_FLAG, nullptr,
@@ -47,6 +54,7 @@ int main(int argc, char** argv) {
     printf("Failed to destroy enclave: 0x%x\n", ret);
     return 1;
   }
+#endif
 
   if (Verify(out, test_output_ref, sizeof(out) / sizeof(out[0]),
              COMPARE_ERROR)) {

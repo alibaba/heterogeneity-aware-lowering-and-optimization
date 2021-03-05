@@ -35,13 +35,14 @@
 #error This library requires minimum ODLA version 0.5
 #endif
 
-#if (DNNL_VERSION_MAJOR < 1 || \
-     (DNNL_VERSION_MAJOR == 1 && DNNL_VERSION_MINOR < 1))
-#error This library requires minimum DNNL version 1.1.0
+#define DNNL_VERSION \
+  (DNNL_VERSION_MAJOR * 1000 + DNNL_VERSION_MINOR * 100 + DNNL_VERSION_PATCH)
+#if (DNNL_VERSION < 1100)
+#error This library requires minimum DNNL version 1.1.1
 #endif
 
 static inline dnnl::memory::data_type get_mem_dt(const dnnl::memory& mem) {
-#if (DNNL_VERSION_MAJOR == 1 && DNNL_VERSION_MINOR <= 6)
+#if (DNNL_VERSION < 1700)
   return static_cast<dnnl::memory::data_type>(mem.get_desc().data.data_type);
 #else
   return mem.get_desc().data_type();
@@ -49,7 +50,7 @@ static inline dnnl::memory::data_type get_mem_dt(const dnnl::memory& mem) {
 }
 
 static inline dnnl::memory::dims get_mem_dims(const dnnl::memory& mem) {
-#if (DNNL_VERSION_MAJOR == 1 && DNNL_VERSION_MINOR <= 6)
+#if (DNNL_VERSION < 1700)
   auto data = mem.get_desc().data;
   return dnnl::memory::dims(data.dims, data.dims + data.ndims);
 #else
@@ -359,7 +360,6 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     op.execute(*context->stream);
   }
   context->stream->wait();
-  /*
   // copy to outputs
   auto outputs_v = context->comp->outputs_v;
   for (auto& output_pair : outputs_v) {
@@ -368,7 +368,6 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     memcpy(dst_ptr, src_val->mem.get_data_handle(),
            GetTotalElements(src_val->shape) * src_val->elem_size);
   }
-  */
   return ODLA_SUCCESS;
 }
 
@@ -525,8 +524,10 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
 odla_status odla_BindToOutputById(const odla_value_id value_id,
                                   odla_void* data_ptr, odla_context context) {
   std::string name((const char*)value_id);
+  auto& outputs_v = context->comp->outputs_v;
   auto val = context->comp->outputs[name];
-  return odla_BindToOutput(val, data_ptr, context);
+  outputs_v[name] = {val, data_ptr};
+  return ODLA_SUCCESS;
 }
 
 odla_value odla_Floor(odla_value input, const odla_value_id id) {
@@ -819,7 +820,7 @@ odla_value odla_Sub(odla_value lhs, odla_value rhs, const odla_value_id id) {
 #endif
 }
 
-#if 0
+#if DNNL_VERSION >= 1700
 odla_value odla_Div(odla_value lhs, odla_value rhs, const odla_value_id id) {
   return binary_eltwise(dnnl::algorithm::binary_div, lhs, rhs, id);
 }
@@ -877,7 +878,7 @@ odla_value odla_PRelu(odla_value input, odla_value slope,
   return v;
 }
 
-#if 0
+#if DNNL_VERSION >= 1700
 odla_value odla_Clamp(odla_value input, odla_float32 lo, odla_float32 hi,
                       const odla_value_id id) {
   return unary_eltwise_op(dnnl::algorithm::eltwise_clip, input, lo, hi, id);
@@ -1351,7 +1352,7 @@ odla_value odla_BatchNormalization(odla_value input,
   return v;
 }
 
-#if (DNNL_VERSION_MAJOR >= 1 && DNNL_VERSION_MINOR >= 7)
+#if (DNNL_VERSION >= 1700)
 odla_value odla_Resize(odla_value input, odla_interpolation_mode interpolation,
                        odla_resize_coordinate_mode mode, odla_uint32 axes_mask,
                        odla_value_shape output_dims,
@@ -1432,7 +1433,7 @@ odla_value odla_Softmax(odla_value input, odla_int32 axis,
   return v;
 }
 
-#if 0
+#if DNNL_VERSION >= 1700
 static odla_value reduce_op(dnnl::algorithm alg, odla_value input,
                             odla_size_t num_of_axes, const odla_uint32* axes,
                             odla_bool keep_dims, odla_value_shape output_dims,
@@ -1446,10 +1447,8 @@ static odla_value reduce_op(dnnl::algorithm alg, odla_value input,
 
   auto type = get_mem_dt(input->mem);
   auto output_md =
-      dnnl::memory::desc(dnnl_out_dims, type,
-                         getFormatTag(input->shape));
-  auto input_md = dnnl::memory::desc(getDims(input->shape),
-                                     type,
+      dnnl::memory::desc(dnnl_out_dims, type, getFormatTag(input->shape));
+  auto input_md = dnnl::memory::desc(getDims(input->shape), type,
                                      getFormatTag(input->shape));
   auto ret_mem = dnnl::memory(output_md, g_comp->eng);
   auto reduction_desc =
@@ -1507,7 +1506,7 @@ odla_value odla_ReduceMean(odla_value input, odla_size_t num_of_axes,
 }
 #endif
 
-#if 0
+#if DNNL_VERSION >= 1700
 odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
                      odla_bool transpose_rhs, odla_float32 alpha,
                      odla_float32 beta, odla_value bias,
@@ -1628,10 +1627,10 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
   return is_elements_add ? odla_Add(v, bias, id) : v;
 }
 #else
-odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
-                     odla_bool transpose_rhs, odla_float32 alpha,
-                     odla_float32 beta, odla_value bias,
-                     odla_value_shape output_dims, const odla_value_id id) {
+odla_value dla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
+                    odla_bool transpose_rhs, odla_float32 alpha,
+                    odla_float32 beta, odla_value bias,
+                    odla_value_shape output_dims, const odla_value_id id) {
   std::function<void()> op;
   dnnl::memory::data_type type = get_mem_dt(lhs->mem);
   auto ret_md = getMemoryDesc(output_dims, type);
@@ -1818,7 +1817,7 @@ odla_value odla_NMS(odla_value input_boxes, odla_value input_scores,
   return v;
 }
 
-#if 0
+#if DNNL_VERSION >= 1700
 odla_value odla_Tile(odla_value input, const odla_uint32* repeat,
                      odla_value_shape output_dims,
                      const odla_value_id value_id) {

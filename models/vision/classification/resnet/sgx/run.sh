@@ -17,17 +17,31 @@ set -xe
 
 # FIXME: remove --outputs option.
 $HALO_BIN -target cxx $model_file -o $OUT/model.cc -disable-broadcasting \
-  -entry-func-name=resnet50_v2 --outputs=resnetv24_batchnorm0_fwd
+  -entry-func-name=resnet50_v2 #--outputs=resnetv24_batchnorm0_fwd
 
-$SGX_DIR/bin/x64/sgx_edger8r $curr_dir/resnet50_v2.edl --search-path $SGX_DIR/include \
-  --untrusted-dir $OUT --trusted-dir $OUT
+if [[ $1 == 'nosgx' ]]; then
+  echo "No SGX test"
+  e_c_flags="-DNOSGX"
+  e_cxx_flags="$e_c_flags"
+else
+  echo "SGX Test"
+  $SGX_DIR/bin/x64/sgx_edger8r $curr_dir/resnet50_v2.edl --search-path $SGX_DIR/include \
+    --untrusted-dir $OUT --trusted-dir $OUT
+  e_c_flags="-nostdinc -isystem $SGX_DIR/include/tlibc -I$SGX_DIR/include/
+            -fpie -fvisibility=hidden -ffunction-sections -fdata-sections"
+  e_cxx_flags="$e_c_flags -nostdinc++ -isystem $SGX_DIR/include/libcxx"
+fi
 
 # Build enclave code
-e_c_flags="-nostdinc -isystem $SGX_DIR/include/tlibc -I$SGX_DIR/include/
-           -fpie -fvisibility=hidden -ffunction-sections -fdata-sections"
-e_cxx_flags="$e_c_flags -nostdinc++ -isystem $SGX_DIR/include/libcxx"
-
 g++ -c $e_cxx_flags $OUT/model.cc -c -o $OUT/model.o -I$OUT -I$ODLA_INC
+
+if [[ $1 == 'nosgx' ]]; then
+  g++ -g -c $curr_dir/app.cc -o $OUT/app.o -DNOSGX -I$OUT -I$SRC_DIR/tests/include
+  g++ $OUT/app.o $OUT/model.o $OUT/model.bin -L$ODLA_LIB -lodla_dnnl -o $OUT/app_nosgx -Wl,-rpath=$ODLA_LIB
+  $OUT/app_nosgx
+  exit
+fi
+
 gcc -c $e_c_flags $OUT/resnet50_v2_t.c -c -o $OUT/resnet50_v2_t.o -Iout
 
 DNNL_SGX="/opt/intel/sgx_dnnl"
