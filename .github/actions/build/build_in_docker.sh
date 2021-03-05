@@ -20,7 +20,7 @@ IMAGE="$REPO:$VER-$VARIANT-ubuntu18.04"
 CONTAINER_NAME="halo.ci-$VER-$VARIANT"
 
 docker_run_flag=""
-cmake_flags=""
+cmake_flags="-DDNNL_COMPILER=gcc-10"
 check_cmds="ninja check-halo && ninja check-halo-models"
 
 if [[ "$VARIANT" =~ cuda ]]; then
