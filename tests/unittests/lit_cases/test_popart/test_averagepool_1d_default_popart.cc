@@ -26,4 +26,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-#include "test_averagepool_1d_default_popart.cc.tmp.main.cc.in" q
+#include "test_averagepool_1d_default_popart.cc.tmp.main.cc.in"
