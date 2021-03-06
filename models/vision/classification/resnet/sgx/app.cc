@@ -24,6 +24,8 @@
 
 static float out[1000];
 int main(int argc, char** argv) {
+  int iter = 100;
+
 #ifdef NOSGX
   resnet50_v2(test_input, out);
 #else
@@ -59,13 +61,18 @@ int main(int argc, char** argv) {
   if (Verify(out, test_output_ref, sizeof(out) / sizeof(out[0]),
              COMPARE_ERROR)) {
     std::cout << "Result verified\n";
-#ifdef TIMING_TEST
     auto begin_time = Now();
-    resnet50_v2(test_input, out);
-    auto end_time = Now();
-    std::cout << "Elapse time: " << GetDuration(begin_time, end_time)
-              << " seconds\n";
+    for (int i = 0; i < iter; ++i) {
+#ifdef NOSGX
+      resnet50_v2(test_input, out);
+#else
+      ret = resnet50_v2(eid, const_cast<float*>(test_input), out);
 #endif
+    }
+    auto end_time = Now();
+    if (iter)
+      std::cout << "Inference time: "
+                << GetDuration(begin_time, end_time) * 1000 / iter << " ms\n";
     return 0;
   }
   std::cout << " Failed\n";

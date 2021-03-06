@@ -15,7 +15,6 @@ wget -nc -O $model_file $model_url
 
 set -xe
 
-# FIXME: remove --outputs option.
 $HALO_BIN -target cxx $model_file -o $OUT/model.cc -disable-broadcasting \
   -entry-func-name=resnet50_v2 #--outputs=resnetv24_batchnorm0_fwd
 
