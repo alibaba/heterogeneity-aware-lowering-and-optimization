@@ -36,8 +36,9 @@ fi
 g++ -c $e_cxx_flags $OUT/model.cc -c -o $OUT/model.o -I$OUT -I$ODLA_INC
 
 if [[ $1 == 'nosgx' ]]; then
+  odla_lib="odla_dnnl_11" # use "odla_dnnl" for dnnl 17.
   g++ -g -c $curr_dir/app.cc -o $OUT/app.o -DNOSGX -I$OUT -I$SRC_DIR/tests/include
-  g++ $OUT/app.o $OUT/model.o $OUT/model.bin -L$ODLA_LIB -lodla_dnnl -o $OUT/app_nosgx -Wl,-rpath=$ODLA_LIB
+  g++ $OUT/app.o $OUT/model.o $OUT/model.bin -L$ODLA_LIB -l$odla_lib -o $OUT/app_nosgx -Wl,-rpath=$ODLA_LIB
   $OUT/app_nosgx
   exit
 fi

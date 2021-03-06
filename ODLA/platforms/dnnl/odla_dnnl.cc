@@ -21,6 +21,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstring>
+#include <functional>
 #include <iostream>
 #include <numeric>
 #include <string>
@@ -1627,26 +1628,35 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
   return is_elements_add ? odla_Add(v, bias, id) : v;
 }
 #else
-odla_value dla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
-                    odla_bool transpose_rhs, odla_float32 alpha,
-                    odla_float32 beta, odla_value bias,
-                    odla_value_shape output_dims, const odla_value_id id) {
+odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
+                     odla_bool transpose_rhs, odla_float32 alpha,
+                     odla_float32 beta, odla_value bias,
+                     odla_value_shape output_dims, const odla_value_id id) {
   std::function<void()> op;
   dnnl::memory::data_type type = get_mem_dt(lhs->mem);
   auto ret_md = getMemoryDesc(output_dims, type);
   auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
+  // FIXME: alpha, beta, bias not handled.
+  op = [&]() {
+    int lda = lhs->shape.dims[1], ldb = rhs->shape.dims[1],
+        ldc = output_dims.dims[1];
 
-  op = [transpose_lhs, transpose_rhs, lhs, rhs, ret_mem, &output_dims]() {
-    auto feature_size = dnnl_sgemm(
-        transpose_lhs ? 'T' : 'N', transpose_rhs ? 'T' : 'N',
-        output_dims.dims[0], output_dims.dims[1], lhs->shape.dims[1], 1.f,
-        (const float*)lhs->mem.get_data_handle(), lhs->shape.dims[0],
-        (const float*)rhs->mem.get_data_handle(), rhs->shape.dims[0], 0.f,
-        (float*)ret_mem.get_data_handle(), output_dims.dims[0]);
+    int M = lhs->shape.dims[0], K = lhs->shape.dims[1];
+    if (transpose_lhs) std::swap(M, K);
+    int N = transpose_rhs ? rhs->shape.dims[0] : rhs->shape.dims[1];
+    assert(K == (transpose_rhs ? rhs->shape.dims[1] : rhs->shape.dims[0]));
+    auto feature_size =
+        dnnl_sgemm(transpose_lhs ? 'T' : 'N', transpose_rhs ? 'T' : 'N', M, N,
+                   K, alpha, (const float*)lhs->mem.get_data_handle(), lda,
+                   (const float*)rhs->mem.get_data_handle(), ldb, beta,
+                   (float*)ret_mem.get_data_handle(), ldc);
   };
 
   add_op(op);
-  odla_value v = CreateValue(ret_mem, output_dims, id);
+  odla_value v = CreateValue(ret_mem, output_dims, bias ? nullptr : id);
+  if (bias) {
+    v = odla_Add(v, bias, id);
+  }
 
   InterpretIfNeeded();
 

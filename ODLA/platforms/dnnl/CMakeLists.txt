@@ -56,3 +56,13 @@ if (ODLA_BUILD_SGX_DNNL)
   target_compile_options(odla_sgx_dnnl PRIVATE -nostdinc -nostdinc++ -fpie
     -fvisibility=hidden -ffunction-sections -fdata-sections)
 endif()
+
+set(ODLA_DNNL_11 ON)
+if (ODLA_DNNL_11)
+  find_library(dnnl11 NAMES dnnl PATHS /tmp/dnnl_1.1.1 PATH_SUFFIXES
+               lib NO_DEFAULT_PATH)
+  add_odla_library(odla_dnnl_11 SHARED odla_dnnl.cc)
+  target_include_directories(odla_dnnl_11 PRIVATE /tmp/dnnl_1.1.1/include)
+  target_link_libraries(odla_dnnl_11 ODLA ${dnnl11})
+  set_property(TARGET odla_dnnl_11 PROPERTY CXX_STANDARD 11)
+endif()
