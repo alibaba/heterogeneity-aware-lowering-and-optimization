@@ -15,7 +15,6 @@
 // limitations under the License.
 // =============================================================================
 
-#include <immintrin.h>
 
 #if defined(__AVX512F__)
 #include "dnnl_utils_avx512.h"

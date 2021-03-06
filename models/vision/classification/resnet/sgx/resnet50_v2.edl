@@ -1,0 +1,15 @@
+enclave {
+
+  from "sgx_tstdc.edl" import *;
+  from "sgx_pthread.edl" import *;
+
+  trusted {
+    public  void resnet50_v2([user_check] float input[150528],
+                              [user_check] float out_inst_416[1000]);
+    public  void resnet50_v2_init();
+    public  void resnet50_v2_fini();
+  };
+
+  untrusted { };
+
+};

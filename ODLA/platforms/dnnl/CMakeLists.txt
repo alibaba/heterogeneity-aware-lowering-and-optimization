@@ -38,3 +38,38 @@ target_compile_definitions(odla_dnnl_interpreter PRIVATE ODLA_DNNL_BUILD_AS_INTE
 target_link_libraries(odla_dnnl_interpreter ODLA ${dnnl})
 target_compile_options(odla_dnnl_interpreter PRIVATE ${DNNL_CXX_FLAGS})
 set(CMAKE_CXX_COMPILER_LAUNCHER ${DEFAULT_COMPILER})
+
+if (ODLA_BUILD_SGX_DNNL)
+  set(SGX_DNNL_PREFIX /opt/intel/sgx_dnnl CACHE STRING "PATH of SGX DNNL.")
+  set(SGX_SDK_PREFIX /opt/intel/sgxsdk CACHE STRING "PATH of SGX SDK.")
+
+  find_library(sgx_dnnl NAMES sgx_dnnl PATHS ${SGX_DNNL_PREFIX} PATH_SUFFIXES
+               lib NO_DEFAULT_PATH)
+  add_odla_library(odla_sgx_dnnl STATIC odla_dnnl.cc)
+  set(SGXSDK /opt/intel/sgxsdk)
+  target_include_directories(odla_sgx_dnnl PRIVATE ${SGX_DNNL_PREFIX}/include
+                            ${SGX_SDK_PREFIX}/include)
+  target_include_directories(odla_sgx_dnnl SYSTEM PRIVATE
+       ${SGX_SDK_PREFIX}/include/tlibc ${SGX_SDK_PREFIX}/include/libcxx)
+  target_link_libraries(odla_sgx_dnnl ODLA)
+  set_property(TARGET odla_sgx_dnnl PROPERTY CXX_STANDARD 11)
+  target_compile_options(odla_sgx_dnnl PRIVATE -nostdinc -nostdinc++ -fpie
+    -fvisibility=hidden -ffunction-sections -fdata-sections)
+endif()
+
+set(ODLA_DNNL_11 ON)
+set(INSTALL_DIR ${CMAKE_BINARY_DIR}/dnnl11)
+if (ODLA_DNNL_11)
+  include(ExternalProject)
+  ExternalProject_Add(dnnl11
+    PREFIX ${CMAKE_BINARY_DIR}/dnnl11
+    GIT_REPOSITORY  https://github.com/intel/mkl-dnn.git GIT_SHALLOW 1 GIT_TAG v1.1.1
+    CMAKE_ARGS -DDNNL_BUILD_EXAMPLES=OFF -DDNNL_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
+  )
+  message("DNNL 1.1 installed @ ${INSTALL_DIR}")
+  add_odla_library(odla_dnnl_11 SHARED odla_dnnl.cc)
+  add_dependencies(odla_dnnl_11 dnnl11)
+  target_include_directories(odla_dnnl_11 PRIVATE ${INSTALL_DIR}/include)
+  target_link_libraries(odla_dnnl_11 ODLA ${INSTALL_DIR}/lib/libdnnl.so)
+  set_property(TARGET odla_dnnl_11 PROPERTY CXX_STANDARD 11)
+endif()

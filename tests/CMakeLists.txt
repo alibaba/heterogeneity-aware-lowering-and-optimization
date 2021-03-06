@@ -31,6 +31,10 @@ if (ODLA_BUILD_DNNL)
   list(APPEND HALO_TEST_DEPENDS odla_dnnl)
 endif()
 
+if (ODLA_BUILD_SGX_DNNL)
+  list(APPEND HALO_TEST_DEPENDS odla_sgx_dnnl)
+endif()
+
 if (ODLA_BUILD_EIGEN)
   list(APPEND HALO_TEST_DEPENDS odla_eigen)
 endif()
@@ -38,7 +42,6 @@ endif()
 if (ODLA_BUILD_XNNPACK)
   list(APPEND HALO_TEST_DEPENDS odla_xnnpack)
 endif()
-
 
 configure_lit_site_cfg(
     ${CMAKE_CURRENT_SOURCE_DIR}/lit.site.cfg.in
