@@ -58,11 +58,18 @@ if (ODLA_BUILD_SGX_DNNL)
 endif()
 
 set(ODLA_DNNL_11 ON)
+set(INSTALL_DIR ${CMAKE_BINARY_DIR}/dnnl11)
 if (ODLA_DNNL_11)
-  find_library(dnnl11 NAMES dnnl PATHS /tmp/dnnl_1.1.1 PATH_SUFFIXES
-               lib NO_DEFAULT_PATH)
+  include(ExternalProject)
+  ExternalProject_Add(dnnl11
+    PREFIX ${CMAKE_BINARY_DIR}/dnnl11
+    GIT_REPOSITORY  https://github.com/intel/mkl-dnn.git GIT_SHALLOW 1 GIT_TAG v1.1.1
+    CMAKE_ARGS -DDNNL_BUILD_EXAMPLES=OFF -DDNNL_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
+  )
+  message("DNNL 1.1 installed @ ${INSTALL_DIR}")
   add_odla_library(odla_dnnl_11 SHARED odla_dnnl.cc)
-  target_include_directories(odla_dnnl_11 PRIVATE /tmp/dnnl_1.1.1/include)
-  target_link_libraries(odla_dnnl_11 ODLA ${dnnl11})
+  add_dependencies(odla_dnnl_11 dnnl11)
+  target_include_directories(odla_dnnl_11 PRIVATE ${INSTALL_DIR}/include)
+  target_link_libraries(odla_dnnl_11 ODLA ${INSTALL_DIR}/lib/libdnnl.so)
   set_property(TARGET odla_dnnl_11 PROPERTY CXX_STANDARD 11)
 endif()
