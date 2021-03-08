@@ -557,23 +557,27 @@ odla_value odla_Gather(odla_value params, const odla_value indices,
     idx_size = indices->shape.dims[1];
   } else {
     batch_size = 1;
-    for (int i = 0; i < axis; ++i) {
-      batch_size *= params->shape.dims[i];
-    }
     idx_size = indices->shape.dims[0];
   }
   size_t inner_size = 1;
+  size_t outer_loop = 1;
   for (int i = axis + 1; i < params->shape.size; ++i) {
     inner_size *= params->shape.dims[i];
   }
+  size_t outer_size = inner_size * params->shape.dims[axis];
+  for (int i = 0; i < axis; ++i) {
+    outer_loop *= params->shape.dims[i];
+  }
   auto ret_md =
-      dnnl::memory::desc(getDims(output_dims), dt, getStrides(output_dims));
+      dnnl::memory::desc(getDims(output_dims), dt, getFormatTag(output_dims));
   auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
   int byte_size =
       params->mem.get_desc().get_size() / GetTotalElements(params->shape);
 
-  op = [params, indices, batch_size, idx_size, inner_size, byte_size, ret_mem,
-        axis]() {
+  auto one_batch_byte_size =
+      GetTotalElements(output_dims) / batch_size * byte_size;
+  op = [params, indices, batch_size, idx_size, inner_size, outer_loop,
+        outer_size, byte_size, ret_mem, one_batch_byte_size, axis]() {
     int32_t* indices_ptr = (int32_t*)indices->mem.get_data_handle();
     std::vector<int> indices_i32;
     if (indices->elem_size == 8) {
@@ -581,10 +585,14 @@ odla_value odla_Gather(odla_value params, const odla_value indices,
       indices_i32.insert(indices_i32.begin(), src, src + idx_size);
       indices_ptr = indices_i32.data();
     }
-    dnnl_utils::gather_func((char*)params->mem.get_data_handle(), indices_ptr,
-                            batch_size, idx_size, params->shape.dims[axis],
-                            inner_size, byte_size,
-                            (char*)ret_mem.get_data_handle());
+    char* ret_ptr = (char*)ret_mem.get_data_handle();
+#pragma omp parallel for
+    for (int i = 0; i < batch_size; i++) {
+      dnnl_utils::gather_func((char*)params->mem.get_data_handle(),
+                              indices_ptr + i * idx_size, idx_size, inner_size,
+                              outer_loop, outer_size, byte_size,
+                              ret_ptr + i * one_batch_byte_size);
+    }
   };
   add_op(op);
   InterpretIfNeeded();
