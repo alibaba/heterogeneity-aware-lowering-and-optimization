@@ -285,3 +285,11 @@ def TF_HgDequant : TFExtension<"HgDequant"> {
     ExtensionAttr<"out_type", EnumDataType, "FLOAT32">
   ];
 }
+
+def TF_TopK  : OpMapping<"TopKV2", TopK>;
+
+def TF_Range : OpMapping<"Range", Range>;
+
+def TF_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
+
+def TF_Tile : OpMapping<"Tile", Tile>;
