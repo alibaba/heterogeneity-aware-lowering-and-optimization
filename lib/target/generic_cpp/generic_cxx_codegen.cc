@@ -768,6 +768,9 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
 void GenericCXXCodeGen::RunOnConstant(Constant& constant, bool decl) {
   const auto& uses = constant.GetIthResultUses(0);
   bool only_used_by_reshape = true;
+  if (uses.empty()) {
+    return;
+  }
   for (const auto& u : uses) {
     if (!IsA<Instruction>(u.GetUse()) ||
         DynCast<Instruction>(u.GetUse())->GetOpCode() != OpCode::RESHAPE ||
