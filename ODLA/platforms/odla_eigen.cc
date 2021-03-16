@@ -1,6 +1,6 @@
 //===- odla_eigen.cc ------------------------------------------------------===//
 //
-// Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+// Copyright (C) 2019-2021 Alibaba Group Holding Limited.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ struct _odla_value {
   bool needs_free;
 };
 
-std::vector<std::unique_ptr<_odla_value>> Vals;
+thread_local std::vector<std::unique_ptr<_odla_value>> Vals;
 
 static int64_t GetTotalElements(const odla_value_shape& dims) {
   return std::accumulate(dims.dims, dims.dims + dims.size, 1,
