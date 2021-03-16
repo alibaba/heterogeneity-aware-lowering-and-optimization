@@ -1693,7 +1693,7 @@ odla_value odla_Slice(odla_value input, const odla_uint32* start,
     add_op(prim, {{DNNL_ARG_FROM, input->mem}, {DNNL_ARG_TO, dst_mem}});
   } else {
     int elem_size = GetDataSize(type);
-    auto op = [&]() {
+    auto op = [=]() {
       strided_slice(input->mem.get_data_handle(), elem_size, input_dims, start,
                     end, strides, dst_mem.get_data_handle(), output_dims);
     };
