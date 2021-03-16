@@ -25,5 +25,4 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_transpose_all_permutations_0 | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-
 #include "test_transpose_all_permutations_0_dnnl.cc.tmp.main.cc.in"

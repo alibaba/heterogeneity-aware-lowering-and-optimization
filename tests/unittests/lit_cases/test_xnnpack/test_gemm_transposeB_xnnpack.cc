@@ -27,5 +27,4 @@
 // RUN: %t_xnnpack.exe 0.0001 0 xnnpack %data_path/test_gemm_transposeB | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_gemm_transposeB_xnnpack.cc.tmp.main.cc.in"

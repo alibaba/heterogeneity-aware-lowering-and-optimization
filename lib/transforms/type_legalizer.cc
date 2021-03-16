@@ -324,6 +324,7 @@ static Type ComputeKernelWiseType(
       ImageAxisInfo::GetImageAxisInfo(data_format, kernel_format);
   auto& data_shape = data_type.GetDimSizes();
   auto ret_shape = data_shape;
+  HLCHECK(data_type.GetNumOfDims() == 4);
 
   int kernel_h = kernel_shape[info.kernel_height_axis];
   int kernel_w = kernel_shape[info.kernel_width_axis];
@@ -1073,6 +1074,17 @@ static void RunOnInstruction(HgEngineInst* inst) {
 
     halo::Type new_type{type, new_shape};
     inst->GetResultsTypes()[i] = new_type;
+  }
+}
+
+static void RunOnInstruction(LoopInst* inst) {
+  auto& ret_types = inst->GetResultsTypes();
+  auto ret_inst = inst->GetBody()->GetReturnInst();
+  if (ret_inst != nullptr) {
+    HLCHECK(ret_types.size() == ret_inst->GetNumOfOperands());
+    for (int i = 0, e = ret_types.size(); i < e; ++i) {
+      ret_types[i] = ret_inst->GetOperand(i).GetType();
+    }
   }
 }
 

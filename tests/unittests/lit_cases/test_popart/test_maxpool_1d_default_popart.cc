@@ -26,5 +26,4 @@
 // CHECK: Result Pass
 // clang-format on
 // XFAIL: *
-
 #include "test_maxpool_1d_default_popart.cc.tmp.main.cc.in"

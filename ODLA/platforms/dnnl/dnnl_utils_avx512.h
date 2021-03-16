@@ -90,16 +90,16 @@ inline __m512 _mm512_cvtbf16f32_load(__mmask16 mask, void* mem_addr) {
   return _mm512_castsi512_ps(dst);
 }
 
-inline void gather_func(char* params, int32_t* idx, size_t batch_size,
-                        size_t idx_size, size_t axis_size, size_t inner_size,
+inline void gather_func(char* params, int32_t* idx, size_t idx_size,
+                        size_t inner_size, size_t outer_loop, size_t outer_size,
                         size_t byte_size, char* dst) {
   size_t slice_bytes = inner_size * byte_size;
 #pragma omp parallel for
-  for (int i = 0; i < batch_size; i++) {
-    for (int j = 0; j < idx_size; j++) {
-      int32_t curr_idx = idx[j];
-      memcpy(dst + (i * idx_size + j) * slice_bytes,
-             params + (i * axis_size + curr_idx) * slice_bytes, slice_bytes);
+  for (int j = 0; j < outer_loop; j++) {
+    for (int i = 0; i < idx_size; i++) {
+      memcpy(dst + (j * idx_size + i) * slice_bytes,
+             params + idx[i] * slice_bytes + j * outer_size * byte_size,
+             slice_bytes);
     }
   }
 }
