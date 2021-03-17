@@ -132,6 +132,20 @@ static dnnl::memory::dims getStrides(const odla_value_shape& od) {
   return dims;
 }
 
+static int GetDataSize(dnnl::memory::data_type dt) {
+  switch (dt) {
+    case dnnl::memory::data_type::s8:
+      return 1;
+    case dnnl::memory::data_type::bf16:
+      return 2;
+    case dnnl::memory::data_type::f32:
+    case dnnl::memory::data_type::s32:
+      return 4;
+  }
+  assert(0 && "invalid data type");
+  return 0;
+}
+
 static dnnl::memory::data_type getDataType(const odla_element_type ty) {
   dnnl::memory::data_type dt;
   switch (ty) {
@@ -1612,6 +1626,45 @@ odla_value odla_Erf(odla_value input, const odla_value_id value_id) {
   return v;
 }
 
+static void strided_slice(const void* src, int elem_size,
+                          const odla_value_shape& input_dims,
+                          const odla_uint32* start, const odla_uint32* end,
+                          const odla_uint32* strides, void* dst,
+                          const odla_value_shape& output_dims) {
+  int64_t dst_elems = GetTotalElements(output_dims);
+  int dims = input_dims.size;
+  std::vector<int> dst_dims(dims);
+  std::vector<size_t> src_strides(dims, 1);
+  const char* src_ptr = reinterpret_cast<const char*>(src);
+  char* dst_ptr = reinterpret_cast<char*>(dst);
+
+  for (int k = dims - 2; k >= 0; --k) {
+    src_strides[k] = src_strides[k + 1] * input_dims.dims[k + 1];
+  }
+  for (int64_t i = 0; i < dst_elems; ++i) {
+    // map dst position to src position.
+    std::vector<int> src_dims(dims);
+    for (int k = 0; k < dims; ++k) {
+      src_dims[k] = start[k] + strides[k] * dst_dims[k];
+    }
+    size_t src_offset =
+        elem_size * std::inner_product(src_dims.begin(), src_dims.end(),
+                                       src_strides.begin(), 0);
+    memcpy(dst_ptr, src_ptr + src_offset, elem_size);
+
+    // Increase the dims of dst;
+    for (int k = dims - 1; k >= 0; --k) {
+      ++dst_dims[k];
+      if (dst_dims[k] == output_dims.dims[k]) {
+        dst_dims[k] = 0;
+      } else {
+        break;
+      }
+    }
+    dst_ptr += elem_size;
+  }
+}
+
 odla_value odla_Slice(odla_value input, const odla_uint32* start,
                       const odla_uint32* end, const odla_uint32* strides,
                       odla_value_shape output_dims, const odla_value_id id) {
@@ -1619,20 +1672,33 @@ odla_value odla_Slice(odla_value input, const odla_uint32* start,
   int dims = input_dims.size;
   auto offsets = dnnl::memory::dims(start, start + dims);
   // only support stride of 1
+  bool simple_stride = true;
   for (int i = 0; i < dims; ++i) {
-    assert(strides[i] == 1);
+    if (strides[i] != 1) {
+      simple_stride = false;
+      break;
+    }
   }
   dnnl::memory::data_type type = input->mem.get_desc().data_type();
-  dnnl::memory::desc input_md = getMemoryDesc(input_dims, type);
-  dnnl::memory::desc src_sub_md =
-      input_md.submemory_desc(getDims(output_dims), offsets);
   dnnl::memory::desc dst_md = getMemoryDesc(output_dims, type);
-
-  // dummy reorder
-  auto src_mem = dnnl::memory(src_sub_md, g_comp->eng, nullptr);
   auto dst_mem = dnnl::memory(dst_md, g_comp->eng);
-  auto prim = dnnl::reorder(src_mem, dst_mem);
-  add_op(prim, {{DNNL_ARG_FROM, input->mem}, {DNNL_ARG_TO, dst_mem}});
+  if (simple_stride) {
+    dnnl::memory::desc input_md = getMemoryDesc(input_dims, type);
+    dnnl::memory::desc src_sub_md =
+        input_md.submemory_desc(getDims(output_dims), offsets);
+
+    // dummy reorder
+    auto src_mem = dnnl::memory(src_sub_md, g_comp->eng, nullptr);
+    auto prim = dnnl::reorder(src_mem, dst_mem);
+    add_op(prim, {{DNNL_ARG_FROM, input->mem}, {DNNL_ARG_TO, dst_mem}});
+  } else {
+    int elem_size = GetDataSize(type);
+    auto op = [=]() {
+      strided_slice(input->mem.get_data_handle(), elem_size, input_dims, start,
+                    end, strides, dst_mem.get_data_handle(), output_dims);
+    };
+    add_op(op);
+  }
   InterpretIfNeeded();
   return CreateValue(dst_mem, output_dims, id);
 }
