@@ -121,6 +121,7 @@ Enumerations</h2></td></tr>
 &#160;&#160;<b>ODLA_PROCESSOR_NUM</b>
 , <b>ODLA_BATCHES_PER_STEP</b>
 , <b>ODLA_USE_DATA_TYPE</b>
+, <b>ODLA_LOAD_ENGINE_MODE</b>
 <br />
  }</td></tr>
 <tr class="memdesc:a6be789aa7177278446e347afcfb9aa0b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Property item type. <br /></td></tr>
@@ -144,9 +145,9 @@ Functions</h2></td></tr>
 <tr class="memitem:aa86e465d71ac084cf74b006d1437c59b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__compute_8h.html#aa86e465d71ac084cf74b006d1437c59b">odla_LoadComputation</a> (const <a class="el" href="odla__common_8h.html#a70ab5c97f8e2150ab1c252e6fa33d38b">odla_char</a> *file_name, <a class="el" href="odla__compute_8h.html#a7906dc5bd415fd126df428a44cfc660e">odla_computation</a> *computation)</td></tr>
 <tr class="memdesc:aa86e465d71ac084cf74b006d1437c59b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load a computation from the file system.  <a href="odla__compute_8h.html#aa86e465d71ac084cf74b006d1437c59b">More...</a><br /></td></tr>
 <tr class="separator:aa86e465d71ac084cf74b006d1437c59b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0b551a95a03962d03b6cd8d18b400ac4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__compute_8h.html#a0b551a95a03962d03b6cd8d18b400ac4">odla_StoreComputation</a> (const <a class="el" href="odla__common_8h.html#a70ab5c97f8e2150ab1c252e6fa33d38b">odla_char</a> *file_name, const <a class="el" href="odla__compute_8h.html#a7906dc5bd415fd126df428a44cfc660e">odla_computation</a> computation)</td></tr>
-<tr class="memdesc:a0b551a95a03962d03b6cd8d18b400ac4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store a computation object into the file system.  <a href="odla__compute_8h.html#a0b551a95a03962d03b6cd8d18b400ac4">More...</a><br /></td></tr>
-<tr class="separator:a0b551a95a03962d03b6cd8d18b400ac4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a23c033d5aa6e7aa89e3285ad5ed0918e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__compute_8h.html#a23c033d5aa6e7aa89e3285ad5ed0918e">odla_StoreComputation</a> (const <a class="el" href="odla__common_8h.html#a70ab5c97f8e2150ab1c252e6fa33d38b">odla_char</a> *file_name, <a class="el" href="odla__compute_8h.html#a7906dc5bd415fd126df428a44cfc660e">odla_computation</a> computation)</td></tr>
+<tr class="memdesc:a23c033d5aa6e7aa89e3285ad5ed0918e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store a computation object into the file system.  <a href="odla__compute_8h.html#a23c033d5aa6e7aa89e3285ad5ed0918e">More...</a><br /></td></tr>
+<tr class="separator:a23c033d5aa6e7aa89e3285ad5ed0918e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2d42e143efcda54765a4ed1b3b0c9986"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__compute_8h.html#a2d42e143efcda54765a4ed1b3b0c9986">odla_DifferentiateComputation</a> (<a class="el" href="odla__compute_8h.html#a7906dc5bd415fd126df428a44cfc660e">odla_computation</a> computation)</td></tr>
 <tr class="memdesc:a2d42e143efcda54765a4ed1b3b0c9986"><td class="mdescLeft">&#160;</td><td class="mdescRight">Differentiate a computation.  <a href="odla__compute_8h.html#a2d42e143efcda54765a4ed1b3b0c9986">More...</a><br /></td></tr>
 <tr class="separator:a2d42e143efcda54765a4ed1b3b0c9986"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -186,15 +187,15 @@ Functions</h2></td></tr>
 <tr class="memitem:a93dd6a6215574b2ace5be8d698c87637"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__compute_8h.html#a93dd6a6215574b2ace5be8d698c87637">odla_DestroyConstantsArray</a> (<a class="el" href="odla__compute_8h.html#aec5edf954a98e250d6c1744f4e5ba672">odla_constants_array</a> constants_array)</td></tr>
 <tr class="memdesc:a93dd6a6215574b2ace5be8d698c87637"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destroy a created constants array object.  <a href="odla__compute_8h.html#a93dd6a6215574b2ace5be8d698c87637">More...</a><br /></td></tr>
 <tr class="separator:a93dd6a6215574b2ace5be8d698c87637"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acc4b0259d59d784d145f8d82e169aaec"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__compute_8h.html#acc4b0259d59d784d145f8d82e169aaec">odla_CreateExecutable</a> (<a class="el" href="odla__compute_8h.html#a58a9f95845de8c2dcee9df9efd983aaf">odla_executable</a> *executable)</td></tr>
-<tr class="memdesc:acc4b0259d59d784d145f8d82e169aaec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an executable object.  <a href="odla__compute_8h.html#acc4b0259d59d784d145f8d82e169aaec">More...</a><br /></td></tr>
-<tr class="separator:acc4b0259d59d784d145f8d82e169aaec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a559331ae14f00daee903db9954a87590"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__compute_8h.html#a559331ae14f00daee903db9954a87590">odla_LoadExecutable</a> (const <a class="el" href="odla__common_8h.html#a70ab5c97f8e2150ab1c252e6fa33d38b">odla_char</a> *file_name, <a class="el" href="odla__compute_8h.html#a58a9f95845de8c2dcee9df9efd983aaf">odla_executable</a> *executable)</td></tr>
-<tr class="memdesc:a559331ae14f00daee903db9954a87590"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load an executable from the file system.  <a href="odla__compute_8h.html#a559331ae14f00daee903db9954a87590">More...</a><br /></td></tr>
-<tr class="separator:a559331ae14f00daee903db9954a87590"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5780236487fdbcfdd5f8a963de940d27"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__compute_8h.html#a5780236487fdbcfdd5f8a963de940d27">odla_StoreExecutable</a> (const <a class="el" href="odla__common_8h.html#a70ab5c97f8e2150ab1c252e6fa33d38b">odla_char</a> *file_name, const <a class="el" href="odla__compute_8h.html#a58a9f95845de8c2dcee9df9efd983aaf">odla_executable</a> executable)</td></tr>
-<tr class="memdesc:a5780236487fdbcfdd5f8a963de940d27"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store an executable object into the file system.  <a href="odla__compute_8h.html#a5780236487fdbcfdd5f8a963de940d27">More...</a><br /></td></tr>
-<tr class="separator:a5780236487fdbcfdd5f8a963de940d27"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac60269f20a44910d950b2405b022169e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__compute_8h.html#ac60269f20a44910d950b2405b022169e">odla_CreateExecutable</a> (<a class="el" href="odla__compute_8h.html#a58a9f95845de8c2dcee9df9efd983aaf">odla_executable</a> *executable, <a class="el" href="odla__compute_8h.html#a6ee1db476eaea6347d96e1e0ab7e0ad7">odla_context</a> context, <a class="el" href="odla__compute_8h.html#a7906dc5bd415fd126df428a44cfc660e">odla_computation</a> computation)</td></tr>
+<tr class="memdesc:ac60269f20a44910d950b2405b022169e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an executable object.  <a href="odla__compute_8h.html#ac60269f20a44910d950b2405b022169e">More...</a><br /></td></tr>
+<tr class="separator:ac60269f20a44910d950b2405b022169e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a38cba75456fe9991346e68cacab44827"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__compute_8h.html#a38cba75456fe9991346e68cacab44827">odla_LoadExecutable</a> (const <a class="el" href="odla__common_8h.html#a70ab5c97f8e2150ab1c252e6fa33d38b">odla_char</a> *file_name, <a class="el" href="odla__compute_8h.html#a58a9f95845de8c2dcee9df9efd983aaf">odla_executable</a> *executable, <a class="el" href="odla__compute_8h.html#a6ee1db476eaea6347d96e1e0ab7e0ad7">odla_context</a> *context, <a class="el" href="odla__compute_8h.html#a7906dc5bd415fd126df428a44cfc660e">odla_computation</a> *computation)</td></tr>
+<tr class="memdesc:a38cba75456fe9991346e68cacab44827"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load an executable from the file system.  <a href="odla__compute_8h.html#a38cba75456fe9991346e68cacab44827">More...</a><br /></td></tr>
+<tr class="separator:a38cba75456fe9991346e68cacab44827"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adaa295d5753d91bb0fc99061df748781"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__compute_8h.html#adaa295d5753d91bb0fc99061df748781">odla_StoreExecutable</a> (const <a class="el" href="odla__common_8h.html#a70ab5c97f8e2150ab1c252e6fa33d38b">odla_char</a> *file_name, <a class="el" href="odla__compute_8h.html#a58a9f95845de8c2dcee9df9efd983aaf">odla_executable</a> executable)</td></tr>
+<tr class="memdesc:adaa295d5753d91bb0fc99061df748781"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store an executable object into the file system.  <a href="odla__compute_8h.html#adaa295d5753d91bb0fc99061df748781">More...</a><br /></td></tr>
+<tr class="separator:adaa295d5753d91bb0fc99061df748781"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab56d87ed06d5f3bfb180ea8ba343130b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__compute_8h.html#ab56d87ed06d5f3bfb180ea8ba343130b">odla_LaunchExecutable</a> (const <a class="el" href="odla__compute_8h.html#a58a9f95845de8c2dcee9df9efd983aaf">odla_executable</a> executable, const <a class="el" href="odla__compute_8h.html#aec5edf954a98e250d6c1744f4e5ba672">odla_constants_array</a> constants_array, const <a class="el" href="odla__compute_8h.html#a6ee1db476eaea6347d96e1e0ab7e0ad7">odla_context</a> context, const <a class="el" href="odla__compute_8h.html#a5cf465369118fbb3edf6d76f28616517">odla_compute_mode</a> mode, <a class="el" href="odla__device_8h.html#aaeace6ca8143dfbca7fbc71736b0c2ae">odla_device</a> device)</td></tr>
 <tr class="memdesc:ab56d87ed06d5f3bfb180ea8ba343130b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Launch an executable.  <a href="odla__compute_8h.html#ab56d87ed06d5f3bfb180ea8ba343130b">More...</a><br /></td></tr>
 <tr class="separator:ab56d87ed06d5f3bfb180ea8ba343130b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -659,8 +660,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="acc4b0259d59d784d145f8d82e169aaec"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acc4b0259d59d784d145f8d82e169aaec">&#9670;&nbsp;</a></span>odla_CreateExecutable()</h2>
+<a id="ac60269f20a44910d950b2405b022169e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac60269f20a44910d950b2405b022169e">&#9670;&nbsp;</a></span>odla_CreateExecutable()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -669,8 +670,24 @@ Functions</h2></td></tr>
           <td class="memname"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL odla_CreateExecutable </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="odla__compute_8h.html#a58a9f95845de8c2dcee9df9efd983aaf">odla_executable</a> *&#160;</td>
-          <td class="paramname"><em>executable</em></td><td>)</td>
+          <td class="paramname"><em>executable</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="el" href="odla__compute_8h.html#a6ee1db476eaea6347d96e1e0ab7e0ad7">odla_context</a>&#160;</td>
+          <td class="paramname"><em>context</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__compute_8h.html#a7906dc5bd415fd126df428a44cfc660e">odla_computation</a>&#160;</td>
+          <td class="paramname"><em>computation</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -678,7 +695,9 @@ Functions</h2></td></tr>
 <p>Create an executable object. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">executable</td><td>the pointer to the created executable object</td></tr>
+    <tr><td class="paramname">executable</td><td>the pointer to the created executable object </td></tr>
+    <tr><td class="paramname">context</td><td>the pointer to the loaded context object </td></tr>
+    <tr><td class="paramname">computation</td><td>the pointer to the loaded computation object </td></tr>
   </table>
   </dd>
 </dl>
@@ -1340,8 +1359,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a559331ae14f00daee903db9954a87590"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a559331ae14f00daee903db9954a87590">&#9670;&nbsp;</a></span>odla_LoadExecutable()</h2>
+<a id="a38cba75456fe9991346e68cacab44827"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a38cba75456fe9991346e68cacab44827">&#9670;&nbsp;</a></span>odla_LoadExecutable()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1356,7 +1375,19 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="odla__compute_8h.html#a58a9f95845de8c2dcee9df9efd983aaf">odla_executable</a> *&#160;</td>
-          <td class="paramname"><em>executable</em>&#160;</td>
+          <td class="paramname"><em>executable</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__compute_8h.html#a6ee1db476eaea6347d96e1e0ab7e0ad7">odla_context</a> *&#160;</td>
+          <td class="paramname"><em>context</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__compute_8h.html#a7906dc5bd415fd126df428a44cfc660e">odla_computation</a> *&#160;</td>
+          <td class="paramname"><em>computation</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1370,7 +1401,9 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">file_name</td><td>the file name </td></tr>
-    <tr><td class="paramname">executable</td><td>the pointer to the loaded executable object</td></tr>
+    <tr><td class="paramname">executable</td><td>the pointer to the loaded executable object </td></tr>
+    <tr><td class="paramname">context</td><td>the pointer to the loaded context object </td></tr>
+    <tr><td class="paramname">computation</td><td>the pointer to the loaded computation object </td></tr>
   </table>
   </dd>
 </dl>
@@ -1468,8 +1501,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a0b551a95a03962d03b6cd8d18b400ac4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0b551a95a03962d03b6cd8d18b400ac4">&#9670;&nbsp;</a></span>odla_StoreComputation()</h2>
+<a id="a23c033d5aa6e7aa89e3285ad5ed0918e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a23c033d5aa6e7aa89e3285ad5ed0918e">&#9670;&nbsp;</a></span>odla_StoreComputation()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1483,7 +1516,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="odla__compute_8h.html#a7906dc5bd415fd126df428a44cfc660e">odla_computation</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="odla__compute_8h.html#a7906dc5bd415fd126df428a44cfc660e">odla_computation</a>&#160;</td>
           <td class="paramname"><em>computation</em>&#160;</td>
         </tr>
         <tr>
@@ -1544,8 +1577,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a5780236487fdbcfdd5f8a963de940d27"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5780236487fdbcfdd5f8a963de940d27">&#9670;&nbsp;</a></span>odla_StoreExecutable()</h2>
+<a id="adaa295d5753d91bb0fc99061df748781"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adaa295d5753d91bb0fc99061df748781">&#9670;&nbsp;</a></span>odla_StoreExecutable()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1559,7 +1592,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="odla__compute_8h.html#a58a9f95845de8c2dcee9df9efd983aaf">odla_executable</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="odla__compute_8h.html#a58a9f95845de8c2dcee9df9efd983aaf">odla_executable</a>&#160;</td>
           <td class="paramname"><em>executable</em>&#160;</td>
         </tr>
         <tr>
