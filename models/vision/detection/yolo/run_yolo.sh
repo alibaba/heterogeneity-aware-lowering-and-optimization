@@ -1,6 +1,7 @@
 #!/bin/bash -xv
 # RUN: %s
 curr_dir=`dirname $0`
+make -C $curr_dir clean
 make -C $curr_dir
 
 out_dir=${TEST_TEMP_DIR}/yolo
