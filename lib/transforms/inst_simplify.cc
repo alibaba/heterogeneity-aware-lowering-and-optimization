@@ -709,12 +709,12 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(ResizeInst* inst) {
       }
 
       new_shape->SetName(inst->GetName() + "_resize_shape");
-
       return SinkTranspose(
           *inst, [new_shape, inst](IRBuilder& builder, const std::string& name,
                                    const Def& op) {
             auto new_inst = builder.CreateResize(name, {op, *new_shape});
             new_inst->CopyAttrsFrom(*inst);
+            new_inst->SetAxesMask(-1);
             return new_inst;
           });
     }
