@@ -1366,7 +1366,7 @@ odla_value odla_Resize(odla_value input, odla_interpolation_mode interpolation,
     scales[3] = scale_w;
   }
 
-  auto ret_md = dnnl::memory::desc(getDims(output_dims), dt,format_tag);
+  auto ret_md = dnnl::memory::desc(getDims(output_dims), dt, format_tag);
 
   auto op_desc = dnnl::resampling_forward::desc(
       dnnl::prop_kind::forward_inference, algo, scales, input_md);
