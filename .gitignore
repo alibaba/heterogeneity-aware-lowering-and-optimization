@@ -30,3 +30,4 @@ cscope.out
 #==============================================================================#
 # VSCode config files.
 .vscode
+*.code-workspace
