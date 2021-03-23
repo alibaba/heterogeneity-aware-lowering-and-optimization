@@ -74,10 +74,7 @@ We appreciate the support of ODLA runtimes from the following partners:
 </p>
 
 <p align="left">
-<a href=https://www.intellif.com>
-  <img src="./docs/partners/intellif.png" align="center" width=20%></a>
- <img src="./docs/partners/padding.png" width=15%>
-  <a href=https://www.nvidia.com><img src="./docs/partners/nvidia.png" align="center" border=0 width=12%></a>
+<a href=https://www.nvidia.com><img src="./docs/partners/nvidia.png" align="center" border=0 width=12%></a>
   <img src="./docs/partners/padding.png" width=18%>
   <a href=https://www.qualcomm.com/products/cloud-artificial-intelligence>
     <img title="Qualcomm Cloud AI 100" src="./docs/partners/qualcomm.png" align="center" border=0 width=22%>
