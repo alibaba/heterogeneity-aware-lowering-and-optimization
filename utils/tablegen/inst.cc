@@ -406,6 +406,7 @@ void Inst::Run() {
   EmitClone();
   EmitAccessAttributes();
   EmitVerify();
+  EmitClassof();
 
   os_ << "\n";
   os_ << " private:\n";
@@ -481,6 +482,16 @@ void Inst::EmitVerify() {
   // call custom verification code.
   os_ << "    broken |= CustomVerify();\n";
   os_ << "    return broken;\n";
+  os_ << "  }\n";
+}
+
+void Inst::EmitClassof() {
+  os_ << "  static inline bool Classof(const IRObject* obj) {\n";
+  os_ << "    if (!Instruction::Classof(obj)) {\n";
+  os_ << "      return false;\n";
+  os_ << "    }\n";
+  os_ << "    const Instruction* inst = DynCast<Instruction>(obj);\n";
+  os_ << "    return inst->GetOpCode() == " << opcode_ << ";\n";
   os_ << "  }\n";
 }
 
