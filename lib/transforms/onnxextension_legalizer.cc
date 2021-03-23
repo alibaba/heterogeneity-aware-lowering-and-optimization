@@ -390,11 +390,6 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
   if (!IsA<Constant>(op_starts) || !IsA<Constant>(op_ends)) {
     auto op_len =
         builder->CreateSub(ext->GetName() + "_len", op_ends, op_starts);
-    /*
-   int len = 1;
-   auto op_len = cb.CreateConstant(ext->GetName() + "_len",
-                                   Type{DataType::INT64, {1}}, &len);
-                                   */
     std::vector<Def> ops{op0, op_starts, *op_len};
 
     if (ext->GetNumOfOperands() >= 4) {
