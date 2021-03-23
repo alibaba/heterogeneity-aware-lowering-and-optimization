@@ -92,6 +92,11 @@ T_TO* DynCast(Instruction* inst) {
   return Downcast<T_TO>(inst);
 }
 
+template <typename T_TO, typename T_FROM>
+const T_TO* DynCast(const Instruction* inst) {
+  return DynCast<T_TO, T_FROM>(const_cast<Instruction*>(inst));
+}
+
 } // namespace halo
 
 #endif // HALO_LIB_IR_INSTRUCTION_H_
