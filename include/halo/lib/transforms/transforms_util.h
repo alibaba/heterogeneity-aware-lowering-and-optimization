@@ -54,9 +54,9 @@ inline const int& GetAttributeValue(const Attribute& attr) {
 }
 
 template <typename T>
-const T& FindAttributeValue(const ExtensionInst* ext, const std::string& name,
+const T& FindAttributeValue(const Instruction& inst, const std::string& name,
                             const T& default_val) {
-  for (const auto& it : ext->GetAttributes()) {
+  for (const auto& it : inst.GetAttributes()) {
     if (it->GetName() == name) {
       return GetAttributeValue<T>(*it);
     }
@@ -64,7 +64,7 @@ const T& FindAttributeValue(const ExtensionInst* ext, const std::string& name,
   return default_val;
 }
 
-bool HasAttribute(const ExtensionInst* ext, const std::string& name);
+bool HasAttribute(const Instruction& inst, const std::string& name);
 
 bool AppendReturnInst(BasicBlock* bb);
 
