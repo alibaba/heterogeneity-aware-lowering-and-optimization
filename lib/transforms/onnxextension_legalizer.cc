@@ -344,7 +344,7 @@ static std::vector<Def> ConvertCast(const ONNXExtensionInst* ext,
 static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
                                      IRBuilder* builder) {
   // Operands: input [begin] [end] [axes] [step]
-  // For opset 1, begn/end/axes are attributs.
+  // For opset 1, begin/end/axes are attributs.
   auto op_num = ext->GetNumOfOperands();
   HLCHECK(op_num >= 1 && op_num != 2 && op_num <= 5);
   builder->SetInsertAfter(ext);
@@ -354,9 +354,9 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
   if (op_num == 1) {
     HLCHECK(ext->GetNumOfAttributes() >= 2);
     std::vector<int> empty;
-    const auto& starts = FindAttributeValue(ext, "starts", empty);
-    const auto& ends = FindAttributeValue(ext, "ends", empty);
-    const auto& axes = FindAttributeValue(ext, "axes", empty);
+    const auto& starts = FindAttributeValue(*ext, "starts", empty);
+    const auto& ends = FindAttributeValue(*ext, "ends", empty);
+    const auto& axes = FindAttributeValue(*ext, "axes", empty);
     HLCHECK(!starts.empty() && starts.size() == ends.size());
     auto ops = ext->GetOperands();
     int s = starts.size();
@@ -377,24 +377,42 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
     return {*new_inst};
   }
   auto op0 = ext->GetOperand(0);
-  auto op1 = ext->GetOperand(1); // starts
-  auto op2 = ext->GetOperand(2); // ends
+  auto op_starts = ext->GetOperand(1); // starts
+  auto op_ends = ext->GetOperand(2);   // ends
 
   auto& input_type = op0.GetType();
   if (!input_type.IsValid()) {
     return {};
   }
-  if (!IsA<Constant>(op1) || !IsA<Constant>(op2)) {
-    return {};
-  }
 
   builder->SetInsertAfter(ext);
+
+  if (!IsA<Constant>(op_starts) || !IsA<Constant>(op_ends)) {
+    auto op_len =
+        builder->CreateSub(ext->GetName() + "_len", op_ends, op_starts);
+    /*
+   int len = 1;
+   auto op_len = cb.CreateConstant(ext->GetName() + "_len",
+                                   Type{DataType::INT64, {1}}, &len);
+                                   */
+    std::vector<Def> ops{op0, op_starts, *op_len};
+
+    if (ext->GetNumOfOperands() >= 4) {
+      ops.push_back(ext->GetOperand(4));
+    }
+    if (ext->GetNumOfOperands() > 4) {
+      ops.push_back(ext->GetOperand(4));
+    }
+    SliceInst* slice = builder->CreateSlice(ext->GetName(), ops);
+    return {*slice};
+  }
+
   int input_dims = input_type.GetNumOfDims();
 
-  Constant* c_starts = DynCast<Constant>(op1);
-  const auto& starts_type = op1.GetType();
-  Constant* c_ends = DynCast<Constant>(op2);
-  const auto& ends_type = op2.GetType();
+  Constant* c_starts = DynCast<Constant>(op_starts);
+  const auto& starts_type = op_starts.GetType();
+  Constant* c_ends = DynCast<Constant>(op_ends);
+  const auto& ends_type = op_ends.GetType();
 
   HLCHECK(ends_type.GetNumOfDims() == starts_type.GetNumOfDims());
 
@@ -450,7 +468,7 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
     HLCHECK(!axes.empty());
   }
 
-  auto e_s = op1.GetType().GetTotalNumOfElements();
+  auto e_s = op_starts.GetType().GetTotalNumOfElements();
   int32_t start = 0;
   std::vector<int32_t> starts;
   starts.reserve(axes.size());
@@ -472,7 +490,7 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
     }
   }
 
-  auto e_d = op2.GetType().GetTotalNumOfElements();
+  auto e_d = op_ends.GetType().GetTotalNumOfElements();
   std::vector<int32_t> ends;
   ends.reserve(axes.size());
   int32_t end = 0;
@@ -1000,6 +1018,58 @@ static std::vector<Def> ConvertHgDeQuant(const ONNXExtensionInst* ext,
   return {input};
 }
 
+static bool FixupLoopBody(LoopInst* inst) {
+  // For ONNX, the loop has 2 + N inputs: (iter_num, condition, loop vars...),
+  // 1 + N + K outputs: (cond, loop vars ...,  scan_outputs...).
+  // The first argument (loop_count) also serves as trip iterator.
+  // Parser omits the "cond" in return.
+
+  // Avoid re-entry.
+  if (HasAttribute(*inst, "halo_fixedup")) {
+    return false;
+  }
+  inst->AddOneAttribute(Attribute::CreateBool("halo_fixedup", true));
+
+  auto body = inst->GetBody();
+  HLCHECK(body->Args().size() >= 2);
+  Argument* trip_arg = body->arg_begin()->get();
+  auto lc_cnt = body->Args().size() - 2;
+  auto return_inst = body->GetReturnInst();
+  HLCHECK(return_inst->GetNumOfOperands() >= lc_cnt);
+  auto scan_output_cnt = return_inst->GetNumOfOperands() - lc_cnt;
+  HLCHECK(scan_output_cnt >= 0 && scan_output_cnt <= lc_cnt);
+
+  // Mark scan outputs
+  if (!HasAttribute(*return_inst, "halo_scan_output_cnt")) {
+    return_inst->AddOneAttribute(
+        Attribute::CreateInteger("halo_scan_output_cnt", scan_output_cnt));
+  }
+
+  if (trip_arg->GetNumberOfUses() == 0) {
+    return false;
+  }
+  // Add an argument with init value of zero.
+  Type ty{DataType::INT32, {}};
+  ArgumentBuilder arg_builder(body);
+  auto arg_i = arg_builder.CreateArgument(inst->GetName() + "_i", ty);
+  HLCHECK(trip_arg->GetResultType().IsScalar());
+  ConstantBuilder const_builder(body);
+  int one = 1;
+  int zero = 0;
+  auto c_one = const_builder.CreateConstant(inst->GetName() + "_one", ty, &one);
+  auto c_zero = const_builder.CreateConstant(inst->GetName() + "_z", ty, &zero);
+  // Create add(init, one).
+  IRBuilder builder(body);
+  builder.SetInsertBefore(body->begin()->get());
+  auto inc = builder.CreateAdd(inst->GetName() + "_inc", *arg_i, *c_one);
+  auto attr = Attribute::CreateBool("halo_loop", true);
+  inc->AddOneAttribute(
+      std::move(attr)); // Mark the instruction as loop carried.
+  trip_arg->ReplaceAllUsesWith({*inc});
+  inst->AddOneOperand(*c_zero);
+  return true;
+}
+
 static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
                                              IRBuilder* builder) {
   switch (onnx_inst->GetExtOpCode()) {
@@ -1084,6 +1154,8 @@ bool ONNXExtensionLegalizer::RunOnBasicBlock(BasicBlock* bb) {
           onnx_inst->ReplaceAllUsesWith(new_defs);
         }
       }
+    } else if (inst->GetOpCode() == OpCode::LOOP) {
+      changed |= FixupLoopBody(DynCast<LoopInst>(inst));
     }
   }
   return changed;

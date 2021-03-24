@@ -24,6 +24,18 @@
 
 namespace halo {
 
+static void RemoveLoopBody(LoopInst* loop_inst) {
+  auto body = loop_inst->GetBody();
+  auto return_inst = body->GetReturnInst();
+  if (return_inst != nullptr) {
+    // Drop all the operands of the return instruction so the rest of the body
+    // loop will be DCE'ed automatically.
+    // Note that the return inst cannot be erased because the current legalizer
+    // will try to append one if no return inst exists for a block.
+    return_inst->DropAllOperands();
+  }
+}
+
 bool DCE::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
   std::set<Instruction*> dead_instrs;
@@ -42,6 +54,9 @@ bool DCE::RunOnBasicBlock(BasicBlock* bb) {
   for (auto it = bb->begin(), e = bb->end(); it != e;) {
     Instruction* inst = it->get();
     if (dead_instrs.count(inst) > 0) {
+      if (inst->GetOpCode() == OpCode::LOOP) {
+        RemoveLoopBody(DynCast<LoopInst>(inst));
+      }
       it = bb->Instructions().erase(it);
     } else {
       it = std::next(it);
