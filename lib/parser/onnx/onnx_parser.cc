@@ -288,7 +288,7 @@ static size_t GetTensorDataSize(const onnx::TensorProto& tensor_proto) {
     case onnx::TensorProto::STRING:
       return tensor_proto.string_data_size();
     case onnx::TensorProto::BOOL:
-      return 0; // 0 means bool storated in raw data
+      return 0; // 0 means bool is stored in raw data
     default:
       LOG(ERROR) << "Unsupported DataType.";
       return 0;
