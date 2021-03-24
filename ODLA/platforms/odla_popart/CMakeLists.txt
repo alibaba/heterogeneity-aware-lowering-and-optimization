@@ -28,6 +28,6 @@ target_compile_definitions(odla_popart PRIVATE ONNX_NAMESPACE=onnx)
 target_link_libraries(odla_popart ODLA ${custom_ops} popart-only)
 add_custom_command(TARGET odla_popart
 	  POST_BUILD
-	  COMMAND ${CMAKE_COMMAND} -E 
+	  COMMAND ${CMAKE_COMMAND} -E
 	  copy ${custom_ops} ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
 	  )
