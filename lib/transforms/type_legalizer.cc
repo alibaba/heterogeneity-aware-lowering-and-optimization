@@ -919,12 +919,16 @@ static void RunOnInstruction(TransposeInst* inst) {
 }
 
 static void RunOnInstruction(ResizeInst* inst) {
-  HLCHECK(inst->GetNumOfOperands() == 2);
-  const auto& op1 = inst->GetOperand(1);
-  if (!IsA<Constant>(op1)) {
+  auto op_num = inst->GetNumOfOperands();
+  // If op_num is 3, the operands are (x, ROI, scales).
+  // If op_num is 2, the operands are (x, scales)
+  // TODO(unknown): ROI operand is not handled now.
+  HLCHECK(op_num == 2 || op_num == 3);
+  const auto& op_scale = inst->GetOperand(op_num - 1);
+  if (!IsA<Constant>(op_scale)) {
     return;
   }
-  const Constant* shape_c = DynCast<Constant>(op1);
+  const Constant* shape_c = DynCast<Constant>(op_scale);
 
   const auto& input_type = inst->GetOperand(0).GetType();
   std::vector<int64_t> new_shape = input_type.GetDimSizes();
@@ -934,11 +938,11 @@ static void RunOnInstruction(ResizeInst* inst) {
       continue;
     }
     int64_t dim = 0;
-    if (op1.GetType().GetDataType() == DataType::INT64) {
+    if (op_scale.GetType().GetDataType() == DataType::INT64) {
       dim = shape_c->GetData<int64_t>(j++);
-    } else if (op1.GetType().GetDataType() == DataType::INT32) {
+    } else if (op_scale.GetType().GetDataType() == DataType::INT32) {
       dim = shape_c->GetData<int32_t>(j++);
-    } else if (op1.GetType().GetDataType() == DataType::FLOAT32) {
+    } else if (op_scale.GetType().GetDataType() == DataType::FLOAT32) {
       HLCHECK(inst->GetExplicitShape() == false);
       dim = std::floor(new_shape[i] * shape_c->GetData<float>(j++));
     }

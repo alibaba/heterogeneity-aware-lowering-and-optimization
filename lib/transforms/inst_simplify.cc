@@ -678,9 +678,35 @@ static Constant* GetPermutedConstant(ConstantBuilder* cb, const Constant* orig,
   return cb->CreateConstant(orig->GetName(), shape_type, data.data());
 }
 
+static bool IsNullConstant(const Def& op) {
+  if (IsA<Constant>(op)) {
+    auto type = DynCast<Constant>(op)->GetResultType();
+    if (!type.IsScalar() && type.GetTotalNumOfElements() == 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
 std::pair<Def, Def> InstSimplify::RunOnInstruction(ResizeInst* inst) {
   Def orig_def{inst, 0};
-  auto op_shape = inst->GetOperand(1);
+  // Check if the optional operand is valid or not.
+  // A null constant can be ignored.
+  std::vector<Def> valid_operands;
+  for (const auto& op : inst->GetOperands()) {
+    if (!IsNullConstant(op)) {
+      valid_operands.push_back(op);
+    }
+  }
+  if (valid_operands.size() < inst->GetNumOfOperands()) {
+    IRBuilder builder(inst->GetParent());
+    builder.SetInsertAfter(inst);
+    // Remove invalid operands.
+    auto new_resize = builder.Clone(*inst, valid_operands);
+    return {orig_def, *new_resize};
+  }
+  // Resize with 3 operands are not handled.
+  HLCHECK(inst->GetNumOfOperands() <= 2);
   if (IsA<Instruction>(inst->GetOperand(0))) {
     Instruction* op0_inst =
         DynCast<Instruction>(inst->GetOperand(0).GetOwner());

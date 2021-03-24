@@ -30,32 +30,32 @@ namespace halo {
 static std::vector<Def> ConvertConvolution(const CAFFEExtensionInst* ext,
                                            IRBuilder* builder) {
   std::vector<int> pad(2, 0);
-  pad = FindAttributeValue(ext, "pad", pad);
+  pad = FindAttributeValue(*ext, "pad", pad);
   if (pad.size() == 1) {
     pad.push_back(pad.front());
   }
-  pad[0] = FindAttributeValue(ext, "pad_h", pad[0]);
-  pad[1] = FindAttributeValue(ext, "pad_w", pad[1]);
+  pad[0] = FindAttributeValue(*ext, "pad_h", pad[0]);
+  pad[1] = FindAttributeValue(*ext, "pad_w", pad[1]);
   std::vector<int> stride(4, 1);
-  stride = FindAttributeValue(ext, "stride", stride);
+  stride = FindAttributeValue(*ext, "stride", stride);
   if (stride.size() == 1) {
     stride.push_back(stride.front());
   }
   while (stride.size() < 4) {
     stride.insert(stride.begin(), 1);
   }
-  stride[2] = FindAttributeValue(ext, "stride_h", stride[2]);
-  stride[3] = FindAttributeValue(ext, "stride_w", stride[3]);
+  stride[2] = FindAttributeValue(*ext, "stride_h", stride[2]);
+  stride[3] = FindAttributeValue(*ext, "stride_w", stride[3]);
 
   std::vector<int> dilation(4, 1);
-  const auto value = FindAttributeValue(ext, "dilation", dilation);
+  const auto value = FindAttributeValue(*ext, "dilation", dilation);
   // N and C set to 1
   dilation[2] = value.empty() ? 1 : value[0];
   dilation[3] = (value.size() > 1) ? value[1] : dilation[2];
 
-  int group = FindAttributeValue(ext, "group", 1);
+  int group = FindAttributeValue(*ext, "group", 1);
 
-  bool bias_term = FindAttributeValue(ext, "bias_term", true);
+  bool bias_term = FindAttributeValue(*ext, "bias_term", true);
 
   HLCHECK(ext->GetNumOfOperands() == 2 || ext->GetNumOfOperands() == 3);
   auto input = ext->GetOperand(0);
@@ -144,11 +144,11 @@ static std::vector<Def> ConvertEltwise(const CAFFEExtensionInst* ext,
 
   std::unordered_map<std::string, int> attr_map;
   std::vector<OpCode> ops = {OpCode::MUL, OpCode::ADD, OpCode::MAXIMUM};
-  OpCode op_code = ops[FindAttributeValue(ext, "operation", 1)];
+  OpCode op_code = ops[FindAttributeValue(*ext, "operation", 1)];
 
-  if (HasAttribute(ext, "coeff") && op_code == OpCode::ADD) {
+  if (HasAttribute(*ext, "coeff") && op_code == OpCode::ADD) {
     std::vector<float> coeff;
-    coeff = FindAttributeValue(ext, "coeff", coeff);
+    coeff = FindAttributeValue(*ext, "coeff", coeff);
     if (coeff.size() == 2) {
       // TODO (unknown) support more case
       HLCHECK(coeff[0] == 1.0 && coeff[1] == -1.0);
@@ -164,23 +164,23 @@ static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
   HLCHECK(ext->GetNumOfOperands() == 1);
   auto input = ext->GetOperand(0);
   const auto& input_type = input.GetType();
-  bool global_pooling = FindAttributeValue<bool>(ext, "global_pooling", false);
-  int stride = FindAttributeValue(ext, "stride", 1);
-  int stride_h = FindAttributeValue(ext, "stride_h", stride);
-  int stride_w = FindAttributeValue(ext, "stride_w", stride);
-  int kernel_size = FindAttributeValue(ext, "kernel_size", -1);
-  int kernel_size_h = FindAttributeValue(ext, "kernel_h", kernel_size);
-  int kernel_size_w = FindAttributeValue(ext, "kernel_w", kernel_size);
-  int pool = FindAttributeValue(ext, "pool", 0);
+  bool global_pooling = FindAttributeValue<bool>(*ext, "global_pooling", false);
+  int stride = FindAttributeValue(*ext, "stride", 1);
+  int stride_h = FindAttributeValue(*ext, "stride_h", stride);
+  int stride_w = FindAttributeValue(*ext, "stride_w", stride);
+  int kernel_size = FindAttributeValue(*ext, "kernel_size", -1);
+  int kernel_size_h = FindAttributeValue(*ext, "kernel_h", kernel_size);
+  int kernel_size_w = FindAttributeValue(*ext, "kernel_w", kernel_size);
+  int pool = FindAttributeValue(*ext, "pool", 0);
   HLCHECK(pool == 0 || pool == 1);
 
-  int pad = FindAttributeValue(ext, "pad", 0);
-  int pad_h = FindAttributeValue(ext, "pad_h", pad);
-  int pad_w = FindAttributeValue(ext, "pad_w", pad);
+  int pad = FindAttributeValue(*ext, "pad", 0);
+  int pad_h = FindAttributeValue(*ext, "pad_h", pad);
+  int pad_w = FindAttributeValue(*ext, "pad_w", pad);
 
-  bool ceil_mode = FindAttributeValue<bool>(ext, "ceil_mode", true);
+  bool ceil_mode = FindAttributeValue<bool>(*ext, "ceil_mode", true);
   // If ceil_mode is set to false (non-default), we always use it.
-  int round_mode = !ceil_mode ? 1 : FindAttributeValue(ext, "round_mode", 0);
+  int round_mode = !ceil_mode ? 1 : FindAttributeValue(*ext, "round_mode", 0);
 
   if (global_pooling) {
     if (!input_type.IsValid()) {
@@ -222,7 +222,7 @@ static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
 static std::vector<Def> ConvertInnerProduct(const CAFFEExtensionInst* ext,
                                             IRBuilder* builder) {
   HLCHECK(ext->GetNumOfOperands() >= 2 && ext->GetNumOfOperands() <= 3);
-  bool has_bias = FindAttributeValue(ext, "bias_term", true);
+  bool has_bias = FindAttributeValue(*ext, "bias_term", true);
   auto input = ext->GetOperand(0);
   const auto& input_type = input.GetType();
 
@@ -243,8 +243,8 @@ static std::vector<Def> ConvertInnerProduct(const CAFFEExtensionInst* ext,
         Type{op1_type.GetDataType(), {dim_a, dim_b}};
   }
   HLCHECK(op1_type.GetNumOfDims() == 2);
-  bool transpose = FindAttributeValue(ext, "transpose", false);
-  size_t axis = FindAttributeValue(ext, "axis", 1);
+  bool transpose = FindAttributeValue(*ext, "transpose", false);
+  size_t axis = FindAttributeValue(*ext, "axis", 1);
   HLCHECK(axis < input_type.GetNumOfDims());
 
   ConstantBuilder cb(ext->GetParent()->GetParent());
@@ -293,7 +293,7 @@ static std::vector<Def> ConvertScale(const CAFFEExtensionInst* ext,
   if (!input_type.IsValid()) {
     return {};
   }
-  bool has_bias = FindAttributeValue(ext, "bias_term", false);
+  bool has_bias = FindAttributeValue(*ext, "bias_term", false);
 
   auto op1 = ext->GetOperand(1);
   if (!op1.GetType().IsValid()) {
@@ -332,7 +332,7 @@ static std::vector<Def> ConvertScale(const CAFFEExtensionInst* ext,
   }
 
   // check if operand needs broadcasting.
-  int axis = FindAttributeValue(ext, "axis", 1);
+  int axis = FindAttributeValue(*ext, "axis", 1);
   int ranks = input_type.GetNumOfDims();
   axis = axis < 0 ? ranks + axis : axis;
   auto reshape_if_needed = [builder, axis, &input_type,
@@ -375,9 +375,9 @@ static std::vector<Def> ConvertPower(const CAFFEExtensionInst* ext,
   // computes y = (shift + scale * x) ^ power.
 
   auto input = ext->GetOperand(0);
-  float power = FindAttributeValue(ext, "power", 1.0F);
-  float scale = FindAttributeValue(ext, "scale", 1.0F);
-  float shift = FindAttributeValue(ext, "shift", .0F);
+  float power = FindAttributeValue(*ext, "power", 1.0F);
+  float scale = FindAttributeValue(*ext, "scale", 1.0F);
+  float shift = FindAttributeValue(*ext, "shift", .0F);
 
   ConstantBuilder cb(ext->GetParent()->GetParent());
   if (scale != 1) {
@@ -407,11 +407,11 @@ static std::vector<Def> ConvertReshape(const CAFFEExtensionInst* ext,
     return {};
   }
 
-  int axis = FindAttributeValue(ext, "axis", 0);
-  int num_axes = FindAttributeValue(ext, "num_axes", -1);
+  int axis = FindAttributeValue(*ext, "axis", 0);
+  int num_axes = FindAttributeValue(*ext, "num_axes", -1);
 
-  if (HasAttribute(ext, "shape")) {
-    const auto& shape = FindAttributeValue(ext, "shape", std::vector<int>{});
+  if (HasAttribute(*ext, "shape")) {
+    const auto& shape = FindAttributeValue(*ext, "shape", std::vector<int>{});
     // TODO(unknown) : handle general cases to reshape in the range of [axis,
     // axis + num_axes]
     HLCHECK(num_axes == -1);
@@ -454,26 +454,26 @@ static std::vector<Def> ConvertReshape(const CAFFEExtensionInst* ext,
 static std::vector<Def> ConvertDeConvolution(const CAFFEExtensionInst* ext,
                                              IRBuilder* builder) {
   std::vector<int> pad(2, 0);
-  pad = FindAttributeValue(ext, "pad", pad);
+  pad = FindAttributeValue(*ext, "pad", pad);
   if (pad.size() == 1) {
     pad.push_back(pad.front());
   }
-  pad[0] = FindAttributeValue(ext, "pad_h", pad[0]);
-  pad[1] = FindAttributeValue(ext, "pad_w", pad[1]);
+  pad[0] = FindAttributeValue(*ext, "pad_h", pad[0]);
+  pad[1] = FindAttributeValue(*ext, "pad_w", pad[1]);
 
   std::vector<int> stride(4, 1);
-  stride = FindAttributeValue(ext, "stride", stride);
+  stride = FindAttributeValue(*ext, "stride", stride);
   if (stride.size() == 1) {
     stride.push_back(stride.front());
   }
   while (stride.size() < 4) {
     stride.insert(stride.begin(), 1);
   }
-  stride[2] = FindAttributeValue(ext, "stride_h", stride[2]);
-  stride[3] = FindAttributeValue(ext, "stride_w", stride[3]);
+  stride[2] = FindAttributeValue(*ext, "stride_h", stride[2]);
+  stride[3] = FindAttributeValue(*ext, "stride_w", stride[3]);
   std::vector<int> dilation(4, 1);
   const auto& value =
-      FindAttributeValue(ext, "dilation", std::vector<int>{1, 1});
+      FindAttributeValue(*ext, "dilation", std::vector<int>{1, 1});
   dilation[2] = value.empty() ? 1 : value[0];
   dilation[3] = (value.size() > 1) ? value[1] : dilation[2];
 
@@ -498,8 +498,8 @@ static std::vector<Def> ConvertDeConvolution(const CAFFEExtensionInst* ext,
   }
 #endif
   // TODO (unknown) ignore group param in deconv
-  int group = FindAttributeValue(ext, "group", 1);
-  bool bias_term = FindAttributeValue(ext, "bias_term", true);
+  int group = FindAttributeValue(*ext, "group", 1);
+  bool bias_term = FindAttributeValue(*ext, "bias_term", true);
 
   HLCHECK(ext->GetNumOfOperands() == 2 || ext->GetNumOfOperands() == 3);
   auto input = ext->GetOperand(0);
@@ -553,9 +553,9 @@ static std::vector<Def> ConvertTile(const CAFFEExtensionInst* ext,
     return {};
   }
   int dims = input_type.GetNumOfDims();
-  int axis = FindAttributeValue(ext, "axis", 1);
+  int axis = FindAttributeValue(*ext, "axis", 1);
   axis = (axis < 0) ? dims + axis : axis;
-  int copies = FindAttributeValue(ext, "tiles", 1);
+  int copies = FindAttributeValue(*ext, "tiles", 1);
   std::vector<int64_t> multipliers(dims, 1);
   HLCHECK(axis < dims);
   multipliers[axis] = copies;
