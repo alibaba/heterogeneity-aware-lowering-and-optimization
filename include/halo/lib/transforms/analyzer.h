@@ -25,7 +25,7 @@ namespace halo {
 
 /// This pass do graph analysis, generate op type / op num / input shape /
 /// output shape / computational estimator, etc.
-class Analyzer final : public BasicBlockPass {
+class Analyzer final : public ModulePass {
  public:
   /// Record analysis result
   struct NodeInfo {
@@ -33,11 +33,13 @@ class Analyzer final : public BasicBlockPass {
     std::string name;
     halo::OpCode type;
     halo::DataType data_type;
-    size_t sizeof_dt = 0;
-    std::vector<int64_t> input_shape;
+
+    std::vector<std::vector<int64_t>> input_shape;
     std::vector<int64_t> output_shape;
-    float weight = 0;
-    float activation = 0;
+
+    float io_mem = 0;
+    float weight_mem = 0;
+
     // Note that FLOPS and FLOPs are different:
     // FLOPS means floating point operations per second, measure hardware
     // performance. FLOPs means floating point operations, measure the
@@ -47,9 +49,9 @@ class Analyzer final : public BasicBlockPass {
     float percent = 0;
   };
 
-  Analyzer() : BasicBlockPass("Analyzer") {}
+  Analyzer() : ModulePass("Analyzer") {}
 
-  bool RunOnBasicBlock(BasicBlock* bb) override;
+  bool RunOnModule(Module* m) override;
 
   void WriteCSVReport(std::ostream& os) const;
 

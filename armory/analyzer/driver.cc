@@ -72,6 +72,7 @@ static void PopulatePassesAndRun(GlobalContext& ctx, Module& m,
   }
   pm.AddPass<DCE>();
   pm.AddPass<TypeLegalizer>(true);
+  pm.AddPass<InstSimplify>(true, true, false, false, false, false);
   auto analyzer = pm.AddPass<Analyzer>();
   pm.Run(&m);
   if (PrintAnalysisReport) {
