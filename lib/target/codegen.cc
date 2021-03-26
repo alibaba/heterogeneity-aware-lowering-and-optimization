@@ -75,6 +75,7 @@ std::string CodeGen::NormalizeVariableName(const std::string& name) {
       case '\'':
       case '/':
       case ' ':
+      case ':':
       case '.':
       case '>':
       case '<':
