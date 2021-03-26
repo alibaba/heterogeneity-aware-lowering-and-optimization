@@ -39,7 +39,7 @@ set(SRCS
   pad.cc
   pooling.cc
   random.cc
-  reduce_mean.cc
+  reduction.cc
   relu.cc
   reshape.cc
   resize.cc
