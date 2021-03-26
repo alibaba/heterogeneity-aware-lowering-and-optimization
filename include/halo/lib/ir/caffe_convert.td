@@ -111,7 +111,6 @@ def CAFFE_Scale : CAFFEExtension<"Scale"> {
 
 def CAFFE_Concat : OpMapping<"Concat", Concat> {
   let param_name_ = "concat_param";
-  let optional_attrs_ = ["axis"];
   let attr_mapping_ = [AttributeMapping<"axis", "axis", "1">,
                        AttributeMapping<"", "N", "0">];
 }
