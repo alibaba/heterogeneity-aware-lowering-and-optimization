@@ -18,6 +18,7 @@
 #include "halo/lib/transforms/inst_simplify.h"
 
 #include <algorithm>
+#include <cstring>
 #include <numeric>
 #include <random>
 #include <string>
@@ -1710,12 +1711,12 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(RandomUniformInst* inst) {
 
 std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
   Def orig_def{inst, 0};
-  auto op2 = inst->GetOperand(2);
+  auto op_len = inst->GetOperand(2);
   const auto& dst_type = inst->GetResultsTypes()[0];
-  if (dst_type.IsValid() && IsA<Constant>(op2.GetOwner())) {
-    Constant* c_size = DynCast<Constant>(op2.GetOwner());
-    if (op2.GetType().GetDataType() == DataType::INT32) {
-      int dim = op2.GetType().GetTotalNumOfElements();
+  if (dst_type.IsValid() && IsA<Constant>(op_len)) {
+    Constant* c_size = DynCast<Constant>(op_len);
+    if (op_len.GetType().GetDataType() == DataType::INT32) {
+      int dim = op_len.GetType().GetTotalNumOfElements();
       std::vector<int> size_adj(dim);
       bool new_size = false;
       for (int i = 0; i != dim; ++i) {
@@ -1729,8 +1730,9 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
       }
       if (new_size) {
         ConstantBuilder cb(inst->GetParent()->GetParent());
-        Constant* c_new_size = cb.CreateConstant(
-            op2.GetOwner()->GetName() + "_adj", op2.GetType(), size_adj.data());
+        Constant* c_new_size =
+            cb.CreateConstant(op_len.GetOwner()->GetName() + "_adj",
+                              op_len.GetType(), size_adj.data());
         IRBuilder builder(inst->GetParent());
         builder.SetInsertAfter(inst);
         SliceInst* new_inst = builder.CreateSlice(
@@ -1741,29 +1743,35 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
       }
     }
   }
-  auto op0 = inst->GetOperand(0);
-  auto op1 = inst->GetOperand(1);
+  const auto& op0 = inst->GetOperand(0);
+  const auto& op_start = inst->GetOperand(1);
+
   bool has_constant_steps =
       (inst->GetNumOfOperands() < 4 || IsA<Constant>(inst->GetOperand(3)));
   has_constant_steps &=
       (inst->GetNumOfOperands() <= 4 || IsA<Constant>(inst->GetOperand(4)));
-
-  if (IsA<Constant>(op0) && IsA<Constant>(op1) && IsA<Constant>(op2) &&
+  int steps = has_constant_steps ? 1 : 0; // FIXME
+  if (IsA<Constant>(op0) && IsA<Constant>(op_start) && IsA<Constant>(op_len) &&
       inst->GetResultType().IsValid() && has_constant_steps) {
     Constant* input = DynCast<Constant>(op0);
     const auto& dt = inst->GetResultType();
-    std::vector<int64_t> data(dt.GetTotalNumOfElements());
-    auto starts = DynCast<Constant>(op1);
-    auto lens = DynCast<Constant>(op2);
+    auto starts = DynCast<Constant>(op_start);
+    auto lens = DynCast<Constant>(op_len);
     // auto steps = DynCast<Constant>(op3);
     // auto axes = DynCast<Constant>(op4);
     auto rank = op0.GetType().GetNumOfDims();
-    if (rank == 1 && dt.GetDataType() == DataType::INT64) {
-      auto idx = starts->GetData<int32_t>(0);
-      auto len = lens->GetData<int32_t>(0);
-      HLCHECK(static_cast<size_t>(len) == data.size());
+    if (rank == 1 && steps == 1) {
+      DefaultDataLayout dl;
+      auto bytes = dl.DataLayout::Bytes(dt);
+      auto es = dl.Bytes(dt.GetDataType());
+      std::vector<char> data(bytes);
+      auto idx = starts->GetDataAsInt64(0);
+      auto len = lens->GetDataAsInt64(0);
+      const char* src = static_cast<const char*>(input->GetRawDataPtr());
+      char* dst = data.data();
+      HLCHECK(len == dt.GetTotalNumOfElements());
       for (int i = 0; i < len; ++i) {
-        data[i] = input->GetData<int64_t>(idx + i);
+        std::memcpy(&dst[i * es], &src[(i + idx) * es], es); // NOLINT
       }
       ConstantBuilder cb(inst->GetParent()->GetParent());
       auto c = cb.CreateConstant(inst->GetName(), dt, data.data());
