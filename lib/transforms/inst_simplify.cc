@@ -1418,6 +1418,25 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(GatherInst* inst) {
   return {orig_def, *c_ret};
 }
 
+std::pair<Def, Def> InstSimplify::RunOnInstruction(CeilInst* inst) {
+  Def orig_def{inst, 0};
+  const auto& op0 = inst->GetOperand(0);
+  if (IsA<Constant>(op0)) {
+    const auto c = DynCast<Constant>(op0);
+    ConstantBuilder cb(inst->GetParent()->GetParent());
+    const auto& dt = op0.GetType();
+    if (dt.GetDataType() == DataType::FLOAT32) {
+      std::vector<float> ceiled(dt.GetTotalNumOfElements());
+      for (int i = 0, e = ceiled.size(); i < e; ++i) {
+        ceiled[i] = std::ceil(c->GetDataAsFloat32(i));
+      }
+      return {orig_def,
+              *cb.CreateConstant(c->GetName() + "_ceil", dt, ceiled.data())};
+    }
+  }
+  return {orig_def, orig_def};
+}
+
 std::pair<Def, Def> InstSimplify::RunOnInstruction(ConcatInst* inst) {
   Def orig_def{inst, 0};
   // Concat(Transpose(A), Transpose(B),...) => Transpose(Concat(A, B))
