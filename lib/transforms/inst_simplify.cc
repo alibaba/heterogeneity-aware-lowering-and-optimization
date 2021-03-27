@@ -197,6 +197,7 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
   Def orig_def{binary_inst, 0};
   auto op0 = binary_inst->GetOperand(0);
   auto op1 = binary_inst->GetOperand(1);
+  auto opc = binary_inst->GetOpCode();
   bool has_swapped = false;
   if (IsA<Constant>(op0)) {
     std::swap(op0, op1);
@@ -204,19 +205,26 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
   }
 
   // MUL(x, 1) ==> x.
-  if (binary_inst->GetOpCode() == OpCode::MUL && IsA<Constant>(op1)) {
+  if (opc == OpCode::MUL && IsA<Constant>(op1)) {
     const Constant* c = DynCast<Constant>(op1);
     if (c->HasSameValueOf(1)) {
       return {orig_def, op0};
     }
   }
 
-  ConstantBuilder cb(binary_inst->GetParent()->GetParent());
+  // ADD/SUB(x, 0) ==> x.
+  if ((opc == OpCode::ADD || opc == OpCode::SUB) && IsA<Constant>(op1)) {
+    const Constant* c = DynCast<Constant>(op1);
+    if (c->HasSameValueOf(0)) {
+      return {orig_def, op0};
+    }
+  }
+
   IRBuilder builder(binary_inst->GetParent());
   builder.SetInsertAfter(binary_inst);
+  ConstantBuilder cb(binary_inst->GetParent()->GetParent());
 
   // Fuse mul/add into conv.
-  auto opc = binary_inst->GetOpCode();
   if ((opc == OpCode::MUL || (fuse_conv_bias && opc == OpCode::ADD)) &&
       IsA<Constant>(op1)) {
     const Constant* c = DynCast<Constant>(op1);
