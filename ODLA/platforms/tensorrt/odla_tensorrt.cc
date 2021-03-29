@@ -956,6 +956,14 @@ odla_value odla_Min(odla_value lhs, odla_value rhs, const odla_value_id id) {
   return binary_op(nvinfer1::ElementWiseOperation::kMIN, lhs, rhs, id);
 }
 
+odla_value odla_Cast(odla_value input, odla_element_type target_type,
+                     const odla_value_id id) {
+  auto op = g_comp->network->addIdentity(*input);
+  odla_value_type dst_type{target_type, input->type.shape};
+  op->setOutputType(0, GetNVDataType(dst_type.element_type));
+  return CreateValue(op, dst_type, id);
+}
+
 odla_value odla_Ceil(odla_value input, const odla_value_id id) {
   return unary_op(nvinfer1::UnaryOperation::kCEIL, input, id);
 }
