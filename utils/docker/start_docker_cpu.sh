@@ -1,15 +1,16 @@
 #!/bin/bash -xe
 
 VER="latest"
+FLAVOR="devel"
 NAMESPACE="registry-intl.us-west-1.aliyuncs.com/computation"
 
 if [[ "$0" =~ "start_docker_gpu.sh" ]]; then
-  IMAGE="$NAMESPACE/halo:$VER-cuda10.0-cudnn7-ubuntu18.04"
+  IMAGE="$NAMESPACE/halo:$VER-$FLAVOR-cuda10.0-cudnn7-ubuntu18.04"
   CONTAINER_NAME=$USER.halo-$VER-GPU
   docker_run_flag="--runtime=nvidia"
 else
   use_gpu=0
-  IMAGE="$NAMESPACE/halo:$VER-x86_64-ubuntu18.04"
+  IMAGE="$NAMESPACE/halo:$VER-$FLAVOR-x86_64-ubuntu18.04"
   CONTAINER_NAME=$USER.halo-$VER-CPU
   docker_run_flag=""
 fi

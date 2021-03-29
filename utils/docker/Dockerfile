@@ -1,7 +1,7 @@
 # Build this image:  docker build -t halo:[version] .
 
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE} 
+FROM ${BASE_IMAGE}
 
 # Redeclare the argument
 ARG BASE_IMAGE
@@ -73,7 +73,7 @@ RUN apt-get update -y && \
       ninja-build \
       libopencv-core-dev \
       libopencv-highgui-dev \
-      libopencv-videoio-dev \ 
+      libopencv-videoio-dev \
       libmpc-dev \
       libmpfr-dev \
       libgmp-dev\
@@ -228,7 +228,7 @@ RUN cd /tmp && \
     git clone --depth=1 https://github.com/google/flatbuffers.git -b v1.12.0 && \
     cd flatbuffers && \
     cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release  -DFLATBUFFERS_BUILD_SHAREDLIB=ON && make -j && make install && \
-    rm -fr /tmp/flatbuffers 
+    rm -fr /tmp/flatbuffers
 
 
 RUN mkdir -p /var/run/sshd
