@@ -288,6 +288,8 @@ def ONNX_Relu : OpMapping<"Relu", Relu>;
 
 def ONNX_Reshape : OpMapping<"Reshape", Reshape>;
 
+// ONNX-13 supports an optional ROI operand.
+// Operands: Input, roi (optional), scales (optional)
 def ONNX_Resize : OpMapping<"Resize", Resize> {
   let attr_mapping_ = [
     AttributeMapping<"", "axes_mask", "-1">,

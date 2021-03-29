@@ -1,4 +1,4 @@
-//===- reduce_mean.cc -----------------------------------------------------===//
+//===- reduction.cc -------------------------------------------------------===//
 //
 // Copyright (C) 2019-2020 Alibaba Group Holding Limited.
 //
@@ -49,6 +49,16 @@ void GenericCXXCodeGen::RunOnReductionInstruction(
 void GenericCXXCodeGen::RunOnInstruction(ReduceMeanInst* inst) {
   RunOnReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims(),
                             "odla_ReduceMean");
+}
+
+void GenericCXXCodeGen::RunOnInstruction(ReduceMinInst* inst) {
+  RunOnReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims(),
+                            "odla_ReduceMin");
+}
+
+void GenericCXXCodeGen::RunOnInstruction(ReduceMaxInst* inst) {
+  RunOnReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims(),
+                            "odla_ReduceMax");
 }
 
 void GenericCXXCodeGen::RunOnInstruction(ReduceL1Inst* inst) {

@@ -22,3 +22,10 @@ jobs:
         uses: ./halo/.github/actions/build
         with:
           docker_image_variant: graphcore1.4.0-x86_64
+
+      - name: Upload
+        uses: actions/upload-artifact@v2
+        with:
+          name: artifact
+          path: ${{runner.workspace}}/heterogeneity-aware-lowering-and-optimization/build/*.bz2
+          if-no-files-found: error
