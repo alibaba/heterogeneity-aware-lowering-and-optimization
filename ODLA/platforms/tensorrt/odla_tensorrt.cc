@@ -956,6 +956,14 @@ odla_value odla_Min(odla_value lhs, odla_value rhs, const odla_value_id id) {
   return binary_op(nvinfer1::ElementWiseOperation::kMIN, lhs, rhs, id);
 }
 
+odla_value odla_Cast(odla_value input, odla_element_type target_type,
+                     const odla_value_id id) {
+  auto op = g_comp->network->addIdentity(*input);
+  odla_value_type dst_type{target_type, input->type.shape};
+  op->setOutputType(0, GetNVDataType(dst_type.element_type));
+  return CreateValue(op, dst_type, id);
+}
+
 odla_value odla_Ceil(odla_value input, const odla_value_id id) {
   return unary_op(nvinfer1::UnaryOperation::kCEIL, input, id);
 }
@@ -1694,6 +1702,22 @@ odla_value odla_NMS(odla_value boxes, odla_value scores,
 
   auto nms = g_comp->network->addPluginV2(&inputs[0], num_inputs, *nms_plugin);
   return CreateValue(nms->getOutput(4), output_value_type, value_id);
+}
+odla_value odla_Tile(odla_value input, const odla_uint32* repeat,
+                     odla_value_shape output_dims,
+                     const odla_value_id value_id) {
+  auto dims = input->type.shape.size;
+  nvinfer1::Dims start{.nbDims = dims};
+  nvinfer1::Dims stride{.nbDims = dims};
+  nvinfer1::Dims size{.nbDims = dims};
+  for (int i = 0; i != dims; ++i) {
+    start.d[i] = 0;
+    stride.d[i] = 1;
+    size.d[i] = repeat[i] * input->type.shape.dims[i];
+  }
+  auto op = g_comp->network->addSlice(*input, start, size, stride);
+  op->setMode(nvinfer1::SliceMode::kWRAP);
+  return CreateValue(op, {input->type.element_type, output_dims}, value_id);
 }
 
 odla_values odla_TopK(odla_value input, odla_uint32 K, odla_bool largest,
