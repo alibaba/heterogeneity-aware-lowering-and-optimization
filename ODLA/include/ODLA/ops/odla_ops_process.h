@@ -241,6 +241,7 @@ odla_Shape(odla_value input, odla_value_shape output_dims,
 
   \param input the input value
   \param start the offets at each slicing dimension
+  \param end the ending indices(exclusive) at each slicing dimension
   \param stride the stride at each slicing dimension
   \param output_dims the optional output shape (can be undefined)
   \param value_id a unique value id (can be NULL)
