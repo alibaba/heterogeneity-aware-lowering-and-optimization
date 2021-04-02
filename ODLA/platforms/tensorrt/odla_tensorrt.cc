@@ -285,14 +285,18 @@ static odla_element_type GetODLAType(DataType type) {
 }
 
 static int64_t GetTotalElements(const odla_value_shape& dims) {
-  return std::accumulate(dims.dims, dims.dims + dims.size, 1,
-                         std::multiplies<size_t>());
+  return dims.size == 0 ? 1
+                        : std::accumulate(dims.dims, dims.dims + dims.size, 1,
+                                          std::multiplies<size_t>());
 }
 
 static nvinfer1::Dims GetNVDims(int n, const odla_uint32* dims) {
   nvinfer1::Dims ret;
   assert(n <= nvinfer1::Dims::MAX_DIMS);
   ret.nbDims = n;
+  if (n == 0) {
+    ret.d[0] = 0;
+  }
   for (int i = 0; i < n; ++i) {
     ret.d[i] = static_cast<int>(dims[i]);
   }
@@ -302,8 +306,11 @@ static nvinfer1::Dims GetNVDims(int n, const odla_uint32* dims) {
 static nvinfer1::Dims GetNVDims(const odla_value_shape& dims) {
   nvinfer1::Dims ret;
   ret.nbDims = dims.size;
-  for (int i = 0, e = std::min(nvinfer1::Dims::MAX_DIMS, ODLA_MAX_DIMENSION);
-       i < e; ++i) {
+  assert(dims.size <= std::min(nvinfer1::Dims::MAX_DIMS, ODLA_MAX_DIMENSION));
+  if (dims.size == 0) {
+    ret.d[0] = 0;
+  }
+  for (int i = 0; i < dims.size; ++i) {
     ret.d[i] = dims.dims[i];
   }
   return ret;
@@ -1703,6 +1710,7 @@ odla_value odla_NMS(odla_value boxes, odla_value scores,
   auto nms = g_comp->network->addPluginV2(&inputs[0], num_inputs, *nms_plugin);
   return CreateValue(nms->getOutput(4), output_value_type, value_id);
 }
+
 odla_value odla_Tile(odla_value input, const odla_uint32* repeat,
                      odla_value_shape output_dims,
                      const odla_value_id value_id) {
