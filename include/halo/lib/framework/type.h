@@ -112,8 +112,16 @@ class Type final {
             dt == DataType::UINT64);
   }
 
+  static bool IsIntegerType(const Type& type) {
+    return IsIntegerType(type.GetDataType());
+  }
+
   static bool IsFloatingPointType(const DataType& dt) {
     return (dt == DataType::FLOAT16 || dt == DataType::FLOAT32);
+  }
+
+  static bool IsFloatingPointType(const Type& type) {
+    return IsFloatingPointType(type.GetDataType());
   }
 
   static std::string DataTypeToString(DataType dt);
