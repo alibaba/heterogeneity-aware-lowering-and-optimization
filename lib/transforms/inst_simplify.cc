@@ -1740,6 +1740,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
   Def orig_def{inst, 0};
   auto op_len = inst->GetOperand(2);
   const auto& dst_type = inst->GetResultsTypes()[0];
+  const auto& src_type = inst->GetOperand(0).GetType();
   if (dst_type.IsValid() && IsA<Constant>(op_len)) {
     Constant* c_size = DynCast<Constant>(op_len);
     if (op_len.GetType().GetDataType() == DataType::INT32) {
@@ -1749,7 +1750,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
       for (int i = 0; i != dim; ++i) {
         int size_i = c_size->GetData<int>(i);
         if (size_i == -1) {
-          size_adj[i] = dst_type.GetNumOfElementsInDim(i);
+          size_adj[i] = src_type.GetNumOfElementsInDim(i);
           new_size = true;
         } else {
           size_adj[i] = size_i;
@@ -1775,30 +1776,60 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
 
   bool has_constant_steps =
       (inst->GetNumOfOperands() < 4 || IsA<Constant>(inst->GetOperand(3)));
-  has_constant_steps &=
+  bool has_constant_axes =
       (inst->GetNumOfOperands() <= 4 || IsA<Constant>(inst->GetOperand(4)));
-  int steps = has_constant_steps ? 1 : 0; // FIXME
+
   if (IsA<Constant>(op0) && IsA<Constant>(op_start) && IsA<Constant>(op_len) &&
-      inst->GetResultType().IsValid() && has_constant_steps) {
+      inst->GetResultType().IsValid() && has_constant_steps &&
+      has_constant_axes) {
     Constant* input = DynCast<Constant>(op0);
     const auto& dt = inst->GetResultType();
-    auto starts = DynCast<Constant>(op_start);
-    auto lens = DynCast<Constant>(op_len);
-    // auto steps = DynCast<Constant>(op3);
-    // auto axes = DynCast<Constant>(op4);
-    auto rank = op0.GetType().GetNumOfDims();
-    if (rank == 1 && steps == 1) {
+    auto starts_c = DynCast<Constant>(op_start);
+    auto lens_c = DynCast<Constant>(op_len);
+    const auto& op0_type = op0.GetType();
+    auto rank = op0_type.GetNumOfDims();
+    std::unordered_set<int> axes;
+    if (inst->GetNumOfOperands() > 4) {
+      const auto& data =
+          DynCast<Constant>(inst->GetOperand(4))->GetDataAsInt64();
+      for (auto x : data) {
+        axes.insert(x);
+      }
+    } else {
+      for (size_t i = 0; i < rank; ++i) {
+        axes.insert(i);
+      }
+    }
+    std::vector<int> starts(rank);
+    std::vector<int> lens(rank);
+    std::vector<int> steps(rank);
+    Constant* steps_c =
+        has_constant_steps ? DynCast<Constant>(inst->GetOperand(3)) : nullptr;
+    for (size_t axis = 0, k = 0; axis < rank; ++axis) {
+      bool to_slice = has_constant_axes && axes.count(axis) != 0;
+      starts[axis] = to_slice ? starts_c->GetDataAsInt64(k) : 0;
+      lens[axis] = to_slice ? lens_c->GetDataAsInt64(k)
+                            : op0_type.GetNumOfElementsInDim(axis);
+      steps[axis] = to_slice ? steps_c->GetDataAsInt64(k) : 1L;
+      k += to_slice ? 1 : 0;
+    }
+
+    if (rank == 1) {
       DefaultDataLayout dl;
       auto bytes = dl.DataLayout::Bytes(dt);
       auto es = dl.Bytes(dt.GetDataType());
       std::vector<char> data(bytes);
-      auto idx = starts->GetDataAsInt64(0);
-      auto len = lens->GetDataAsInt64(0);
+      int step = steps[0];
+      auto len = lens[0];
+      auto start = starts[0];
       const char* src = static_cast<const char*>(input->GetRawDataPtr());
       char* dst = data.data();
       HLCHECK(len == dt.GetTotalNumOfElements());
       for (int i = 0; i < len; ++i) {
-        std::memcpy(&dst[i * es], &src[(i + idx) * es], es); // NOLINT
+        auto src_idx = start + i * step;
+        HLCHECK(src_idx >= 0 &&
+                src_idx < op0.GetType().GetTotalNumOfElements());
+        std::memcpy(&dst[i * es], &src[src_idx * es], es); // NOLINT
       }
       ConstantBuilder cb(inst->GetParent()->GetParent());
       auto c = cb.CreateConstant(inst->GetName(), dt, data.data());
