@@ -30,6 +30,7 @@ namespace halo {
 class Argument;
 class Function;
 class ReturnInst;
+class LoopInst;
 
 /// This class defines a basic block in IR.
 /// A basic block is simply a list of instructions without terminating in
@@ -38,7 +39,7 @@ class BasicBlock final : public IRObject {
  public:
   BasicBlock() = delete;
   explicit BasicBlock(GlobalContext& ctx, const std::string& name)
-      : IRObject(ctx, name) {
+      : IRObject(ctx, name), loop_inst_(nullptr) {
     if (name.empty()) {
       SetName("bb_" + std::to_string(GetId()));
     }
@@ -117,6 +118,10 @@ class BasicBlock final : public IRObject {
 
   ReturnInst* GetReturnInst() const;
 
+  LoopInst* GetLoopInst() const noexcept { return loop_inst_; };
+
+  void SetLoopInst(LoopInst* inst) noexcept { loop_inst_ = inst; }
+
   static inline bool Classof(const BasicBlock* bb) { return true; }
   static inline bool Classof(const IRObject* obj) {
     return obj->GetKind() == Kind::BasicBlock;
@@ -130,6 +135,7 @@ class BasicBlock final : public IRObject {
   InstructionList instructions_;
   ArgumentList args_;
   ConstantList constants_;
+  LoopInst* loop_inst_;
 
   friend class BasicBlockBuilder;
 };
