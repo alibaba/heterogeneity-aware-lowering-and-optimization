@@ -316,6 +316,18 @@ static nvinfer1::Dims GetNVDims(const odla_value_shape& dims) {
   return ret;
 }
 
+static bool SameNVDims(const nvinfer1::Dims& d1, const nvinfer1::Dims& d2) {
+  if (d1.nbDims != d2.nbDims) {
+    return false;
+  }
+  for (int i = 0; i < d1.nbDims; ++i) {
+    if (d1.d[i] != d2.d[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 static nvinfer1::Dims BroadcastDims(const odla_value_shape& dims,
                                     size_t dim_size) {
   if (dims.size >= dim_size) {
@@ -877,6 +889,15 @@ static odla_value binary_op(nvinfer1::ElementWiseOperation op, odla_value lhs,
       broadcastTensor(g_comp, lhs_tensor, rhs_tensor, dims_lhs, dims_rhs);
   auto sub = g_comp->network->addElementWise(*lhs_tensor, *rhs_tensor, op);
 
+  nvinfer1::Dims sub_dim = sub->getOutput(0)->getDimensions();
+  if (!SameNVDims(rhs_tensor->getDimensions(), lhs_tensor->getDimensions())) {
+    // fix the case when dims_lhs and dims_rhs both need to broadcast
+    // e.g., dims_lhs = (256,1), dims_rhs = (1,768), out_dims = (256,768)
+    out_dim.size = (odla_int32)sub_dim.nbDims;
+    for (int i = 0; i < sub_dim.nbDims; ++i) {
+      out_dim.dims[i] = (odla_int64)sub_dim.d[i];
+    }
+  }
   return CreateValue(sub, {lhs->type.element_type, out_dim}, id);
 }
 
@@ -1024,11 +1045,8 @@ odla_value odla_Tan(odla_value input, const odla_value_id id) {
 }
 
 odla_value odla_Tanh(odla_value input, const odla_value_id id) {
-  auto op0 = g_comp->network->addUnary(*input, nvinfer1::UnaryOperation::kSINH);
-  auto op1 = g_comp->network->addUnary(*input, nvinfer1::UnaryOperation::kCOSH);
-  auto op = g_comp->network->addElementWise(
-      *(op0->getOutput(0)), *(op1->getOutput(0)),
-      nvinfer1::ElementWiseOperation::kDIV);
+  auto op =
+      g_comp->network->addActivation(*input, nvinfer1::ActivationType::kTANH);
   return CreateValue(op, input->type, id);
 }
 
@@ -1742,6 +1760,16 @@ odla_values odla_TopK(odla_value input, odla_uint32 K, odla_bool largest,
                                  value_ids.value_ids[0]),
                      CreateValue(topk->getOutput(1), output_value_index_type,
                                  value_ids.value_ids[1])}};
+}
+
+odla_value odla_Pow(odla_value base, odla_value exponent,
+                    const odla_value_id value_id) {
+  return binary_op(nvinfer1::ElementWiseOperation::kPOW, base, exponent,
+                   value_id);
+}
+
+odla_value odla_Reciprocal(odla_value input, const odla_value_id value_id) {
+  return unary_op(nvinfer1::UnaryOperation::kRECIP, input, value_id);
 }
 
 } // C extern
