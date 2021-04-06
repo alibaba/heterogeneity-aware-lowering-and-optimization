@@ -53,8 +53,7 @@ int main(int argc, char** argv) {
   float output[OUTPUT_SIZE];
 
   std::vector<float> data_nhwc(INPUT_SIZE);
-  std::vector<float> output_v(std::begin(output_gold),
-                              std::end(output_gold));
+  std::vector<float> output_v(std::begin(output_gold), std::end(output_gold));
 
   const float* input = data;
   if (argc > 1) {
@@ -71,12 +70,13 @@ int main(int argc, char** argv) {
   of_out.open("out_debug.txt", std::ofstream::out);
 
   for (int i = 0; i < OUTPUT_SIZE; i++) {
-      of_out << output[i] << std::endl;
+    of_out << output[i] << std::endl;
   }
 #endif
   auto check = [](const float* out, const std::vector<float>& gold) {
     float cos_sim = EvalCosSim(out, gold.data(), gold.size());
-    if (Verify(out, gold.data(), gold.size(), COMPARE_ERROR) && (cos_sim - 0.99) >= 0) {
+    if (Verify(out, gold.data(), gold.size(), COMPARE_ERROR) &&
+        (cos_sim - 0.99) >= 0) {
       std::cout << "Result verified" << std::endl;
       return true;
     }
@@ -86,6 +86,6 @@ int main(int argc, char** argv) {
   };
 
   check(output, output_v);
-  
+
   return 0;
 }
