@@ -1,5 +1,4 @@
-//===- face_detect_test.cc
-//-------------------------------------------------===//
+//===- pose_hrnet_test.cc---------------------------------------------===//
 //
 // Copyright (C) 2019-2021 Alibaba Group Holding Limited.
 //
@@ -14,7 +13,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-// =============================================================================
+// ========================================================================
 
 // clang-format off
 // prepare model&dataset
