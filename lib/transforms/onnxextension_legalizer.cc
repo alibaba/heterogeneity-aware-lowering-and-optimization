@@ -482,19 +482,8 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
       continue;
     }
     auto end = c_ends->GetDataAsInt64(j++);
-
-<<<<<<< HEAD
     if (end < 0) {
       end += input_type.GetNumOfElementsInDim(i);
-=======
-      if (end < 0) {
-        end = input_type.GetNumOfElementsInDim(i) + end + 1;
-      } else if (end > input_type.GetNumOfElementsInDim(i)) {
-        end = input_type.GetNumOfElementsInDim(i);
-      }
-      ends.push_back(end);
-      j++;
->>>>>>> onnx bert cg
     }
     ends[i] = std::min(std::max(end, -1L), static_cast<int64_t>(ends[i]));
   }
@@ -656,15 +645,11 @@ static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
   int input_dims = input_type.GetNumOfDims();
 
   HLCHECK(ext->GetNumOfAttributes() == 2);
-  const Attribute* attr = ext->GetAttributes()[1].get();
-  HLCHECK(attr->GetName() == "axis");
-  int axis = attr->GetValueAsInteger();
-  axis = (axis < 0) ? axis + input_dims : axis;
+  const auto& attr = FindAttributeValue(*ext, "axis", 0);
+  int axis = (attr < 0) ? attr + input_dims : attr;
   HLCHECK(((axis >= 0) && (axis < input_dims)) && "Invalid axis.");
-
-  const Attribute* attr1 = ext->GetAttributes()[0].get();
-  HLCHECK(attr1->GetName() == "split");
-  std::vector<int> splits = attr1->GetValueAsIntegerList();
+  std::vector<int> empty;
+  const auto& splits = FindAttributeValue(*ext, "split", empty);
 
   builder->SetInsertAfter(ext);
 
