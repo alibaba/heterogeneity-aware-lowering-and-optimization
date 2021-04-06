@@ -70,7 +70,7 @@ bool Type::HasNativeType<int8_t>(DataType dt) {
 
 template <>
 bool Type::HasNativeType<uint8_t>(DataType dt) {
-  return dt == DataType::UINT8;
+  return dt == DataType::UINT8 || dt == DataType::BOOL;
 }
 
 template <>
