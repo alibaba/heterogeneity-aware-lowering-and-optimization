@@ -727,8 +727,9 @@ static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
         Type{DataType::INT64, {static_cast<int64_t>(input_dims)}},
         sizes.data());
 
-    SliceInst* slice = builder->CreateSlice(
-        ext->GetName() + "_slice_" + std::to_string(j), {op0, *c_begins, *c_sizes});
+    SliceInst* slice =
+        builder->CreateSlice(ext->GetName() + "_slice_" + std::to_string(j),
+                             {op0, *c_begins, *c_sizes});
 
     ret_v.push_back(*slice);
     j++;
