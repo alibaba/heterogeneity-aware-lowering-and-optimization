@@ -34,8 +34,9 @@ void GenericCXXCodeGen::RunOnUnaryInstruction(Instruction* inst) {
       {OpCode::RSQRT, "odla_Rsqrt"}, {OpCode::SQRT, "odla_Sqrt"},
       {OpCode::SIN, "odla_Sin"},     {OpCode::SINH, "odla_Sinh"},
       {OpCode::ROUND, "odla_Round"}, {OpCode::NEG, "odla_Neg"},
-      {OpCode::RCP, "odla_Recip"},   {OpCode::NOT, "odla_Not"},
-      {OpCode::CEIL, "odla_Ceil"},   {OpCode::LOG, "odla_Log"}};
+      {OpCode::RCP, "odla_Reciprocal"},   {OpCode::NOT, "odla_Not"},
+      {OpCode::CEIL, "odla_Ceil"},   {OpCode::LOG, "odla_Log"},
+      {OpCode::TANH, "odla_Tanh"}};
 
   auto it = names.find(inst->GetOpCode());
   HLCHECK(it != names.end());
@@ -54,7 +55,7 @@ void GenericCXXCodeGen::RunOnBinaryInstruction(Instruction* inst) {
       {OpCode::ADD, "odla_Add"},     {OpCode::AND, "odla_And"},
       {OpCode::DIV, "odla_Div"},     {OpCode::MAXIMUM, "odla_Max"},
       {OpCode::MINIMUM, "odla_Min"}, {OpCode::MUL, "odla_Mul"},
-      {OpCode::SUB, "odla_Sub"}};
+      {OpCode::SUB, "odla_Sub"},     {OpCode::POW, "odla_Pow"}};
   auto it = names.find(inst->GetOpCode());
   HLCHECK(it != names.end());
   const Def& lhs = inst->GetOperand(0);
@@ -181,6 +182,14 @@ void GenericCXXCodeGen::RunOnInstruction(NegInst* inst) {
 }
 
 void GenericCXXCodeGen::RunOnInstruction(NotInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(PowInst* inst) {
+  RunOnBinaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(TanhInst* inst) {
   RunOnUnaryInstruction(inst);
 }
 

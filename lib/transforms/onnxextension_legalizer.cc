@@ -483,8 +483,18 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
     }
     auto end = c_ends->GetDataAsInt64(j++);
 
+<<<<<<< HEAD
     if (end < 0) {
       end += input_type.GetNumOfElementsInDim(i);
+=======
+      if (end < 0) {
+        end = input_type.GetNumOfElementsInDim(i) + end + 1;
+      } else if (end > input_type.GetNumOfElementsInDim(i)) {
+        end = input_type.GetNumOfElementsInDim(i);
+      }
+      ends.push_back(end);
+      j++;
+>>>>>>> onnx bert cg
     }
     ends[i] = std::min(std::max(end, -1L), static_cast<int64_t>(ends[i]));
   }
@@ -646,13 +656,13 @@ static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
   int input_dims = input_type.GetNumOfDims();
 
   HLCHECK(ext->GetNumOfAttributes() == 2);
-  const Attribute* attr = ext->GetAttributes()[0].get();
+  const Attribute* attr = ext->GetAttributes()[1].get();
   HLCHECK(attr->GetName() == "axis");
   int axis = attr->GetValueAsInteger();
   axis = (axis < 0) ? axis + input_dims : axis;
   HLCHECK(((axis >= 0) && (axis < input_dims)) && "Invalid axis.");
 
-  const Attribute* attr1 = ext->GetAttributes()[1].get();
+  const Attribute* attr1 = ext->GetAttributes()[0].get();
   HLCHECK(attr1->GetName() == "split");
   std::vector<int> splits = attr1->GetValueAsIntegerList();
 
@@ -683,7 +693,6 @@ static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
 
   std::vector<int64_t> sizes;
   std::vector<std::vector<int64_t>> sizes_v;
-  std::vector<int64_t> starts;
   std::vector<std::vector<int64_t>> starts_v;
   int32_t num_outputs = static_cast<int32_t>(ext->GetNumOfResults());
 
@@ -713,7 +722,9 @@ static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
   }
 
   int64_t offset = 0;
+  int j = 0;
   for (auto sizes : sizes_v) {
+    std::vector<int64_t> starts;
     for (size_t i = 0; i < input_type.GetNumOfDims(); ++i) {
       int64_t value = (i == static_cast<size_t>(axis)) ? offset : 0;
       starts.push_back(value);
@@ -722,19 +733,20 @@ static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
     offset += sizes[axis];
 
     Constant* c_begins = cb.CreateConstant(
-        ext->GetName() + "_starts",
-        Type{DataType::INT32, {static_cast<int64_t>(input_dims)}},
+        ext->GetName() + "_starts_" + std::to_string(j),
+        Type{DataType::INT64, {static_cast<int64_t>(input_dims)}},
         starts.data());
 
     Constant* c_sizes = cb.CreateConstant(
-        ext->GetName() + "_sizes",
-        Type{DataType::INT32, {static_cast<int64_t>(input_dims)}},
+        ext->GetName() + "_sizes_" + std::to_string(j),
+        Type{DataType::INT64, {static_cast<int64_t>(input_dims)}},
         sizes.data());
 
     SliceInst* slice = builder->CreateSlice(
-        ext->GetName(), {op0, *c_begins, *c_sizes, op4, op3});
+        ext->GetName() + "_slice_" + std::to_string(j), {op0, *c_begins, *c_sizes});
 
     ret_v.push_back(*slice);
+    j++;
   }
 
   return ret_v;

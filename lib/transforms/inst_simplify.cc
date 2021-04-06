@@ -192,6 +192,18 @@ static T* FuseToConvDeConv(const T* conv, OpCode opc, const Constant* c) {
   return DynCast<T>(new_conv);
 }
 
+static bool IsSameType(const Type& lhs, const Type& rhs) {
+  if (lhs.GetNumOfDims() != rhs.GetNumOfDims()) {
+    return false;
+  }
+  for (size_t d = 0; d < lhs.GetNumOfDims(); d++) {
+    if (lhs.GetNumOfElementsInDim(d) != rhs.GetNumOfElementsInDim(d)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
                                                       bool disable_broadcasting,
                                                       bool fuse_conv_bias) {
@@ -209,7 +221,11 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
   if (opc == OpCode::MUL && IsA<Constant>(op1)) {
     const Constant* c = DynCast<Constant>(op1);
     if (c->HasSameValueOf(1)) {
-      return {orig_def, op0};
+      const Type& type0 = op0.GetType();
+      const Type& type1 = op1.GetType();
+      if (IsSameType(type0, type1)) {
+        return {orig_def, op0};
+      }
     }
   }
 
@@ -1605,7 +1621,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(TransposeInst* inst) {
     HLCHECK(perm0.size() == perm.size());
     auto new_perm = perm0;
     for (int i = 0, e = perm0.size(); i < e; ++i) {
-      new_perm[i] = perm[perm0[i]];
+      new_perm[i] = perm0[perm[i]];
     }
     IRBuilder builder(inst->GetParent());
     builder.SetInsertAfter(inst);
