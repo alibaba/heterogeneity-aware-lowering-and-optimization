@@ -2,6 +2,7 @@
 
 REPO="registry-intl.us-west-1.aliyuncs.com/computation/halo"
 VER="latest"
+FLAVOR="devel"
 
 MOUNT_DIR="$PWD"
 if [ ! -z "$1" ]; then
@@ -16,7 +17,7 @@ if [ ! -z "$1" ]; then
 fi
 
 
-IMAGE="$REPO:$VER-$VARIANT-ubuntu18.04"
+IMAGE="$REPO:$VER-$FLAVOR-$VARIANT-ubuntu18.04"
 CONTAINER_NAME="halo.ci-$VER-$VARIANT"
 
 docker_run_flag=""

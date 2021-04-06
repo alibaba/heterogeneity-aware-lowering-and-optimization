@@ -215,8 +215,6 @@ RUN cd /tmp && git clone https://github.com/google/XNNPACK.git && \
     ninja install
 
 # Install frameworks for model conversion
-RUN cd /usr/local/bin && \
-    ln -s /usr/bin/python3 python
 RUN pip3 install torch
 RUN pip3 install tensorflow tf_slim scipy matplotlib
 RUN pip3 install EasyDict==1.7 opencv-python==3.4.1.15 shapely==1.6.4 Cython \
