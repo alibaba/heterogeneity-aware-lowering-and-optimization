@@ -318,6 +318,7 @@ void GenericLLVMIRCodeGen::RunOnConstant(Constant& constant) {
       cv = llvm::ConstantDataArray::get(llvm_module_->getContext(), data);
       break;
     }
+    case DataType::BOOL:
     case DataType::INT8:
     case DataType::UINT8: {
       llvm::ArrayRef<uint8_t> data(constant.GetDataPtr<uint8_t>(),
