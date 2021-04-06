@@ -25,17 +25,17 @@ namespace halo {
 
 void GenericCXXCodeGen::RunOnUnaryInstruction(Instruction* inst) {
   static const std::unordered_map<OpCode, const char*> names{
-      {OpCode::ABS, "odla_Abs"},     {OpCode::ACOS, "odla_ACos"},
-      {OpCode::ACOSH, "odla_ACosh"}, {OpCode::ASIN, "odla_ASin"},
-      {OpCode::ASINH, "odla_ASinh"}, {OpCode::ATAN, "odla_ATan"},
-      {OpCode::ATANH, "odla_ATanh"}, {OpCode::COS, "odla_Cos"},
-      {OpCode::COSH, "odla_Cosh"},   {OpCode::ERF, "odla_Erf"},
-      {OpCode::EXP, "odla_Exp"},     {OpCode::FLOOR, "odla_Floor"},
-      {OpCode::RSQRT, "odla_Rsqrt"}, {OpCode::SQRT, "odla_Sqrt"},
-      {OpCode::SIN, "odla_Sin"},     {OpCode::SINH, "odla_Sinh"},
-      {OpCode::ROUND, "odla_Round"}, {OpCode::NEG, "odla_Neg"},
-      {OpCode::RCP, "odla_Reciprocal"},   {OpCode::NOT, "odla_Not"},
-      {OpCode::CEIL, "odla_Ceil"},   {OpCode::LOG, "odla_Log"},
+      {OpCode::ABS, "odla_Abs"},        {OpCode::ACOS, "odla_ACos"},
+      {OpCode::ACOSH, "odla_ACosh"},    {OpCode::ASIN, "odla_ASin"},
+      {OpCode::ASINH, "odla_ASinh"},    {OpCode::ATAN, "odla_ATan"},
+      {OpCode::ATANH, "odla_ATanh"},    {OpCode::COS, "odla_Cos"},
+      {OpCode::COSH, "odla_Cosh"},      {OpCode::ERF, "odla_Erf"},
+      {OpCode::EXP, "odla_Exp"},        {OpCode::FLOOR, "odla_Floor"},
+      {OpCode::RSQRT, "odla_Rsqrt"},    {OpCode::SQRT, "odla_Sqrt"},
+      {OpCode::SIN, "odla_Sin"},        {OpCode::SINH, "odla_Sinh"},
+      {OpCode::ROUND, "odla_Round"},    {OpCode::NEG, "odla_Neg"},
+      {OpCode::RCP, "odla_Reciprocal"}, {OpCode::NOT, "odla_Not"},
+      {OpCode::CEIL, "odla_Ceil"},      {OpCode::LOG, "odla_Log"},
       {OpCode::TANH, "odla_Tanh"}};
 
   auto it = names.find(inst->GetOpCode());
