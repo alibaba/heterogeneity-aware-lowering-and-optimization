@@ -32,8 +32,7 @@ if lib_path not in sys.path:
 from config import cfg
 from config import update_config
 
-subprocess.run("cd deep-high-resolution-net.pytorch && cd lib", shell=True)
-subprocess.run("cd nms && python3 setup_linux.py build_ext --inplace && rm -rf build && cd ../../../", shell=True)
+subprocess.run("cd deep-high-resolution-net.pytorch/lib/nms && python3 setup_linux.py build_ext --inplace && rm -rf build && cd ../../", shell=True)
 
 import dataset
 import models
