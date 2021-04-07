@@ -44,9 +44,12 @@ static Constant* RunConstantFoldingOnMathBinary(const std::string& name,
                                                 const Type& ret_type, Def op0,
                                                 Def op1, OpCode opcode,
                                                 KindPredicate pred) {
-  if (!IsA<Constant>(op0) || !IsA<Constant>(op1) ||
-      op0.GetType().GetTotalNumOfElements() !=
-          op1.GetType().GetTotalNumOfElements()) {
+  if (!IsA<Constant>(op0) || !IsA<Constant>(op1)) {
+    return nullptr;
+  }
+  if ((op0.GetType().GetTotalNumOfElements() !=
+           op1.GetType().GetTotalNumOfElements() &&
+       op1.GetType().GetTotalNumOfElements() != 1)) {
     return nullptr;
   }
   if (opcode == OpCode::CMP) {
@@ -58,32 +61,36 @@ static Constant* RunConstantFoldingOnMathBinary(const std::string& name,
       std::swap(op0, op1);
     }
   }
-  Constant* c_lhs = DynCast<Constant>(op0.GetOwner());
-  Constant* c_rhs = DynCast<Constant>(op1.GetOwner());
+  Constant* c_lhs = DynCast<Constant>(op0);
+  Constant* c_rhs = DynCast<Constant>(op1);
   size_t num_elements = op0.GetType().GetTotalNumOfElements();
   Constant* c_ret = nullptr;
   ConstantBuilder cb(DynCast<Function>(c_lhs->GetParent()));
   std::vector<T> ret;
   ret.reserve(num_elements);
+  bool rhs_is_scalar = op1.GetType().GetTotalNumOfElements() == 1;
 
   switch (opcode) {
     case OpCode::ADD: {
       for (size_t i = 0; i < num_elements; ++i) {
-        ret.push_back(c_lhs->GetData<T>(i) + c_rhs->GetData<T>(i));
+        ret.push_back(c_lhs->GetData<T>(i) +
+                      c_rhs->GetData<T>(rhs_is_scalar ? 0 : i));
       }
       c_ret = cb.CreateConstant(name, ret_type, ret.data());
       break;
     }
     case OpCode::MUL: {
       for (size_t i = 0; i < num_elements; ++i) {
-        ret.push_back(c_lhs->GetData<T>(i) * c_rhs->GetData<T>(i));
+        ret.push_back(c_lhs->GetData<T>(i) *
+                      c_rhs->GetData<T>(rhs_is_scalar ? 0 : i));
       }
       c_ret = cb.CreateConstant(name, ret_type, ret.data());
       break;
     }
     case OpCode::DIV: {
       for (size_t i = 0; i < num_elements; ++i) {
-        ret.push_back(c_lhs->GetData<T>(i) / c_rhs->GetData<T>(i));
+        ret.push_back(c_lhs->GetData<T>(i) /
+                      c_rhs->GetData<T>(rhs_is_scalar ? 0 : i));
       }
       c_ret = cb.CreateConstant(name, ret_type, ret.data());
       break;
@@ -93,7 +100,8 @@ static Constant* RunConstantFoldingOnMathBinary(const std::string& name,
       switch (pred) {
         case KindPredicate::LT: {
           for (size_t i = 0; i < num_elements; ++i) {
-            if (c_lhs->GetData<T>(i) < c_rhs->GetData<T>(i)) {
+            if (c_lhs->GetData<T>(i) <
+                c_rhs->GetData<T>(rhs_is_scalar ? 0 : i)) {
               ret.push_back(1);
             } else {
               ret.push_back(0);
@@ -260,39 +268,14 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
   const auto& op0_type = op0.GetType();
   const auto& op1_type = op1.GetType();
   OpCode opcode = binary_inst->GetOpCode();
-  /*
-  // Handle scalar constant
-  if (IsA<Constant>(op1.GetOwner())) {
-    Constant* c_op1 = DynCast<Constant>(op1.GetOwner());
-    Type ret_type = binary_inst->GetResultsTypes()[0];
-    HLCHECK(ret_type.IsValid());
-    if (c_op1->IsScalarZero()) {
-      if (opcode == OpCode::ADD) {
-        return {orig_def, op0};
-      }
-      if (opcode == OpCode::MUL) {
-        Constant* c_zero =
-            cb.SplatConstantZero(binary_inst->GetName(), ret_type);
-        return {orig_def, *c_zero};
-      }
-    }
-    if (c_op1->IsScalarOne()) {
-      if (opcode == OpCode::MUL) {
-        return {orig_def, op0};
-      }
-    }
-  }*/
 
-  const int64_t folding_threshold = 10;
-  // Both operands are constant, do constant folding
-  if (IsA<Constant>(op0) && IsA<Constant>(op1) &&
-      op0_type.GetTotalNumOfElements() == op1_type.GetTotalNumOfElements() &&
-      op0_type.GetTotalNumOfElements() < folding_threshold) {
-    Type ret_type = binary_inst->GetResultsTypes()[0];
-    HLCHECK(ret_type.IsValid());
+  // Try constant folding
+  const auto& ret_type = binary_inst->GetResultType();
+
+  if (ret_type.IsValid()) {
     KindPredicate pred = KindPredicate::INVALID;
     if (opcode == OpCode::CMP) {
-      pred = static_cast<CmpInst*>(binary_inst)->GetPredicator(); // NOLINT
+      pred = DynCast<CmpInst>(binary_inst)->GetPredicator();
     }
     if (has_swapped) {
       std::swap(op0, op1);
@@ -301,19 +284,19 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
     switch (op0_type.GetDataType()) {
       case DataType::INT32: {
         c_ret = RunConstantFoldingOnMathBinary<int>(
-            binary_inst->GetName() + "_folding", ret_type, op0, op1, opcode,
+            binary_inst->GetName() + "_folded", ret_type, op0, op1, opcode,
             pred);
         break;
       }
       case DataType::INT64: {
         c_ret = RunConstantFoldingOnMathBinary<int64_t>(
-            binary_inst->GetName() + "_folding", ret_type, op0, op1, opcode,
+            binary_inst->GetName() + "_folded", ret_type, op0, op1, opcode,
             pred);
         break;
       }
       case DataType::FLOAT32: {
         c_ret = RunConstantFoldingOnMathBinary<float>(
-            binary_inst->GetName() + "_folding", ret_type, op0, op1, opcode,
+            binary_inst->GetName() + "_folded", ret_type, op0, op1, opcode,
             pred);
         break;
       }
@@ -323,7 +306,6 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
     if (c_ret != nullptr) {
       return {orig_def, *c_ret};
     }
-    return {orig_def, orig_def};
   }
 
   // Do offline broadcasting.
