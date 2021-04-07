@@ -63,12 +63,16 @@ bool GenericConstantWriter::RunOnModule(Module* module) {
       module->GetName() + "_constants", GetLLVMContext());
   llvm_module_->setDataLayout(target_machine_->createDataLayout());
   llvm_module_->setTargetTriple(target_machine_->getTargetTriple().getTriple());
-  for (auto& c : module->Constants()) {
-    RunOnConstant(*c);
-  }
+  auto run_on_constants = [this](const auto& constants) {
+    for (const auto& c : constants) {
+      RunOnConstant(*c);
+    }
+  };
+  run_on_constants(module->Constants());
   for (auto& func : *module) {
-    for (auto& constant : func->Constants()) {
-      RunOnConstant(*constant);
+    run_on_constants(func->Constants());
+    for (auto& bb : *func) {
+      run_on_constants(bb->Constants());
     }
   }
   WriteToBuf();

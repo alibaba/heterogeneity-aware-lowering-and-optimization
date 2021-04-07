@@ -414,15 +414,15 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
   std::unordered_set<int32_t> axes;
 
   // If no axes operand, assumes all axes are sliced and steps are 1.
-  Def op3 = Def::GetUndefined();
-  Def op4 = Def::GetUndefined();
+  Def op_axes = Def::GetUndefined();
+  Def op_steps = Def::GetUndefined();
 
+  std::vector<int> steps(input_dims, 1);
   if ((op_num == 3) || (op_num == 4)) {
-    std::vector<int> steps(input_dims, 1);
     Constant* c_steps =
         cb.CreateConstant(ext->GetName() + "_steps",
                           Type{DataType::INT32, {input_dims}}, steps.data());
-    op4 = *c_steps;
+    op_steps = *c_steps;
     if (op_num == 3) {
       std::vector<int> data(input_dims);
       for (int i = 0; i < input_dims; ++i) {
@@ -432,107 +432,92 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
       Constant* c_axes =
           cb.CreateConstant(ext->GetName() + "_axes",
                             Type{DataType::INT32, {input_dims}}, data.data());
-      op3 = *c_axes;
+      op_axes = *c_axes;
     }
   }
 
   if (op_num >= 4) {
-    op3 = ext->GetOperand(3); // axes
-    if (!IsA<Constant>(op3)) {
+    op_axes = ext->GetOperand(3); // axes
+    if (!IsA<Constant>(op_axes)) {
       return {};
     }
 
     if (op_num > 4) {
-      op4 = ext->GetOperand(4); // steps
-      if (!IsA<Constant>(op4)) {
+      op_steps = ext->GetOperand(4); // steps
+      if (!IsA<Constant>(op_steps)) {
         return {};
       }
     }
 
-    Constant* c_axes = DynCast<Constant>(op3);
-    auto e_a = op3.GetType().GetTotalNumOfElements();
+    Constant* c_axes = DynCast<Constant>(op_axes);
+    HLCHECK(Type::IsIntegerType(op_axes.GetType()));
+    auto e_a = op_axes.GetType().GetTotalNumOfElements();
     for (int i = 0, tmp = 0; i != e_a; ++i) {
-      if (op3.GetType().GetDataType() == DataType::INT32) {
-        tmp = c_axes->GetData<int32_t>(i);
-      } else if (op3.GetType().GetDataType() == DataType::INT64) {
-        tmp = static_cast<int32_t>(c_axes->GetData<int64_t>(i));
-      }
+      tmp = c_axes->GetDataAsInt64(i);
       axes.insert(tmp >= 0 ? tmp : tmp + input_dims);
     }
 
     HLCHECK(!axes.empty());
   }
 
-  auto e_s = op_starts.GetType().GetTotalNumOfElements();
-  int32_t start = 0;
-  std::vector<int32_t> starts;
-  starts.reserve(axes.size());
+  std::vector<int32_t> starts(input_dims);
+  HLCHECK(Type::IsIntegerType(c_starts->GetResultType()));
   for (int i = 0, j = 0; i < input_dims; ++i) {
     if (axes.count(i) != 0) {
-      if (starts_type.GetDataType() == DataType::INT32) {
-        start = c_starts->GetData<int32_t>(j);
-      } else if (starts_type.GetDataType() == DataType::INT64) {
-        start = static_cast<int32_t>(c_starts->GetData<int64_t>(j));
-      }
-
+      auto start = c_starts->GetDataAsInt64(j++);
       if (start < 0) {
-        start = input_type.GetNumOfElementsInDim(i) - start;
+        start = input_type.GetNumOfElementsInDim(i) + start;
       } else if (start > input_type.GetNumOfElementsInDim(i)) {
         start = input_type.GetNumOfElementsInDim(i);
       }
-      starts.push_back(start);
-      j++;
+      starts[i] = start;
     }
   }
 
-  auto e_d = op_ends.GetType().GetTotalNumOfElements();
-  std::vector<int32_t> ends;
-  ends.reserve(axes.size());
-  int32_t end = 0;
+  std::vector<int32_t> ends(input_dims);
+  HLCHECK(Type::IsIntegerType(ends_type));
+  for (int i = 0, j = 0; i < input_dims; ++i) {
+    ends[i] = input_type.GetNumOfElementsInDim(i);
+    if (axes.count(i) == 0) {
+      continue;
+    }
+    auto end = c_ends->GetDataAsInt64(j++);
+    if (end < 0) {
+      end += input_type.GetNumOfElementsInDim(i);
+    }
+    ends[i] = std::min(std::max(end, -1L), static_cast<int64_t>(ends[i]));
+  }
+
+  Constant* c_steps = DynCast<Constant>(op_steps);
+  HLCHECK(Type::IsIntegerType(op_steps.GetType()));
   for (int i = 0, j = 0; i < input_dims; ++i) {
     if (axes.count(i) != 0) {
-      if (ends_type.GetDataType() == DataType::INT32) {
-        auto tmp = c_ends->GetData<int32_t>(j);
-        if (tmp == std::numeric_limits<int32_t>::max()) {
-          // INT_MAX represents end dimension is unknown,
-          // thus take all elements
-          tmp = input_type.GetNumOfElementsInDim(i);
-        }
-        end = tmp;
-      } else if (ends_type.GetDataType() == DataType::INT64) {
-        auto tmp = c_ends->GetData<int64_t>(j);
-        if (tmp == std::numeric_limits<int64_t>::max()) {
-          // INT64_MAX represents end dimension is unknown,
-          // thus take all elements
-          tmp = input_type.GetNumOfElementsInDim(i);
-        }
-        end = static_cast<int32_t>(tmp);
-      }
-
-      if (end < 0) {
-        end = input_type.GetNumOfElementsInDim(i) - end;
-      } else if (end > input_type.GetNumOfElementsInDim(i)) {
-        end = input_type.GetNumOfElementsInDim(i);
-      }
-      ends.push_back(end);
-      j++;
+      steps[i] = c_steps->GetDataAsInt64(j++);
     }
   }
 
-  // calculate sizes = ends - starts
-  std::transform(ends.begin(), ends.end(), starts.begin(), ends.begin(),
-                 std::minus<int32_t>());
-
+  // calculate sizes: -((start - end) / step)
+  std::vector<int> sizes_data;
+  std::vector<int> starts_data;
+  sizes_data.reserve(axes.size());
+  starts_data.reserve(axes.size());
+  for (auto axis : axes) {
+    starts_data.push_back(starts[axis]);
+    sizes_data.push_back(-((starts[axis] - ends[axis]) / steps[axis]));
+    HLCHECK(sizes_data.back() >= 0);
+  }
   Constant* c_begins_norm = cb.CreateConstant(
       ext->GetName() + "_starts",
-      Type{DataType::INT32, {static_cast<int64_t>(e_s)}}, starts.data());
+      Type{DataType::INT32, {static_cast<int64_t>(starts_data.size())}},
+      starts_data.data());
 
   Constant* c_sizes_norm = cb.CreateConstant(
       ext->GetName() + "_sizes",
-      Type{DataType::INT32, {static_cast<int64_t>(e_d)}}, ends.data());
+      Type{DataType::INT32, {static_cast<int64_t>(sizes_data.size())}},
+      sizes_data.data());
 
   SliceInst* slice = builder->CreateSlice(
-      ext->GetName(), {op0, *c_begins_norm, *c_sizes_norm, op4, op3});
+      ext->GetName(), {op0, *c_begins_norm, *c_sizes_norm, op_steps, op_axes});
   return {*slice};
 }
 
@@ -660,15 +645,11 @@ static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
   int input_dims = input_type.GetNumOfDims();
 
   HLCHECK(ext->GetNumOfAttributes() == 2);
-  const Attribute* attr = ext->GetAttributes()[0].get();
-  HLCHECK(attr->GetName() == "axis");
-  int axis = attr->GetValueAsInteger();
-  axis = (axis < 0) ? axis + input_dims : axis;
+  const auto& attr = FindAttributeValue(*ext, "axis", 0);
+  int axis = (attr < 0) ? attr + input_dims : attr;
   HLCHECK(((axis >= 0) && (axis < input_dims)) && "Invalid axis.");
-
-  const Attribute* attr1 = ext->GetAttributes()[1].get();
-  HLCHECK(attr1->GetName() == "split");
-  std::vector<int> splits = attr1->GetValueAsIntegerList();
+  std::vector<int> empty;
+  const auto& splits = FindAttributeValue(*ext, "split", empty);
 
   builder->SetInsertAfter(ext);
 
@@ -697,7 +678,6 @@ static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
 
   std::vector<int64_t> sizes;
   std::vector<std::vector<int64_t>> sizes_v;
-  std::vector<int64_t> starts;
   std::vector<std::vector<int64_t>> starts_v;
   int32_t num_outputs = static_cast<int32_t>(ext->GetNumOfResults());
 
@@ -727,7 +707,9 @@ static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
   }
 
   int64_t offset = 0;
+  int j = 0;
   for (auto sizes : sizes_v) {
+    std::vector<int64_t> starts;
     for (size_t i = 0; i < input_type.GetNumOfDims(); ++i) {
       int64_t value = (i == static_cast<size_t>(axis)) ? offset : 0;
       starts.push_back(value);
@@ -736,19 +718,21 @@ static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
     offset += sizes[axis];
 
     Constant* c_begins = cb.CreateConstant(
-        ext->GetName() + "_starts",
-        Type{DataType::INT32, {static_cast<int64_t>(input_dims)}},
+        ext->GetName() + "_starts_" + std::to_string(j),
+        Type{DataType::INT64, {static_cast<int64_t>(input_dims)}},
         starts.data());
 
     Constant* c_sizes = cb.CreateConstant(
-        ext->GetName() + "_sizes",
-        Type{DataType::INT32, {static_cast<int64_t>(input_dims)}},
+        ext->GetName() + "_sizes_" + std::to_string(j),
+        Type{DataType::INT64, {static_cast<int64_t>(input_dims)}},
         sizes.data());
 
-    SliceInst* slice = builder->CreateSlice(
-        ext->GetName(), {op0, *c_begins, *c_sizes, op4, op3});
+    SliceInst* slice =
+        builder->CreateSlice(ext->GetName() + "_slice_" + std::to_string(j),
+                             {op0, *c_begins, *c_sizes});
 
     ret_v.push_back(*slice);
+    j++;
   }
 
   return ret_v;
