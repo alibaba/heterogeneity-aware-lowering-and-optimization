@@ -27,5 +27,4 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_split_equal_parts_1d | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_split_equal_parts_1d_popart.cc.tmp.main.cc.in"

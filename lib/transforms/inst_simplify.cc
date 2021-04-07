@@ -192,6 +192,18 @@ static T* FuseToConvDeConv(const T* conv, OpCode opc, const Constant* c) {
   return DynCast<T>(new_conv);
 }
 
+static bool IsSameType(const Type& lhs, const Type& rhs) {
+  if (lhs.GetNumOfDims() != rhs.GetNumOfDims()) {
+    return false;
+  }
+  for (size_t d = 0; d < lhs.GetNumOfDims(); d++) {
+    if (lhs.GetNumOfElementsInDim(d) != rhs.GetNumOfElementsInDim(d)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
                                                       bool disable_broadcasting,
                                                       bool fuse_conv_bias) {
@@ -209,7 +221,11 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
   if (opc == OpCode::MUL && IsA<Constant>(op1)) {
     const Constant* c = DynCast<Constant>(op1);
     if (c->HasSameValueOf(1)) {
-      return {orig_def, op0};
+      const Type& type0 = op0.GetType();
+      const Type& type1 = op1.GetType();
+      if (IsSameType(type0, type1)) {
+        return {orig_def, op0};
+      }
     }
   }
 
@@ -1418,6 +1434,25 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(GatherInst* inst) {
   return {orig_def, *c_ret};
 }
 
+std::pair<Def, Def> InstSimplify::RunOnInstruction(CeilInst* inst) {
+  Def orig_def{inst, 0};
+  const auto& op0 = inst->GetOperand(0);
+  if (IsA<Constant>(op0)) {
+    const auto c = DynCast<Constant>(op0);
+    ConstantBuilder cb(inst->GetParent()->GetParent());
+    const auto& dt = op0.GetType();
+    if (dt.GetDataType() == DataType::FLOAT32) {
+      std::vector<float> ceiled(dt.GetTotalNumOfElements());
+      for (int i = 0, e = ceiled.size(); i < e; ++i) {
+        ceiled[i] = std::ceil(c->GetDataAsFloat32(i));
+      }
+      return {orig_def,
+              *cb.CreateConstant(c->GetName() + "_ceil", dt, ceiled.data())};
+    }
+  }
+  return {orig_def, orig_def};
+}
+
 std::pair<Def, Def> InstSimplify::RunOnInstruction(ConcatInst* inst) {
   Def orig_def{inst, 0};
   // Concat(Transpose(A), Transpose(B),...) => Transpose(Concat(A, B))
@@ -1586,7 +1621,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(TransposeInst* inst) {
     HLCHECK(perm0.size() == perm.size());
     auto new_perm = perm0;
     for (int i = 0, e = perm0.size(); i < e; ++i) {
-      new_perm[i] = perm[perm0[i]];
+      new_perm[i] = perm0[perm[i]];
     }
     IRBuilder builder(inst->GetParent());
     builder.SetInsertAfter(inst);
@@ -1721,6 +1756,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
   Def orig_def{inst, 0};
   auto op_len = inst->GetOperand(2);
   const auto& dst_type = inst->GetResultsTypes()[0];
+  const auto& src_type = inst->GetOperand(0).GetType();
   if (dst_type.IsValid() && IsA<Constant>(op_len)) {
     Constant* c_size = DynCast<Constant>(op_len);
     if (op_len.GetType().GetDataType() == DataType::INT32) {
@@ -1730,7 +1766,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
       for (int i = 0; i != dim; ++i) {
         int size_i = c_size->GetData<int>(i);
         if (size_i == -1) {
-          size_adj[i] = dst_type.GetNumOfElementsInDim(i);
+          size_adj[i] = src_type.GetNumOfElementsInDim(i);
           new_size = true;
         } else {
           size_adj[i] = size_i;
@@ -1756,30 +1792,60 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
 
   bool has_constant_steps =
       (inst->GetNumOfOperands() < 4 || IsA<Constant>(inst->GetOperand(3)));
-  has_constant_steps &=
+  bool has_constant_axes =
       (inst->GetNumOfOperands() <= 4 || IsA<Constant>(inst->GetOperand(4)));
-  int steps = has_constant_steps ? 1 : 0; // FIXME
+
   if (IsA<Constant>(op0) && IsA<Constant>(op_start) && IsA<Constant>(op_len) &&
-      inst->GetResultType().IsValid() && has_constant_steps) {
+      inst->GetResultType().IsValid() && has_constant_steps &&
+      has_constant_axes) {
     Constant* input = DynCast<Constant>(op0);
     const auto& dt = inst->GetResultType();
-    auto starts = DynCast<Constant>(op_start);
-    auto lens = DynCast<Constant>(op_len);
-    // auto steps = DynCast<Constant>(op3);
-    // auto axes = DynCast<Constant>(op4);
-    auto rank = op0.GetType().GetNumOfDims();
-    if (rank == 1 && steps == 1) {
+    auto starts_c = DynCast<Constant>(op_start);
+    auto lens_c = DynCast<Constant>(op_len);
+    const auto& op0_type = op0.GetType();
+    auto rank = op0_type.GetNumOfDims();
+    std::unordered_set<int> axes;
+    if (inst->GetNumOfOperands() > 4) {
+      const auto& data =
+          DynCast<Constant>(inst->GetOperand(4))->GetDataAsInt64();
+      for (auto x : data) {
+        axes.insert(x);
+      }
+    } else {
+      for (size_t i = 0; i < rank; ++i) {
+        axes.insert(i);
+      }
+    }
+    std::vector<int> starts(rank);
+    std::vector<int> lens(rank);
+    std::vector<int> steps(rank);
+    Constant* steps_c =
+        has_constant_steps ? DynCast<Constant>(inst->GetOperand(3)) : nullptr;
+    for (size_t axis = 0, k = 0; axis < rank; ++axis) {
+      bool to_slice = has_constant_axes && axes.count(axis) != 0;
+      starts[axis] = to_slice ? starts_c->GetDataAsInt64(k) : 0;
+      lens[axis] = to_slice ? lens_c->GetDataAsInt64(k)
+                            : op0_type.GetNumOfElementsInDim(axis);
+      steps[axis] = to_slice ? steps_c->GetDataAsInt64(k) : 1L;
+      k += to_slice ? 1 : 0;
+    }
+
+    if (rank == 1) {
       DefaultDataLayout dl;
       auto bytes = dl.DataLayout::Bytes(dt);
       auto es = dl.Bytes(dt.GetDataType());
       std::vector<char> data(bytes);
-      auto idx = starts->GetDataAsInt64(0);
-      auto len = lens->GetDataAsInt64(0);
+      int step = steps[0];
+      auto len = lens[0];
+      auto start = starts[0];
       const char* src = static_cast<const char*>(input->GetRawDataPtr());
       char* dst = data.data();
       HLCHECK(len == dt.GetTotalNumOfElements());
       for (int i = 0; i < len; ++i) {
-        std::memcpy(&dst[i * es], &src[(i + idx) * es], es); // NOLINT
+        auto src_idx = start + i * step;
+        HLCHECK(src_idx >= 0 &&
+                src_idx < op0.GetType().GetTotalNumOfElements());
+        std::memcpy(&dst[i * es], &src[src_idx * es], es); // NOLINT
       }
       ConstantBuilder cb(inst->GetParent()->GetParent());
       auto c = cb.CreateConstant(inst->GetName(), dt, data.data());

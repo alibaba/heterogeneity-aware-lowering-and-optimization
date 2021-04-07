@@ -285,14 +285,18 @@ static odla_element_type GetODLAType(DataType type) {
 }
 
 static int64_t GetTotalElements(const odla_value_shape& dims) {
-  return std::accumulate(dims.dims, dims.dims + dims.size, 1,
-                         std::multiplies<size_t>());
+  return dims.size == 0 ? 1
+                        : std::accumulate(dims.dims, dims.dims + dims.size, 1,
+                                          std::multiplies<size_t>());
 }
 
 static nvinfer1::Dims GetNVDims(int n, const odla_uint32* dims) {
   nvinfer1::Dims ret;
   assert(n <= nvinfer1::Dims::MAX_DIMS);
   ret.nbDims = n;
+  if (n == 0) {
+    ret.d[0] = 0;
+  }
   for (int i = 0; i < n; ++i) {
     ret.d[i] = static_cast<int>(dims[i]);
   }
@@ -302,11 +306,26 @@ static nvinfer1::Dims GetNVDims(int n, const odla_uint32* dims) {
 static nvinfer1::Dims GetNVDims(const odla_value_shape& dims) {
   nvinfer1::Dims ret;
   ret.nbDims = dims.size;
-  for (int i = 0, e = std::min(nvinfer1::Dims::MAX_DIMS, ODLA_MAX_DIMENSION);
-       i < e; ++i) {
+  assert(dims.size <= std::min(nvinfer1::Dims::MAX_DIMS, ODLA_MAX_DIMENSION));
+  if (dims.size == 0) {
+    ret.d[0] = 0;
+  }
+  for (int i = 0; i < dims.size; ++i) {
     ret.d[i] = dims.dims[i];
   }
   return ret;
+}
+
+static bool SameNVDims(const nvinfer1::Dims& d1, const nvinfer1::Dims& d2) {
+  if (d1.nbDims != d2.nbDims) {
+    return false;
+  }
+  for (int i = 0; i < d1.nbDims; ++i) {
+    if (d1.d[i] != d2.d[i]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 static nvinfer1::Dims BroadcastDims(const odla_value_shape& dims,
@@ -870,6 +889,15 @@ static odla_value binary_op(nvinfer1::ElementWiseOperation op, odla_value lhs,
       broadcastTensor(g_comp, lhs_tensor, rhs_tensor, dims_lhs, dims_rhs);
   auto sub = g_comp->network->addElementWise(*lhs_tensor, *rhs_tensor, op);
 
+  nvinfer1::Dims sub_dim = sub->getOutput(0)->getDimensions();
+  if (!SameNVDims(rhs_tensor->getDimensions(), lhs_tensor->getDimensions())) {
+    // fix the case when dims_lhs and dims_rhs both need to broadcast
+    // e.g., dims_lhs = (256,1), dims_rhs = (1,768), out_dims = (256,768)
+    out_dim.size = (odla_int32)sub_dim.nbDims;
+    for (int i = 0; i < sub_dim.nbDims; ++i) {
+      out_dim.dims[i] = (odla_int64)sub_dim.d[i];
+    }
+  }
   return CreateValue(sub, {lhs->type.element_type, out_dim}, id);
 }
 
@@ -956,6 +984,14 @@ odla_value odla_Min(odla_value lhs, odla_value rhs, const odla_value_id id) {
   return binary_op(nvinfer1::ElementWiseOperation::kMIN, lhs, rhs, id);
 }
 
+odla_value odla_Cast(odla_value input, odla_element_type target_type,
+                     const odla_value_id id) {
+  auto op = g_comp->network->addIdentity(*input);
+  odla_value_type dst_type{target_type, input->type.shape};
+  op->setOutputType(0, GetNVDataType(dst_type.element_type));
+  return CreateValue(op, dst_type, id);
+}
+
 odla_value odla_Ceil(odla_value input, const odla_value_id id) {
   return unary_op(nvinfer1::UnaryOperation::kCEIL, input, id);
 }
@@ -1009,11 +1045,8 @@ odla_value odla_Tan(odla_value input, const odla_value_id id) {
 }
 
 odla_value odla_Tanh(odla_value input, const odla_value_id id) {
-  auto op0 = g_comp->network->addUnary(*input, nvinfer1::UnaryOperation::kSINH);
-  auto op1 = g_comp->network->addUnary(*input, nvinfer1::UnaryOperation::kCOSH);
-  auto op = g_comp->network->addElementWise(
-      *(op0->getOutput(0)), *(op1->getOutput(0)),
-      nvinfer1::ElementWiseOperation::kDIV);
+  auto op =
+      g_comp->network->addActivation(*input, nvinfer1::ActivationType::kTANH);
   return CreateValue(op, input->type, id);
 }
 
@@ -1696,6 +1729,23 @@ odla_value odla_NMS(odla_value boxes, odla_value scores,
   return CreateValue(nms->getOutput(4), output_value_type, value_id);
 }
 
+odla_value odla_Tile(odla_value input, const odla_uint32* repeat,
+                     odla_value_shape output_dims,
+                     const odla_value_id value_id) {
+  auto dims = input->type.shape.size;
+  nvinfer1::Dims start{.nbDims = dims};
+  nvinfer1::Dims stride{.nbDims = dims};
+  nvinfer1::Dims size{.nbDims = dims};
+  for (int i = 0; i != dims; ++i) {
+    start.d[i] = 0;
+    stride.d[i] = 1;
+    size.d[i] = repeat[i] * input->type.shape.dims[i];
+  }
+  auto op = g_comp->network->addSlice(*input, start, size, stride);
+  op->setMode(nvinfer1::SliceMode::kWRAP);
+  return CreateValue(op, {input->type.element_type, output_dims}, value_id);
+}
+
 odla_values odla_TopK(odla_value input, odla_uint32 K, odla_bool largest,
                       odla_bool sorted, odla_uint32 axis,
                       odla_value_type output_value_type,
@@ -1710,6 +1760,16 @@ odla_values odla_TopK(odla_value input, odla_uint32 K, odla_bool largest,
                                  value_ids.value_ids[0]),
                      CreateValue(topk->getOutput(1), output_value_index_type,
                                  value_ids.value_ids[1])}};
+}
+
+odla_value odla_Pow(odla_value base, odla_value exponent,
+                    const odla_value_id value_id) {
+  return binary_op(nvinfer1::ElementWiseOperation::kPOW, base, exponent,
+                   value_id);
+}
+
+odla_value odla_Reciprocal(odla_value input, const odla_value_id value_id) {
+  return unary_op(nvinfer1::UnaryOperation::kRECIP, input, value_id);
 }
 
 } // C extern
