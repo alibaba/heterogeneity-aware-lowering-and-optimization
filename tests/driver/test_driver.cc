@@ -19,4 +19,5 @@
 
 // RUN: %halo_compiler -version 2>&1 | FileCheck %s
 
-// CHECK: Version:	0.5.0
+// CHECK: Version:	0.6.0
+// CHECK: HALO Repo:{{.*}} Rev:

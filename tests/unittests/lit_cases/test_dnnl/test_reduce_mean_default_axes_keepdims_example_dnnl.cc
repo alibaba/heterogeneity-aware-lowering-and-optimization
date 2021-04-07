@@ -25,5 +25,4 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_reduce_mean_default_axes_keepdims_example | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-
 #include "test_reduce_mean_default_axes_keepdims_example_dnnl.cc.tmp.main.cc.in"

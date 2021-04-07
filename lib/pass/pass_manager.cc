@@ -73,8 +73,8 @@ class BasicBlockPassManager final : public FunctionPass {
  public:
   BasicBlockPassManager() : FunctionPass("BasicBlockPassManager") {}
   bool RunOnFunction(Function* function) override {
-    bool changed = true;
-    while (changed) {
+    bool global_changed = false;
+    for (bool changed = true; changed;) {
       changed = false;
       for (auto& bb : *function) {
         for (auto& fp : passes_) {
@@ -82,13 +82,15 @@ class BasicBlockPassManager final : public FunctionPass {
             std::cout << "      BasicBlockPass : " << fp->Name() << std::endl;
           }
           changed |= fp->RunOnBasicBlock(bb.get());
+          global_changed |= changed;
+          if (IsPrintPass && global_changed) {
+            std::cout << " ---- After " << fp->Name() << std::endl;
+            bb->Dump();
+          }
         }
       }
-      if (!changed) {
-        break;
-      }
     }
-    return changed;
+    return global_changed;
   }
   void AddPass(std::unique_ptr<BasicBlockPass> pass) {
     passes_.push_back(std::move(pass));
@@ -112,8 +114,8 @@ class FunctionPassManager final : public ModulePass {
  public:
   FunctionPassManager() : ModulePass("FunctionPassManager") {}
   bool RunOnModule(Module* module) override {
-    bool changed = true;
-    while (changed) {
+    bool global_changed = false;
+    for (bool changed = true; changed;) {
       changed = false;
       for (auto& func : *module) {
         for (auto& fp : passes_) {
@@ -121,10 +123,15 @@ class FunctionPassManager final : public ModulePass {
             std::cout << "    FunctionPass : " << fp->Name() << std::endl;
           }
           changed |= fp->RunOnFunction(func.get());
+          global_changed |= changed;
+          if (IsPrintPass && global_changed) {
+            std::cout << " ---- After " << fp->Name() << std::endl;
+            func->Dump();
+          }
         }
       }
     }
-    return changed;
+    return global_changed;
   }
 
   void AddPass(std::unique_ptr<FunctionPass> pass) {
@@ -179,6 +186,10 @@ Status PassManagerImpl::Run(Module* module) {
       std::cout << "  ModulePass : " << pass->Name() << std::endl;
     }
     pass->RunOnModule(module);
+    if (IsPrintPass) {
+      std::cout << " ---- After " << pass->Name() << std::endl;
+      module->Dump();
+    }
   }
   return Status::SUCCESS;
 }

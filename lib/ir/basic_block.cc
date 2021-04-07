@@ -17,10 +17,33 @@
 
 #include "halo/lib/ir/basic_block.h"
 
+#include "halo/lib/ir/common_instructions.h"
 namespace halo {
 
+ReturnInst* BasicBlock::GetReturnInst() const {
+  for (auto it = instructions_.rbegin(), ie = instructions_.rend(); it != ie;
+       ++it) {
+    if ((*it)->GetOpCode() == OpCode::RETURN) {
+      return DynCast<ReturnInst>(it->get());
+    }
+  }
+  return nullptr;
+}
+
 void BasicBlock::Print(std::ostream& os) const {
-  os << "BasicBlock: " << GetName() << "\n";
+  os << "BasicBlock: " << GetName() << "(";
+  int arg_idx = 0;
+  for (auto& arg : Args()) {
+    if (arg_idx++ != 0) {
+      os << ", ";
+    }
+    arg->Print(os);
+  }
+  os << ")\n";
+
+  for (auto& c : Constants()) {
+    c->Print(os);
+  }
   for (const auto& inst : *this) {
     inst->Print(os);
   }

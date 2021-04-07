@@ -74,7 +74,7 @@ def CAFFE_Pooling: CAFFEExtension<"Pooling"> {
   let param_name_ = "pooling_param";
   let optional_attrs_ = [
     "pad_h", "pad_w", "stride_h", "stride_w", "kernel_h", "kernel_w",
-    "global_pooling", "round_mode"
+    "global_pooling", "round_mode", "ceil_mode"
   ];
   let extension_attr_ = [
     ExtensionAttr<"pool", Integer, "0">,
@@ -88,6 +88,7 @@ def CAFFE_Pooling: CAFFEExtension<"Pooling"> {
     ExtensionAttr<"kernel_h", Integer, "0">,
     ExtensionAttr<"kernel_w", Integer, "0">,
     ExtensionAttr<"round_mode", Integer, "0">,
+    ExtensionAttr<"ceil_mode", Bool, "true">,
     ExtensionAttr<"global_pooling", Bool, "false">
   ];
 }
@@ -110,12 +111,15 @@ def CAFFE_Scale : CAFFEExtension<"Scale"> {
 
 def CAFFE_Concat : OpMapping<"Concat", Concat> {
   let param_name_ = "concat_param";
-  let optional_attrs_ = ["axis"];
   let attr_mapping_ = [AttributeMapping<"axis", "axis", "1">,
                        AttributeMapping<"", "N", "0">];
 }
 
-def CAFFE_Relu : OpMapping<"ReLU", Relu>;
+def CAFFE_Relu : CAFFEExtension<"ReLU"> {
+  let param_name_ = "relu_param";
+  let optional_attrs_ = ["negative_slope"];
+  let extension_attr_ = [ExtensionAttr<"negative_slope", Float, "0.0">];
+}
 
 def CAFFE_Softmax : OpMapping<"Softmax", Softmax> {
   let param_name_ = "softmax_param";

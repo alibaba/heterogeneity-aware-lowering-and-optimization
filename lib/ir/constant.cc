@@ -212,6 +212,15 @@ int64_t Constant::GetDataAsInt64(size_t idx) const {
   return GetDataAs<int64_t>(*this, idx);
 }
 
+std::vector<int64_t> Constant::GetDataAsInt64() const {
+  auto n = GetResultType().GetTotalNumOfElements();
+  std::vector<int64_t> ret(n);
+  for (int i = 0; i != n; ++i) {
+    ret[i] = GetDataAsInt64(i);
+  }
+  return ret;
+}
+
 float Constant::GetDataAsFloat32(size_t idx) const {
   return GetDataAs<float>(*this, idx);
 }

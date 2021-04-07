@@ -304,7 +304,8 @@ static Type ComputeKernelWiseType(
     const Type& data_type, const std::vector<int64_t>& kernel_shape,
     const std::vector<int>& strides, Padding padding_mode,
     std::vector<int>* input_paddings, const std::vector<int>& dilations,
-    DataFormat data_format, DataFormat kernel_format, int group, OpCode op) {
+    DataFormat data_format, DataFormat kernel_format, int group, OpCode op,
+    bool ceil_mode = false) {
   std::vector<int>& explicit_paddings = *input_paddings;
   switch (op) {
     case OpCode::CONV2D:
@@ -323,6 +324,7 @@ static Type ComputeKernelWiseType(
       ImageAxisInfo::GetImageAxisInfo(data_format, kernel_format);
   auto& data_shape = data_type.GetDimSizes();
   auto ret_shape = data_shape;
+  HLCHECK(data_type.GetNumOfDims() == 4);
 
   int kernel_h = kernel_shape[info.kernel_height_axis];
   int kernel_w = kernel_shape[info.kernel_width_axis];
@@ -370,13 +372,20 @@ static Type ComputeKernelWiseType(
                              explicit_paddings[3];
       } else {
         ret_shape[index_h] = (data_shape[index_h] + explicit_paddings[0] +
-                              explicit_paddings[1] - kernel_h) /
-                                 strides[index_h] +
-                             1;
+                              explicit_paddings[1] - kernel_h);
         ret_shape[index_w] = (data_shape[index_w] + explicit_paddings[2] +
-                              explicit_paddings[3] - kernel_w) /
-                                 strides[index_w] +
-                             1;
+                              explicit_paddings[3] - kernel_w);
+        if (ceil_mode) {
+          ret_shape[index_h] =
+              (ret_shape[index_h] + strides[index_h] - 1) / strides[index_h] +
+              1;
+          ret_shape[index_w] =
+              (ret_shape[index_w] + strides[index_w] - 1) / strides[index_w] +
+              1;
+        } else {
+          ret_shape[index_h] = ret_shape[index_h] / strides[index_h] + 1;
+          ret_shape[index_w] = ret_shape[index_w] / strides[index_w] + 1;
+        }
       }
       break;
     }
@@ -384,6 +393,7 @@ static Type ComputeKernelWiseType(
       HLCHECK(0 && "unsupported padding type");
     }
   }
+
   auto paddings = std::max(
       0L, (ret_shape[index_h] - 1) * strides[index_h] + kernel_h +
               (dilations[index_h] - 1) * (kernel_h - 1) - data_shape[index_h]);
@@ -395,6 +405,7 @@ static Type ComputeKernelWiseType(
               (dilations[index_w] - 1) * (kernel_w - 1) - data_shape[index_w]);
   explicit_paddings[2] = paddings / 2;
   explicit_paddings[3] = paddings - explicit_paddings[2];
+
   if (padding_mode == Padding::SAME_LOWER) {
     std::swap(explicit_paddings[0], explicit_paddings[1]);
     std::swap(explicit_paddings[2], explicit_paddings[3]);
@@ -512,11 +523,8 @@ static void RunOnCommonReductionInstruction(Instruction* inst,
       inst->GetOpCode() == OpCode::ARGMIN) {
     dt = DataType::INT32;
   }
-  if (!keep_dims && ret_shape.size() == 1) {
-    inst->GetResultsTypes()[0] = halo::Type{dt};
-  } else {
-    inst->GetResultsTypes()[0] = halo::Type{dt, ret_shape};
-  }
+
+  inst->GetResultsTypes()[0] = halo::Type{dt, ret_shape};
 }
 
 static void RunOnInstruction(ReduceL1Inst* inst) {
@@ -563,12 +571,17 @@ static void RunOnInstruction(ArgmaxInst* inst) {
   RunOnCommonReductionInstruction(inst, axis, inst->GetKeepDims());
 }
 
-static void RunOnInstruction(PoolingMaxInst* inst) {
+template <typename T>
+static void RunOnPoolingInstruction(Instruction* pooling_inst) {
   std::vector<int> paddings;
+  auto inst = DynCast<T>(pooling_inst);
   auto& data_type = inst->GetOperand(0).GetType();
   if (!data_type.IsValid()) {
     return;
   }
+
+  bool ceil_mode = inst->GetRoundMode() == 1;
+
   std::vector<int> explicit_paddings{
       inst->GetPaddingTop(), inst->GetPaddingBottom(), inst->GetPaddingLeft(),
       inst->GetPaddingRight()};
@@ -580,7 +593,7 @@ static void RunOnInstruction(PoolingMaxInst* inst) {
   auto ret_type = ComputeKernelWiseType(
       data_type, kernel_shape, inst->GetStrides(), inst->GetPadding(),
       &explicit_paddings, {1, 1, 1, 1}, inst->GetDataFormat(),
-      inst->GetDataFormat(), 1 /*group*/, inst->GetOpCode());
+      inst->GetDataFormat(), 1 /*group*/, inst->GetOpCode(), ceil_mode);
   inst->GetResultsTypes()[0] = ret_type;
   if (inst->GetPadding() != Padding::EXPLICIT) {
     inst->SetPaddingTop(explicit_paddings[0]);
@@ -590,31 +603,12 @@ static void RunOnInstruction(PoolingMaxInst* inst) {
   }
 }
 
+static void RunOnInstruction(PoolingMaxInst* inst) {
+  RunOnPoolingInstruction<PoolingMaxInst>(inst);
+}
+
 static void RunOnInstruction(PoolingAvgInst* inst) {
-  std::vector<int> paddings;
-  auto& data_type = inst->GetOperand(0).GetType();
-  if (!data_type.IsValid()) {
-    return;
-  }
-  std::vector<int> explicit_paddings{
-      inst->GetPaddingTop(), inst->GetPaddingBottom(), inst->GetPaddingLeft(),
-      inst->GetPaddingRight()};
-  std::vector<int64_t> kernel_shape;
-  kernel_shape.reserve(4);
-  for (auto dim : inst->GetKsize()) {
-    kernel_shape.push_back(dim);
-  }
-  auto ret_type = ComputeKernelWiseType(
-      data_type, kernel_shape, inst->GetStrides(), inst->GetPadding(),
-      &explicit_paddings, {1, 1, 1, 1}, inst->GetDataFormat(),
-      inst->GetDataFormat(), 1 /*group*/, inst->GetOpCode());
-  inst->GetResultsTypes()[0] = ret_type;
-  if (inst->GetPadding() != Padding::EXPLICIT) {
-    inst->SetPaddingTop(explicit_paddings[0]);
-    inst->SetPaddingBottom(explicit_paddings[1]);
-    inst->SetPaddingLeft(explicit_paddings[2]);
-    inst->SetPaddingRight(explicit_paddings[3]);
-  }
+  RunOnPoolingInstruction<PoolingAvgInst>(inst);
 }
 
 static void RunOnMatrixMultiplyInstruction(Instruction* inst, bool trans_a,
@@ -761,69 +755,45 @@ static void RunOnInstruction(GatherInst* inst) {
 
 static void RunOnInstruction(SliceInst* inst) {
   auto op0 = inst->GetOperand(0);
-  auto op1 = inst->GetOperand(1);
-  auto op2 = inst->GetOperand(2);
+  auto op_start = inst->GetOperand(1);
+  auto op_len = inst->GetOperand(2);
   auto& input_type = op0.GetType();
 
-  if (!input_type.IsValid() || !IsA<Constant>(op2)) {
+  if (!input_type.IsValid() || !IsA<Constant>(op_len)) {
+    inst->GetResultsTypes()[0] = halo::Type{op0.GetType().GetDataType(), {1}};
     return;
   }
 
   auto dims = input_type.GetNumOfDims();
-  bool specified_axes = inst->GetNumOfOperands() > 4;
   std::unordered_set<int32_t> axes;
-  if (specified_axes) {
-    auto op4 = inst->GetOperand(4);
-    if (!IsA<Constant>(op4)) {
+  if (inst->GetNumOfOperands() > 4) {
+    auto op_axes = inst->GetOperand(4);
+    if (!IsA<Constant>(op_axes)) {
       return;
     }
-    const Constant* axes_op = DynCast<Constant>(op4);
-    if (op4.GetType().GetDataType() == DataType::INT32) {
-      for (int i = 0, e = op4.GetType().GetTotalNumOfElements(); i != e; ++i) {
-        axes.insert(axes_op->GetData<int32_t>(i));
-      }
-    } else if (op4.GetType().GetDataType() == DataType::INT64) {
-      for (int i = 0, e = op4.GetType().GetTotalNumOfElements(); i != e; ++i) {
-        axes.insert(static_cast<int32_t>(axes_op->GetData<int64_t>(i)));
-      }
+    const Constant* axes_c = DynCast<Constant>(op_axes);
+    for (int i = 0, e = op_axes.GetType().GetTotalNumOfElements(); i != e;
+         ++i) {
+      axes.insert(axes_c->GetDataAsInt64(i));
     }
   } else {
-    for (unsigned i = 0; i < dims; ++i) {
+    for (size_t i = 0; i < dims; ++i) {
       axes.insert(i);
     }
   }
-  HLCHECK(op2.GetType().GetTotalNumOfElements() ==
-          static_cast<int64_t>(axes.size()));
-
-  Constant* c_sizes = DynCast<Constant>(op2);
-  Constant* c_begins = DynCast<Constant>(op1);
-  std::vector<int64_t> ret_shape;
+  Constant* c_sizes = DynCast<Constant>(op_len);
+  std::vector<int64_t> ret_shape(dims);
   for (size_t i = 0, j = 0; i < dims; ++i) {
-    auto size_i = input_type.GetNumOfElementsInDim(i);
-    if (axes.count(i) != 0) {
-      if (op2.GetType().GetDataType() == DataType::INT32) {
-        if (auto t = c_sizes->GetData<int32_t>(j); t >= 0) {
-          size_i = t;
-        } else if (IsA<Constant>(op1.GetOwner())) {
-          size_i -= c_begins->GetData<int32_t>(j);
-        } else {
-          return;
-        }
-      } else if (op2.GetType().GetDataType() == DataType::INT64) {
-        if (auto t = c_sizes->GetData<int64_t>(j); t >= 0) {
-          size_i = t;
-        } else if (IsA<Constant>(op1.GetOwner())) {
-          size_i -= c_begins->GetData<int64_t>(j);
-        } else {
-          return;
-        }
-      }
-      j++;
+    ret_shape[i] = axes.count(i) != 0 ? c_sizes->GetDataAsInt64(j++)
+                                      : input_type.GetNumOfElementsInDim(i);
+    if (ret_shape[i] == -1) {
+      ret_shape[i] = input_type.GetNumOfElementsInDim(i);
     }
-    ret_shape.push_back(size_i);
   }
   inst->GetResultsTypes()[0] =
       halo::Type{op0.GetType().GetDataType(), ret_shape};
+  HLCHECK(inst->GetResultType().IsValid() &&
+          inst->GetResultType().GetTotalNumOfElements() > 0);
 }
 
 static void RunOnInstruction(StackInst* inst) {
@@ -925,12 +895,16 @@ static void RunOnInstruction(TransposeInst* inst) {
 }
 
 static void RunOnInstruction(ResizeInst* inst) {
-  HLCHECK(inst->GetNumOfOperands() == 2);
-  const auto& op1 = inst->GetOperand(1);
-  if (!IsA<Constant>(op1)) {
+  auto op_num = inst->GetNumOfOperands();
+  // If op_num is 3, the operands are (x, ROI, scales).
+  // If op_num is 2, the operands are (x, scales)
+  // TODO(unknown): ROI operand is not handled now.
+  HLCHECK(op_num == 2 || op_num == 3);
+  const auto& op_scale = inst->GetOperand(op_num - 1);
+  if (!IsA<Constant>(op_scale)) {
     return;
   }
-  const Constant* shape_c = DynCast<Constant>(op1);
+  const Constant* shape_c = DynCast<Constant>(op_scale);
 
   const auto& input_type = inst->GetOperand(0).GetType();
   std::vector<int64_t> new_shape = input_type.GetDimSizes();
@@ -940,11 +914,11 @@ static void RunOnInstruction(ResizeInst* inst) {
       continue;
     }
     int64_t dim = 0;
-    if (op1.GetType().GetDataType() == DataType::INT64) {
+    if (op_scale.GetType().GetDataType() == DataType::INT64) {
       dim = shape_c->GetData<int64_t>(j++);
-    } else if (op1.GetType().GetDataType() == DataType::INT32) {
+    } else if (op_scale.GetType().GetDataType() == DataType::INT32) {
       dim = shape_c->GetData<int32_t>(j++);
-    } else if (op1.GetType().GetDataType() == DataType::FLOAT32) {
+    } else if (op_scale.GetType().GetDataType() == DataType::FLOAT32) {
       HLCHECK(inst->GetExplicitShape() == false);
       dim = std::floor(new_shape[i] * shape_c->GetData<float>(j++));
     }
@@ -1001,8 +975,9 @@ static void RunOnInstruction(NonMaxSuppressionInst* inst) {
 
 static void RunOnInstruction(TopKInst* inst) {
   HLCHECK(inst->GetNumOfOperands() == 2);
+  const auto& input_type = inst->GetOperand(0).GetType();
   const auto& op1 = inst->GetOperand(1);
-  if (!IsA<Constant>(op1)) {
+  if (!input_type.IsValid() || !IsA<Constant>(op1)) {
     return;
   }
 
@@ -1016,7 +991,6 @@ static void RunOnInstruction(TopKInst* inst) {
     k = c_k->GetData<int64_t>(0);
   }
 
-  const auto& input_type = inst->GetOperand(0).GetType();
   const auto dims = input_type.GetNumOfDims();
   // Normalize axis.
   auto axis = inst->GetAxis();
@@ -1029,7 +1003,6 @@ static void RunOnInstruction(TopKInst* inst) {
 
   auto ret_shape = input_type.GetDimSizes();
   ret_shape[axis] = k;
-
   inst->GetResultsTypes()[0] = Type{input_type.GetDataType(), ret_shape};
   inst->GetResultsTypes()[1] = Type{inst->GetIndexType(), ret_shape};
 }
@@ -1057,6 +1030,42 @@ static void RunOnInstruction(TileInst* inst) {
 
   halo::Type new_type{op0_type.GetDataType(), new_shape};
   inst->GetResultsTypes()[0] = new_type;
+}
+
+static void RunOnInstruction(HgEngineInst* inst) {
+  std::vector<std::string> out_type_list = inst->GetOutTypeList();
+  std::vector<std::vector<int64_t>> output_shapes = inst->GetOutputShapes();
+
+  auto type = DataType::INT8;
+  HLCHECK(output_shapes.size() == out_type_list.size());
+
+  std::vector<int64_t> new_shape;
+  for (size_t i = 0; i < output_shapes.size(); ++i) {
+    if (out_type_list[i] == "int8") {
+      type = DataType::INT8;
+    } else if (out_type_list[i] == "int16") {
+      type = DataType::INT16;
+    } else {
+      HLCHECK(false && "Wrong output type");
+    }
+    for (auto dim : output_shapes[i]) {
+      new_shape.push_back(static_cast<int64_t>(dim));
+    }
+
+    halo::Type new_type{type, new_shape};
+    inst->GetResultsTypes()[i] = new_type;
+  }
+}
+
+static void RunOnInstruction(LoopInst* inst) {
+  auto& ret_types = inst->GetResultsTypes();
+  auto ret_inst = inst->GetBody()->GetReturnInst();
+  if (ret_inst != nullptr) {
+    HLCHECK(ret_types.size() == ret_inst->GetNumOfOperands());
+    for (int i = 0, e = ret_types.size(); i < e; ++i) {
+      ret_types[i] = ret_inst->GetOperand(i).GetType();
+    }
+  }
 }
 
 bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {

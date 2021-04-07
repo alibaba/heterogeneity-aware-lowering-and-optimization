@@ -34,9 +34,9 @@ More frameworks will be supported soon.
 
 HALO supports
 [Alibaba's first AI-inference chip](https://www.alibabacloud.com/blog/announcing-hanguang-800-alibabas-first-ai-inference-chip_595482
-): [Hanghuang-800 NPU](https://www.t-head.cn/product/npu?spm=a2ouz.12987052.0.0.7d1a6245rNL0T1)
+): [Hanguang-800 NPU](https://www.t-head.cn/product/npu?spm=a2ouz.12987052.0.0.7d1a6245rNL0T1)
 via its [HgAI SDK](http://doc.ratelnn.com).
-Hangguang-800 NPU is designed by [T-Head Semiconductor Co., Ltd.](https://www.t-head.cn) (also known as PingTouGe),
+Hanguang-800 NPU is designed by [T-Head Semiconductor Co., Ltd.](https://www.t-head.cn) (also known as PingTouGe),
 a business entity of Alibaba Group.
 
 <a href="https://www.t-head.cn"> <img src="./docs/t_head.png" width="30%"></a>
@@ -74,10 +74,7 @@ We appreciate the support of ODLA runtimes from the following partners:
 </p>
 
 <p align="left">
-<a href=https://www.intellif.com>
-  <img src="./docs/partners/intellif.png" align="center" width=20%></a>
- <img src="./docs/partners/padding.png" width=15%>
-  <a href=https://www.nvidia.com><img src="./docs/partners/nvidia.png" align="center" border=0 width=12%></a>
+<a href=https://www.nvidia.com><img src="./docs/partners/nvidia.png" align="center" border=0 width=12%></a>
   <img src="./docs/partners/padding.png" width=18%>
   <a href=https://www.qualcomm.com/products/cloud-artificial-intelligence>
     <img title="Qualcomm Cloud AI 100" src="./docs/partners/qualcomm.png" align="center" border=0 width=22%>

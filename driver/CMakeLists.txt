@@ -17,3 +17,4 @@
 add_executable(halo driver.cc)
 
 target_link_libraries(halo halolib)
+add_dependencies(halo halo_version_h)

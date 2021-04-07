@@ -19,6 +19,7 @@
 #define HALO_LIB_PARSER_ONNX_ONNXPARSER_H_
 
 #include <functional>
+#include <stack>
 #include <unordered_map>
 
 #include "halo/lib/ir/ir_builder.h"
@@ -54,6 +55,24 @@ class ONNXAttrs {
 
 /// Parser for ONNX
 class ONNXParser : public Parser {
+  class Scope {
+    using ir_map = std::unordered_map<std::string, Value>;
+
+   public:
+    Value Find(const std::string& name);
+    void Insert(const onnx::TensorProto& tensor, const Value& def);
+    void Insert(const std::string& name, const Value& def);
+    Scope* GetParent() const { return parent_; }
+    Scope* CreateScope();
+
+   private:
+    ir_map inst_name_to_ptr_;
+    std::vector<std::unique_ptr<Scope>> sub_scopes_;
+
+   private:
+    Scope* parent_ = nullptr;
+  };
+
  public:
   explicit ONNXParser(){};
   Status Parse(Function* function, const std::vector<std::string>& file_list,
@@ -74,25 +93,39 @@ class ONNXParser : public Parser {
  private:
   void RegisterOp();
   Status ConvertToHaloIR(const onnx::GraphProto& graph_def);
-  Status ConvertOneNode(const onnx::NodeProto& node_def);
-  IRObject* ConvertConstNode(const onnx::TensorProto& tensor_def);
-  Status ConvertConstNode(const onnx::NodeProto& cur_node);
-  Status ConvertDummyNode(const onnx::NodeProto& cur_node);
-  Status ConvertPlaceholderNode(const onnx::ValueInfoProto& value_info_def);
+  Status ConvertOneNode(IRBuilder* ir_builder, const onnx::NodeProto& node_def);
+  IRObject* ConvertConstNode(ConstantBuilder* c_builder,
+                             const onnx::TensorProto& tensor_def);
+  Status ConvertConstNode(ConstantBuilder* c_builder,
+                          const onnx::NodeProto& cur_node);
+  Status ConvertDummyNode(IRBuilder* ir_builder,
+                          const onnx::NodeProto& cur_node);
+  Status ConvertLoopNode(IRBuilder* ir_builder,
+                         const onnx::NodeProto& cur_node);
+  Status ConvertPlaceholderNode(ArgumentBuilder* arg_builder,
+                                const onnx::ValueInfoProto& value_info_def);
+  Status ConvertSubPlaceholderNode(ArgumentBuilder* arg_builder,
+                                   const onnx::ValueInfoProto& value_info_def);
   std::vector<Def> GetInputOperands(const onnx::NodeProto& node_def);
   void InsertIDToInstMap(const onnx::NodeProto& node_def, IRObject* inst);
+  Type GetType(const onnx::ValueInfoProto& value_info_def);
+
 /// create node function auto generatered by tablegen
 #include "onnx_convert.h.inc"
 
  private:
+  std::unique_ptr<BasicBlockBuilder> bb_builder_;
   std::unique_ptr<IRBuilder> ir_builder_;
   std::unique_ptr<ArgumentBuilder> arg_builder_;
   std::unique_ptr<ConstantBuilder> c_builder_;
   armory::Opts opts_;
-  std::unordered_map<std::string, std::pair<IRObject*, int>> inst_name_to_ptr_;
-  std::unordered_map<std::string, std::function<Status(const onnx::NodeProto&)>>
-      func_lists_;
-};
+  using CallBack =
+      std::function<Status(IRBuilder* ir_builder, const onnx::NodeProto&)>;
+  std::unordered_map<std::string, CallBack> func_lists_;
+  std::stack<Type> loop_arg_types_;
+  Scope root_scope_;
+  Scope* curr_scope_ = &root_scope_;
+}; // namespace halo
 
 } // namespace halo
 

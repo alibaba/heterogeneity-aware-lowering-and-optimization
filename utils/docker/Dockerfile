@@ -90,6 +90,9 @@ RUN apt-get update -y && \
       bc && \
     apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+#install the Git
+RUN add-apt-repository ppa:git-core/ppa -y && apt update && apt install git -y
+
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 60 --slave /usr/bin/g++ g++ /usr/bin/g++-${GCC_VERSION} && \
     update-alternatives --install /usr/bin/aarch64-linux-gnu-g++ aarch64-linux-gnu-g++ /usr/bin/aarch64-linux-gnu-g++-${GCC_VERSION} 60 && \
     update-alternatives --install /usr/bin/aarch64-linux-gnu-gcc aarch64-linux-gnu-gcc /usr/bin/aarch64-linux-gnu-gcc-${GCC_VERSION} 60 && \
@@ -214,6 +217,9 @@ RUN cd /tmp && git clone https://github.com/google/XNNPACK.git && \
 # Install frameworks for model conversion
 RUN pip3 install torch
 RUN pip3 install tensorflow tf_slim scipy matplotlib
+RUN pip3 install EasyDict==1.7 opencv-python==3.4.1.15 shapely==1.6.4 Cython \
+    pandas pyyaml json_tricks scikit-image yacs>=0.1.5 \
+    tensorboardX==1.6 torchvision pycocotools wget gdown GitPython
 
 # Install Flatbuffer
 RUN cd /tmp && \

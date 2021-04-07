@@ -20,11 +20,17 @@
 
 #include <list>
 
+#include "halo/lib/ir/argument.h"
+#include "halo/lib/ir/basic_block.h"
+#include "halo/lib/ir/constant.h"
 #include "halo/lib/ir/instruction.h"
 
 namespace halo {
 
+class Argument;
 class Function;
+class ReturnInst;
+class LoopInst;
 
 /// This class defines a basic block in IR.
 /// A basic block is simply a list of instructions without terminating in
@@ -33,7 +39,7 @@ class BasicBlock final : public IRObject {
  public:
   BasicBlock() = delete;
   explicit BasicBlock(GlobalContext& ctx, const std::string& name)
-      : IRObject(ctx, name) {
+      : IRObject(ctx, name), loop_inst_(nullptr) {
     if (name.empty()) {
       SetName("bb_" + std::to_string(GetId()));
     }
@@ -77,10 +83,44 @@ class BasicBlock final : public IRObject {
   InstructionList& Instructions() noexcept { return instructions_; }
   const InstructionList& Instructions() const noexcept { return instructions_; }
 
+  /// Arguments
+  using ArgumentList = std::list<std::unique_ptr<Argument>>;
+  using arg_iterator = ArgumentList::iterator;
+  using const_arg_iterator = ArgumentList::const_iterator;
+  arg_iterator arg_begin() noexcept { return args_.begin(); }
+  const_arg_iterator arg_begin() const noexcept { return args_.begin(); }
+  arg_iterator arg_end() noexcept { return args_.end(); }
+  const_arg_iterator arg_end() const noexcept { return args_.end(); }
+  ArgumentList& Args() noexcept { return args_; }
+  const ArgumentList& Args() const noexcept { return args_; }
+  Argument* arg_front() const { return args_.front().get(); }
+  Argument* arg_back() const { return args_.back().get(); }
+
+  /// Constants
+  using ConstantList = std::list<std::unique_ptr<Constant>>;
+  using constant_iterator = ConstantList::iterator;
+  using const_constant_iterator = ConstantList::const_iterator;
+  constant_iterator constant_begin() noexcept { return constants_.begin(); }
+  const_constant_iterator constant_begin() const noexcept {
+    return constants_.begin();
+  }
+  constant_iterator constant_end() noexcept { return constants_.end(); }
+  const_constant_iterator constant_end() const noexcept {
+    return constants_.end();
+  }
+  ConstantList& Constants() noexcept { return constants_; }
+  const ConstantList& Constants() const noexcept { return constants_; }
+
   /// Return the parent function to which this basic block belongs.
-  Function* GetParent() noexcept { return parent_function_; }
+  Function* GetParent() noexcept { return parent_; }
 
   Kind GetKind() const noexcept override { return Kind::BasicBlock; }
+
+  ReturnInst* GetReturnInst() const;
+
+  LoopInst* GetLoopInst() const noexcept { return loop_inst_; };
+
+  void SetLoopInst(LoopInst* inst) noexcept { loop_inst_ = inst; }
 
   static inline bool Classof(const BasicBlock* bb) { return true; }
   static inline bool Classof(const IRObject* obj) {
@@ -91,8 +131,11 @@ class BasicBlock final : public IRObject {
   void Print(std::ostream& os) const override;
 
  private:
-  Function* parent_function_ = nullptr;
+  Function* parent_ = nullptr;
   InstructionList instructions_;
+  ArgumentList args_;
+  ConstantList constants_;
+  LoopInst* loop_inst_;
 
   friend class BasicBlockBuilder;
 };

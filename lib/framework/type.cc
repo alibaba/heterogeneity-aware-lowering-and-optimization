@@ -70,7 +70,7 @@ bool Type::HasNativeType<int8_t>(DataType dt) {
 
 template <>
 bool Type::HasNativeType<uint8_t>(DataType dt) {
-  return dt == DataType::UINT8;
+  return dt == DataType::UINT8 || dt == DataType::BOOL;
 }
 
 template <>
@@ -161,6 +161,33 @@ bool Type::operator==(const Type& rhs) const noexcept {
     }
   }
   return true;
+}
+
+bool Type::BroadcastableTo(const Type& to) const noexcept {
+  auto to_elems = to.GetTotalNumOfElements();
+  auto elems = GetTotalNumOfElements();
+  if (*this == to) {
+    return true;
+  }
+  if (to_elems % elems != 0) {
+    return false;
+  }
+  unsigned matched = 0;
+  for (int64_t axis = GetNumOfDims() - 1, to_axis = to.GetNumOfDims() - 1;
+       axis >= 0 && to_axis >= 0; --to_axis) {
+    if (shape_[axis] == to.shape_[to_axis] || shape_[axis] == 1) {
+      matched += 1;
+      --axis;
+    }
+  }
+  return matched == GetNumOfDims();
+}
+
+size_t Type::GetSqueezedNumOfDims() const noexcept {
+  size_t d = 0;
+  d = std::count_if(shape_.begin(), shape_.end(),
+                    [](auto v) { return v != 1; });
+  return d;
 }
 
 bool Type::operator!=(const Type& rhs) const noexcept {

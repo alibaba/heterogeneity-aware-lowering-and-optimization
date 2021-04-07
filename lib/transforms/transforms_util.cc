@@ -63,4 +63,13 @@ void SplitStringToInt64List(const std::string& src, std::vector<int64_t>* dst,
   }
 }
 
+bool HasAttribute(const Instruction& inst, const std::string& name) {
+  for (const auto& attr : inst.GetAttributes()) {
+    if (attr->GetName() == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
 } // end namespace halo

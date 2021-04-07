@@ -101,6 +101,23 @@ static void EmitBanner(std::ostream* os, std::ostream* header_os,
   *os << "#include " << GetIncludeFile(api) << "\n\n";
 }
 
+static std::string GetBF16Mode(CodeGen::BF16Mode mode) {
+  switch (mode) {
+    case CodeGen::BF16Mode::Accuracy: {
+      return "BF16_ACCURACY_MODE";
+    }
+    case CodeGen::BF16Mode::Performace: {
+      return "BF16_PERFORMACE_MODE";
+    }
+    case CodeGen::BF16Mode::Auto: {
+      return "BF16_AUTO_MODE";
+    }
+    default: {
+      return "BF16_DISABLE";
+    }
+  }
+}
+
 bool GenericCXXCodeGen::RunOnModule(Module* module) {
   memory_analyzer_ = std::make_unique<MemoryAnalyzer>(*module);
   Function* entry_func = nullptr;
@@ -566,6 +583,11 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
         os_ << "odla_SetComputationItem(Comp, ODLA_OPT_BATCH_SIZE, "
                "(odla_item_value) &opt_batch_size);\n";
       }
+
+      os_ << "odla_bf16_mode mode = " << GetBF16Mode(opts_.bf16_mode) << ";\n";
+      os_ << "odla_SetComputationItem(Comp, ODLA_BF16_MODE, "
+             "(odla_item_value) &mode);\n";
+
     } else {
       os_ << "static void " << helper_func_name
           << GetFunctionDecl(function, *return_inst, false, true, false)
@@ -607,6 +629,10 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
         os_ << "odla_SetComputationItem(Comp, ODLA_OPT_BATCH_SIZE, "
                "(odla_item_value) &opt_batch_size);\n";
       }
+
+      os_ << "odla_bf16_mode mode = " << GetBF16Mode(opts_.bf16_mode) << ";\n";
+      os_ << "odla_SetComputationItem(Comp, ODLA_BF16_MODE, "
+             "(odla_item_value) &mode);\n";
     }
   }
 
@@ -742,6 +768,9 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
 void GenericCXXCodeGen::RunOnConstant(Constant& constant, bool decl) {
   const auto& uses = constant.GetIthResultUses(0);
   bool only_used_by_reshape = true;
+  if (uses.empty()) {
+    return;
+  }
   for (const auto& u : uses) {
     if (!IsA<Instruction>(u.GetUse()) ||
         DynCast<Instruction>(u.GetUse())->GetOpCode() != OpCode::RESHAPE ||

@@ -42,14 +42,14 @@ enum class Dialect {
 };
 
 struct Opts {
-  Opts(const bool& en_bf16) : enable_bf16(en_bf16) {}
+  Opts(const CodeGen::BF16Mode& mode) : bf16_mode(mode) {}
   Opts() = default;
-  bool enable_bf16 = false;
   Dialect dialect = Dialect::CXX_11;
   bool print_mem_stats = false;
   bool emit_value_reset = false;
   bool emit_value_init = false;
   bool emit_value_id_as_int = false;
+  CodeGen::BF16Mode bf16_mode = CodeGen::BF16Mode::Disable;
   CodeGen::ExecMode exec_mode = CodeGen::ExecMode::Compile;
   bool emit_inference_func_sig = false;
   bool emit_model_info_apis = false;
@@ -159,13 +159,17 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(PadInst*) override;
   virtual void RunOnInstruction(PoolingMaxInst*) override;
   virtual void RunOnInstruction(PoolingAvgInst*) override;
+  virtual void RunOnInstruction(PowInst*) override;
   virtual void RunOnInstruction(PReluInst*) override;
+  virtual void RunOnInstruction(RandomUniformInst*) override;
   virtual void RunOnInstruction(ReduceL1Inst*) override;
   virtual void RunOnInstruction(ReduceL2Inst*) override;
   virtual void RunOnInstruction(ReduceLogSumInst*) override;
   virtual void RunOnInstruction(ReduceLogSumExpInst*) override;
   virtual void RunOnInstruction(ReduceSumSquareInst*) override;
   virtual void RunOnInstruction(ReduceMeanInst*) override;
+  virtual void RunOnInstruction(ReduceMaxInst*) override;
+  virtual void RunOnInstruction(ReduceMinInst*) override;
   virtual void RunOnInstruction(ReluInst*) override;
   virtual void RunOnInstruction(Relu6Inst*) override;
   virtual void RunOnInstruction(ReshapeInst*) override;
@@ -179,10 +183,12 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(SinhInst*) override;
   virtual void RunOnInstruction(CosInst*) override;
   virtual void RunOnInstruction(CoshInst*) override;
+  virtual void RunOnInstruction(TanhInst*) override;
   virtual void RunOnInstruction(TopKInst*) override;
   virtual void RunOnInstruction(TransposeInst*) override;
   virtual void RunOnInstruction(TileInst*) override;
   virtual void RunOnInstruction(ZExtInst*) override;
+  virtual void RunOnInstruction(HgEngineInst*) override;
 
   virtual void RunOnBinaryInstruction(Instruction*);
   virtual void RunOnCastInstruction(Instruction*);

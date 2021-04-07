@@ -46,6 +46,7 @@ class InstSimplify final : public BasicBlockPass {
   std::pair<Def, Def> RunOnInstruction(TransposeInst* inst);
   std::pair<Def, Def> RunOnInstruction(ReturnInst* inst);
   std::pair<Def, Def> RunOnInstruction(BatchNormInst* inst);
+  static std::pair<Def, Def> RunOnInstruction(CeilInst* inst);
   static std::pair<Def, Def> RunOnInstruction(ConcatInst* inst);
   static std::pair<Def, Def> RunOnInstruction(Conv2DInst* inst);
   static std::pair<Def, Def> RunOnInstruction(ExpandDimsInst* inst);
@@ -56,9 +57,11 @@ class InstSimplify final : public BasicBlockPass {
   static std::pair<Def, Def> RunOnInstruction(ReshapeInst* inst);
   static std::pair<Def, Def> RunOnInstruction(ReluInst* inst);
   static std::pair<Def, Def> RunOnInstruction(Relu6Inst* inst);
+  static std::pair<Def, Def> RunOnInstruction(PReluInst* inst);
   static std::pair<Def, Def> RunOnInstruction(LeakyReluInst* inst);
   static std::pair<Def, Def> RunOnInstruction(ResizeInst* inst);
   static std::pair<Def, Def> RunOnInstruction(SetDiff1DInst* inst);
+  static std::pair<Def, Def> RunOnInstruction(SigmoidInst* inst);
   static std::pair<Def, Def> RunOnInstruction(SItoFPInst* inst);
   static std::pair<Def, Def> RunOnInstruction(FPtoSIInst* inst);
   static std::pair<Def, Def> RunOnInstruction(SliceInst* inst);

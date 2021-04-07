@@ -44,12 +44,22 @@ typedef enum {
   ODLA_MAX_BATCH_SIZE,
   ODLA_OPT_BATCH_SIZE,
   ODLA_RUN_BATCH_SIZE,
+  ODLA_BF16_MODE,
   ODLA_FP16_MODE,
   ODLA_USE_SIM_MODE,
   ODLA_PROCESSOR_NUM,
   ODLA_BATCHES_PER_STEP,
   ODLA_USE_DATA_TYPE,
+  ODLA_LOAD_ENGINE_MODE,
 } odla_item_type;
+
+//! \brief BF16 mode
+typedef enum {
+  BF16_DISABLE,
+  BF16_ACCURACY_MODE,
+  BF16_PERFORMACE_MODE,
+  BF16_AUTO_MODE,
+} odla_bf16_mode;
 
 //! \brief Computation object
 typedef struct _odla_computation* odla_computation;
@@ -102,8 +112,8 @@ odla_LoadComputation(const odla_char* file_name, odla_computation* computation);
 
   \return odla_status
 */
-extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_StoreComputation(
-    const odla_char* file_name, const odla_computation computation);
+extern ODLA_API_EXPORT odla_status ODLA_API_CALL
+odla_StoreComputation(const odla_char* file_name, odla_computation computation);
 
 //! \brief Differentiate a computation
 /*!
@@ -249,21 +259,25 @@ odla_DestroyConstantsArray(odla_constants_array constants_array);
 //! \brief Create an executable object
 /*!
   \param executable the pointer to the created executable object
-
+  \param context the pointer to the loaded context object
+  \param computation the pointer to the loaded computation object
   \return odla_status
 */
 extern ODLA_API_EXPORT odla_status ODLA_API_CALL
-odla_CreateExecutable(odla_executable* executable);
+odla_CreateExecutable(odla_executable* executable, odla_context context,
+                      odla_computation computation);
 
 //! \brief Load an executable from the file system
 /*!
   \param file_name the file name
   \param executable the pointer to the loaded executable object
-
+  \param context the pointer to the loaded context object
+  \param computation the pointer to the loaded computation object
   \return odla_status
 */
 extern ODLA_API_EXPORT odla_status ODLA_API_CALL
-odla_LoadExecutable(const odla_char* file_name, odla_executable* executable);
+odla_LoadExecutable(const odla_char* file_name, odla_executable* executable,
+                    odla_context* context, odla_computation* computation);
 
 //! \brief Store an executable object into the file system
 /*!
@@ -272,8 +286,8 @@ odla_LoadExecutable(const odla_char* file_name, odla_executable* executable);
 
   \return odla_status
 */
-extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_StoreExecutable(
-    const odla_char* file_name, const odla_executable executable);
+extern ODLA_API_EXPORT odla_status ODLA_API_CALL
+odla_StoreExecutable(const odla_char* file_name, odla_executable executable);
 
 //! \brief Launch an executable
 /*!

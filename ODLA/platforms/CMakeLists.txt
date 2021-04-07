@@ -1,5 +1,5 @@
 # ==============================================================================
-# Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+# Copyright (C) 2019-2021 Alibaba Group Holding Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,20 +40,7 @@ endif()
 
 option(ODLA_BUILD_TRT "Build ODLA Runtime Library for TensorRT" ON)
 if (ODLA_BUILD_TRT)
-  set(CUDA_VERSION 10.0)
-  set(TRT_ROOT "/usr/local/cuda-${CUDA_VERSION}/targets/x86_64-linux"
-      CACHE STRING "Path of TensorRT package")
-  find_library(cudart NAMES cudart PATHS ${TRT_ROOT} PATH_SUFFIXES lib NO_DEFAULT_PATH)
-  find_library(nvinfer NAMES nvinfer)
-  if(NOT cudart OR NOT nvinfer)
-    message(STATUS "CUDA library not found, skip building ODLA for TensorRT")
-    add_library(odla_tensorrt INTERFACE) # pseudo target
-  else()
-    add_odla_library(odla_tensorrt SHARED odla_tensorrt.cc)
-    target_include_directories(odla_tensorrt PRIVATE ${TRT_ROOT}/include)
-    target_compile_options(odla_tensorrt PRIVATE -Wno-deprecated-declarations)
-    target_link_libraries(odla_tensorrt ODLA ${nvinfer} ${cudart})
-  endif()
+  add_subdirectory(tensorrt)
 endif()
 
 option(ODLA_BUILD_EIGEN "Build ODLA Runtime Library for Eigen" ON)
@@ -83,4 +70,10 @@ if (ODLA_BUILD_XNNPACK)
   target_include_directories(odla_xnnpack PRIVATE ${XNNPACK_ROOT}/include)
   target_compile_options(odla_xnnpack PRIVATE -Wno-deprecated-declarations)
   target_link_libraries(odla_xnnpack ODLA ${xnnpack} ${cpuinfo} ${pthreadpool} ${clog} pthread)
+endif()
+
+option(ODLA_BUILD_Profiler "Build ODLA Profiler Library" ON)
+if (ODLA_BUILD_Profiler)
+  add_odla_library(odla_profiler SHARED odla_profiler.cc)
+  target_link_libraries(odla_profiler ODLA dl)
 endif()

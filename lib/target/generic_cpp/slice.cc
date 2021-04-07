@@ -114,11 +114,10 @@ void GenericCXXCodeGen::RunOnInstruction(SliceInst* inst) {
     // stride is provided, calculate ends = starts + sizes * strides
     std::for_each(strides_v.begin(), strides_v.end(),
                   [=](uint32_t& s) { s = s >= 0 ? s : dims + s; });
-    std::vector<uint32_t> tmp(strides_v.begin(), strides_v.end());
-    std::transform(tmp.begin(), tmp.end(), size_v.begin(), tmp.begin(),
-                   std::multiplies<uint32_t>());
-    std::transform(size_v.begin(), size_v.end(), tmp.begin(), size_v.begin(),
-                   std::plus<uint32_t>());
+    std::transform(strides_v.begin(), strides_v.end(), size_v.begin(),
+                   size_v.begin(), std::multiplies<uint32_t>());
+    std::transform(start_v.begin(), start_v.end(), size_v.begin(),
+                   size_v.begin(), std::plus<uint32_t>());
   } else {
     // stride is omitted, set to [1,1,...,1], calculate ends = starts + sizes
     std::transform(size_v.begin(), size_v.end(), start_v.begin(),

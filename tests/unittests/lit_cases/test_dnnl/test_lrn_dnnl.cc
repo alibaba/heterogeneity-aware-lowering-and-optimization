@@ -25,4 +25,5 @@
 // RUN: %t_dnnl.exe 0.001 0 dnnl %data_path/test_lrn | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
+
 #include "test_lrn_dnnl.cc.tmp.main.cc.in"

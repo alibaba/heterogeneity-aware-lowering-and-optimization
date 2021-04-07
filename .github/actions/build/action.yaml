@@ -10,5 +10,7 @@ runs:
   steps:
     - run: echo "Curr:${{runner.workspace}}"
       shell: bash
-    - run: ./halo/.github/actions/build/build_in_docker.sh ${{runner.workspace}} ${{ inputs.docker_image_variant }}
+    - run: ./halo/.github/actions/build/build_in_docker.sh
+             ${{runner.workspace}}/heterogeneity-aware-lowering-and-optimization
+             ${{ inputs.docker_image_variant }}
       shell: bash

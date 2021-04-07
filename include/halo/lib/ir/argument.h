@@ -39,8 +39,8 @@ class Argument final : public IRObject {
   explicit Argument(GlobalContext& context, const std::string& name,
                     const Type& type);
 
-  /// Get the parent function of this argument.
-  Function* GetParent() const noexcept { return parent_function_; }
+  /// Returns the parent object that could be a Function or a BasicBlock.
+  IRObject* GetParent() const noexcept { return parent_; }
 
   /// Set the type of this argument.
   void SetType(const Type& type);
@@ -55,7 +55,7 @@ class Argument final : public IRObject {
   void Print(std::ostream& os) const override;
 
  private:
-  Function* parent_function_ = nullptr;
+  IRObject* parent_ = nullptr;
 
   friend class ArgumentBuilder;
 };

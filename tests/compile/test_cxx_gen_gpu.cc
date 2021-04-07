@@ -24,8 +24,7 @@
 // RUN: cat %t.gen.cc | FileCheck %s --check-prefix=GEN
 // RUN: %cxx %s -DRUNTIME_TEST -I%odla_path/include -c -o %t.main.o
 // RUN: %cxx %t.gen.cc -I%odla_path/include -c -o %t.gen.o
-// RUN: %cxx %odla_path/platforms/odla_tensorrt.cc -c -o %t.tensort.o -I %tensorrt_path/include -I%odla_path/include -Wno-deprecated-declarations
-// RUN: %cxx %t.tensort.o %t.gen.o  %t.main.o -L %tensorrt_path/lib -lnvinfer -lcudart -o %t.tensort_exe
+// RUN: %cxx %t.gen.o %t.main.o %odla_link -lodla_tensorrt -o %t.tensort_exe
 // RUN: %t.tensort_exe 2>&1| FileCheck %s --check-prefix=EXECUTE
 
 // GEN: include <ODLA/odla.h>

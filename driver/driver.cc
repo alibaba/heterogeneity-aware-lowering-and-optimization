@@ -117,9 +117,16 @@ static llvm::cl::opt<bool> RISCVOpt(
     "riscv-opt", llvm::cl::desc("Enable optimizations for RISC-V only"),
     llvm::cl::init(false));
 
-static llvm::cl::opt<bool> EnableBF16("enable-bf16",
-                                      llvm::cl::desc("Enable BF16"),
-                                      llvm::cl::init(false));
+static llvm::cl::opt<CodeGen::BF16Mode> BF16Mode(
+    llvm::cl::values(
+        clEnumValN(CodeGen::BF16Mode::Disable, "disable", "disable bf16 mode"),
+        clEnumValN(CodeGen::BF16Mode::Accuracy, "accuracy", "white list Model"),
+        clEnumValN(CodeGen::BF16Mode::Performace, "performace",
+                   "global enable bf16,except black list"),
+        clEnumValN(CodeGen::BF16Mode::Auto, "auto", "automixprecision")),
+    "bf16-mode", llvm::cl::desc("Enable BF16 with acc/perf/auto mode"),
+    llvm::cl::init(CodeGen::BF16Mode::Disable));
+
 static llvm::cl::opt<bool> EnableFP16("enable-fp16",
                                       llvm::cl::desc("Enable FP16 mode"),
                                       llvm::cl::init(false));
@@ -256,7 +263,7 @@ static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
 
   CodeGen* cg = nullptr;
   if (is_c_or_cxx_output) {
-    Opts opts(EnableBF16 ? true : false);
+    Opts opts(BF16Mode);
     if (llvm::StringRef(Target).startswith_lower("cc")) {
       opts.dialect = Dialect::C99;
     }
@@ -366,7 +373,8 @@ static void PopulatePasses(PassManager* pm, std::ostream* out_code,
                            bool is_c_or_cxx_output, bool is_binary_output,
                            Parser::Format format) {
   std::vector<std::string> input_shapes(InputsShape.begin(), InputsShape.end());
-  pm->AddPass<InputLegalizer>(Batch.getValue(), input_shapes);
+  pm->AddPass<InputLegalizer>(Batch.getValue(), input_shapes,
+                              PreprocessScale.getValue());
   if (!Outputs.empty()) {
     std::vector<std::string> outputs(Outputs.begin(), Outputs.end());
     pm->AddPass<OutputRewriter>(outputs);
@@ -440,6 +448,12 @@ static bool FormatCode(const std::string& filename) {
 static void PrintVersion(llvm::raw_ostream& os) {
   os << "  Version:\t" << HALO_MAJOR << '.' << HALO_MINOR << '.' << HALO_PATCH
      << '\n';
+#ifdef HALO_REVISION
+  os << "  HALO Repo:" << HALO_REPOSITORY << " Rev:" << HALO_REVISION << '\n';
+#endif
+#ifdef ODLA_REVISION
+  os << "  ODLA Repo:" << ODLA_REPOSITORY << " Rev:" << ODLA_REVISION << '\n';
+#endif
 #ifndef NDEBUG
   os << "  Build:\tDebug\n";
 #else
