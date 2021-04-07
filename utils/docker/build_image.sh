@@ -12,3 +12,4 @@ docker build --build-arg BASE_IMAGE=${base_image_cpu} \
 
 docker build --build-arg BASE_IMAGE=${base_image_gpu} \
   -t $NAMESPACE/halo:$VER-$FLAVOR-cuda10.0-cudnn7-ubuntu18.04 .
+

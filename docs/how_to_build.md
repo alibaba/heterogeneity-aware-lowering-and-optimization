@@ -41,9 +41,9 @@ which is under [utils/docker](../utils/docker):
 
 You can also pull the Docker images for development from aliyun:
 ```bash
-docker pull registry-intl.us-west-1.aliyuncs.com/computation/halo:0.5-cuda10.0-cudnn7-ubuntu18.04 # Ubuntu 18.04 with CUDA 10.0
+docker pull registry-intl.us-west-1.aliyuncs.com/computation/halo:latest-devel-cuda10.0-cudnn7-ubuntu18.04 # Ubuntu 18.04 with CUDA 10.0
 
-docker pull registry-intl.us-west-1.aliyuncs.com/computation/halo:0.5-x86_64-ubuntu18.04 # Ubuntu 18.04
+docker pull registry-intl.us-west-1.aliyuncs.com/computation/halo:latest-devel-x86_64-ubuntu18.04 # Ubuntu 18.04
 ```
 
 ## Build From Scratch <a name="build-from-scratch"/>
