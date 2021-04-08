@@ -228,6 +228,10 @@ RUN cd /tmp && \
     cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release  -DFLATBUFFERS_BUILD_SHAREDLIB=ON && make -j && make install && \
     rm -fr /tmp/flatbuffers
 
+# INSATLL ONEAPI
+RUN if [[ "${BASE_IMAGE}" != "nvidia" ]]; then wget https://registrationcenter-download.intel.com/akdlm/irc_nas/17769/l_BaseKit_p_2021.2.0.2883_offline.sh && \
+    chmod +x ./l_BaseKit_p_2021.2.0.2883_offline.sh && \
+    ./l_BaseKit_p_2021.2.0.2883_offline.sh -s -a --silent --eula accept; fi
 
 RUN mkdir -p /var/run/sshd
 RUN sed -i 's/prohibit-password/yes/' /etc/ssh/sshd_config
