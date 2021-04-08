@@ -214,13 +214,6 @@ RUN cd /tmp && git clone https://github.com/google/XNNPACK.git && \
       -DCMAKE_INSTALL_PREFIX=/opt/XNNPACK && \
     ninja install
 
-# Install frameworks for model conversion
-RUN pip3 install torch
-RUN pip3 install tensorflow tf_slim scipy matplotlib
-RUN pip3 install EasyDict==1.7 opencv-python==3.4.1.15 shapely==1.6.4 Cython \
-    pandas pyyaml json_tricks scikit-image yacs>=0.1.5 \
-    tensorboardX==1.6 torchvision pycocotools wget gdown GitPython
-
 # Install Flatbuffer
 RUN cd /tmp && \
     git clone --depth=1 https://github.com/google/flatbuffers.git -b v1.12.0 && \
@@ -229,9 +222,13 @@ RUN cd /tmp && \
     rm -fr /tmp/flatbuffers
 
 # INSATLL ONEAPI
-RUN if [[ "${BASE_IMAGE}" != "nvidia" ]]; then wget https://registrationcenter-download.intel.com/akdlm/irc_nas/17769/l_BaseKit_p_2021.2.0.2883_offline.sh && \
+RUN if [[ ! "${BASE_IMAGE}" =~ "nvidia" ]]; then wget https://registrationcenter-download.intel.com/akdlm/irc_nas/17769/l_BaseKit_p_2021.2.0.2883_offline.sh && \
     chmod +x ./l_BaseKit_p_2021.2.0.2883_offline.sh && \
     ./l_BaseKit_p_2021.2.0.2883_offline.sh -s -a --silent --eula accept; fi
+
+# Install models & test cases
+COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:latest-model-zoo /models /models
+COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:latest-model-zoo /unittests /unittests
 
 RUN mkdir -p /var/run/sshd
 RUN sed -i 's/prohibit-password/yes/' /etc/ssh/sshd_config

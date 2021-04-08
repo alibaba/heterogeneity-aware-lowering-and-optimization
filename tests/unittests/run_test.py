@@ -52,9 +52,7 @@ if odla_lib not in ld_libpath.split(':'):
 # download onnx op data
 def download_data(localdir):
     if not os.path.exists(localdir):
-        os.system('git clone --depth 1 -b rel-1.8.0 https://github.com/onnx/onnx.git')
-        os.system('cp -r onnx/onnx/backend/test/data/node ' + localdir)
-        os.system('rm -rf onnx')
+        os.system('ln -s /unittests ' + localdir)
 
 
 def run_shell_cmd(args):
@@ -176,7 +174,7 @@ def single_test(test_case, device, error_thr, enable_timeperf, data_path):
     flags = ['-g']
     if enable_timeperf == 'TRUE':
         flags.append('-DTIME_PERF')
-    
+
     test_data_dir = data_path+ '/' + test_case +'/test_data_set_0'
     files = os.listdir(test_data_dir)
     id_input = 0
