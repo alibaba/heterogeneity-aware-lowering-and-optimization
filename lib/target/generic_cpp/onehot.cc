@@ -37,11 +37,8 @@ void GenericCXXCodeGen::RunOnInstruction(OneHotInst* inst) {
 
   CXXValue ret(inst->GetName(), op0.type);
 
-  os_ << "  " << EmitLValue(ret.name) << " = odla_Onehot("
-      << Join("comp", GetODLAType(ret_type.GetDataType()), EmitShape(lhs_type),
-              op0.name, EmitShape(rhs_type), op1.name, op_on.name, op_off.name,
-              inst->GetAxis(), EmitShape(ret_type))
-      << ");\n";
+  EmitODLACall(ret, "odla_Onehot", ret_type.GetDataType(), lhs_type, op0,
+               rhs_type, op1, op_on, op_off, inst->GetAxis(), ret_type);
   ir_mapping_[*inst] = ret;
 }
 
