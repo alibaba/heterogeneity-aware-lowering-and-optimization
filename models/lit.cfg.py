@@ -9,8 +9,8 @@ config.test_source_root = os.path.dirname(__file__)
 # Test suffixes.
 config.suffixes = ['.sh']
 
-config.excludes = ['run.all.sh', 'get_images.sh']
-
+config.excludes = ['run.all.sh', 'build_image.sh']
+config.environment['MODELS_ROOT'] = '/models'
 config.environment['SRC_DIR'] = config.halo_src_dir
 config.environment['BUILD_DIR'] = config.halo_build_dir
 config.environment['ODLA_INC'] = os.path.sep.join(
@@ -27,7 +27,7 @@ config.environment['HALO_BIN'] = os.path.sep.join(
 config.environment['PATH'] = os.path.pathsep.join(
     (config.environment['PATH'],
      os.path.sep.join((config.halo_build_dir, 'llvm', 'bin'))))
-
+config.substitutions.append(('%models_root', config.environment['MODELS_ROOT']))
 config.substitutions.append(('%test_temp_dir', config.environment['TEST_TEMP_DIR']))
 
 lit_config.parallelism_groups['modeltest'] = 7
