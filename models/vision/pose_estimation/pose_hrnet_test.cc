@@ -16,14 +16,11 @@
 // ========================================================================
 
 // clang-format off
-// prepare model&dataset
-// RUN: cd %S && python3 get_model_and_data.py --cfg config.yaml TEST.MODEL_FILE pose_hrnet_w32_256x256.pth && cd -
 
 // Testing using ODLA Tensorrt
-// RUN: %halo_compiler -target cxx -disable-broadcasting %S/pose_hrnet_w32_256x256.onnx -o %T/model.cc -entry-func-name=model -fuse-conv-bias -disable-code-format
-
+// RUN: %halo_compiler -target cxx -disable-broadcasting %models_root/vision/pose_estimation/pose_hrnet_w32_256x256.onnx -o %T/model.cc -entry-func-name=model -fuse-conv-bias -disable-code-format
 // RUN: %cxx %flags -c %T/model.cc -I%odla_path/include -o %T/model.o
-// RUN: %cxx %flags -c %include -I%T %s -o %t_main.o
+// RUN: %cxx %flags -c %include -I%T -I%models_root/vision/pose_estimation %s -o %t_main.o
 // RUN: %cxx %t_main.o %T/model.o %T/model.bin %odla_link -lodla_tensorrt -o %t_dnnl.exe
 // RUN: %t_dnnl.exe | FileCheck %s
 

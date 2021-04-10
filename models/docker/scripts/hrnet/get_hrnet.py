@@ -2,14 +2,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import models
+import dataset
+from config import update_config
+from config import cfg
 import subprocess
 import argparse
 import os
 import pprint
 import sys
 import gdown
-import wget
-import git
 
 import torch
 import torch.optim
@@ -19,48 +21,16 @@ import torchvision.transforms as transforms
 
 import numpy as np
 
-cur_dir = os.path.dirname(__file__)
-if os.path.exists('deep-high-resolution-net.pytorch'):
-    subprocess.run("sudo rm -r deep-high-resolution-net.pytorch", shell=True)
-git.Git(cur_dir).clone("https://github.com/leoxiaobin/deep-high-resolution-net.pytorch.git")
-
-lib_path = os.path.join(cur_dir, 'deep-high-resolution-net.pytorch/', 'lib')
-
-if lib_path not in sys.path:
-    sys.path.insert(0, lib_path)
-
-from config import cfg
-from config import update_config
-
-subprocess.run("cd deep-high-resolution-net.pytorch/lib/nms && python3 setup_linux.py build_ext --inplace && rm -rf build && cd ../../", shell=True)
-
-import dataset
-import models
-
-def download_model():
-    url = 'https://drive.google.com/uc?id=1_wn2ifmoQprBrFvUCDedjPON4Y6jsN-v'
-    local = os.path.dirname(__file__)
-    local = os.path.join(local, 'pose_hrnet_w32_256x256.pth')
-    gdown.download(url, local)
-
-def download_dataset():
-    #download images
-    url = 'https://upload-images.jianshu.io/upload_images/1877813-ff9b9c6b0e013006.jpg?imageMogr2/auto-orient/strip|imageView2/2/w/1200/format/webp'
-    local = os.path.dirname(__file__)
-    local = os.path.join(local, 'images')
-    if not os.path.exists(local):
-        os.mkdir(local)
-    local = os.path.join(local, '005808361.jpg')
-    wget.download(url, local)
 
 def dump_iodata(file_name, datas, array_name):
     with open(file_name, 'w') as cf:
-        array_name = 'float ' + array_name + ' [' + str(len(datas)) +'] = {\n' 
+        array_name = 'float ' + array_name + ' [' + str(len(datas)) + '] = {\n'
         cf.write(array_name)
         for data in datas:
-            #print(data.item())
-            cf.write(str(data.item()) +',\n')
+            # print(data.item())
+            cf.write(str(data.item()) + ',\n')
         cf.write('};\n')
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train keypoints network')
@@ -98,17 +68,16 @@ def parse_args():
 
 def main():
     args = parse_args()
-    download_model()
-    download_dataset()
     update_config(cfg, args)
 
     model = eval('models.'+cfg.MODEL.NAME+'.get_pose_net')(
         cfg, is_train=False
     )
 
-    model.load_state_dict(torch.load(cfg.TEST.MODEL_FILE), strict=False)
+    model.load_state_dict(torch.load(cfg.TEST.MODEL_FILE,
+                                     map_location=torch.device('cpu')), strict=False)
     model.eval()
-    
+
     # pytorch to onnx
     h = 256
     w = 256
