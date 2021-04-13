@@ -4,7 +4,8 @@ import urllib
 
 unittest_build_path = os.path.join(config.halo_build_dir, 'tests/unittests')
 data_path = os.path.join(config.halo_build_dir, 'tests/unittests/data')
-os.makedirs(unittest_build_path)
+if not os.path.exists(unittest_build_path):
+    os.makedirs(unittest_build_path)
 if not os.path.exists(data_path):
     # TODO: read from /unittests directly.
     os.system('cp -r /unittests ' + data_path)
