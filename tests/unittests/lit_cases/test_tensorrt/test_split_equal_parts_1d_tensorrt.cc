@@ -27,5 +27,4 @@
 // RUN: %t_tensorrt.exe 0.0001 0 tensorrt %data_path/test_split_equal_parts_1d | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_split_equal_parts_1d_tensorrt.cc.tmp.main.cc.in"

@@ -38,6 +38,15 @@ static bool is_nan(const T& x) {
 }
 
 template <typename T>
+static const T* to_nhwc(const T* src, T* dst, int N, int H, int W, int C = 3) {
+  for (int n = 0; n < N; ++n)
+    for (int c = 0; c < C; ++c)
+      for (int s = 0, HW = H * W; s < HW; ++s)
+        dst[n * HW * C + s * C + c] = src[n * C * HW + c * HW + s];
+  return dst;
+}
+
+template <typename T>
 bool Verify(const T* out, const T* out_ref, size_t n, float thre = 1e-5) {
   for (size_t i = 0; i < n; ++i) {
     bool nan_mismatch = (is_nan(out[i]) ^ is_nan(out_ref[i]));
@@ -50,6 +59,21 @@ bool Verify(const T* out, const T* out_ref, size_t n, float thre = 1e-5) {
   return true;
 }
 
+template <typename T>
+float EvalCosSim(const T* out, const T* out_ref, size_t n) {
+  float norm_out = 0.f;
+  float norm_out_ref = 0.f;
+  float dot = 0.f;
+  for (size_t i = 0; i < n; ++i) {
+    dot += out[i] * out_ref[i];
+    norm_out += out[i] * out[i];
+    norm_out_ref += out_ref[i] * out_ref[i];
+  }
+  norm_out = std::sqrt(norm_out);
+  norm_out_ref = std::sqrt(norm_out_ref);
+
+  return dot / (norm_out * norm_out_ref);
+}
 typedef std::chrono::high_resolution_clock::time_point timestamp_t;
 static timestamp_t Now() { return std::chrono::high_resolution_clock::now(); }
 

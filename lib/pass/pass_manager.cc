@@ -83,6 +83,10 @@ class BasicBlockPassManager final : public FunctionPass {
           }
           changed |= fp->RunOnBasicBlock(bb.get());
           global_changed |= changed;
+          if (IsPrintPass && global_changed) {
+            std::cout << " ---- After " << fp->Name() << std::endl;
+            bb->Dump();
+          }
         }
       }
     }
@@ -120,6 +124,10 @@ class FunctionPassManager final : public ModulePass {
           }
           changed |= fp->RunOnFunction(func.get());
           global_changed |= changed;
+          if (IsPrintPass && global_changed) {
+            std::cout << " ---- After " << fp->Name() << std::endl;
+            func->Dump();
+          }
         }
       }
     }
@@ -178,6 +186,10 @@ Status PassManagerImpl::Run(Module* module) {
       std::cout << "  ModulePass : " << pass->Name() << std::endl;
     }
     pass->RunOnModule(module);
+    if (IsPrintPass) {
+      std::cout << " ---- After " << pass->Name() << std::endl;
+      module->Dump();
+    }
   }
   return Status::SUCCESS;
 }
