@@ -23,15 +23,8 @@
 #include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/parser/parser.h"
 #include "halo/lib/pass/pass_manager.h"
-#include "halo/lib/transforms/analyzer.h"
-#include "halo/lib/transforms/caffeextension_legalizer.h"
-#include "halo/lib/transforms/dce.h"
-#include "halo/lib/transforms/input_legalizer.h"
-#include "halo/lib/transforms/inst_simplify.h"
-#include "halo/lib/transforms/onnxextension_legalizer.h"
-#include "halo/lib/transforms/tfextension_legalizer.h"
-#include "halo/lib/transforms/type_legalizer.h"
 #include "halo/utils/cl_options.h"
+#include "halo/utils/passes_helper.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
@@ -60,24 +53,13 @@ static void PopulatePassesAndRun(GlobalContext& ctx, Module& m,
                                  Parser::Format format) {
   PassManager pm(ctx);
   std::vector<std::string> input_shapes(InputsShape.begin(), InputsShape.end());
-  pm.AddPass<InputLegalizer>(batch.getValue(), input_shapes,
-                             PreprocessScale.getValue());
-  if (format == Parser::Format::CAFFE) {
-    pm.AddPass<CAFFEExtensionLegalizer>();
-  } else if (format == Parser::Format::TENSORFLOW) {
-    pm.AddPass<TFExtensionLegalizer>();
-  } else {
-    HLCHECK(format == Parser::Format::ONNX);
-    pm.AddPass<ONNXExtensionLegalizer>();
-  }
-  pm.AddPass<DCE>();
-  pm.AddPass<TypeLegalizer>(true);
-  pm.AddPass<InstSimplify>(true, true, false, false, false, false);
-  auto analyzer = pm.AddPass<Analyzer>();
+  Fusion::Options fusion_opts;
+  Opts opts;
+  PopulateOptPasses(&pm, "cxx", input_shapes, {}, {}, batch, "",
+                    ReorderChannel::ChannelOrder::None, false, false, format,
+                    opts, fusion_opts);
+  pm.AddAnalyzerPass(&std::cout);
   pm.Run(&m);
-  if (PrintAnalysisReport) {
-    analyzer->WriteCSVReport(std::cout);
-  }
 }
 
 int main(int argc, char** argv) {
