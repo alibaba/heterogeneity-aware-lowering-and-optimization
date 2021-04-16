@@ -23,26 +23,27 @@
 
 // CHECK: odla_Softmax
 
+// clang-format on
+
 #include <cstddef>
 #include <fstream>
 #include "halo/halo.h"
 
 int main(int argc, char** argv) {
   if (argc != 3) {
-      return 1;
+    return 1;
   }
   std::ifstream ifs(argv[1], std::iostream::ios_base::binary);
   if (!ifs.good()) {
     return 1;
   }
-   ifs.seekg (0, ifs.end);
+  ifs.seekg(0, std::ios::end);
   size_t size = ifs.tellg();
   ifs.seekg(0, std::ios::beg);
   std::vector<char> buffer(size);
   std::string dir(argv[2]);
-if (ifs.read(buffer.data(), size)) {
-halo::CXXCodeGenOpts opts;
-halo::CompileTFGraph(buffer.data(), buffer.size(), "model", dir,  {}, opts);
-}
-
+  if (ifs.read(buffer.data(), size)) {
+    halo::CXXCodeGenOpts opts;
+    halo::CompileTFGraph(buffer.data(), buffer.size(), "model", dir, {}, opts);
+  }
 }

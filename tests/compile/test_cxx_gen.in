@@ -38,8 +38,10 @@ void build() {
   ir_builder.CreateReturn("ret", *add1);
 
   PassManager pm(ctx);
-  pm.AddPass<TypeLegalizer>();
-  auto cg = pm.AddPass<GenericCXXCodeGen>(std::ref(std::cout), std::ref(std::cout));
+  pm.AddTypeLegalizerPass(false);
+  CodeGenOpts::CXXCodeGenOpts opts;
+  pm.AddGenericCXXCodeGenPass(std::ref(std::cout), std::ref(std::cout),
+                              std::ref(std::cout), opts);
 
   pm.Run(&m);
 }

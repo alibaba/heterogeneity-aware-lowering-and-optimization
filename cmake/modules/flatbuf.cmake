@@ -18,9 +18,9 @@
 
 find_package(Flatbuffers REQUIRED 1.12.0)
 if (Flatbuffers_FOUND)
-  message(STATUS "Found Flatbuffers ${Flatbuffers_VERSION}: ${Flatbuffers_LIBRARY}")
+  message(STATUS "Found Flatbuffers ${Flatbuffers_VERSION}: ${Flatbuffers_DIRS}: ${Flatbuffers_INCLUDE_DIRS} ")
 else()
-  message(FATAL_ERROR "Flatbuffers lib not found")  
+  message(FATAL_ERROR "Flatbuffers lib not found")
 endif(Flatbuffers_FOUND)
 
 macro(gen_flatbuf_files)

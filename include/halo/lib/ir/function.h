@@ -29,7 +29,7 @@ class Argument;
 class ReturnInst;
 
 /// This class defines a function in IR.
-class Function final : public IRObject {
+class HL_API_EXPORT Function final : public IRObject {
  public:
   Function() = delete;
   explicit Function(GlobalContext& ctx, const std::string& name)

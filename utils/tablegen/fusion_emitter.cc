@@ -133,8 +133,8 @@ void EmitFusion(const llvm::RecordKeeper& records, llvm::raw_ostream& os) {
     os << "    llvm::cl::desc(\"" << rec->getValueAsString("option_desc_")
        << "\"), llvm::cl::init(false));\n";
   }
-  os << "static Fusion::Options GetFusionOptions() {\n";
-  os << "  Fusion::Options opts;";
+  os << "static FusionOptions GetFusionOptions() {\n";
+  os << "  FusionOptions opts;";
   for (auto& rec : fusions) {
     auto rule_name = rec->getName();
     os << "    opts." << rule_name << " = Fusion" << rule_name << ";\n";

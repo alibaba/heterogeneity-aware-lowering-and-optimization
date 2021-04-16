@@ -17,28 +17,28 @@
 #ifndef HALO_UTILS_CL_OPTIONS_H_
 #define HALO_UTILS_CL_OPTIONS_H_
 
+#include "halo/halo.h"
 #include "halo/lib/parser/parser.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
-#
+
 namespace halo {
 
 static llvm::cl::list<std::string> ModelFiles(
     llvm::cl::Positional, llvm::cl::desc("model file name."),
     llvm::cl::OneOrMore);
 
-static llvm::cl::opt<Parser::Format> ModelFormat(
+static llvm::cl::opt<ModelFormat> Format(
     "x",
-    llvm::cl::values(clEnumValN(Parser::Format::CAFFE, "caffe", "CAFFE format"),
-                     clEnumValN(Parser::Format::ONNX, "onnx", "ONNX format"),
-                     clEnumValN(Parser::Format::TENSORFLOW, "tensorflow",
-                                "Tensorflow format"),
-                     clEnumValN(Parser::Format::TFLITE, "tflite",
-                                "TFLite format")),
+    llvm::cl::values(
+        clEnumValN(ModelFormat::CAFFE, "caffe", "CAFFE format"),
+        clEnumValN(ModelFormat::ONNX, "onnx", "ONNX format"),
+        clEnumValN(ModelFormat::TENSORFLOW, "tensorflow", "Tensorflow format"),
+        clEnumValN(ModelFormat::TFLITE, "tflite", "TFLite format")),
     llvm::cl::desc("format of input model files. If unspecified, the format is "
                    "guessed base on file's extension."),
-    llvm::cl::init(Parser::Format::INVALID));
+    llvm::cl::init(ModelFormat::INVALID));
 
 static llvm::cl::opt<signed> Batch(
     "batch-size",
@@ -65,38 +65,38 @@ static llvm::cl::opt<std::string> PreprocessScale(
         "to input shape. Invalid if there are more than one inputs. "));
 
 /// Guess the model format based on input file extension.gg
-static Parser::Format InferFormat(
-    const llvm::cl::list<std::string>& model_files, size_t file_idx) {
+static ModelFormat InferFormat(const llvm::cl::list<std::string>& model_files,
+                               size_t file_idx) {
   llvm::StringRef ext = llvm::sys::path::extension(model_files[file_idx]);
-  auto format = llvm::StringSwitch<Parser::Format>(ext)
-                    .Case(".pb", Parser::Format::TENSORFLOW)
-                    .Case(".pbtxt", Parser::Format::TENSORFLOW)
-                    .Case(".prototxt", Parser::Format::TENSORFLOW)
-                    .Case(".onnx", Parser::Format::ONNX)
-                    .Case(".json", Parser::Format::MXNET)
-                    .Case(".tflite", Parser::Format::TFLITE)
-                    .Default(Parser::Format::INVALID);
+  auto format = llvm::StringSwitch<ModelFormat>(ext)
+                    .Case(".pb", ModelFormat::TENSORFLOW)
+                    .Case(".pbtxt", ModelFormat::TENSORFLOW)
+                    .Case(".prototxt", ModelFormat::TENSORFLOW)
+                    .Case(".onnx", ModelFormat::ONNX)
+                    .Case(".json", ModelFormat::MXNET)
+                    .Case(".tflite", ModelFormat::TFLITE)
+                    .Default(ModelFormat::INVALID);
   // Check the next input file to see if it is caffe.
-  if (format == Parser::Format::TENSORFLOW &&
+  if (format == ModelFormat::TENSORFLOW &&
       (file_idx + 1 < model_files.size()) &&
       llvm::sys::path::extension(model_files[file_idx + 1]) == ".caffemodel") {
-    format = Parser::Format::CAFFE;
+    format = ModelFormat::CAFFE;
   }
   return format;
 }
 
 static Status ParseModels(const llvm::cl::list<std::string>& model_files,
-                          const llvm::cl::opt<Parser::Format>& model_format,
+                          const llvm::cl::opt<ModelFormat>& model_format,
                           const llvm::cl::opt<std::string>& entry_func_name,
                           const armory::Opts& opts, Module* module,
-                          Parser::Format* f) {
+                          ModelFormat* f) {
   std::set<std::string> func_names;
   for (size_t i = 0, e = model_files.size(); i < e; ++i) {
-    Parser::Format format = model_format;
-    if (format == Parser::Format::INVALID) {
+    ModelFormat format = model_format;
+    if (format == ModelFormat::INVALID) {
       format = InferFormat(model_files, i);
     }
-    HLCHECK(format != Parser::Format::INVALID);
+    HLCHECK(format != ModelFormat::INVALID);
     *f = format;
     FunctionBuilder func_builder(module);
     // Use stem of the input model as function name.
@@ -109,7 +109,7 @@ static Status ParseModels(const llvm::cl::list<std::string>& model_files,
     func_names.insert(func_name);
     Function* func = func_builder.CreateFunction(func_name);
     std::vector<std::string> files{model_files[i]};
-    if (format == Parser::Format::CAFFE || format == Parser::Format::MXNET) {
+    if (format == ModelFormat::CAFFE || format == ModelFormat::MXNET) {
       HLCHECK(i + 1 < e);
       files.push_back(model_files[++i]);
     }

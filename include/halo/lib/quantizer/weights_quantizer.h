@@ -19,14 +19,14 @@
 
 #include <unordered_map>
 
+#include "halo/halo.h"
 #include "halo/lib/pass/pass.h"
-#include "halo/lib/target/codegen.h"
 namespace halo {
 
 /// This pass quantizes weights.
 class WeightsQuantizer final : public ModulePass {
  public:
-  WeightsQuantizer(CodeGen::Quantization quant, const std::string& file)
+  WeightsQuantizer(Quantization quant, const std::string& file)
       : ModulePass("Quantize Weights"), quant_(quant), pgq_file_(file) {}
 
   bool RunOnModule(Module* m) override;
@@ -40,7 +40,7 @@ class WeightsQuantizer final : public ModulePass {
     float scale;
     int zp;
   } QuantInfo;
-  CodeGen::Quantization quant_;
+  Quantization quant_;
   const std::string pgq_file_;
   std::unordered_map<std::string, QuantInfo> quant_info_;
 };

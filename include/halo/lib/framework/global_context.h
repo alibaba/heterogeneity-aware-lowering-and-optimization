@@ -21,13 +21,14 @@
 #include <iostream>
 #include <memory>
 
+#include "halo/lib/framework/common.h"
 namespace halo {
 
 class CodeGenObject;
 class DataLayout;
 class GlobalContextImpl;
 
-class GlobalContext {
+class HL_API_EXPORT GlobalContext {
  public:
   GlobalContext();
   ~GlobalContext();

@@ -25,7 +25,7 @@ namespace halo {
 class Function;
 
 /// This class represents an arugment of a function.
-class Argument final : public IRObject {
+class HL_API_EXPORT Argument final : public IRObject {
  public:
   Argument() = delete;
   Argument(const Argument&) = delete;

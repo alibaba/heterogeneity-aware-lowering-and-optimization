@@ -22,7 +22,10 @@ macro(create_halo_object)
   set(MULTI_VALUE_ARGS TARGET_SRCS TARGET_DEPENDENCES)
   cmake_parse_arguments("" "" "${ONE_VALUE_ARGS}" "${MULTI_VALUE_ARGS}" ${ARGN})
   add_library(${_TARGET_NAME} OBJECT ${_TARGET_SRCS})
-
+set_target_properties(${_TARGET_NAME} PROPERTIES
+  CXX_VISIBILITY_PRESET hidden
+  VISIBILITY_INLINES_HIDDEN 1
+)
   if(NOT DEFINED _TARGET_NAME)
     message(FATAL_ERROR "No TARGET_NAME defined for create_halo_object")
   endif()
@@ -55,7 +58,7 @@ macro(add_halo_subdirectory)
   set(CORE_COMPONENTS ${CORE_COMPONENTS} PARENT_SCOPE)
   set(CORE_COMPONENTS_OBJECTS ${CORE_COMPONENTS_OBJECTS} PARENT_SCOPE)
 endmacro(add_halo_subdirectory)
- 
+
 
 # NORTTI: Disable RTTI
 # NOEXCEPTIONS: Disable exception support.
@@ -87,7 +90,7 @@ function(set_halo_compile_flags)
     if(_WERROR)
       list(APPEND HALO_COMPILE_FLAGS -pedantic -Wall -Werror)
     endif()
-  endif()   
+  endif()
   set(HALO_COMPILE_FLAGS ${HALO_COMPILE_FLAGS} PARENT_SCOPE)
 endfunction(set_halo_compile_flags)
 

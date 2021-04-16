@@ -25,7 +25,7 @@
 namespace halo {
 
 /// This class defines a module in IR.
-class Module final : public IRObject {
+class HL_API_EXPORT Module final : public IRObject {
  public:
   Module() = delete;
   explicit Module(GlobalContext& context, const std::string& name)
