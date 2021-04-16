@@ -181,7 +181,7 @@ class Def final : public Value {
 
 /// This class defines a base class for all computable objects in the IR system.
 /// It is the base for instruciton, basic block, and function.
-class IRObject {
+class HL_API_EXPORT IRObject {
  public:
   // constructors
   IRObject() = delete;

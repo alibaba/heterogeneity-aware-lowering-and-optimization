@@ -15,12 +15,13 @@
 # ==============================================================================
 
 # Install halo
+include(GNUInstallDirs)
 
 install(TARGETS halo halolib
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        INCLUDES DESTINATION include
-        PUBLIC_HEADER DESTINATION include
+        RUNTIME DESTINATION ${CAMKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 install(DIRECTORY ${CMAKE_BINARY_DIR}/runtime DESTINATION .)

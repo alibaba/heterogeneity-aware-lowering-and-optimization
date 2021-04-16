@@ -128,7 +128,7 @@ class IRObjectBuilder {
 
 /// This class provides the APIs to create functions and insert them into
 /// the current module.
-class FunctionBuilder final
+class HL_API_EXPORT FunctionBuilder final
     : public IRObjectBuilder<Module, Module::FunctionList> {
  public:
   /// Constructs a IRBuilder for an existing module object.

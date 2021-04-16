@@ -4,18 +4,19 @@ ARG BASE_IMAGE
 FROM gcc:7.5.0 AS pb_builder
 WORKDIR /tmp
 RUN git clone --depth=1 https://github.com/protocolbuffers/protobuf.git -b v3.9.1 && \
-    cd protobuf && ./autogen.sh && \
-    ./configure --prefix=/tmp/install && make clean && \
-    make -j && make install && \
+    cd protobuf/cmake && \
+    cmake -G Ninja  -Dprotobuf_BUILD_TESTS=OFF  -DCMAKE_POSITION_INDEPENDENT_CODE=ON .
+    -DCMAKE_INSTALL_PREFIX=/tmp/install && ninja && ninja install
     tar -cf /tmp/protobuf.tar ../install --transform 's,^install/,/usr/local/,'
 
 # Build Flatbuffer
 FROM rikorose/gcc-cmake:gcc-7 AS fb_builder
 WORKDIR /tmp
-RUN git clone --depth=1 https://github.com/google/flatbuffers.git -b v1.12.0 && \
+RUN && \
     cd flatbuffers && \
     cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX=/tmp/install -DFLATBUFFERS_BUILD_SHAREDLIB=ON && \
+          -DFLATBUFFERS_BUILD_TESTS=OFF && \
     make -j && make install && \
     tar -cf /tmp/flatbuffer.tar ../install --transform 's,^install/,/usr/local/,'
 

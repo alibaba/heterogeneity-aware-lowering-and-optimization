@@ -29,7 +29,6 @@
 #include "halo/lib/target/codegen_object.h"
 
 namespace halo {
-
 std::string CXXType::Str(bool use_array_decl) const {
   std::string str;
   if (is_const) {
@@ -62,25 +61,27 @@ GenericCXXCodeGen::GenericCXXCodeGen(std::ostream& os, std::ostream& header_os)
       os_(os),
       header_os_(header_os),
       dynamic_check_os_(std::cout) {
+  SetAPI(opts_.api);
   CXXValue::Reset();
 }
 
 GenericCXXCodeGen::GenericCXXCodeGen(std::ostream& os, std::ostream& header_os,
                                      std::ostream& dynamic_check_os,
-                                     const Opts& opts)
+                                     const CXXCodeGenOpts& opts)
     : CodeGen("Generic CXX Compilation"),
       os_(os),
       header_os_(header_os),
       dynamic_check_os_(dynamic_check_os),
       opts_(opts) {
+  SetAPI(opts_.api);
   CXXValue::Reset();
 }
 
 GenericCXXCodeGen::~GenericCXXCodeGen() = default;
 
-static const std::string& GetIncludeFile(CodeGen::API api) {
-  static const std::unordered_map<CodeGen::API, std::string> headers{
-      {CodeGen::API::HALO_RT, ""}, {CodeGen::API::ODLA_05, "<ODLA/odla.h>"}};
+static const std::string& GetIncludeFile(API api) {
+  static const std::unordered_map<API, std::string> headers{
+      {API::HALO_RT, ""}, {API::ODLA_05, "<ODLA/odla.h>"}};
   auto it = headers.find(api);
   HLCHECK(it != headers.end());
   if (it != headers.end()) {
@@ -89,8 +90,7 @@ static const std::string& GetIncludeFile(CodeGen::API api) {
   return headers.begin()->second;
 }
 
-static void EmitBanner(std::ostream* os, std::ostream* header_os,
-                       CodeGen::API api) {
+static void EmitBanner(std::ostream* os, std::ostream* header_os, API api) {
   static const std::string banner(
       "//===- Halo Compiler Generated File "
       "--------------------------------===//\n\n");
@@ -101,15 +101,15 @@ static void EmitBanner(std::ostream* os, std::ostream* header_os,
   *os << "#include " << GetIncludeFile(api) << "\n\n";
 }
 
-static std::string GetBF16Mode(CodeGen::BF16Mode mode) {
+static std::string GetBF16Mode(BF16Mode mode) {
   switch (mode) {
-    case CodeGen::BF16Mode::Accuracy: {
+    case BF16Mode::Accuracy: {
       return "BF16_ACCURACY_MODE";
     }
-    case CodeGen::BF16Mode::Performace: {
+    case BF16Mode::Performace: {
       return "BF16_PERFORMACE_MODE";
     }
-    case CodeGen::BF16Mode::Auto: {
+    case BF16Mode::Auto: {
       return "BF16_AUTO_MODE";
     }
     default: {
@@ -519,7 +519,7 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
   Instruction* return_inst = function.GetReturnInst();
   HLCHECK(return_inst && "No Return Instruction found");
 
-  bool is_compile_mode = opts_.exec_mode == CodeGen::ExecMode::Compile;
+  bool is_compile_mode = opts_.exec_mode == ExecMode::Compile;
 
   // Emit a separate computation builder function or not.
   bool emit_builder_func = function.GetParent()->Functions().size() == 1;
@@ -670,7 +670,7 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
 
   if (emit_builder_func) {
     // Emit function for launching computation.
-    if (opts_.exec_mode == CodeGen::ExecMode::Compile) {
+    if (opts_.exec_mode == ExecMode::Compile) {
       if (function.IsEntryFunction()) {
         os_ << "void " << fini_func_name << "(){\n";
         os_ << "  odla_DestroyComputation(Comp);\n";
@@ -688,11 +688,11 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
     if (function.IsEntryFunction()) {
       os_ << GetFunctionDecl(function, *return_inst, true, true, true)
           << " {\n";
-      if (opts_.exec_mode == CodeGen::ExecMode::Compile) {
+      if (opts_.exec_mode == ExecMode::Compile) {
         os_ << "  " << init_func_name << "();\n";
       }
     }
-    if (opts_.exec_mode == CodeGen::ExecMode::Interpret) {
+    if (opts_.exec_mode == ExecMode::Interpret) {
       os_ << "  " << helper_func_name;
       if (opts_.emit_inference_func_sig) {
         os_ << "(";
@@ -722,7 +722,7 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
     }
   }
 
-  if (opts_.exec_mode == CodeGen::ExecMode::Compile) {
+  if (opts_.exec_mode == ExecMode::Compile) {
     os_ << "  static odla_context Ctx;\n";
     os_ << "  if (Ctx == " << EmitNull()
         << ") {  odla_CreateContext(&Ctx); };\n";
@@ -757,7 +757,7 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
         << Join("(const odla_value_id)\"" + cv.name + "\"", arg_name, "Ctx")
         << ");\n";
   }
-  if (opts_.exec_mode == CodeGen::ExecMode::Compile) {
+  if (opts_.exec_mode == ExecMode::Compile) {
     os_ << "  odla_ExecuteComputation(Comp, Ctx, "
            "ODLA_COMPUTE_INFERENCE, "
         << EmitNull() << ");\n";

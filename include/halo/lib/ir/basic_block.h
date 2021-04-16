@@ -35,7 +35,7 @@ class LoopInst;
 /// This class defines a basic block in IR.
 /// A basic block is simply a list of instructions without terminating in
 /// the middle. It is formed as "Single-Enter and Single-Exit".
-class BasicBlock final : public IRObject {
+class HL_API_EXPORT BasicBlock final : public IRObject {
  public:
   BasicBlock() = delete;
   explicit BasicBlock(GlobalContext& ctx, const std::string& name)

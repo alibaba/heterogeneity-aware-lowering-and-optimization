@@ -49,7 +49,6 @@
 #include "llvm/Transforms/IPO/Internalize.h"
 
 namespace halo {
-
 GenericLLVMIRCodeGen::GenericLLVMIRCodeGen(
     const std::string& name, ConstantDataStorage constant_data_storage)
     : CodeGen(name), constant_data_storage_(constant_data_storage) {}

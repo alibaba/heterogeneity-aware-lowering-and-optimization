@@ -35,12 +35,12 @@ static bool ValidateFiles(const std::vector<std::string>& file_list) {
   return true;
 }
 
-static std::unique_ptr<Parser> GetParser(Parser::Format format,
+static std::unique_ptr<Parser> GetParser(ModelFormat format,
                                          const std::string& variant,
                                          const armory::Opts& opts) {
   std::unique_ptr<Parser> parser(nullptr);
   switch (format) {
-    case Parser::Format::TENSORFLOW: {
+    case ModelFormat::TENSORFLOW: {
       if (opts.convert_to_ipu_graphdef) {
         parser = CreateIPUParser(variant);
       } else {
@@ -48,15 +48,15 @@ static std::unique_ptr<Parser> GetParser(Parser::Format format,
       }
       break;
     }
-    case Parser::Format::ONNX: {
+    case ModelFormat::ONNX: {
       parser = CreateONNXParser();
       break;
     }
-    case Parser::Format::TFLITE: {
+    case ModelFormat::TFLITE: {
       parser = CreateTFLITEParser();
       break;
     }
-    case Parser::Format::CAFFE: {
+    case ModelFormat::CAFFE: {
       parser = CreateCAFFEParser();
       break;
     }
@@ -66,7 +66,7 @@ static std::unique_ptr<Parser> GetParser(Parser::Format format,
   return parser;
 }
 
-Status Parser::Parse(Function* function, Format format,
+Status Parser::Parse(Function* function, ModelFormat format,
                      const std::string& variant,
                      const std::vector<std::string>& file_list,
                      const armory::Opts& opts) {
@@ -80,7 +80,7 @@ Status Parser::Parse(Function* function, Format format,
   return parser->Parse(function, file_list, opts);
 }
 
-Status Parser::Parse(Function* function, Format format,
+Status Parser::Parse(Function* function, ModelFormat format,
                      const std::vector<std::string>& file_list,
                      const armory::Opts& opts) {
   return Parse(function, format, "", file_list, opts);
@@ -88,7 +88,8 @@ Status Parser::Parse(Function* function, Format format,
 
 Status Parser::Parse(Function* function,
                      const std::vector<const char*>& buffers,
-                     const std::vector<size_t>& buffer_sizes, Format format) {
+                     const std::vector<size_t>& buffer_sizes,
+                     ModelFormat format) {
   armory::Opts opts;
   std::string variant;
   auto parser = GetParser(format, variant, opts);
@@ -99,7 +100,7 @@ Status Parser::Parse(Function* function,
 }
 
 Status Parser::Parse(Function* function, const std::vector<const void*>& model,
-                     Format format) {
+                     ModelFormat format) {
   armory::Opts opts;
   std::string variant;
   auto parser = GetParser(format, variant, opts);

@@ -292,7 +292,7 @@ static int64_t GetTotalElements(const odla_value_shape& dims) {
 
 static nvinfer1::Dims GetNVDims(int n, const odla_uint32* dims) {
   nvinfer1::Dims ret;
-  assert(n <= nvinfer1::Dims::MAX_DIMS);
+  // assert(n <= nvinfer1::Dims::MAX_DIMS);
   ret.nbDims = n;
   if (n == 0) {
     ret.d[0] = 0;
@@ -306,7 +306,8 @@ static nvinfer1::Dims GetNVDims(int n, const odla_uint32* dims) {
 static nvinfer1::Dims GetNVDims(const odla_value_shape& dims) {
   nvinfer1::Dims ret;
   ret.nbDims = dims.size;
-  assert(dims.size <= std::min(nvinfer1::Dims::MAX_DIMS, ODLA_MAX_DIMENSION));
+  // nassert(dims.size <= std::min(nvinfer1::Dims::MAX_DIMS,
+  // ODLA_MAX_DIMENSION));
   if (dims.size == 0) {
     ret.d[0] = 0;
   }

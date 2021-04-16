@@ -24,19 +24,20 @@
 namespace halo {
 
 /// This pass simplififies instructions to reduce computation strength.
-class Fusion final : public BasicBlockPass {
- public:
-  struct Options {
+struct FusionOptions {
 #define HALO_FUSION_OPTIONS
 #include "halo/lib/ir/fusion.cc.inc"
 #undef HALO_FUSION_OPTIONS
-  };
-  Fusion(const Options& opts)
+};
+
+class Fusion final : public BasicBlockPass {
+ public:
+  Fusion(const FusionOptions& opts)
       : BasicBlockPass("Instruction Fusion"), opts_(opts) {}
 
   bool RunOnBasicBlock(BasicBlock* bb) override;
 
-  struct Options opts_;
+  struct FusionOptions opts_;
 
  private:
   std::pair<Def, Def> RunOnInstruction(Instruction* inst);
