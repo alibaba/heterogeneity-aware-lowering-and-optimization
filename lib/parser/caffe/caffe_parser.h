@@ -58,6 +58,11 @@ class CAFFEParser : public Parser {
   Status Parse(BasicBlock* bb, const caffe::NetParameter& layer_param,
                const caffe::NetParameter& layer_param_weight,
                const armory::Opts& opts);
+  Status Parse(Function* function, const std::vector<const char*>& buffers,
+               const std::vector<size_t>& buffer_sizes) override;
+  Status Parse(Function* function,
+               const std::vector<const void*>& model_defs) override;
+
   ~CAFFEParser();
 
   static void WriteCSVReport(const caffe::LayerParameter& layer_param,

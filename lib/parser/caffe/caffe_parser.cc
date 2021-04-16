@@ -38,6 +38,27 @@ CAFFEAttrs::CAFFEAttrs(const caffe::BlobShape& shape) {
 CAFFEParser::~CAFFEParser() {}
 
 Status CAFFEParser::Parse(Function* function,
+                          const std::vector<const char*>& buffers,
+                          const std::vector<size_t>& buffer_sizes) {
+  return Status::ASSERTION;
+}
+
+Status CAFFEParser::Parse(Function* function,
+                          const std::vector<const void*>& model_defs) {
+  if (model_defs.size() < 2) {
+    return Status::FILE_NOT_EXIST;
+  }
+  armory::Opts opts;
+  BasicBlockBuilder bb_builder(function);
+  BasicBlock* bb = bb_builder.CreateBasicBlock("bb0");
+  const caffe::NetParameter* net_param =
+      reinterpret_cast<const caffe::NetParameter*>(model_defs[0]);
+  const caffe::NetParameter* net_param_weight =
+      reinterpret_cast<const caffe::NetParameter*>(model_defs[0]);
+  return Parse(bb, *net_param, *net_param_weight, opts);
+}
+
+Status CAFFEParser::Parse(Function* function,
                           const std::vector<std::string>& file_list,
                           const armory::Opts& opts) {
   // Verify that the version of the library that we linked against is

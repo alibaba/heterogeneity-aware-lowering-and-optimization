@@ -17,7 +17,9 @@
 
 #include "tf_parser.h"
 
+#include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <google/protobuf/io/zero_copy_stream_impl_lite.h>
 #include <google/protobuf/text_format.h>
 
 #include <fstream>
@@ -59,6 +61,41 @@ Status TFParser::Parse(Function* function,
   BasicBlockBuilder bb_builder(function);
   BasicBlock* bb = bb_builder.CreateBasicBlock("bb0");
   return Parse(bb, graph_def, opts);
+}
+
+Status TFParser::Parse(Function* function,
+                       const std::vector<const char*>& buffers,
+                       const std::vector<size_t>& buffer_sizes) {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  tensorflow::GraphDef graph_def;
+
+  google::protobuf::io::ArrayInputStream ais(buffers[0], buffer_sizes[0]);
+
+  if (!graph_def.ParseFromZeroCopyStream(&ais)) {
+    if (!google::protobuf::TextFormat::Parse(&ais, &graph_def)) {
+      LOG(ERROR) << "Encountered error(s) when parsing memory graph";
+      return Status::ASSERTION;
+    }
+  }
+
+  BasicBlockBuilder bb_builder(function);
+  BasicBlock* bb = bb_builder.CreateBasicBlock("bb0");
+  return Parse(bb, graph_def, opts_);
+}
+
+Status TFParser::Parse(Function* function,
+                       const std::vector<const void*>& model_defs) {
+  if (model_defs.empty() || model_defs[0] == nullptr) {
+    return Status::FILE_NOT_EXIST;
+  }
+  BasicBlockBuilder bb_builder(function);
+  BasicBlock* bb = bb_builder.CreateBasicBlock("bb0");
+
+  const tensorflow::GraphDef* graph_def =
+      reinterpret_cast<const tensorflow::GraphDef*>(model_defs[0]);
+
+  return Parse(bb, *graph_def, opts_);
 }
 
 Status TFParser::Parse(BasicBlock* bb, const tensorflow::GraphDef& graph_def,
