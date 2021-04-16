@@ -4,8 +4,6 @@
 #include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/ir/values.h"
 #include "halo/lib/pass/pass_manager.h"
-#include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
-#include "halo/lib/transforms/type_legalizer.h"
 
 using namespace halo;
 
@@ -36,9 +34,9 @@ void build() {
   ctx.SetBasePath(getenv("HALO_BASE_PATH"));
 
   PassManager pm(ctx);
-  pm.AddPass<TypeLegalizer>();
-  pm.AddPass<GenericLLVMIRCodeGen>();
-  pm.AddPass<GenericLLVMIRWriter>(std::ref(std::cout), false);
+  pm.AddTypeLegalizerPass();
+  pm.AddGenericLLVMIRCodeGenPass();
+  pm.AddGenericLLVMIRWriterPass(std::cout, false);
 
   pm.Run(&m);
   // clang-format off

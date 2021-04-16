@@ -7,10 +7,6 @@
 #include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/ir/values.h"
 #include "halo/lib/pass/pass_manager.h"
-#include "halo/lib/target/cpu/x86/binary/x86_llvmir_codegen.h"
-#include "halo/lib/transforms/dce.h"
-#include "halo/lib/transforms/inst_simplify.h"
-#include "halo/lib/transforms/type_legalizer.h"
 
 using namespace halo;
 
@@ -44,14 +40,14 @@ void Build() {
   ctx.SetBasePath(getenv("HALO_BASE_PATH"));
 
   PassManager pm(ctx);
-  pm.AddPass<TypeLegalizer>();
-  pm.AddPass<DCE>();
-  pm.AddPass<InstSimplify>();
+  pm.AddTypeLegalizerPass();
+  pm.AddDCEPass();
+  pm.AddInstSimplifyPass();
   pm.Run(&m);
   // pm.AddPass<GenericLLVMIRCodeGen>();
   // pm.AddPass<GenericLLVMIRWriter>(std::ref(std::cout), false);
-  pm.AddPass<X86LLVMIRCodeGen>();
-  pm.AddPass<X86BinaryWriter>(std::ref(std::cout));
+  pm.AddX86LLVMIRCodeGenPass();
+  pm.AddX86BinaryWriterPass(std::cout);
 
   pm.Run(&m);
 }

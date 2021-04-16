@@ -89,13 +89,12 @@ static void build() {
   of_constants.open(xstr(OUTPUT) + ".bin", std::ofstream::binary);
 
   PassManager pm(ctx);
-  pm.AddPass<TFExtensionLegalizer>();
-  pm.AddPass<DCE>();
-  pm.AddPass<TypeLegalizer>(true);
-  pm.AddPass<InstSimplify>();
-  auto cg =
-      pm.AddPass<GenericCXXCodeGen>(std::ref(of_code), std::ref(std::cout));
-  pm.AddPass<X86ConstantWriter>(std::ref(of_constants));
+  pm.AddTFExtensionLegalizerPass();
+  pm.AddDCEPass();
+  pm.AddTypeLegalizerPass(true);
+  pm.AddInstSimplifyPass();
+  auto cg = pm.AddGenericCXXCodeGenPass(of_code, std::cout);
+  pm.AddX86ConstantWriterPass(of_constants);
   pm.Run(&m);
 }
 

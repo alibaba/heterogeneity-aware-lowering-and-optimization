@@ -23,29 +23,10 @@
 #include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/parser/parser.h"
 #include "halo/lib/pass/pass_manager.h"
-#include "halo/lib/quantizer/weights_quantizer.h"
-#include "halo/lib/target/cpu/arm/binary/arm_llvmir_codegen.h"
-#include "halo/lib/target/cpu/riscv/binary/riscv_llvmir_codegen.h"
-#include "halo/lib/target/cpu/x86/binary/x86_llvmir_codegen.h"
-#include "halo/lib/target/generic_cxx/generic_cxx_codegen.h"
-#include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
-#include "halo/lib/target/triton/triton_config_writer.h"
-#include "halo/lib/transforms/caffeextension_legalizer.h"
-#include "halo/lib/transforms/dce.h"
-#include "halo/lib/transforms/device_placement.h"
 #include "halo/lib/transforms/fusion.h"
-#include "halo/lib/transforms/input_legalizer.h"
-#include "halo/lib/transforms/input_rewriter.h"
-#include "halo/lib/transforms/inst_simplify.h"
-#include "halo/lib/transforms/onnxextension_legalizer.h"
-#include "halo/lib/transforms/output_rewriter.h"
 #include "halo/lib/transforms/reorder_channel.h"
-#include "halo/lib/transforms/splitting.h"
-#include "halo/lib/transforms/tfextension_legalizer.h"
-#include "halo/lib/transforms/tfliteextension_legalizer.h"
-#include "halo/lib/transforms/type_legalizer.h"
-#include "halo/lib/transforms/typecast.h"
 #include "halo/utils/cl_options.h"
+#include "halo/utils/passes_helper.h"
 #include "halo/version.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringSwitch.h"
@@ -248,177 +229,6 @@ static llvm::cl::opt<bool> CheckModel("check-model",
 #include "halo/lib/ir/fusion.cc.inc"
 #undef HALO_FUSION_CMD_OPTIONS_DECL
 
-static void PopulateCodeGenPasses(PassManager* pm, std::ostream* out_code,
-                                  std::ostream* out_constants,
-                                  std::ostream* out_header,
-                                  std::ostream* out_dynamic_check,
-                                  bool is_c_or_cxx_output,
-                                  bool is_binary_output) {
-  auto constant_storage =
-      GenericLLVMIRCodeGen::ConstantDataStorage::DefinedAsStatic;
-  if (SeparateConstants) {
-    constant_storage =
-        GenericLLVMIRCodeGen::ConstantDataStorage::DeclaredAsExternal;
-  }
-
-  CodeGen* cg = nullptr;
-  if (is_c_or_cxx_output) {
-    Opts opts(BF16Mode);
-    if (llvm::StringRef(Target).startswith_lower("cc")) {
-      opts.dialect = Dialect::C99;
-    }
-    opts.print_mem_stats = PrintMemStats;
-    opts.emit_value_reset = EmitValueReset;
-    opts.exec_mode = ExecMode.getValue();
-    opts.emit_value_id_as_int = EmitValueIDAsInt;
-    opts.emit_inference_func_sig = EmitInferenceFunctionSignature;
-    opts.emit_dynamic_batch = (Batch.getValue() == kDynamicBatchSize);
-    opts.fp16_mode = EnableFP16;
-    opts.max_batch_size = MaxBatch.getValue();
-    opts.min_batch_size = MinBatch.getValue();
-    opts.opt_batch_size = OptBatch.getValue();
-    opts.check_model = CheckModel;
-    opts.enable_ipu_device = EnableIpuDevice;
-    opts.use_ipu_model = UseIpuModel;
-    opts.ipu_num = IpuNum;
-    opts.batches_per_step = BatchesPerStep;
-
-    pm->AddPass<WeightsQuantizer>(QuantWeights.getValue(), PGQFile.getValue());
-    cg = pm->AddPass<GenericCXXCodeGen>(std::ref(*out_code),
-                                        std::ref(*out_header),
-                                        std::ref(*out_dynamic_check), opts);
-    cg->SetAPI(Api);
-
-    if (EmitDataAsC) {
-      pm->AddPass<GenericCXXConstantWriter>(std::ref(*out_constants));
-    } else {
-      pm->AddPass<X86ConstantWriter>(std::ref(*out_constants));
-    }
-    if (EmitTritonConfig) {
-      pm->AddPass<TritonConfigWriter>(
-          TritonConfigFile.getValue(),
-          opts.emit_dynamic_batch ? MaxBatch.getValue() : 0);
-    }
-    return;
-  }
-
-  if (EmitLLVMIR) {
-    pm->AddPass<WeightsQuantizer>(QuantWeights.getValue(), PGQFile.getValue());
-    cg = pm->AddPass<GenericLLVMIRCodeGen>(constant_storage);
-    pm->AddPass<GenericLLVMIRWriter>(std::ref(*out_code), is_binary_output);
-    if (SeparateConstants && !EmitCodeOnly) {
-      pm->AddPass<GenericConstantWriter>(std::ref(*out_constants),
-                                         is_binary_output);
-    }
-  } else {
-    llvm::Triple triple(Target);
-    switch (triple.getArch()) {
-      case llvm::Triple::ArchType::x86:
-      case llvm::Triple::ArchType::x86_64: {
-        pm->AddPass<X86LLVMIRCodeGen>(
-            GenericLLVMIRCodeGen::ConstantDataStorage::DeclaredAsExternal);
-        pm->AddPass<X86BinaryWriter>(std::ref(*out_code));
-        if (SeparateConstants && !EmitCodeOnly) {
-          pm->AddPass<WeightsQuantizer>(QuantWeights.getValue(),
-                                        PGQFile.getValue());
-          pm->AddPass<X86ConstantWriter>(std::ref(*out_constants));
-        }
-        break;
-      }
-      case llvm::Triple::ArchType::aarch64: {
-        pm->AddPass<ARMLLVMIRCodeGen>(
-            GenericLLVMIRCodeGen::ConstantDataStorage::DeclaredAsExternal);
-        pm->AddPass<ARMBinaryWriter>(std::ref(*out_code));
-        if (SeparateConstants && !EmitCodeOnly) {
-          pm->AddPass<WeightsQuantizer>(QuantWeights.getValue(),
-                                        PGQFile.getValue());
-          pm->AddPass<ARMConstantWriter>(std::ref(*out_constants));
-        }
-        break;
-      }
-      case llvm::Triple::ArchType::riscv32:
-      case llvm::Triple::ArchType::riscv64: {
-        if (RISCVOpt) {
-          pm->AddPass<RISCVLLVMIRCodeGen>(
-              GenericLLVMIRCodeGen::ConstantDataStorage::DeclaredAsExternal,
-              "libRT_RISCV.a");
-        } else {
-          pm->AddPass<RISCVLLVMIRCodeGen>(
-              GenericLLVMIRCodeGen::ConstantDataStorage::DeclaredAsExternal);
-        }
-        pm->AddPass<RISCVBinaryWriter>(std::ref(*out_code));
-        if (SeparateConstants && !EmitCodeOnly) {
-          pm->AddPass<WeightsQuantizer>(QuantWeights.getValue(),
-                                        PGQFile.getValue());
-          pm->AddPass<RISCVConstantWriter>(std::ref(*out_constants));
-        }
-
-        break;
-      }
-
-      default: {
-        HLCHECK(0 && "Unsupported");
-      }
-    }
-  }
-  if (cg != nullptr) {
-    cg->SetAPI(Api);
-  }
-}
-
-static void PopulatePasses(PassManager* pm, std::ostream* out_code,
-                           std::ostream* out_constants,
-                           std::ostream* out_header,
-                           std::ostream* out_dynamic_check,
-                           bool is_c_or_cxx_output, bool is_binary_output,
-                           Parser::Format format) {
-  std::vector<std::string> input_shapes(InputsShape.begin(), InputsShape.end());
-  pm->AddPass<InputLegalizer>(Batch.getValue(), input_shapes,
-                              PreprocessScale.getValue());
-  if (!Outputs.empty()) {
-    std::vector<std::string> outputs(Outputs.begin(), Outputs.end());
-    pm->AddPass<OutputRewriter>(outputs);
-  }
-  if (format == Parser::Format::CAFFE) {
-    pm->AddPass<CAFFEExtensionLegalizer>();
-  } else if (format == Parser::Format::TENSORFLOW) {
-    pm->AddPass<TFExtensionLegalizer>();
-  } else if (format == Parser::Format::TFLITE) {
-    HLCHECK(format == Parser::Format::TFLITE);
-    pm->AddPass<TFLITEExtensionLegalizer>();
-  } else {
-    HLCHECK(format == Parser::Format::ONNX);
-    pm->AddPass<ONNXExtensionLegalizer>();
-  }
-  pm->AddPass<DCE>();
-  pm->AddPass<TypeLegalizer>(true);
-  if (!Inputs.empty()) {
-    std::vector<std::string> inputs(Inputs.begin(), Inputs.end());
-    pm->AddPass<InputRewriter>(inputs);
-  }
-  auto fusion_opts = GetFusionOptions();
-  pm->AddPass<InstSimplify>(
-      llvm::StringRef(Target).startswith("cxx"), DisableBroadcasting.getValue(),
-      RemoveInputTranspose.getValue(), RemoveOutputTranspose.getValue(),
-      DisableConvBN.getValue(), fusion_opts.ConvBias);
-  if (ReorderChannelLayout != ReorderChannel::ChannelOrder::None) {
-    pm->AddPass<ReorderChannel>(ReorderChannelLayout ==
-                                ReorderChannel::ChannelOrder::ChannelFirst);
-  }
-  pm->AddPass<Fusion>(fusion_opts);
-  if (SplitFunction) {
-    pm->AddPass<Splitting>();
-    pm->AddPass<DevicePlacement>();
-  }
-  if (!DisableTypeCast) {
-    pm->AddPass<TypeCast>();
-  }
-
-  PopulateCodeGenPasses(pm, out_code, out_constants, out_header,
-                        out_dynamic_check, is_c_or_cxx_output,
-                        is_binary_output);
-}
-
 static bool FormatCode(const std::string& filename) {
   if (filename.empty() || filename == "-") {
     return false;
@@ -540,11 +350,49 @@ int main(int argc, char** argv) {
     out_dynamic_check = &of_dynamic_check;
   }
 
-  PopulatePasses(&pm, out_code, out_constants, out_header, out_dynamic_check,
-                 is_c_or_cxx_output, is_binary_output, format);
+  Opts cg_opts;
+  cg_opts.bf16_mode = BF16Mode;
+  cg_opts.print_mem_stats = PrintMemStats;
+  cg_opts.emit_value_reset = EmitValueReset;
+  cg_opts.exec_mode = ExecMode.getValue();
+  cg_opts.emit_value_id_as_int = EmitValueIDAsInt;
+  cg_opts.emit_inference_func_sig = EmitInferenceFunctionSignature;
+  cg_opts.emit_dynamic_batch = (Batch.getValue() == kDynamicBatchSize);
+  cg_opts.fp16_mode = EnableFP16;
+  cg_opts.max_batch_size = MaxBatch.getValue();
+  cg_opts.min_batch_size = MinBatch.getValue();
+  cg_opts.opt_batch_size = OptBatch.getValue();
+  cg_opts.check_model = CheckModel;
+  cg_opts.enable_ipu_device = EnableIpuDevice;
+  cg_opts.use_ipu_model = UseIpuModel;
+  cg_opts.ipu_num = IpuNum;
+  cg_opts.batches_per_step = BatchesPerStep;
+  cg_opts.api = Api;
+  cg_opts.disable_broadcasting = DisableBroadcasting;
+  cg_opts.separate_constants = SeparateConstants;
+  cg_opts.disable_conv_bn = DisableConvBN;
+  cg_opts.remove_input_transpose = RemoveInputTranspose;
+  cg_opts.remove_output_transpose = RemoveOutputTranspose;
+
   if (is_c_or_cxx_output) {
     ctx.SetTargetTriple("x86_64"); // For binary constant writer.
+    if (llvm::StringRef(Target).startswith_lower("cc")) {
+      cg_opts.dialect = Dialect::C99;
+    }
   }
+  std::vector<std::string> input_shapes(InputsShape.begin(), InputsShape.end());
+  std::vector<std::string> inputs(Inputs.begin(), Inputs.end());
+  std::vector<std::string> outputs(Outputs.begin(), Outputs.end());
+  const auto& fusion_opts = GetFusionOptions();
+
+  PopulateOptPasses(&pm, Target, input_shapes, inputs, outputs, Batch,
+                    PreprocessScale, ReorderChannelLayout, SplitFunction,
+                    DisableTypeCast, format, cg_opts, fusion_opts);
+  PopulateCodeGenPasses(&pm, out_code, out_constants, out_header,
+                        out_dynamic_check, Target, is_c_or_cxx_output,
+                        is_binary_output, EmitDataAsC, EmitCodeOnly, EmitLLVMIR,
+                        EmitTritonConfig, TritonConfigFile, QuantWeights,
+                        PGQFile, RISCVOpt, cg_opts);
 
   auto status = pm.Run(&m);
 

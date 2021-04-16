@@ -17,6 +17,32 @@
 
 #include "halo/lib/pass/pass_manager.h"
 
+#include <ostream>
+
+#include "halo/lib/quantizer/weights_quantizer.h"
+#include "halo/lib/target/cpu/arm/binary/arm_llvmir_codegen.h"
+#include "halo/lib/target/cpu/riscv/binary/riscv_llvmir_codegen.h"
+#include "halo/lib/target/cpu/x86/binary/x86_llvmir_codegen.h"
+#include "halo/lib/target/generic_cxx/generic_cxx_codegen.h"
+#include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
+#include "halo/lib/target/triton/triton_config_writer.h"
+#include "halo/lib/transforms/analyzer.h"
+#include "halo/lib/transforms/caffeextension_legalizer.h"
+#include "halo/lib/transforms/dce.h"
+#include "halo/lib/transforms/device_placement.h"
+#include "halo/lib/transforms/fusion.h"
+#include "halo/lib/transforms/input_legalizer.h"
+#include "halo/lib/transforms/input_rewriter.h"
+#include "halo/lib/transforms/inst_simplify.h"
+#include "halo/lib/transforms/onnxextension_legalizer.h"
+#include "halo/lib/transforms/output_rewriter.h"
+#include "halo/lib/transforms/reorder_channel.h"
+#include "halo/lib/transforms/splitting.h"
+#include "halo/lib/transforms/tfextension_legalizer.h"
+#include "halo/lib/transforms/tfliteextension_legalizer.h"
+#include "halo/lib/transforms/type_legalizer.h"
+#include "halo/lib/transforms/typecast.h"
+
 static bool IsPrintPass = false;
 
 namespace halo {
@@ -207,6 +233,177 @@ void PassManagerImpl::Print(std::ostream& os) const {
   for (auto& pass : passes_) {
     pass->Print(os);
   }
+}
+
+Pass* PassManager::AddAnalyzerPass(std::ostream* os) {
+  return AddPass<Analyzer>(os);
+}
+
+Pass* PassManager::AddARMBinaryWriterPass(std::ostream& os) {
+  return AddPass<ARMBinaryWriter>(os);
+}
+
+Pass* PassManager::AddARMConstantWriterPass(std::ostream& os) {
+  return AddPass<ARMConstantWriter>(os);
+}
+
+Pass* PassManager::AddARMLLVMIRCodeGenPass(
+    GenericLLVMIRCodeGen::ConstantDataStorage constant_data_storage) {
+  return AddPass<ARMLLVMIRCodeGen>(constant_data_storage);
+}
+
+Pass* PassManager::AddCAFFEExtensionLegalizerPass() {
+  return AddPass<CAFFEExtensionLegalizer>();
+}
+
+Pass* PassManager::AddDCEPass() { return AddPass<DCE>(); }
+
+Pass* PassManager::AddDevicePlacementPass() {
+  return AddPass<DevicePlacement>();
+}
+
+Pass* PassManager::AddFusionPass(const Fusion::Options& opts) {
+  return AddPass<Fusion>(opts);
+}
+
+Pass* PassManager::AddGenericConstantWriterPass(std::ostream& os,
+                                                bool bitcode_format) {
+  return AddPass<GenericConstantWriter>(os, bitcode_format);
+}
+
+Pass* PassManager::AddGenericCXXConstantWriterPass(std::ostream& os) {
+  return AddPass<GenericCXXConstantWriter>(os);
+}
+
+Pass* PassManager::AddGenericCXXCodeGenPass(std::ostream& os,
+                                            std::ostream& header_os) {
+  return AddPass<GenericCXXCodeGen>(os, header_os);
+}
+
+Pass* PassManager::AddGenericCXXCodeGenPass(std::ostream& os,
+                                            std::ostream& header_os,
+                                            std::ostream& dynamic_check_os,
+                                            const Opts& opts) {
+  return AddPass<GenericCXXCodeGen>(os, header_os, dynamic_check_os, opts);
+}
+
+Pass* PassManager::AddGenericLLVMIRCodeGenPass(
+    const std::string& name,
+    GenericLLVMIRCodeGen::ConstantDataStorage constant_data_storage) {
+  return AddPass<GenericLLVMIRCodeGen>(name, constant_data_storage);
+}
+
+Pass* PassManager::AddGenericLLVMIRCodeGenPass() {
+  return AddPass<GenericLLVMIRCodeGen>();
+}
+
+Pass* PassManager::AddGenericLLVMIRCodeGenPass(
+    GenericLLVMIRCodeGen::ConstantDataStorage constant_data_storage) {
+  return AddPass<GenericLLVMIRCodeGen>(constant_data_storage);
+}
+
+Pass* PassManager::AddGenericLLVMIRWriterPass(std::ostream& os,
+                                              bool bitcode_format) {
+  return AddPass<GenericLLVMIRWriter>(os, bitcode_format);
+}
+
+Pass* PassManager::AddInputRewriterPass(
+    const std::vector<std::string>& inputs) {
+  return AddPass<InputRewriter>(inputs);
+}
+
+Pass* PassManager::AddInputLegalizerPass(
+    int batch_size, const std::vector<std::string>& inputs_shapes,
+    const std::string& scale_str) {
+  return AddPass<InputLegalizer>(batch_size, inputs_shapes, scale_str);
+}
+
+Pass* PassManager::AddInstSimplifyPass() { return AddPass<InstSimplify>(); }
+
+Pass* PassManager::AddInstSimplifyPass(bool simplify_for_preprocess,
+                                       bool disable_broadcasting,
+                                       bool remove_input_transpose,
+                                       bool remove_output_transpose,
+                                       bool disable_conv_bn,
+                                       bool fuse_conv_bias) {
+  return AddPass<InstSimplify>(simplify_for_preprocess, disable_broadcasting,
+                               remove_input_transpose, remove_output_transpose,
+                               disable_conv_bn, fuse_conv_bias);
+}
+
+Pass* PassManager::AddONNXExtensionLegalizerPass() {
+  return AddPass<ONNXExtensionLegalizer>();
+}
+
+Pass* PassManager::AddOutputRewriterPass(
+    const std::vector<std::string>& outputs) {
+  return AddPass<OutputRewriter>(outputs);
+}
+
+Pass* PassManager::AddReorderChannelPass(bool channel_first) {
+  return AddPass<ReorderChannel>(channel_first);
+}
+Pass* PassManager::AddRISCVBinaryWriterPass(std::ostream& os) {
+  return AddPass<RISCVBinaryWriter>(os);
+}
+
+Pass* PassManager::AddRISCVConstantWriterPass(std::ostream& os) {
+  return AddPass<ARMConstantWriter>(os);
+}
+Pass* PassManager::AddRISCVLLVMIRCodeGenPass(
+    GenericLLVMIRCodeGen::ConstantDataStorage constant_data_storage,
+    std::string rt_lib_name) {
+  return AddPass<RISCVLLVMIRCodeGen>(constant_data_storage, rt_lib_name);
+}
+
+Pass* PassManager::AddRISCVLLVMIRCodeGenPass(
+    GenericLLVMIRCodeGen::ConstantDataStorage constant_data_storage) {
+  return AddPass<RISCVLLVMIRCodeGen>(constant_data_storage);
+}
+
+Pass* PassManager::AddSplittingPass() { return AddPass<Splitting>(); }
+
+Pass* PassManager::AddTFExtensionLegalizerPass() {
+  return AddPass<TFExtensionLegalizer>();
+}
+
+Pass* PassManager::AddTFLiteExtensionLegalizerPass() {
+  return AddPass<TFLITEExtensionLegalizer>();
+}
+
+Pass* PassManager::AddTritonConfigWriterPass(const std::string& filename,
+                                             int max_batch_size) {
+  return AddPass<TritonConfigWriter>(filename, max_batch_size);
+}
+
+Pass* PassManager::AddTypeCastPass() { return AddPass<TypeCast>(); }
+
+Pass* PassManager::AddTypeLegalizerPass() { return AddPass<TypeLegalizer>(); }
+
+Pass* PassManager::AddTypeLegalizerPass(bool relaxed) {
+  return AddPass<TypeLegalizer>(relaxed);
+}
+
+Pass* PassManager::AddWeightsQuantizerPass(CodeGen::Quantization quant,
+                                           const std::string& file) {
+  return AddPass<WeightsQuantizer>(quant, file);
+}
+
+Pass* PassManager::AddX86BinaryWriterPass(std::ostream& os) {
+  return AddPass<X86BinaryWriter>(os);
+}
+
+Pass* PassManager::AddX86ConstantWriterPass(std::ostream& os) {
+  return AddPass<X86ConstantWriter>(os);
+}
+
+Pass* PassManager::AddX86LLVMIRCodeGenPass() {
+  return AddPass<X86LLVMIRCodeGen>();
+}
+
+Pass* PassManager::AddX86LLVMIRCodeGenPass(
+    GenericLLVMIRCodeGen::ConstantDataStorage constant_data_storage) {
+  return AddPass<X86LLVMIRCodeGen>(constant_data_storage);
 }
 
 } // end namespace halo

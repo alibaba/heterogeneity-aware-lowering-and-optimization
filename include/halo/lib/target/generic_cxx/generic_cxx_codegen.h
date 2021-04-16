@@ -42,8 +42,6 @@ enum class Dialect {
 };
 
 struct Opts {
-  Opts(const CodeGen::BF16Mode& mode) : bf16_mode(mode) {}
-  Opts() = default;
   Dialect dialect = Dialect::CXX_11;
   bool print_mem_stats = false;
   bool emit_value_reset = false;
@@ -51,6 +49,7 @@ struct Opts {
   bool emit_value_id_as_int = false;
   CodeGen::BF16Mode bf16_mode = CodeGen::BF16Mode::Disable;
   CodeGen::ExecMode exec_mode = CodeGen::ExecMode::Compile;
+  CodeGen::API api = CodeGen::API::ODLA_05;
   bool emit_inference_func_sig = false;
   bool emit_model_info_apis = false;
   bool emit_dynamic_batch = false;
@@ -63,6 +62,11 @@ struct Opts {
   int64_t ipu_num = 1;
   int64_t batches_per_step = 1;
   bool check_model = false;
+  bool disable_broadcasting = false;
+  bool separate_constants = true;
+  bool disable_conv_bn = false;
+  bool remove_input_transpose = false;
+  bool remove_output_transpose = false;
 };
 
 struct CXXType {
