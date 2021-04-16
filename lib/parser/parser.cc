@@ -35,17 +35,12 @@ static bool ValidateFiles(const std::vector<std::string>& file_list) {
   return true;
 }
 
-Status Parser::Parse(Function* function, Format format,
-                     const std::string& variant,
-                     const std::vector<std::string>& file_list,
-                     const armory::Opts& opts) {
-  if (!ValidateFiles(file_list)) {
-    return Status::FILE_NOT_EXIST;
-  }
-
+static std::unique_ptr<Parser> GetParser(Parser::Format format,
+                                         const std::string& variant,
+                                         const armory::Opts& opts) {
   std::unique_ptr<Parser> parser(nullptr);
   switch (format) {
-    case Format::TENSORFLOW: {
+    case Parser::Format::TENSORFLOW: {
       if (opts.convert_to_ipu_graphdef) {
         parser = CreateIPUParser(variant);
       } else {
@@ -53,20 +48,34 @@ Status Parser::Parse(Function* function, Format format,
       }
       break;
     }
-    case Format::ONNX: {
+    case Parser::Format::ONNX: {
       parser = CreateONNXParser();
       break;
     }
-    case Format::TFLITE: {
+    case Parser::Format::TFLITE: {
       parser = CreateTFLITEParser();
       break;
     }
-    case Format::CAFFE: {
+    case Parser::Format::CAFFE: {
       parser = CreateCAFFEParser();
       break;
     }
     default:
       HLCHECK(0 && "Unsupported format");
+  }
+  return parser;
+}
+
+Status Parser::Parse(Function* function, Format format,
+                     const std::string& variant,
+                     const std::vector<std::string>& file_list,
+                     const armory::Opts& opts) {
+  if (!ValidateFiles(file_list)) {
+    return Status::FILE_NOT_EXIST;
+  }
+  auto parser = GetParser(format, variant, opts);
+  if (parser == nullptr) {
+    return Status::ILLEGAL_PARAM;
   }
   return parser->Parse(function, file_list, opts);
 }
@@ -75,6 +84,29 @@ Status Parser::Parse(Function* function, Format format,
                      const std::vector<std::string>& file_list,
                      const armory::Opts& opts) {
   return Parse(function, format, "", file_list, opts);
+}
+
+Status Parser::Parse(Function* function,
+                     const std::vector<const char*>& buffers,
+                     const std::vector<size_t>& buffer_sizes, Format format) {
+  armory::Opts opts;
+  std::string variant;
+  auto parser = GetParser(format, variant, opts);
+  if (parser == nullptr) {
+    return Status::ILLEGAL_PARAM;
+  }
+  return parser->Parse(function, buffers, buffer_sizes);
+}
+
+Status Parser::Parse(Function* function, const std::vector<const void*>& model,
+                     Format format) {
+  armory::Opts opts;
+  std::string variant;
+  auto parser = GetParser(format, variant, opts);
+  if (parser == nullptr) {
+    return Status::ILLEGAL_PARAM;
+  }
+  return parser->Parse(function, model);
 }
 
 } // namespace halo

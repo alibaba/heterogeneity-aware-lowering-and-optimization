@@ -48,8 +48,22 @@ class Parser {
   virtual Status Parse(Function* function,
                        const std::vector<std::string>& file_list,
                        const armory::Opts& opts) = 0;
+  virtual Status Parse(Function* function,
+                       const std::vector<const char*>& buffers,
+                       const std::vector<size_t>& buffer_sizes) = 0;
+  virtual Status Parse(Function* function,
+                       const std::vector<const void*>& model_defs) = 0;
 
-  /// Parse a file from `file_lists` based on specified format. `variant`
+  /// Parse a model from specified data structure (e.g. graphdef).
+  static Status Parse(Function* function, const std::vector<const void*>& model,
+                      Format format);
+
+  /// Parse a model from buffers based on specified format.
+  static Status Parse(Function* function,
+                      const std::vector<const char*>& buffers,
+                      const std::vector<size_t>& buffer_sizes, Format format);
+
+  /// Parse a model from `file_lists` based on specified format. `variant`
   /// specifies sub variants like version etc., which can be empty.
   static Status Parse(Function* function, Format format,
                       const std::string& variant,
