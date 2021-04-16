@@ -48,15 +48,15 @@ static std::unique_ptr<Parser> GetParser(ModelFormat format,
       }
       break;
     }
-    case Parser::ModalFormat::ONNX: {
+    case ModelFormat::ONNX: {
       parser = CreateONNXParser();
       break;
     }
-    case Parser::ModalFormat::TFLITE: {
+    case ModelFormat::TFLITE: {
       parser = CreateTFLITEParser();
       break;
     }
-    case Parser::ModalFormat::CAFFE: {
+    case ModelFormat::CAFFE: {
       parser = CreateCAFFEParser();
       break;
     }
@@ -66,7 +66,7 @@ static std::unique_ptr<Parser> GetParser(ModelFormat format,
   return parser;
 }
 
-Status Parser::Parse(Function* function, ModalFormat format,
+Status Parser::Parse(Function* function, ModelFormat format,
                      const std::string& variant,
                      const std::vector<std::string>& file_list,
                      const armory::Opts& opts) {
@@ -100,7 +100,7 @@ Status Parser::Parse(Function* function,
 }
 
 Status Parser::Parse(Function* function, const std::vector<const void*>& model,
-                     ModalFormat format) {
+                     ModelFormat format) {
   armory::Opts opts;
   std::string variant;
   auto parser = GetParser(format, variant, opts);
