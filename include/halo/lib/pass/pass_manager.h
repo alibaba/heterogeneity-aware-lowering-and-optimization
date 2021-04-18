@@ -22,6 +22,7 @@
 #include <list>
 #include <memory>
 
+#include "halo/halo.h"
 #include "halo/lib/framework/global_context.h"
 #include "halo/lib/ir/module.h"
 #include "halo/lib/pass/pass.h"
@@ -33,9 +34,10 @@ namespace halo {
 
 class FunctionPassManager;
 class PassManagerImpl;
+struct FusionOptions;
 
 // A class that manages all IR transformation passes.
-class PassManager final {
+class HL_API_EXPORT PassManager final {
  public:
   explicit PassManager(GlobalContext& ctx);
   ~PassManager();
@@ -59,24 +61,21 @@ class PassManager final {
   Pass* AddAnalyzerPass(std::ostream* os);
   Pass* AddARMBinaryWriterPass(std::ostream& os);
   Pass* AddARMConstantWriterPass(std::ostream& os);
-  Pass* AddARMLLVMIRCodeGenPass(
-      GenericLLVMIRCodeGen::ConstantDataStorage constant_data_storage);
+  Pass* AddARMLLVMIRCodeGenPass(ConstantDataStorage constant_data_storage);
   Pass* AddCAFFEExtensionLegalizerPass();
   Pass* AddDCEPass();
   Pass* AddDevicePlacementPass();
-  Pass* AddFusionPass(const Fusion::Options& opts);
+  Pass* AddFusionPass(const FusionOptions& opts);
   Pass* AddGenericConstantWriterPass(std::ostream& os, bool bitcode_format);
   Pass* AddGenericCXXConstantWriterPass(std::ostream& os);
   Pass* AddGenericCXXCodeGenPass(std::ostream& os, std::ostream& header_os);
   Pass* AddGenericCXXCodeGenPass(std::ostream& os, std::ostream& header_os,
                                  std::ostream& dynamic_check_os,
-                                 const Opts& opts);
+                                 const CXXCodeGenOpts& opts);
   Pass* AddGenericLLVMIRCodeGenPass();
-  Pass* AddGenericLLVMIRCodeGenPass(
-      GenericLLVMIRCodeGen::ConstantDataStorage constant_data_storage);
-  Pass* AddGenericLLVMIRCodeGenPass(
-      const std::string& name,
-      GenericLLVMIRCodeGen::ConstantDataStorage constant_data_storage);
+  Pass* AddGenericLLVMIRCodeGenPass(ConstantDataStorage constant_data_storage);
+  Pass* AddGenericLLVMIRCodeGenPass(const std::string& name,
+                                    ConstantDataStorage constant_data_storage);
   Pass* AddGenericLLVMIRWriterPass(std::ostream& os, bool bitcode_format);
   Pass* AddInputLegalizerPass(int batch_size,
                               const std::vector<std::string>& inputs_shapes,
@@ -93,12 +92,10 @@ class PassManager final {
   Pass* AddReorderChannelPass(bool channel_first);
   Pass* AddRISCVBinaryWriterPass(std::ostream& os);
   Pass* AddRISCVConstantWriterPass(std::ostream& os);
-  Pass* AddRISCVLLVMIRCodeGenPass(
-      GenericLLVMIRCodeGen::ConstantDataStorage constant_data_storage);
+  Pass* AddRISCVLLVMIRCodeGenPass(ConstantDataStorage constant_data_storage);
 
-  Pass* AddRISCVLLVMIRCodeGenPass(
-      GenericLLVMIRCodeGen::ConstantDataStorage constant_data_storage,
-      std::string rt_lib_name);
+  Pass* AddRISCVLLVMIRCodeGenPass(ConstantDataStorage constant_data_storage,
+                                  std::string rt_lib_name);
   Pass* AddSplittingPass();
   Pass* AddTFExtensionLegalizerPass();
   Pass* AddTFLiteExtensionLegalizerPass();
@@ -107,13 +104,11 @@ class PassManager final {
   Pass* AddTypeCastPass();
   Pass* AddTypeLegalizerPass();
   Pass* AddTypeLegalizerPass(bool relaxed);
-  Pass* AddWeightsQuantizerPass(CodeGen::Quantization quant,
-                                const std::string& file);
+  Pass* AddWeightsQuantizerPass(Quantization quant, const std::string& file);
   Pass* AddX86BinaryWriterPass(std::ostream& os);
   Pass* AddX86ConstantWriterPass(std::ostream& os);
   Pass* AddX86LLVMIRCodeGenPass();
-  Pass* AddX86LLVMIRCodeGenPass(
-      GenericLLVMIRCodeGen::ConstantDataStorage constant_data_storage);
+  Pass* AddX86LLVMIRCodeGenPass(ConstantDataStorage constant_data_storage);
 
  private:
   Pass* Add(std::unique_ptr<ModulePass> pass);

@@ -18,6 +18,7 @@
 #ifndef HALO_LIB_TARGET_CODEGEN_H_
 #define HALO_LIB_TARGET_CODEGEN_H_
 
+#include "halo/halo.h"
 #include "halo/lib/ir/all_instructions.h"
 #include "halo/lib/pass/pass.h"
 
@@ -27,10 +28,6 @@ namespace halo {
 // function for each IR class.
 class CodeGen : public ModulePass {
  public:
-  enum class ExecMode { Compile, Interpret };
-  enum class API { HALO_RT, ODLA_05 };
-  enum class Quantization { QUINT8, None };
-  enum class BF16Mode { Disable, Accuracy, Performace, Auto };
   CodeGen(const std::string& pass_name)
       : ModulePass(pass_name), api_(API::ODLA_05) {}
   bool RunOnModule(Module* module) = 0;

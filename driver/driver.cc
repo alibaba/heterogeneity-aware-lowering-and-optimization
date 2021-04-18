@@ -19,6 +19,7 @@
 #include <set>
 #include <string>
 
+#include "halo/halo.h"
 #include "halo/lib/framework/common.h"
 #include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/parser/parser.h"
@@ -61,15 +62,14 @@ static llvm::cl::opt<std::string> ModuleName("module-name",
                                              llvm::cl::desc("name of module"),
                                              llvm::cl::init("halo_module"));
 
-static llvm::cl::opt<ReorderChannel::ChannelOrder> ReorderChannelLayout(
-    llvm::cl::values(clEnumValN(ReorderChannel::ChannelOrder::None, "none",
-                                "No reordering"),
-                     clEnumValN(ReorderChannel::ChannelOrder::ChannelFirst,
-                                "channel-first", "Reorder to channel first"),
-                     clEnumValN(ReorderChannel::ChannelOrder::ChannelLast,
-                                "channel-last", "Reorder to channel last")),
+static llvm::cl::opt<ChannelOrder> ReorderChannelLayout(
+    llvm::cl::values(clEnumValN(ChannelOrder::None, "none", "No reordering"),
+                     clEnumValN(ChannelOrder::ChannelFirst, "channel-first",
+                                "Reorder to channel first"),
+                     clEnumValN(ChannelOrder::ChannelLast, "channel-last",
+                                "Reorder to channel last")),
     "reorder-data-layout", llvm::cl::desc("Reorder the data layout"),
-    llvm::cl::init(ReorderChannel::ChannelOrder::None));
+    llvm::cl::init(ChannelOrder::None));
 
 static llvm::cl::opt<bool> RemoveInputTranspose(
     "remove-input-transpose", llvm::cl::desc("Remove the transpose for inputs"),
@@ -98,15 +98,15 @@ static llvm::cl::opt<bool> RISCVOpt(
     "riscv-opt", llvm::cl::desc("Enable optimizations for RISC-V only"),
     llvm::cl::init(false));
 
-static llvm::cl::opt<CodeGen::BF16Mode> BF16Mode(
+static llvm::cl::opt<BF16Mode> OptBF16Mode(
     llvm::cl::values(
-        clEnumValN(CodeGen::BF16Mode::Disable, "disable", "disable bf16 mode"),
-        clEnumValN(CodeGen::BF16Mode::Accuracy, "accuracy", "white list Model"),
-        clEnumValN(CodeGen::BF16Mode::Performace, "performace",
+        clEnumValN(BF16Mode::Disable, "disable", "disable bf16 mode"),
+        clEnumValN(BF16Mode::Accuracy, "accuracy", "white list Model"),
+        clEnumValN(BF16Mode::Performace, "performace",
                    "global enable bf16,except black list"),
-        clEnumValN(CodeGen::BF16Mode::Auto, "auto", "automixprecision")),
+        clEnumValN(BF16Mode::Auto, "auto", "automixprecision")),
     "bf16-mode", llvm::cl::desc("Enable BF16 with acc/perf/auto mode"),
-    llvm::cl::init(CodeGen::BF16Mode::Disable));
+    llvm::cl::init(BF16Mode::Disable));
 
 static llvm::cl::opt<bool> EnableFP16("enable-fp16",
                                       llvm::cl::desc("Enable FP16 mode"),
@@ -134,13 +134,12 @@ static llvm::cl::opt<bool> DisableCodeFormat(
     llvm::cl::desc("Disable formatting the generated C/C++ code"),
     llvm::cl::init(false));
 
-static llvm::cl::opt<CodeGen::ExecMode> ExecMode(
-    llvm::cl::values(clEnumValN(CodeGen::ExecMode::Compile, "compile",
-                                "Compilation-Execution Model"),
-                     clEnumValN(CodeGen::ExecMode::Interpret, "interpret",
-                                "Interpreter Model")),
+static llvm::cl::opt<ExecMode> OptExecMode(
+    llvm::cl::values(
+        clEnumValN(ExecMode::Compile, "compile", "Compilation-Execution Model"),
+        clEnumValN(ExecMode::Interpret, "interpret", "Interpreter Model")),
     "exec-mode", llvm::cl::desc("Execution model of emitted code"),
-    llvm::cl::init(CodeGen::ExecMode::Compile));
+    llvm::cl::init(ExecMode::Compile));
 
 static llvm::cl::opt<bool> EmitDataAsC(
     "emit-data-as-c", llvm::cl::desc("Emit Constants as C/C++ code"),
@@ -165,13 +164,12 @@ static llvm::cl::opt<bool> SplitFunction(
     llvm::cl::desc("Split the function into multiple subfunctions"),
     llvm::cl::init(false));
 
-static llvm::cl::opt<CodeGen::API> Api(
-    llvm::cl::values(clEnumValN(CodeGen::API::HALO_RT, "halo_rt",
-                                "Using Halo Runtime Library"),
-                     clEnumValN(CodeGen::API::ODLA_05, "odla_05",
-                                "Using ODLA 0.5")),
+static llvm::cl::opt<halo::API> Api(
+    llvm::cl::values(
+        clEnumValN(halo::API::HALO_RT, "halo_rt", "Using Halo Runtime Library"),
+        clEnumValN(halo::API::ODLA_05, "odla_05", "Using ODLA 0.5")),
     "api", llvm::cl::desc("APIs used in emitted code"),
-    llvm::cl::init(CodeGen::API::ODLA_05));
+    llvm::cl::init(halo::API::ODLA_05));
 
 static llvm::cl::opt<bool> EmitInferenceFunctionSignature(
     "emit-inference-func-sig",
@@ -195,11 +193,11 @@ static llvm::cl::list<std::string> Outputs(
     "outputs",
     llvm::cl::desc("Specify output names like -outputs=foo, -outputs=bar:0"));
 
-static llvm::cl::opt<CodeGen::Quantization> QuantWeights(
-    llvm::cl::values(clEnumValN(CodeGen::Quantization::QUINT8, "quint8",
+static llvm::cl::opt<Quantization> QuantWeights(
+    llvm::cl::values(clEnumValN(Quantization::QUINT8, "quint8",
                                 "Quantize weigths as quint8")),
     "quantize-weights", llvm::cl::desc("Emit weights as quantized"),
-    llvm::cl::init(CodeGen::Quantization::None));
+    llvm::cl::init(Quantization::None));
 
 static llvm::cl::opt<bool> DisableTypeCast(
     "disable-type-cast", llvm::cl::desc("Disable casting int64 to int32"),
@@ -283,9 +281,9 @@ int main(int argc, char** argv) {
   Module m(ctx, ModuleName);
 
   armory::Opts opts;
-  Parser::Format format = Parser::Format::INVALID;
-  if (ParseModels(ModelFiles, ModelFormat, EntryFunctionName, opts, &m,
-                  &format) != Status::SUCCESS) {
+  ModelFormat format = ModelFormat::INVALID;
+  if (ParseModels(ModelFiles, Format, EntryFunctionName, opts, &m, &format) !=
+      Status::SUCCESS) {
     return 1;
   }
 
@@ -350,11 +348,11 @@ int main(int argc, char** argv) {
     out_dynamic_check = &of_dynamic_check;
   }
 
-  Opts cg_opts;
-  cg_opts.bf16_mode = BF16Mode;
+  CXXCodeGenOpts cg_opts;
+  cg_opts.bf16_mode = OptBF16Mode;
   cg_opts.print_mem_stats = PrintMemStats;
   cg_opts.emit_value_reset = EmitValueReset;
-  cg_opts.exec_mode = ExecMode.getValue();
+  cg_opts.exec_mode = OptExecMode;
   cg_opts.emit_value_id_as_int = EmitValueIDAsInt;
   cg_opts.emit_inference_func_sig = EmitInferenceFunctionSignature;
   cg_opts.emit_dynamic_batch = (Batch.getValue() == kDynamicBatchSize);

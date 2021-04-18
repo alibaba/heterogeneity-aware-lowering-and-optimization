@@ -248,7 +248,7 @@ Pass* PassManager::AddARMConstantWriterPass(std::ostream& os) {
 }
 
 Pass* PassManager::AddARMLLVMIRCodeGenPass(
-    GenericLLVMIRCodeGen::ConstantDataStorage constant_data_storage) {
+    ConstantDataStorage constant_data_storage) {
   return AddPass<ARMLLVMIRCodeGen>(constant_data_storage);
 }
 
@@ -262,7 +262,7 @@ Pass* PassManager::AddDevicePlacementPass() {
   return AddPass<DevicePlacement>();
 }
 
-Pass* PassManager::AddFusionPass(const Fusion::Options& opts) {
+Pass* PassManager::AddFusionPass(const FusionOptions& opts) {
   return AddPass<Fusion>(opts);
 }
 
@@ -283,13 +283,12 @@ Pass* PassManager::AddGenericCXXCodeGenPass(std::ostream& os,
 Pass* PassManager::AddGenericCXXCodeGenPass(std::ostream& os,
                                             std::ostream& header_os,
                                             std::ostream& dynamic_check_os,
-                                            const Opts& opts) {
+                                            const CXXCodeGenOpts& opts) {
   return AddPass<GenericCXXCodeGen>(os, header_os, dynamic_check_os, opts);
 }
 
 Pass* PassManager::AddGenericLLVMIRCodeGenPass(
-    const std::string& name,
-    GenericLLVMIRCodeGen::ConstantDataStorage constant_data_storage) {
+    const std::string& name, ConstantDataStorage constant_data_storage) {
   return AddPass<GenericLLVMIRCodeGen>(name, constant_data_storage);
 }
 
@@ -298,7 +297,7 @@ Pass* PassManager::AddGenericLLVMIRCodeGenPass() {
 }
 
 Pass* PassManager::AddGenericLLVMIRCodeGenPass(
-    GenericLLVMIRCodeGen::ConstantDataStorage constant_data_storage) {
+    ConstantDataStorage constant_data_storage) {
   return AddPass<GenericLLVMIRCodeGen>(constant_data_storage);
 }
 
@@ -351,13 +350,12 @@ Pass* PassManager::AddRISCVConstantWriterPass(std::ostream& os) {
   return AddPass<ARMConstantWriter>(os);
 }
 Pass* PassManager::AddRISCVLLVMIRCodeGenPass(
-    GenericLLVMIRCodeGen::ConstantDataStorage constant_data_storage,
-    std::string rt_lib_name) {
+    ConstantDataStorage constant_data_storage, std::string rt_lib_name) {
   return AddPass<RISCVLLVMIRCodeGen>(constant_data_storage, rt_lib_name);
 }
 
 Pass* PassManager::AddRISCVLLVMIRCodeGenPass(
-    GenericLLVMIRCodeGen::ConstantDataStorage constant_data_storage) {
+    ConstantDataStorage constant_data_storage) {
   return AddPass<RISCVLLVMIRCodeGen>(constant_data_storage);
 }
 
@@ -384,7 +382,7 @@ Pass* PassManager::AddTypeLegalizerPass(bool relaxed) {
   return AddPass<TypeLegalizer>(relaxed);
 }
 
-Pass* PassManager::AddWeightsQuantizerPass(CodeGen::Quantization quant,
+Pass* PassManager::AddWeightsQuantizerPass(Quantization quant,
                                            const std::string& file) {
   return AddPass<WeightsQuantizer>(quant, file);
 }
@@ -402,7 +400,7 @@ Pass* PassManager::AddX86LLVMIRCodeGenPass() {
 }
 
 Pass* PassManager::AddX86LLVMIRCodeGenPass(
-    GenericLLVMIRCodeGen::ConstantDataStorage constant_data_storage) {
+    ConstantDataStorage constant_data_storage) {
   return AddPass<X86LLVMIRCodeGen>(constant_data_storage);
 }
 

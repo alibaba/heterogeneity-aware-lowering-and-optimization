@@ -66,7 +66,7 @@ void static QuantTo(Constant* val, DataType dt, float scale, float offset) {
 void WeightsQuantizer::RunOnConstant(Constant* val) {
   const auto& type = val->GetResultType();
   // So far only quint8 is supported.
-  HLCHECK(quant_ == CodeGen::Quantization::QUINT8);
+  HLCHECK(quant_ == Quantization::QUINT8);
   if (type.GetDataType() != DataType::FLOAT32) {
     return;
   }
@@ -146,7 +146,7 @@ void WeightsQuantizer::RunOnConstant(Constant* val) {
 }
 
 bool WeightsQuantizer::RunOnModule(Module* m) {
-  if (quant_ == CodeGen::Quantization::None) {
+  if (quant_ == Quantization::None) {
     return false;
   }
 

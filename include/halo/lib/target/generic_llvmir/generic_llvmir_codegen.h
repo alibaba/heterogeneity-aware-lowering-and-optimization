@@ -21,6 +21,7 @@
 #include <memory>
 #include <unordered_map>
 
+#include "halo/halo.h"
 #include "halo/lib/framework/global_context.h"
 #include "halo/lib/ir/common_instructions.h"
 #include "halo/lib/ir/common_reduction_instructions.h"
@@ -28,6 +29,7 @@
 #include "halo/lib/ir/nn_activation_instructions.h"
 #include "halo/lib/ir/nn_cnn_instructions.h"
 #include "halo/lib/target/codegen.h"
+#include "halo/lib/target/generic_cxx/generic_cxx_codegen.h"
 
 // Forward declaration here to avoid the need of LLVM header files for API
 // users of this class.
@@ -51,17 +53,9 @@ class ArrayRef;
 } // namespace llvm
 
 namespace halo {
-
 // The generic LLVMIR compiler, which is a module pass.
 class GenericLLVMIRCodeGen : public CodeGen {
  public:
-  enum class ConstantDataStorage {
-    DefinedAsStatic,         // internal, constant, with initializer.
-    DefinedAsStaticNonConst, // internal, non-constant, no initializer.
-    DeclaredAsExternal,      // external, constant, no initializer
-    DefinedAsGlobal          // external, constant, with initializer.
-  };
-
   GenericLLVMIRCodeGen();
   GenericLLVMIRCodeGen(ConstantDataStorage constant_data_storage);
 
