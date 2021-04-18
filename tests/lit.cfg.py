@@ -72,6 +72,7 @@ config.substitutions.append(('%unittests_path',
 config.substitutions.append(('%onnx_path',
                               os.path.join(config.halo_build_dir, 'lib/parser/onnx')))
 config.substitutions.append(('%data_path', data_path))
+config.substitutions.append(('%models_root', '/models'))
 
 path = config.halo_lib_dir
 if 'LD_LIBRARY_PATH' in config.environment:

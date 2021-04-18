@@ -19,6 +19,7 @@
 #include <set>
 #include <string>
 
+#include "halo/halo.h"
 #include "halo/lib/framework/common.h"
 #include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/parser/parser.h"
@@ -50,14 +51,14 @@ static llvm::cl::opt<std::string> OutputGraphDefFile(
 
 static void PopulatePassesAndRun(GlobalContext& ctx, Module& m,
                                  const llvm::cl::opt<signed>& batch,
-                                 Parser::Format format) {
+                                 ModelFormat format) {
   PassManager pm(ctx);
   std::vector<std::string> input_shapes(InputsShape.begin(), InputsShape.end());
-  Fusion::Options fusion_opts;
-  Opts opts;
+  FusionOptions fusion_opts;
+  CXXCodeGenOpts opts;
   PopulateOptPasses(&pm, "cxx", input_shapes, {}, {}, batch, "",
-                    ReorderChannel::ChannelOrder::None, false, false, format,
-                    opts, fusion_opts);
+                    ChannelOrder::None, false, false, format, opts,
+                    fusion_opts);
   pm.AddAnalyzerPass(&std::cout);
   pm.Run(&m);
 }
@@ -89,9 +90,9 @@ int main(int argc, char** argv) {
     }
   }
 
-  Parser::Format format = Parser::Format::INVALID;
-  if (ParseModels(ModelFiles, ModelFormat, EntryFunctionName, opts, &m,
-                  &format) != Status::SUCCESS) {
+  ModelFormat format = ModelFormat::INVALID;
+  if (ParseModels(ModelFiles, Format, EntryFunctionName, opts, &m, &format) !=
+      Status::SUCCESS) {
     return 1;
   }
 

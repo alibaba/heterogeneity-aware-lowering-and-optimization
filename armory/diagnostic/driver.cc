@@ -50,9 +50,9 @@ int main(int argc, char** argv) {
   Module m(ctx, "diagnostic_module");
 
   armory::Opts opts(PrintDiagnosticReport);
-  Parser::Format format = Parser::Format::INVALID;
-  if (ParseModels(ModelFiles, ModelFormat, EntryFunctionName, opts, &m,
-                  &format) != Status::SUCCESS) {
+  ModelFormat format;
+  if (ParseModels(ModelFiles, Format, EntryFunctionName, opts, &m, &format) !=
+      Status::SUCCESS) {
     return 1;
   }
 
