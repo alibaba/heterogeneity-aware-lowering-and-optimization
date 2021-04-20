@@ -49,13 +49,14 @@ class Analyzer final : public ModulePass {
     float percent = 0;
   };
 
-  Analyzer() : ModulePass("Analyzer") {}
+  Analyzer(std::ostream* os) : ModulePass("Analyzer"), os_(os) {}
 
   bool RunOnModule(Module* m) override;
 
   void WriteCSVReport(std::ostream& os) const;
 
  private:
+  std::ostream* os_;
   std::vector<Analyzer::NodeInfo> node_infos_;
 };
 

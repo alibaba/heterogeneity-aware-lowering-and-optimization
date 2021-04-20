@@ -25,6 +25,7 @@
 #include "halo/lib/framework/common.h"
 #include "halo/lib/framework/type.h"
 #include "halo/lib/ir/extension_instructions.h"
+#include "halo/lib/parser/parser.h"
 #include "onnx.pb.h"
 
 namespace halo {
@@ -54,6 +55,26 @@ ONNXParser::Scope* ONNXParser::Scope::CreateScope() {
 
 void ONNXParser::Scope::Insert(const std::string& name, const Value& def) {
   inst_name_to_ptr_[name] = def;
+}
+
+Status ONNXParser::Parse(Function* function,
+                         const std::vector<const char*>& buffers,
+                         const std::vector<size_t>& buffer_sizes) {
+  return Status::ASSERTION;
+}
+
+Status ONNXParser::Parse(Function* function,
+                         const std::vector<const void*>& model_defs) {
+  if (model_defs.empty() || model_defs[0] == nullptr) {
+    return Status::FILE_NOT_EXIST;
+  }
+
+  const onnx::GraphProto* graph_def =
+      reinterpret_cast<const onnx::GraphProto*>(model_defs[0]);
+  bb_builder_ = std::make_unique<BasicBlockBuilder>(function);
+  BasicBlock* bb = bb_builder_->CreateBasicBlock("bb0");
+  armory::Opts opts;
+  return Parse(bb, *graph_def, opts);
 }
 
 Status ONNXParser::Parse(Function* function,

@@ -19,19 +19,13 @@
 #include <set>
 #include <string>
 
+#include "halo/halo.h"
 #include "halo/lib/framework/common.h"
 #include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/parser/parser.h"
 #include "halo/lib/pass/pass_manager.h"
-#include "halo/lib/transforms/analyzer.h"
-#include "halo/lib/transforms/caffeextension_legalizer.h"
-#include "halo/lib/transforms/dce.h"
-#include "halo/lib/transforms/input_legalizer.h"
-#include "halo/lib/transforms/inst_simplify.h"
-#include "halo/lib/transforms/onnxextension_legalizer.h"
-#include "halo/lib/transforms/tfextension_legalizer.h"
-#include "halo/lib/transforms/type_legalizer.h"
 #include "halo/utils/cl_options.h"
+#include "halo/utils/passes_helper.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
@@ -57,27 +51,16 @@ static llvm::cl::opt<std::string> OutputGraphDefFile(
 
 static void PopulatePassesAndRun(GlobalContext& ctx, Module& m,
                                  const llvm::cl::opt<signed>& batch,
-                                 Parser::Format format) {
+                                 ModelFormat format) {
   PassManager pm(ctx);
   std::vector<std::string> input_shapes(InputsShape.begin(), InputsShape.end());
-  pm.AddPass<InputLegalizer>(batch.getValue(), input_shapes,
-                             PreprocessScale.getValue());
-  if (format == Parser::Format::CAFFE) {
-    pm.AddPass<CAFFEExtensionLegalizer>();
-  } else if (format == Parser::Format::TENSORFLOW) {
-    pm.AddPass<TFExtensionLegalizer>();
-  } else {
-    HLCHECK(format == Parser::Format::ONNX);
-    pm.AddPass<ONNXExtensionLegalizer>();
-  }
-  pm.AddPass<DCE>();
-  pm.AddPass<TypeLegalizer>(true);
-  pm.AddPass<InstSimplify>(true, true, false, false, false, false);
-  auto analyzer = pm.AddPass<Analyzer>();
+  FusionOptions fusion_opts;
+  CXXCodeGenOpts opts;
+  PopulateOptPasses(&pm, "cxx", input_shapes, {}, {}, batch, "",
+                    ChannelOrder::None, false, false, format, opts,
+                    fusion_opts);
+  pm.AddAnalyzerPass(&std::cout);
   pm.Run(&m);
-  if (PrintAnalysisReport) {
-    analyzer->WriteCSVReport(std::cout);
-  }
 }
 
 int main(int argc, char** argv) {
@@ -107,9 +90,9 @@ int main(int argc, char** argv) {
     }
   }
 
-  Parser::Format format = Parser::Format::INVALID;
-  if (ParseModels(ModelFiles, ModelFormat, EntryFunctionName, opts, &m,
-                  &format) != Status::SUCCESS) {
+  ModelFormat format = ModelFormat::INVALID;
+  if (ParseModels(ModelFiles, Format, EntryFunctionName, opts, &m, &format) !=
+      Status::SUCCESS) {
     return 1;
   }
 

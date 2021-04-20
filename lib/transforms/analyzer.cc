@@ -478,7 +478,9 @@ bool Analyzer::RunOnModule(Module* m) {
       }
     }
   }
-
+  if (os_ != nullptr) {
+    WriteCSVReport(*os_);
+  }
   return false;
 }
 

@@ -16,12 +16,18 @@
 
 # Build protobuf.
 
+option(HALO_USE_STATIC_PROTOBUF "Link against static protobuf library" OFF)
+
+if (HALO_USE_STATIC_PROTOBUF)
+  set(Protobuf_USE_STATIC_LIBS ON)
+endif()
+
 find_package(Protobuf REQUIRED 3.9.1)
 
 if (Protobuf_FOUND)
   message(STATUS "Found Protobuf ${Protobuf_VERSION}: ${Protobuf_LIBRARY}")
 else()
-  message(FATAL_ERROR "Protobuf lib not found")  
+  message(FATAL_ERROR "Protobuf lib not found")
 endif(Protobuf_FOUND)
 
 macro(gen_protobuf_files)
@@ -42,11 +48,11 @@ macro(gen_protobuf_files)
 
   # Add link library and include pathes for generated files.
   set(GEN_TARGET ${_TARGET_NAME}_GEN)
-  add_library(${GEN_TARGET} OBJECT "")  
+  add_library(${GEN_TARGET} OBJECT "")
   target_sources(${GEN_TARGET} PUBLIC ${ALL_GEN_SRCS})
   if (HALO_NO_RTTI)
     target_compile_definitions(${GEN_TARGET} PUBLIC -DGOOGLE_PROTOBUF_NO_RTTI=1)
-  endif()  
+  endif()
   target_link_libraries(${GEN_TARGET} PUBLIC ${Protobuf_LIBRARIES})
   target_include_directories(${GEN_TARGET} PUBLIC ${Protobuf_INCLUDE_DIRS} ${GEN_DIR})
 

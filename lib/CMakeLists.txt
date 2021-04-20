@@ -21,6 +21,7 @@ add_subdirectory(compiler)
 add_subdirectory(distributed)
 add_subdirectory(executor)
 add_subdirectory(framework)
+add_subdirectory(interface)
 add_subdirectory(ir)
 add_subdirectory(mm)
 add_subdirectory(parser)
@@ -35,6 +36,11 @@ add_subdirectory(transforms)
 add_library(halolib SHARED)
 target_link_options(halolib PUBLIC -Wl,-no-undefined)
 set_target_properties(halolib PROPERTIES OUTPUT_NAME halo)
+set_target_properties(halolib PROPERTIES PUBLIC_HEADER include/halo/halo.h)
+set_target_properties(halolib PROPERTIES
+  CXX_VISIBILITY_PRESET hidden
+  VISIBILITY_INLINES_HIDDEN 1
+)
 
 set(GLOG_COMPONENT)
 if(HALO_USE_GLOG)

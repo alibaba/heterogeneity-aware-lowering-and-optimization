@@ -60,8 +60,11 @@ class TFParser : public Parser {
   explicit TFParser(const std::string& variant) : variant_(variant) {}
   Status Parse(Function* function, const std::vector<std::string>& file_list,
                const armory::Opts& opts) override;
-  virtual Status Parse(BasicBlock* bb, const tensorflow::GraphDef& graph_def,
-                       const armory::Opts& opts);
+  Status Parse(Function* function, const std::vector<const char*>& buffers,
+               const std::vector<size_t>& buffer_sizes) override;
+  Status Parse(Function* function,
+               const std::vector<const void*>& model_defs) override;
+
   ~TFParser();
 
   static std::vector<int64_t> ProcessShape(
@@ -72,6 +75,10 @@ class TFParser : public Parser {
 
   TFParser(const TFParser&) = delete;
   TFParser& operator=(const TFParser&) = delete;
+
+ protected:
+  virtual Status Parse(BasicBlock* bb, const tensorflow::GraphDef& graph_def,
+                       const armory::Opts& opts);
 
  private:
   void Init(BasicBlock* bb, Function* function, const armory::Opts& opts);

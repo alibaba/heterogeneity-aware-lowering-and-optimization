@@ -197,6 +197,25 @@ Status TFLITEParser::Parse(Function* function,
   return Parse(bb, model);
 }
 
+Status TFLITEParser::Parse(Function* function,
+                           const std::vector<const void*>& model_defs) {
+  if (model_defs.empty() || model_defs[0] == nullptr) {
+    return Status::FILE_NOT_EXIST;
+  }
+
+  const tflite::Model* graph_def =
+      reinterpret_cast<const tflite::Model*>(model_defs[0]);
+  auto bb_builder = std::make_unique<BasicBlockBuilder>(function);
+  BasicBlock* bb = bb_builder->CreateBasicBlock("bb0");
+  return Parse(bb, *graph_def);
+}
+
+Status TFLITEParser::Parse(Function* function,
+                           const std::vector<const char*>& buffers,
+                           const std::vector<size_t>& buffer_sizes) {
+  return Status::ASSERTION;
+}
+
 Status TFLITEParser::Parse(BasicBlock* bb, const tflite::Model& model) {
   RegisterOp();
   auto function = bb->GetParent();

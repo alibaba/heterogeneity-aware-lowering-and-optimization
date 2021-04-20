@@ -18,6 +18,19 @@
 #ifndef HALO_LIB_FRAMEWORK_COMMON_H_
 #define HALO_LIB_FRAMEWORK_COMMON_H_
 
+//! \brief API export directives
+#if defined _WIN32 || defined __CYGWIN__
+#define HL_API_EXPORT __declspec(dllexport)
+#else
+#define HL_API_EXPORT __attribute__((visibility("default")))
+#endif
+
+#if defined __has_attribute
+#if __has_attribute(unused)
+#define HL_UNUSED __attribute__((unused))
+#endif
+#endif
+
 /// log with verbose less than GOOGLE_STRIP_LOG will not be displayed
 // #define GOOGLE_STRIP_LOG 3
 #include "glog/logging.h"

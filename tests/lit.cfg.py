@@ -4,7 +4,8 @@ import urllib
 
 unittest_build_path = os.path.join(config.halo_build_dir, 'tests/unittests')
 data_path = os.path.join(config.halo_build_dir, 'tests/unittests/data')
-os.makedirs(unittest_build_path)
+if not os.path.exists(unittest_build_path):
+    os.makedirs(unittest_build_path)
 if not os.path.exists(data_path):
     # TODO: read from /unittests directly.
     os.system('cp -r /unittests ' + data_path)
@@ -71,6 +72,7 @@ config.substitutions.append(('%unittests_path',
 config.substitutions.append(('%onnx_path',
                               os.path.join(config.halo_build_dir, 'lib/parser/onnx')))
 config.substitutions.append(('%data_path', data_path))
+config.substitutions.append(('%models_root', '/models'))
 
 path = config.halo_lib_dir
 if 'LD_LIBRARY_PATH' in config.environment:
