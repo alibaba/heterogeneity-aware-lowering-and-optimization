@@ -749,8 +749,9 @@ static void RunOnInstruction(GatherInst* inst) {
     }
   }
   if (indices_type.GetTotalNumOfElements() > 1) {
-    ret_shape.insert(ret_shape.begin() + axis, indices_type.GetDimSizes().begin(),
-                    indices_type.GetDimSizes().end());
+    ret_shape.insert(ret_shape.begin() + axis,
+                     indices_type.GetDimSizes().begin(),
+                     indices_type.GetDimSizes().end());
   }
   inst->GetResultsTypes()[0] = halo::Type{param_type.GetDataType(), ret_shape};
 }
