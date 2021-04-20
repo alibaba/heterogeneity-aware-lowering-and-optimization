@@ -786,7 +786,7 @@ void GenericCXXCodeGen::RunOnConstant(Constant& constant, bool decl) {
   auto& type = constant.GetResultType();
   if (decl) {
     CXXValue value(constant.GetName(), TensorTypeToCXXType(type, true));
-    if (type.GetTotalNumOfElements() == 1) {
+    if (type.IsScalar()) {
       os_ << "extern const " << value.type.name << " " << value.name
           << "[1];\n";
     } else {
