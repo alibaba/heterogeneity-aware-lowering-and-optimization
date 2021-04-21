@@ -27,6 +27,7 @@
 #include "halo/lib/ir/common_reduction_instructions.h"
 #include "halo/lib/ir/constant.h"
 #include "halo/lib/ir/math_instructions.h"
+#include "halo/lib/transforms/transforms_util.h"
 
 namespace halo {
 
@@ -1060,10 +1061,26 @@ static void RunOnInstruction(HgEngineInst* inst) {
 static void RunOnInstruction(LoopInst* inst) {
   auto& ret_types = inst->GetResultsTypes();
   auto ret_inst = inst->GetBody()->GetReturnInst();
-  if (ret_inst != nullptr) {
-    HLCHECK(ret_types.size() == ret_inst->GetNumOfOperands());
-    for (int i = 0, e = ret_types.size(); i < e; ++i) {
-      ret_types[i] = ret_inst->GetOperand(i).GetType();
+  if (ret_inst == nullptr) {
+    return;
+  }
+  auto trip = inst->GetOperand(0);
+  constexpr int max_trip = 1000; // FIXME
+  int64_t trip_count = IsA<Constant>(trip)
+                           ? DynCast<Constant>(trip)->GetDataAsInt64(0)
+                           : max_trip;
+  int scan_outputs = FindAttributeValue(*ret_inst, "halo_scan_output_cnt", 0);
+  HLCHECK(ret_types.size() == ret_inst->GetNumOfOperands());
+  for (int64_t i = 0, e = ret_types.size() - scan_outputs; i < e; ++i) {
+    ret_types[i] = ret_inst->GetOperand(i).GetType();
+  }
+  for (int64_t i = 0; i < scan_outputs; ++i) {
+    const auto& orig_ty = ret_types[i];
+    if (orig_ty.IsValid()) {
+      auto& scan_ty = ret_types[i + ret_types.size() - scan_outputs];
+      auto shape = orig_ty.GetDimSizes();
+      shape.insert(shape.begin(), trip_count);
+      scan_ty = Type{orig_ty.GetDataType(), shape};
     }
   }
 }
@@ -1072,9 +1089,16 @@ bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
   for (auto& it : *bb) {
     Instruction* inst = it.get();
-    if (inst->HasValidResultTypes()) {
-      continue;
-    }
+    auto orig_types = inst->GetResultsTypes();
+    // For loops, the shape of scan output depends on trip count.
+    // If trip count is non-const, we will assume a max trip count to
+    // make a valid result type. Since the initial non-const trip count may
+    // become a constant after optimizing, we always re-compute the type for
+    // loops.
+    // bool is_loop = inst->GetOpCode() == OpCode::LOOP;
+    // if (inst->HasValidResultTypes() && !is_loop) {
+    //  continue;
+    // }
     switch (inst->GetOpCode()) {
 #define GET_INST_DOWNCAST_SWITCH
 #include "halo/lib/ir/instructions_info.def"
@@ -1085,8 +1109,16 @@ bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
         }
       }
     }
-    if (inst->HasValidResultTypes()) {
+    const auto& new_types = inst->GetResultsTypes();
+    if (new_types.size() != orig_types.size()) {
       changed = true;
+    } else {
+      for (size_t i = 0, e = new_types.size(); i != e; ++i) {
+        if (new_types[i].IsValid() && orig_types[i] != new_types[i]) {
+          changed = true;
+          break;
+        }
+      }
     }
   }
   return changed;

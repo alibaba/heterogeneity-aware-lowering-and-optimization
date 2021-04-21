@@ -90,7 +90,12 @@ class Logger : public nvinfer1::ILogger {
       default:
         log_level = 5;
     }
-    if (log_level <= 1) {
+#ifndef NDEBUG
+#define LOG_LEVEL 3
+#else
+#define LOG_LEVEL 2
+#endif
+    if (log_level <= LOG_LEVEL) {
       std::cerr << "[" << log_level << "]: " << msg << "\n";
     }
   }
@@ -103,12 +108,16 @@ struct _odla_value {
   _odla_value(nvinfer1::ITensor* tensor, const odla_value_type& type,
               const char* name)
       : tensor(tensor), type(type), name(name) {
-    tensor->setName(name);
+    if (name != nullptr) {
+      tensor->setName(name);
+    }
   }
   _odla_value(nvinfer1::ILayer* layer, const odla_value_type& type,
               const char* name)
       : layer(layer), tensor(layer->getOutput(0)), type(type), name(name) {
-    layer->setName(name);
+    if (name != nullptr) {
+      layer->setName(name);
+    }
   }
 
   _odla_value() {}
@@ -137,6 +146,7 @@ struct _odla_computation {
   std::unordered_map<std::string, odla_value> outputs;
   std::vector<std::vector<float>> buffers;
   std::vector<std::unique_ptr<_odla_value>> vals;
+  std::vector<nvinfer1::ILoop*> curr_loops;
   bool fp16_mode = false;
 
   bool is_dynamic_batch = false;
@@ -161,7 +171,9 @@ struct _odla_computation {
       network = builder->createNetwork();
 #else
       initODLAPlugin(&Logger, "");
-      nvinfer1::NetworkDefinitionCreationFlags flags = 0;
+      nvinfer1::NetworkDefinitionCreationFlags flags =
+          1U << static_cast<uint32_t>(
+              nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
       network = builder->createNetworkV2(flags);
 #endif
     }
@@ -289,6 +301,8 @@ static int64_t GetTotalElements(const odla_value_shape& dims) {
                         : std::accumulate(dims.dims, dims.dims + dims.size, 1,
                                           std::multiplies<size_t>());
 }
+
+const int nvinfer1::Dims::MAX_DIMS;
 
 static nvinfer1::Dims GetNVDims(int n, const odla_uint32* dims) {
   nvinfer1::Dims ret;
@@ -529,6 +543,13 @@ odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
 
 odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
                                const odla_value_id id) {
+// TRT currently doesn't support weights of bool type.
+#if NV_TENSORRT_MAJOR < 7 || (NV_TENSORRT_MAJOR == 7 && NV_TENSORRT_MINOR < 3)
+  if (type.element_type == ODLA_BOOL) {
+    return nullptr;
+  }
+#endif
+
   nvinfer1::Weights weight{
       .type = GetNVDataType(type.element_type),
       .values = ValidateValuePtr(type, const_cast<void*>(ptr)),
@@ -1746,6 +1767,11 @@ odla_value odla_Tile(odla_value input, const odla_uint32* repeat,
   return CreateValue(op, {input->type.element_type, output_dims}, value_id);
 }
 
+odla_value odla_Shape(odla_value input, odla_value_shape s, odla_value_id id) {
+  auto layer = g_comp->network->addShape(*input->tensor);
+  return CreateValue(layer, {ODLA_INT32, s}, id);
+}
+
 odla_values odla_TopK(odla_value input, odla_uint32 K, odla_bool largest,
                       odla_bool sorted, odla_uint32 axis,
                       odla_value_type output_value_type,
@@ -1770,6 +1796,64 @@ odla_value odla_Pow(odla_value base, odla_value exponent,
 
 odla_value odla_Reciprocal(odla_value input, const odla_value_id value_id) {
   return unary_op(nvinfer1::UnaryOperation::kRECIP, input, value_id);
+}
+
+odla_status odla_Assign(odla_value dst, odla_value src) {
+  assert(dst->layer->getType() == nvinfer1::LayerType::kRECURRENCE);
+  dst->layer->setInput(1, *src);
+  return ODLA_SUCCESS;
+}
+
+odla_value odla_CreateLoopVariable(odla_value init_value,
+                                   odla_value_id value_id) {
+  assert(!g_comp->curr_loops.empty());
+  auto v = g_comp->curr_loops.back()->addRecurrence(*init_value);
+  // Do not set name for TRT layers because the name will be used by loop
+  // output layers.
+  auto ret_val = CreateValue(v, init_value->type, nullptr);
+  ret_val->name = reinterpret_cast<const char*>(value_id);
+  return ret_val;
+}
+
+odla_status odla_BeginLoop(odla_value counts, odla_value_id id) {
+  nvinfer1::ILoop* loop = g_comp->network->addLoop();
+  loop->setName(reinterpret_cast<const char*>(id));
+  if (counts != nullptr) {
+    loop->addTripLimit(*counts, TripLimit::kCOUNT);
+  }
+  g_comp->curr_loops.push_back(loop);
+
+  return ODLA_SUCCESS;
+}
+
+odla_values odla_EndLoop(odla_value cond, odla_values output_values,
+                         const odla_loop_output_mode* scan_flags,
+                         odla_value_ids ids) {
+  odla_values vals;
+  auto loop = g_comp->curr_loops.back();
+  if (cond != nullptr) {
+    loop->addTripLimit(*cond, TripLimit::kWHILE);
+  }
+  std::vector<ILoopOutputLayer*> loop_outs;
+
+  loop_outs.reserve(output_values.size * 2);
+  assert(!g_comp->curr_loops.empty());
+  for (int i = 0; i < output_values.size; ++i) {
+    loop_outs.push_back(
+        loop->addLoopOutput(*output_values.values[i], LoopOutput::kLAST_VALUE));
+    assert(scan_flags[i] == ODLA_LOOP_LAST_VALUE);
+  }
+  odla_values scan_outputs;
+  scan_outputs.size = 0;
+  // Map values to loop output layers.
+  for (int i = 0; i < output_values.size; ++i) {
+    auto v = output_values.values[i];
+    v->layer = loop_outs[i];
+    v->tensor = loop_outs[i]->getOutput(0);
+    loop_outs[i]->setName(v->name);
+  }
+  g_comp->curr_loops.pop_back();
+  return scan_outputs;
 }
 
 } // C extern
