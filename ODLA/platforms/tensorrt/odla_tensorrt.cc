@@ -162,6 +162,12 @@ struct _odla_computation {
 #else
       initODLAPlugin(&Logger, "");
       nvinfer1::NetworkDefinitionCreationFlags flags = 0;
+      if (const char* env_p = std::getenv("ODLA_TRT_USE_EXPLICIT_BATCH")) {
+        if (*env_p != '0') {
+          flags = 1U << static_cast<uint32_t>(
+                      nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
+        }
+      }
       network = builder->createNetworkV2(flags);
 #endif
     }
@@ -289,6 +295,8 @@ static int64_t GetTotalElements(const odla_value_shape& dims) {
                         : std::accumulate(dims.dims, dims.dims + dims.size, 1,
                                           std::multiplies<size_t>());
 }
+
+const int nvinfer1::Dims::MAX_DIMS;
 
 static nvinfer1::Dims GetNVDims(int n, const odla_uint32* dims) {
   nvinfer1::Dims ret;
