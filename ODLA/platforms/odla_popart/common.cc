@@ -77,30 +77,25 @@ odla_element_type GetOdlaType(popart::DataType type) {
   }
 }
 
-std::string&& GetResizeInterpolationModeName(odla_interpolation_mode mode) {
-  switch (mode) {
-    case ODLA_NEAREST:
-      return std::move(std::string("nearest"));
-    case ODLA_LINEAR:
-      return std::move(std::string("linear"));
-    case ODLA_CUBIC:
-      return std::move(std::string("cubic"));
-    default:
-      assert(false);
-  }
+const std::string& GetResizeInterpolationModeName(
+    odla_interpolation_mode mode) {
+  static const std::unordered_map<odla_interpolation_mode, std::string> modes{
+      {ODLA_NEAREST, "nearest"},
+      {ODLA_LINEAR, "linear"},
+      {ODLA_CUBIC, "cubic"}};
+  auto it = modes.find(mode);
+  assert(it != modes.end());
+  return it->second;
 }
 
-std::string&& GetDirectionName(odla_rnn_direction direction) {
-  switch (direction) {
-    case ODLA_RNN_FORWARD:
-      return std::move(std::string("forward"));
-    case ODLA_RNN_REVERSE:
-      return std::move(std::string("reverse"));
-    case ODLA_RNN_BIDIRECTIONAL:
-      return std::move(std::string("bidirectional"));
-    default:
-      assert(false);
-  }
+const std::string& GetDirectionName(odla_rnn_direction direction) {
+  static const std::unordered_map<odla_rnn_direction, std::string> directions{
+      {ODLA_RNN_FORWARD, "forward"},
+      {ODLA_RNN_REVERSE, "reverse"},
+      {ODLA_RNN_BIDIRECTIONAL, "bidirectional"}};
+  auto it = directions.find(direction);
+  assert(it != directions.end());
+  return it->second;
 }
 
 popart::Shape GetPopartShape(odla_value_shape shape) {
@@ -155,36 +150,16 @@ std::unique_ptr<popart::IArray> MakeNDArrayWrapper(const odla_void* data_ptr,
   return pArray;
 }
 
-std::string&& GetTypeName(odla_element_type type_value) {
-  std::string result;
-  switch (type_value) {
-    case ODLA_INT8:
-      return std::move(std::string("INT8"));
-    case ODLA_INT16:
-      return std::move(std::string("INT16"));
-    case ODLA_INT32:
-      return std::move(std::string("INT32"));
-    case ODLA_INT64:
-      return std::move(std::string("INT64"));
-    case ODLA_UINT8:
-      return std::move(std::string("UINT8"));
-    case ODLA_UINT16:
-      return std::move(std::string("UINT16"));
-    case ODLA_UINT32:
-      return std::move(std::string("UINT32"));
-    case ODLA_UINT64:
-      return std::move(std::string("UINT64"));
-    case ODLA_FLOAT16:
-      return std::move(std::string("FLOAT16"));
-    case ODLA_BFLOAT16:
-      return std::move(std::string("BFLOAT16"));
-    case ODLA_FLOAT32:
-      return std::move(std::string("FLOAT"));
-    case ODLA_FLOAT64:
-      return std::move(std::string("DOUBLE"));
-    case ODLA_BOOL:
-      return std::move(std::string("BOOL"));
-    default:
-      assert(false);
-  }
+const std::string& GetTypeName(odla_element_type type_value) {
+  static const std::unordered_map<odla_element_type, std::string> type_names{
+      {ODLA_INT8, "INT8"},       {ODLA_INT16, "INT16"},
+      {ODLA_INT32, "INT32"},     {ODLA_INT64, "INT64"},
+      {ODLA_UINT8, "UINT8"},     {ODLA_UINT16, "UINT16"},
+      {ODLA_UINT32, "UINT32"},   {ODLA_UINT64, "UINT64"},
+      {ODLA_FLOAT16, "FLOAT16"}, {ODLA_BFLOAT16, "BFLOAT16"},
+      {ODLA_FLOAT32, "FLOAT"},   {ODLA_FLOAT64, "DOUBLE"},
+      {ODLA_BOOL, "BOOL"}};
+  auto it = type_names.find(type_value);
+  assert(it != type_names.end());
+  return it->second;
 }
