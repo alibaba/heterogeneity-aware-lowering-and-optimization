@@ -96,6 +96,15 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_CloneValueById(
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_CreateVariable(
     const odla_value_type value_type, const odla_value_id value_id);
 
+//! \def Assign
+//! \brief Assign a value to a variable
+/*!
+  \param dst a variable to be assigned to
+  \param src a source value
+*/
+extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_Assign(odla_value dst,
+                                                             odla_value src);
+
 #ifdef __cplusplus
 } // C extern
 #endif
