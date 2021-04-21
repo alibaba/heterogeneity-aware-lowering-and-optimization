@@ -32,6 +32,7 @@ set(SRCS
   gemm.cc
   generic_cxx_codegen.cc
   generic_cxx_constant_writer.cc
+  loop.cc
   lrn.cc
   matmul.cc
   nms.cc

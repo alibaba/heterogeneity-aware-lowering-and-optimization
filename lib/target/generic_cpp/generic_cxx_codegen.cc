@@ -280,7 +280,11 @@ const std::string& GenericCXXCodeGen::EmitReturnType(bool auto_type,
   return auto_type ? cxx_type : single_value ? single_c_type : multiple_c_type;
 }
 
-std::string GenericCXXCodeGen::EmitLValue(const std::string& name) const {
+std::string GenericCXXCodeGen::EmitLValue(const std::string& name,
+                                          bool decl) const {
+  if (!decl) {
+    return name;
+  }
   return EmitReturnType(opts_.dialect == Dialect::CXX_11, true) + " " + name;
 }
 
@@ -493,7 +497,10 @@ void GenericCXXCodeGen::RunOnHostFunction(Function& function) {
     created_val_names.push_back(v.name);
   }
   for (auto& bb : function) {
-    RunOnBasicBlock(*bb);
+    if (bb->GetLoopInst() == nullptr) {
+      // Loop body will be generated with LoopInst.
+      RunOnBasicBlock(*bb);
+    }
   }
 
   index = 0;
@@ -590,8 +597,9 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
                "(odla_item_value) &opt_batch_size);\n";
       }
 
-      os_ << "odla_bf16_mode mode = " << GetBF16Mode(opts_.bf16_mode) << ";\n";
-      os_ << "odla_SetComputationItem(Comp, ODLA_BF16_MODE, "
+      os_ << "  odla_bf16_mode mode = " << GetBF16Mode(opts_.bf16_mode)
+          << ";\n";
+      os_ << "  odla_SetComputationItem(Comp, ODLA_BF16_MODE, "
              "(odla_item_value) &mode);\n";
 
     } else {
@@ -665,7 +673,9 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
   }
 
   for (auto& bb : function) {
-    RunOnBasicBlock(*bb);
+    if (bb->GetLoopInst() == nullptr) {
+      RunOnBasicBlock(*bb);
+    }
   }
 
   os_ << "}\n"; // End of computation build function.
@@ -760,7 +770,8 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
                                      std::to_string(index++) + "]"
                                : "out_" + cv.name;
     os_ << "  odla_Bind" << (is_sub ? "Value" : "") << "ToOutputById("
-        << Join("(const odla_value_id)\"" + cv.name + "\"", arg_name, "Ctx")
+        << Join("(const odla_value_id)\"" + cv.GetName() + "\"", arg_name,
+                "Ctx")
         << ");\n";
   }
   if (opts_.exec_mode == ExecMode::Compile) {

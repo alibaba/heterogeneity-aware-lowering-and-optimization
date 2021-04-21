@@ -119,6 +119,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(GatherInst*) override;
   virtual void RunOnInstruction(GemmInst*) override;
   virtual void RunOnInstruction(LogInst*) override;
+  virtual void RunOnInstruction(LoopInst*) override;
   virtual void RunOnInstruction(LRNInst*) override;
   virtual void RunOnInstruction(MatMulInst*) override;
   virtual void RunOnInstruction(MaximumInst*) override;
@@ -178,7 +179,7 @@ class GenericCXXCodeGen : public CodeGen {
                                const Instruction& ret_inst);
   virtual std::string EmitShape(const halo::Type& type);
   virtual std::string EmitType(const halo::Type& type);
-  virtual std::string EmitLValue(const std::string& name) const;
+  virtual std::string EmitLValue(const std::string& name, bool decl) const;
   virtual std::string EmitLValues(const std::string& name) const;
 
   void EmitODLAArgs(const std::vector<int32_t>& arg);
@@ -216,7 +217,9 @@ class GenericCXXCodeGen : public CodeGen {
   template <int indent = 2, bool is_op = true, typename... Targs>
   void EmitODLACall(const CXXValue& lhs, const char* func_name, Targs... args) {
     os_ << std::string(indent, ' ');
-    os_ << EmitLValue(lhs.name) << " = ";
+    if (!lhs.name.empty()) {
+      os_ << EmitLValue(lhs.name, true) << " = ";
+    }
     os_ << func_name << "(";
     EmitODLAArgs(args...);
     if (is_op) {
@@ -226,12 +229,16 @@ class GenericCXXCodeGen : public CodeGen {
     os_ << ");\n";
   }
 
-  template <int indent = 2, bool is_op = true, typename... Targs>
+  template <int indent = 2, bool is_op = true, bool decl = true,
+            typename... Targs>
   void EmitODLACall(const std::vector<CXXValue>& lhs, const char* func_name,
                     Targs... args) {
     os_ << std::string(indent, ' ');
-    auto ret_array = lhs[0].name + "_array";
-    os_ << EmitLValues(ret_array) << " = ";
+    std::string ret_array;
+    if (!lhs.empty()) {
+      ret_array = lhs[0].name + "_array";
+      os_ << EmitLValues(ret_array) << " = ";
+    }
     os_ << func_name << "(";
     EmitODLAArgs(args...);
     if (is_op) {
@@ -251,8 +258,8 @@ class GenericCXXCodeGen : public CodeGen {
     unsigned int id = 0;
     for (auto& one : lhs) {
       os_ << std::string(indent, ' ');
-      os_ << EmitLValue(one.name) << " = " << ret_array << ".values[" << id++
-          << "];";
+      os_ << EmitLValue(one.name, decl) << " = " << ret_array << ".values["
+          << id++ << "];";
     }
   }
 
