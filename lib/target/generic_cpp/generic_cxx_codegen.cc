@@ -325,6 +325,9 @@ std::string GenericCXXCodeGen::GetODLAType(DataType type) const noexcept {
     case DataType::INT64: {
       return "ODLA_INT64";
     }
+    case DataType::BOOL: {
+      return "ODLA_BOOL";
+    }
     default: {
       return "INVALID";
     }
@@ -372,6 +375,9 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
         break;
       case DataType::INT64:
         data_type_str = "int64_t";
+        break;
+      case DataType::BOOL:
+        data_type_str = "bool";
         break;
       default:
         HLCHECK(0);

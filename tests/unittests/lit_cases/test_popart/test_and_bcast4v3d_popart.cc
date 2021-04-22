@@ -26,5 +26,5 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_and_bcast4v3d | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_and_bcast4v3d_popart.cc.tmp.main.cc.in"
