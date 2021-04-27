@@ -738,6 +738,34 @@ static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
   return ret_v;
 }
 
+std::vector<Def> ConvertGlobalMaxPooling(const ONNXExtensionInst* ext,
+                                         IRBuilder* builder) {
+  HLCHECK(ext->GetNumOfOperands() == 1);
+  auto input = ext->GetOperand(0);
+  const auto& input_type = input.GetType();
+
+  int kernel_size_h = input_type.GetNumOfElementsInDim(2);
+  int kernel_size_w = input_type.GetNumOfElementsInDim(3);
+
+  auto set_pooling_attributes = [&](auto inst) {
+    inst->SetKsize({1, 1, kernel_size_h, kernel_size_w});
+    inst->SetPaddingLeft(0);
+    inst->SetPaddingRight(0);
+    inst->SetPaddingTop(0);
+    inst->SetPaddingBottom(0);
+    inst->SetStrides({1, 1, 1, 1});
+    inst->SetPadding(Padding::EXPLICIT);
+    inst->SetDataFormat(DataFormat::NCHW);
+    inst->SetRoundMode(0);
+  };
+
+  builder->SetInsertAfter(ext);
+  Instruction* inst = nullptr;
+  inst = builder->CreatePoolingMax(ext->GetName(), ext->GetOperand(0));
+  set_pooling_attributes(DynCast<PoolingMaxInst>(inst));
+  return {*inst};
+}
+
 void SplitString(const std::string& s, std::vector<int64_t>* v,
                  const std::string& c) {
   std::string::size_type pos2 = s.find(c);
@@ -1096,6 +1124,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::SPLIT: {
       return ConvertSplit(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::GLOBALMAXPOOL: {
+      return ConvertGlobalMaxPooling(onnx_inst, builder);
     }
     // Todo: DNNl and ODLA should support quant/dequant op, for performace
     // considerations; Now split the Hgai quant op to
