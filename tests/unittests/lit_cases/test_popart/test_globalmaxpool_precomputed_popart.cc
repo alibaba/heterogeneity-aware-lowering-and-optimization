@@ -25,5 +25,5 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_globalmaxpool_precomputed | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_globalmaxpool_precomputed_popart.cc.tmp.main.cc.in"
