@@ -149,6 +149,8 @@ def ONNX_GlobalAveragePool : OpMapping<"GlobalAveragePool", ReduceMean> {
     AttributeMapping<"", "keep_dims", "true">];
 }
 
+def ONNX_GlobalMaxPool : ONNXExtension<"GlobalMaxPool">;
+
 def ONNX_Greater: OpMapping<"Greater", Greater>;
 
 def ONNX_Identity : ONNXExtension<"Identity">;
