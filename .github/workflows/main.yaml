@@ -90,6 +90,8 @@ jobs:
             tag=pr-${{ github.event.number }}
           fi
           echo ::set-output name=tag::${tag}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
       - name: Login to Aliyun
         if: github.event_name != 'pull_request'
