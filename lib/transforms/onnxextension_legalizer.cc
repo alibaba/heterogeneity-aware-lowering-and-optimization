@@ -743,7 +743,9 @@ std::vector<Def> ConvertGlobalMaxPooling(const ONNXExtensionInst* ext,
   HLCHECK(ext->GetNumOfOperands() == 1);
   auto input = ext->GetOperand(0);
   const auto& input_type = input.GetType();
+  HLCHECK(input_type.isValid());
 
+  HLCHECK(input_type.GetNumOfDims() == 4);
   int kernel_size_h = input_type.GetNumOfElementsInDim(2);
   int kernel_size_w = input_type.GetNumOfElementsInDim(3);
 
