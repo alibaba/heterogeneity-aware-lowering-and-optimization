@@ -131,7 +131,7 @@ void EmitFusion(const llvm::RecordKeeper& records, llvm::raw_ostream& os) {
     os << "static llvm::cl::opt<bool> Fusion" << rule_name << "(\""
        << rec->getValueAsString("option_name_") << "\",\n";
     os << "    llvm::cl::desc(\"" << rec->getValueAsString("option_desc_")
-       << "\"), llvm::cl::init(false));\n";
+       << "\"), llvm::cl::init(false), llvm::cl::cat(HaloOptCat));\n";
   }
   os << "static FusionOptions GetFusionOptions() {\n";
   os << "  FusionOptions opts;";

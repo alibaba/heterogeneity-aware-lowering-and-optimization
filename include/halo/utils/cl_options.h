@@ -25,9 +25,12 @@
 
 namespace halo {
 
+// Mark all our options with this category, everything else will be hidden.
+static llvm::cl::OptionCategory HaloOptCat("Halo options");
+
 static llvm::cl::list<std::string> ModelFiles(
     llvm::cl::Positional, llvm::cl::desc("model file name."),
-    llvm::cl::OneOrMore);
+    llvm::cl::OneOrMore, llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<ModelFormat> Format(
     "x",
@@ -38,21 +41,22 @@ static llvm::cl::opt<ModelFormat> Format(
         clEnumValN(ModelFormat::TFLITE, "tflite", "TFLite format")),
     llvm::cl::desc("format of input model files. If unspecified, the format is "
                    "guessed base on file's extension."),
-    llvm::cl::init(ModelFormat::INVALID));
+    llvm::cl::init(ModelFormat::INVALID), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<signed> Batch(
     "batch-size",
     llvm::cl::desc("Specify batch size if the first dim of input is negative"),
-    llvm::cl::init(1));
+    llvm::cl::init(1), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<std::string> EntryFunctionName(
     "entry-func-name", llvm::cl::desc("name of entry function"),
-    llvm::cl::init(""));
+    llvm::cl::init(""), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::list<std::string> InputsShape(
     "input-shape",
     llvm::cl::desc("Specify input names like -input-shape=foo:1x3x100x100 "
-                   "-input-shape=bar:int8:-1x3x200x200"));
+                   "-input-shape=bar:int8:-1x3x200x200"),
+    llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<std::string> PreprocessScale(
     "preproc-scale",
@@ -62,7 +66,8 @@ static llvm::cl::opt<std::string> PreprocessScale(
         "The number of values are comma separated and should be "
         "even. The first n values are for addition, the next n "
         "values are for multiplication. It should be broadcasting "
-        "to input shape. Invalid if there are more than one inputs. "));
+        "to input shape. Invalid if there are more than one inputs. "),
+    llvm::cl::cat(HaloOptCat));
 
 /// Guess the model format based on input file extension.gg
 static ModelFormat InferFormat(const llvm::cl::list<std::string>& model_files,

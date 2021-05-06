@@ -38,29 +38,35 @@
 
 using namespace halo;
 
-static llvm::cl::opt<std::string> Target(
-    "target", llvm::cl::desc("target triple"),
-    llvm::cl::init("x86_64-unknown-linux"));
+static llvm::cl::opt<std::string> Target("target",
+                                         llvm::cl::desc("target triple"),
+                                         llvm::cl::init("x86_64-unknown-linux"),
+                                         llvm::cl::cat(HaloOptCat));
 static llvm::cl::opt<std::string> Processor("processor",
                                             llvm::cl::desc("processor name"),
-                                            llvm::cl::init("native"));
+                                            llvm::cl::init("native"),
+                                            llvm::cl::cat(HaloOptCat));
 static llvm::cl::opt<std::string> OutputFile(
-    "o", llvm::cl::desc("output file name."), llvm::cl::Required);
+    "o", llvm::cl::desc("output file name."), llvm::cl::Required,
+    llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> PrintAll(
     "print-all", llvm::cl::desc("print intermediates of all passes"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> PrintPass("print-pass",
                                      llvm::cl::desc("print pass name"),
-                                     llvm::cl::init(false));
+                                     llvm::cl::init(false),
+                                     llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> EmitLLVMIR("emit-llvm",
                                       llvm::cl::desc("output the LLVM IR code"),
-                                      llvm::cl::init(false));
+                                      llvm::cl::init(false),
+                                      llvm::cl::cat(HaloOptCat));
 static llvm::cl::opt<std::string> ModuleName("module-name",
                                              llvm::cl::desc("name of module"),
-                                             llvm::cl::init("halo_module"));
+                                             llvm::cl::init("halo_module"),
+                                             llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<ChannelOrder> ReorderChannelLayout(
     llvm::cl::values(clEnumValN(ChannelOrder::None, "none", "No reordering"),
@@ -69,34 +75,35 @@ static llvm::cl::opt<ChannelOrder> ReorderChannelLayout(
                      clEnumValN(ChannelOrder::ChannelLast, "channel-last",
                                 "Reorder to channel last")),
     "reorder-data-layout", llvm::cl::desc("Reorder the data layout"),
-    llvm::cl::init(ChannelOrder::None));
+    llvm::cl::init(ChannelOrder::None), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> RemoveInputTranspose(
     "remove-input-transpose", llvm::cl::desc("Remove the transpose for inputs"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> RemoveOutputTranspose(
     "remove-output-transpose",
-    llvm::cl::desc("Remove the transpose for outputs"), llvm::cl::init(false));
+    llvm::cl::desc("Remove the transpose for outputs"), llvm::cl::init(false),
+    llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> SeparateConstants(
     "separate-constants",
     llvm::cl::desc("Generate separate file for constants"),
-    llvm::cl::init(true));
+    llvm::cl::init(true), llvm::cl::cat(HaloOptCat));
 static llvm::cl::opt<bool> DisableBroadcasting(
     "disable-broadcasting", llvm::cl::desc("disable broadcasting of constants"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 static llvm::cl::opt<bool> DisableConvBN(
     "disable-convert-bn",
     llvm::cl::desc("disable convert Batch Normalization into mul/add"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 static llvm::cl::opt<bool> EmitCodeOnly(
     "code-only", llvm::cl::desc("Generate the code only"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> RISCVOpt(
     "riscv-opt", llvm::cl::desc("Enable optimizations for RISC-V only"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<BF16Mode> OptBF16Mode(
     llvm::cl::values(
@@ -106,121 +113,131 @@ static llvm::cl::opt<BF16Mode> OptBF16Mode(
                    "global enable bf16,except black list"),
         clEnumValN(BF16Mode::Auto, "auto", "automixprecision")),
     "bf16-mode", llvm::cl::desc("Enable BF16 with acc/perf/auto mode"),
-    llvm::cl::init(BF16Mode::Disable));
+    llvm::cl::init(BF16Mode::Disable), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> EnableFP16("enable-fp16",
                                       llvm::cl::desc("Enable FP16 mode"),
-                                      llvm::cl::init(false));
+                                      llvm::cl::init(false),
+                                      llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> EnableIpuDevice("enable-ipu-device",
                                            llvm::cl::desc("Enable IPU Device"),
-                                           llvm::cl::init(false));
+                                           llvm::cl::init(false),
+                                           llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> UseIpuModel("use-ipu-model",
                                        llvm::cl::desc("Use IPU Mode"),
-                                       llvm::cl::init(false));
+                                       llvm::cl::init(false),
+                                       llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<int> IpuNum(
     "ipu-num",
     llvm::cl::desc("Num of ipus, should consistent with subgraph num"),
-    llvm::cl::init(1));
+    llvm::cl::init(1), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<int> BatchesPerStep(
     "batches-per-step", llvm::cl::desc("Specify batches num for each step"),
-    llvm::cl::init(1));
+    llvm::cl::init(1), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> DisableCodeFormat(
     "disable-code-format",
     llvm::cl::desc("Disable formatting the generated C/C++ code"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<ExecMode> OptExecMode(
     llvm::cl::values(
         clEnumValN(ExecMode::Compile, "compile", "Compilation-Execution Model"),
         clEnumValN(ExecMode::Interpret, "interpret", "Interpreter Model")),
     "exec-mode", llvm::cl::desc("Execution model of emitted code"),
-    llvm::cl::init(ExecMode::Compile));
+    llvm::cl::init(ExecMode::Compile), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> EmitDataAsC(
     "emit-data-as-c", llvm::cl::desc("Emit Constants as C/C++ code"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> PrintMemStats(
     "print-mem-stats", llvm::cl::desc("Print Memory Usage Stats"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> EmitValueReset(
     "emit-value-reset",
     llvm::cl::desc("Emit code to reset value life cycle ends"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> EmitValueIDAsInt(
     "emit-value-id-as-int",
     llvm::cl::desc("Emit value id as integer. (default is string"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> SplitFunction(
     "fiss-function",
     llvm::cl::desc("Split the function into multiple subfunctions"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<halo::API> Api(
     llvm::cl::values(
         clEnumValN(halo::API::HALO_RT, "halo_rt", "Using Halo Runtime Library"),
         clEnumValN(halo::API::ODLA_05, "odla_05", "Using ODLA 0.5")),
     "api", llvm::cl::desc("APIs used in emitted code"),
-    llvm::cl::init(halo::API::ODLA_05));
+    llvm::cl::init(halo::API::ODLA_05), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> EmitInferenceFunctionSignature(
     "emit-inference-func-sig",
     llvm::cl::desc("Emit fuction with a universal signature in c/c++ codegen"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> EmitTritonConfig(
     "emit-triton-config",
     llvm::cl::desc("Emit triton inference server config file"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<std::string> TritonConfigFile(
     "triton-config-file", llvm::cl::desc("Triton inference server config file"),
-    llvm::cl::init("config.pbtxt"));
+    llvm::cl::init("config.pbtxt"), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::list<std::string> Inputs(
     "inputs",
-    llvm::cl::desc("Specify input names like -inputs=foo -inputs=bar"));
+    llvm::cl::desc("Specify input names like -inputs=foo -inputs=bar"),
+    llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::list<std::string> Outputs(
     "outputs",
-    llvm::cl::desc("Specify output names like -outputs=foo, -outputs=bar:0"));
+    llvm::cl::desc("Specify output names like -outputs=foo, -outputs=bar:0"),
+    llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<Quantization> QuantWeights(
     llvm::cl::values(clEnumValN(Quantization::QUINT8, "quint8",
                                 "Quantize weigths as quint8")),
     "quantize-weights", llvm::cl::desc("Emit weights as quantized"),
-    llvm::cl::init(Quantization::None));
+    llvm::cl::init(Quantization::None), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> DisableTypeCast(
     "disable-type-cast", llvm::cl::desc("Disable casting int64 to int32"),
-    llvm::cl::init(true));
+    llvm::cl::init(true), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<signed> MaxBatch("max-batch-size",
                                       llvm::cl::desc("Specify max batch size"),
-                                      llvm::cl::init(8));
+                                      llvm::cl::init(8),
+                                      llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<signed> MinBatch("min-batch-size",
                                       llvm::cl::desc("Specify min batch size"),
-                                      llvm::cl::init(1));
+                                      llvm::cl::init(1),
+                                      llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<signed> OptBatch("opt-batch-size",
                                       llvm::cl::desc("Specify opt batch size"),
-                                      llvm::cl::init(4));
+                                      llvm::cl::init(4),
+                                      llvm::cl::cat(HaloOptCat));
 static llvm::cl::opt<std::string> PGQFile(
     "pgq-file", llvm::cl::init(""),
-    llvm::cl::desc("Profiling file for quantization of biases"));
+    llvm::cl::desc("Profiling file for quantization of biases"),
+    llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> CheckModel("check-model",
                                       llvm::cl::desc("dynamic check model"),
-                                      llvm::cl::init(false));
+                                      llvm::cl::init(false),
+                                      llvm::cl::cat(HaloOptCat));
 
 #undef HALO_FUSION_OPTIONS
 #define HALO_FUSION_CMD_OPTIONS_DECL
@@ -271,6 +288,7 @@ static void PrintVersion(llvm::raw_ostream& os) {
 
 int main(int argc, char** argv) {
   llvm::cl::SetVersionPrinter(PrintVersion);
+  llvm::cl::HideUnrelatedOptions(HaloOptCat);
   llvm::cl::ParseCommandLineOptions(argc, argv);
   GlobalContext ctx;
   ctx.SetBasePath(argv[0]);

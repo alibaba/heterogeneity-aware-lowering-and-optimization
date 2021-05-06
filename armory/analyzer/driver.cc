@@ -34,20 +34,21 @@ using namespace halo;
 
 static llvm::cl::opt<bool> PrintAnalysisReport(
     "print-analysis-report", llvm::cl::desc("Print analysis report"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> ConvertToIpuGraphDef(
     "convert-to-ipu-graphdef", llvm::cl::desc("Convert to IPU style graphdef"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<std::string> SplitNames(
     "split-names", llvm::cl::desc("Split names."),
     llvm::cl::desc(
-        "Specify split names like -split-name=xxx:yyy,aaa:bbb,mmm:nnn"));
+        "Specify split names like -split-name=xxx:yyy,aaa:bbb,mmm:nnn"),
+    llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<std::string> OutputGraphDefFile(
     "graphdef-file-name", llvm::cl::desc("output graphdef file name."),
-    llvm::cl::init("./converted_model.pb"));
+    llvm::cl::init("./converted_model.pb"), llvm::cl::cat(HaloOptCat));
 
 static void PopulatePassesAndRun(GlobalContext& ctx, Module& m,
                                  const llvm::cl::opt<signed>& batch,
@@ -64,6 +65,7 @@ static void PopulatePassesAndRun(GlobalContext& ctx, Module& m,
 }
 
 int main(int argc, char** argv) {
+  llvm::cl::HideUnrelatedOptions(HaloOptCat);
   llvm::cl::ParseCommandLineOptions(argc, argv);
   GlobalContext ctx;
   ctx.SetBasePath(argv[0]);
