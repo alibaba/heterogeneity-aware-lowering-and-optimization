@@ -157,7 +157,9 @@ class Inst {
   void EmitInitAttributes();
   /// Emit a public function to copy attributes from the same Instr class.
   void EmitVerify();
-  /// Emit formated (markdown) document
+  /// Emit classof and casting code.
+  void EmitClassof();
+  /// Emit formated (markdown) document.
   void EmitDoc();
 
  private:

@@ -38,6 +38,10 @@ class TFLITEParser : public Parser {
   Status Parse(Function* function, const std::vector<std::string>& file_list,
                const armory::Opts& opts) override;
   Status Parse(BasicBlock* bb, const tflite::Model& model);
+  Status Parse(Function* function, const std::vector<const char*>& buffers,
+               const std::vector<size_t>& buffer_sizes) override;
+  Status Parse(Function* function,
+               const std::vector<const void*>& model_defs) override;
 
   template <typename T>
   static const Tensor<T> ProcessTensor(

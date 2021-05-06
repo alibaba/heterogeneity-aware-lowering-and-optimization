@@ -1,0 +1,61 @@
+# syntax=docker/dockerfile:experimental
+ARG BASE_IMAGE
+
+# Build Protobuf
+FROM gcc:7.5.0 AS pb_builder
+WORKDIR /tmp
+RUN git clone --depth=1 https://github.com/protocolbuffers/protobuf.git -b v3.9.1 && \
+    cd protobuf && ./autogen.sh && \
+    ./configure --prefix=/tmp/install && make clean && \
+    make -j && make install && \
+    tar -cf /tmp/protobuf.tar ../install --transform 's,^install/,/usr/local/,'
+
+# Build Flatbuffer
+FROM rikorose/gcc-cmake:gcc-7 AS fb_builder
+WORKDIR /tmp
+RUN git clone --depth=1 https://github.com/google/flatbuffers.git -b v1.12.0 && \
+    cd flatbuffers && \
+    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=/tmp/install -DFLATBUFFERS_BUILD_SHAREDLIB=ON && \
+    make -j && make install && \
+    tar -cf /tmp/flatbuffer.tar ../install --transform 's,^install/,/usr/local/,'
+
+# Build DNNL
+FROM rikorose/gcc-cmake:gcc-7 AS dnnl_builder
+WORKDIR /tmp
+RUN git clone --depth=1 https://github.com/oneapi-src/oneDNN.git --branch v1.7 && \
+    cd oneDNN && \
+    cmake -G "Unix Makefiles" -DDNNL_BUILD_EXAMPLES=OFF -DDNNL_BUILD_TESTS=OFF \
+          -DDNNL_ENABLE_PRIMITIVE_CACHE=ON -DCMAKE_INSTALL_PREFIX=/tmp/install && \
+    make -j install && \
+    tar -cf /tmp/dnnl.tar ../install --transform 's,^install/,/opt/dnnl/,'
+
+# Get clang tools
+FROM alpine AS clang_tools
+ARG LLVM_URL=https://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz
+WORKDIR /clang
+RUN wget -O llvm.tar.xz ${LLVM_URL} && tar x --strip-components=1 -f llvm.tar.xz && \
+    rm -fr llvm.tar.xz
+
+FROM ${BASE_IMAGE}
+
+RUN --mount=from=pb_builder,target=/pkg,source=/tmp tar xf /pkg/protobuf.tar -C /
+RUN --mount=from=fb_builder,source=/tmp,target=/pkg tar xf /pkg/flatbuffer.tar -C /
+RUN --mount=from=dnnl_builder,target=/pkg,source=/tmp tar xf /pkg/dnnl.tar -C /
+COPY --from=clang_tools /clang/bin/clang-format /usr/bin/
+
+RUN echo "/usr/local/lib" >> /etc/ld.so.conf && ldconfig
+
+# Install HALO
+ARG HALO_PKG
+WORKDIR /tmp
+COPY ${HALO_PKG} .
+RUN rm -fr /opt/halo && mkdir -p /opt/halo && \
+    tar jxf ${HALO_PKG} -C /opt/halo --strip-components=1 && \
+    rm /tmp/*
+ENV PATH="${PATH}:/opt/halo/bin"
+ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/opt/halo/lib"
+SHELL ["/bin/bash", "-c"]
+
+WORKDIR /root
+ENTRYPOINT ["/opt/halo/bin/halo"]

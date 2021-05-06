@@ -36,35 +36,6 @@
 
 namespace halo {
 
-enum class Dialect {
-  CXX_11,
-  C99,
-};
-
-struct Opts {
-  Opts(const CodeGen::BF16Mode& mode) : bf16_mode(mode) {}
-  Opts() = default;
-  Dialect dialect = Dialect::CXX_11;
-  bool print_mem_stats = false;
-  bool emit_value_reset = false;
-  bool emit_value_init = false;
-  bool emit_value_id_as_int = false;
-  CodeGen::BF16Mode bf16_mode = CodeGen::BF16Mode::Disable;
-  CodeGen::ExecMode exec_mode = CodeGen::ExecMode::Compile;
-  bool emit_inference_func_sig = false;
-  bool emit_model_info_apis = false;
-  bool emit_dynamic_batch = false;
-  bool fp16_mode = false;
-  int max_batch_size = 0;
-  int min_batch_size = 0;
-  int opt_batch_size = 0;
-  bool enable_ipu_device = false;
-  bool use_ipu_model = false;
-  int64_t ipu_num = 1;
-  int64_t batches_per_step = 1;
-  bool check_model = false;
-};
-
 struct CXXType {
   CXXType(const std::string& name)
       : name(name), is_const(false), is_pointer(true) {}
@@ -95,7 +66,7 @@ class GenericCXXCodeGen : public CodeGen {
  public:
   GenericCXXCodeGen(std::ostream& os, std::ostream& header_os);
   GenericCXXCodeGen(std::ostream& os, std::ostream& header_os,
-                    std::ostream& dynamic_check_os, const Opts& opts);
+                    std::ostream& dynamic_check_os, const CXXCodeGenOpts& opts);
 
   virtual ~GenericCXXCodeGen();
 
@@ -159,6 +130,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(PadInst*) override;
   virtual void RunOnInstruction(PoolingMaxInst*) override;
   virtual void RunOnInstruction(PoolingAvgInst*) override;
+  virtual void RunOnInstruction(PowInst*) override;
   virtual void RunOnInstruction(PReluInst*) override;
   virtual void RunOnInstruction(RandomUniformInst*) override;
   virtual void RunOnInstruction(ReduceL1Inst*) override;
@@ -167,6 +139,8 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(ReduceLogSumExpInst*) override;
   virtual void RunOnInstruction(ReduceSumSquareInst*) override;
   virtual void RunOnInstruction(ReduceMeanInst*) override;
+  virtual void RunOnInstruction(ReduceMaxInst*) override;
+  virtual void RunOnInstruction(ReduceMinInst*) override;
   virtual void RunOnInstruction(ReluInst*) override;
   virtual void RunOnInstruction(Relu6Inst*) override;
   virtual void RunOnInstruction(ReshapeInst*) override;
@@ -180,6 +154,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(SinhInst*) override;
   virtual void RunOnInstruction(CosInst*) override;
   virtual void RunOnInstruction(CoshInst*) override;
+  virtual void RunOnInstruction(TanhInst*) override;
   virtual void RunOnInstruction(TopKInst*) override;
   virtual void RunOnInstruction(TransposeInst*) override;
   virtual void RunOnInstruction(TileInst*) override;
@@ -320,7 +295,7 @@ class GenericCXXCodeGen : public CodeGen {
   GlobalContext* ctx_ = nullptr;
   std::unordered_map<Def, CXXValue> ir_mapping_;
   std::unique_ptr<MemoryAnalyzer> memory_analyzer_;
-  Opts opts_;
+  CXXCodeGenOpts opts_;
 };
 
 class GenericCXXConstantWriter : public GenericCXXCodeGen {

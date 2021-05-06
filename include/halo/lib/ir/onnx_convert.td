@@ -149,6 +149,8 @@ def ONNX_GlobalAveragePool : OpMapping<"GlobalAveragePool", ReduceMean> {
     AttributeMapping<"", "keep_dims", "true">];
 }
 
+def ONNX_GlobalMaxPool : ONNXExtension<"GlobalMaxPool">;
+
 def ONNX_Greater: OpMapping<"Greater", Greater>;
 
 def ONNX_Identity : ONNXExtension<"Identity">;
@@ -288,6 +290,8 @@ def ONNX_Relu : OpMapping<"Relu", Relu>;
 
 def ONNX_Reshape : OpMapping<"Reshape", Reshape>;
 
+// ONNX-13 supports an optional ROI operand.
+// Operands: Input, roi (optional), scales (optional)
 def ONNX_Resize : OpMapping<"Resize", Resize> {
   let attr_mapping_ = [
     AttributeMapping<"", "axes_mask", "-1">,

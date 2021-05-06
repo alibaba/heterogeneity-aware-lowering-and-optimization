@@ -159,14 +159,14 @@ if __name__ == "__main__":
     image_path = args.image_dir
 
     print('Using halo: {}'.format(halo_exe))
-    
+
     model_lib = compile_with_halo(
         model_file, "model", args.odla, args.convert_layout_to, args.input_shape)
     clsidx = []
     if args.label_file:
         clsidx = args.label_file.readlines()
     print('\n##### Start to test using {} #####'.format(model_lib))
-    files = glob.glob(image_path + '/*.jpg')
+    files = sorted(glob.glob(image_path + '/*.jpg'))
 
     if not files:
         print("No images found in " + image_path)
@@ -192,15 +192,14 @@ if __name__ == "__main__":
         ind = ret.argsort()[-3:][::-1]
 
         if clsidx:
-            print(path, '==>', clsidx[ind[0]])
+            print(os.path.basename(path), '==>', clsidx[ind[0]].strip('\n'))
             res_info.append(path.split('/')[-1] + ' ==> ' + clsidx[ind[0]])
         else:
+            print(ind)
             res_info.append(ind)
-    resfile = []
-    if ".onnx" in model_file[0]:
-        resfile = model_file[0].split('.onnx')[0] + '_' +args.odla + '.txt'
-    else:
-        resfile = model_file[1].split('.caffemodel')[0] + '_' +args.odla + '.txt'
-    with open(resfile, 'w') as f:
-        f.write(''.join(str(i) for i in res_info))
+    #resfile = os.path.splitext(os.path.basename(model_file[0]))[0]
+    #resfile = resfile + '_' + args.odla + '.txt'
+    #resfile = os.path.join('/tmp', resfile)
+    #with open(resfile, 'w') as f:
+    #    f.write(''.join(str(i) for i in res_info))
     print("======== Testing Done ========")

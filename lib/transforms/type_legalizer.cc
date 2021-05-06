@@ -324,6 +324,7 @@ static Type ComputeKernelWiseType(
       ImageAxisInfo::GetImageAxisInfo(data_format, kernel_format);
   auto& data_shape = data_type.GetDimSizes();
   auto ret_shape = data_shape;
+  HLCHECK(data_type.GetNumOfDims() == 4);
 
   int kernel_h = kernel_shape[info.kernel_height_axis];
   int kernel_w = kernel_shape[info.kernel_width_axis];
@@ -754,69 +755,45 @@ static void RunOnInstruction(GatherInst* inst) {
 
 static void RunOnInstruction(SliceInst* inst) {
   auto op0 = inst->GetOperand(0);
-  auto op1 = inst->GetOperand(1);
-  auto op2 = inst->GetOperand(2);
+  auto op_start = inst->GetOperand(1);
+  auto op_len = inst->GetOperand(2);
   auto& input_type = op0.GetType();
 
-  if (!input_type.IsValid() || !IsA<Constant>(op2)) {
+  if (!input_type.IsValid() || !IsA<Constant>(op_len)) {
+    inst->GetResultsTypes()[0] = halo::Type{op0.GetType().GetDataType(), {1}};
     return;
   }
 
   auto dims = input_type.GetNumOfDims();
-  bool specified_axes = inst->GetNumOfOperands() > 4;
   std::unordered_set<int32_t> axes;
-  if (specified_axes) {
-    auto op4 = inst->GetOperand(4);
-    if (!IsA<Constant>(op4)) {
+  if (inst->GetNumOfOperands() > 4) {
+    auto op_axes = inst->GetOperand(4);
+    if (!IsA<Constant>(op_axes)) {
       return;
     }
-    const Constant* axes_op = DynCast<Constant>(op4);
-    if (op4.GetType().GetDataType() == DataType::INT32) {
-      for (int i = 0, e = op4.GetType().GetTotalNumOfElements(); i != e; ++i) {
-        axes.insert(axes_op->GetData<int32_t>(i));
-      }
-    } else if (op4.GetType().GetDataType() == DataType::INT64) {
-      for (int i = 0, e = op4.GetType().GetTotalNumOfElements(); i != e; ++i) {
-        axes.insert(static_cast<int32_t>(axes_op->GetData<int64_t>(i)));
-      }
+    const Constant* axes_c = DynCast<Constant>(op_axes);
+    for (int i = 0, e = op_axes.GetType().GetTotalNumOfElements(); i != e;
+         ++i) {
+      axes.insert(axes_c->GetDataAsInt64(i));
     }
   } else {
-    for (unsigned i = 0; i < dims; ++i) {
+    for (size_t i = 0; i < dims; ++i) {
       axes.insert(i);
     }
   }
-  HLCHECK(op2.GetType().GetTotalNumOfElements() ==
-          static_cast<int64_t>(axes.size()));
-
-  Constant* c_sizes = DynCast<Constant>(op2);
-  Constant* c_begins = DynCast<Constant>(op1);
-  std::vector<int64_t> ret_shape;
+  Constant* c_sizes = DynCast<Constant>(op_len);
+  std::vector<int64_t> ret_shape(dims);
   for (size_t i = 0, j = 0; i < dims; ++i) {
-    auto size_i = input_type.GetNumOfElementsInDim(i);
-    if (axes.count(i) != 0) {
-      if (op2.GetType().GetDataType() == DataType::INT32) {
-        if (auto t = c_sizes->GetData<int32_t>(j); t >= 0) {
-          size_i = t;
-        } else if (IsA<Constant>(op1.GetOwner())) {
-          size_i -= c_begins->GetData<int32_t>(j);
-        } else {
-          return;
-        }
-      } else if (op2.GetType().GetDataType() == DataType::INT64) {
-        if (auto t = c_sizes->GetData<int64_t>(j); t >= 0) {
-          size_i = t;
-        } else if (IsA<Constant>(op1.GetOwner())) {
-          size_i -= c_begins->GetData<int64_t>(j);
-        } else {
-          return;
-        }
-      }
-      j++;
+    ret_shape[i] = axes.count(i) != 0 ? c_sizes->GetDataAsInt64(j++)
+                                      : input_type.GetNumOfElementsInDim(i);
+    if (ret_shape[i] == -1) {
+      ret_shape[i] = input_type.GetNumOfElementsInDim(i);
     }
-    ret_shape.push_back(size_i);
   }
   inst->GetResultsTypes()[0] =
       halo::Type{op0.GetType().GetDataType(), ret_shape};
+  HLCHECK(inst->GetResultType().IsValid() &&
+          inst->GetResultType().GetTotalNumOfElements() > 0);
 }
 
 static void RunOnInstruction(StackInst* inst) {
@@ -918,12 +895,16 @@ static void RunOnInstruction(TransposeInst* inst) {
 }
 
 static void RunOnInstruction(ResizeInst* inst) {
-  HLCHECK(inst->GetNumOfOperands() == 2);
-  const auto& op1 = inst->GetOperand(1);
-  if (!IsA<Constant>(op1)) {
+  auto op_num = inst->GetNumOfOperands();
+  // If op_num is 3, the operands are (x, ROI, scales).
+  // If op_num is 2, the operands are (x, scales)
+  // TODO(unknown): ROI operand is not handled now.
+  HLCHECK(op_num == 2 || op_num == 3);
+  const auto& op_scale = inst->GetOperand(op_num - 1);
+  if (!IsA<Constant>(op_scale)) {
     return;
   }
-  const Constant* shape_c = DynCast<Constant>(op1);
+  const Constant* shape_c = DynCast<Constant>(op_scale);
 
   const auto& input_type = inst->GetOperand(0).GetType();
   std::vector<int64_t> new_shape = input_type.GetDimSizes();
@@ -933,11 +914,11 @@ static void RunOnInstruction(ResizeInst* inst) {
       continue;
     }
     int64_t dim = 0;
-    if (op1.GetType().GetDataType() == DataType::INT64) {
+    if (op_scale.GetType().GetDataType() == DataType::INT64) {
       dim = shape_c->GetData<int64_t>(j++);
-    } else if (op1.GetType().GetDataType() == DataType::INT32) {
+    } else if (op_scale.GetType().GetDataType() == DataType::INT32) {
       dim = shape_c->GetData<int32_t>(j++);
-    } else if (op1.GetType().GetDataType() == DataType::FLOAT32) {
+    } else if (op_scale.GetType().GetDataType() == DataType::FLOAT32) {
       HLCHECK(inst->GetExplicitShape() == false);
       dim = std::floor(new_shape[i] * shape_c->GetData<float>(j++));
     }
@@ -1073,6 +1054,17 @@ static void RunOnInstruction(HgEngineInst* inst) {
 
     halo::Type new_type{type, new_shape};
     inst->GetResultsTypes()[i] = new_type;
+  }
+}
+
+static void RunOnInstruction(LoopInst* inst) {
+  auto& ret_types = inst->GetResultsTypes();
+  auto ret_inst = inst->GetBody()->GetReturnInst();
+  if (ret_inst != nullptr) {
+    HLCHECK(ret_types.size() == ret_inst->GetNumOfOperands());
+    for (int i = 0, e = ret_types.size(); i < e; ++i) {
+      ret_types[i] = ret_inst->GetOperand(i).GetType();
+    }
   }
 }
 

@@ -42,7 +42,7 @@ static std::vector<Def> ConvertReshape(const TFExtensionInst* tf_reshape,
         {tf_reshape->GetOperand(0), tf_reshape->GetOperand(1)});
   } else {
     // Convert attribute to constant operand.
-    auto shape = FindAttributeValue<std::vector<int>>(tf_reshape, "shape", {});
+    auto shape = FindAttributeValue<std::vector<int>>(*tf_reshape, "shape", {});
     HLCHECK(!shape.empty());
     ConstantBuilder cb(tf_reshape->GetParent()->GetParent());
     Constant* c = cb.CreateConstant(
@@ -67,7 +67,8 @@ static std::vector<Def> ConvertSqueeze(const TFExtensionInst* tf_squeeze,
   std::vector<int32_t> squeeze_dims;
   HLCHECK(tf_squeeze->GetNumOfAttributes() <= 1);
   if (tf_squeeze->GetNumOfAttributes() == 1) {
-    squeeze_dims = FindAttributeValue(tf_squeeze, "squeeze_dims", squeeze_dims);
+    squeeze_dims =
+        FindAttributeValue(*tf_squeeze, "squeeze_dims", squeeze_dims);
     HLCHECK(!squeeze_dims.empty());
   }
   std::vector<int32_t> new_dims;

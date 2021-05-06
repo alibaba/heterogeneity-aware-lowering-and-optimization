@@ -46,6 +46,7 @@ class InstSimplify final : public BasicBlockPass {
   std::pair<Def, Def> RunOnInstruction(TransposeInst* inst);
   std::pair<Def, Def> RunOnInstruction(ReturnInst* inst);
   std::pair<Def, Def> RunOnInstruction(BatchNormInst* inst);
+  static std::pair<Def, Def> RunOnInstruction(CeilInst* inst);
   static std::pair<Def, Def> RunOnInstruction(ConcatInst* inst);
   static std::pair<Def, Def> RunOnInstruction(Conv2DInst* inst);
   static std::pair<Def, Def> RunOnInstruction(ExpandDimsInst* inst);

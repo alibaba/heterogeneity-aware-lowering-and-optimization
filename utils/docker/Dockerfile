@@ -1,7 +1,7 @@
 # Build this image:  docker build -t halo:[version] .
 
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE} 
+FROM ${BASE_IMAGE}
 
 # Redeclare the argument
 ARG BASE_IMAGE
@@ -73,7 +73,7 @@ RUN apt-get update -y && \
       ninja-build \
       libopencv-core-dev \
       libopencv-highgui-dev \
-      libopencv-videoio-dev \ 
+      libopencv-videoio-dev \
       libmpc-dev \
       libmpfr-dev \
       libgmp-dev\
@@ -89,6 +89,9 @@ RUN apt-get update -y && \
       libpixman-1-dev \
       bc && \
     apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+#install the Git
+RUN add-apt-repository ppa:git-core/ppa -y && apt update && apt install git -y
 
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 60 --slave /usr/bin/g++ g++ /usr/bin/g++-${GCC_VERSION} && \
     update-alternatives --install /usr/bin/aarch64-linux-gnu-g++ aarch64-linux-gnu-g++ /usr/bin/aarch64-linux-gnu-g++-${GCC_VERSION} 60 && \
@@ -211,17 +214,21 @@ RUN cd /tmp && git clone https://github.com/google/XNNPACK.git && \
       -DCMAKE_INSTALL_PREFIX=/opt/XNNPACK && \
     ninja install
 
-# Install frameworks for model conversion
-RUN pip3 install torch
-RUN pip3 install tensorflow tf_slim scipy matplotlib
-
 # Install Flatbuffer
 RUN cd /tmp && \
     git clone --depth=1 https://github.com/google/flatbuffers.git -b v1.12.0 && \
     cd flatbuffers && \
     cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release  -DFLATBUFFERS_BUILD_SHAREDLIB=ON && make -j && make install && \
-    rm -fr /tmp/flatbuffers 
+    rm -fr /tmp/flatbuffers
 
+# INSATLL ONEAPI
+RUN if [[ ! "${BASE_IMAGE}" =~ "nvidia" ]]; then wget https://registrationcenter-download.intel.com/akdlm/irc_nas/17769/l_BaseKit_p_2021.2.0.2883_offline.sh && \
+    chmod +x ./l_BaseKit_p_2021.2.0.2883_offline.sh && \
+    ./l_BaseKit_p_2021.2.0.2883_offline.sh -s -a --silent --eula accept; fi
+
+# Install models & test cases
+COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:latest-model-zoo /models /models
+COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:latest-model-zoo /unittests /unittests
 
 RUN mkdir -p /var/run/sshd
 RUN sed -i 's/prohibit-password/yes/' /etc/ssh/sshd_config

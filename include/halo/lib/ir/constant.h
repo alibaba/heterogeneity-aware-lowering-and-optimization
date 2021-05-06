@@ -98,6 +98,7 @@ class Constant : public IRObject {
   }
 
   int64_t GetDataAsInt64(size_t idx) const;
+  std::vector<int64_t> GetDataAsInt64() const;
 
   float GetDataAsFloat32(size_t idx) const;
 

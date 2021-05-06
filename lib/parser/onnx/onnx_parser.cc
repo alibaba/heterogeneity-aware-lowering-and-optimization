@@ -25,11 +25,57 @@
 #include "halo/lib/framework/common.h"
 #include "halo/lib/framework/type.h"
 #include "halo/lib/ir/extension_instructions.h"
+#include "halo/lib/parser/parser.h"
 #include "onnx.pb.h"
 
 namespace halo {
 
 ONNXParser::~ONNXParser() {}
+
+Value ONNXParser::Scope::Find(const std::string& name) {
+  const static Value empty_value;
+  auto it = inst_name_to_ptr_.find(name);
+  if (it != inst_name_to_ptr_.end()) {
+    return it->second;
+  }
+  return (parent_ == nullptr) ? empty_value : parent_->Find(name);
+}
+
+void ONNXParser::Scope::Insert(const onnx::TensorProto& tensor,
+                               const Value& def) {
+  Insert(tensor.name(), def);
+}
+
+ONNXParser::Scope* ONNXParser::Scope::CreateScope() {
+  sub_scopes_.push_back(std::make_unique<Scope>());
+  Scope* new_scope = sub_scopes_.back().get();
+  new_scope->parent_ = this;
+  return new_scope;
+}
+
+void ONNXParser::Scope::Insert(const std::string& name, const Value& def) {
+  inst_name_to_ptr_[name] = def;
+}
+
+Status ONNXParser::Parse(Function* function,
+                         const std::vector<const char*>& buffers,
+                         const std::vector<size_t>& buffer_sizes) {
+  return Status::ASSERTION;
+}
+
+Status ONNXParser::Parse(Function* function,
+                         const std::vector<const void*>& model_defs) {
+  if (model_defs.empty() || model_defs[0] == nullptr) {
+    return Status::FILE_NOT_EXIST;
+  }
+
+  const onnx::GraphProto* graph_def =
+      reinterpret_cast<const onnx::GraphProto*>(model_defs[0]);
+  bb_builder_ = std::make_unique<BasicBlockBuilder>(function);
+  BasicBlock* bb = bb_builder_->CreateBasicBlock("bb0");
+  armory::Opts opts;
+  return Parse(bb, *graph_def, opts);
+}
 
 Status ONNXParser::Parse(Function* function,
                          const std::vector<std::string>& file_list,
@@ -131,9 +177,9 @@ Status ONNXParser::ConvertToHaloIR(const onnx::GraphProto& graph_def) {
       if (s != Status::SUCCESS) {
         return s;
       }
-      auto it = inst_name_to_ptr_.find(node.output(0));
-      HLCHECK(it != inst_name_to_ptr_.end());
-      IRObject* obj = it->second.first;
+      auto def = curr_scope_->Find(node.output(0));
+      HLCHECK(!def.IsNull());
+      IRObject* obj = def.GetOwner();
       HLCHECK(IsA<ONNXExtensionInst>(obj));
       ONNXExtensionInst* inst = DynCast<ONNXExtensionInst>(obj);
       std::unique_ptr<Attribute> attr_val = Attribute::CreateFloat("value", 0);
@@ -186,11 +232,10 @@ Status ONNXParser::ConvertToHaloIR(const onnx::GraphProto& graph_def) {
   auto output_infos_size = graph_def.output_size();
   for (int i = 0; i < output_infos_size; ++i) {
     auto name = graph_def.output(i).name();
-    auto it = inst_name_to_ptr_.find(name);
-    int idx = 0;
-    if (it != inst_name_to_ptr_.end()) {
-      auto inst = it->second.first;
-      idx = it->second.second;
+    auto val = curr_scope_->Find(name);
+    if (!val.IsNull()) {
+      auto inst = val.GetOwner();
+      int idx = val.GetIdx();
       HLCHECK(0 <= idx && idx <= 1024);
       outputs.emplace_back(Def{inst, idx});
     } else {
@@ -288,7 +333,7 @@ static size_t GetTensorDataSize(const onnx::TensorProto& tensor_proto) {
     case onnx::TensorProto::STRING:
       return tensor_proto.string_data_size();
     case onnx::TensorProto::BOOL:
-      return 0; // 0 means bool storated in raw data
+      return 0; // 0 means bool is stored in raw data
     default:
       LOG(ERROR) << "Unsupported DataType.";
       return 0;
@@ -366,33 +411,32 @@ IRObject* ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
       const Tensor<float> temp = ProcessTensor<float>(tensor_def);
       inst = c_builder->CreateConstant(
           tensor_def.name(), Type(data_type, temp.GetShape()), temp.GetData());
-      inst_name_to_ptr_.emplace(tensor_def.name(), std::make_pair(inst, 0));
       break;
     }
     case DataType::INT32: {
       const Tensor<int> temp = ProcessTensor<int>(tensor_def);
       inst = c_builder->CreateConstant(
           tensor_def.name(), Type(data_type, temp.GetShape()), temp.GetData());
-      inst_name_to_ptr_.emplace(tensor_def.name(), std::make_pair(inst, 0));
       break;
     }
     case DataType::INT64: {
       const Tensor<int64_t> temp = ProcessTensor<int64_t>(tensor_def);
       inst = c_builder->CreateConstant(
           tensor_def.name(), Type(data_type, temp.GetShape()), temp.GetData());
-      inst_name_to_ptr_.emplace(tensor_def.name(), std::make_pair(inst, 0));
       break;
     }
     case DataType::BOOL: {
       const Tensor<int8_t> temp = ProcessTensor<int8_t>(tensor_def);
       inst = c_builder->CreateConstant(tensor_def.name(),
-                                       Type(DataType::INT8, temp.GetShape()),
+                                       Type(DataType::BOOL, temp.GetShape()),
                                        temp.GetData());
-      inst_name_to_ptr_.emplace(tensor_def.name(), std::make_pair(inst, 0));
       break;
     }
     default:
       HLCHECK(0 && "Unsupported data type");
+  }
+  if (inst != nullptr) {
+    curr_scope_->Insert(tensor_def, Value(inst, 0));
   }
   return inst;
 }
@@ -439,7 +483,7 @@ Status ONNXParser::ConvertSubPlaceholderNode(
     type = GetType(value_info_def);
   }
   auto arg = arg_builder->CreateArgument(value_info_def.name(), type);
-  inst_name_to_ptr_.emplace(value_info_def.name(), std::make_pair(arg, 0));
+  curr_scope_->Insert(value_info_def.name(), Value{arg, 0});
   loop_arg_types_.pop();
   return Status::SUCCESS;
 }
@@ -448,7 +492,7 @@ Status ONNXParser::ConvertPlaceholderNode(
     ArgumentBuilder* arg_builder, const onnx::ValueInfoProto& value_info_def) {
   auto arg = arg_builder->CreateArgument(value_info_def.name(),
                                          GetType(value_info_def));
-  inst_name_to_ptr_.emplace(value_info_def.name(), std::make_pair(arg, 0));
+  curr_scope_->Insert(value_info_def.name(), Value{arg, 0});
   return Status::SUCCESS;
 }
 
@@ -458,10 +502,10 @@ std::vector<Def> ONNXParser::GetInputOperands(const onnx::NodeProto& node_def) {
   for (size_t i = 0, operand_num = node_def.input_size(); i < operand_num;
        ++i) {
     std::string input_node_name = node_def.input(i);
-    it = inst_name_to_ptr_.find(input_node_name);
-    if (it != inst_name_to_ptr_.end()) {
-      auto inst = it->second.first;
-      int idx = it->second.second;
+    Value val = curr_scope_->Find(input_node_name);
+    if (!val.IsNull()) {
+      auto inst = val.GetOwner();
+      int idx = val.GetIdx();
       HLCHECK(0 <= idx && idx <= 1024);
       operands.emplace_back(Def{inst, idx});
     } else {
@@ -480,7 +524,8 @@ void ONNXParser::InsertIDToInstMap(const onnx::NodeProto& node_def,
     inst->SetNumOfResults(num_outputs);
   }
   for (size_t i = 0; i < num_outputs; ++i) {
-    inst_name_to_ptr_.emplace(node_def.output(i), std::make_pair(inst, i));
+    int idx = i;
+    curr_scope_->Insert(node_def.output(i), Value{inst, idx});
   }
 }
 
@@ -726,6 +771,7 @@ Status ONNXParser::ConvertLoopNode(IRBuilder* ir_builder,
 
   ONNXAttrs attrs(cur_node);
   onnx::GraphProto subgraph;
+  curr_scope_ = curr_scope_->CreateScope();
   attrs.Process<onnx::GraphProto>("body", &subgraph);
   auto loop_body = bb_builder_->CreateBasicBlock("bb_" + cur_node_name);
   auto _ir_builder = std::make_unique<IRBuilder>(loop_body);
@@ -755,19 +801,17 @@ Status ONNXParser::ConvertLoopNode(IRBuilder* ir_builder,
     ConvertOneNode(_ir_builder.get(), subgraph.node(i));
   }
 
-  // Convert output
+  // Convert output. Skip the first operand as "cond" is not a real output.
   std::vector<Def> outputs;
-  for (int i = 0, output_infos_size = subgraph.output_size();
+
+  for (int i = 1, output_infos_size = subgraph.output_size();
        i < output_infos_size; ++i) {
     auto name = subgraph.output(i).name();
     VLOG(1) << "output node name: " << name;
-    auto it = inst_name_to_ptr_.find(name);
-    int idx = 0;
-    if (it != inst_name_to_ptr_.end()) {
-      auto inst = it->second.first;
-      idx = it->second.second;
-      HLCHECK(0 <= idx && idx <= 1024);
-      outputs.emplace_back(Def{inst, idx});
+    auto value = curr_scope_->Find(name);
+    if (!value.IsNull()) {
+      HLCHECK(0 <= value.GetIdx() && value.GetIdx() <= 1024);
+      outputs.emplace_back(Def{value.GetOwner(), value.GetIdx()});
     } else {
       LOG(ERROR) << "Output " << i << " :" << name << " not found.";
     }
@@ -775,9 +819,13 @@ Status ONNXParser::ConvertLoopNode(IRBuilder* ir_builder,
   if (!outputs.empty()) {
     _ir_builder->CreateReturn("output", outputs);
   }
-
+  curr_scope_ = curr_scope_->GetParent();
   auto loop = ir_builder->CreateLoop(cur_node.name(), operands);
   loop->SetBody(loop_body);
+  loop_body->SetLoopInst(loop);
+  loop->GetResultsUses().resize(cur_node.output_size());
+  loop->GetResultsTypes().resize(cur_node.output_size());
+
   InsertIDToInstMap(cur_node, loop);
   return Status::SUCCESS;
 }

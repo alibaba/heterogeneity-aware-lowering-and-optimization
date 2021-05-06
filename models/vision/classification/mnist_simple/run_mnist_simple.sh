@@ -1,17 +1,16 @@
 #!/bin/bash
-# RUN: %s
+# RUN: %s %t.1 %t.2
 
 curr_dir=`dirname $0`
-out=$TEST_TEMP_DIR/mnist
-
-mkdir -p $out
-
-if [[ ! -e $out/test_image ]]; then
-  wget -qO- http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz  | gunzip -c > $out/test_image
-  wget -qO- http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz | gunzip -c > $out/test_label
+if [[ $# != 0 ]];then
+  export TEST_TEMP_DIR=`dirname $1`
 fi
+out=$TEST_TEMP_DIR
 
-$HALO_BIN -target cxx -o $out/mnist_simple.cc $curr_dir/mnist_simple.pb
+model_name="mnist_simple"
+model_path=$MODELS_ROOT/vision/classification/$model_name
+
+$HALO_BIN -target cxx -o $out/mnist_simple.cc $model_path/$model_name.pb
 
 g++ $out/mnist_simple.cc -I$ODLA_INC -c -o $out/mnist_simple.o
 
@@ -21,16 +20,15 @@ if [[ $TEST_WITH_GPU -eq 1 ]]; then
   echo "Using TensorRT based ODLA runtime"
   g++ -o $out/test $out/main.o $out/mnist_simple.o $out/mnist_simple.bin \
     -L$ODLA_LIB -lodla_tensorrt -Wl,-rpath=$ODLA_LIB
-  res_tensorrt_info=`$out/test $out/test_image $out/test_label`
-  echo ${res_tensorrt_info} >> $out/mnist_tensorrt.txt
-# RUN: FileCheck --input-file %test_temp_dir/mnist/mnist_tensorrt.txt %s
+  $out/test $model_path/test_image $model_path/test_label | tee $1
+# RUN: FileCheck --input-file %t.1 %s
 fi
 
 echo "Using DNNL-based ODLA implementation"
 g++ -o $out/test $out/main.o $out/mnist_simple.o $out/mnist_simple.bin \
   -L$ODLA_LIB -lodla_dnnl -Wl,-rpath=$ODLA_LIB
 
-res_dnnl_info=`$out/test $out/test_image $out/test_label`
-echo ${res_dnnl_info} >> $out/mnist_dnnl.txt
-# RUN: FileCheck --input-file %test_temp_dir/mnist/mnist_dnnl.txt %s
-# CHECK: Accuracy 9190/10000 (91.9%)
+$out/test $model_path/test_image $model_path/test_label | tee $2
+# RUN: FileCheck --input-file %t.2 %s
+
+# CHECK: Accuracy 919{{.*}}/10000 (91.9{{.*}}%)

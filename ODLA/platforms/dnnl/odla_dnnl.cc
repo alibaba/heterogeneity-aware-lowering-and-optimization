@@ -132,6 +132,20 @@ static dnnl::memory::dims getStrides(const odla_value_shape& od) {
   return dims;
 }
 
+static int GetDataSize(dnnl::memory::data_type dt) {
+  switch (dt) {
+    case dnnl::memory::data_type::s8:
+      return 1;
+    case dnnl::memory::data_type::bf16:
+      return 2;
+    case dnnl::memory::data_type::f32:
+    case dnnl::memory::data_type::s32:
+      return 4;
+  }
+  assert(0 && "invalid data type");
+  return 0;
+}
+
 static dnnl::memory::data_type getDataType(const odla_element_type ty) {
   dnnl::memory::data_type dt;
   switch (ty) {
@@ -400,15 +414,15 @@ odla_status odla_GetValueType(const odla_value value,
 
 odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                 odla_context context) {
-  if (g_comp->opts.bf16_mode == BF16_PERFORMACE_MODE &&
+  if (context->comp->opts.bf16_mode == BF16_PERFORMACE_MODE &&
       value->mem.get_desc().data_type() == dnnl::memory::data_type::bf16) {
     auto src_md = dnnl::memory::desc(value->mem.get_desc().dims(),
                                      getDataType(ODLA_FLOAT32),
                                      getFormatTag(value->shape));
     auto src_mem =
-        dnnl::memory(src_md, g_comp->eng, const_cast<void*>(data_ptr));
+        dnnl::memory(src_md, context->comp->eng, const_cast<void*>(data_ptr));
     auto r = dnnl::reorder(src_mem, value->mem);
-    r.execute(dnnl::stream(g_comp->eng),
+    r.execute(dnnl::stream(context->comp->eng),
               {{DNNL_ARG_FROM, src_mem}, {DNNL_ARG_TO, value->mem}});
   } else {
     value->mem.set_data_handle(const_cast<void*>(data_ptr));
@@ -557,23 +571,27 @@ odla_value odla_Gather(odla_value params, const odla_value indices,
     idx_size = indices->shape.dims[1];
   } else {
     batch_size = 1;
-    for (int i = 0; i < axis; ++i) {
-      batch_size *= params->shape.dims[i];
-    }
     idx_size = indices->shape.dims[0];
   }
   size_t inner_size = 1;
+  size_t outer_loop = 1;
   for (int i = axis + 1; i < params->shape.size; ++i) {
     inner_size *= params->shape.dims[i];
   }
+  size_t outer_size = inner_size * params->shape.dims[axis];
+  for (int i = 0; i < axis; ++i) {
+    outer_loop *= params->shape.dims[i];
+  }
   auto ret_md =
-      dnnl::memory::desc(getDims(output_dims), dt, getStrides(output_dims));
+      dnnl::memory::desc(getDims(output_dims), dt, getFormatTag(output_dims));
   auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
   int byte_size =
       params->mem.get_desc().get_size() / GetTotalElements(params->shape);
 
-  op = [params, indices, batch_size, idx_size, inner_size, byte_size, ret_mem,
-        axis]() {
+  auto one_batch_byte_size =
+      GetTotalElements(output_dims) / batch_size * byte_size;
+  op = [params, indices, batch_size, idx_size, inner_size, outer_loop,
+        outer_size, byte_size, ret_mem, one_batch_byte_size, axis]() {
     int32_t* indices_ptr = (int32_t*)indices->mem.get_data_handle();
     std::vector<int> indices_i32;
     if (indices->elem_size == 8) {
@@ -581,10 +599,14 @@ odla_value odla_Gather(odla_value params, const odla_value indices,
       indices_i32.insert(indices_i32.begin(), src, src + idx_size);
       indices_ptr = indices_i32.data();
     }
-    dnnl_utils::gather_func((char*)params->mem.get_data_handle(), indices_ptr,
-                            batch_size, idx_size, params->shape.dims[axis],
-                            inner_size, byte_size,
-                            (char*)ret_mem.get_data_handle());
+    char* ret_ptr = (char*)ret_mem.get_data_handle();
+#pragma omp parallel for
+    for (int i = 0; i < batch_size; i++) {
+      dnnl_utils::gather_func((char*)params->mem.get_data_handle(),
+                              indices_ptr + i * idx_size, idx_size, inner_size,
+                              outer_loop, outer_size, byte_size,
+                              ret_ptr + i * one_batch_byte_size);
+    }
   };
   add_op(op);
   InterpretIfNeeded();
@@ -1604,6 +1626,45 @@ odla_value odla_Erf(odla_value input, const odla_value_id value_id) {
   return v;
 }
 
+static void strided_slice(const void* src, int elem_size,
+                          const odla_value_shape& input_dims,
+                          const odla_uint32* start, const odla_uint32* end,
+                          const odla_uint32* strides, void* dst,
+                          const odla_value_shape& output_dims) {
+  int64_t dst_elems = GetTotalElements(output_dims);
+  int dims = input_dims.size;
+  std::vector<int> dst_dims(dims);
+  std::vector<size_t> src_strides(dims, 1);
+  const char* src_ptr = reinterpret_cast<const char*>(src);
+  char* dst_ptr = reinterpret_cast<char*>(dst);
+
+  for (int k = dims - 2; k >= 0; --k) {
+    src_strides[k] = src_strides[k + 1] * input_dims.dims[k + 1];
+  }
+  for (int64_t i = 0; i < dst_elems; ++i) {
+    // map dst position to src position.
+    std::vector<int> src_dims(dims);
+    for (int k = 0; k < dims; ++k) {
+      src_dims[k] = start[k] + strides[k] * dst_dims[k];
+    }
+    size_t src_offset =
+        elem_size * std::inner_product(src_dims.begin(), src_dims.end(),
+                                       src_strides.begin(), 0);
+    memcpy(dst_ptr, src_ptr + src_offset, elem_size);
+
+    // Increase the dims of dst;
+    for (int k = dims - 1; k >= 0; --k) {
+      ++dst_dims[k];
+      if (dst_dims[k] == output_dims.dims[k]) {
+        dst_dims[k] = 0;
+      } else {
+        break;
+      }
+    }
+    dst_ptr += elem_size;
+  }
+}
+
 odla_value odla_Slice(odla_value input, const odla_uint32* start,
                       const odla_uint32* end, const odla_uint32* strides,
                       odla_value_shape output_dims, const odla_value_id id) {
@@ -1611,20 +1672,33 @@ odla_value odla_Slice(odla_value input, const odla_uint32* start,
   int dims = input_dims.size;
   auto offsets = dnnl::memory::dims(start, start + dims);
   // only support stride of 1
+  bool simple_stride = true;
   for (int i = 0; i < dims; ++i) {
-    assert(strides[i] == 1);
+    if (strides[i] != 1) {
+      simple_stride = false;
+      break;
+    }
   }
   dnnl::memory::data_type type = input->mem.get_desc().data_type();
-  dnnl::memory::desc input_md = getMemoryDesc(input_dims, type);
-  dnnl::memory::desc src_sub_md =
-      input_md.submemory_desc(getDims(output_dims), offsets);
   dnnl::memory::desc dst_md = getMemoryDesc(output_dims, type);
-
-  // dummy reorder
-  auto src_mem = dnnl::memory(src_sub_md, g_comp->eng, nullptr);
   auto dst_mem = dnnl::memory(dst_md, g_comp->eng);
-  auto prim = dnnl::reorder(src_mem, dst_mem);
-  add_op(prim, {{DNNL_ARG_FROM, input->mem}, {DNNL_ARG_TO, dst_mem}});
+  if (simple_stride) {
+    dnnl::memory::desc input_md = getMemoryDesc(input_dims, type);
+    dnnl::memory::desc src_sub_md =
+        input_md.submemory_desc(getDims(output_dims), offsets);
+
+    // dummy reorder
+    auto src_mem = dnnl::memory(src_sub_md, g_comp->eng, nullptr);
+    auto prim = dnnl::reorder(src_mem, dst_mem);
+    add_op(prim, {{DNNL_ARG_FROM, input->mem}, {DNNL_ARG_TO, dst_mem}});
+  } else {
+    int elem_size = GetDataSize(type);
+    auto op = [=]() {
+      strided_slice(input->mem.get_data_handle(), elem_size, input_dims, start,
+                    end, strides, dst_mem.get_data_handle(), output_dims);
+    };
+    add_op(op);
+  }
   InterpretIfNeeded();
   return CreateValue(dst_mem, output_dims, id);
 }

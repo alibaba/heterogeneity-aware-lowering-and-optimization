@@ -55,12 +55,35 @@ class ONNXAttrs {
 
 /// Parser for ONNX
 class ONNXParser : public Parser {
+  class Scope {
+    using ir_map = std::unordered_map<std::string, Value>;
+
+   public:
+    Value Find(const std::string& name);
+    void Insert(const onnx::TensorProto& tensor, const Value& def);
+    void Insert(const std::string& name, const Value& def);
+    Scope* GetParent() const { return parent_; }
+    Scope* CreateScope();
+
+   private:
+    ir_map inst_name_to_ptr_;
+    std::vector<std::unique_ptr<Scope>> sub_scopes_;
+
+   private:
+    Scope* parent_ = nullptr;
+  };
+
  public:
   explicit ONNXParser(){};
   Status Parse(Function* function, const std::vector<std::string>& file_list,
                const armory::Opts& opts) override;
+  Status Parse(Function* function, const std::vector<const char*>& buffers,
+               const std::vector<size_t>& buffer_sizes) override;
+  Status Parse(Function* function,
+               const std::vector<const void*>& model_defs) override;
   Status Parse(BasicBlock* bb, const onnx::GraphProto& graph_def,
                const armory::Opts& opts);
+
   ~ONNXParser();
 
   template <typename T>
@@ -101,12 +124,13 @@ class ONNXParser : public Parser {
   std::unique_ptr<ArgumentBuilder> arg_builder_;
   std::unique_ptr<ConstantBuilder> c_builder_;
   armory::Opts opts_;
-  std::unordered_map<std::string, std::pair<IRObject*, int>> inst_name_to_ptr_;
   using CallBack =
       std::function<Status(IRBuilder* ir_builder, const onnx::NodeProto&)>;
   std::unordered_map<std::string, CallBack> func_lists_;
   std::stack<Type> loop_arg_types_;
-};
+  Scope root_scope_;
+  Scope* curr_scope_ = &root_scope_;
+}; // namespace halo
 
 } // namespace halo
 

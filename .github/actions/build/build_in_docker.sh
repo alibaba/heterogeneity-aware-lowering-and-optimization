@@ -2,6 +2,7 @@
 
 REPO="registry-intl.us-west-1.aliyuncs.com/computation/halo"
 VER="latest"
+FLAVOR="devel"
 
 MOUNT_DIR="$PWD"
 if [ ! -z "$1" ]; then
@@ -16,11 +17,11 @@ if [ ! -z "$1" ]; then
 fi
 
 
-IMAGE="$REPO:$VER-$VARIANT-ubuntu18.04"
+IMAGE="$REPO:$VER-$FLAVOR-$VARIANT-ubuntu18.04"
 CONTAINER_NAME="halo.ci-$VER-$VARIANT"
 
 docker_run_flag=""
-cmake_flags=""
+cmake_flags="-DDNNL_COMPILER=gcc-10"
 check_cmds="ninja check-halo && ninja check-halo-models"
 
 if [[ "$VARIANT" =~ cuda ]]; then
@@ -50,15 +51,13 @@ if [ -z "$DOCKER_ID" ]; then
     --disabled-password --home /home/$USER $USER"
 fi
 
+extra_cmd="true" # dummy command
+
 if [[ "$VARIANT" =~ graphcore ]]; then
   extra_cmd="source /opt/poplar_sdk-ubuntu_18_04-1.4.0+365-665f971c8f/poplar-ubuntu_18_04-1.4.0+71819-c5c0c8ebab/enable.sh \
          && source /opt/poplar_sdk-ubuntu_18_04-1.4.0+365-665f971c8f/popart-ubuntu_18_04-1.4.0+5352-e86081acc9/enable.sh"
-
-  docker exec --user $USER $CONTAINER_NAME bash -c \
-    "$extra_cmd && cd /host && rm -fr build && mkdir -p build && cd build && \
-    cmake -G Ninja $cmake_flags ../halo && ninja && $check_cmds"
-else
-  docker exec --user $USER $CONTAINER_NAME bash -c \
-    "cd /host && rm -fr build && mkdir -p build && cd build && \
-     cmake -G Ninja $cmake_flags ../halo && ninja && $check_cmds && ninja package"
 fi
+
+docker exec --user $USER $CONTAINER_NAME bash -c \
+  "$extra_cmd && cd /host && rm -fr build && mkdir -p build && cd build && \
+  cmake -G Ninja $cmake_flags ../halo && ninja && $check_cmds && ninja package"

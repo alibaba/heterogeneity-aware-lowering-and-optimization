@@ -25,12 +25,6 @@ namespace halo {
 /// This pass attemps to reorder the channel dimension of ops.
 class ReorderChannel final : public BasicBlockPass {
  public:
-  enum class ChannelOrder {
-    None,
-    ChannelFirst,
-    ChannelLast,
-  };
-
   ReorderChannel(bool channel_first)
       : BasicBlockPass("Data Format"), channel_first_(channel_first) {}
 

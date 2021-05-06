@@ -26,5 +26,4 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_pow_bcast_scalar | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_pow_bcast_scalar_popart.cc.tmp.main.cc.in"
