@@ -242,7 +242,7 @@ Status TFLITEParser::ConvertToHaloIR(const tflite::Model& model) {
   const auto tensors = graph_def.tensors();
   for (size_t i = 0; i < tensors->size(); ++i) {
     const auto tensor = tensors->Get(i);
-    if (inputs_set.count(i)) {
+    if (inputs_set.count(i) != 0) {
       s = ConvertPlaceholderNode(*tensor, i);
       if (s != Status::SUCCESS) {
         return s;
@@ -281,6 +281,13 @@ Status TFLITEParser::ConvertToHaloIR(const tflite::Model& model) {
   }
   if (!outputs.empty()) {
     ir_builder_->CreateReturn("output", outputs);
+  }
+
+  // Setup names.
+  for (const auto& kv : inst_id_to_ptr_) {
+    if (!kv.second->GetName().empty()) {
+      kv.second->SetName(tensors->Get(kv.first)->name()->str());
+    }
   }
 
   return Status::SUCCESS;
