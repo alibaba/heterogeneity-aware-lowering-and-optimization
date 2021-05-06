@@ -213,7 +213,7 @@ std::string GenericCXXCodeGen::GetFunctionDecl(const Function& func,
     ss << "static ";
   }
   if (with_func_name) {
-    ss << "void " << func.GetName();
+    ss << "void " << NormalizeVariableName(func.GetName());
   }
   ss << "(";
   if (is_sub) {
@@ -530,9 +530,9 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
   // Emit a separate computation builder function or not.
   bool emit_builder_func = function.GetParent()->Functions().size() == 1;
 
-  std::string helper_func_name = is_compile_mode
-                                     ? function.GetName() + "_helper"
-                                     : "run_" + function.GetName();
+  std::string fn_name = NormalizeVariableName(function.GetName());
+  std::string helper_func_name =
+      is_compile_mode ? fn_name + "_helper" : "run_" + fn_name;
   // Emit function for launching computation.
   auto func_decl = GetFunctionDecl(function, *return_inst, true, true, true);
 
@@ -541,9 +541,9 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
   bool emit_triton_style =
       (function.IsEntryFunction() && opts_.emit_inference_func_sig);
   const std::string init_func_name =
-      emit_triton_style ? "model_init" : function.GetName() + "_init";
+      emit_triton_style ? "model_init" : fn_name + "_init";
   const std::string fini_func_name =
-      emit_triton_style ? "model_fini" : function.GetName() + "_fini";
+      emit_triton_style ? "model_fini" : fn_name + "_fini";
 
   if (function.IsEntryFunction()) {
     if (opts_.dialect == Dialect::CXX_11) {
