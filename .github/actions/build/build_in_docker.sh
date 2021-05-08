@@ -37,20 +37,6 @@ if [[ "$VARIANT" =~ graphcore ]]; then
   check_cmds="ninja check-halo"
 fi
 
-DOCKER_ID=`docker ps -aq -f name=$CONTAINER_NAME -f status=running`
-
-if [ -z "$DOCKER_ID" ]; then
-  gid=$(id -g ${USER})
-  group=$(id -g -n ${USER})
-  uid=$(id -u ${USER})
-  docker run $docker_run_flag -t -d --name $CONTAINER_NAME -v $MOUNT_DIR:/host \
-    --tmpfs /tmp:exec --rm $IMAGE
-  docker exec $CONTAINER_NAME bash -c "groupadd -f -g $gid $group"
-  docker exec $CONTAINER_NAME bash -c \
-    "adduser --shell /bin/bash --uid $uid --gecos '' --gid $gid \
-    --disabled-password --home /home/$USER $USER"
-fi
-
 extra_cmd="true" # dummy command
 
 if [[ "$VARIANT" =~ graphcore ]]; then
@@ -58,6 +44,14 @@ if [[ "$VARIANT" =~ graphcore ]]; then
          && source /opt/poplar_sdk-ubuntu_18_04-1.4.0+365-665f971c8f/popart-ubuntu_18_04-1.4.0+5352-e86081acc9/enable.sh"
 fi
 
-docker exec --user $USER $CONTAINER_NAME bash -c \
-  "$extra_cmd && cd /host && rm -fr build && mkdir -p build && cd build && \
+gid=$(id -g ${USER})
+uid=$(id -u ${USER})
+mkdir -p ccache
+rm -fr build
+docker run $docker_run_flag -t --rm -v $MOUNT_DIR:/host \
+  --tmpfs /tmp:exec -e CCACHE_DIR=/host/ccache --rm -u $uid \
+  --entrypoint="" \
+  $IMAGE \
+  bash -c \
+  "$extra_cmd && cd /host && mkdir -p build && cd build && \
   cmake -G Ninja $cmake_flags ../halo && ninja && $check_cmds && ninja package"
