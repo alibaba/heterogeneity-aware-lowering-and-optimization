@@ -20,7 +20,7 @@
 namespace halo {
 
 GenericCXXConstantWriter::GenericCXXConstantWriter(std::ostream& os)
-    : GenericCXXCodeGen(/*"Generic CXX Constant Writer"*/ os, os) {}
+    : CodeGen("Generic CXX Constant Writer"), os_(os) {}
 
 void GenericCXXConstantWriter::RunOnConstant(const Constant& constant,
                                              std::ostream* os) {
@@ -29,7 +29,7 @@ void GenericCXXConstantWriter::RunOnConstant(const Constant& constant,
                  GenericCXXCodeGen::TensorTypeToCXXType(type, true));
   // "extern" is needed for CXX compiler to prevent name mangling.
   *os << "extern const " << value.type.name << " " << value.name << "["
-      << Join(type.GetDimSizes(), '*') << "] = {";
+      << GenericCXXCodeGen::Join(type.GetDimSizes(), '*') << "] = {";
   constant.PrintData(os, constant.GetResultType().GetTotalNumOfElements());
   *os << "};\n";
 }

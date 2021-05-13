@@ -44,6 +44,7 @@ set(SRCS
 
 set(LLVM_LIBS
   LLVMAnalysis
+  LLVMAsmPrinter
   LLVMBinaryFormat
   LLVMBitReader
   LLVMBitWriter
@@ -57,6 +58,7 @@ set(LLVM_LIBS
   LLVMObject
   LLVMSelectionDAG
   LLVMScalarOpts
+  LLVMSupport
   LLVMTarget
   LLVMVectorize
   LLVMX86CodeGen

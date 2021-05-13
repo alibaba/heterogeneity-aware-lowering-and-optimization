@@ -24,6 +24,7 @@ set(SRCS
   batchnorm.cc
   call.cc
   cast.cc
+  code_formatter.cc
   concat.cc
   conv.cc
   deconv.cc
@@ -53,10 +54,30 @@ set(SRCS
   hgengine.cc
 )
 
+set(LLVM_LINK_COMPONENTS Support)
+set(CLANG_LIBS
+  clangBasic
+  clangFormat
+  clangRewrite
+  clangRewriteFrontend
+  clangTooling
+  clangToolingCore
+)
+
 # dependences which need to be built first.
-set(DEPENDENCES TARGET)
+set(DEPENDENCES TARGET ${CLANG_LIBS})
 
 create_halo_object(TARGET_NAME ${NAME}
   TARGET_SRCS ${SRCS}
   TARGET_DEPENDENCES ${DEPENDENCES}
 )
+
+target_include_directories(${NAME} SYSTEM
+   PRIVATE
+   ${CLANG_SRC_DIR}/include
+   ${LLVM_SRC_DIR}/include
+   ${CMAKE_BINARY_DIR}/llvm/tools/clang/include
+   ${CMAKE_BINARY_DIR}/llvm/include
+)
+
+target_link_libraries(${NAME} PRIVATE ${CLANG_LIBS})

@@ -29,7 +29,7 @@
 
 namespace halo {
 
-static std::tuple<std::unique_ptr<Module>, Function*> Init(
+static std::tuple<std::unique_ptr<Module>, Function*> CreateModule(
     GlobalContext* ctx, const std::string& target) {
   ctx->SetTargetTriple(std::string(target));
   if (target.substr(0, 3) == "cxx") {
@@ -44,19 +44,22 @@ static std::tuple<std::unique_ptr<Module>, Function*> Init(
   return std::make_tuple(std::move(m), func);
 }
 
-static void PopulatePasses(PassManager* pm, const std::string& name,
-                           const std::string& temp_dir,
-                           const std::string& target, int batch,
-                           const std::vector<std::string>& input_shapes,
-                           const std::vector<std::string>& inputs,
-                           const std::vector<std::string>& outputs,
-                           const CXXCodeGenOpts& cg_opts) {
+static int InvokeCompiler(Module* m, const std::string& name,
+                          const std::string& temp_dir,
+                          const std::string& target, int batch,
+                          const std::vector<std::string>& input_shapes,
+                          const std::vector<std::string>& inputs,
+                          const std::vector<std::string>& outputs,
+                          const CXXCodeGenOpts& cg_opts) {
+  PassManager pm(m->GetGlobalContext());
   FusionOptions fusion_opts;
-  PopulateOptPasses(pm, target, input_shapes, inputs, outputs, batch, "",
+  PopulateOptPasses(&pm, target, input_shapes, inputs, outputs, batch, "",
                     ChannelOrder::None, false, false, ModelFormat::TENSORFLOW,
                     cg_opts, fusion_opts);
-  std::string code_fn = temp_dir + "/" + name + ".cc";
+  std::string ext = (cg_opts.dialect == halo::Dialect::C99) ? ".c" : ".cc";
+  std::string code_fn = temp_dir + "/" + name + ext;
   std::string weights_fn = temp_dir + "/" + name + ".bin";
+
   std::string header_fn = temp_dir + "/" + name + ".h";
 
   std::ofstream out_code(code_fn, std::ofstream::binary);
@@ -64,13 +67,18 @@ static void PopulatePasses(PassManager* pm, const std::string& name,
   std::ofstream out_header(header_fn, std::ofstream::binary);
   bool is_c_or_cxx_output =
       target.substr(0, 3) == "cxx" || target.substr(0, 2) == "cc";
-
-  PopulateCodeGenPasses(pm, &out_code, &out_constants, &out_header, &std::cerr,
+  std::ostringstream buf_code;
+  std::ostringstream buf_header;
+  PopulateCodeGenPasses(&pm, &buf_code, &out_constants, &buf_header, &std::cerr,
                         target, is_c_or_cxx_output, false /*is_binary_output*/,
                         false /* EmitDataAsC */, false /*EmitCodeOnly*/,
                         false /* EmitLLVMIR */, false /* EmitTritonConfig */,
                         "" /*TritonConfigFile */, Quantization::None,
                         "" /* PGQFile */, false /* RISCVOpt */, cg_opts);
+  pm.Run(m);
+  out_code << buf_code.str();
+  out_header << buf_header.str();
+  return 0;
 }
 
 HL_API_EXPORT
@@ -84,16 +92,15 @@ int Compile(ModelFormat format, const std::vector<const void*>& model_defs,
   GlobalContext ctx;
   Function* func;
   std::unique_ptr<Module> m;
-  std::tie(m, func) = Init(&ctx, target);
+  std::tie(m, func) = CreateModule(&ctx, target);
+
   if (auto status = Parser::Parse(func, model_defs, format);
       status != Status::SUCCESS) {
     return 1;
   }
-  PassManager pm(ctx);
-  PopulatePasses(&pm, name, temp_dir, target, batch, input_shapes, inputs,
-                 outputs, cg_opts);
-  pm.Run(m.get());
-  return 0;
+
+  return InvokeCompiler(m.get(), name, temp_dir, target, batch, input_shapes,
+                        inputs, outputs, cg_opts);
 }
 
 HL_API_EXPORT
@@ -105,43 +112,16 @@ int Compile(ModelFormat format, const std::vector<const char*>& models,
             const std::vector<std::string>& outputs,
             const CXXCodeGenOpts& cg_opts) {
   GlobalContext ctx;
-  ctx.SetTargetTriple(std::string(target));
-  if (target.substr(0, 3) == "cxx") {
-    ctx.SetTargetTriple("x86_64"); // For binary constant writer.
-  }
-
-  Module m(ctx, "halo_module");
-
-  FunctionBuilder func_builder(&m);
-  std::string func_name = "model";
-  Function* func = func_builder.CreateFunction(func_name);
+  Function* func;
+  std::unique_ptr<Module> m;
+  std::tie(m, func) = CreateModule(&ctx, target);
   if (auto status = Parser::Parse(func, models, model_sizes, format);
       status != Status::SUCCESS) {
     return 1;
   }
-  PassManager pm(ctx);
-  FusionOptions fusion_opts;
-  PopulateOptPasses(&pm, target, input_shapes, inputs, outputs, batch, "",
-                    ChannelOrder::None, false, false, ModelFormat::TENSORFLOW,
-                    cg_opts, fusion_opts);
-  std::string code_fn = temp_dir + "/" + name + ".cc";
-  std::string weights_fn = temp_dir + "/" + name + ".bin";
-  std::string header_fn = temp_dir + "/" + name + ".h";
 
-  std::ofstream out_code(code_fn, std::ofstream::binary);
-  std::ofstream out_constants(weights_fn, std::ofstream::binary);
-  std::ofstream out_header(header_fn, std::ofstream::binary);
-  bool is_c_or_cxx_output =
-      target.substr(0, 3) == "cxx" || target.substr(0, 2) == "cc";
-
-  PopulateCodeGenPasses(&pm, &out_code, &out_constants, &out_header, &std::cerr,
-                        target, is_c_or_cxx_output, false /*is_binary_output*/,
-                        false /* EmitDataAsC */, false /*EmitCodeOnly*/,
-                        false /* EmitLLVMIR */, false /* EmitTritonConfig */,
-                        "" /*TritonConfigFile */, Quantization::None,
-                        "" /* PGQFile */, false /* RISCVOpt */, cg_opts);
-  pm.Run(&m);
-  return 0;
+  return InvokeCompiler(m.get(), name, temp_dir, target, batch, input_shapes,
+                        inputs, outputs, cg_opts);
 }
 
 HL_API_EXPORT
