@@ -196,7 +196,7 @@ static halo::DataType ProcessDataType(const tensorflow::DataType& data_type) {
     case tensorflow::DT_BOOL:
       return DataType::BOOL;
     default:
-      LOG(ERROR) << "Unsupported DataType";
+      LOG(ERROR) << "Unsupported DataType:" << data_type;
       return DataType::INVALID;
   }
 }
@@ -741,7 +741,7 @@ std::vector<Def> TFParser::GetInputOperands(
   size_t operand_num = node_def.input_size();
   for (size_t i = 0; i < operand_num; ++i) {
     std::string input_node_name = SkipFirstChar(node_def.input(i));
-    size_t pos = input_node_name.find(":");
+    size_t pos = input_node_name.find_last_of(':');
     std::string idx_str;
     std::unordered_map<std::string, IRObject*>::iterator it;
     if (pos != std::string::npos) {
@@ -761,6 +761,14 @@ std::vector<Def> TFParser::GetInputOperands(
       // those errors will be record in diagnostic report file
       // LOG(ERROR) << node_def.name() << " Node's " << i
       //<< "th operand:" << node_def.input(i) << " not found";
+      pos = input_node_name.find_first_of(':');
+      it = inst_name_to_ptr_.find(input_node_name.substr(0, pos));
+      if (it != inst_name_to_ptr_.end()) {
+        auto inst = it->second;
+        int idx = (idx_str.empty()) ? 0 : std::stoi(idx_str);
+        HLCHECK(0 <= idx && idx <= 1024);
+        operands.emplace_back(Def{inst, idx});
+      }
     }
   }
   return operands;

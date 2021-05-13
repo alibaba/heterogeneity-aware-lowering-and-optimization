@@ -97,6 +97,8 @@ class TFParser : public Parser {
                           const tensorflow::NodeDef& node_def);
   Status ConvertPlaceholderNode(IRBuilder* ir_builder,
                                 const tensorflow::NodeDef& node_def);
+  Status ConvertArgNode(IRBuilder* ir_builder,
+                        const tensorflow::NodeDef& node_def);
   Status ConvertDummyNode(IRBuilder* ir_builder,
                           const tensorflow::NodeDef& node_def);
 
