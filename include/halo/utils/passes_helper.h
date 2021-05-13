@@ -24,9 +24,10 @@
 #include "llvm/ADT/Triple.h"
 
 namespace halo {
+
 HL_UNUSED static void PopulateCodeGenPasses(
-    PassManager* pm, std::ostream* out_code, std::ostream* out_constants,
-    std::ostream* out_header, std::ostream* out_dynamic_check,
+    PassManager* pm, std::ostringstream* out_code, std::ostream* out_constants,
+    std::ostringstream* out_header, std::ostream* out_dynamic_check,
     const std::string& target, bool is_c_or_cxx_output, bool is_binary_output,
     bool emit_data_as_c, bool emit_code_only, bool emit_llvm_ir,
     bool emit_triton_config, const std::string& triton_config_file,
@@ -51,16 +52,18 @@ HL_UNUSED static void PopulateCodeGenPasses(
           triton_config_file,
           opts.emit_dynamic_batch ? opts.max_batch_size : 0);
     }
+    if (is_c_or_cxx_output && opts.format_code) {
+      pm->AddCodeFormatterPass(*out_code, *out_header, opts);
+    }
     return;
   }
 
   if (emit_llvm_ir) {
     pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
     pm->AddGenericLLVMIRCodeGenPass(constant_storage);
-    pm->AddGenericLLVMIRWriterPass(std::ref(*out_code), is_binary_output);
+    pm->AddGenericLLVMIRWriterPass(*out_code, is_binary_output);
     if (opts.separate_constants && !emit_code_only) {
-      pm->AddGenericConstantWriterPass(std::ref(*out_constants),
-                                       is_binary_output);
+      pm->AddGenericConstantWriterPass(*out_constants, is_binary_output);
     }
   } else {
     llvm::Triple triple(target);
