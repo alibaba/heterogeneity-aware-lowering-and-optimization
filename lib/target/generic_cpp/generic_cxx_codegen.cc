@@ -56,7 +56,8 @@ CXXValue::CXXValue(const std::string& name, const CXXType& type)
   id = name2id[name];
 }
 
-GenericCXXCodeGen::GenericCXXCodeGen(std::ostream& os, std::ostream& header_os)
+GenericCXXCodeGen::GenericCXXCodeGen(std::ostringstream& os,
+                                     std::ostringstream& header_os)
     : CodeGen("Generic CXX Compilation"),
       os_(os),
       header_os_(header_os),
@@ -65,7 +66,8 @@ GenericCXXCodeGen::GenericCXXCodeGen(std::ostream& os, std::ostream& header_os)
   CXXValue::Reset();
 }
 
-GenericCXXCodeGen::GenericCXXCodeGen(std::ostream& os, std::ostream& header_os,
+GenericCXXCodeGen::GenericCXXCodeGen(std::ostringstream& os,
+                                     std::ostringstream& header_os,
                                      std::ostream& dynamic_check_os,
                                      const CXXCodeGenOpts& opts)
     : CodeGen("Generic CXX Compilation"),

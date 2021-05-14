@@ -256,6 +256,12 @@ Pass* PassManager::AddCAFFEExtensionLegalizerPass() {
   return AddPass<CAFFEExtensionLegalizer>();
 }
 
+Pass* PassManager::AddCodeFormatterPass(std::ostringstream& buf_code,
+                                        std::ostringstream& buf_header,
+                                        const CXXCodeGenOpts& opts) {
+  return AddPass<CodeFormatter>(buf_code, buf_header, opts);
+}
+
 Pass* PassManager::AddDCEPass() { return AddPass<DCE>(); }
 
 Pass* PassManager::AddDevicePlacementPass() {
@@ -275,13 +281,13 @@ Pass* PassManager::AddGenericCXXConstantWriterPass(std::ostream& os) {
   return AddPass<GenericCXXConstantWriter>(os);
 }
 
-Pass* PassManager::AddGenericCXXCodeGenPass(std::ostream& os,
-                                            std::ostream& header_os) {
+Pass* PassManager::AddGenericCXXCodeGenPass(std::ostringstream& os,
+                                            std::ostringstream& header_os) {
   return AddPass<GenericCXXCodeGen>(os, header_os);
 }
 
-Pass* PassManager::AddGenericCXXCodeGenPass(std::ostream& os,
-                                            std::ostream& header_os,
+Pass* PassManager::AddGenericCXXCodeGenPass(std::ostringstream& os,
+                                            std::ostringstream& header_os,
                                             std::ostream& dynamic_check_os,
                                             const CXXCodeGenOpts& opts) {
   return AddPass<GenericCXXCodeGen>(os, header_os, dynamic_check_os, opts);

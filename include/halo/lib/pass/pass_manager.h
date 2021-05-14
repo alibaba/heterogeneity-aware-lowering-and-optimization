@@ -26,6 +26,7 @@
 #include "halo/lib/framework/global_context.h"
 #include "halo/lib/ir/module.h"
 #include "halo/lib/pass/pass.h"
+#include "halo/lib/target/generic_cxx/code_formatter.h"
 #include "halo/lib/target/generic_cxx/generic_cxx_codegen.h"
 #include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
 #include "halo/lib/transforms/fusion.h"
@@ -63,13 +64,18 @@ class HL_API_EXPORT PassManager final {
   Pass* AddARMConstantWriterPass(std::ostream& os);
   Pass* AddARMLLVMIRCodeGenPass(ConstantDataStorage constant_data_storage);
   Pass* AddCAFFEExtensionLegalizerPass();
+  Pass* AddCodeFormatterPass(std::ostringstream& code,
+                             std::ostringstream& header,
+                             const CXXCodeGenOpts& opts);
   Pass* AddDCEPass();
   Pass* AddDevicePlacementPass();
   Pass* AddFusionPass(const FusionOptions& opts);
   Pass* AddGenericConstantWriterPass(std::ostream& os, bool bitcode_format);
   Pass* AddGenericCXXConstantWriterPass(std::ostream& os);
-  Pass* AddGenericCXXCodeGenPass(std::ostream& os, std::ostream& header_os);
-  Pass* AddGenericCXXCodeGenPass(std::ostream& os, std::ostream& header_os,
+  Pass* AddGenericCXXCodeGenPass(std::ostringstream& os,
+                                 std::ostringstream& header_os);
+  Pass* AddGenericCXXCodeGenPass(std::ostringstream& os,
+                                 std::ostringstream& header_os,
                                  std::ostream& dynamic_check_os,
                                  const CXXCodeGenOpts& opts);
   Pass* AddGenericLLVMIRCodeGenPass();

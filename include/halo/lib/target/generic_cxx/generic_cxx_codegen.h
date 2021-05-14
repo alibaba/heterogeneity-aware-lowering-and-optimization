@@ -64,8 +64,8 @@ class CXXValue {
 // The generic CXX compiler, which is a module pass.
 class GenericCXXCodeGen : public CodeGen {
  public:
-  GenericCXXCodeGen(std::ostream& os, std::ostream& header_os);
-  GenericCXXCodeGen(std::ostream& os, std::ostream& header_os,
+  GenericCXXCodeGen(std::ostringstream& os, std::ostringstream& header_os);
+  GenericCXXCodeGen(std::ostringstream& os, std::ostringstream& header_os,
                     std::ostream& dynamic_check_os, const CXXCodeGenOpts& opts);
 
   virtual ~GenericCXXCodeGen();
@@ -258,6 +258,8 @@ class GenericCXXCodeGen : public CodeGen {
 
   virtual const std::string& EmitNull() const noexcept;
   virtual std::string GetODLAType(halo::DataType data_type) const noexcept;
+
+ public:
   static const std::string& EmitReturnType(bool auto_type, bool single_value);
   static CXXType SNTypeToCXXType(DataType dt);
   static CXXType TensorTypeToCXXType(const halo::Type& type, bool is_const);
@@ -289,16 +291,17 @@ class GenericCXXCodeGen : public CodeGen {
     return ss.str();
   }
 
-  std::ostream& os_;
-  std::ostream& header_os_;
+ protected:
+  bool emit_banner = true;
+  std::ostringstream& os_;
+  std::ostringstream& header_os_;
   std::ostream& dynamic_check_os_;
-  GlobalContext* ctx_ = nullptr;
   std::unordered_map<Def, CXXValue> ir_mapping_;
   std::unique_ptr<MemoryAnalyzer> memory_analyzer_;
   CXXCodeGenOpts opts_;
 };
 
-class GenericCXXConstantWriter : public GenericCXXCodeGen {
+class GenericCXXConstantWriter : public CodeGen {
  public:
   virtual ~GenericCXXConstantWriter() = default;
   explicit GenericCXXConstantWriter(std::ostream& os);
@@ -307,6 +310,7 @@ class GenericCXXConstantWriter : public GenericCXXCodeGen {
 
  private:
   void static RunOnConstant(const Constant& constant, std::ostream* os);
+  std::ostream& os_;
 };
 
 } // end namespace halo.

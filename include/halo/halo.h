@@ -78,6 +78,7 @@ struct CXXCodeGenOpts {
   int64_t batches_per_step = 1;
   bool check_model = false;
   API api = API::ODLA_05;
+  bool format_code = false;
 };
 
 int CompileTFGraph(const char* pb_buf, size_t pb_buf_size,

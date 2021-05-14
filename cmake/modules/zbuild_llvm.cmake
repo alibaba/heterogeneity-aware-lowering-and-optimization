@@ -21,6 +21,12 @@ set(LLVM_ENABLE_EH OFF)
 
 set(LLVM_LIT_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/llvm/bin)
 
+# Enable build clang libraries
+set(CLANG_SRC_DIR ${CMAKE_SOURCE_DIR}/external/llvm-project/clang)
+set(LLVM_ENABLE_PROJECTS_USED ON)
+set(LLVM_ENABLE_PROJECTS "clang")
+set(LLVM_EXTERNAL_CLANG_SOURCE_DIR ${CLANG_SRC_DIR})
+
 
 set(HALO_USE_SHARED_LLVM_LIBS AUTO CACHE STRING
   "Link against shared LLVM libraries")
@@ -35,7 +41,7 @@ else()
 endif()
 
 add_subdirectory(${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm EXCLUDE_FROM_ALL)
-
+add_llvm_external_project(clang ${CLANG_SRC_DIR})
 set(CMAKE_MODULE_PATH ${LLVM_SRC_DIR}/cmake/modules)
 include(DetermineGCCCompatible)
 

@@ -244,32 +244,6 @@ static llvm::cl::opt<bool> CheckModel("check-model",
 #include "halo/lib/ir/fusion.cc.inc"
 #undef HALO_FUSION_CMD_OPTIONS_DECL
 
-static bool FormatCode(const std::string& filename) {
-  if (filename.empty() || filename == "-") {
-    return false;
-  }
-  // Search clang-format in PATH env.
-  auto exe = llvm::sys::findProgramByName("clang-format", {});
-  if (!exe) {
-    exe = llvm::sys::findProgramByName("clang-format-9", {});
-  }
-  std::string ret_msg;
-  if (exe) {
-    ret_msg = "";
-    const char* arg0 = "--style=LLVM";
-    const char* arg1 = "-i"; // in-place format.
-    constexpr int timeout = 10;
-    llvm::sys::ExecuteAndWait(exe.get(), {arg0, arg1, filename}, {}, {},
-                              timeout, 0, &ret_msg);
-  } else {
-    ret_msg = "Unable to find formatting tool";
-  }
-  if (!ret_msg.empty()) {
-    std::cerr << "Code format failed: " << ret_msg << "\n";
-  }
-  return true;
-}
-
 static void PrintVersion(llvm::raw_ostream& os) {
   os << "  Version:\t" << HALO_MAJOR << '.' << HALO_MINOR << '.' << HALO_PATCH
      << '\n';
@@ -311,6 +285,8 @@ int main(int argc, char** argv) {
 
   PassManager pm(ctx);
 
+  std::ostringstream buf_code;
+  std::ostringstream buf_header;
   std::ofstream of_code;
   std::ofstream of_constants;
   std::ofstream of_header;
@@ -389,6 +365,7 @@ int main(int argc, char** argv) {
   cg_opts.disable_conv_bn = DisableConvBN;
   cg_opts.remove_input_transpose = RemoveInputTranspose;
   cg_opts.remove_output_transpose = RemoveOutputTranspose;
+  cg_opts.format_code = !DisableCodeFormat && is_c_or_cxx_output;
 
   if (is_c_or_cxx_output) {
     ctx.SetTargetTriple("x86_64"); // For binary constant writer.
@@ -404,7 +381,7 @@ int main(int argc, char** argv) {
   PopulateOptPasses(&pm, Target, input_shapes, inputs, outputs, Batch,
                     PreprocessScale, ReorderChannelLayout, SplitFunction,
                     DisableTypeCast, format, cg_opts, fusion_opts);
-  PopulateCodeGenPasses(&pm, out_code, out_constants, out_header,
+  PopulateCodeGenPasses(&pm, &buf_code, out_constants, &buf_header,
                         out_dynamic_check, Target, is_c_or_cxx_output,
                         is_binary_output, EmitDataAsC, EmitCodeOnly, EmitLLVMIR,
                         EmitTritonConfig, TritonConfigFile, QuantWeights,
@@ -421,13 +398,7 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  if (!DisableCodeFormat && is_c_or_cxx_output && of_code.good()) {
-    of_code.close();
-    FormatCode(OutputFile);
-  }
-  if (!DisableCodeFormat && of_header.good()) {
-    of_header.close();
-    FormatCode(header_file_name.str());
-  }
+  *out_code << buf_code.str();
+  *out_header << buf_header.str();
   return 0;
 }
