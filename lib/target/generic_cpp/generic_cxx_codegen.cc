@@ -177,7 +177,7 @@ CXXType GenericCXXCodeGen::SNTypeToCXXType(DataType dt) {
       return (CXXType("unsigned int"));
     }
     case DataType::INT64: {
-      return (CXXType("int64_t"));
+      return (CXXType("odla_int64"));
     }
     case DataType::BOOL: {
       return (CXXType("bool"));

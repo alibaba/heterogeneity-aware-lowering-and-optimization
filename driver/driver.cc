@@ -16,6 +16,7 @@
 // =============================================================================
 
 #include <fstream>
+#include <iterator>
 #include <set>
 #include <string>
 
@@ -30,9 +31,12 @@
 #include "halo/utils/passes_helper.h"
 #include "halo/version.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Path.h"
 #include "llvm/Support/Process.h"
 #include "llvm/Support/Program.h"
 
@@ -59,10 +63,15 @@ static llvm::cl::opt<bool> PrintPass("print-pass",
                                      llvm::cl::init(false),
                                      llvm::cl::cat(HaloOptCat));
 
+static llvm::cl::opt<bool> EmitObj(
+    "emit-obj", llvm::cl::desc("output the object code of ODLA"),
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
+
 static llvm::cl::opt<bool> EmitLLVMIR("emit-llvm",
                                       llvm::cl::desc("output the LLVM IR code"),
                                       llvm::cl::init(false),
                                       llvm::cl::cat(HaloOptCat));
+
 static llvm::cl::opt<std::string> ModuleName("module-name",
                                              llvm::cl::desc("name of module"),
                                              llvm::cl::init("halo_module"),
@@ -239,6 +248,14 @@ static llvm::cl::opt<bool> CheckModel("check-model",
                                       llvm::cl::init(false),
                                       llvm::cl::cat(HaloOptCat));
 
+static llvm::cl::list<std::string> IncludePaths(
+    "I", llvm::cl::desc("Add directory to include search paths"),
+    llvm::cl::cat(HaloOptCat));
+
+static llvm::cl::list<std::string> LibPaths(
+    "L", llvm::cl::desc("Add directory to library search paths"),
+    llvm::cl::cat(HaloOptCat));
+
 #undef HALO_FUSION_OPTIONS
 #define HALO_FUSION_CMD_OPTIONS_DECL
 #include "halo/lib/ir/fusion.cc.inc"
@@ -260,12 +277,51 @@ static void PrintVersion(llvm::raw_ostream& os) {
 #endif
 }
 
+static std::string get_absolute_dir(const std::string& dir) {
+  if (llvm::sys::path::is_absolute(dir)) {
+    return dir;
+  }
+  llvm::SmallString<128> curr_path;
+  llvm::sys::fs::current_path(curr_path);
+  return (llvm::StringRef(curr_path) + llvm::sys::path::get_separator() + dir)
+      .str();
+}
+
+static std::string get_base_dir(const char* argv0) {
+  auto dir = llvm::sys::path::parent_path(argv0);
+  std::string exe_dir = get_absolute_dir(dir.str());
+  // assume the halo is under "bin" directory.
+  return llvm::sys::path::parent_path(exe_dir).str();
+}
+
+static std::string find_odla_inc_path(const std::string& base_dir) {
+  std::vector<std::string> search_dirs;
+  // search in specified paths first.
+  std::copy(IncludePaths.begin(), IncludePaths.end(),
+            std::back_inserter(search_dirs));
+  search_dirs.push_back(base_dir + "/ODLA/include");
+  search_dirs.push_back("/usr/include");
+  search_dirs.push_back("/usr/local/include");
+  search_dirs.push_back("/opt/halo/include");
+
+  llvm::StringRef file = "ODLA/odla.h";
+  for (const auto& dir : search_dirs) {
+    auto prefix = get_absolute_dir(dir);
+    if (llvm::sys::fs::exists(prefix + llvm::sys::path::get_separator() +
+                              file)) {
+      return prefix;
+    }
+  }
+  return "";
+}
+
 int main(int argc, char** argv) {
   llvm::cl::SetVersionPrinter(PrintVersion);
   llvm::cl::HideUnrelatedOptions(HaloOptCat);
   llvm::cl::ParseCommandLineOptions(argc, argv);
   GlobalContext ctx;
-  ctx.SetBasePath(argv[0]);
+  ctx.SetBasePath(get_base_dir(argv[0]));
+  ctx.SetODLAIncludePath(find_odla_inc_path(ctx.GetBasePath()));
   ctx.SetTargetTriple(Target);
   ctx.SetProcessorName(Processor);
   ctx.SetPrintPass(PrintPass);
@@ -282,7 +338,7 @@ int main(int argc, char** argv) {
   if (PrintAll) {
     m.Dump();
   }
-
+  ctx.SetVerbosity(Verbose ? 1 : 0);
   PassManager pm(ctx);
 
   std::ostringstream buf_code;
@@ -296,7 +352,7 @@ int main(int argc, char** argv) {
   std::ostream* out_header = &std::cout;
   std::ostream* out_dynamic_check = &std::cout;
 
-  bool is_binary_output = false;
+  bool is_binary_output = EmitObj;
   llvm::StringRef target_name(Target);
   bool is_c_or_cxx_output =
       target_name.startswith_lower("cxx") || target_name.startswith_lower("cc");
@@ -307,7 +363,9 @@ int main(int argc, char** argv) {
     llvm::StringRef name(OutputFile);
     llvm::SmallString<128> data_file_name(name);
     header_file_name = name;
-    is_binary_output = name.endswith(".bc") || name.endswith(".o");
+    if (EmitObj.getNumOccurrences() == 0) {
+      is_binary_output = name.endswith(".bc") || name.endswith(".o");
+    }
     if (EmitDataAsC) {
       std::string ext =
           llvm::StringRef(Target).startswith_lower("cc") ? "data.c" : "data.cc";
@@ -365,12 +423,17 @@ int main(int argc, char** argv) {
   cg_opts.disable_conv_bn = DisableConvBN;
   cg_opts.remove_input_transpose = RemoveInputTranspose;
   cg_opts.remove_output_transpose = RemoveOutputTranspose;
-  cg_opts.format_code = !DisableCodeFormat && is_c_or_cxx_output;
+  cg_opts.format_code =
+      !DisableCodeFormat && is_c_or_cxx_output && !is_binary_output;
 
   if (is_c_or_cxx_output) {
     ctx.SetTargetTriple("x86_64"); // For binary constant writer.
     if (llvm::StringRef(Target).startswith_lower("cc")) {
       cg_opts.dialect = Dialect::C99;
+    }
+    if (is_binary_output && ctx.GetODLAIncludePath().empty()) {
+      llvm::errs() << "error: unable to find ODLA include path\n";
+      return 1;
     }
   }
   std::vector<std::string> input_shapes(InputsShape.begin(), InputsShape.end());
@@ -386,7 +449,7 @@ int main(int argc, char** argv) {
                         is_binary_output, EmitDataAsC, EmitCodeOnly, EmitLLVMIR,
                         EmitTritonConfig, TritonConfigFile, QuantWeights,
                         PGQFile, RISCVOpt, cg_opts);
-
+  ModelFiles.removeArgument();
   auto status = pm.Run(&m);
 
   if (PrintAll) {

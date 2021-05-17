@@ -10,9 +10,7 @@ out=$TEST_TEMP_DIR
 model_name="mnist_simple"
 model_path=$MODELS_ROOT/vision/classification/$model_name
 
-$HALO_BIN -target cxx -o $out/mnist_simple.cc $model_path/$model_name.pb
-
-g++ $out/mnist_simple.cc -I$ODLA_INC -c -o $out/mnist_simple.o
+$HALO_BIN -target cxx -o $out/mnist_simple.o $model_path/$model_name.pb -I $ODLA_INC
 
 g++ -c $curr_dir/main.cc -I$out -o $out/main.o
 
