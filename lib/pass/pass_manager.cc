@@ -25,6 +25,7 @@
 #include "halo/lib/target/cpu/x86/binary/x86_llvmir_codegen.h"
 #include "halo/lib/target/generic_cxx/generic_cxx_codegen.h"
 #include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
+#include "halo/lib/target/jit_compiler/cxx_jit_compiler.h"
 #include "halo/lib/target/triton/triton_config_writer.h"
 #include "halo/lib/transforms/analyzer.h"
 #include "halo/lib/transforms/caffeextension_legalizer.h"
@@ -334,6 +335,13 @@ Pass* PassManager::AddInstSimplifyPass(bool simplify_for_preprocess,
   return AddPass<InstSimplify>(simplify_for_preprocess, disable_broadcasting,
                                remove_input_transpose, remove_output_transpose,
                                disable_conv_bn, fuse_conv_bias);
+}
+
+Pass* PassManager::AddObjEmitPass(
+    std::ostringstream& out, const std::ostringstream& source,
+    const std::vector<std::string>& header_searchs,
+    const CXXCodeGenOpts& opts) {
+  return AddPass<CXXJITCompiler>(out, source, header_searchs, opts);
 }
 
 Pass* PassManager::AddONNXExtensionLegalizerPass() {

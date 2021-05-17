@@ -38,7 +38,8 @@
 #include <sstream>
 #include <string>
 
-static bool FormatCode(std::ostringstream& input) {
+#include "halo/halo.h"
+static bool FormatCode(std::ostringstream& input, bool is_cxx) {
   const std::string& code = input.str();
   unsigned int len = code.size();
   if (len == 0) {
@@ -47,13 +48,13 @@ static bool FormatCode(std::ostringstream& input) {
   std::vector<clang::tooling::Range> ranges{{0, len}};
   auto code_buf = llvm::MemoryBuffer::getMemBuffer(code);
 
-  std::string assumed_file_name = "a.cc";
-  auto style = clang::format::getStyle("llvm", assumed_file_name, "llvm", code);
+  std::string assumed_file_name = is_cxx ? "a.cc" : "a.c";
+  auto style = clang::format::getLLVMStyle();
 
-  style->SortIncludes = false;
+  style.SortIncludes = false;
   unsigned cursor_position = 0;
   auto replaces = clang::format::sortIncludes(
-      *style, code, ranges, assumed_file_name, &cursor_position);
+      style, code, ranges, assumed_file_name, &cursor_position);
   auto changed_code = clang::tooling::applyAllReplacements(code, replaces);
   if (!changed_code) {
     llvm::errs() << llvm::toString(changed_code.takeError()) << "\n";
@@ -62,7 +63,7 @@ static bool FormatCode(std::ostringstream& input) {
   ranges = clang::tooling::calculateRangesAfterReplacements(replaces, ranges);
   clang::format::FormattingAttemptStatus status;
   auto format_changes =
-      reformat(*style, *changed_code, ranges, assumed_file_name, &status);
+      reformat(style, *changed_code, ranges, assumed_file_name, &status);
   replaces = replaces.merge(format_changes);
 
   llvm::IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> vfs(
@@ -89,8 +90,10 @@ static bool FormatCode(std::ostringstream& input) {
 namespace halo {
 
 bool CodeFormatter::RunOnModule(Module* m) {
-  FormatCode(os_code_);
-  FormatCode(os_header_);
+  bool is_cxx = opts_.dialect == Dialect::CXX_11;
+  FormatCode(os_code_, is_cxx);
+  FormatCode(os_header_, is_cxx);
+
   return false;
 }
 

@@ -93,6 +93,10 @@ class HL_API_EXPORT PassManager final {
                             bool remove_input_transpose,
                             bool remove_output_transpose, bool disable_conv_bn,
                             bool fuse_conv_bias);
+  Pass* AddObjEmitPass(std::ostringstream& out,
+                       const std::ostringstream& source,
+                       const std::vector<std::string>& header_searchs,
+                       const CXXCodeGenOpts& opts);
   Pass* AddONNXExtensionLegalizerPass();
   Pass* AddOutputRewriterPass(const std::vector<std::string>& outputs);
   Pass* AddReorderChannelPass(bool channel_first);

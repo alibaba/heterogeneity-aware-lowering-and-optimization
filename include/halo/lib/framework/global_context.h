@@ -60,10 +60,17 @@ class GlobalContext {
   /// Set the path of toolchain  so it can locate other components like runtime
   /// library. If a file path is given, it assumes the file is under
   /// `base_path`/bin/file and thus computes the `base_path`.
-  void SetBasePath(const char* path) noexcept;
+  void SetBasePath(const std::string& path) noexcept;
   const std::string& GetBasePath() const noexcept;
+  void SetODLAIncludePath(const std::string& path) noexcept;
+  const std::string& GetODLAIncludePath() const noexcept;
+  void SetODLALibraryPath(const std::string& path) noexcept;
+  const std::string& GetODLALibraryPath() const noexcept;
   void SetPrintPass(const bool is_print_pass) noexcept;
   bool GetPrintPass() const noexcept;
+
+  void SetVerbosity(int verbosity) noexcept;
+  int GetVerbosity() const noexcept;
 
  private:
   const std::unique_ptr<GlobalContextImpl> impl_;

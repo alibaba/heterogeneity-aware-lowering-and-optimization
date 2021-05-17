@@ -1,5 +1,5 @@
 # ==============================================================================
-# Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+# Copyright (C) 2019-2021 Alibaba Group Holding Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,29 +14,37 @@
 # limitations under the License
 # ==============================================================================
 
-add_subdirectory(cpu)
-add_subdirectory(generic_cpp)
-add_subdirectory(generic_llvmir)
-add_subdirectory(jit_compiler)
-add_subdirectory(triton)
-
 # name.
-set(NAME TARGET)
+set(NAME TARGET_JIT_COMPILER)
 
 # source files.
 set(SRCS
-  codegen.cc
-  codegen_object.cc
+  cxx_jit_compiler.cc
+)
+
+set(LLVM_LINK_COMPONENTS Support)
+set(CLANG_LIBS
+  clangCodeGen
+  clangFrontend
+  clangTooling
+  clangToolingCore
+  clangSerialization
 )
 
 # dependences which need to be built first.
-set(DEPENDENCES IR)
+set(DEPENDENCES TARGET ${CLANG_LIBS})
 
 create_halo_object(TARGET_NAME ${NAME}
   TARGET_SRCS ${SRCS}
   TARGET_DEPENDENCES ${DEPENDENCES}
 )
 
-target_include_directories(${NAME}
-   PUBLIC ${LLVM_SRC_DIR}/include ${CMAKE_BINARY_DIR}/llvm/include
+target_include_directories(${NAME} SYSTEM
+   PRIVATE
+   ${CLANG_SRC_DIR}/include
+   ${LLVM_SRC_DIR}/include
+   ${CMAKE_BINARY_DIR}/llvm/tools/clang/include
+   ${CMAKE_BINARY_DIR}/llvm/include
 )
+
+target_link_libraries(${NAME} PRIVATE ${CLANG_LIBS})

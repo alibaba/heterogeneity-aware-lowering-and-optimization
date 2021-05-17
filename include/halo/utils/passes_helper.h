@@ -55,6 +55,9 @@ HL_UNUSED static void PopulateCodeGenPasses(
     if (is_c_or_cxx_output && opts.format_code) {
       pm->AddCodeFormatterPass(*out_code, *out_header, opts);
     }
+    if (is_binary_output) {
+      pm->AddObjEmitPass(*out_code, *out_code, {}, opts);
+    }
     return;
   }
 

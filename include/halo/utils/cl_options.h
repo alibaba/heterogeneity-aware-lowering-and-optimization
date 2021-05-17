@@ -69,6 +69,10 @@ static llvm::cl::opt<std::string> PreprocessScale(
         "to input shape. Invalid if there are more than one inputs. "),
     llvm::cl::cat(HaloOptCat));
 
+static llvm::cl::opt<bool> Verbose("verbose",
+                                   llvm::cl::desc("Show verbose info"),
+                                   llvm::cl::cat(HaloOptCat));
+
 /// Guess the model format based on input file extension.gg
 static ModelFormat InferFormat(const llvm::cl::list<std::string>& model_files,
                                size_t file_idx) {
