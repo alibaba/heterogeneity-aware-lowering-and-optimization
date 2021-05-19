@@ -382,7 +382,6 @@ int main(int argc, char** argv) {
   cg_opts.constant_decombine = ConstantDecombine;
 
   if (is_c_or_cxx_output) {
-    ctx.SetTargetTriple("x86_64"); // For binary constant writer.
     if (llvm::StringRef(Target).startswith_lower("cc")) {
       cg_opts.dialect = Dialect::C99;
     }
