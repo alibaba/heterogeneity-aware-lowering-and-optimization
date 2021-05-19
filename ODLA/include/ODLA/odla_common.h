@@ -18,8 +18,6 @@
 #ifndef _ODLA_COMMON_H_
 #define _ODLA_COMMON_H_
 
-#include <stddef.h>
-
 /*! \file
  * \details This file defines the ODLA basic common types.
  */
@@ -61,32 +59,39 @@ typedef double odla_float64;            /**< 64-bit floating point type */
 
 #else
 
-#include <stdint.h>
 // Integer types
-typedef int8_t odla_int8;     /**< 8-bit signed integer type */
-typedef int16_t odla_int16;   /**< 16-bit signed integer type */
-typedef int32_t odla_int32;   /**< 32-bit signed integer type */
-typedef int64_t odla_int64;   /**< 64-bit signed integer type */
-typedef uint8_t odla_uint8;   /**< 8-bit unsigned integer type */
-typedef uint16_t odla_uint16; /**< 16-bit unsigned integer type */
-typedef uint32_t odla_uint32; /**< 32-bit unsigned integer type */
-typedef uint64_t odla_uint64; /**< 64-bit unsigned integer type */
+typedef __INT8_TYPE__ odla_int8;     /**< 8-bit signed integer type */
+typedef __INT16_TYPE__ odla_int16;   /**< 16-bit signed integer type */
+typedef __INT32_TYPE__ odla_int32;   /**< 32-bit signed integer type */
+typedef __INT64_TYPE__ odla_int64;   /**< 64-bit signed integer type */
+typedef __UINT8_TYPE__ odla_uint8;   /**< 8-bit unsigned integer type */
+typedef __UINT16_TYPE__ odla_uint16; /**< 16-bit unsigned integer type */
+typedef __UINT32_TYPE__ odla_uint32; /**< 32-bit unsigned integer type */
+typedef __UINT64_TYPE__ odla_uint64; /**< 64-bit unsigned integer type */
 
 // Quantized integer types
-typedef int8_t odla_qint8;     /**< 8-bit signed quantized integer type */
-typedef int16_t odla_qint16;   /**< 16-bit signed quantized integer type */
-typedef int32_t odla_qint32;   /**< 32-bit signed quantized integer type */
-typedef int64_t odla_qint64;   /**< 64-bit signed quantized integer type */
-typedef uint8_t odla_quint8;   /**< 8-bit unsigned quantized integer type */
-typedef uint16_t odla_quint16; /**< 16-bit unsigned quantized integer type */
-typedef uint32_t odla_quint32; /**< 32-bit unsigned quantized integer type */
-typedef uint64_t odla_quint64; /**< 64-bit unsigned quantized integer type */
+typedef __INT8_TYPE__ odla_qint8;   /**< 8-bit signed quantized integer type */
+typedef __INT16_TYPE__ odla_qint16; /**< 16-bit signed quantized integer type */
+typedef __INT32_TYPE__ odla_qint32; /**< 32-bit signed quantized integer type */
+typedef __INT64_TYPE__ odla_qint64; /**< 64-bit signed quantized integer type */
+typedef __UINT8_TYPE__
+    odla_quint8; /**< 8-bit unsigned quantized integer type */
+typedef __UINT16_TYPE__
+    odla_quint16; /**< 16-bit unsigned quantized integer type */
+typedef __UINT32_TYPE__
+    odla_quint32; /**< 32-bit unsigned quantized integer type */
+typedef __UINT64_TYPE__
+    odla_quint64; /**< 64-bit unsigned quantized integer type */
 
 // Floating point types
-typedef uint16_t odla_float16;  /**< 16-bit floating point type */
-typedef uint16_t odla_bfloat16; /**< 16-bit brain floating point type */
-typedef float odla_float32;     /**< 32-bit floating point type */
-typedef double odla_float64;    /**< 64-bit floating point type */
+typedef __UINT16_TYPE__ odla_float16;  /**< 16-bit floating point type */
+typedef __UINT16_TYPE__ odla_bfloat16; /**< 16-bit brain floating point type */
+typedef float odla_float32;            /**< 32-bit floating point type */
+typedef double odla_float64;           /**< 64-bit floating point type */
+#endif
+
+#ifndef NULL
+#define NULL ((void*)0)
 #endif
 
 typedef odla_uint32 odla_bool; /**< boolean type */
@@ -123,7 +128,7 @@ typedef enum {
 typedef char odla_char;
 
 //! \brief size_t
-typedef size_t odla_size_t;
+typedef __SIZE_TYPE__ odla_size_t;
 
 //! \brief void
 typedef void odla_void;
