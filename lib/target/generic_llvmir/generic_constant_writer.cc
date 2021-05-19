@@ -86,6 +86,7 @@ void GenericConstantWriter::WriteToBuf() {
   } else {
     llvm_module_->print(llvm_os, nullptr);
   }
+  llvm_os.flush();
 }
 
 ELFConstantWriter::ELFConstantWriter(const std::string& name, std::ostream& os)
@@ -113,6 +114,7 @@ void ELFConstantWriter::WriteToBuf() {
         pm, buf, nullptr,
         llvm::TargetMachine::CodeGenFileType::CGFT_ObjectFile);
     pm.run(*llvm_module_);
+    llvm_os.flush();
     return;
   }
 
@@ -191,6 +193,7 @@ void ELFConstantWriter::WriteToBuf() {
     mc_streamer->emitELFSize(gv_sym, llvm::MCConstantExpr::create(size, mctx));
   }
   mc_streamer->Finish();
+  llvm_os.flush();
 }
 
 } // namespace halo

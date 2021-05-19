@@ -31,6 +31,7 @@ add_subdirectory(runtime)
 add_subdirectory(target)
 add_subdirectory(threadpool)
 add_subdirectory(transforms)
+add_subdirectory(utils)
 
 # ========= Build the Halo core library =========
 add_library(halolib SHARED)

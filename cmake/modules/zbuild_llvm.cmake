@@ -27,6 +27,12 @@ set(LLVM_ENABLE_PROJECTS_USED ON)
 set(LLVM_ENABLE_PROJECTS "clang")
 set(LLVM_EXTERNAL_CLANG_SOURCE_DIR ${CLANG_SRC_DIR})
 
+# Enable build lld libraries
+set(LLD_BUILD_TOOLS OFF)
+set(LLD_SRC_DIR ${CMAKE_SOURCE_DIR}/external/llvm-project/lld)
+set(LLVM_ENABLE_PROJECTS_USED ON)
+set(LLVM_ENABLE_PROJECTS "${LLVM_ENABLE_PROJECTS};lld")
+set(LLVM_EXTERNAL_LLD_SOURCE_DIR ${LLD_SRC_DIR})
 
 set(HALO_USE_SHARED_LLVM_LIBS AUTO CACHE STRING
   "Link against shared LLVM libraries")
@@ -42,6 +48,7 @@ endif()
 
 add_subdirectory(${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm EXCLUDE_FROM_ALL)
 add_llvm_external_project(clang ${CLANG_SRC_DIR})
+add_llvm_external_project(lld ${LLD_SRC_DIR})
 set(CMAKE_MODULE_PATH ${LLVM_SRC_DIR}/cmake/modules)
 include(DetermineGCCCompatible)
 
