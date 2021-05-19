@@ -15,44 +15,24 @@
 # ==============================================================================
 
 # name.
-set(NAME TARGET_JIT_COMPILER)
+set(NAME UTILS)
 
 # source files.
 set(SRCS
-  cxx_jit_compiler.cc
-  generic_jit_linker.cc
-)
-
-set(LLVM_LINK_COMPONENTS Support)
-set(CLANG_LIBS
-  clangCodeGen
-  clangFrontend
-  clangTooling
-  clangToolingCore
-  clangSerialization
-)
-
-set(LLD_LIBS
-  lldCommon
-  lldELF
-  lldReaderWriter
+  path.cc
 )
 
 # dependences which need to be built first.
-set(DEPENDENCES TARGET ${CLANG_LIBS})
+set(DEPENDENCES
+ )
 
 create_halo_object(TARGET_NAME ${NAME}
   TARGET_SRCS ${SRCS}
-  TARGET_DEPENDENCES ${DEPENDENCES}
+  TARGET_DEPENDENCES LLVMSupport
 )
 
 target_include_directories(${NAME} SYSTEM
   PRIVATE
   ${LLVM_SRC_DIR}/include
-  ${CLANG_SRC_DIR}/include
-  ${LLD_SRC_DIR}/include
-  ${CMAKE_BINARY_DIR}/llvm/tools/clang/include
   ${CMAKE_BINARY_DIR}/llvm/include
 )
-
-target_link_libraries(${NAME} PRIVATE ${CLANG_LIBS} ${LLD_LIBS})

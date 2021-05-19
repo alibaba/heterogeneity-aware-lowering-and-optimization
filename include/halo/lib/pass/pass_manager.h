@@ -93,6 +93,10 @@ class HL_API_EXPORT PassManager final {
                             bool remove_input_transpose,
                             bool remove_output_transpose, bool disable_conv_bn,
                             bool fuse_conv_bias);
+  Pass* AddLinkPass(const std::ostringstream& obj_code,
+                    const std::ostringstream& obj_constants,
+                    const std::string& output_file_name,
+                    const CXXCodeGenOpts& opts);
   Pass* AddObjEmitPass(std::ostringstream& out,
                        const std::ostringstream& source,
                        const std::vector<std::string>& header_searchs,
@@ -105,7 +109,7 @@ class HL_API_EXPORT PassManager final {
   Pass* AddRISCVLLVMIRCodeGenPass(ConstantDataStorage constant_data_storage);
 
   Pass* AddRISCVLLVMIRCodeGenPass(ConstantDataStorage constant_data_storage,
-                                  std::string rt_lib_name);
+                                  const std::string& rt_lib_name);
   Pass* AddSplittingPass();
   Pass* AddTFExtensionLegalizerPass();
   Pass* AddTFLiteExtensionLegalizerPass();

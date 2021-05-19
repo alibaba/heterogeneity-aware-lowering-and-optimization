@@ -26,6 +26,7 @@
 #include "halo/lib/target/generic_cxx/generic_cxx_codegen.h"
 #include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
 #include "halo/lib/target/jit_compiler/cxx_jit_compiler.h"
+#include "halo/lib/target/jit_compiler/generic_jit_linker.h"
 #include "halo/lib/target/triton/triton_config_writer.h"
 #include "halo/lib/transforms/analyzer.h"
 #include "halo/lib/transforms/caffeextension_legalizer.h"
@@ -337,6 +338,14 @@ Pass* PassManager::AddInstSimplifyPass(bool simplify_for_preprocess,
                                disable_conv_bn, fuse_conv_bias);
 }
 
+Pass* PassManager::AddLinkPass(const std::ostringstream& obj_code,
+                               const std::ostringstream& obj_constants,
+                               const std::string& output_file_name,
+                               const CXXCodeGenOpts& opts) {
+  return AddPass<GenericJITLinker>(obj_code, obj_constants, output_file_name,
+                                   opts);
+}
+
 Pass* PassManager::AddObjEmitPass(
     std::ostringstream& out, const std::ostringstream& source,
     const std::vector<std::string>& header_searchs,
@@ -364,7 +373,7 @@ Pass* PassManager::AddRISCVConstantWriterPass(std::ostream& os) {
   return AddPass<ARMConstantWriter>(os);
 }
 Pass* PassManager::AddRISCVLLVMIRCodeGenPass(
-    ConstantDataStorage constant_data_storage, std::string rt_lib_name) {
+    ConstantDataStorage constant_data_storage, const std::string& rt_lib_name) {
   return AddPass<RISCVLLVMIRCodeGen>(constant_data_storage, rt_lib_name);
 }
 
