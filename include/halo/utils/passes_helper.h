@@ -20,6 +20,7 @@
 #include <iostream>
 
 #include "halo/lib/framework/common.h"
+#include "halo/lib/framework/global_context.h"
 #include "halo/lib/pass/pass_manager.h"
 #include "llvm/ADT/Triple.h"
 
@@ -38,16 +39,17 @@ HL_UNUSED static void PopulateCodeGenPasses(
   if (opts.separate_constants) {
     constant_storage = ConstantDataStorage::DeclaredAsExternal;
   }
-
   if (is_c_or_cxx_output) {
+    auto idx = target.find_first_of('-');
+    auto weight_target =
+        (idx == std::string::npos) ? "x86_64" : target.substr(idx + 1);
+    pm->GetGlobalContext().SetTargetTriple(
+        weight_target); // For binary constant writer.
     pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
     pm->AddGenericCXXCodeGenPass(*out_code, *out_header, *out_dynamic_check,
                                  opts);
-    if (emit_data_as_c) {
-      pm->AddGenericCXXConstantWriterPass(*out_constants);
-    } else {
-      pm->AddX86ConstantWriterPass(*out_constants);
-    }
+    pm->AddConstantWriterPass(*out_constants,
+                              emit_data_as_c ? "" : weight_target);
     if (emit_triton_config) {
       pm->AddTritonConfigWriterPass(
           triton_config_file,
@@ -68,30 +70,20 @@ HL_UNUSED static void PopulateCodeGenPasses(
   if (emit_llvm_ir) {
     pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
     pm->AddGenericLLVMIRCodeGenPass(constant_storage);
-    pm->AddGenericLLVMIRWriterPass(*out_code, is_binary_output);
-    if (opts.separate_constants && !emit_code_only) {
-      pm->AddGenericConstantWriterPass(*out_constants, is_binary_output);
-    }
+    pm->AddGenericLLVMIRWriterPass(std::ref(*out_code), is_binary_output);
   } else {
     llvm::Triple triple(target);
+    const auto arch_name = triple.getArchName().str();
     switch (triple.getArch()) {
       case llvm::Triple::ArchType::x86:
       case llvm::Triple::ArchType::x86_64: {
         pm->AddX86LLVMIRCodeGenPass(ConstantDataStorage::DeclaredAsExternal);
         pm->AddX86BinaryWriterPass(*out_code);
-        if (opts.separate_constants && !emit_code_only) {
-          pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
-          pm->AddX86ConstantWriterPass(*out_constants);
-        }
         break;
       }
       case llvm::Triple::ArchType::aarch64: {
         pm->AddARMLLVMIRCodeGenPass(ConstantDataStorage::DeclaredAsExternal);
-        pm->AddARMBinaryWriterPass(*out_code);
-        if (opts.separate_constants && !emit_code_only) {
-          pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
-          pm->AddARMConstantWriterPass(*out_constants);
-        }
+        pm->AddARMBinaryWriterPass(std::ref(*out_code));
         break;
       }
       case llvm::Triple::ArchType::riscv32:
@@ -104,17 +96,16 @@ HL_UNUSED static void PopulateCodeGenPasses(
               ConstantDataStorage::DeclaredAsExternal);
         }
         pm->AddRISCVBinaryWriterPass(std::ref(*out_code));
-        if (opts.separate_constants && !emit_code_only) {
-          pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
-          pm->AddRISCVConstantWriterPass(*out_constants);
-        }
-
         break;
       }
 
       default: {
         HLCHECK(0 && "Unsupported");
       }
+    }
+    pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
+    if (opts.separate_constants && !emit_code_only) {
+      pm->AddConstantWriterPass(*out_constants, arch_name);
     }
   }
 }

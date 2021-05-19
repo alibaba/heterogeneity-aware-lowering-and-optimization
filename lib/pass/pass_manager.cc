@@ -61,7 +61,7 @@ class PassManagerImpl {
   Pass* Add(std::unique_ptr<FunctionPass> pass);
   Pass* Add(std::unique_ptr<BasicBlockPass> pass);
 
-  GlobalContext& GetGobalContext() { return ctx_; }
+  GlobalContext& GetGlobalContext() { return ctx_; }
 
   Status Run(Module* module);
 
@@ -89,6 +89,10 @@ Pass* PassManager::Add(std::unique_ptr<FunctionPass> pass) {
 
 Pass* PassManager::Add(std::unique_ptr<BasicBlockPass> pass) {
   return impl_->Add(std::move(pass));
+}
+
+GlobalContext& PassManager::GetGlobalContext() const {
+  return impl_->GetGlobalContext();
 }
 
 Status PassManager::Run(Module* module) { return impl_->Run(module); }
@@ -267,6 +271,23 @@ Pass* PassManager::AddCodeFormatterPass(std::ostringstream& buf_code,
 }
 
 Pass* PassManager::AddConvertTFCFGPass() { return AddPass<ConvertTFCFG>(); }
+
+Pass* PassManager::AddConstantWriterPass(std::ostream& os,
+                                         const std::string& target) {
+  auto is_begin_with = [](const std::string& s, const std::string& t) {
+    return s.substr(0, t.size()) == t;
+  };
+  if (is_begin_with(target, "x86_64")) {
+    return AddX86ConstantWriterPass(os);
+  }
+  if (is_begin_with(target, "aarch64")) {
+    return AddARMConstantWriterPass(os);
+  }
+  if (is_begin_with(target, "riscv")) {
+    return AddRISCVConstantWriterPass(os);
+  }
+  return AddGenericCXXConstantWriterPass(os);
+}
 
 Pass* PassManager::AddDCEPass() { return AddPass<DCE>(); }
 
