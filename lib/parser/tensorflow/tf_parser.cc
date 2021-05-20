@@ -27,6 +27,7 @@
 #include <set>
 #include <string_view>
 
+#include "function.pb.h"
 #include "graph.pb.h"
 #include "halo/lib/framework/common.h"
 #include "halo/lib/framework/type.h"
@@ -119,6 +120,10 @@ Status TFParser::ConvertToHaloIR(const tensorflow::GraphDef& graph_def) {
   Status s = Status::SUCCESS;
   for (const auto& cur_node : graph_def.node()) {
     VLOG(4) << "==========layer[" << i << "]==========";
+    if (cur_node.op() == "_Retval") {
+      ++i;
+      continue;
+    }
     s = ConvertOneNode(ir_builder_.get(), cur_node, i++);
     if (s != Status::SUCCESS) {
       return s;
@@ -168,6 +173,9 @@ void TFParser::RegisterOp() {
                       std::bind(&TFParser::ConvertConstNode, this,
                                 std::placeholders::_1, std::placeholders::_2));
   func_lists_.emplace("Placeholder",
+                      std::bind(&TFParser::ConvertPlaceholderNode, this,
+                                std::placeholders::_1, std::placeholders::_2));
+  func_lists_.emplace("_Arg",
                       std::bind(&TFParser::ConvertPlaceholderNode, this,
                                 std::placeholders::_1, std::placeholders::_2));
 #include "tf_regist_op.h.inc"
@@ -790,7 +798,8 @@ Status TFParser::ConvertPlaceholderNode(IRBuilder* ir_builder,
     Constant* inst = c_builder_->CreateConstant<int>(
         node_def.name(), Type{DataType::INT32, {1}}, {15});
     inst_name_to_ptr_.emplace(node_def.name(), inst);
-  } else if (attrs.Process<DataType>("dtype", &data_type)) {
+  } else if (attrs.Process<DataType>(node_def.op() == "_Arg" ? "T" : "dtype",
+                                     &data_type)) {
     // Add default shape if no shape info in placehold
     std::vector<int64_t> shape = {};
     attrs.Process<std::vector<int64_t>>("shape", &shape);
