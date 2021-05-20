@@ -21,7 +21,9 @@
 #include <vector>
 
 namespace halo {
+
 std::string GetBaseDir(const char* argv0);
+std::string GetBaseDir();
 
 std::string FindODLAIncPath(const std::string& base_dir,
                             const std::vector<std::string>& include_paths);

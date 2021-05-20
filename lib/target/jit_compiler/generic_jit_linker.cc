@@ -38,15 +38,17 @@ static void Link(const std::string& output_file,
   const char* rpath_opt = "-R";
   const char* shared_opt = "--shared";
   std::vector<const char*> args{prog, shared_opt, output_opt,
-                                output_file.c_str(), "--Map=/tmp/a.map"};
+                                output_file.c_str()};
   for (auto& f : input_files) {
     args.push_back(f.c_str());
   }
   for (auto& path : lib_search_paths) {
-    args.push_back(lib_search_opt);
-    args.push_back(path.c_str());
-    args.push_back(rpath_opt);
-    args.push_back(path.c_str());
+    if (!path.empty()) {
+      args.push_back(lib_search_opt);
+      args.push_back(path.c_str());
+      args.push_back(rpath_opt);
+      args.push_back(path.c_str());
+    }
   }
   for (auto& lib : libs) {
     if (!lib.empty()) {

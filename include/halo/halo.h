@@ -86,21 +86,22 @@ struct CXXCodeGenOpts {
 };
 
 int CompileTFGraph(const char* pb_buf, size_t pb_buf_size,
-                   const std::string& main_output_file,
                    const std::vector<std::string>& input_shapes,
-                   const CXXCodeGenOpts& cg_opts);
+                   const CXXCodeGenOpts& cg_opts,
+                   const std::string& main_output_file);
 
-int CompileTFGraph(const void* graphdef, const std::string& main_output_file,
+int CompileTFGraph(const void* graphdef,
                    const std::vector<std::string>& input_shapes,
-                   const CXXCodeGenOpts& cg_opts);
+                   const CXXCodeGenOpts& cg_opts,
+                   const std::string& main_output_file);
 
 int Compile(ModelFormat model_format, const std::vector<const char*>& models,
-            const std::vector<size_t>& model_sizes, const std::string& name,
-            const std::string& main_output_file, const std::string& target,
+            const std::vector<size_t>& model_sizes, const std::string& target,
             int batch, const std::vector<std::string>& input_shapes,
             const std::vector<std::string>& inputs,
             const std::vector<std::string>& outputs,
-            const CXXCodeGenOpts& cg_opts);
+            const CXXCodeGenOpts& cg_opts, const std::string& main_output_file);
+
 } // namespace halo
 
 #endif // HALO_HALO_H_
