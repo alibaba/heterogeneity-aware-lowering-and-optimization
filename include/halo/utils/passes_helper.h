@@ -26,13 +26,14 @@
 namespace halo {
 
 HL_UNUSED static void PopulateCodeGenPasses(
-    PassManager* pm, std::ostringstream* out_code, std::ostream* out_constants,
-    std::ostringstream* out_header, std::ostream* out_dynamic_check,
-    const std::string& target, bool is_c_or_cxx_output, bool is_binary_output,
-    bool emit_data_as_c, bool emit_code_only, bool emit_llvm_ir,
-    bool emit_triton_config, const std::string& triton_config_file,
-    Quantization quant_weights, const std::string& pgq_file, bool riscv_opt,
-    const CXXCodeGenOpts& opts) {
+    PassManager* pm, std::ostringstream* out_code,
+    std::ostringstream* out_constants, std::ostringstream* out_header,
+    std::ostream* out_dynamic_check, const std::string& target,
+    bool is_c_or_cxx_output, bool is_binary_output, bool emit_data_as_c,
+    bool emit_code_only, bool emit_llvm_ir, bool emit_triton_config,
+    const std::string& triton_config_file, Quantization quant_weights,
+    const std::string& pgq_file, bool riscv_opt, const CXXCodeGenOpts& opts,
+    const std::string& output_file_name) {
   auto constant_storage = ConstantDataStorage::DefinedAsStatic;
   if (opts.separate_constants) {
     constant_storage = ConstantDataStorage::DeclaredAsExternal;
@@ -40,12 +41,12 @@ HL_UNUSED static void PopulateCodeGenPasses(
 
   if (is_c_or_cxx_output) {
     pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
-    pm->AddGenericCXXCodeGenPass(std::ref(*out_code), std::ref(*out_header),
-                                 std::ref(*out_dynamic_check), opts);
+    pm->AddGenericCXXCodeGenPass(*out_code, *out_header, *out_dynamic_check,
+                                 opts);
     if (emit_data_as_c) {
-      pm->AddGenericCXXConstantWriterPass(std::ref(*out_constants));
+      pm->AddGenericCXXConstantWriterPass(*out_constants);
     } else {
-      pm->AddX86ConstantWriterPass(std::ref(*out_constants));
+      pm->AddX86ConstantWriterPass(*out_constants);
     }
     if (emit_triton_config) {
       pm->AddTritonConfigWriterPass(
@@ -55,8 +56,11 @@ HL_UNUSED static void PopulateCodeGenPasses(
     if (is_c_or_cxx_output && opts.format_code) {
       pm->AddCodeFormatterPass(*out_code, *out_header, opts);
     }
-    if (is_binary_output) {
+    if (opts.emit_obj || opts.emit_shared_lib) {
       pm->AddObjEmitPass(*out_code, *out_code, {}, opts);
+    }
+    if (opts.emit_shared_lib) {
+      pm->AddLinkPass(*out_code, *out_constants, output_file_name, opts);
     }
     return;
   }
@@ -74,19 +78,19 @@ HL_UNUSED static void PopulateCodeGenPasses(
       case llvm::Triple::ArchType::x86:
       case llvm::Triple::ArchType::x86_64: {
         pm->AddX86LLVMIRCodeGenPass(ConstantDataStorage::DeclaredAsExternal);
-        pm->AddX86BinaryWriterPass(std::ref(*out_code));
+        pm->AddX86BinaryWriterPass(*out_code);
         if (opts.separate_constants && !emit_code_only) {
           pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
-          pm->AddX86ConstantWriterPass(std::ref(*out_constants));
+          pm->AddX86ConstantWriterPass(*out_constants);
         }
         break;
       }
       case llvm::Triple::ArchType::aarch64: {
         pm->AddARMLLVMIRCodeGenPass(ConstantDataStorage::DeclaredAsExternal);
-        pm->AddARMBinaryWriterPass(std::ref(*out_code));
+        pm->AddARMBinaryWriterPass(*out_code);
         if (opts.separate_constants && !emit_code_only) {
           pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
-          pm->AddARMConstantWriterPass(std::ref(*out_constants));
+          pm->AddARMConstantWriterPass(*out_constants);
         }
         break;
       }
@@ -102,7 +106,7 @@ HL_UNUSED static void PopulateCodeGenPasses(
         pm->AddRISCVBinaryWriterPass(std::ref(*out_code));
         if (opts.separate_constants && !emit_code_only) {
           pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
-          pm->AddRISCVConstantWriterPass(std::ref(*out_constants));
+          pm->AddRISCVConstantWriterPass(*out_constants);
         }
 
         break;

@@ -29,6 +29,7 @@
 #include "halo/lib/transforms/reorder_channel.h"
 #include "halo/utils/cl_options.h"
 #include "halo/utils/passes_helper.h"
+#include "halo/utils/path.h"
 #include "halo/version.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
@@ -37,8 +38,6 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
-#include "llvm/Support/Process.h"
-#include "llvm/Support/Program.h"
 
 using namespace halo;
 
@@ -66,6 +65,14 @@ static llvm::cl::opt<bool> PrintPass("print-pass",
 static llvm::cl::opt<bool> EmitObj(
     "emit-obj", llvm::cl::desc("output the object code of ODLA"),
     llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
+
+static llvm::cl::opt<bool> EmitLibrary(
+    "emit-lib", llvm::cl::desc("output the shared library"),
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
+
+static llvm::cl::opt<std::string> LinkODLALib(
+    "link-odla-lib", llvm::cl::desc("link with ODLA library"),
+    llvm::cl::init(""), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> EmitLLVMIR("emit-llvm",
                                       llvm::cl::desc("output the LLVM IR code"),
@@ -277,51 +284,15 @@ static void PrintVersion(llvm::raw_ostream& os) {
 #endif
 }
 
-static std::string get_absolute_dir(const std::string& dir) {
-  if (llvm::sys::path::is_absolute(dir)) {
-    return dir;
-  }
-  llvm::SmallString<128> curr_path;
-  llvm::sys::fs::current_path(curr_path);
-  return (llvm::StringRef(curr_path) + llvm::sys::path::get_separator() + dir)
-      .str();
-}
-
-static std::string get_base_dir(const char* argv0) {
-  auto dir = llvm::sys::path::parent_path(argv0);
-  std::string exe_dir = get_absolute_dir(dir.str());
-  // assume the halo is under "bin" directory.
-  return llvm::sys::path::parent_path(exe_dir).str();
-}
-
-static std::string find_odla_inc_path(const std::string& base_dir) {
-  std::vector<std::string> search_dirs;
-  // search in specified paths first.
-  std::copy(IncludePaths.begin(), IncludePaths.end(),
-            std::back_inserter(search_dirs));
-  search_dirs.push_back(base_dir + "/ODLA/include");
-  search_dirs.push_back("/usr/include");
-  search_dirs.push_back("/usr/local/include");
-  search_dirs.push_back("/opt/halo/include");
-
-  llvm::StringRef file = "ODLA/odla.h";
-  for (const auto& dir : search_dirs) {
-    auto prefix = get_absolute_dir(dir);
-    if (llvm::sys::fs::exists(prefix + llvm::sys::path::get_separator() +
-                              file)) {
-      return prefix;
-    }
-  }
-  return "";
-}
-
 int main(int argc, char** argv) {
   llvm::cl::SetVersionPrinter(PrintVersion);
   llvm::cl::HideUnrelatedOptions(HaloOptCat);
   llvm::cl::ParseCommandLineOptions(argc, argv);
   GlobalContext ctx;
-  ctx.SetBasePath(get_base_dir(argv[0]));
-  ctx.SetODLAIncludePath(find_odla_inc_path(ctx.GetBasePath()));
+  ctx.SetBasePath(GetBaseDir(argv[0]));
+  ctx.SetODLAIncludePath(FindODLAIncPath(ctx.GetBasePath(), IncludePaths));
+  ctx.SetODLALibraryPath(
+      FindODLALibPath(ctx.GetBasePath(), LibPaths, LinkODLALib));
   ctx.SetTargetTriple(Target);
   ctx.SetProcessorName(Processor);
   ctx.SetPrintPass(PrintPass);
@@ -343,44 +314,15 @@ int main(int argc, char** argv) {
 
   std::ostringstream buf_code;
   std::ostringstream buf_header;
-  std::ofstream of_code;
-  std::ofstream of_constants;
-  std::ofstream of_header;
+  std::ostringstream buf_constants;
   std::ofstream of_dynamic_check;
-  std::ostream* out_code = &std::cout;
-  std::ostream* out_constants = &std::cout;
-  std::ostream* out_header = &std::cout;
   std::ostream* out_dynamic_check = &std::cout;
 
   bool is_binary_output = EmitObj;
+
   llvm::StringRef target_name(Target);
   bool is_c_or_cxx_output =
       target_name.startswith_lower("cxx") || target_name.startswith_lower("cc");
-  llvm::SmallString<128> header_file_name("");
-  if (!OutputFile.empty() && OutputFile != "-") {
-    of_code.open(OutputFile, std::ofstream::binary);
-    out_code = &of_code;
-    llvm::StringRef name(OutputFile);
-    llvm::SmallString<128> data_file_name(name);
-    header_file_name = name;
-    if (EmitObj.getNumOccurrences() == 0) {
-      is_binary_output = name.endswith(".bc") || name.endswith(".o");
-    }
-    if (EmitDataAsC) {
-      std::string ext =
-          llvm::StringRef(Target).startswith_lower("cc") ? "data.c" : "data.cc";
-      llvm::sys::path::replace_extension(data_file_name, ext);
-    } else {
-      llvm::sys::path::replace_extension(data_file_name, ".bin");
-    }
-    llvm::sys::path::replace_extension(header_file_name, ".h");
-
-    of_constants.open(data_file_name.str(), std::ofstream::binary);
-    out_constants = &of_constants;
-    of_header.open(header_file_name.str());
-    out_header = &of_header;
-  }
-
   if (EmitTritonConfig) {
     if (!TritonConfigFile.empty() &&
         llvm::sys::path::filename(TritonConfigFile).equals(TritonConfigFile)) {
@@ -391,12 +333,11 @@ int main(int argc, char** argv) {
       TritonConfigFile = file_name.str();
     }
   }
+  llvm::StringRef name(OutputFile);
 
   if (CheckModel) {
-    llvm::StringRef name(OutputFile);
-    llvm::SmallString<128> filename(name);
-    llvm::sys::path::replace_extension(filename, ".main.cc.in");
-    of_dynamic_check.open(filename.str(), std::ofstream::binary);
+    of_dynamic_check.open(GetDerivedFileName(name, ".main.cc.in"),
+                          std::ofstream::binary);
     out_dynamic_check = &of_dynamic_check;
   }
 
@@ -425,6 +366,10 @@ int main(int argc, char** argv) {
   cg_opts.remove_output_transpose = RemoveOutputTranspose;
   cg_opts.format_code =
       !DisableCodeFormat && is_c_or_cxx_output && !is_binary_output;
+  cg_opts.emit_header = true;
+  cg_opts.emit_obj = EmitObj;
+  cg_opts.emit_shared_lib = EmitLibrary || !LinkODLALib.empty();
+  cg_opts.linked_odla_lib = LinkODLALib.c_str();
 
   if (is_c_or_cxx_output) {
     ctx.SetTargetTriple("x86_64"); // For binary constant writer.
@@ -435,20 +380,31 @@ int main(int argc, char** argv) {
       llvm::errs() << "error: unable to find ODLA include path\n";
       return 1;
     }
+    if (!LinkODLALib.empty() && ctx.GetODLALibraryPath().empty()) {
+      llvm::errs() << "warning: unable to find ODLA library path\n";
+    }
   }
   std::vector<std::string> input_shapes(InputsShape.begin(), InputsShape.end());
   std::vector<std::string> inputs(Inputs.begin(), Inputs.end());
   std::vector<std::string> outputs(Outputs.begin(), Outputs.end());
   const auto& fusion_opts = GetFusionOptions();
 
+  is_binary_output = name.endswith(".bc");
+  if (EmitObj.getNumOccurrences() == 0 && name.endswith(".o")) {
+    cg_opts.emit_obj = true;
+  }
+  if (EmitLibrary.getNumOccurrences() == 0 && name.endswith(".so")) {
+    cg_opts.emit_shared_lib = true;
+  }
+
   PopulateOptPasses(&pm, Target, input_shapes, inputs, outputs, Batch,
                     PreprocessScale, ReorderChannelLayout, SplitFunction,
                     DisableTypeCast, format, cg_opts, fusion_opts);
-  PopulateCodeGenPasses(&pm, &buf_code, out_constants, &buf_header,
+  PopulateCodeGenPasses(&pm, &buf_code, &buf_constants, &buf_header,
                         out_dynamic_check, Target, is_c_or_cxx_output,
                         is_binary_output, EmitDataAsC, EmitCodeOnly, EmitLLVMIR,
                         EmitTritonConfig, TritonConfigFile, QuantWeights,
-                        PGQFile, RISCVOpt, cg_opts);
+                        PGQFile, RISCVOpt, cg_opts, OutputFile);
   ModelFiles.removeArgument();
   auto status = pm.Run(&m);
 
@@ -461,7 +417,43 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  *out_code << buf_code.str();
-  *out_header << buf_header.str();
+  if (!cg_opts.emit_shared_lib) {
+    std::ofstream of_code;
+    if (OutputFile == "-") {
+      std::cout.rdbuf(of_code.rdbuf());
+    } else {
+      of_code.open(OutputFile, std::ofstream::binary);
+    }
+    of_code << buf_code.str();
+  }
+
+  if (cg_opts.emit_header) {
+    llvm::SmallString<128> header_file_name("");
+    header_file_name = name;
+    llvm::sys::path::replace_extension(header_file_name, ".h");
+    std::ofstream of_header;
+    if (OutputFile == "-") {
+      std::cout.rdbuf(of_header.rdbuf());
+    } else {
+      of_header.open(header_file_name.str());
+    }
+    of_header << buf_header.str();
+  }
+
+  if (!EmitCodeOnly) {
+    llvm::StringRef name(OutputFile);
+    llvm::SmallString<128> data_file_name(name);
+    if (EmitDataAsC) {
+      std::string ext =
+          llvm::StringRef(Target).startswith_lower("cc") ? "data.c" : "data.cc";
+      llvm::sys::path::replace_extension(data_file_name, ext);
+    } else {
+      llvm::sys::path::replace_extension(data_file_name, ".bin");
+    }
+
+    std::ofstream of_constants;
+    of_constants.open(data_file_name.str(), std::ofstream::binary);
+    of_constants << buf_constants.str();
+  }
   return 0;
 }

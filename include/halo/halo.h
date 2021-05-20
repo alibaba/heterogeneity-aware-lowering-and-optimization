@@ -79,22 +79,25 @@ struct CXXCodeGenOpts {
   bool check_model = false;
   API api = API::ODLA_05;
   bool format_code = false;
+  bool emit_header = false;
+  bool emit_obj = false;
+  bool emit_shared_lib = false;
+  const char* linked_odla_lib = nullptr;
 };
 
 int CompileTFGraph(const char* pb_buf, size_t pb_buf_size,
-                   const std::string& name, const std::string& temp_dir,
+                   const std::string& main_output_file,
                    const std::vector<std::string>& input_shapes,
                    const CXXCodeGenOpts& cg_opts);
 
-int CompileTFGraph(const void* graphdef, const std::string& name,
-                   const std::string& temp_dir,
+int CompileTFGraph(const void* graphdef, const std::string& main_output_file,
                    const std::vector<std::string>& input_shapes,
                    const CXXCodeGenOpts& cg_opts);
 
 int Compile(ModelFormat model_format, const std::vector<const char*>& models,
             const std::vector<size_t>& model_sizes, const std::string& name,
-            const std::string& temp_dir, const std::string& target, int batch,
-            const std::vector<std::string>& input_shapes,
+            const std::string& main_output_file, const std::string& target,
+            int batch, const std::vector<std::string>& input_shapes,
             const std::vector<std::string>& inputs,
             const std::vector<std::string>& outputs,
             const CXXCodeGenOpts& cg_opts);
