@@ -17,6 +17,7 @@
 
 #include "halo/utils/path.h"
 
+#include <experimental/filesystem>
 #include <string>
 
 #include "llvm/ADT/SmallString.h"
@@ -54,6 +55,11 @@ std::string GetBaseDir(const char* argv0) {
   std::string exe_dir = GetAbsoluteDir(dir.str());
   // assume the halo is under "bin" directory.
   return llvm::sys::path::parent_path(exe_dir).str();
+}
+
+std::string GetBaseDir() {
+  const auto& curr = std::experimental::filesystem::current_path();
+  return curr;
 }
 
 std::string FindODLAIncPath(const std::string& base_dir,
