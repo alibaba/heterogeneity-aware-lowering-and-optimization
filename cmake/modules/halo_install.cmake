@@ -19,10 +19,9 @@
 install(TARGETS halo halolib
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
-        INCLUDES DESTINATION include
-        PUBLIC_HEADER DESTINATION include
+        INCLUDES DESTINATION include/halo
+        PUBLIC_HEADER DESTINATION include/halo
 )
-
 install(DIRECTORY ${CMAKE_BINARY_DIR}/runtime DESTINATION .)
 install(FILES ${CMAKE_SOURCE_DIR}/utils/halo_pgq.py DESTINATION bin)
 install(CODE "execute_process(COMMAND ${CMAKE_SOURCE_DIR}/demo/install.sh ${CMAKE_INSTALL_PREFIX})")
