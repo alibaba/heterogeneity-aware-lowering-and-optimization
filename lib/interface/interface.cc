@@ -51,7 +51,13 @@ static int InvokeCompiler(Module* m, const std::string& target, int batch,
                           const std::vector<std::string>& outputs,
                           const CXXCodeGenOpts& cg_opts,
                           const std::string& main_output_file_name) {
-  PassManager pm(m->GetGlobalContext());
+  auto& ctx = m->GetGlobalContext();
+  ctx.SetBasePath(GetBaseDir());
+  ctx.SetODLAIncludePath(FindODLAIncPath(ctx.GetBasePath(), {}));
+  ctx.SetODLALibraryPath(
+      FindODLALibPath(ctx.GetBasePath(), {}, cg_opts.linked_odla_lib));
+
+  PassManager pm(ctx);
   FusionOptions fusion_opts;
   PopulateOptPasses(&pm, target, input_shapes, inputs, outputs, batch, "",
                     ChannelOrder::None, false, false, ModelFormat::TENSORFLOW,
