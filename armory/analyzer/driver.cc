@@ -57,9 +57,8 @@ static void PopulatePassesAndRun(GlobalContext& ctx, Module& m,
   std::vector<std::string> input_shapes(InputsShape.begin(), InputsShape.end());
   FusionOptions fusion_opts;
   CXXCodeGenOpts opts;
-  PopulateOptPasses(&pm, "cxx", input_shapes, {}, {}, batch, "",
-                    ChannelOrder::None, false, false, format, opts,
-                    fusion_opts);
+  PopulateOptPasses(&pm, "cxx", input_shapes, {}, {}, batch, "", false, false,
+                    format, opts, fusion_opts);
   pm.AddAnalyzerPass(&std::cout);
   pm.Run(&m);
 }

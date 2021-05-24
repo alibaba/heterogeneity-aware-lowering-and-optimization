@@ -78,6 +78,7 @@ struct CXXCodeGenOpts {
   int64_t batches_per_step = 1;
   bool check_model = false;
   API api = API::ODLA_05;
+  ChannelOrder channel_order = ChannelOrder::None;
   bool format_code = false;
   bool emit_header = false;
   bool emit_obj = false;

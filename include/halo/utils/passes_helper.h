@@ -124,9 +124,8 @@ static void PopulateOptPasses(PassManager* pm, const std::string& target,
                               const std::vector<std::string>& inputs,
                               const std::vector<std::string>& outputs,
                               int batch, const std::string& preprocess_scale,
-                              ChannelOrder channel_order, bool split_function,
-                              bool disable_type_cast, ModelFormat format,
-                              const CXXCodeGenOpts& opts,
+                              bool split_function, bool disable_type_cast,
+                              ModelFormat format, const CXXCodeGenOpts& opts,
                               const FusionOptions& fusion_opts) {
   pm->AddInputLegalizerPass(batch, input_shapes, preprocess_scale);
   if (!outputs.empty()) {
@@ -152,8 +151,8 @@ static void PopulateOptPasses(PassManager* pm, const std::string& target,
       target.substr(0, 3) == "cxx", opts.disable_broadcasting,
       opts.remove_input_transpose, opts.remove_output_transpose,
       opts.disable_conv_bn, fusion_opts.ConvBias);
-  if (channel_order != ChannelOrder::None) {
-    pm->AddReorderChannelPass(channel_order == ChannelOrder::ChannelFirst);
+  if (opts.channel_order != ChannelOrder::None) {
+    pm->AddReorderChannelPass(opts.channel_order == ChannelOrder::ChannelFirst);
   }
   pm->AddFusionPass(fusion_opts);
   if (split_function) {
