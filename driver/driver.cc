@@ -26,7 +26,6 @@
 #include "halo/lib/parser/parser.h"
 #include "halo/lib/pass/pass_manager.h"
 #include "halo/lib/transforms/fusion.h"
-#include "halo/lib/transforms/reorder_channel.h"
 #include "halo/utils/cl_options.h"
 #include "halo/utils/passes_helper.h"
 #include "halo/utils/path.h"
@@ -36,8 +35,6 @@
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/FileSystem.h"
-#include "llvm/Support/Path.h"
 
 using namespace halo;
 
@@ -396,10 +393,10 @@ int main(int argc, char** argv) {
   if (EmitLibrary.getNumOccurrences() == 0 && name.endswith(".so")) {
     cg_opts.emit_shared_lib = true;
   }
-
+  cg_opts.channel_order = ReorderChannelLayout;
   PopulateOptPasses(&pm, Target, input_shapes, inputs, outputs, Batch,
-                    PreprocessScale, ReorderChannelLayout, SplitFunction,
-                    DisableTypeCast, format, cg_opts, fusion_opts);
+                    PreprocessScale, SplitFunction, DisableTypeCast, format,
+                    cg_opts, fusion_opts);
   PopulateCodeGenPasses(&pm, &buf_code, &buf_constants, &buf_header,
                         out_dynamic_check, Target, is_c_or_cxx_output,
                         is_binary_output, EmitDataAsC, EmitCodeOnly, EmitLLVMIR,
