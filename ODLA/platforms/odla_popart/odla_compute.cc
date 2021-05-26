@@ -132,7 +132,6 @@ odla_status odla_CreateContext(odla_context* context) {
   auto session = popart::InferenceSession::createFromOnnxModel(
       proto, data_flow, device, popart::InputShapeInfo(), *opts);
   *context = new _odla_context(g_comp, std::move(session));
-  (*context)->comp = g_comp;
 
   // Compile graph, create engine and load into the IPU
   // use compileAndExport() to frozen engine to specified path
@@ -210,7 +209,8 @@ odla_status odla_BindToArgumentById(const odla_value_id value_id,
                                     const odla_void* data_ptr,
                                     odla_context context) {
   std::string name(reinterpret_cast<const char*>(value_id));
-  return odla_BindToArgument(g_comp->inputs_map[name], data_ptr, context);
+  return odla_BindToArgument(context->comp->inputs_map[name], data_ptr,
+                             context);
 }
 
 odla_status odla_SetValueAsOutput(const odla_value value) {
@@ -239,5 +239,5 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
 odla_status odla_BindToOutputById(const odla_value_id value_id,
                                   odla_void* data_ptr, odla_context context) {
   std::string name(reinterpret_cast<const char*>(value_id));
-  return odla_BindToOutput(g_comp->outputs_map[name], data_ptr, context);
+  return odla_BindToOutput(context->comp->outputs_map[name], data_ptr, context);
 }
