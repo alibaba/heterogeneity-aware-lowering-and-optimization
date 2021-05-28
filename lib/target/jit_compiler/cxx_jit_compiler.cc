@@ -25,6 +25,8 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_os_ostream.h>
 
+#include <fstream>
+
 #include "halo/halo.h"
 
 class CodeGenActionFactory : public clang::tooling::FrontendActionFactory {
@@ -118,9 +120,18 @@ static void EmitObj(std::ostream& output, const std::string& code,
 }
 
 bool halo::CXXJITCompiler::RunOnModule(Module* module) {
-  std::string source = source_.str();
-  std::ostringstream buf;
   const auto& ctx = module->GetGlobalContext();
+  const std::string& source = source_.str();
+  if (opts_.save_temps) {
+    constexpr int len = 128;
+    llvm::SmallString<len> c_file;
+    llvm::sys::fs::createTemporaryFile("halo_jit" /* prefix */, "c", c_file);
+    std::cerr << "HALO intermediate ODLA file: " << c_file.str().str() << "\n";
+    std::ofstream ofs(c_file.str(), std::ofstream::binary);
+    ofs << source;
+  }
+
+  std::ostringstream buf;
   EmitObj(buf, source, {ctx.GetODLAIncludePath()},
           opts_.dialect == Dialect::CXX_11, ctx.GetVerbosity() > 0, {});
   buf.swap(code_);

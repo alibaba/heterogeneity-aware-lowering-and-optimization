@@ -260,6 +260,10 @@ static llvm::cl::list<std::string> LibPaths(
     "L", llvm::cl::desc("Add directory to library search paths"),
     llvm::cl::cat(HaloOptCat));
 
+static llvm::cl::opt<bool> SaveTemps(
+    "save-temps", llvm::cl::desc("Save intermediate compilation results"),
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
+
 #undef HALO_FUSION_OPTIONS
 #define HALO_FUSION_CMD_OPTIONS_DECL
 #include "halo/lib/ir/fusion.cc.inc"
@@ -367,6 +371,7 @@ int main(int argc, char** argv) {
   cg_opts.emit_obj = EmitObj;
   cg_opts.emit_shared_lib = EmitLibrary || !LinkODLALib.empty();
   cg_opts.linked_odla_lib = LinkODLALib.c_str();
+  cg_opts.save_temps = SaveTemps;
 
   if (is_c_or_cxx_output) {
     ctx.SetTargetTriple("x86_64"); // For binary constant writer.

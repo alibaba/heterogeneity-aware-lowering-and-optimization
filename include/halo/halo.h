@@ -84,6 +84,7 @@ struct CXXCodeGenOpts {
   bool emit_obj = false;
   bool emit_shared_lib = false;
   const char* linked_odla_lib = nullptr;
+  bool save_temps = false;
 };
 
 int CompileTFGraph(const char* pb_buf, size_t pb_buf_size,
