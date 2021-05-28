@@ -69,8 +69,7 @@ static std::string WriteToTempFile(const std::ostringstream& data) {
   constexpr int len = 128;
   llvm::SmallString<len> obj_file;
   llvm::sys::fs::createTemporaryFile("halo_jit" /* prefix */, "o", obj_file);
-  std::ofstream ofs;
-  ofs.open(obj_file.str(), std::ofstream::binary);
+  std::ofstream ofs(obj_file.str(), std::ofstream::binary);
   ofs << data.str();
   ofs.close();
   return obj_file.str();
@@ -87,7 +86,14 @@ bool halo::GenericJITLinker::RunOnModule(Module* module) {
   Link(output_file_name_, {code_file_name, constants_file_name},
        {ctx.GetODLALibraryPath()}, libs, true /* shared */,
        ctx.GetVerbosity() > 0);
-  // llvm::sys::fs::remove(code_file_name);
-  // llvm::sys::fs::remove(constants_file_name);
+  if (opts_.save_temps) {
+    std::cerr << "HALO intermediate ODLA file (code): " << code_file_name
+              << "\n";
+    std::cerr << "HALO intermediate ODLA file (constants): "
+              << constants_file_name << "\n";
+  } else {
+    llvm::sys::fs::remove(code_file_name);
+    llvm::sys::fs::remove(constants_file_name);
+  }
   return false;
 }
