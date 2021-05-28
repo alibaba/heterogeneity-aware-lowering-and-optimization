@@ -442,7 +442,7 @@ int main(int argc, char** argv) {
     of_header << buf_header.str();
   }
 
-  if (!EmitCodeOnly) {
+  if (!EmitCodeOnly && !cg_opts.emit_shared_lib) {
     llvm::StringRef name(OutputFile);
     llvm::SmallString<128> data_file_name(name);
     if (EmitDataAsC) {
