@@ -26,6 +26,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "ODLA/odla_common.h"
 #include "ODLA/odla_compute.h"
 #include "dnnl.hpp"
 #include "dnnl_threadpool_iface.hpp"
@@ -75,6 +76,8 @@ struct _odla_computation {
   std::vector<std::unique_ptr<_odla_value>> vals;
   std::unordered_map<std::string, odla_value> inputs;
   std::unordered_map<std::string, odla_value> outputs;
+  std::vector<odla_value> input_vals;
+  std::vector<odla_value> output_vals;
   std::unordered_map<std::string, std::pair<odla_value, void*>> outputs_v;
   target_opts opts;
 
@@ -395,7 +398,25 @@ odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
     v->elem_size = 8;
   }
   g_comp->inputs[name] = v;
+  g_comp->input_vals.push_back(v);
   return v;
+}
+
+odla_status odla_GetNumOfArgsFromComputation(const odla_computation computation,
+                                             odla_uint32* num_args) {
+  *num_args = computation->input_vals.size();
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_GetArgFromComputationByIdx(const odla_computation computation,
+                                            const odla_uint32 arg_idx,
+                                            odla_value* arg_value) {
+  *arg_value = nullptr;
+  if (arg_idx >= computation->input_vals.size()) {
+    return ODLA_FAILURE;
+  }
+  *arg_value = computation->input_vals[arg_idx];
+  return ODLA_SUCCESS;
 }
 
 odla_value odla_CreateValue(odla_value_type type, const odla_value_id id) {
@@ -407,7 +428,19 @@ odla_value odla_CreateValue(odla_value_type type, const odla_value_id id) {
 
 odla_status odla_GetValueType(const odla_value value,
                               odla_value_type* value_type) {
-  value_type->element_type = ODLA_FLOAT32;
+  switch (value->elem_size) {
+    case 1:
+      value_type->element_type = ODLA_INT8;
+      break;
+    case 2:
+      value_type->element_type = ODLA_INT16;
+      break;
+    case 4:
+      value_type->element_type = ODLA_FLOAT32;
+      break;
+    default:
+      value_type->element_type = ODLA_INT64;
+  }
   value_type->shape = value->shape;
   return ODLA_SUCCESS;
 }
@@ -483,8 +516,27 @@ odla_status odla_SetValueAsOutput(const odla_value val) {
     val->mem =
         cast_odla_mem(val->mem, val->shape, getDataType(ODLA_FLOAT32), false);
   }
+  g_comp->output_vals.push_back(val);
   return ODLA_SUCCESS;
 }
+
+odla_status odla_GetNumOfOutputsFromComputation(
+    const odla_computation computation, odla_uint32* num_outputs) {
+  *num_outputs = computation->output_vals.size();
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_GetOutputFromComputationByIdx(
+    const odla_computation computation, const odla_uint32 output_idx,
+    odla_value* output_value) {
+  *output_value = nullptr;
+  if (output_idx >= computation->output_vals.size()) {
+    return ODLA_FAILURE;
+  }
+  *output_value = computation->output_vals[output_idx];
+  return ODLA_SUCCESS;
+}
+
 odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
                               odla_context context) {
   // Handle the case of output is constant due to compile-time optimization.
