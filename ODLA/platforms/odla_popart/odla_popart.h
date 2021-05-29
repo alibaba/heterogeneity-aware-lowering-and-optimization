@@ -66,6 +66,8 @@ struct _odla_computation {
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> outputs;
   std::unordered_map<std::string, odla_value> inputs_map;
   std::unordered_map<std::string, odla_value> outputs_map;
+  std::vector<odla_value> input_values;
+  std::vector<odla_value> output_values;
   target_opts opts;
 
   _odla_computation(std::unique_ptr<popart::Builder> b)
