@@ -21,6 +21,7 @@
 #include <sstream>
 
 #include "halo/api/halo_data.h"
+#include "halo/halo.h"
 #include "halo/lib/framework/global_context.h"
 #include "halo/lib/ir/all_instructions.h"
 #include "halo/lib/ir/instruction.h"
@@ -99,6 +100,7 @@ static void EmitBanner(std::ostream* os, std::ostream* header_os, API api) {
   *os << banner;
   if (header_os != nullptr) {
     *header_os << banner;
+    *header_os << "typedef struct _odla_computation* odla_computation;\n";
   }
   *os << "#include " << GetIncludeFile(api) << "\n\n";
 }
@@ -514,6 +516,39 @@ void GenericCXXCodeGen::RunOnHostFunction(Function& function) {
   os_ << "}\n";
 }
 
+static void EmitComputationItems(std::ostream* os, const CXXCodeGenOpts& opts) {
+  if (opts.enable_ipu_device) {
+    *os << "bool use_ipu_model = " << opts.use_ipu_model << ";\n";
+    *os << "int ipu_num = " << opts.ipu_num << ";\n";
+    *os << "int batches_per_step = " << opts.batches_per_step << ";\n";
+    *os << "odla_SetComputationItem(comp, ODLA_USE_SIM_MODE, "
+           "(odla_item_value) &use_ipu_model);\n";
+    *os << "odla_SetComputationItem(comp, ODLA_PROCESSOR_NUM, "
+           "(odla_item_value) &ipu_num);\n";
+    *os << "odla_SetComputationItem(comp, ODLA_BATCHES_PER_STEP, "
+           "(odla_item_value) &batches_per_step);\n";
+  }
+  if (opts.emit_dynamic_batch) {
+    *os << "bool is_dynamic_batch = true;\n";
+    *os << "int min_batch_size = " << opts.min_batch_size << ";\n";
+    *os << "int max_batch_size = " << opts.max_batch_size << ";\n";
+    *os << "int opt_batch_size = " << opts.opt_batch_size << ";\n";
+    *os << "odla_SetComputationItem(comp, ODLA_DYNAMIC_BATCH, "
+           "(odla_item_value) &is_dynamic_batch);\n";
+    *os << "odla_SetComputationItem(comp, ODLA_MIN_BATCH_SIZE, "
+           "(odla_item_value) &min_batch_size);\n";
+    *os << "odla_SetComputationItem(comp, ODLA_MAX_BATCH_SIZE, "
+           "(odla_item_value) &max_batch_size);\n";
+    *os << "odla_SetComputationItem(comp, ODLA_OPT_BATCH_SIZE, "
+           "(odla_item_value) &opt_batch_size);\n";
+  }
+  if (opts.bf16_mode != BF16Mode::Disable) {
+    *os << "odla_bf16_mode mode = " << GetBF16Mode(opts.bf16_mode) << ";\n";
+    *os << "odla_SetComputationItem(comp, ODLA_BF16_MODE, "
+           "(odla_item_value) &mode);\n";
+  }
+}
+
 void GenericCXXCodeGen::RunOnFunction(Function& function) {
   for (auto& constant : function.Constants()) {
     RunOnConstant(*constant, true);
@@ -554,6 +589,8 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
     oss << "  " << func_decl << ";\n";
     oss << "void " << init_func_name << "();\n";
     oss << "void " << fini_func_name << "();\n";
+    oss << (is_compile_mode ? "odla_computation " : "static void ")
+        << helper_func_name << "();\n";
     if (opts_.dialect == Dialect::CXX_11) {
       oss << "};\n";
     }
@@ -564,38 +601,10 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
   if (emit_builder_func) {
     if (is_compile_mode) {
       os_ << "static odla_computation Comp;\n";
-      os_ << "static void " << helper_func_name << "() {\n";
-      os_ << "  odla_CreateComputation(&Comp);\n";
-      if (opts_.enable_ipu_device) {
-        os_ << "bool use_ipu_model = " << opts_.use_ipu_model << ";\n";
-        os_ << "int ipu_num = " << opts_.ipu_num << ";\n";
-        os_ << "int batches_per_step = " << opts_.batches_per_step << ";\n";
-        os_ << "odla_SetComputationItem(Comp, ODLA_USE_SIM_MODE, "
-               "(odla_item_value) &use_ipu_model);\n";
-        os_ << "odla_SetComputationItem(Comp, ODLA_PROCESSOR_NUM, "
-               "(odla_item_value) &ipu_num);\n";
-        os_ << "odla_SetComputationItem(Comp, ODLA_BATCHES_PER_STEP, "
-               "(odla_item_value) &batches_per_step);\n";
-      }
-      if (opts_.emit_dynamic_batch) {
-        os_ << "bool is_dynamic_batch = true;\n";
-        os_ << "int min_batch_size = " << opts_.min_batch_size << ";\n";
-        os_ << "int max_batch_size = " << opts_.max_batch_size << ";\n";
-        os_ << "int opt_batch_size = " << opts_.opt_batch_size << ";\n";
-        os_ << "odla_SetComputationItem(Comp, ODLA_DYNAMIC_BATCH, "
-               "(odla_item_value) &is_dynamic_batch);\n";
-        os_ << "odla_SetComputationItem(Comp, ODLA_MIN_BATCH_SIZE, "
-               "(odla_item_value) &min_batch_size);\n";
-        os_ << "odla_SetComputationItem(Comp, ODLA_MAX_BATCH_SIZE, "
-               "(odla_item_value) &max_batch_size);\n";
-        os_ << "odla_SetComputationItem(Comp, ODLA_OPT_BATCH_SIZE, "
-               "(odla_item_value) &opt_batch_size);\n";
-      }
-
-      os_ << "odla_bf16_mode mode = " << GetBF16Mode(opts_.bf16_mode) << ";\n";
-      os_ << "odla_SetComputationItem(Comp, ODLA_BF16_MODE, "
-             "(odla_item_value) &mode);\n";
-
+      os_ << "odla_computation " << helper_func_name << "() {\n";
+      os_ << "  odla_computation comp;\n";
+      os_ << "  odla_CreateComputation(&comp);\n";
+      EmitComputationItems(&os_, opts_);
     } else {
       os_ << "static void " << helper_func_name
           << GetFunctionDecl(function, *return_inst, false, true, false)
@@ -608,40 +617,11 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
     }
 
     if (is_compile_mode) {
-      os_ << "  static odla_computation Comp;\n";
-      os_ << "  if (Comp == " << EmitNull() << ") {\n";
-      os_ << "    odla_CreateComputation(&Comp);\n";
-      if (opts_.enable_ipu_device) {
-        os_ << "bool use_ipu_model = " << opts_.use_ipu_model << ";\n";
-        os_ << "int ipu_num = " << opts_.ipu_num << ";\n";
-        os_ << "int batches_per_step = " << opts_.batches_per_step << ";\n";
-        os_ << "odla_SetComputationItem(Comp, ODLA_USE_SIM_MODE, "
-               "(odla_item_value) &use_ipu_model);\n";
-        os_ << "odla_SetComputationItem(Comp, ODLA_PROCESSOR_NUM, "
-               "(odla_item_value) &ipu_num);\n";
-        os_ << "odla_SetComputationItem(Comp, ODLA_BATCHES_PER_STEP, "
-               "(odla_item_value) &batches_per_step);\n";
-      }
-
-      if (opts_.emit_dynamic_batch) {
-        os_ << "bool is_dynamic_batch = true;\n";
-        os_ << "int min_batch_size = " << opts_.min_batch_size << ";\n";
-        os_ << "int max_batch_size = " << opts_.max_batch_size << ";\n";
-        os_ << "int opt_batch_size = " << opts_.opt_batch_size << ";\n";
-        os_ << "odla_SetComputationItem(Comp, ODLA_DYNAMIC_BATCH, "
-               "(odla_item_value) &is_dynamic_batch);\n";
-        os_ << "odla_SetComputationItem(Comp, ODLA_MIN_BATCH_SIZE, "
-               "(odla_item_value) &min_batch_size);\n";
-        os_ << "odla_SetComputationItem(Comp, ODLA_MAX_BATCH_SIZE, "
-               "(odla_item_value) &max_batch_size);\n";
-        os_ << "odla_SetComputationItem(Comp, ODLA_OPT_BATCH_SIZE, "
-               "(odla_item_value) &opt_batch_size);\n";
-      }
-
-      os_ << "odla_bf16_mode mode = " << GetBF16Mode(opts_.bf16_mode) << ";\n";
-      os_ << "odla_SetComputationItem(Comp, ODLA_BF16_MODE, "
-             "(odla_item_value) &mode);\n";
+      os_ << "  static odla_computation comp;\n";
+      os_ << "  if (comp == " << EmitNull() << ") {\n";
+      os_ << "    odla_CreateComputation(&comp);\n";
     }
+    EmitComputationItems(&os_, opts_);
   }
 
   // Emit wrappers for arguments.
@@ -669,6 +649,9 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
   for (auto& bb : function) {
     RunOnBasicBlock(*bb);
   }
+  if (is_compile_mode) {
+    os_ << " return comp;\n";
+  }
 
   os_ << "}\n"; // End of computation build function.
 
@@ -689,7 +672,7 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
         os_ << GetFunctionDecl(function, *return_inst, true, true, true)
             << " {\n";
       }
-      os_ << "  if (Comp == " << EmitNull() << ") { " << helper_func_name
+      os_ << "  if (Comp == " << EmitNull() << ") { Comp = " << helper_func_name
           << "(); }\n";
       os_ << "}\n";
     }
