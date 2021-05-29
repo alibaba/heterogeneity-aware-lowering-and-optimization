@@ -341,6 +341,7 @@ void GenericLLVMIRCodeGen::RunOnConstant(Constant& constant) {
   llvm::GlobalVariable* gv = llvm::dyn_cast<llvm::GlobalVariable>(v);
   HLCHECK(gv);
   if (gv != nullptr) {
+    gv->setVisibility(llvm::GlobalValue::HiddenVisibility);
     gv->setLinkage(constant_data_storage_ ==
                            ConstantDataStorage::DefinedAsStatic
                        ? llvm::GlobalValue::LinkageTypes::InternalLinkage
