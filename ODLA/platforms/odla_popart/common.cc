@@ -41,6 +41,8 @@
 #include <string>
 #include <vector>
 
+#include "ODLA/odla_common.h"
+#include "ODLA/odla_value.h"
 #include "odla_popart.h"
 
 popart::DataType GetPopartType(odla_value_type type) {
@@ -98,10 +100,19 @@ const std::string& GetDirectionName(odla_rnn_direction direction) {
   return it->second;
 }
 
-popart::Shape GetPopartShape(odla_value_shape shape) {
+popart::Shape GetPopartShape(const odla_value_shape& shape) {
   popart::Shape dims(shape.size);
   for (int i = 0; i < shape.size; ++i) {
     dims[i] = shape.dims[i];
+  }
+  return dims;
+}
+
+odla_value_shape GetOdlaShape(const popart::Shape& shape) {
+  odla_value_shape dims;
+  dims.size = shape.size();
+  for (int i = 0; i < shape.size(); ++i) {
+    dims.dims[i] = shape[i];
   }
   return dims;
 }
