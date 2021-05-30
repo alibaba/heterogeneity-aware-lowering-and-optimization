@@ -137,6 +137,8 @@ struct _odla_computation {
   std::unordered_map<std::string, odla_value> outputs;
   std::vector<std::vector<float>> buffers;
   std::vector<std::unique_ptr<_odla_value>> vals;
+  std::vector<odla_value> input_vals;
+  std::vector<odla_value> output_vals;
   bool fp16_mode = false;
 
   bool is_dynamic_batch = false;
@@ -440,9 +442,10 @@ odla_status odla_SetActiveComputation(odla_computation computation) {
 }
 
 odla_status odla_DestroyComputation(odla_computation comp) {
-  for (auto& c : g_comps) {
-    if (c.get() == comp) {
-      c.reset();
+  for (auto it = g_comps.begin(), e = g_comps.end(); it != e; ++it) {
+    if (it->get() == comp) {
+      it->reset();
+      g_comps.erase(it);
       return ODLA_SUCCESS;
     }
   }
@@ -532,7 +535,25 @@ odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
                                          GetNVDims(type.shape));
   odla_value v = CreateValue(input, type, id);
   g_comp->inputs[name] = v;
+  g_comp->input_vals.push_back(v);
   return v;
+}
+
+odla_status odla_GetNumOfArgsFromComputation(const odla_computation computation,
+                                             odla_uint32* num_args) {
+  *num_args = computation->input_vals.size();
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_GetArgFromComputationByIdx(const odla_computation computation,
+                                            const odla_uint32 arg_idx,
+                                            odla_value* arg_value) {
+  *arg_value = nullptr;
+  if (arg_idx >= computation->input_vals.size()) {
+    return ODLA_FAILURE;
+  }
+  *arg_value = computation->input_vals[arg_idx];
+  return ODLA_SUCCESS;
 }
 
 odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
@@ -551,8 +572,25 @@ odla_status odla_SetValueAsOutput(const odla_value val) {
   const char* name =
       val->layer != nullptr ? val->layer->getName() : val->tensor->getName();
   g_comp->outputs[name] = val;
+  g_comp->output_vals.push_back(val);
   val->tensor->setName(name);
   g_comp->network->markOutput(*val->tensor);
+  return ODLA_SUCCESS;
+}
+odla_status odla_GetNumOfOutputsFromComputation(
+    const odla_computation computation, odla_uint32* num_outputs) {
+  *num_outputs = computation->output_vals.size();
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_GetOutputFromComputationByIdx(
+    const odla_computation computation, const odla_uint32 output_idx,
+    odla_value* output_value) {
+  *output_value = nullptr;
+  if (output_idx >= computation->output_vals.size()) {
+    return ODLA_FAILURE;
+  }
+  *output_value = computation->output_vals[output_idx];
   return ODLA_SUCCESS;
 }
 
