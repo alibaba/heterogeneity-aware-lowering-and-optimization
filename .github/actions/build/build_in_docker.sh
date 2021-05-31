@@ -16,8 +16,13 @@ if [ ! -z "$1" ]; then
   shift
 fi
 
+OS="ubuntu18.04"
+if [ ! -z "$1" ]; then
+  OS=$1
+  shift;
+fi
 
-IMAGE="$REPO:$VER-$FLAVOR-$VARIANT-ubuntu18.04"
+IMAGE="$REPO:$VER-$FLAVOR-$VARIANT-$OS"
 CONTAINER_NAME="halo.ci-$VER-$VARIANT"
 
 docker_run_flag=""
@@ -28,36 +33,43 @@ if [[ "$VARIANT" =~ cuda ]]; then
   docker_run_flag="--runtime=nvidia"
 fi
 
+cmake_flags="-DODLA_BUILD_POPART=OFF"
 if [[ "$VARIANT" =~ graphcore ]]; then
-  cmake_flags="-DPOPLAR_SDK_ROOT=/opt/poplar_sdk-ubuntu_18_04-2.0.1+562-81b90b6055 \
-              -DPOPLAR_VERSION=poplar-ubuntu_18_04-2.0.1+130833-d32e9bc95a \
-              -DPOPART_VERSION=popart-ubuntu_18_04-2.0.0+130833-d32e9bc95a \
+  sdk_os="ubuntu_18_04"
+  if [[ "$OS" == "centos7" ]];then
+    sdk_os="centos_7_6"
+  fi
+  cmake_flags="-DPOPLAR_SDK_ROOT=/opt/poplar_sdk-$sdk_os-2.0.1+562-81b90b6055 \
+              -DPOPLAR_VERSION=$sdk_os-2.0.1+130834-d32e9bc95a \
+              -DPOPART_ROOT=/opt/poplar_sdk-$sdk_os-2.0.1+562-81b90b6055/popart-$sdk_os-2.0.0+130834-d32e9bc95a \
 	            -DODLA_BUILD_DNNL=OFF -DODLA_BUILD_TRT=OFF \
-              -DODLA_BUILD_EIGEN=OFF -DODLA_BUILD_XNNPACK=OFF"
+              -DODLA_BUILD_POPART=ON \
+              -DODLA_BUILD_EIGEN=OFF -DODLA_BUILD_XNNPACK=OFF \
+              -DHALO_USE_TIDY_CHECK=OFF \
+              -DHALO_GEN_DOCS=OFF .. "
   check_cmds="ninja check-halo"
 fi
 
 DOCKER_ID=`docker ps -aq -f name=$CONTAINER_NAME -f status=running`
 
+gid=$(id -g ${USER})
+uid=$(id -u ${USER})
+
 if [ -z "$DOCKER_ID" ]; then
-  gid=$(id -g ${USER})
-  group=$(id -g -n ${USER})
-  uid=$(id -u ${USER})
   docker run $docker_run_flag -t -d --name $CONTAINER_NAME -v $MOUNT_DIR:/host \
-    --tmpfs /tmp:exec --rm $IMAGE
-  docker exec $CONTAINER_NAME bash -c "groupadd -f -g $gid $group"
-  docker exec $CONTAINER_NAME bash -c \
-    "adduser --shell /bin/bash --uid $uid --gecos '' --gid $gid \
-    --disabled-password --home /home/$USER $USER"
+    --tmpfs /tmp:exec --user=$uid:$gid --rm $IMAGE
 fi
 
 extra_cmd="true" # dummy command
-
-if [[ "$VARIANT" =~ graphcore ]]; then
-  extra_cmd="source /opt/poplar_sdk-ubuntu_18_04-2.0.1+562-81b90b6055/poplar-ubuntu_18_04-2.0.1+130833-d32e9bc95a/enable.sh \
-             source /opt/poplar_sdk-ubuntu_18_04-2.0.1+562-81b90b6055/popart-ubuntu_18_04-2.0.0+130833-d32e9bc95a/enable.sh"
+if [[ "$OS" == "centos7" ]];then
+  extra_cmd="$extra_cmd;source /opt/rh/devtoolset-7/enable"
 fi
 
-docker exec --user $USER $CONTAINER_NAME bash -c \
+if [[ "$VARIANT" =~ graphcore ]]; then
+  extra_cmd="$extra_cmd;source /opt/poplar_sdk-$sdk_os-2.0.1+562-81b90b6055/poplar-$sdk_os-2.0.1+130834-d32e9bc95a/enable.sh \
+             source /opt/poplar_sdk-$sdk_os-2.0.1+562-81b90b6055/popart-$sdk_os-2.0.0+130834-d32e9bc95a/enable.sh"
+fi
+
+docker exec --user=$uid:$gid $CONTAINER_NAME bash -c \
   "$extra_cmd && cd /host && rm -fr build && mkdir -p build && cd build && \
   cmake -G Ninja $cmake_flags ../halo && ninja && $check_cmds && ninja package"

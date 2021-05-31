@@ -9,7 +9,7 @@ on:
       - "web"
 
 jobs:
-  build_ipu:
+  build_ipu_centos:
     runs-on: [self-hosted, ipu_sim]
     steps:
       - name: Checkout
@@ -22,6 +22,7 @@ jobs:
         uses: ./halo/.github/actions/build
         with:
           docker_image_variant: graphcore2.0.1-x86_64
+          docker_image_os: centos7
 
       - name: Upload
         uses: actions/upload-artifact@v2
