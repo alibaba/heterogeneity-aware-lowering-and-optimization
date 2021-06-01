@@ -17,8 +17,6 @@
 add_odla_library(odla_popart SHARED common.cc odla_compute.cc
                                odla_ops_math.cc odla_ops_nn.cc
                                odla_ops_process.cc odla_ops.cc)
-find_library(popart NAMES popart PATHS ${POPART_ROOT} PATH_SUFFIXES lib
-             NO_DEFAULT_PATH)
 find_library(custom_ops NAMES custom_ops PATHS ${CMAKE_CURRENT_SOURCE_DIR}/custom_ops
              PATH_SUFFIXES lib NO_DEFAULT_PATH)
 find_package(popart CONFIG COMPONENTS popart-only REQUIRED)

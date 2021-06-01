@@ -5,6 +5,10 @@ inputs:
     description: "Docker image variant"
     required: true
     default: "x86_64"
+  docker_image_os:
+    description: "Docker image OS"
+    required: false
+    default: "ubuntu18.04"
 runs:
   using: "composite"
   steps:
@@ -13,4 +17,5 @@ runs:
     - run: ./halo/.github/actions/build/build_in_docker.sh
              ${{runner.workspace}}/heterogeneity-aware-lowering-and-optimization
              ${{ inputs.docker_image_variant }}
+             ${{ inputs.docker_image_os }}
       shell: bash

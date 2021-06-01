@@ -45,6 +45,7 @@ jobs:
         uses: ./halo/.github/actions/build
         with:
           docker_image_variant: cuda10.0-cudnn7
+          docker_image_os: ubuntu18.04
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
