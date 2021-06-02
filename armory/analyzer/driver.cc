@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
 
   armory::Opts opts;
   opts.convert_to_ipu_graphdef = ConvertToIpuGraphDef;
-  opts.output_graphdef_filename = OutputGraphDefFile;
+  opts.output_graphdef_filename = OutputGraphDefFile.getValue();
 
   llvm::SmallVector<llvm::StringRef, 4> splitted;
   llvm::StringRef(SplitNames).split(splitted, ',');
