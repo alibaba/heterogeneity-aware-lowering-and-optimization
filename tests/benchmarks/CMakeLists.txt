@@ -16,11 +16,9 @@
 
 set(HALO_TEST_DEPENDS
   FileCheck
-  RTLIB
   halolib
   halo
-  analyzer
-  diagnostic
+  halo_tblgen
 )
 
 if (ODLA_BUILD_TRT)
@@ -39,14 +37,13 @@ if (ODLA_BUILD_XNNPACK)
   list(APPEND HALO_TEST_DEPENDS odla_xnnpack)
 endif()
 
-add_subdirectory(benchmarks)
 
 configure_lit_site_cfg(
-    ${CMAKE_CURRENT_SOURCE_DIR}/lit.site.cfg.in
-    ${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lit.site.cfg.in
+    ${CMAKE_CURRENT_BINARY_DIR}/../lit.site.cfg
 )
 
-add_lit_testsuite(check-halo "Running Halo regression tests"
+add_lit_testsuite(check-halo-MZBenchs "Running Halo ModelZoo Benchmarks tests"
   ${CMAKE_CURRENT_BINARY_DIR}
   DEPENDS ${HALO_TEST_DEPENDS}
 )
