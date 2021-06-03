@@ -106,4 +106,24 @@ int Compile(ModelFormat model_format, const std::vector<const char*>& models,
 
 } // namespace halo
 
+extern "C" {
+typedef struct CXXCodeGenOps HaloCodeGenOpts;
+int halo_CompileTFPbGraph(const char* pb_buf, size_t pb_buf_size,
+                          size_t num_input_shapes, const char* input_shapes[],
+                          const HaloCodeGenOpts* cg_opts,
+                          const char* main_output_file);
+
+int halo_CompileTFGraphdef(const void* graphdef, size_t num_input_shapes,
+                           const char* input_shapes[],
+                           const HaloCodeGenOpts* cg_opts,
+                           const char* main_output_file);
+
+int halo_Compile(unsigned model_format, size_t num_models, const char* models[],
+                 const size_t* model_sizes[], const char* target, int batch,
+                 size_t num_input_shapes, const char* input_shapes[],
+                 size_t num_inputs, const char* inputs[], size_t num_outputs,
+                 const char* outputs[], const HaloCodeGenOpts& cg_opts,
+                 const char* main_output_file);
+}
+
 #endif // HALO_HALO_H_
