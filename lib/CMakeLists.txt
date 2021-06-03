@@ -14,6 +14,8 @@
 # limitations under the License
 # ==============================================================================
 
+option(HALO_BUILD_RTLIB "Build RTLib" ON)
+
 set(CORE_COMPONENTS)
 set(CORE_COMPONENTS_OBJECTS)
 
@@ -27,7 +29,9 @@ add_subdirectory(mm)
 add_subdirectory(parser)
 add_subdirectory(pass)
 add_subdirectory(quantizer)
-add_subdirectory(runtime)
+if (HALO_BUILD_RTLIB)
+  add_subdirectory(runtime)
+endif()
 add_subdirectory(target)
 add_subdirectory(threadpool)
 add_subdirectory(transforms)

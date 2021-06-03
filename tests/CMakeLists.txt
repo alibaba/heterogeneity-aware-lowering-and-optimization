@@ -16,12 +16,15 @@
 
 set(HALO_TEST_DEPENDS
   FileCheck
-  RTLIB
   halolib
   halo
   analyzer
   diagnostic
 )
+
+if (HALO_BUILD_RTLIB)
+  list(APPEND HALO_TEST_DEPENDS RTLIB)
+endif()
 
 if (ODLA_BUILD_TRT)
   list(APPEND HALO_TEST_DEPENDS odla_tensorrt)
