@@ -44,6 +44,17 @@ def TF_Squeeze : TFExtension<"Squeeze"> {
   let extension_attr_ = [ ExtensionAttr<"squeeze_dims", IntegerList, "{}"> ];
 }
 
+def TF_Split : TFExtension<"Split"> {
+  let num_outputs_ = -1;
+} // FIX
+def TF_Sum : TFExtension<"Sum">;
+def TF_Neg : TFExtension<"Neg">;
+def TF_Addv2 : TFExtension<"AddV2">;
+def TF_AddN : TFExtension<"AddN">;
+def TF_BroadcastTo : TFExtension<"BroadcastTo">;
+def TF_IpuGelu : TFExtension<"IpuGelu">;
+def TF_LogSoftmax : TFExtension<"LogSoftmax">;
+
 def TF_StopGradient : TFExtension<"StopGradient">;
 
 def TF_StridedSlice : TFExtension<"StridedSlice"> {
@@ -191,6 +202,8 @@ def TF_Mean : OpMapping<"Mean", ReduceMean> {
 }
 
 def TF_Mul : OpMapping<"Mul", Mul>;
+
+def TF_NoOp : OpMapping<"NoOp", NoOp>;
 
 def TF_OneHot : OpMapping<"OneHot", OneHot> {
   let attr_mapping_ = [
