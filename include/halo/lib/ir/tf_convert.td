@@ -32,6 +32,11 @@ def TF_Fill : TFExtension<"Fill">;
 
 def TF_Identity : TFExtension<"Identity">;
 
+def TF_LogSoftmax : OpMapping<"LogSoftmax", LogSoftmax> {
+ let attr_mapping_ = [
+   AttributeMapping<"axis", "axis", "-1">];
+}
+
 def TF_Reshape : TFExtension<"Reshape"> {
   let extension_attr_ = [ ExtensionAttr<"shape", IntegerList, "{}"> ];
 }
