@@ -970,6 +970,11 @@ static void Pad(char* dst, const char* src, size_t elems_num, size_t elem_size,
   }
 }
 
+std::pair<Def, Def> InstSimplify::RunOnInstruction(NoOpInst* noop_inst) {
+  return {*noop_inst,
+          noop_inst->GetNumOfOperands() > 0 ? Def::GetUndefined() : *noop_inst};
+}
+
 std::pair<Def, Def> InstSimplify::RunOnInstruction(PadInst* pad_inst) {
   Def orig_def{pad_inst, 0};
   Def op0 = pad_inst->GetOperand(0);

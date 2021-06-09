@@ -210,6 +210,8 @@ def TF_Mul : OpMapping<"Mul", Mul>;
 
 def TF_Neg : OpMapping<"Neg", Neg>;
 
+def TF_NoOp : OpMapping<"NoOp", NoOp>;
+
 def TF_OneHot : OpMapping<"OneHot", OneHot> {
   let attr_mapping_ = [
     AttributeMapping<"axis", "axis", "-1">];
