@@ -54,6 +54,12 @@ def TF_StridedSlice : TFExtension<"StridedSlice"> {
                          ExtensionAttr<"shrink_axis_mask", Integer, "0">];
 }
 
+def TF_Sum : OpMapping<"Sum", ReduceSum> {
+  let attr_mapping_ = [
+    AttributeMapping<"keep_dims", "keep_dims", "false">
+  ];
+}
+
 def TF_ResizeBilinear : OpMapping<"ResizeBilinear", Resize> {
   let attr_mapping_ = [
     AttributeMapping<"", "interpolation", "LINEAR">,
