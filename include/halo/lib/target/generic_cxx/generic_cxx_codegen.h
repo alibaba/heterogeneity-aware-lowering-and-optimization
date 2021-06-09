@@ -137,6 +137,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(ReduceL2Inst*) override;
   virtual void RunOnInstruction(ReduceLogSumInst*) override;
   virtual void RunOnInstruction(ReduceLogSumExpInst*) override;
+  virtual void RunOnInstruction(ReduceSumInst*) override;
   virtual void RunOnInstruction(ReduceSumSquareInst*) override;
   virtual void RunOnInstruction(ReduceMeanInst*) override;
   virtual void RunOnInstruction(ReduceMaxInst*) override;
