@@ -119,6 +119,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(GatherInst*) override;
   virtual void RunOnInstruction(GemmInst*) override;
   virtual void RunOnInstruction(LogInst*) override;
+  virtual void RunOnInstruction(LogSoftmaxInst*) override;
   virtual void RunOnInstruction(LRNInst*) override;
   virtual void RunOnInstruction(MatMulInst*) override;
   virtual void RunOnInstruction(MaximumInst*) override;
