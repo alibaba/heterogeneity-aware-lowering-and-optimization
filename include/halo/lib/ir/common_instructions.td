@@ -121,4 +121,9 @@ let cat_ = cat_common in {
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
   }
 
+  def NoOp: Inst<"No Op"> {
+    let ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >];
+    let outs_ = [Arg<"The result.", MatchArgType<0> >];
+  }
+
 }
