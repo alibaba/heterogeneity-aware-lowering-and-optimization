@@ -19,6 +19,7 @@ include "convert.td"
 
 // Define TF extension inst
 def TF_Broadcast : TFExtension<"Broadcast">;
+def TF_BroadcastTo : TFExtension<"BroadcastTo">;
 
 def TF_Cast : TFExtension<"Cast"> {
   let extension_attr_ = [ExtensionAttr<"SrcT", EnumDataType, "INVALID">,
@@ -83,6 +84,8 @@ def TF_BatchToSpaceND : TFExtension<"BatchToSpaceND">;
 
 // Define Halo instruction
 def TF_Add : OpMapping<"Add", Add>;
+def TF_AddV2 : OpMapping<"AddV2", Add>;
+def TF_AddN : TFExtension<"AddN">;
 
 def TF_ArgMax : OpMapping<"ArgMax", Argmax> {
  let attr_mapping_ = [
@@ -202,6 +205,8 @@ def TF_Mean : OpMapping<"Mean", ReduceMean> {
 }
 
 def TF_Mul : OpMapping<"Mul", Mul>;
+
+def TF_Neg : OpMapping<"Neg", Neg>;
 
 def TF_OneHot : OpMapping<"OneHot", OneHot> {
   let attr_mapping_ = [

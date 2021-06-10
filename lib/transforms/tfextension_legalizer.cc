@@ -29,6 +29,25 @@
 
 namespace halo {
 
+static std::vector<Def> ConvertAddN(const TFExtensionInst* ext,
+                                    IRBuilder* builder) {
+  HLCHECK(ext->GetNumOfOperands() >= 2 && "Invalid AddN");
+  builder->SetInsertAfter(ext);
+  Instruction* acc = builder->CreateAdd(ext->GetName(), ext->GetOperand(0),
+                                        ext->GetOperand(1));
+  for (int i = 2, e = ext->GetNumOfOperands(); i != e; ++i) {
+    acc = builder->CreateAdd(ext->GetName() + "_" + std::to_string(i - 2), *acc,
+                             ext->GetOperand(i));
+  }
+  return {*acc};
+}
+
+static std::vector<Def> ConvertBroadcastTo(const TFExtensionInst* ext,
+                                           IRBuilder* builder) {
+  // Assume the consumer supports implicit broadcasting.
+  return {ext->GetOperand(0)};
+}
+
 static std::vector<Def> ConvertReshape(const TFExtensionInst* tf_reshape,
                                        IRBuilder* builder) {
   HLCHECK(tf_reshape->GetNumOfOperands() > 0 &&
@@ -845,6 +864,12 @@ static std::vector<Def> ConvertHgDeQuant(const TFExtensionInst* ext,
 static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
                                            IRBuilder* builder) {
   switch (tf_inst->GetExtOpCode()) {
+    case TFExtOpCode::ADDN: {
+      return ConvertAddN(tf_inst, builder);
+    }
+    case TFExtOpCode::BROADCASTTO: {
+      return ConvertBroadcastTo(tf_inst, builder);
+    }
     case TFExtOpCode::CAST: {
       return ConvertCast(tf_inst, builder);
     }
