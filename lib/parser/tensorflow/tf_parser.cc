@@ -118,9 +118,11 @@ void TFParser::Init(BasicBlock* bb, Function* function,
 Status TFParser::ConvertToHaloIR(const tensorflow::GraphDef& graph_def) {
   int i = 0;
   Status s = Status::SUCCESS;
+  std::vector<const tensorflow::NodeDef*> ret_vals;
   for (const auto& cur_node : graph_def.node()) {
     VLOG(4) << "==========layer[" << i << "]==========";
     if (cur_node.op() == "_Retval") {
+      ret_vals.push_back(&cur_node);
       ++i;
       continue;
     }
@@ -132,6 +134,27 @@ Status TFParser::ConvertToHaloIR(const tensorflow::GraphDef& graph_def) {
 
   VLOG(4) << "Total convert node num: " << graph_def.node_size();
   HLCHECK(graph_def.node_size() == i);
+  ConvertReturnNodes(ir_builder_.get(), ret_vals);
+
+  return Status::SUCCESS;
+}
+
+Status TFParser::ConvertReturnNodes(
+    IRBuilder* ir_builder,
+    const std::vector<const tensorflow::NodeDef*>& ret_vals) {
+  if (ret_vals.empty()) {
+    return Status::SUCCESS;
+  }
+  std::vector<Def> outputs;
+  for (auto& op : ret_vals) {
+    auto inputs = GetInputOperands(*op);
+    for (auto v : inputs) {
+      if (v.GetOwner()->GetNumberOfUses() > 0) {
+        outputs.push_back(v);
+      }
+    }
+  }
+  ir_builder->CreateReturn("output", outputs);
   return Status::SUCCESS;
 }
 
