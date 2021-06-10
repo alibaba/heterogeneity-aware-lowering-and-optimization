@@ -169,6 +169,9 @@ CXXType GenericCXXCodeGen::SNTypeToCXXType(DataType dt) {
     case DataType::UINT16: {
       return (CXXType("unsigned short"));
     }
+    case DataType::FLOAT16: {
+      return (CXXType("odla_float16"));
+    }
     case DataType::FLOAT32: {
       return (CXXType("float"));
     }
@@ -316,6 +319,9 @@ std::string GenericCXXCodeGen::GetODLAType(DataType type) const noexcept {
     }
     case DataType::UINT8: {
       return "ODLA_UINT8";
+    }
+    case DataType::FLOAT16: {
+      return "ODLA_FLOAT16";
     }
     case DataType::FLOAT32: {
       return "ODLA_FLOAT32";
