@@ -177,10 +177,10 @@ static std::vector<Def> ConvertExpandDims(const TFExtensionInst* ext,
   auto index = ext->GetOperand(1);
   const Type& input_type = input.GetType();
 
-  if (!input_type.IsValid() || !IsA<Constant>(index.GetOwner())) {
+  const Constant* axis_c = DynCast<Constant>(index);
+  if (!input_type.IsValid() || axis_c == nullptr) {
     return {};
   }
-  const Constant* axis_c = DynCast<Constant>(index.GetOwner());
   DataType dt = axis_c->GetResultType(0).GetDataType();
   int64_t axis;
   if (dt == DataType::INT64) {
@@ -192,7 +192,7 @@ static std::vector<Def> ConvertExpandDims(const TFExtensionInst* ext,
 
   std::vector<int64_t> new_dims(input_type.GetDimSizes());
   if (axis < 0) {
-    axis += input_type.GetNumOfDims() + 1;
+    axis += input_type.GetNumOfDims();
   }
   new_dims.insert(new_dims.begin() + axis, 1);
 
