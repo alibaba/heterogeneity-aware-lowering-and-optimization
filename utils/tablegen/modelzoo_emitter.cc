@@ -105,6 +105,7 @@ static llvm::raw_ostream& EmitTimePerf(int num_inputs, int num_outputs,
   os << "std::cout << \"Elapse time: \" << ";
   os << "GetDuration(begin_time, end_time) / ";
   os << "TEST_ITERS << \" seconds\\n\";\n";
+  os << "return 0;\n";
   return os;
 }
 
@@ -129,10 +130,10 @@ static llvm::raw_ostream& EmitCheckResult(int num_outputs,
   }
   os << "check_" << num_outputs - 1 << ") {\n";
   os << "    std::cout << \"Result verified\" << std::endl;\n";
-  os << "    return 0;\n";
-  os << "  }\n";
-  os << "  std::cout << \" Failed \" << std::endl;\n";
-  os << "  return 1;\n";
+  os << "  } else { \n";
+  os << "    std::cout << \" Failed \" << std::endl;\n";
+  os << "    return 1;\n";
+  os << "  };\n";
   return os;
 }
 
@@ -188,8 +189,10 @@ static llvm::raw_ostream& EmitMainFunc(llvm::Record* model,
     os << "output_ref_" << i << ");\n";
   }
 
-  EmitTimePerf(num_inputs, num_outputs, os);
+  EmitCallFunc(num_inputs, num_outputs, os);
   EmitCheckResult(num_outputs, os);
+  EmitTimePerf(num_inputs, num_outputs, os);
+
   os << "}\n";
   return os;
 }
