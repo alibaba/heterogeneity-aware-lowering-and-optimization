@@ -169,6 +169,8 @@ def TF_GreaterEqual : OpMapping<"GreaterEqual", Cmp> {
   let attr_mapping_ = [AttributeMapping<"", "predicator", "GE">];
 }
 
+def TF_IpuGelu : TFExtension<"IpuGelu">;
+
 def TF_Less : OpMapping<"Less", Cmp> {
   let attr_mapping_ = [AttributeMapping<"", "predicator", "LT">];
 }

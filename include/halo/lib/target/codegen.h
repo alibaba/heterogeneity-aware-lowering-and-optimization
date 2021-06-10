@@ -46,6 +46,9 @@ class CodeGen : public ModulePass {
 #define GET_RUN_ON_INSTRUCTION_DECL
 #include "halo/lib/ir/instructions_info.def"
 #undef GET_RUN_ON_INSTRUCTION_DECL
+  virtual void RunOnInstruction(CustomInst* inst) {
+    HLCHECK(0 && "Custom not implemented");
+  };
 
   static const std::string& GetRTLibFuncName(const Instruction&);
 
