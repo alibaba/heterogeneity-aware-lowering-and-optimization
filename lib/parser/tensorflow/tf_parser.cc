@@ -24,6 +24,7 @@
 
 #include <fstream>
 #include <map>
+#include <numeric>
 #include <set>
 #include <string_view>
 
@@ -204,6 +205,8 @@ void TFParser::RegisterOp() {
 
 static halo::DataType ProcessDataType(const tensorflow::DataType& data_type) {
   switch (data_type) {
+    case tensorflow::DT_HALF:
+      return DataType::FLOAT16;
     case tensorflow::DT_FLOAT:
       return DataType::FLOAT32;
     case tensorflow::DT_INT64:
@@ -368,8 +371,16 @@ Tensor<int> TFParser::ProcessTensor<int>(
   }
 
   std::vector<int> v;
-  for (const auto& it : tensor_proto.int_val()) {
-    v.emplace_back(it);
+  v.reserve(std::accumulate(shape.begin(), shape.end(), 1,
+                            std::multiplies<int64_t>()));
+  if (data_type == DataType::FLOAT16) {
+    for (const auto& it : tensor_proto.half_val()) {
+      v.emplace_back(it);
+    }
+  } else {
+    for (const auto& it : tensor_proto.int_val()) {
+      v.emplace_back(it);
+    }
   }
   return Tensor<int>(data_type, shape, v);
 }
@@ -900,6 +911,37 @@ Status TFParser::ConvertConstNode(IRBuilder* ir_builder,
         inst_name_to_ptr_.emplace(node_def.name(), inst);
         break;
       }
+      case DataType::FLOAT16: {
+        IRObject* inst = nullptr;
+        std::vector<Tensor<std::string>> tensors;
+        std::vector<uint16_t> data;
+        if (attrs.Process<std::vector<Tensor<std::string>>>("value",
+                                                            &tensors)) {
+          HLCHECK(1 == tensors.size());
+          auto& tensor = tensors.back();
+          if (tensor.GetNeedDecode()) {
+            data =
+                Tensor<uint16_t>::DecodeTensorContent(tensor.GetData().back());
+          } else {
+            std::vector<Tensor<int32_t>> native_tensors;
+            attrs.Process<std::vector<Tensor<int32_t>>>("value",
+                                                        &native_tensors);
+            HLCHECK(1 == native_tensors.size());
+            const auto& orig_data = native_tensors.back().GetData();
+            data.reserve(orig_data.size());
+            for (auto v : orig_data) {
+              data.push_back(v);
+            }
+          }
+          Type ty(data_type, tensors.back().GetShape());
+          HLCHECK(data.size() ==
+                  static_cast<size_t>(ty.GetTotalNumOfElements()));
+          inst = c_builder_->CreateConstant(node_def.name(), ty, data.data());
+        }
+        HLCHECK(inst && "Unable to handle DT_HALF");
+        inst_name_to_ptr_.emplace(node_def.name(), inst);
+        break;
+      }
       case DataType::FLOAT32: {
         // check need decoded from tensor content
         std::vector<Tensor<std::string>> tensors;
@@ -936,6 +978,7 @@ Status TFParser::ConvertConstNode(IRBuilder* ir_builder,
         break;
       }
       default:
+        std::cerr << node_def.name();
         HLCHECK(0 && "Unsupported data type");
     }
   }

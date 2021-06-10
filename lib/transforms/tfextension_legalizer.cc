@@ -206,11 +206,11 @@ static std::vector<Def> ConvertFill(const TFExtensionInst* ext,
   HLCHECK(ext->GetNumOfOperands() == 2);
   auto dims = ext->GetOperand(0);
   auto value = ext->GetOperand(1);
-  if (!IsA<Constant>(dims.GetOwner()) || !IsA<Constant>(value.GetOwner())) {
+  if (!IsA<Constant>(dims) || !IsA<Constant>(value)) {
     return {};
   }
   std::vector<int64_t> shape;
-  Constant* dims_c = DynCast<Constant>(dims.GetOwner());
+  Constant* dims_c = DynCast<Constant>(dims);
   const Type& dims_type = dims.GetType();
   for (size_t i = 0, e = dims_type.GetTotalNumOfElements(); i < e; ++i) {
     shape.push_back(dims_c->GetData<int32_t>(i));
@@ -234,6 +234,13 @@ static std::vector<Def> ConvertFill(const TFExtensionInst* ext,
     }
     case DataType::INT64: {
       std::vector<int64_t> data(data_size, value_c->GetData<int64_t>(0));
+      c = cb.CreateConstant(ext->GetName(), new_type, data.data());
+      break;
+    }
+    case DataType::FLOAT16: {
+      const void* raw_ptr = value_c->GetRawDataPtr();
+      std::vector<int16_t> data(
+          data_size, *static_cast<const uint16_t*>(raw_ptr)); // NOLINT
       c = cb.CreateConstant(ext->GetName(), new_type, data.data());
       break;
     }
@@ -998,6 +1005,7 @@ static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
       return ConvertHgDeQuant(tf_inst, builder);
     }
     default: {
+      tf_inst->Dump();
       HLCHECK(0 && "Unhandled");
     }
   }
