@@ -50,6 +50,11 @@ def TF_Squeeze : TFExtension<"Squeeze"> {
   let extension_attr_ = [ ExtensionAttr<"squeeze_dims", IntegerList, "{}"> ];
 }
 
+def TF_Split : TFExtension<"Split"> {
+  let extension_attr_  = [ ExtensionAttr<"num_split", Integer, "0">];
+  let num_outputs_ = -1;
+}
+
 def TF_StopGradient : TFExtension<"StopGradient">;
 
 def TF_StridedSlice : TFExtension<"StridedSlice"> {

@@ -265,6 +265,46 @@ static std::vector<Def> ConvertShape(const TFExtensionInst* ext,
   return {*c};
 }
 
+static std::vector<Def> ConvertSplit(const TFExtensionInst* ext,
+                                     IRBuilder* builder) {
+  auto input = ext->GetOperand(1);
+  auto split_dim = ext->GetOperand(0);
+  auto num_split = FindAttributeValue<int>(*ext, "num_split", 0);
+  const Type& input_type = input.GetType();
+  if (!input_type.IsValid()) {
+    return {};
+  }
+  int rank = input_type.GetNumOfDims();
+  const Constant* split_dim_c = DynCast<Constant>(split_dim);
+  HLCHECK(split_dim_c != nullptr && "split_dim is not a constant");
+  HLCHECK(split_dim_c->GetResultType().IsScalar() &&
+          "split_dim is not a scalar");
+  int axis = split_dim_c->GetDataAsInt64(0);
+  HLCHECK(axis >= 0 && axis < rank && "Invalid split dim");
+  auto orig_size = input_type.GetNumOfElementsInDim(axis);
+  HLCHECK(num_split > 0 && (orig_size % num_split == 0) && "Invalid num_split");
+  int len = static_cast<int>(orig_size / num_split);
+  builder->SetInsertAfter(ext);
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  const int32_t step = 1;
+  const Type param_type{DataType::INT32, {1}};
+  auto c_len = cb.CreateConstant(ext->GetName() + "_len", param_type, &len);
+  auto c_step = cb.CreateConstant(ext->GetName() + "_step", param_type, &step);
+  auto c_axis = cb.CreateConstant(ext->GetName() + "_axis", param_type, &axis);
+  std::vector<Def> ret;
+  ret.reserve(num_split);
+  for (int i = 0, start = 0; i < num_split; ++i) {
+    auto c_start = cb.CreateConstant(
+        ext->GetName() + "_start_" + std::to_string(i), param_type, &start);
+    auto slice =
+        builder->CreateSlice(ext->GetName() + "_" + std::to_string(i), input,
+                             *c_start, *c_len, *c_step, *c_axis);
+    ret.push_back(*slice);
+    start += len;
+  }
+  return ret;
+}
+
 static std::vector<Def> ConvertSquaredDifference(const TFExtensionInst* ext,
                                                  IRBuilder* builder) {
   HLCHECK(ext->GetNumOfOperands() == 2);
@@ -297,7 +337,6 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
   int shrink_mask = ext->GetAttributes()[4]->GetValueAsInteger();
   int new_axis_mask = ext->GetAttributes()[3]->GetValueAsInteger();
 
-  HLCHECK((ellipsis_mask == 0) && "Not supported ellipsis mask value.");
   size_t n = begin.GetType().GetTotalNumOfElements();
   auto begin_c = DynCast<Constant>(begin.GetOwner());
   auto end_c = DynCast<Constant>(end.GetOwner());
@@ -305,6 +344,7 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
   ConstantBuilder cb(ext->GetParent()->GetParent());
   // constant folding
   if (IsA<Constant>(input) && input_type.GetNumOfDims() == 1) {
+    HLCHECK((ellipsis_mask == 0) && "Not supported ellipsis mask value.");
     int32_t begin_i = begin_mask == 1 ? 0 : begin_c->GetData<int32_t>(0);
     int32_t end_i = end_mask == 1 || end_c->GetData<int32_t>(0) == -1
                         ? input_type.GetNumOfElementsInDim(0)
@@ -339,24 +379,43 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
   // General extension handling: --> slice + reshape.
   std::vector<int32_t> new_begin;
   std::vector<int32_t> new_size;
-  for (size_t i = 0; i < n; ++i) {
+  bool empty_slice = false;
+  for (size_t i = 0, ellipsis_cnt = 0; i < n; ++i) {
     int32_t begin_i = begin_c->GetData<int32_t>(i);
     int32_t end_i = end_c->GetData<int32_t>(i);
     int32_t strides_i = strides_c->GetData<int32_t>(i);
     int32_t dims_i = input.GetType().GetNumOfElementsInDim(i);
     auto index = 1 << i;
-    if ((begin_mask & index) != 0) {
+    if ((ellipsis_mask & index) != 0) {
+      HLCHECK(new_axis_mask == 0 && shrink_mask == 0 && "Unhandled ellipsis");
+      ellipsis_cnt = 1 + n - input_type.GetNumOfDims();
+    }
+    if ((begin_mask & index) != 0 || ellipsis_cnt != 0) {
       new_begin.push_back(0);
     } else {
       new_begin.push_back(begin_i);
     }
-    if ((shrink_mask & index) != 0) {
+    if ((shrink_mask & index) != 0 || ellipsis_cnt != 0) {
       new_size.push_back(1);
     } else if ((end_mask & index) != 0) {
       new_size.push_back((dims_i - new_begin.back()) / strides_i);
     } else {
       new_size.push_back((end_i - new_begin.back()) / strides_i);
     }
+    if (ellipsis_cnt > 0) {
+      --ellipsis_cnt;
+    }
+    HLCHECK(new_size.back() >= 0); // TF allows empty tensor
+    if (new_size.back() == 0) {
+      empty_slice = true;
+    }
+  }
+  if (empty_slice) {
+    std::vector<int64_t> new_shape(new_size.begin(), new_size.end());
+    Constant* c_empty =
+        cb.CreateConstant(ext->GetName() + "_empty",
+                          Type{input_type.GetDataType(), new_shape}, nullptr);
+    return {*c_empty};
   }
 
   Constant* c_begin = cb.CreateConstant(
@@ -903,6 +962,9 @@ static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
     }
     case TFExtOpCode::SHAPE: {
       return ConvertShape(tf_inst, builder);
+    }
+    case TFExtOpCode::SPLIT: {
+      return ConvertSplit(tf_inst, builder);
     }
     case TFExtOpCode::SQUAREDDIFFERENCE: {
       return ConvertSquaredDifference(tf_inst, builder);
