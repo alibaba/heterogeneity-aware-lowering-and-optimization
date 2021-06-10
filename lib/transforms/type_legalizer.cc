@@ -559,6 +559,10 @@ static void RunOnInstruction(ReduceProductInst* inst) {
   RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
 }
 
+static void RunOnInstruction(ReduceSumInst* inst) {
+  RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
+}
+
 static void RunOnInstruction(ReduceSumSquareInst* inst) {
   RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
 }
