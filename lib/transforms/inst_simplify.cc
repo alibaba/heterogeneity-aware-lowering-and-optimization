@@ -1219,12 +1219,13 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(ZExtInst* inst) {
   auto op0 = inst->GetOperand(0);
   const auto& op0_type = op0.GetType();
   DataType src_dt = op0_type.GetDataType();
-  HLCHECK(halo::Type::IsIntegerType(src_dt) &&
-          halo::Type::IsIntegerType(ret_dt));
 
   if (!op0_type.IsValid() || !IsA<Constant>(op0)) {
     return {orig_def, orig_def};
   }
+
+  HLCHECK(halo::Type::IsIntegerType(src_dt) &&
+          halo::Type::IsIntegerType(ret_dt));
 
   ConstantBuilder cb(inst->GetParent()->GetParent());
   Constant* c_src = DynCast<Constant>(op0.GetOwner());

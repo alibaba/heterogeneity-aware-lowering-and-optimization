@@ -107,6 +107,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(RoundInst*) override;
   virtual void RunOnInstruction(RcpInst*) override;
   virtual void RunOnInstruction(FPtoSIInst*) override;
+  virtual void RunOnInstruction(FPtoFPInst*) override;
   virtual void RunOnInstruction(LeakyReluInst*) override;
   virtual void RunOnInstruction(SeluInst*) override;
   virtual void RunOnInstruction(EluInst*) override;
