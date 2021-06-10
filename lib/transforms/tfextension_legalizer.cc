@@ -946,6 +946,32 @@ static std::vector<Def> ConvertHgDeQuant(const TFExtensionInst* ext,
   return {input};
 }
 
+static bool FixUpOneHot(OneHotInst* inst) {
+  // For TF, the on/off value can be empty.
+  const Constant* on_value = DynCast<Constant>(inst->GetOperand(2));
+  const Constant* off_value = DynCast<Constant>(inst->GetOperand(3));
+
+  auto get_new_value = [](OneHotInst* inst, const Constant* value, bool on) {
+    if (value == nullptr ||
+        value->GetResultType().GetTotalNumOfElements() > 0) {
+      return false;
+    }
+    ConstantBuilder cb(inst->GetParent()->GetParent());
+    auto elem_type = value->GetResultType().GetDataType();
+    if (elem_type == DataType::FLOAT16) {
+      constexpr uint16_t one = 0x3c00;
+      uint16_t x = on ? one : 0;
+      auto new_c = cb.CreateConstant(value->GetName() + (on ? "_on" : "_off"),
+                                     halo::Type{elem_type, {1}}, &x);
+      inst->ReplaceOperandWith(on ? 2 : 3, *new_c);
+      return true;
+    }
+    return false;
+  };
+  return get_new_value(inst, on_value, true) ||
+         get_new_value(inst, off_value, false);
+}
+
 static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
                                            IRBuilder* builder) {
   switch (tf_inst->GetExtOpCode()) {
@@ -1050,6 +1076,9 @@ bool TFExtensionLegalizer::RunOnBasicBlock(BasicBlock* bb) {
         conv_inst->GetOperand(1).SetType(
             halo::Type{op1_type.GetDataType(), op1_dims});
       }
+    } else if (inst->GetOpCode() == OpCode::ONEHOT) {
+      OneHotInst* one_hot = Downcast<OneHotInst>(inst);
+      changed |= FixUpOneHot(one_hot);
     }
   }
   return changed;

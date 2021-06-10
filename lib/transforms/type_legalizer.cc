@@ -705,10 +705,10 @@ static void RunOnInstruction(OneHotInst* inst) {
   auto indices = inst->GetOperand(0);
   auto depth = inst->GetOperand(1);
   auto on_value = inst->GetOperand(2);
-  if (!indices.GetType().IsValid() || !IsA<Constant>(depth.GetOwner())) {
+  Constant* c_depth = DynCast<Constant>(depth);
+  if (!indices.GetType().IsValid() || c_depth == nullptr) {
     return;
   }
-  Constant* c_depth = DynCast<Constant>(depth.GetOwner());
   int depth_c = c_depth->GetData<int32_t>(0);
   std::vector<int64_t> ret_shape(indices.GetType().GetDimSizes());
   if (axis < 0) {

@@ -1929,7 +1929,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SItoFPInst* inst) {
 
 std::pair<Def, Def> InstSimplify::RunOnInstruction(OneHotInst* inst) {
   Def orig_def{inst, 0};
-  // work around on cxx target when backend doens't support onehot.
+  // work around on cxx target when backend doesn't support onehot.
   if (!simplify_for_preprocess_) {
     return {orig_def, orig_def};
   }
