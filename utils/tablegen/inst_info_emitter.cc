@@ -45,9 +45,7 @@ static void EmitRunOnInstruction(const std::vector<llvm::Record*>& insts,
     os.indent(2);
     os << "virtual void RunOnInstruction(" << inst->getName()
        << "Inst* inst) { \n"
-       << "  auto msg = Instruction::OpCodeToString(inst->GetOpCode())"
-       << " + \" not implemented.\";\n"
-       << "  HLCHECK(0 && msg.c_str());\n"
+       << "  HLCHECK(0 && \"" + inst->getName() + " not implemented\");\n"
        << "};\n";
   }
   os << "#endif //" << macro << "\n\n";
