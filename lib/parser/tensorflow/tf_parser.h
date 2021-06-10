@@ -86,6 +86,9 @@ class TFParser : public Parser {
   Status ConvertToHaloIR(const tensorflow::GraphDef& graph_def);
   Status ConvertOneNode(IRBuilder* ir_builder,
                         const tensorflow::NodeDef& cur_node, size_t index);
+  Status ConvertReturnNodes(
+      IRBuilder* ir_builder,
+      const std::vector<const tensorflow::NodeDef*>& ret_vals);
   template <typename T>
   Constant* CreateConstant(TFAttrs* attrs, DataType data_type,
                            const tensorflow::NodeDef& node_def);
