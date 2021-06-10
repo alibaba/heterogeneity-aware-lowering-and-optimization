@@ -161,6 +161,11 @@ static std::vector<Def> ConvertCast(const TFExtensionInst* ext,
       new_inst->SetDataType(dst_type);
       return {*new_inst};
     }
+    if (Type::IsFloatingPointType(dst_type)) {
+      auto new_inst = builder->CreateFPtoFP(ext->GetName(), op0);
+      new_inst->SetDataType(dst_type);
+      return {*new_inst};
+    }
   }
   return {};
 }

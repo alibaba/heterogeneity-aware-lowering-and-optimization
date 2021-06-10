@@ -31,4 +31,6 @@ let cat_ = cat_common_cast,
   def FPtoSI : Inst<"Cast the element of input X1 from floating point"
                     "to the integer type">;
   def ZExt : Inst<"Perform zero-extension on X1">;
+
+  def FPtoFP : Inst<"Cast the element of input X1 between different floating point format">;
 }
