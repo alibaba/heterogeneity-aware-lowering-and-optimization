@@ -149,9 +149,7 @@ Status TFParser::ConvertReturnNodes(
   for (auto& op : ret_vals) {
     auto inputs = GetInputOperands(*op);
     for (auto v : inputs) {
-      if (v.GetOwner()->GetNumberOfUses() > 0) {
-        outputs.push_back(v);
-      }
+      outputs.push_back(v);
     }
   }
   ir_builder->CreateReturn("output", outputs);
