@@ -1893,7 +1893,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SItoFPInst* inst) {
     auto* reshape_inst = DynCast<ReshapeInst>(op0);
     if (reshape_inst->GetNumberOfUses() == 1) {
       const auto& op_reshape = reshape_inst->GetOperand(0);
-      if (IsA<Argument>(op_reshape.GetOwner())) {
+      if (IsA<Argument>(op_reshape)) {
         Argument* arg = DynCast<Argument>(op_reshape);
         if (arg->GetNumberOfUses() == 1 && op_reshape.GetType().IsValid()) {
           arg->SetType(halo::Type{DataType::FLOAT32,
@@ -1902,11 +1902,6 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SItoFPInst* inst) {
         }
       }
     }
-  } else if (IsA<Argument>(op0.GetOwner()) && op0.GetType().IsValid() &&
-             DynCast<Argument>(op0.GetOwner())->GetNumberOfUses() == 1) {
-    Argument* arg = DynCast<Argument>(op0.GetOwner());
-    arg->SetType(halo::Type{DataType::FLOAT32, op0.GetType().GetDimSizes()});
-    return {orig_def, *arg};
   } else if (IsA<Constant>(op0)) {
     auto src_ty = op0.GetType().GetDataType();
     Constant* input = DynCast<Constant>(op0);
@@ -1955,8 +1950,8 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(OneHotInst* inst) {
         }
       }
     }
-  } else if (IsA<Argument>(op0.GetOwner()) && op0.GetType().IsValid() &&
-             DynCast<Argument>(op0.GetOwner())->GetNumberOfUses() == 1) {
+  } else if (IsA<Argument>(op0) && op0.GetType().IsValid() &&
+             DynCast<Argument>(op0)->GetNumberOfUses() == 1) {
     Argument* arg = DynCast<Argument>(op0.GetOwner());
     arg->SetType(
         halo::Type{on_value.GetType().GetDataType(), dst_type.GetDimSizes()});
