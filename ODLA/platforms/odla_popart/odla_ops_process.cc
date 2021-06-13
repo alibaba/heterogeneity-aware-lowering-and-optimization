@@ -56,7 +56,7 @@ odla_value odla_Cast(odla_value input, odla_element_type target_type,
                      const odla_value_id value_id) {
   const auto& name =
       value_id ? std::string(reinterpret_cast<const char*>(value_id)) : "Cast";
-  std::string type_name = GetTypeName(target_type);
+  const std::string& type_name = GetTypeName(target_type);
   popart::TensorId result =
       g_comp->builder->aiOnnxOpset10().cast({input->tensor_id}, type_name);
 
@@ -199,9 +199,10 @@ odla_value odla_Tile(odla_value input, const odla_uint32* repeat,
       value_id ? std::string(reinterpret_cast<const char*>(value_id)) : "Tile";
 
   int rank = output_dims.size;
+  std::vector<int64_t> repeat_i64(repeat, repeat + rank);
   auto repeats_tensor =
-      odla_CreateConstant({ODLA_INT32, {.size = 1, .dims = {rank}}},
-                          reinterpret_cast<const odla_void*>(repeat),
+      odla_CreateConstant({ODLA_INT64, {.size = 1, .dims = {rank}}},
+                          reinterpret_cast<const odla_void*>(repeat_i64.data()),
                           (const odla_value_id)((name + "_repeat").c_str()));
 
   popart::TensorId result = g_comp->builder->aiOnnxOpset10().tile(
