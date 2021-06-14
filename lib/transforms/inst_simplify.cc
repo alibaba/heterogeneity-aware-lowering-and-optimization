@@ -1929,10 +1929,10 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(OneHotInst* inst) {
     return {orig_def, orig_def};
   }
   auto on_value = inst->GetOperand(2);
-  auto off_value = inst->GetOperand(3);
   const auto& dst_type = inst->GetResultsTypes()[0];
-  if (!IsA<Constant>(on_value.GetOwner()) ||
-      !IsA<Constant>(off_value.GetOwner()) || !dst_type.IsValid()) {
+  if (!IsA<Constant>(on_value) ||
+      (inst->GetNumOfOperands() == 4 && !IsA<Constant>(inst->GetOperand(3))) ||
+      !dst_type.IsValid()) {
     return {orig_def, orig_def};
   }
 
