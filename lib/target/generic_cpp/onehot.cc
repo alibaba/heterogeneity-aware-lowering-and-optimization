@@ -25,20 +25,15 @@ namespace halo {
 void GenericCXXCodeGen::RunOnInstruction(OneHotInst* inst) {
   CXXValue op_idx = ir_mapping_[inst->GetOperand(0)];
   CXXValue op_depth = ir_mapping_[inst->GetOperand(1)];
-  CXXValue op_on = ir_mapping_[inst->GetOperand(2)];
-  CXXValue op_off = ir_mapping_[inst->GetOperand(3)];
-
+  // We assume the IR is transformed to match with ODLA def: on_off is a [2]
+  // shaped data.
+  CXXValue on_off_val = ir_mapping_[inst->GetOperand(2)];
   const auto& ret_type = inst->GetResultType();
   const Constant* depth_c = DynCast<Constant>(inst->GetOperand(1));
   HLCHECK(depth_c != nullptr && depth_c->GetResultType().IsScalar() &&
           "Depth must be constant scalar");
 
   CXXValue ret(inst->GetName(), op_idx.type);
-  CXXValue on_off_val(op_on.GetName() + "_on_off",
-                      TensorTypeToCXXType(ret_type, true));
-  EmitODLACall(on_off_val, "odla_Concat", std::vector<CXXValue>{op_off, op_on},
-               0, EmitShape(halo::Type{ret_type.GetDataType(), {2}}));
-
   EmitODLACall(ret, "odla_OneHot", op_idx, depth_c->GetDataAsInt64(0),
                on_off_val, inst->GetAxis(), EmitShape(ret_type));
   ir_mapping_[*inst] = ret;
