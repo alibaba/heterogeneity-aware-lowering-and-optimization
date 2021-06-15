@@ -407,9 +407,9 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
     } else {
       new_begin.push_back(begin_i);
     }
-    if ((shrink_mask & index) != 0 || ellipsis_cnt != 0) {
+    if ((shrink_mask & index) != 0) {
       new_size.push_back(1);
-    } else if ((end_mask & index) != 0) {
+    } else if ((end_mask & index) != 0 || ellipsis_cnt != 0) {
       new_size.push_back((dims_i - new_begin.back()) / strides_i);
     } else {
       new_size.push_back((end_i - new_begin.back()) / strides_i);
@@ -946,30 +946,20 @@ static std::vector<Def> ConvertHgDeQuant(const TFExtensionInst* ext,
   return {input};
 }
 
-static bool FixUpOneHot(OneHotInst* inst) {
+bool FixUpOneHot(OneHotInst* inst, IRBuilder* builder) {
   // For TF, the on/off value can be empty.
-  const Constant* on_value = DynCast<Constant>(inst->GetOperand(2));
-  const Constant* off_value = DynCast<Constant>(inst->GetOperand(3));
-
-  auto get_new_value = [](OneHotInst* inst, const Constant* value, bool on) {
-    if (value == nullptr ||
-        value->GetResultType().GetTotalNumOfElements() > 0) {
-      return false;
-    }
-    ConstantBuilder cb(inst->GetParent()->GetParent());
-    auto elem_type = value->GetResultType().GetDataType();
-    if (elem_type == DataType::FLOAT16) {
-      constexpr uint16_t one = 0x3c00;
-      uint16_t x = on ? one : 0;
-      auto new_c = cb.CreateConstant(value->GetName() + (on ? "_on" : "_off"),
-                                     halo::Type{elem_type, {1}}, &x);
-      inst->ReplaceOperandWith(on ? 2 : 3, *new_c);
-      return true;
-    }
+  if (inst->GetNumOfOperands() < 4) {
     return false;
-  };
-  return get_new_value(inst, on_value, true) ||
-         get_new_value(inst, off_value, false);
+  }
+  auto on_value = inst->GetOperand(2);
+  auto off_value = inst->GetOperand(3);
+  builder->SetInsertBefore(inst);
+  auto on_off =
+      builder->CreateConcat(inst->GetName() + "on_off", {on_value, off_value});
+  std::vector<Def> ops{inst->GetOperand(0), inst->GetOperand(1), *on_off};
+  auto new_inst = builder->CreateOneHot(inst->GetName(), ops);
+  inst->ReplaceAllUsesWith({*new_inst});
+  return true;
 }
 
 static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
@@ -1078,7 +1068,7 @@ bool TFExtensionLegalizer::RunOnBasicBlock(BasicBlock* bb) {
       }
     } else if (inst->GetOpCode() == OpCode::ONEHOT) {
       OneHotInst* one_hot = Downcast<OneHotInst>(inst);
-      changed |= FixUpOneHot(one_hot);
+      changed |= FixUpOneHot(one_hot, &builder);
     }
   }
   return changed;

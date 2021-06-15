@@ -696,6 +696,9 @@ static void RunOnInstruction(ConcatInst* inst) {
                    : 1;
   }
   std::vector<int64_t> ret_shape(input_type.GetDimSizes());
+  if (ret_shape.empty()) { // concating scalars.
+    ret_shape.resize(1);
+  }
   ret_shape.at(axis) = new_dim;
   inst->GetResultsTypes()[0] = halo::Type{input_type.GetDataType(), ret_shape};
 }
