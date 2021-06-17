@@ -190,18 +190,14 @@ static std::vector<Def> ConvertExpandDims(const TFExtensionInst* ext,
   if (!input_type.IsValid() || axis_c == nullptr) {
     return {};
   }
-  DataType dt = axis_c->GetResultType(0).GetDataType();
-  int64_t axis;
-  if (dt == DataType::INT64) {
-    axis = axis_c->GetData<int64_t>(0);
-  } else {
-    HLCHECK(dt == DataType::INT32);
-    axis = axis_c->GetData<int32_t>(0);
-  }
+  int64_t axis = axis_c->GetDataAsInt64(0);
+  int input_rank = input_type.GetNumOfDims();
+  HLCHECK(-1 - input_rank <= axis && axis <= input_rank);
 
   std::vector<int64_t> new_dims(input_type.GetDimSizes());
   if (axis < 0) {
-    axis += input_type.GetNumOfDims();
+    //  if 't' is a tensor of shape [2], expand_dims(t, -1) ==> [2, 1]
+    axis += input_rank + 1;
   }
   new_dims.insert(new_dims.begin() + axis, 1);
 
@@ -407,6 +403,10 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
     int32_t strides_i = strides_c->GetData<int32_t>(i);
     int32_t dims_i = input.GetType().GetNumOfElementsInDim(i);
     auto index = 1 << i;
+    if (end_i < 0) {
+      end_i += dims_i;
+    }
+
     if ((ellipsis_mask & index) != 0) {
       HLCHECK(new_axis_mask == 0 && shrink_mask == 0 && "Unhandled ellipsis");
       ellipsis_cnt = 1 + n - input_type.GetNumOfDims();
