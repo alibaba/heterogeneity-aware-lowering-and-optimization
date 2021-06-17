@@ -838,6 +838,10 @@ Status TFParser::ConvertPlaceholderNode(IRBuilder* ir_builder,
     Argument* arg = nullptr;
     arg = arg_builder_->CreateArgument(node_def.name(), Type(data_type, shape));
     inst_name_to_ptr_.emplace(node_def.name(), arg);
+    if (node_def.op() == "_Arg" && node_def.attr().contains("value")) {
+      // Handle special constant arg that has "value" attr.
+      ConvertConstNode(ir_builder, node_def);
+    }
   }
   return Status::SUCCESS;
 }
@@ -852,7 +856,8 @@ Constant* TFParser::CreateConstant(TFAttrs* attrs, DataType data_type,
       auto v = Tensor<T>::DecodeTensorContent(tensors.back().GetData().back());
       auto inst = c_builder_->CreateConstant(
           node_def.name(), Type(data_type, tensors.back().GetShape()), v);
-      inst_name_to_ptr_.emplace(node_def.name(), inst);
+      inst_name_to_ptr_[node_def.name()] =
+          inst; // override existing name with constant.
       return inst;
     }
   }
