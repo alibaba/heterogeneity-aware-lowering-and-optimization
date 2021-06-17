@@ -237,8 +237,8 @@ void PassManagerImpl::Print(std::ostream& os) const {
   }
 }
 
-Pass* PassManager::AddAnalyzerPass(std::ostream* os) {
-  return AddPass<Analyzer>(os);
+Pass* PassManager::AddAnalyzerPass(std::ostream* os, const AnalyzerOpts& opts) {
+  return AddPass<Analyzer>(os, opts);
 }
 
 Pass* PassManager::AddARMBinaryWriterPass(std::ostream& os) {

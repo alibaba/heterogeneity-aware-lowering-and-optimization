@@ -89,9 +89,6 @@ static void EmitCastingSwitch(const std::vector<llvm::Record*>& insts,
     }
 
     os << "RunOnInstruction(static_cast<" << inst->getName() << "Inst*>(inst)";
-    if (opt == Option::TAKE_EXTRA_PARAM) {
-      os << ", &node_infos_";
-    }
     os << ");\n";
     os << "      break;\n";
     os << "    }\n";
