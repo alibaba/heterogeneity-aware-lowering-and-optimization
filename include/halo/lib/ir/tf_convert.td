@@ -265,6 +265,8 @@ def TF_Softmax : OpMapping<"Softmax", Softmax>;
 
 def TF_Sqrt : OpMapping<"Sqrt", Sqrt>;
 
+def TF_Square: TFExtension<"Square">;
+
 def TF_Sub : OpMapping<"Sub", Sub>;
 
 def TF_Tanh : OpMapping<"Tanh", Tanh>;
