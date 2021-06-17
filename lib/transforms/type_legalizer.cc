@@ -188,6 +188,10 @@ static void RunOnInstruction(SItoFPInst* inst) {
   RunOnCastInstruction(inst, inst->GetDataType());
 }
 
+static void RunOnInstruction(FPtoFPInst* inst) {
+  RunOnCastInstruction(inst, inst->GetDataType());
+}
+
 static void RunOnInstruction(ReshapeInst* inst) {
   auto& op0_type = inst->GetOperand(0).GetType();
   Def op1 = inst->GetOperand(1);
