@@ -19,32 +19,13 @@
 
 #include <algorithm>
 #include <iostream>
-#include <set>
-#include <unordered_map>
-
-#include "halo/api/halo_data.h"
-#include "halo/lib/framework/common.h"
-#include "halo/lib/framework/data_layout.h"
-#include "halo/lib/framework/global_context.h"
-#include "halo/lib/ir/common_reduction_instructions.h"
-#include "halo/lib/ir/ir_builder.h"
-#include "halo/lib/ir/math_instructions.h"
-#include "halo/lib/ir/nn_cnn_instructions.h"
 
 namespace halo {
 
 static DefaultDataLayout Ddl;
 static DataLayout* Dl = &Ddl;
 
-std::unordered_map<std::string, unsigned int>
-    InputTensorApp; // input tensor appearance
-std::unordered_map<std::string, size_t>
-    IoTensorSize;                  // size of input output tensors
-std::set<std::string> AliveTensor; // live tensor buffer
-
-namespace {
-
-float GetNumOfOperators(halo::Instruction* inst) {
+float Analyzer::GetNumOfOperators(const Instruction* inst) {
   switch (inst->GetOpCode()) {
     case OpCode::SIGMOID:
     case OpCode::SOFTMAX:
@@ -59,11 +40,10 @@ float GetNumOfOperators(halo::Instruction* inst) {
   }
 }
 
-Analyzer::NodeInfo& GenerateCommonInfo(
-    const Instruction* inst, std::vector<Analyzer::NodeInfo>* node_infos) {
-  (*node_infos).emplace_back();
-  Analyzer::NodeInfo& node_info = node_infos->back();
-  node_info.id = node_infos->size();
+Analyzer::NodeInfo& Analyzer::GenerateCommonInfo(const Instruction* inst) {
+  node_infos_.emplace_back();
+  Analyzer::NodeInfo& node_info = node_infos_.back();
+  node_info.id = node_infos_.size();
   node_info.name = inst->GetName();
   node_info.type = inst->GetOpCode();
 
@@ -82,31 +62,34 @@ Analyzer::NodeInfo& GenerateCommonInfo(
       node_info.data_type = ip_type.GetDataType();
     }
 
+    size_t size = Dl->Bytes(ip_type);
     if (IsA<Constant>(inst->GetOperand(i))) {
-      node_info.weight_mem += Dl->Bytes(ip_type);
+      node_info.weight_mem += size;
     } else {
+      node_info.io_mem += size;
       std::string name = inst->GetOperand(i).GetOwner()->GetName();
-      if (InputTensorApp[name] > 0) {
-        InputTensorApp[name]--;
+      if (AliveTensor.find(name) != AliveTensor.end()) {
+        AliveTensor[name].Liveness--;
       }
-      AliveTensor.insert(name);
     }
   }
 
-  // output shape
+  // todo: only output[0] is processed here
   const auto& op_type = inst->GetResultType();
   if (op_type.IsScalar()) {
     node_info.output_shape.push_back(1);
   } else {
     node_info.output_shape = op_type.GetDimSizes();
   }
-  AliveTensor.insert(node_info.name);
+  TensorInfo tif = {inst->GetResultsUses()[0].GetUses().size(),
+                    Dl->Bytes(op_type)};
+  AliveTensor[node_info.name] = tif;
 
   for (auto iter = AliveTensor.begin(); iter != AliveTensor.end();) {
-    node_info.io_mem += IoTensorSize[*iter];
-    if (InputTensorApp[*iter] == 0) {
+    if (iter->second.Liveness == 0) {
       iter = AliveTensor.erase(iter);
     } else {
+      node_info.io_mem += iter->second.Size;
       iter++;
     }
   }
@@ -114,34 +97,40 @@ Analyzer::NodeInfo& GenerateCommonInfo(
   return node_info;
 }
 
-// Pool computational estimator: Kh * Kw * Hout * Wout * Cout
-Analyzer::NodeInfo& CalcPoolFLOPs(const std::vector<int>& kernel_shape,
-                                  const DataFormat& data_format,
-                                  const float operator_num,
-                                  Analyzer::NodeInfo* node_info) {
-  // Pooling window size format [1, Kh, Kw, 1]
-  switch (data_format) {
+template <class T>
+void Analyzer::CalPoolingInst(const T* inst) {
+  float op_num = GetNumOfOperators(inst);
+  auto& node_info = GenerateCommonInfo(inst);
+  auto kernel_shape = inst->GetKsize();
+  auto stride_shape = inst->GetStrides();
+  auto input_type = inst->GetOperand(0).GetType();
+  auto input_dim = input_type.GetDimSizes();
+
+  switch (inst->GetDataFormat()) {
     case DataFormat::NCHW: {
-      node_info->flops = operator_num * kernel_shape.back() *
-                         kernel_shape[kernel_shape.size() - 1];
+      node_info.flops =
+          op_num * kernel_shape.back() * kernel_shape[kernel_shape.size() - 2];
+      size_t rptx = input_dim[3] / stride_shape[stride_shape.size() - 2];
+      size_t rpty = input_dim[2] / stride_shape[stride_shape.back()];
+      node_info.flops *= static_cast<float>(rptx * rpty * input_dim[1]);
       break;
     }
     case DataFormat::NHWC: {
-      node_info->flops = operator_num * kernel_shape[kernel_shape.size() - 2] *
-                         kernel_shape[kernel_shape.size() - 3];
+      node_info.flops = op_num * kernel_shape[kernel_shape.size() - 2] *
+                        kernel_shape[kernel_shape.size() - 3];
+      size_t rptx = input_dim[2] / stride_shape[stride_shape.size() - 2];
+      size_t rpty = input_dim[1] / stride_shape[stride_shape.back()];
+      node_info.flops *= static_cast<float>(rptx * rpty * input_dim[3]);
       break;
     }
     default: {
       HLCHECK(0 && "Invalid format");
     }
   }
-  return *node_info;
 }
 
-} // anonymous namespace
-
-static void RunOnInstruction(Instruction* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
+void Analyzer::RunOnInstruction(Instruction* inst) {
+  auto op_code = inst->GetOpCode();
   switch (inst->GetOpCode()) {
     case OpCode::ADD:
     case OpCode::DIV:
@@ -159,9 +148,13 @@ static void RunOnInstruction(Instruction* inst,
     case OpCode::SQRT:
     case OpCode::RSQRT:
     case OpCode::FLOOR:
-    case OpCode::SITOFP: {
-      auto& node_info = GenerateCommonInfo(inst, node_infos);
+    case OpCode::SITOFP:
+    case OpCode::SIGMOID: {
+      auto& node_info = GenerateCommonInfo(inst);
       node_info.flops = inst->GetResultType().GetTotalNumOfElements();
+      if (op_code == OpCode::SIGMOID) {
+        node_info.flops *= 3;
+      }
       break;
     }
     default: {
@@ -170,14 +163,8 @@ static void RunOnInstruction(Instruction* inst,
   }
 }
 
-static void RunOnInstruction(ArgmaxInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  GenerateCommonInfo(inst, node_infos);
-}
-
-static void RunOnInstruction(BatchMatMulInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  auto& node_info = GenerateCommonInfo(inst, node_infos);
+void Analyzer::RunOnInstruction(BatchMatMulInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
 
   // batch matmul computational estimator: batch * ((2 * Cin - 1) * Cout)
   const auto& input_type = inst->GetOperand(0).GetType();
@@ -212,24 +199,8 @@ static void RunOnInstruction(BatchMatMulInst* inst,
   node_info.weight_mem *= batch;
 }
 
-static void RunOnInstruction(BatchNormInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  auto& node_info = GenerateCommonInfo(inst, node_infos);
-  // z = gamma * (y - mean) / sqrt(variance + epsilon) + beta
-  // BatchNorm computational estimator: Cin * 4
-  const auto& input_type = inst->GetOperand(0).GetType();
-  node_info.flops =
-      GetNumOfOperators(inst) * input_type.GetTotalNumOfElements();
-}
-
-static void RunOnInstruction(ConcatInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  GenerateCommonInfo(inst, node_infos);
-}
-
-static void RunOnInstruction(Conv2DInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  auto& node_info = GenerateCommonInfo(inst, node_infos);
+void Analyzer::RunOnInstruction(Conv2DInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
 
   const auto& weight_op = inst->GetOperand(1);
   const auto& weight_type = weight_op.GetType();
@@ -260,15 +231,8 @@ static void RunOnInstruction(Conv2DInst* inst,
   }
 }
 
-static void RunOnInstruction(GatherInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  auto& node_info = GenerateCommonInfo(inst, node_infos);
-  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
-}
-
-static void RunOnInstruction(GemmInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  auto& node_info = GenerateCommonInfo(inst, node_infos);
+void Analyzer::RunOnInstruction(GemmInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
 
   const auto& matrix_b = inst->GetOperand(1);
   const auto& matrix_c = inst->GetOperand(2);
@@ -288,9 +252,8 @@ static void RunOnInstruction(GemmInst* inst,
       static_cast<float>(row_a * (2 * matrixb_sz - col_b) + 2 * matrixc_sz);
 }
 
-static void RunOnInstruction(MatMulInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  auto& node_info = GenerateCommonInfo(inst, node_infos);
+void Analyzer::RunOnInstruction(MatMulInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
 
   const auto& matrixb = inst->GetOperand(1);
   const auto& matrixb_type = matrixb.GetType();
@@ -318,150 +281,94 @@ static void RunOnInstruction(MatMulInst* inst,
   node_info.flops = static_cast<float>(row * (2 * matb_size - col));
 }
 
-static void RunOnInstruction(OneHotInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  GenerateCommonInfo(inst, node_infos);
+void Analyzer::RunOnInstruction(PoolingMaxInst* inst) {
+  CalPoolingInst<PoolingMaxInst>(inst);
 }
 
-static void RunOnInstruction(PadInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  GenerateCommonInfo(inst, node_infos);
+void Analyzer::RunOnInstruction(PoolingAvgInst* inst) {
+  CalPoolingInst<PoolingAvgInst>(inst);
 }
 
-static void RunOnInstruction(PoolingMaxInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  auto& node_info = GenerateCommonInfo(inst, node_infos);
-  CalcPoolFLOPs(inst->GetKsize(), inst->GetDataFormat(),
-                GetNumOfOperators(inst), &node_info);
+void Analyzer::RunOnInstruction(BatchNormInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
+  // z = gamma * (y - mean) / sqrt(variance + epsilon) + beta
+  // BatchNorm computational estimator: Cin * 4
+  const auto& input_type = inst->GetOperand(0).GetType();
+  node_info.flops =
+      GetNumOfOperators(inst) * input_type.GetTotalNumOfElements();
 }
 
-static void RunOnInstruction(PoolingAvgInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  auto& node_info = GenerateCommonInfo(inst, node_infos);
-  CalcPoolFLOPs(inst->GetKsize(), inst->GetDataFormat(),
-                GetNumOfOperators(inst), &node_info);
+void Analyzer::RunOnInstruction(GatherInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
+  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
 }
 
-static void RunOnInstruction(RangeInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  GenerateCommonInfo(inst, node_infos);
-}
-
-static void RunOnInstruction(RandomUniformInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  GenerateCommonInfo(inst, node_infos);
-}
-
-static void RunOnInstruction(ReduceMaxInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  GenerateCommonInfo(inst, node_infos);
-}
-
-static void RunOnInstruction(ReduceMeanInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  auto& node_info = GenerateCommonInfo(inst, node_infos);
+void Analyzer::RunOnInstruction(ReduceMeanInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
   node_info.flops = GetNumOfOperators(inst) *
                     inst->GetOperand(0).GetType().GetTotalNumOfElements();
 }
 
-static void RunOnInstruction(ReduceProductInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  GenerateCommonInfo(inst, node_infos);
-}
-
-static void RunOnInstruction(ReluInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  auto& node_info = GenerateCommonInfo(inst, node_infos);
+void Analyzer::RunOnInstruction(ReluInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
   node_info.flops = inst->GetOperand(0).GetType().GetTotalNumOfElements();
 }
 
-static void RunOnInstruction(Relu6Inst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  auto& node_info = GenerateCommonInfo(inst, node_infos);
+void Analyzer::RunOnInstruction(Relu6Inst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
   node_info.flops = inst->GetOperand(0).GetType().GetTotalNumOfElements();
 }
 
-static void RunOnInstruction(ReshapeInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  GenerateCommonInfo(inst, node_infos);
+void Analyzer::RunOnInstruction(SoftmaxInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
+  node_info.flops = GetNumOfOperators(inst) *
+                    inst->GetOperand(0).GetType().GetTotalNumOfElements();
 }
 
-static void RunOnInstruction(ReturnInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
+void Analyzer::RunOnInstruction(ArgmaxInst* inst) { GenerateCommonInfo(inst); }
+
+void Analyzer::RunOnInstruction(ConcatInst* inst) { GenerateCommonInfo(inst); }
+
+void Analyzer::RunOnInstruction(OneHotInst* inst) { GenerateCommonInfo(inst); }
+
+void Analyzer::RunOnInstruction(PadInst* inst) { GenerateCommonInfo(inst); }
+
+void Analyzer::RunOnInstruction(RangeInst* inst) { GenerateCommonInfo(inst); }
+
+void Analyzer::RunOnInstruction(RandomUniformInst* inst) {
+  GenerateCommonInfo(inst);
+}
+
+void Analyzer::RunOnInstruction(ReduceMaxInst* inst) {
+  GenerateCommonInfo(inst);
+}
+
+void Analyzer::RunOnInstruction(ReduceProductInst* inst) {
+  GenerateCommonInfo(inst);
+}
+
+void Analyzer::RunOnInstruction(ReshapeInst* inst) { GenerateCommonInfo(inst); }
+
+void Analyzer::RunOnInstruction(SetDiff1DInst* inst) {
+  GenerateCommonInfo(inst);
+}
+
+void Analyzer::RunOnInstruction(SliceInst* inst) { GenerateCommonInfo(inst); }
+
+void Analyzer::RunOnInstruction(StackInst* inst) { GenerateCommonInfo(inst); }
+
+void Analyzer::RunOnInstruction(TransposeInst* inst) {
+  GenerateCommonInfo(inst);
+}
+
+void Analyzer::RunOnInstruction(ZExtInst* inst) { GenerateCommonInfo(inst); }
+
+void Analyzer::RunOnInstruction(ReturnInst* inst) {
   // do nothing
 }
 
-static void RunOnInstruction(SetDiff1DInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  GenerateCommonInfo(inst, node_infos);
-}
-
-static void RunOnInstruction(SliceInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  GenerateCommonInfo(inst, node_infos);
-}
-
-static void RunOnInstruction(SoftmaxInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  auto& node_info = GenerateCommonInfo(inst, node_infos);
-  node_info.flops = GetNumOfOperators(inst) *
-                    inst->GetOperand(0).GetType().GetTotalNumOfElements();
-}
-
-static void RunOnInstruction(StackInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  GenerateCommonInfo(inst, node_infos);
-}
-
-static void RunOnInstruction(TransposeInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  GenerateCommonInfo(inst, node_infos);
-}
-
-static void RunOnInstruction(ZExtInst* inst,
-                             std::vector<Analyzer::NodeInfo>* node_infos) {
-  GenerateCommonInfo(inst, node_infos);
-}
-
-void GenerateInputTensor(Instruction* inst) {
-  // input
-  auto ip_num = inst->GetNumOfOperands();
-  for (size_t i = 0; i < ip_num; ++i) {
-    auto ip_op = inst->GetOperand(i);
-    if (!(IsA<Constant>(ip_op))) {
-      std::string name = ip_op.GetOwner()->GetName();
-      if (InputTensorApp.find(name) == InputTensorApp.end()) { // not found
-        InputTensorApp[name] = 1;
-        auto& ip_type = ip_op.GetType();
-        IoTensorSize[name] = Dl->Bytes(ip_type);
-      } else { // already exists
-        InputTensorApp[name]++;
-      }
-    }
-  }
-
-  // output
-  if (inst->GetNumOfResults() > 0) {
-    const auto& op_type = inst->GetResultType();
-    IoTensorSize[inst->GetName()] = Dl->Bytes(op_type);
-  }
-}
-
 bool Analyzer::RunOnModule(Module* m) {
-  // input tensor preprocessing
-  InputTensorApp.clear();
-  IoTensorSize.clear();
   AliveTensor.clear();
-  for (auto& func : *m) {
-    for (auto& bb : *func) {
-      for (const auto& it : *bb) {
-        Instruction* inst = it.get();
-        GenerateInputTensor(inst);
-      }
-    }
-  }
-
-  // per node processing
   node_infos_.clear();
   for (auto& func : *m) {
     for (auto& bb : *func) {
@@ -484,7 +391,7 @@ bool Analyzer::RunOnModule(Module* m) {
   return false;
 }
 
-void Analyzer::WriteCSVReport(std::ostream& os) const {
+void Analyzer::WriteCSVReport(std::ostream& os) {
   static constexpr float mflops = 1000000.0F;
   static constexpr float gflops = 1000 * mflops;
   static constexpr float mb = 1024 * 1024.0F;
@@ -500,43 +407,48 @@ void Analyzer::WriteCSVReport(std::ostream& os) const {
     max_io = std::max(max_io, it.io_mem);
   }
 
-  os << "Analysis Report\n"
-     << "layerID, "
-     << "layerName, "
-     << "opName, "
-     << "type, "
-     << "input-shape, "
-     << "output-shape, "
-     << "MFLOPs, "
-     << "weight(MB), "
-     << "Total(MB), "
-     << "percent(%)\n";
+  if (opts_.print_details) {
+    os << "Analysis Report\n"
+       << "layerID, "
+       << "layerName, "
+       << "opName, "
+       << "type, "
+       << "input-shape, "
+       << "output-shape, "
+       << "MFLOPs, "
+       << "weight(MB), "
+       << "Total(MB), "
+       << "percent(%)\n";
 
-  for (const auto& it : node_infos_) {
-    os << it.id << ", " << it.name << ", "
-       << Instruction::OpCodeToString(it.type) << ", "
-       << Type::DataTypeToString(it.data_type) << ", (";
-    for (auto& ii : it.input_shape) {
-      os << "(";
-      for (const auto& i : ii) {
-        os << i << " ";
+    for (const auto& it : node_infos_) {
+      os << it.id << ", " << it.name << ", "
+         << Instruction::OpCodeToString(it.type) << ", "
+         << Type::DataTypeToString(it.data_type) << ", (";
+      for (auto& ii : it.input_shape) {
+        os << "(";
+        for (const auto& i : ii) {
+          os << i << " ";
+        }
+        os << ")";
       }
-      os << ")";
+      os << "), (";
+      for (const auto& ii : it.output_shape) {
+        os << ii << " ";
+      }
+      os << "), " << it.flops / mflops << ", " << it.weight_mem / mb << ", "
+         << (it.weight_mem + it.io_mem) / mb << ", "
+         << ratio * it.flops / total_flops << ", "
+         << "\n";
     }
-    os << "), (";
-    for (const auto& ii : it.output_shape) {
-      os << ii << " ";
-    }
-    os << "), " << it.flops / mflops << ", " << it.weight_mem / mb << ", "
-       << (it.weight_mem + it.io_mem) / mb << ", "
-       << ratio * it.flops / total_flops << ", "
-       << "\n";
+
+    os << "\n";
   }
 
-  os << "\nTotal layers: " << node_infos_.size()
+  float total_mem = (total_weights + max_io) / mb;
+  os << "Total layers: " << node_infos_.size()
      << "\nTotal GFLOPs: " << total_flops / gflops
      << "\nTotal Weights(MB): " << total_weights / mb
-     << "\nTotal Memory(MB): " << (total_weights + max_io) / mb << "\n";
+     << "\nTotal Memory(MB): " << total_mem << "\n";
 }
 
 } // namespace halo

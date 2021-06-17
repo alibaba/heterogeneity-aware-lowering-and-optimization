@@ -50,6 +50,11 @@ enum class ChannelOrder {
   ChannelLast,
 };
 
+struct AnalyzerOpts {
+  bool print_details = false;
+  int batch_size = 1;
+};
+
 struct CXXCodeGenOpts {
   CXXCodeGenOpts(const BF16Mode& mode) : bf16_mode(mode) {}
   CXXCodeGenOpts() = default;

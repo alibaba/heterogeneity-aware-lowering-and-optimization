@@ -59,7 +59,7 @@ class HL_API_EXPORT PassManager final {
   void Print(std::ostream& os) const;
 
   void Dump() const;
-  Pass* AddAnalyzerPass(std::ostream* os);
+  Pass* AddAnalyzerPass(std::ostream* os, const AnalyzerOpts& opts);
   Pass* AddARMBinaryWriterPass(std::ostream& os);
   Pass* AddARMConstantWriterPass(std::ostream& os);
   Pass* AddARMLLVMIRCodeGenPass(ConstantDataStorage constant_data_storage);
