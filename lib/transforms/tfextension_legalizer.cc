@@ -22,6 +22,7 @@
 
 #include "halo/api/halo_data.h"
 #include "halo/lib/framework/common.h"
+#include "halo/lib/framework/data_layout.h"
 #include "halo/lib/ir/common_instructions.h"
 #include "halo/lib/ir/extension_instructions.h"
 #include "halo/lib/ir/ir_builder.h"
@@ -474,6 +475,22 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
                                             {Def{new_slice_inst, 0}, *c_shape});
   }
   return {*new_slice_inst};
+}
+
+static std::vector<Def> ConvertZerosLike(const TFExtensionInst* ext,
+                                         IRBuilder* builder) {
+  const auto& op0_type = ext->GetOperand(0).GetType();
+  if (!op0_type.IsValid()) {
+    return {};
+  }
+  DataType vt = FindAttributeValue<DataType>(*ext, "dtype", DataType::INVALID);
+  vt = (vt == DataType::INVALID) ? op0_type.GetDataType() : vt;
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  DefaultDataLayout dl;
+  std::vector<char> buf(dl.DataLayout::Bytes(op0_type));
+  auto c = cb.CreateConstant(ext->GetName(), Type{vt, op0_type.GetDimSizes()},
+                             buf.data());
+  return {*c};
 }
 
 template <typename T>
@@ -1035,6 +1052,9 @@ static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
     }
     case TFExtOpCode::HGDEQUANT: {
       return ConvertHgDeQuant(tf_inst, builder);
+    }
+    case TFExtOpCode::ZEROSLIKE: {
+      return ConvertZerosLike(tf_inst, builder);
     }
     default: {
       tf_inst->Dump();
