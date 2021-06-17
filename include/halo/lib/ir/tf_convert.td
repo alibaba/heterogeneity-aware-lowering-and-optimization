@@ -333,3 +333,9 @@ def TF_Range : OpMapping<"Range", Range>;
 def TF_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
 
 def TF_Tile : OpMapping<"Tile", Tile>;
+
+def TF_ZerosLike : TFExtension<"ZerosLike"> {
+  let extension_attr_ = [
+   ExtensionAttr<"dtype", EnumDataType, "INVALID">
+  ];
+}
