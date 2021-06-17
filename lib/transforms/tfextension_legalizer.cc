@@ -88,6 +88,14 @@ static std::vector<Def> ConvertReshape(const TFExtensionInst* tf_reshape,
   return {*new_inst};
 }
 
+static std::vector<Def> ConvertSquare(const TFExtensionInst* tf_inst,
+                                      IRBuilder* builder) {
+  builder->SetInsertAfter(tf_inst);
+  const auto& op = tf_inst->GetOperand(0);
+  auto new_inst = builder->CreateMul(tf_inst->GetName(), op, op);
+  return {*new_inst};
+}
+
 static std::vector<Def> ConvertSqueeze(const TFExtensionInst* tf_squeeze,
                                        IRBuilder* builder) {
   auto input = tf_squeeze->GetOperand(0);
@@ -993,6 +1001,9 @@ static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
     }
     case TFExtOpCode::SPLIT: {
       return ConvertSplit(tf_inst, builder);
+    }
+    case TFExtOpCode::SQUARE: {
+      return ConvertSquare(tf_inst, builder);
     }
     case TFExtOpCode::SQUAREDDIFFERENCE: {
       return ConvertSquaredDifference(tf_inst, builder);
