@@ -272,11 +272,12 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
   // Try constant folding
   const auto& ret_type = binary_inst->GetResultType();
 
+  KindPredicate pred = KindPredicate::INVALID;
+  if (opcode == OpCode::CMP) {
+    pred = DynCast<CmpInst>(binary_inst)->GetPredicator();
+  }
+
   if (ret_type.IsValid()) {
-    KindPredicate pred = KindPredicate::INVALID;
-    if (opcode == OpCode::CMP) {
-      pred = DynCast<CmpInst>(binary_inst)->GetPredicator();
-    }
     if (has_swapped) {
       std::swap(op0, op1);
     }
@@ -329,10 +330,11 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
     auto addend = cb.CreateConstant(orig_addend->GetName() + "_broadcasted_" +
                                         std::to_string(binary_inst->GetId()),
                                     op0_type, buf.data());
-    auto new_add = has_swapped ? builder.CreateBinary(binary_inst->GetName(),
-                                                      *addend, op0, opcode)
-                               : builder.CreateBinary(binary_inst->GetName(),
-                                                      op0, *addend, opcode);
+    auto new_add = has_swapped
+                       ? builder.CreateBinary(binary_inst->GetName(), *addend,
+                                              op0, opcode, pred)
+                       : builder.CreateBinary(binary_inst->GetName(), op0,
+                                              *addend, opcode, pred);
     new_add->GetResultsTypes()[0] = binary_inst->GetResultsTypes()[0];
     return {orig_def, *new_add};
   }
