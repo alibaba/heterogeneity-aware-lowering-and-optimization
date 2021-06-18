@@ -1474,6 +1474,21 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(ConcatInst* inst) {
     return {orig_def, *new_tr};
   }
 
+  // Skip empty inputs.
+  std::vector<Def> operands;
+  for (const auto& op : inst->GetOperands()) {
+    if (!op.GetType().IsValid() || op.GetType().GetTotalNumOfElements() != 0) {
+      operands.push_back(op);
+    }
+  }
+  if (operands.size() < inst->GetNumOfOperands()) {
+    IRBuilder builder(inst->GetParent());
+    builder.SetInsertAfter(inst);
+
+    auto new_concat = builder.Clone(*inst, operands);
+    return {orig_def, *new_concat};
+  }
+
   for (size_t i = 0; i < inst->GetNumOfOperands(); ++i) {
     if (!IsA<Constant>(inst->GetOperand(i).GetOwner())) {
       return {orig_def, orig_def};
