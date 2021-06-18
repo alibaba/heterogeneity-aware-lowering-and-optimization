@@ -25,6 +25,15 @@ namespace halo {
 
 bool TypeCast::RunOnFunction(Function* func) {
   bool changed = false;
+  // Replace arguments.
+  for (auto& arg : func->Args()) {
+    const auto& ty = arg->GetResultType();
+    if (ty.GetDataType() == DataType::INT64) {
+      halo::Type new_ty{DataType::INT32, ty.GetDimSizes()};
+      arg->SetType(new_ty);
+      changed |= true;
+    }
+  }
   // Replace constants.
   ConstantBuilder cb(func);
   Function::ConstantList& constants = func->Constants();
