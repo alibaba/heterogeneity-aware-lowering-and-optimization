@@ -97,6 +97,8 @@ def TF_ArgMax : OpMapping<"ArgMax", Argmax> {
    AttributeMapping<"", "keep_dims", "false">];
 }
 
+def TF_And : OpMapping<"LogicalAnd", And>;
+
 def TF_AvgPool : OpMapping<"AvgPool", PoolingAvg> {
   let attr_mapping_ = [
     AttributeMapping<"strides", "strides", "{1,1,1,1}">,
@@ -149,6 +151,10 @@ def TF_EQ : OpMapping<"Equal", Cmp> {
   let attr_mapping_ = [AttributeMapping<"", "predicator", "EQ">];
 }
 
+def TF_NE : OpMapping<"NotEqual", Cmp> {
+  let attr_mapping_ = [AttributeMapping<"", "predicator", "NE">];
+}
+
 def TF_Erf : OpMapping<"Erf", Erf>;
 
 def TF_Exp : OpMapping<"Exp", Exp>;
@@ -168,6 +174,10 @@ def TF_FusedBatchNorm : OpMapping<"FusedBatchNorm", BatchNorm> {
 
 def TF_GatherV2 : OpMapping<"GatherV2", Gather> {
   let attr_mapping_ = [AttributeMapping<"", "axis", "0">];
+}
+
+def TF_Greater : OpMapping<"Greater", Cmp> {
+  let attr_mapping_ = [AttributeMapping<"", "predicator", "GT">];
 }
 
 def TF_GreaterEqual : OpMapping<"GreaterEqual", Cmp> {
@@ -194,6 +204,9 @@ def TF_Max : OpMapping<"Max", ReduceMax> {
     AttributeMapping<"keep_dims", "keep_dims", "false">,
     AttributeMapping<"axis", "axis", "{}">];
 }
+
+def TF_Maximum : OpMapping<"Maximum", Maximum>;
+def TF_Minimum : OpMapping<"Minimum", Minimum>;
 
 def TF_MaxPool : OpMapping<"MaxPool", PoolingMax> {
   let attr_mapping_ = [
@@ -251,6 +264,8 @@ def TF_Slice : OpMapping<"Slice", Slice>;
 def TF_Softmax : OpMapping<"Softmax", Softmax>;
 
 def TF_Sqrt : OpMapping<"Sqrt", Sqrt>;
+
+def TF_Square: TFExtension<"Square">;
 
 def TF_Sub : OpMapping<"Sub", Sub>;
 
@@ -318,3 +333,9 @@ def TF_Range : OpMapping<"Range", Range>;
 def TF_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
 
 def TF_Tile : OpMapping<"Tile", Tile>;
+
+def TF_ZerosLike : TFExtension<"ZerosLike"> {
+  let extension_attr_ = [
+   ExtensionAttr<"dtype", EnumDataType, "INVALID">
+  ];
+}

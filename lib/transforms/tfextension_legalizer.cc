@@ -22,6 +22,7 @@
 
 #include "halo/api/halo_data.h"
 #include "halo/lib/framework/common.h"
+#include "halo/lib/framework/data_layout.h"
 #include "halo/lib/ir/common_instructions.h"
 #include "halo/lib/ir/extension_instructions.h"
 #include "halo/lib/ir/ir_builder.h"
@@ -85,6 +86,14 @@ static std::vector<Def> ConvertReshape(const TFExtensionInst* tf_reshape,
     new_inst = builder->CreateReshape(tf_reshape->GetName(),
                                       {tf_reshape->GetOperand(0), *c});
   }
+  return {*new_inst};
+}
+
+static std::vector<Def> ConvertSquare(const TFExtensionInst* tf_inst,
+                                      IRBuilder* builder) {
+  builder->SetInsertAfter(tf_inst);
+  const auto& op = tf_inst->GetOperand(0);
+  auto new_inst = builder->CreateMul(tf_inst->GetName(), op, op);
   return {*new_inst};
 }
 
@@ -181,18 +190,14 @@ static std::vector<Def> ConvertExpandDims(const TFExtensionInst* ext,
   if (!input_type.IsValid() || axis_c == nullptr) {
     return {};
   }
-  DataType dt = axis_c->GetResultType(0).GetDataType();
-  int64_t axis;
-  if (dt == DataType::INT64) {
-    axis = axis_c->GetData<int64_t>(0);
-  } else {
-    HLCHECK(dt == DataType::INT32);
-    axis = axis_c->GetData<int32_t>(0);
-  }
+  int64_t axis = axis_c->GetDataAsInt64(0);
+  int input_rank = input_type.GetNumOfDims();
+  HLCHECK(-1 - input_rank <= axis && axis <= input_rank);
 
   std::vector<int64_t> new_dims(input_type.GetDimSizes());
   if (axis < 0) {
-    axis += input_type.GetNumOfDims();
+    //  if 't' is a tensor of shape [2], expand_dims(t, -1) ==> [2, 1]
+    axis += input_rank + 1;
   }
   new_dims.insert(new_dims.begin() + axis, 1);
 
@@ -398,6 +403,10 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
     int32_t strides_i = strides_c->GetData<int32_t>(i);
     int32_t dims_i = input.GetType().GetNumOfElementsInDim(i);
     auto index = 1 << i;
+    if (end_i < 0) {
+      end_i += dims_i;
+    }
+
     if ((ellipsis_mask & index) != 0) {
       HLCHECK(new_axis_mask == 0 && shrink_mask == 0 && "Unhandled ellipsis");
       ellipsis_cnt = 1 + n - input_type.GetNumOfDims();
@@ -466,6 +475,22 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
                                             {Def{new_slice_inst, 0}, *c_shape});
   }
   return {*new_slice_inst};
+}
+
+static std::vector<Def> ConvertZerosLike(const TFExtensionInst* ext,
+                                         IRBuilder* builder) {
+  const auto& op0_type = ext->GetOperand(0).GetType();
+  if (!op0_type.IsValid()) {
+    return {};
+  }
+  DataType vt = FindAttributeValue<DataType>(*ext, "dtype", DataType::INVALID);
+  vt = (vt == DataType::INVALID) ? op0_type.GetDataType() : vt;
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  DefaultDataLayout dl;
+  std::vector<char> buf(dl.DataLayout::Bytes(op0_type));
+  auto c = cb.CreateConstant(ext->GetName(), Type{vt, op0_type.GetDimSizes()},
+                             buf.data());
+  return {*c};
 }
 
 template <typename T>
@@ -947,16 +972,16 @@ static std::vector<Def> ConvertHgDeQuant(const TFExtensionInst* ext,
 }
 
 bool FixUpOneHot(OneHotInst* inst, IRBuilder* builder) {
-  // For TF, the on/off value can be empty.
-  if (inst->GetNumOfOperands() < 4) {
+  auto on_value = inst->GetOperand(2);
+  if (on_value.GetType().GetTotalNumOfElements() != 1) {
     return false;
   }
-  auto on_value = inst->GetOperand(2);
   auto off_value = inst->GetOperand(3);
   builder->SetInsertBefore(inst);
   auto on_off =
-      builder->CreateConcat(inst->GetName() + "on_off", {on_value, off_value});
-  std::vector<Def> ops{inst->GetOperand(0), inst->GetOperand(1), *on_off};
+      builder->CreateConcat(inst->GetName() + "_off_on", {off_value, on_value});
+  std::vector<Def> ops{inst->GetOperand(0), inst->GetOperand(1), *on_off,
+                       off_value};
   auto new_inst = builder->CreateOneHot(inst->GetName(), ops);
   inst->ReplaceAllUsesWith({*new_inst});
   return true;
@@ -994,6 +1019,9 @@ static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
     case TFExtOpCode::SPLIT: {
       return ConvertSplit(tf_inst, builder);
     }
+    case TFExtOpCode::SQUARE: {
+      return ConvertSquare(tf_inst, builder);
+    }
     case TFExtOpCode::SQUAREDDIFFERENCE: {
       return ConvertSquaredDifference(tf_inst, builder);
     }
@@ -1024,6 +1052,9 @@ static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
     }
     case TFExtOpCode::HGDEQUANT: {
       return ConvertHgDeQuant(tf_inst, builder);
+    }
+    case TFExtOpCode::ZEROSLIKE: {
+      return ConvertZerosLike(tf_inst, builder);
     }
     default: {
       tf_inst->Dump();

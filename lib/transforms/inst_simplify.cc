@@ -272,11 +272,12 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
   // Try constant folding
   const auto& ret_type = binary_inst->GetResultType();
 
+  KindPredicate pred = KindPredicate::INVALID;
+  if (opcode == OpCode::CMP) {
+    pred = DynCast<CmpInst>(binary_inst)->GetPredicator();
+  }
+
   if (ret_type.IsValid()) {
-    KindPredicate pred = KindPredicate::INVALID;
-    if (opcode == OpCode::CMP) {
-      pred = DynCast<CmpInst>(binary_inst)->GetPredicator();
-    }
     if (has_swapped) {
       std::swap(op0, op1);
     }
@@ -329,10 +330,11 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
     auto addend = cb.CreateConstant(orig_addend->GetName() + "_broadcasted_" +
                                         std::to_string(binary_inst->GetId()),
                                     op0_type, buf.data());
-    auto new_add = has_swapped ? builder.CreateBinary(binary_inst->GetName(),
-                                                      *addend, op0, opcode)
-                               : builder.CreateBinary(binary_inst->GetName(),
-                                                      op0, *addend, opcode);
+    auto new_add = has_swapped
+                       ? builder.CreateBinary(binary_inst->GetName(), *addend,
+                                              op0, opcode, pred)
+                       : builder.CreateBinary(binary_inst->GetName(), op0,
+                                              *addend, opcode, pred);
     new_add->GetResultsTypes()[0] = binary_inst->GetResultsTypes()[0];
     return {orig_def, *new_add};
   }
@@ -1470,6 +1472,21 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(ConcatInst* inst) {
         builder.CreateTranspose(new_concat->GetName() + "_t", {*new_concat});
     new_tr->SetPermutation(perm);
     return {orig_def, *new_tr};
+  }
+
+  // Skip empty inputs.
+  std::vector<Def> operands;
+  for (const auto& op : inst->GetOperands()) {
+    if (!op.GetType().IsValid() || op.GetType().GetTotalNumOfElements() != 0) {
+      operands.push_back(op);
+    }
+  }
+  if (operands.size() < inst->GetNumOfOperands()) {
+    IRBuilder builder(inst->GetParent());
+    builder.SetInsertAfter(inst);
+
+    auto new_concat = builder.Clone(*inst, operands);
+    return {orig_def, *new_concat};
   }
 
   for (size_t i = 0; i < inst->GetNumOfOperands(); ++i) {
