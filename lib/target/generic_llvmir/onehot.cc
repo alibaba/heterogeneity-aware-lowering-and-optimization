@@ -32,6 +32,10 @@ void GenericLLVMIRCodeGen::RunOnInstruction(OneHotInst* inst) {
   llvm::Value* op2 = ir_mapping_[on_value];
   llvm::Value* op3 = ir_mapping_[off_value];
 
+  // In ODLA, it uses off_value, on_value. To be consistant, we follow the ODLA
+  // x style.
+  std::swap(op3, op2);
+
   std::string fname = GetRTLibFuncName(*inst, on_value.GetType().GetDataType());
 
   llvm::Type* data_type = SNTypeToLLVMType(on_value.GetType().GetDataType());
