@@ -214,7 +214,7 @@ static llvm::raw_ostream& EmitTestConfigs(llvm::Record* model,
     os << "// RUN: %cxx %flags %macro_flags %s %t.o %t.bin %incs %odla_link "
           "%device_link ";
     os << "-o %t.exe -Wno-deprecated-declarations\n";
-    os << "// RUN: %t.exe | FileCheck %s\n";
+    os << "// RUN: %t.exe | tee -a log.txt | FileCheck %s\n";
     os << "// CHECK: Result verified\n";
   }
   os << "// clang-format on\n";
@@ -224,8 +224,39 @@ static llvm::raw_ostream& EmitTestConfigs(llvm::Record* model,
   return os;
 }
 
-void EmitReportModel(const llvm::RecordKeeper& records, llvm::raw_ostream& os) {
+static llvm::raw_ostream& EmitReportHeader(llvm::raw_ostream& os) {
+  os << "### Model Zoo\n";
+  os << "[models directory](../models/) contains scripts for the following "
+        "models,";
+  os << "which download the pretrained models, compile and deploy them using "
+        "HALO on X86-CPU or NVGPU.\n";
+  os << "Please refer to [Instruction.md](../models/Instruction.md) for more "
+        "details about how to run the examples.\n\n";
 
+  os << "| Model | Reference Framework | Descriptors\n";
+  os << "|:----|:----|:----|\n";
+  return os;
+}
+
+static llvm::raw_ostream& EmitReportDescTable(llvm::Record* model,
+                                              llvm::raw_ostream& os) {
+  auto docs = model->getValueAsDef("docs_");
+  llvm::StringRef model_name = docs->getValueAsString("model_name_");
+  llvm::StringRef ref_framework = docs->getValueAsString("ref_framework_");
+  llvm::StringRef model_desc = docs->getValueAsString("model_desc_");
+
+  os << "| " << model_name << "| " << ref_framework << "| " << model_desc
+     << "|\n";
+
+  return os;
+}
+
+void EmitReportModel(const llvm::RecordKeeper& records, llvm::raw_ostream& os) {
+  auto models = GetAllModels(records);
+  EmitReportHeader(os);
+  for (auto model : models) {
+    EmitReportDescTable(model, os);
+  }
 }
 
 void EmitConfigModel(const llvm::RecordKeeper& records, llvm::raw_ostream& os) {

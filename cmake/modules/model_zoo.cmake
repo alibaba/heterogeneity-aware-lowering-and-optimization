@@ -44,6 +44,12 @@ macro(add_models model_name)
   )
 endmacro()
 
+macro(add_models_doc)
+  set(TDFILE ${CMAKE_SOURCE_DIR}/models/benchmarks/models.td)
+  set(DOCFILE ${CMAKE_SOURCE_DIR}/models/benchmarks/model_zoo.md)
+  gen_modelfile(-gen-report-model ${TDFILE} ${DOCFILE})
+endmacro()
+
 macro(add_models_target target)
   if( MODELGEN_OUTPUT )
     add_custom_target(${target} DEPENDS ${MODELGEN_OUTPUT})

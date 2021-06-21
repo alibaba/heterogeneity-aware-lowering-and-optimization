@@ -52,6 +52,8 @@ extern void EmitTestModel(const llvm::RecordKeeper& records,
                           llvm::raw_ostream&);
 extern void EmitConfigModel(const llvm::RecordKeeper& records,
                             llvm::raw_ostream&);
+extern void EmitReportModel(const llvm::RecordKeeper& records,
+                            llvm::raw_ostream&);
 extern void EmitRegisterOp(const llvm::RecordKeeper& records,
                            llvm::raw_ostream&);
 

@@ -23,10 +23,12 @@ list(APPEND DEV_NAMES
 file(GLOB tds "*.td")
 foreach(td_path IN LISTS tds)
   string(REGEX REPLACE ".+/(.+)\\..*" "\\1" td_name ${td_path})
-  if (NOT ${td_name} MATCHES "models")
+  if (NOT ${td_name} MATCHES "model*")
     add_models(${td_name} ${DEV_NAMES})
   endif()
 endforeach()
+
+add_models_doc()
 
 
 add_models_target(MODELGEN)

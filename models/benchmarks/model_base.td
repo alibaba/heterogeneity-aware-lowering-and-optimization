@@ -1,4 +1,4 @@
-//===- models.td -----------------------------------*- tblgen -*-===//
+//===- model_base.td -----------------------------------*- tblgen -*-===//
 //
 // Copyright (C) 2019-2021 Alibaba Group Holding Limited.
 //
@@ -15,4 +15,22 @@
 // limitations under the License.
 // =============================================================================
 
-include "resnet50v2.td"
+/// Configure class
+class Config<int batch_size> {
+  int batch_size_ = batch_size;
+}
+
+/// Docs class
+class Docs<string model_name, string ref_framework, string desc> {
+  string model_name_ = model_name;
+  string ref_framework_ = ref_framework;
+  string model_desc_ = desc;
+}
+
+/// Model class
+class Model<int num_inputs, int num_outputs> {
+  int num_inputs_ = num_inputs;
+  int num_outputs_ = num_outputs;
+  list<Config> configs = [];
+  Docs docs_ = ?;
+}
