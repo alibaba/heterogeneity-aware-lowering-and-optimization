@@ -12,7 +12,3 @@
 	path = ODLA/platforms/odla_popart/custom_ops/third_party/onnx
 	url = https://github.com/onnx/onnx.git
 	branch = rel-1.6.0
-[submodule "ODLA/platforms/odla_popart/custom_ops/third_party/protobuf"]
-	path = ODLA/platforms/odla_popart/custom_ops/third_party/protobuf
-	url = https://github.com/protocolbuffers/protobuf.git
-	branch = 3.9.x
