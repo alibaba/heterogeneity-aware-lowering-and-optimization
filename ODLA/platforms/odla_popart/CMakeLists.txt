@@ -40,6 +40,3 @@ if (NOT ODLA_BUILD_POPART_USE_CXX11ABI)
 endif()
 
 target_link_libraries(odla_popart PUBLIC ODLA custom_ops popart-only)
-
-if (ODLA_BUILD_POPART_COSTOM_OPS)
-endif()
