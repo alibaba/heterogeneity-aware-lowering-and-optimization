@@ -124,8 +124,8 @@ static void PopulateOptPasses(PassManager* pm, const std::string& target,
                               const std::vector<std::string>& inputs,
                               const std::vector<std::string>& outputs,
                               int batch, const std::string& preprocess_scale,
-                              bool split_function, bool disable_type_cast,
-                              ModelFormat format, const CXXCodeGenOpts& opts,
+                              bool split_function, ModelFormat format,
+                              const CXXCodeGenOpts& opts,
                               const FusionOptions& fusion_opts) {
   pm->AddInputLegalizerPass(batch, input_shapes, preprocess_scale);
   if (!outputs.empty()) {
@@ -159,7 +159,7 @@ static void PopulateOptPasses(PassManager* pm, const std::string& target,
     pm->AddSplittingPass();
     pm->AddDevicePlacementPass();
   }
-  if (!disable_type_cast) {
+  if (opts.enable_type_cast) {
     pm->AddTypeCastPass();
   }
 }
