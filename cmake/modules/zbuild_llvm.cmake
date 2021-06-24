@@ -15,9 +15,12 @@
 # ==============================================================================
 
 unset(CMAKE_CXX_FLAGS)
+set(ORIG_CXX_STD ${CMAKE_CXX_STANDARD})
+unset(CMAKE_CXX_STANDARD)
 set(LLVM_SRC_DIR ${CMAKE_SOURCE_DIR}/external/llvm-project/llvm)
 set(LLVM_CCACHE_BUILD ${HALO_CCACHE_BUILD})
 set(LLVM_ENABLE_EH OFF)
+set(LLVM_ENABLE_CXX1Y ON)
 
 set(LLVM_LIT_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/llvm/bin)
 
@@ -58,3 +61,5 @@ function(halo_tblgen ofn)
     ${CMAKE_CURRENT_BINARY_DIR}/${ofn} PARENT_SCOPE
   )
 endfunction()
+
+set(CMAKE_CXX_STANDARD ${ORIG_CXX_STD})

@@ -193,4 +193,23 @@ void GenericCXXCodeGen::RunOnInstruction(TanhInst* inst) {
   RunOnUnaryInstruction(inst);
 }
 
+void GenericCXXCodeGen::RunOnInstruction(CmpInst* inst) {
+  CXXValue op0 = ir_mapping_[inst->GetOperand(0)];
+  CXXValue op1 = ir_mapping_[inst->GetOperand(1)];
+  CXXValue ret(inst->GetName(), op0.type);
+  auto pred = inst->GetPredicator();
+  static const std::unordered_map<KindPredicate, const char*> odla_funcs{
+      {KindPredicate::LT, "odla_Less"},
+      {KindPredicate::LE, "odla_LessOrEqual"},
+      {KindPredicate::GT, "odla_Greater"},
+      {KindPredicate::GE, "odla_GreaterOrEqual"},
+      {KindPredicate::NE, "odla_NotEqual"},
+      {KindPredicate::EQ, "odla_Equal"}};
+  auto it = odla_funcs.find(pred);
+  HLCHECK(it != odla_funcs.end());
+
+  EmitODLACall(ret, it->second, op0, op1);
+  ir_mapping_[*inst] = ret;
+}
+
 } // namespace halo

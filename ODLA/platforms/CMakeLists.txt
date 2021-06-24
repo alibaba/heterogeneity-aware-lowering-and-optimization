@@ -31,7 +31,7 @@ if (ODLA_BUILD_POPART)
   find_library(poplar NAMES poplar PATHS ${POPLAR_SDK_ROOT}/poplar-${POPLAR_VERSION}
                PATH_SUFFIXES lib NO_DEFAULT_PATH)
   if(NOT poplar)
-    message(STATUS "Popart library not found, skip building ODLA for Popart")
+	  message(FATAL_ERROR "Popart library not found, skip building ODLA for Popart")
   else()
     message(STATUS "Found Popart library")
     add_subdirectory(odla_popart)

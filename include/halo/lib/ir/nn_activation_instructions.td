@@ -34,6 +34,11 @@ let cat_ = cat_nn_activation,
     let attrs_ = [Attr<"Slope at X1 < 0", Float, "alpha", "0.2">];
   }
 
+  def LogSoftmax : Inst<"Compute the log of softmax values."> {
+    let attrs_ = [Attr<"The dimension the LogSoftmax would be performed on.",
+                       Integer, "axis", "-1">];
+  }
+
   def Selu : Inst<"Compute selu activation, element-wise. Return lambda * X1, "
                   "if X1 > 0; lambda * (alpha * exp(X1) - alpha), if X1 <= 0."> {
     let attrs_ = [

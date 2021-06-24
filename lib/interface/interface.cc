@@ -52,6 +52,7 @@ static int InvokeCompiler(Module* m, const std::string& target, int batch,
                           const CXXCodeGenOpts& cg_opts,
                           const std::string& main_output_file_name) {
   auto& ctx = m->GetGlobalContext();
+  ctx.SetVerbosity(1);
   ctx.SetBasePath(GetBaseDir());
   ctx.SetODLAIncludePath(FindODLAIncPath(ctx.GetBasePath(), {}));
   ctx.SetODLALibraryPath(
@@ -152,8 +153,47 @@ int CompileTFGraph(const char* pb_buf, size_t pb_buf_size,
                    const std::vector<std::string>& input_shapes,
                    const CXXCodeGenOpts& cg_opts,
                    const std::string& main_output_file) {
+  const char* str = main_output_file.c_str();
+  const std::string new_str(str);
   return Compile(ModelFormat::TENSORFLOW, {pb_buf}, {pb_buf_size}, "cxx", 0,
-                 input_shapes, {}, {}, cg_opts, main_output_file);
+                 input_shapes, {}, {}, cg_opts, new_str);
 }
 
 } // namespace halo
+
+// NOLINTNEXTLINE
+static std::vector<std::string> ToStrings(size_t n, const char* strs[]) {
+  std::vector<std::string> strs_v;
+  strs_v.reserve(n);
+  for (unsigned i = 0; i < n; ++i) {
+    strs_v.push_back(std::string(strs[i])); // NOLINT
+  }
+  return strs_v;
+}
+
+HL_API_EXPORT
+// NOLINTNEXTLINE
+int halo_CompileTFPbGraph(const char* pb_buf, size_t pb_buf_size,
+                          size_t num_input_shapes, const char* input_shapes[],
+                          const HaloCodeGenOpts* cg_opts,
+                          const char* main_output_file) {
+  const halo::CXXCodeGenOpts& opts =
+      *(halo::CXXCodeGenOpts*)(cg_opts); // NOLINT
+  return halo::CompileTFGraph(pb_buf, pb_buf_size,
+                              ToStrings(num_input_shapes, input_shapes), opts,
+                              std::string(main_output_file));
+}
+
+HL_API_EXPORT
+// NOLINTNEXTLINE
+int halo_CompileTFGraphdef(const void* graphdef, size_t num_input_shapes,
+                           const char* input_shapes[],
+                           const HaloCodeGenOpts* cg_opts,
+                           const char* main_output_file) {
+  const halo::CXXCodeGenOpts& opts =
+      *(halo::CXXCodeGenOpts*)(cg_opts); // NOLINT
+
+  return halo::CompileTFGraph(graphdef,
+                              ToStrings(num_input_shapes, input_shapes), opts,
+                              std::string(main_output_file));
+}

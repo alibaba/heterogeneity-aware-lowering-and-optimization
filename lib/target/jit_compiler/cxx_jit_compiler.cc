@@ -122,18 +122,20 @@ static void EmitObj(std::ostream& output, const std::string& code,
 bool halo::CXXJITCompiler::RunOnModule(Module* module) {
   const auto& ctx = module->GetGlobalContext();
   const std::string& source = source_.str();
+  bool is_cxx = opts_.dialect == Dialect::CXX_11;
   if (opts_.save_temps) {
     constexpr int len = 128;
     llvm::SmallString<len> c_file;
-    llvm::sys::fs::createTemporaryFile("halo_jit" /* prefix */, "c", c_file);
+    llvm::sys::fs::createTemporaryFile("halo_jit" /* prefix */,
+                                       is_cxx ? "cc" : "c", c_file);
     std::cerr << "HALO intermediate ODLA file: " << c_file.str().str() << "\n";
     std::ofstream ofs(c_file.str(), std::ofstream::binary);
     ofs << source;
   }
 
   std::ostringstream buf;
-  EmitObj(buf, source, {ctx.GetODLAIncludePath()},
-          opts_.dialect == Dialect::CXX_11, ctx.GetVerbosity() > 0, {});
+  EmitObj(buf, source, {ctx.GetODLAIncludePath()}, is_cxx,
+          ctx.GetVerbosity() > 0, {});
   buf.swap(code_);
   return false;
 }

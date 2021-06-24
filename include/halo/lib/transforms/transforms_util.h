@@ -53,6 +53,11 @@ inline const int& GetAttributeValue(const Attribute& attr) {
   return attr.GetValueAsInteger();
 }
 
+template <>
+inline const DataType& GetAttributeValue(const Attribute& attr) {
+  return attr.GetValueAsEnumDataType();
+}
+
 template <typename T>
 const T& FindAttributeValue(const Instruction& inst, const std::string& name,
                             const T& default_val) {

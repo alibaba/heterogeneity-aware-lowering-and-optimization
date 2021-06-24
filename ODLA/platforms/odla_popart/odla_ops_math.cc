@@ -132,6 +132,20 @@ odla_value odla_Equal(odla_value lhs, odla_value rhs,
                          name);
 }
 
+odla_value odla_NotEqual(odla_value lhs, odla_value rhs,
+                         const odla_value_id value_id) {
+  odla_value equal = odla_Equal(lhs, rhs, (const odla_value_id) "equal");
+  const auto& name = value_id
+                         ? std::string(reinterpret_cast<const char*>(value_id))
+                         : "NotEqual";
+  popart::TensorId result =
+      g_comp->builder->aiOnnxOpset10().logical_not({equal->tensor_id});
+  return new _odla_value(result,
+                         {g_comp->builder->getTensorDataType(result),
+                          g_comp->builder->getTensorShape(result)},
+                         name);
+}
+
 odla_value odla_Exp(odla_value input, const odla_value_id value_id) {
   const auto& name =
       value_id ? std::string(reinterpret_cast<const char*>(value_id)) : "Exp";

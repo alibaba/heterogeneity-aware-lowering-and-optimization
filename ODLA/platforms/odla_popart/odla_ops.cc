@@ -197,8 +197,28 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
                      odla_value_shape output_dims, const odla_value_id id) {
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
 
-  popart::TensorId lhs_trans = lhs->tensor_id;
   int rank = lhs->tensor_info.rank();
+
+  if (rank == 2) {
+    std::vector<popart::TensorId> inputs{lhs->tensor_id, rhs->tensor_id};
+    if (bias == nullptr || beta == 0) {
+      static const int64_t zero = 0;
+      auto dummy_bias = odla_CreateConstant(
+          {GetOdlaType(lhs->tensor_info.dataType()), {.size = 1, .dims = {1}}},
+          &zero, (const odla_value_id)((name + "_bias_zero").c_str()));
+      inputs.push_back(dummy_bias->tensor_id);
+    } else {
+      inputs.push_back(bias->tensor_id);
+    }
+    popart::TensorId result = g_comp->builder->aiOnnxOpset10().gemm(
+        inputs, alpha, beta, transpose_lhs, transpose_rhs);
+
+    return new _odla_value(result,
+                           {g_comp->builder->getTensorDataType(result),
+                            g_comp->builder->getTensorShape(result)},
+                           name);
+  }
+  popart::TensorId lhs_trans = lhs->tensor_id;
   if (rank > 2 && transpose_lhs) {
     if (rank == 4) {
       lhs_trans = g_comp->builder->aiOnnxOpset10().transpose(

@@ -17,6 +17,7 @@
 // =============================================================================
 
 #include <ODLA/odla.h>
+#include <dlfcn.h>
 
 #include <algorithm>
 #include <cassert>
@@ -96,6 +97,7 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
 
 odla_status odla_CreateComputation(odla_computation* comp) {
   // Create graph builder
+  static void* custom_op_handle = nullptr;
   std::unique_ptr<popart::Builder> builder = popart::Builder::create();
 
   // Place Subgraph on IPU 0
@@ -106,6 +108,15 @@ odla_status odla_CreateComputation(odla_computation* comp) {
       new _odla_computation(std::move(builder))));
   g_comp = g_comps.back().get();
   *comp = g_comp;
+  if (custom_op_handle == nullptr) {
+    custom_op_handle = dlopen("libcustom_ops.so", RTLD_NOW | RTLD_GLOBAL);
+    if (custom_op_handle == nullptr) {
+      std::cerr << "Unable to open libcustom_ops " << dlerror() << std::endl;
+      assert(0);
+      return ODLA_FAILURE;
+    }
+  }
+
   return ODLA_SUCCESS;
 }
 

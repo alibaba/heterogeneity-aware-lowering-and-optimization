@@ -86,7 +86,8 @@ void GenericCXXCodeGen::RunOnInstruction(SliceInst* inst) {
     NormalizerOperands<int64_t>(*start_c, axes, dims, &start_v);
   }
 
-  std::vector<uint32_t> size_v(dims, 0);
+  std::vector<uint32_t> size_v(input.GetType().GetDimSizes().begin(),
+                               input.GetType().GetDimSizes().end());
   const Def& size = inst->GetOperand(2);
   HLCHECK(size.GetType().GetTotalNumOfElements() ==
           static_cast<int64_t>(axes.size()));

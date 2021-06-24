@@ -188,6 +188,10 @@ static void RunOnInstruction(SItoFPInst* inst) {
   RunOnCastInstruction(inst, inst->GetDataType());
 }
 
+static void RunOnInstruction(FPtoFPInst* inst) {
+  RunOnCastInstruction(inst, inst->GetDataType());
+}
+
 static void RunOnInstruction(ReshapeInst* inst) {
   auto& op0_type = inst->GetOperand(0).GetType();
   Def op1 = inst->GetOperand(1);
@@ -559,6 +563,10 @@ static void RunOnInstruction(ReduceProductInst* inst) {
   RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
 }
 
+static void RunOnInstruction(ReduceSumInst* inst) {
+  RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
+}
+
 static void RunOnInstruction(ReduceSumSquareInst* inst) {
   RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
 }
@@ -692,6 +700,9 @@ static void RunOnInstruction(ConcatInst* inst) {
                    : 1;
   }
   std::vector<int64_t> ret_shape(input_type.GetDimSizes());
+  if (ret_shape.empty()) { // concating scalars.
+    ret_shape.resize(1);
+  }
   ret_shape.at(axis) = new_dim;
   inst->GetResultsTypes()[0] = halo::Type{input_type.GetDataType(), ret_shape};
 }
@@ -701,10 +712,10 @@ static void RunOnInstruction(OneHotInst* inst) {
   auto indices = inst->GetOperand(0);
   auto depth = inst->GetOperand(1);
   auto on_value = inst->GetOperand(2);
-  if (!indices.GetType().IsValid() || !IsA<Constant>(depth.GetOwner())) {
+  Constant* c_depth = DynCast<Constant>(depth);
+  if (!indices.GetType().IsValid() || c_depth == nullptr) {
     return;
   }
-  Constant* c_depth = DynCast<Constant>(depth.GetOwner());
   int depth_c = c_depth->GetData<int32_t>(0);
   std::vector<int64_t> ret_shape(indices.GetType().GetDimSizes());
   if (axis < 0) {

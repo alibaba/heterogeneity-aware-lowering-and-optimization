@@ -96,6 +96,8 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(MulInst*) override;
   virtual void RunOnInstruction(CallInst*) override;
   virtual void RunOnInstruction(CeilInst*) override;
+  virtual void RunOnInstruction(CmpInst*) override;
+  virtual void RunOnInstruction(CustomInst*) override;
   virtual void RunOnInstruction(ConcatInst*) override;
   virtual void RunOnInstruction(DivInst*) override;
   virtual void RunOnInstruction(ErfInst*) override;
@@ -105,6 +107,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(RoundInst*) override;
   virtual void RunOnInstruction(RcpInst*) override;
   virtual void RunOnInstruction(FPtoSIInst*) override;
+  virtual void RunOnInstruction(FPtoFPInst*) override;
   virtual void RunOnInstruction(LeakyReluInst*) override;
   virtual void RunOnInstruction(SeluInst*) override;
   virtual void RunOnInstruction(EluInst*) override;
@@ -119,6 +122,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(GatherInst*) override;
   virtual void RunOnInstruction(GemmInst*) override;
   virtual void RunOnInstruction(LogInst*) override;
+  virtual void RunOnInstruction(LogSoftmaxInst*) override;
   virtual void RunOnInstruction(LRNInst*) override;
   virtual void RunOnInstruction(MatMulInst*) override;
   virtual void RunOnInstruction(MaximumInst*) override;
@@ -137,6 +141,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(ReduceL2Inst*) override;
   virtual void RunOnInstruction(ReduceLogSumInst*) override;
   virtual void RunOnInstruction(ReduceLogSumExpInst*) override;
+  virtual void RunOnInstruction(ReduceSumInst*) override;
   virtual void RunOnInstruction(ReduceSumSquareInst*) override;
   virtual void RunOnInstruction(ReduceMeanInst*) override;
   virtual void RunOnInstruction(ReduceMaxInst*) override;

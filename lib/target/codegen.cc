@@ -28,6 +28,10 @@ void CodeGen::RunOnBaseInstruction(Instruction* inst) {
 #define GET_INST_DOWNCAST_SWITCH
 #include "halo/lib/ir/instructions_info.def"
 #undef GET_INST_DOWNCAST_SWITCH
+    case OpCode::CUSTOM: {
+      RunOnInstruction(static_cast<CustomInst*>(inst)); // NOLINT.
+      break;
+    }
     default: {
       HLCHECK(0 && "Unreachable");
     }

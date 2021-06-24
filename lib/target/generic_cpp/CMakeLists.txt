@@ -27,6 +27,7 @@ set(SRCS
   code_formatter.cc
   concat.cc
   conv.cc
+  custom.cc
   deconv.cc
   expand.cc
   gather.cc

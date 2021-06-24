@@ -59,7 +59,10 @@ static void PopulatePassesAndRun(GlobalContext& ctx, Module& m,
   CXXCodeGenOpts opts;
   PopulateOptPasses(&pm, "cxx", input_shapes, {}, {}, batch, "", false, false,
                     format, opts, fusion_opts);
-  pm.AddAnalyzerPass(&std::cout);
+  AnalyzerOpts alz_opts;
+  alz_opts.batch_size = Batch;
+  alz_opts.print_details = PrintAnalysisReport;
+  pm.AddAnalyzerPass(&std::cout, alz_opts);
   pm.Run(&m);
 }
 
@@ -73,7 +76,7 @@ int main(int argc, char** argv) {
 
   armory::Opts opts;
   opts.convert_to_ipu_graphdef = ConvertToIpuGraphDef;
-  opts.output_graphdef_filename = OutputGraphDefFile;
+  opts.output_graphdef_filename = OutputGraphDefFile.getValue();
 
   llvm::SmallVector<llvm::StringRef, 4> splitted;
   llvm::StringRef(SplitNames).split(splitted, ',');
