@@ -57,8 +57,8 @@ static void PopulatePassesAndRun(GlobalContext& ctx, Module& m,
   std::vector<std::string> input_shapes(InputsShape.begin(), InputsShape.end());
   FusionOptions fusion_opts;
   CXXCodeGenOpts opts;
-  PopulateOptPasses(&pm, "cxx", input_shapes, {}, {}, batch, "", false, false,
-                    format, opts, fusion_opts);
+  PopulateOptPasses(&pm, "cxx", input_shapes, {}, {}, batch, "", false, format,
+                    opts, fusion_opts);
   AnalyzerOpts alz_opts;
   alz_opts.batch_size = Batch;
   alz_opts.print_details = PrintAnalysisReport;

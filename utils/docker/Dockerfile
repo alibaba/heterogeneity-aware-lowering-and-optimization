@@ -173,13 +173,15 @@ RUN mkdir /tmp/valgrind && \
     make install && \
     rm -rf /tmp/valgrind
 
-# INSTALL Protobuf
+# INSTALL Protobuf (static)
 RUN cd /tmp && \
     git clone --depth=1 https://github.com/protocolbuffers/protobuf.git -b v3.9.1 && \
-    cd protobuf && \
-    ./autogen.sh && ./configure && make -j && make install && \
-    rm -fr /tmp/protobuf && \
-    echo "/usr/local/lib" >> /etc/ld.so.conf
+    cd protobuf/cmake && \
+    cmake -G Ninja . -Dprotobuf_BUILD_TESTS=OFF \
+      -Dprotobuf_BUILD_SHARED_LIBS=OFF \
+      -DCMAKE_POSITION_INDEPENDENT_CODE=ON && \
+    ninja install && \
+    rm -fr /tmp/protobuf
 
 # INSTALL glog
 RUN cd /tmp && \
