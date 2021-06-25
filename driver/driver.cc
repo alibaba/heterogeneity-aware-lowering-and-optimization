@@ -361,6 +361,7 @@ int main(int argc, char** argv) {
   cg_opts.batches_per_step = BatchesPerStep;
   cg_opts.api = Api;
   cg_opts.disable_broadcasting = DisableBroadcasting;
+  cg_opts.enable_type_cast = !DisableTypeCast;
   cg_opts.separate_constants = SeparateConstants;
   cg_opts.disable_conv_bn = DisableConvBN;
   cg_opts.remove_input_transpose = RemoveInputTranspose;
@@ -400,8 +401,8 @@ int main(int argc, char** argv) {
   }
   cg_opts.channel_order = ReorderChannelLayout;
   PopulateOptPasses(&pm, Target, input_shapes, inputs, outputs, Batch,
-                    PreprocessScale, SplitFunction, DisableTypeCast, format,
-                    cg_opts, fusion_opts);
+                    PreprocessScale, SplitFunction, format, cg_opts,
+                    fusion_opts);
   PopulateCodeGenPasses(&pm, &buf_code, &buf_constants, &buf_header,
                         out_dynamic_check, Target, is_c_or_cxx_output,
                         is_binary_output, EmitDataAsC, EmitCodeOnly, EmitLLVMIR,

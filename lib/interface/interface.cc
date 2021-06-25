@@ -61,8 +61,7 @@ static int InvokeCompiler(Module* m, const std::string& target, int batch,
   PassManager pm(ctx);
   FusionOptions fusion_opts;
   PopulateOptPasses(&pm, target, input_shapes, inputs, outputs, batch, "",
-                    false, false, ModelFormat::TENSORFLOW, cg_opts,
-                    fusion_opts);
+                    false, ModelFormat::TENSORFLOW, cg_opts, fusion_opts);
   std::string ext = (cg_opts.dialect == halo::Dialect::C99) ? ".c" : ".cc";
   bool is_c_or_cxx_output =
       target.substr(0, 3) == "cxx" || target.substr(0, 2) == "cc";

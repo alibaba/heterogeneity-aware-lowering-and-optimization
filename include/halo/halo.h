@@ -76,6 +76,7 @@ struct CXXCodeGenOpts {
   bool use_ipu_model = false;
   bool separate_constants = false;
   bool disable_broadcasting = true;
+  bool enable_type_cast = false;
   bool remove_input_transpose = false;
   bool remove_output_transpose = false;
   bool disable_conv_bn = false;

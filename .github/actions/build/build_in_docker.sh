@@ -39,6 +39,8 @@ else
   cmake_flags="$cmake_flags -DODLA_BUILD_POPART=OFF"
 fi
 
+cmake_flags="$cmake_flags -DHALO_USE_STATIC_PROTOBUF=ON"
+
 DOCKER_ID=`docker ps -aq -f name=$CONTAINER_NAME -f status=running`
 
 if [ -z "$DOCKER_ID" ]; then
