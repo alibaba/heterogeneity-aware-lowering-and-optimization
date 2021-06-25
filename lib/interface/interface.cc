@@ -50,7 +50,8 @@ static int InvokeCompiler(Module* m, const std::string& target, int batch,
                           const std::vector<std::string>& inputs,
                           const std::vector<std::string>& outputs,
                           const CXXCodeGenOpts& cg_opts,
-                          const std::string& main_output_file_name) {
+                          const std::string& main_output_file_name,
+                          ModelInfo* model_info) {
   auto& ctx = m->GetGlobalContext();
   ctx.SetVerbosity(1);
   ctx.SetBasePath(GetBaseDir());
@@ -92,6 +93,9 @@ static int InvokeCompiler(Module* m, const std::string& target, int batch,
     std::ofstream out_header(header_fn, std::ofstream::binary);
     out_header << buf_header.str();
   }
+  if (model_info != nullptr) {
+    *model_info = ctx.GetModelInfo();
+  }
   return 0;
 }
 
@@ -102,7 +106,7 @@ int Compile(ModelFormat format, const std::vector<const void*>& model_defs,
             const std::vector<std::string>& inputs,
             const std::vector<std::string>& outputs,
             const CXXCodeGenOpts& cg_opts,
-            const std::string& main_output_file_name) {
+            const std::string& main_output_file_name, ModelInfo* model_info) {
   GlobalContext ctx;
   Function* func;
   std::unique_ptr<Module> m;
@@ -114,7 +118,7 @@ int Compile(ModelFormat format, const std::vector<const void*>& model_defs,
   }
 
   return InvokeCompiler(m.get(), target, batch, input_shapes, inputs, outputs,
-                        cg_opts, main_output_file_name);
+                        cg_opts, main_output_file_name, model_info);
 }
 
 HL_API_EXPORT
@@ -124,7 +128,7 @@ int Compile(ModelFormat format, const std::vector<const char*>& models,
             const std::vector<std::string>& inputs,
             const std::vector<std::string>& outputs,
             const CXXCodeGenOpts& cg_opts,
-            const std::string& main_output_file_name) {
+            const std::string& main_output_file_name, ModelInfo* model_info) {
   GlobalContext ctx;
   Function* func;
   std::unique_ptr<Module> m;
@@ -135,27 +139,27 @@ int Compile(ModelFormat format, const std::vector<const char*>& models,
   }
 
   return InvokeCompiler(m.get(), target, batch, input_shapes, inputs, outputs,
-                        cg_opts, main_output_file_name);
+                        cg_opts, main_output_file_name, model_info);
 }
 
 HL_API_EXPORT
 int CompileTFGraph(const void* graphdef,
                    const std::vector<std::string>& input_shapes,
                    const CXXCodeGenOpts& cg_opts,
-                   const std::string& main_output_file) {
+                   const std::string& main_output_file, ModelInfo* model_info) {
   return Compile(ModelFormat::TENSORFLOW, {graphdef}, "cxx", 0, input_shapes,
-                 {}, {}, cg_opts, main_output_file);
+                 {}, {}, cg_opts, main_output_file, model_info);
 }
 
 HL_API_EXPORT
 int CompileTFGraph(const char* pb_buf, size_t pb_buf_size,
                    const std::vector<std::string>& input_shapes,
                    const CXXCodeGenOpts& cg_opts,
-                   const std::string& main_output_file) {
+                   const std::string& main_output_file, ModelInfo* model_info) {
   const char* str = main_output_file.c_str();
   const std::string new_str(str);
   return Compile(ModelFormat::TENSORFLOW, {pb_buf}, {pb_buf_size}, "cxx", 0,
-                 input_shapes, {}, {}, cg_opts, new_str);
+                 input_shapes, {}, {}, cg_opts, new_str, model_info);
 }
 
 } // namespace halo
@@ -175,12 +179,13 @@ HL_API_EXPORT
 int halo_CompileTFPbGraph(const char* pb_buf, size_t pb_buf_size,
                           size_t num_input_shapes, const char* input_shapes[],
                           const HaloCodeGenOpts* cg_opts,
-                          const char* main_output_file) {
+                          const char* main_output_file,
+                          HaloModelInfo* model_info) {
   const halo::CXXCodeGenOpts& opts =
       *(halo::CXXCodeGenOpts*)(cg_opts); // NOLINT
   return halo::CompileTFGraph(pb_buf, pb_buf_size,
                               ToStrings(num_input_shapes, input_shapes), opts,
-                              std::string(main_output_file));
+                              std::string(main_output_file), model_info);
 }
 
 HL_API_EXPORT
@@ -188,11 +193,12 @@ HL_API_EXPORT
 int halo_CompileTFGraphdef(const void* graphdef, size_t num_input_shapes,
                            const char* input_shapes[],
                            const HaloCodeGenOpts* cg_opts,
-                           const char* main_output_file) {
+                           const char* main_output_file,
+                           HaloModelInfo* model_info) {
   const halo::CXXCodeGenOpts& opts =
       *(halo::CXXCodeGenOpts*)(cg_opts); // NOLINT
 
   return halo::CompileTFGraph(graphdef,
                               ToStrings(num_input_shapes, input_shapes), opts,
-                              std::string(main_output_file));
+                              std::string(main_output_file), model_info);
 }

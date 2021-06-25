@@ -93,43 +93,54 @@ struct CXXCodeGenOpts {
   bool save_temps = false;
 };
 
+#define HALO_MODEL_INFO_MAX_OUTPUT_NR 64
+struct ModelInfo {
+  size_t num_outputs;
+  size_t output_buf_sizes[HALO_MODEL_INFO_MAX_OUTPUT_NR];
+};
+
 int CompileTFGraph(const char* pb_buf, size_t pb_buf_size,
                    const std::vector<std::string>& input_shapes,
                    const CXXCodeGenOpts& cg_opts,
-                   const std::string& main_output_file);
+                   const std::string& main_output_file, ModelInfo* model_info);
 
 int CompileTFGraph(const void* graphdef,
                    const std::vector<std::string>& input_shapes,
                    const CXXCodeGenOpts& cg_opts,
-                   const std::string& main_output_file);
+                   const std::string& main_output_file, ModelInfo* model_info);
 
 int Compile(ModelFormat model_format, const std::vector<const char*>& models,
             const std::vector<size_t>& model_sizes, const std::string& target,
             int batch, const std::vector<std::string>& input_shapes,
             const std::vector<std::string>& inputs,
             const std::vector<std::string>& outputs,
-            const CXXCodeGenOpts& cg_opts, const std::string& main_output_file);
+            const CXXCodeGenOpts& cg_opts, const std::string& main_output_file,
+            ModelInfo* model_info);
 
 } // namespace halo
 
 extern "C" {
 typedef struct CXXCodeGenOps HaloCodeGenOpts;
+typedef struct halo::ModelInfo HaloModelInfo;
+
 int halo_CompileTFPbGraph(const char* pb_buf, size_t pb_buf_size,
                           size_t num_input_shapes, const char* input_shapes[],
                           const HaloCodeGenOpts* cg_opts,
-                          const char* main_output_file);
+                          const char* main_output_file,
+                          HaloModelInfo* model_info);
 
 int halo_CompileTFGraphdef(const void* graphdef, size_t num_input_shapes,
                            const char* input_shapes[],
                            const HaloCodeGenOpts* cg_opts,
-                           const char* main_output_file);
+                           const char* main_output_file,
+                           HaloModelInfo* model_info);
 
 int halo_Compile(unsigned model_format, size_t num_models, const char* models[],
                  const size_t* model_sizes[], const char* target, int batch,
                  size_t num_input_shapes, const char* input_shapes[],
                  size_t num_inputs, const char* inputs[], size_t num_outputs,
                  const char* outputs[], const HaloCodeGenOpts& cg_opts,
-                 const char* main_output_file);
+                 const char* main_output_file, HaloModelInfo* model_info);
 }
 
 #endif // HALO_HALO_H_

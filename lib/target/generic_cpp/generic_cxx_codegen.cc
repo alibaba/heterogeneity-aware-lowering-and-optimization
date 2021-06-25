@@ -22,6 +22,7 @@
 
 #include "halo/api/halo_data.h"
 #include "halo/halo.h"
+#include "halo/lib/framework/data_layout.h"
 #include "halo/lib/framework/global_context.h"
 #include "halo/lib/ir/all_instructions.h"
 #include "halo/lib/ir/instruction.h"
@@ -249,7 +250,11 @@ std::string GenericCXXCodeGen::GetFunctionDecl(const Function& func,
     }
     is_first = false;
   }
-  for (auto& out : ret_inst.GetOperands()) {
+  auto& ctx = func.GetGlobalContext();
+  auto& model_info = ctx.GetModelInfo();
+  auto nr_outputs = ret_inst.GetNumOfOperands();
+  model_info.num_outputs = nr_outputs;
+  for (const auto& out : ret_inst.GetOperands()) {
     const auto& type = out.GetType();
     if (ir_mapping_.find(out) == ir_mapping_.end()) {
       CXXValue cv(out.GetDef()->GetName(), TensorTypeToCXXType(type, false));
@@ -567,6 +572,20 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
 
   Instruction* return_inst = function.GetReturnInst();
   HLCHECK(return_inst && "No Return Instruction found");
+
+  auto& ctx = function.GetGlobalContext();
+  auto& model_info = ctx.GetModelInfo();
+  auto nr_outputs = return_inst->GetNumOfOperands();
+  model_info.num_outputs = nr_outputs;
+  DefaultDataLayout dl;
+  for (size_t idx = 0; idx < nr_outputs; ++idx) {
+    const auto& out = return_inst->GetOperand(idx);
+    const auto& type = out.GetType();
+    if (idx < HALO_MODEL_INFO_MAX_OUTPUT_NR) {
+      // NOLINTNEXTLINE.
+      model_info.output_buf_sizes[idx] = dl.DataLayout::Bytes(type);
+    }
+  }
 
   bool is_compile_mode = opts_.exec_mode == ExecMode::Compile;
 
