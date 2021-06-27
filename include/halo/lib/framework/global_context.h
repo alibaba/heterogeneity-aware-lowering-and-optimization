@@ -26,6 +26,7 @@ namespace halo {
 class CodeGenObject;
 class DataLayout;
 class GlobalContextImpl;
+struct ModelInfo;
 
 class GlobalContext {
  public:
@@ -68,6 +69,7 @@ class GlobalContext {
   const std::string& GetODLALibraryPath() const noexcept;
   void SetPrintPass(const bool is_print_pass) noexcept;
   bool GetPrintPass() const noexcept;
+  ModelInfo& GetModelInfo() noexcept;
 
   void SetVerbosity(int verbosity) noexcept;
   int GetVerbosity() const noexcept;

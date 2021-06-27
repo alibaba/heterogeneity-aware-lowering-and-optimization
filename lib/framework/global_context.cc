@@ -19,6 +19,7 @@
 
 #include <experimental/filesystem>
 
+#include "halo/halo.h"
 #include "halo/lib/framework/data_layout.h"
 #include "halo/lib/target/codegen_object.h"
 #include "llvm/Config/llvm-config.h"
@@ -78,6 +79,8 @@ class GlobalContextImpl {
     processor_ = processor;
   }
 
+  ModelInfo& GetModelInfo() noexcept { return model_info_; }
+
   void SetPrintPass(const bool is_print_pass) noexcept {
     is_print_pass_ = is_print_pass;
   }
@@ -96,6 +99,7 @@ class GlobalContextImpl {
   std::string triple_{LLVM_HOST_TRIPLE};
   std::string processor_{"native"};
   bool is_print_pass_ = false;
+  ModelInfo model_info_{};
 };
 
 GlobalContext::GlobalContext() : impl_(std::make_unique<GlobalContextImpl>()) {}
@@ -165,6 +169,10 @@ const std::string& GlobalContext::GetProcessorName() const noexcept {
 
 void GlobalContext::SetProcessorName(const std::string& processor) noexcept {
   impl_->SetProcessorName(processor);
+}
+
+ModelInfo& GlobalContext::GetModelInfo() noexcept {
+  return impl_->GetModelInfo();
 }
 
 std::ostream& GlobalContext::Dbgs() noexcept { return std::cerr; }
