@@ -46,10 +46,14 @@ HL_UNUSED static void PopulateCodeGenPasses(
     pm->GetGlobalContext().SetTargetTriple(
         weight_target); // For binary constant writer.
     pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
-    pm->AddGenericCXXCodeGenPass(*out_code, *out_header, *out_dynamic_check,
-                                 opts);
     pm->AddConstantWriterPass(*out_constants,
                               emit_data_as_c ? "" : weight_target);
+    if (opts.template_file == nullptr) {
+      pm->AddGenericCXXCodeGenPass(*out_code, *out_header, *out_dynamic_check,
+                                   opts);
+    } else {
+      pm->AddTemplatedCXXCodeGenPass(*out_code, *out_header, opts);
+    }
     if (emit_triton_config) {
       pm->AddTritonConfigWriterPass(
           triton_config_file,
