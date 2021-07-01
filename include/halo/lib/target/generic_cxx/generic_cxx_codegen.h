@@ -77,6 +77,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnHostFunction(Function& function);
   virtual void RunOnConstant(Constant& constant, bool decl);
   virtual void RunOnBasicBlock(BasicBlock& bb);
+  void RunOnArgument(Argument& arg);
   void PreRunOnInstruction(Instruction*);
   void PostRunOnInstruction(Instruction*);
 

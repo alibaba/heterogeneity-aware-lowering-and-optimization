@@ -126,7 +126,10 @@ static std::string GetBF16Mode(BF16Mode mode) {
 bool GenericCXXCodeGen::RunOnModule(Module* module) {
   memory_analyzer_ = std::make_unique<MemoryAnalyzer>(*module);
   Function* entry_func = nullptr;
-  EmitBanner(&os_, &header_os_, GetAPI());
+  if (emit_banner) {
+    EmitBanner(&os_, &header_os_, GetAPI());
+  }
+
   for (auto& func : *module) {
     if (func->IsEntryFunction()) {
       entry_func = func.get();
@@ -560,6 +563,24 @@ static void EmitComputationItems(std::ostream* os, const CXXCodeGenOpts& opts) {
   }
 }
 
+void GenericCXXCodeGen::RunOnArgument(Argument& arg) {
+  bool is_compile_mode = opts_.exec_mode == ExecMode::Compile;
+  auto& type = arg.GetResultType();
+  auto arg_name = NormalizeVariableName(arg.GetName());
+  CXXValue v(is_compile_mode ? arg.GetName() : "in_" + arg.GetName(),
+             TensorTypeToCXXType(type, true));
+  if (is_compile_mode) {
+    EmitODLACall<2, false>(v, "odla_CreateArgument", type,
+                           "(const odla_value_id)(\"" + arg.GetName() + "\")");
+
+  } else {
+    EmitODLACall(v, "odla_CreateValue", type);
+    os_ << "  odla_SetValueData(" << v.name << ", " << v.name.substr(3)
+        << ");\n";
+  }
+  ir_mapping_[arg] = v;
+}
+
 void GenericCXXCodeGen::RunOnFunction(Function& function) {
   for (auto& constant : function.Constants()) {
     RunOnConstant(*constant, true);
@@ -651,20 +672,7 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
 
   // Emit wrappers for arguments.
   for (auto& arg : function.Args()) {
-    auto& type = arg->GetResultType();
-    auto arg_name = NormalizeVariableName(arg->GetName());
-    CXXValue v(is_compile_mode ? arg->GetName() : "in_" + arg->GetName(),
-               TensorTypeToCXXType(type, true));
-    if (is_compile_mode) {
-      EmitODLACall<2, false>(
-          v, "odla_CreateArgument", type,
-          "(const odla_value_id)(\"" + arg->GetName() + "\")");
-    } else {
-      EmitODLACall(v, "odla_CreateValue", type);
-      os_ << "  odla_SetValueData(" << v.name << ", " << v.name.substr(3)
-          << ");\n";
-    }
-    ir_mapping_[*arg] = v;
+    RunOnArgument(*arg);
   }
   // Emit wrappers for constants.
   for (auto& constant : function.Constants()) {
