@@ -34,6 +34,10 @@ std::string FindODLALibPath(const std::string& base_dir,
 
 std::string GetDerivedFileName(const std::string& main_file_name,
                                const std::string& ext);
+
+std::string FindTemplateFile(const std::string& base_dir,
+                             const std::string& file_path);
+
 } // namespace halo
 
 #endif // HALO_UTILS_PATH_H_

@@ -265,6 +265,10 @@ static llvm::cl::list<std::string> LibPaths(
 static llvm::cl::opt<bool> SaveTemps(
     "save-temps", llvm::cl::desc("Save intermediate compilation results"),
     llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
+static llvm::cl::opt<std::string> TemplateFile(
+    "use-template-file", llvm::cl::init(""),
+    llvm::cl::desc("Template file for ODLA code generation"),
+    llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> ConstantDecombine(
     "constant-decombine", llvm::cl::desc("Constant Decombine"),
@@ -380,6 +384,17 @@ int main(int argc, char** argv) {
   cg_opts.linked_odla_lib = LinkODLALib.c_str();
   cg_opts.save_temps = SaveTemps;
   cg_opts.constant_decombine = ConstantDecombine;
+
+  if (!TemplateFile.empty()) {
+    auto path = FindTemplateFile(ctx.GetBasePath(), TemplateFile);
+    if (!path.empty()) {
+      TemplateFile = path;
+      cg_opts.template_file = TemplateFile.c_str();
+    } else {
+      cg_opts.template_file = nullptr;
+      std::cerr << "Cannot find template file " << TemplateFile << std::endl;
+    }
+  }
 
   if (is_c_or_cxx_output) {
     if (llvm::StringRef(Target).startswith_lower("cc")) {
