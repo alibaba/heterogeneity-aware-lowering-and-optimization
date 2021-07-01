@@ -101,4 +101,21 @@ std::string GetDerivedFileName(const std::string& main_file_name,
   return filename.str().str();
 }
 
+std::string FindTemplateFile(const std::string& base_dir,
+                             const std::string& file_path) {
+  if (llvm::sys::fs::exists(file_path)) {
+    return file_path;
+  }
+  if (llvm::sys::path::parent_path(file_path).empty()) {
+    // Try to search in lib/template
+    llvm::Twine path = base_dir + llvm::sys::path::get_separator() + "lib" +
+                       llvm::sys::path::get_separator() + "templates" +
+                       llvm::sys::path::get_separator() + file_path;
+    if (llvm::sys::fs::exists(path)) {
+      return path.str();
+    }
+  }
+  return "";
+}
+
 } // namespace halo

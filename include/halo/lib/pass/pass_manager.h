@@ -111,6 +111,9 @@ class HL_API_EXPORT PassManager final {
   Pass* AddRISCVLLVMIRCodeGenPass(ConstantDataStorage constant_data_storage,
                                   const std::string& rt_lib_name);
   Pass* AddSplittingPass();
+  Pass* AddTemplatedCXXCodeGenPass(std::ostringstream& os,
+                                   std::ostringstream& header_os,
+                                   const CXXCodeGenOpts& opts);
   Pass* AddTFExtensionLegalizerPass();
   Pass* AddTFLiteExtensionLegalizerPass();
   Pass* AddTritonConfigWriterPass(const std::string& filename,

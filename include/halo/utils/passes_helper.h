@@ -41,12 +41,17 @@ HL_UNUSED static void PopulateCodeGenPasses(
 
   if (is_c_or_cxx_output) {
     pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
-    pm->AddGenericCXXCodeGenPass(*out_code, *out_header, *out_dynamic_check,
-                                 opts);
     if (emit_data_as_c) {
       pm->AddGenericCXXConstantWriterPass(*out_constants);
     } else {
       pm->AddX86ConstantWriterPass(*out_constants);
+    }
+
+    if (opts.template_file == nullptr) {
+      pm->AddGenericCXXCodeGenPass(*out_code, *out_header, *out_dynamic_check,
+                                   opts);
+    } else {
+      pm->AddTemplatedCXXCodeGenPass(*out_code, *out_header, opts);
     }
     if (emit_triton_config) {
       pm->AddTritonConfigWriterPass(
