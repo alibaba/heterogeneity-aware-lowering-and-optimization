@@ -76,28 +76,28 @@ public:
 
     Tensor x = getInTensor(0);
 
-    Tensor sign = popops::signum(graph(), x, prog);
-    Tensor y = popops::abs(graph(), x, prog);
-    popops::mulInPlace(graph(), y, 0.3275911f, prog);
-    popops::addInPlace(graph(), y, 1.0f, prog);
-    popops::invInPlace(graph(), y, prog);
+    Tensor sign = popops::signum(graph().getPoplarGraph(), x, prog);
+    Tensor y = popops::abs(graph().getPoplarGraph(), x, prog);
+    popops::mulInPlace(graph().getPoplarGraph(), y, 0.3275911f, prog);
+    popops::addInPlace(graph().getPoplarGraph(), y, 1.0f, prog);
+    popops::invInPlace(graph().getPoplarGraph(), y, prog);
 
     static const std::array<float ,4> coeff {
         -1.453152027f, 1.421413741f, -0.284496736f, 0.254829592f
     };
-    Tensor poly = popops::mul(graph(), y, 1.061405429f, prog);
+    Tensor poly = popops::mul(graph().getPoplarGraph(), y, 1.061405429f, prog);
     for (float c: coeff) {
-        popops::addInPlace(graph(), poly, c, prog);
-        popops::mulInPlace(graph(), poly, y, prog);
+        popops::addInPlace(graph().getPoplarGraph(), poly, c, prog);
+        popops::mulInPlace(graph().getPoplarGraph(), poly, y, prog);
     }
 
-    y = popops::square(graph(), x, prog);
-    popops::negInPlace(graph(), y, prog);
-    popops::expInPlace(graph(), y, prog);
-    popops::mulInPlace(graph(), y, poly, prog);
-    popops::negInPlace(graph(), y, prog);
-    popops::addInPlace(graph(), y, 1.0f, prog);
-    popops::mulInPlace(graph(), y, sign, prog);
+    y = popops::square(graph().getPoplarGraph(), x, prog);
+    popops::negInPlace(graph().getPoplarGraph(), y, prog);
+    popops::expInPlace(graph().getPoplarGraph(), y, prog);
+    popops::mulInPlace(graph().getPoplarGraph(), y, poly, prog);
+    popops::negInPlace(graph().getPoplarGraph(), y, prog);
+    popops::addInPlace(graph().getPoplarGraph(), y, 1.0f, prog);
+    popops::mulInPlace(graph().getPoplarGraph(), y, sign, prog);
 
     setOutTensor(0, y);
   }
