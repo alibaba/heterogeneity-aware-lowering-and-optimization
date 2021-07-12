@@ -22,12 +22,46 @@
 
 #include "halo/api/halo_data.h"
 #include "halo/lib/framework/common.h"
+#include "halo/lib/framework/data_layout.h"
 #include "halo/lib/ir/common_instructions.h"
 #include "halo/lib/ir/extension_instructions.h"
 #include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/transforms/transforms_util.h"
 
 namespace halo {
+
+static std::vector<Def> ConvertAddN(const TFExtensionInst* ext,
+                                    IRBuilder* builder) {
+  HLCHECK(ext->GetNumOfOperands() >= 2 && "Invalid AddN");
+  builder->SetInsertAfter(ext);
+  Instruction* acc = builder->CreateAdd(ext->GetName(), ext->GetOperand(0),
+                                        ext->GetOperand(1));
+  for (int i = 2, e = ext->GetNumOfOperands(); i != e; ++i) {
+    acc = builder->CreateAdd(ext->GetName() + "_" + std::to_string(i - 2), *acc,
+                             ext->GetOperand(i));
+  }
+  return {*acc};
+}
+
+static std::vector<Def> ConvertBroadcastTo(const TFExtensionInst* ext,
+                                           IRBuilder* builder) {
+  // Assume the consumer supports implicit broadcasting.
+  return {ext->GetOperand(0)};
+}
+
+static std::vector<Def> ConvertIpuGelu(const TFExtensionInst* ext,
+                                       IRBuilder* builder) {
+  auto op0 = ext->GetOperand(0);
+  const auto& type = op0.GetType();
+  if (!type.IsValid()) {
+    return {};
+  }
+  builder->SetInsertAfter(ext);
+  auto new_inst =
+      builder->CreateCustom(ext->GetName(), ext->GetOperands(), 1, "IpuGelu");
+  new_inst->GetResultsTypes()[0] = type;
+  return {*new_inst};
+}
 
 static std::vector<Def> ConvertReshape(const TFExtensionInst* tf_reshape,
                                        IRBuilder* builder) {
@@ -52,6 +86,14 @@ static std::vector<Def> ConvertReshape(const TFExtensionInst* tf_reshape,
     new_inst = builder->CreateReshape(tf_reshape->GetName(),
                                       {tf_reshape->GetOperand(0), *c});
   }
+  return {*new_inst};
+}
+
+static std::vector<Def> ConvertSquare(const TFExtensionInst* tf_inst,
+                                      IRBuilder* builder) {
+  builder->SetInsertAfter(tf_inst);
+  const auto& op = tf_inst->GetOperand(0);
+  auto new_inst = builder->CreateMul(tf_inst->GetName(), op, op);
   return {*new_inst};
 }
 
@@ -128,6 +170,11 @@ static std::vector<Def> ConvertCast(const TFExtensionInst* ext,
       new_inst->SetDataType(dst_type);
       return {*new_inst};
     }
+    if (Type::IsFloatingPointType(dst_type)) {
+      auto new_inst = builder->CreateFPtoFP(ext->GetName(), op0);
+      new_inst->SetDataType(dst_type);
+      return {*new_inst};
+    }
   }
   return {};
 }
@@ -139,22 +186,18 @@ static std::vector<Def> ConvertExpandDims(const TFExtensionInst* ext,
   auto index = ext->GetOperand(1);
   const Type& input_type = input.GetType();
 
-  if (!input_type.IsValid() || !IsA<Constant>(index.GetOwner())) {
+  const Constant* axis_c = DynCast<Constant>(index);
+  if (!input_type.IsValid() || axis_c == nullptr) {
     return {};
   }
-  const Constant* axis_c = DynCast<Constant>(index.GetOwner());
-  DataType dt = axis_c->GetResultType(0).GetDataType();
-  int64_t axis;
-  if (dt == DataType::INT64) {
-    axis = axis_c->GetData<int64_t>(0);
-  } else {
-    HLCHECK(dt == DataType::INT32);
-    axis = axis_c->GetData<int32_t>(0);
-  }
+  int64_t axis = axis_c->GetDataAsInt64(0);
+  int input_rank = input_type.GetNumOfDims();
+  HLCHECK(-1 - input_rank <= axis && axis <= input_rank);
 
   std::vector<int64_t> new_dims(input_type.GetDimSizes());
   if (axis < 0) {
-    axis += input_type.GetNumOfDims() + 1;
+    //  if 't' is a tensor of shape [2], expand_dims(t, -1) ==> [2, 1]
+    axis += input_rank + 1;
   }
   new_dims.insert(new_dims.begin() + axis, 1);
 
@@ -173,11 +216,11 @@ static std::vector<Def> ConvertFill(const TFExtensionInst* ext,
   HLCHECK(ext->GetNumOfOperands() == 2);
   auto dims = ext->GetOperand(0);
   auto value = ext->GetOperand(1);
-  if (!IsA<Constant>(dims.GetOwner()) || !IsA<Constant>(value.GetOwner())) {
+  if (!IsA<Constant>(dims) || !IsA<Constant>(value)) {
     return {};
   }
   std::vector<int64_t> shape;
-  Constant* dims_c = DynCast<Constant>(dims.GetOwner());
+  Constant* dims_c = DynCast<Constant>(dims);
   const Type& dims_type = dims.GetType();
   for (size_t i = 0, e = dims_type.GetTotalNumOfElements(); i < e; ++i) {
     shape.push_back(dims_c->GetData<int32_t>(i));
@@ -201,6 +244,13 @@ static std::vector<Def> ConvertFill(const TFExtensionInst* ext,
     }
     case DataType::INT64: {
       std::vector<int64_t> data(data_size, value_c->GetData<int64_t>(0));
+      c = cb.CreateConstant(ext->GetName(), new_type, data.data());
+      break;
+    }
+    case DataType::FLOAT16: {
+      const void* raw_ptr = value_c->GetRawDataPtr();
+      std::vector<int16_t> data(
+          data_size, *static_cast<const uint16_t*>(raw_ptr)); // NOLINT
       c = cb.CreateConstant(ext->GetName(), new_type, data.data());
       break;
     }
@@ -230,6 +280,46 @@ static std::vector<Def> ConvertShape(const TFExtensionInst* ext,
       Type{DataType::INT32, {static_cast<int64_t>(input_type.GetNumOfDims())}},
       shape.data());
   return {*c};
+}
+
+static std::vector<Def> ConvertSplit(const TFExtensionInst* ext,
+                                     IRBuilder* builder) {
+  auto input = ext->GetOperand(1);
+  auto split_dim = ext->GetOperand(0);
+  auto num_split = FindAttributeValue<int>(*ext, "num_split", 0);
+  const Type& input_type = input.GetType();
+  if (!input_type.IsValid()) {
+    return {};
+  }
+  int rank = input_type.GetNumOfDims();
+  const Constant* split_dim_c = DynCast<Constant>(split_dim);
+  HLCHECK(split_dim_c != nullptr && "split_dim is not a constant");
+  HLCHECK(split_dim_c->GetResultType().IsScalar() &&
+          "split_dim is not a scalar");
+  int axis = split_dim_c->GetDataAsInt64(0);
+  HLCHECK(axis >= 0 && axis < rank && "Invalid split dim");
+  auto orig_size = input_type.GetNumOfElementsInDim(axis);
+  HLCHECK(num_split > 0 && (orig_size % num_split == 0) && "Invalid num_split");
+  int len = static_cast<int>(orig_size / num_split);
+  builder->SetInsertAfter(ext);
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  const int32_t step = 1;
+  const Type param_type{DataType::INT32, {1}};
+  auto c_len = cb.CreateConstant(ext->GetName() + "_len", param_type, &len);
+  auto c_step = cb.CreateConstant(ext->GetName() + "_step", param_type, &step);
+  auto c_axis = cb.CreateConstant(ext->GetName() + "_axis", param_type, &axis);
+  std::vector<Def> ret;
+  ret.reserve(num_split);
+  for (int i = 0, start = 0; i < num_split; ++i) {
+    auto c_start = cb.CreateConstant(
+        ext->GetName() + "_start_" + std::to_string(i), param_type, &start);
+    auto slice =
+        builder->CreateSlice(ext->GetName() + "_" + std::to_string(i), input,
+                             *c_start, *c_len, *c_step, *c_axis);
+    ret.push_back(*slice);
+    start += len;
+  }
+  return ret;
 }
 
 static std::vector<Def> ConvertSquaredDifference(const TFExtensionInst* ext,
@@ -264,7 +354,6 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
   int shrink_mask = ext->GetAttributes()[4]->GetValueAsInteger();
   int new_axis_mask = ext->GetAttributes()[3]->GetValueAsInteger();
 
-  HLCHECK((ellipsis_mask == 0) && "Not supported ellipsis mask value.");
   size_t n = begin.GetType().GetTotalNumOfElements();
   auto begin_c = DynCast<Constant>(begin.GetOwner());
   auto end_c = DynCast<Constant>(end.GetOwner());
@@ -272,6 +361,7 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
   ConstantBuilder cb(ext->GetParent()->GetParent());
   // constant folding
   if (IsA<Constant>(input) && input_type.GetNumOfDims() == 1) {
+    HLCHECK((ellipsis_mask == 0) && "Not supported ellipsis mask value.");
     int32_t begin_i = begin_mask == 1 ? 0 : begin_c->GetData<int32_t>(0);
     int32_t end_i = end_mask == 1 || end_c->GetData<int32_t>(0) == -1
                         ? input_type.GetNumOfElementsInDim(0)
@@ -306,24 +396,47 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
   // General extension handling: --> slice + reshape.
   std::vector<int32_t> new_begin;
   std::vector<int32_t> new_size;
-  for (size_t i = 0; i < n; ++i) {
+  bool empty_slice = false;
+  for (size_t i = 0, ellipsis_cnt = 0; i < n; ++i) {
     int32_t begin_i = begin_c->GetData<int32_t>(i);
     int32_t end_i = end_c->GetData<int32_t>(i);
     int32_t strides_i = strides_c->GetData<int32_t>(i);
     int32_t dims_i = input.GetType().GetNumOfElementsInDim(i);
     auto index = 1 << i;
-    if ((begin_mask & index) != 0) {
+    if (end_i < 0) {
+      end_i += dims_i;
+    }
+
+    if ((ellipsis_mask & index) != 0) {
+      HLCHECK(new_axis_mask == 0 && shrink_mask == 0 && "Unhandled ellipsis");
+      ellipsis_cnt = 1 + n - input_type.GetNumOfDims();
+    }
+    if ((begin_mask & index) != 0 || ellipsis_cnt != 0) {
       new_begin.push_back(0);
     } else {
       new_begin.push_back(begin_i);
     }
     if ((shrink_mask & index) != 0) {
       new_size.push_back(1);
-    } else if ((end_mask & index) != 0) {
+    } else if ((end_mask & index) != 0 || ellipsis_cnt != 0) {
       new_size.push_back((dims_i - new_begin.back()) / strides_i);
     } else {
       new_size.push_back((end_i - new_begin.back()) / strides_i);
     }
+    if (ellipsis_cnt > 0) {
+      --ellipsis_cnt;
+    }
+    HLCHECK(new_size.back() >= 0); // TF allows empty tensor
+    if (new_size.back() == 0) {
+      empty_slice = true;
+    }
+  }
+  if (empty_slice) {
+    std::vector<int64_t> new_shape(new_size.begin(), new_size.end());
+    Constant* c_empty =
+        cb.CreateConstant(ext->GetName() + "_empty",
+                          Type{input_type.GetDataType(), new_shape}, nullptr);
+    return {*c_empty};
   }
 
   Constant* c_begin = cb.CreateConstant(
@@ -362,6 +475,22 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
                                             {Def{new_slice_inst, 0}, *c_shape});
   }
   return {*new_slice_inst};
+}
+
+static std::vector<Def> ConvertZerosLike(const TFExtensionInst* ext,
+                                         IRBuilder* builder) {
+  const auto& op0_type = ext->GetOperand(0).GetType();
+  if (!op0_type.IsValid()) {
+    return {};
+  }
+  DataType vt = FindAttributeValue<DataType>(*ext, "dtype", DataType::INVALID);
+  vt = (vt == DataType::INVALID) ? op0_type.GetDataType() : vt;
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  DefaultDataLayout dl;
+  std::vector<char> buf(dl.DataLayout::Bytes(op0_type));
+  auto c = cb.CreateConstant(ext->GetName(), Type{vt, op0_type.GetDimSizes()},
+                             buf.data());
+  return {*c};
 }
 
 template <typename T>
@@ -842,9 +971,31 @@ static std::vector<Def> ConvertHgDeQuant(const TFExtensionInst* ext,
   return {input};
 }
 
+bool FixUpOneHot(OneHotInst* inst, IRBuilder* builder) {
+  auto on_value = inst->GetOperand(2);
+  if (on_value.GetType().GetTotalNumOfElements() != 1) {
+    return false;
+  }
+  auto off_value = inst->GetOperand(3);
+  builder->SetInsertBefore(inst);
+  auto on_off =
+      builder->CreateConcat(inst->GetName() + "_off_on", {off_value, on_value});
+  std::vector<Def> ops{inst->GetOperand(0), inst->GetOperand(1), *on_off,
+                       off_value};
+  auto new_inst = builder->CreateOneHot(inst->GetName(), ops);
+  inst->ReplaceAllUsesWith({*new_inst});
+  return true;
+}
+
 static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
                                            IRBuilder* builder) {
   switch (tf_inst->GetExtOpCode()) {
+    case TFExtOpCode::ADDN: {
+      return ConvertAddN(tf_inst, builder);
+    }
+    case TFExtOpCode::BROADCASTTO: {
+      return ConvertBroadcastTo(tf_inst, builder);
+    }
     case TFExtOpCode::CAST: {
       return ConvertCast(tf_inst, builder);
     }
@@ -854,6 +1005,9 @@ static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
     case TFExtOpCode::FILL: {
       return ConvertFill(tf_inst, builder);
     }
+    case TFExtOpCode::IPUGELU: {
+      return ConvertIpuGelu(tf_inst, builder);
+    }
     case TFExtOpCode::STOPGRADIENT:
     case TFExtOpCode::QUEUEDEQUEUEV2:
     case TFExtOpCode::IDENTITY: {
@@ -861,6 +1015,12 @@ static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
     }
     case TFExtOpCode::SHAPE: {
       return ConvertShape(tf_inst, builder);
+    }
+    case TFExtOpCode::SPLIT: {
+      return ConvertSplit(tf_inst, builder);
+    }
+    case TFExtOpCode::SQUARE: {
+      return ConvertSquare(tf_inst, builder);
     }
     case TFExtOpCode::SQUAREDDIFFERENCE: {
       return ConvertSquaredDifference(tf_inst, builder);
@@ -893,7 +1053,11 @@ static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
     case TFExtOpCode::HGDEQUANT: {
       return ConvertHgDeQuant(tf_inst, builder);
     }
+    case TFExtOpCode::ZEROSLIKE: {
+      return ConvertZerosLike(tf_inst, builder);
+    }
     default: {
+      tf_inst->Dump();
       HLCHECK(0 && "Unhandled");
     }
   }
@@ -933,6 +1097,9 @@ bool TFExtensionLegalizer::RunOnBasicBlock(BasicBlock* bb) {
         conv_inst->GetOperand(1).SetType(
             halo::Type{op1_type.GetDataType(), op1_dims});
       }
+    } else if (inst->GetOpCode() == OpCode::ONEHOT) {
+      OneHotInst* one_hot = Downcast<OneHotInst>(inst);
+      changed |= FixUpOneHot(one_hot, &builder);
     }
   }
   return changed;

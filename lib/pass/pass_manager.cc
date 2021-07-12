@@ -25,6 +25,8 @@
 #include "halo/lib/target/cpu/x86/binary/x86_llvmir_codegen.h"
 #include "halo/lib/target/generic_cxx/generic_cxx_codegen.h"
 #include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
+#include "halo/lib/target/jit_compiler/cxx_jit_compiler.h"
+#include "halo/lib/target/jit_compiler/generic_jit_linker.h"
 #include "halo/lib/target/triton/triton_config_writer.h"
 #include "halo/lib/transforms/analyzer.h"
 #include "halo/lib/transforms/caffeextension_legalizer.h"
@@ -235,8 +237,8 @@ void PassManagerImpl::Print(std::ostream& os) const {
   }
 }
 
-Pass* PassManager::AddAnalyzerPass(std::ostream* os) {
-  return AddPass<Analyzer>(os);
+Pass* PassManager::AddAnalyzerPass(std::ostream* os, const AnalyzerOpts& opts) {
+  return AddPass<Analyzer>(os, opts);
 }
 
 Pass* PassManager::AddARMBinaryWriterPass(std::ostream& os) {
@@ -254,6 +256,12 @@ Pass* PassManager::AddARMLLVMIRCodeGenPass(
 
 Pass* PassManager::AddCAFFEExtensionLegalizerPass() {
   return AddPass<CAFFEExtensionLegalizer>();
+}
+
+Pass* PassManager::AddCodeFormatterPass(std::ostringstream& buf_code,
+                                        std::ostringstream& buf_header,
+                                        const CXXCodeGenOpts& opts) {
+  return AddPass<CodeFormatter>(buf_code, buf_header, opts);
 }
 
 Pass* PassManager::AddDCEPass() { return AddPass<DCE>(); }
@@ -275,13 +283,13 @@ Pass* PassManager::AddGenericCXXConstantWriterPass(std::ostream& os) {
   return AddPass<GenericCXXConstantWriter>(os);
 }
 
-Pass* PassManager::AddGenericCXXCodeGenPass(std::ostream& os,
-                                            std::ostream& header_os) {
+Pass* PassManager::AddGenericCXXCodeGenPass(std::ostringstream& os,
+                                            std::ostringstream& header_os) {
   return AddPass<GenericCXXCodeGen>(os, header_os);
 }
 
-Pass* PassManager::AddGenericCXXCodeGenPass(std::ostream& os,
-                                            std::ostream& header_os,
+Pass* PassManager::AddGenericCXXCodeGenPass(std::ostringstream& os,
+                                            std::ostringstream& header_os,
                                             std::ostream& dynamic_check_os,
                                             const CXXCodeGenOpts& opts) {
   return AddPass<GenericCXXCodeGen>(os, header_os, dynamic_check_os, opts);
@@ -330,6 +338,21 @@ Pass* PassManager::AddInstSimplifyPass(bool simplify_for_preprocess,
                                disable_conv_bn, fuse_conv_bias);
 }
 
+Pass* PassManager::AddLinkPass(const std::ostringstream& obj_code,
+                               const std::ostringstream& obj_constants,
+                               const std::string& output_file_name,
+                               const CXXCodeGenOpts& opts) {
+  return AddPass<GenericJITLinker>(obj_code, obj_constants, output_file_name,
+                                   opts);
+}
+
+Pass* PassManager::AddObjEmitPass(
+    std::ostringstream& out, const std::ostringstream& source,
+    const std::vector<std::string>& header_searchs,
+    const CXXCodeGenOpts& opts) {
+  return AddPass<CXXJITCompiler>(out, source, header_searchs, opts);
+}
+
 Pass* PassManager::AddONNXExtensionLegalizerPass() {
   return AddPass<ONNXExtensionLegalizer>();
 }
@@ -350,7 +373,7 @@ Pass* PassManager::AddRISCVConstantWriterPass(std::ostream& os) {
   return AddPass<ARMConstantWriter>(os);
 }
 Pass* PassManager::AddRISCVLLVMIRCodeGenPass(
-    ConstantDataStorage constant_data_storage, std::string rt_lib_name) {
+    ConstantDataStorage constant_data_storage, const std::string& rt_lib_name) {
   return AddPass<RISCVLLVMIRCodeGen>(constant_data_storage, rt_lib_name);
 }
 

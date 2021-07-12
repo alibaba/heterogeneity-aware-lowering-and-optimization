@@ -37,9 +37,12 @@ void build() {
 
   PassManager pm(ctx);
   pm.AddTypeLegalizerPass();
-  auto cg = pm.AddGenericCXXCodeGenPass(std::cout, std::cout);
+  std::ostringstream os_code;
+  std::ostringstream os_header;
+  auto cg = pm.AddGenericCXXCodeGenPass(os_code, os_header);
 
   pm.Run(&m);
+  std::cout << os_code.str();
 }
 
 int main() { build(); }

@@ -14,20 +14,29 @@
 # limitations under the License
 # ==============================================================================
 
+option(ODLA_BUILD_POPART_USE_CXX11ABI "Use CXX11 ABI for odla_popart" ON)
+option(ODLA_BUILD_POPART_CUSTOM_OPS "Link with Popart custom ops" ON)
+
 add_odla_library(odla_popart SHARED common.cc odla_compute.cc
                                odla_ops_math.cc odla_ops_nn.cc
-                               odla_ops_process.cc odla_ops.cc)
+                               odla_ops_process.cc odla_ops.cc
+                               odla_ops_custom.cc
+                               )
 find_library(popart NAMES popart PATHS ${POPART_ROOT} PATH_SUFFIXES lib
              NO_DEFAULT_PATH)
-find_library(custom_ops NAMES custom_ops PATHS ${CMAKE_CURRENT_SOURCE_DIR}/custom_ops
-             PATH_SUFFIXES lib NO_DEFAULT_PATH)
-find_package(popart CONFIG REQUIRED)
+find_package(popart CONFIG COMPONENTS popart-only REQUIRED)
+
+if (ODLA_BUILD_POPART_CUSTOM_OPS)
+  message(INFO "Build popart custom op")
+  add_subdirectory(custom_ops)
+endif()
+
 set_property(TARGET odla_popart PROPERTY CXX_STANDARD 14)
 
 target_compile_definitions(odla_popart PRIVATE ONNX_NAMESPACE=onnx)
-target_link_libraries(odla_popart ODLA ${custom_ops} popart-only)
-add_custom_command(TARGET odla_popart
-	  POST_BUILD
-	  COMMAND ${CMAKE_COMMAND} -E
-	  copy ${custom_ops} ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
-	  )
+if (NOT ODLA_BUILD_POPART_USE_CXX11ABI)
+  target_compile_definitions(odla_popart PRIVATE _GLIBCXX_USE_CXX11_ABI=0)
+endif()
+
+target_link_libraries(odla_popart PUBLIC ODLA custom_ops popart-only)
+

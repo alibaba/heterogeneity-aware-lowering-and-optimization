@@ -64,8 +64,8 @@ class CXXValue {
 // The generic CXX compiler, which is a module pass.
 class GenericCXXCodeGen : public CodeGen {
  public:
-  GenericCXXCodeGen(std::ostream& os, std::ostream& header_os);
-  GenericCXXCodeGen(std::ostream& os, std::ostream& header_os,
+  GenericCXXCodeGen(std::ostringstream& os, std::ostringstream& header_os);
+  GenericCXXCodeGen(std::ostringstream& os, std::ostringstream& header_os,
                     std::ostream& dynamic_check_os, const CXXCodeGenOpts& opts);
 
   virtual ~GenericCXXCodeGen();
@@ -96,6 +96,8 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(MulInst*) override;
   virtual void RunOnInstruction(CallInst*) override;
   virtual void RunOnInstruction(CeilInst*) override;
+  virtual void RunOnInstruction(CmpInst*) override;
+  virtual void RunOnInstruction(CustomInst*) override;
   virtual void RunOnInstruction(ConcatInst*) override;
   virtual void RunOnInstruction(DivInst*) override;
   virtual void RunOnInstruction(ErfInst*) override;
@@ -105,6 +107,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(RoundInst*) override;
   virtual void RunOnInstruction(RcpInst*) override;
   virtual void RunOnInstruction(FPtoSIInst*) override;
+  virtual void RunOnInstruction(FPtoFPInst*) override;
   virtual void RunOnInstruction(LeakyReluInst*) override;
   virtual void RunOnInstruction(SeluInst*) override;
   virtual void RunOnInstruction(EluInst*) override;
@@ -119,6 +122,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(GatherInst*) override;
   virtual void RunOnInstruction(GemmInst*) override;
   virtual void RunOnInstruction(LogInst*) override;
+  virtual void RunOnInstruction(LogSoftmaxInst*) override;
   virtual void RunOnInstruction(LRNInst*) override;
   virtual void RunOnInstruction(MatMulInst*) override;
   virtual void RunOnInstruction(MaximumInst*) override;
@@ -137,6 +141,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(ReduceL2Inst*) override;
   virtual void RunOnInstruction(ReduceLogSumInst*) override;
   virtual void RunOnInstruction(ReduceLogSumExpInst*) override;
+  virtual void RunOnInstruction(ReduceSumInst*) override;
   virtual void RunOnInstruction(ReduceSumSquareInst*) override;
   virtual void RunOnInstruction(ReduceMeanInst*) override;
   virtual void RunOnInstruction(ReduceMaxInst*) override;
@@ -258,6 +263,8 @@ class GenericCXXCodeGen : public CodeGen {
 
   virtual const std::string& EmitNull() const noexcept;
   virtual std::string GetODLAType(halo::DataType data_type) const noexcept;
+
+ public:
   static const std::string& EmitReturnType(bool auto_type, bool single_value);
   static CXXType SNTypeToCXXType(DataType dt);
   static CXXType TensorTypeToCXXType(const halo::Type& type, bool is_const);
@@ -289,16 +296,17 @@ class GenericCXXCodeGen : public CodeGen {
     return ss.str();
   }
 
-  std::ostream& os_;
-  std::ostream& header_os_;
+ protected:
+  bool emit_banner = true;
+  std::ostringstream& os_;
+  std::ostringstream& header_os_;
   std::ostream& dynamic_check_os_;
-  GlobalContext* ctx_ = nullptr;
   std::unordered_map<Def, CXXValue> ir_mapping_;
   std::unique_ptr<MemoryAnalyzer> memory_analyzer_;
   CXXCodeGenOpts opts_;
 };
 
-class GenericCXXConstantWriter : public GenericCXXCodeGen {
+class GenericCXXConstantWriter : public CodeGen {
  public:
   virtual ~GenericCXXConstantWriter() = default;
   explicit GenericCXXConstantWriter(std::ostream& os);
@@ -307,6 +315,7 @@ class GenericCXXConstantWriter : public GenericCXXCodeGen {
 
  private:
   void static RunOnConstant(const Constant& constant, std::ostream* os);
+  std::ostream& os_;
 };
 
 } // end namespace halo.

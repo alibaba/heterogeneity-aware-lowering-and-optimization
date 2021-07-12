@@ -30,19 +30,11 @@ RUN git clone --depth=1 https://github.com/oneapi-src/oneDNN.git --branch v1.7 &
     make -j install && \
     tar -cf /tmp/dnnl.tar ../install --transform 's,^install/,/opt/dnnl/,'
 
-# Get clang tools
-FROM alpine AS clang_tools
-ARG LLVM_URL=https://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-gnu-ubuntu-18.04.tar.xz
-WORKDIR /clang
-RUN wget -O llvm.tar.xz ${LLVM_URL} && tar x --strip-components=1 -f llvm.tar.xz && \
-    rm -fr llvm.tar.xz
-
 FROM ${BASE_IMAGE}
 
 RUN --mount=from=pb_builder,target=/pkg,source=/tmp tar xf /pkg/protobuf.tar -C /
 RUN --mount=from=fb_builder,source=/tmp,target=/pkg tar xf /pkg/flatbuffer.tar -C /
 RUN --mount=from=dnnl_builder,target=/pkg,source=/tmp tar xf /pkg/dnnl.tar -C /
-COPY --from=clang_tools /clang/bin/clang-format /usr/bin/
 
 RUN echo "/usr/local/lib" >> /etc/ld.so.conf && ldconfig
 

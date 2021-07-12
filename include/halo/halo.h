@@ -50,6 +50,11 @@ enum class ChannelOrder {
   ChannelLast,
 };
 
+struct AnalyzerOpts {
+  bool print_details = false;
+  int batch_size = 1;
+};
+
 struct CXXCodeGenOpts {
   CXXCodeGenOpts(const BF16Mode& mode) : bf16_mode(mode) {}
   CXXCodeGenOpts() = default;
@@ -70,7 +75,8 @@ struct CXXCodeGenOpts {
   bool enable_ipu_device = false;
   bool use_ipu_model = false;
   bool separate_constants = false;
-  bool disable_broadcasting = false;
+  bool disable_broadcasting = true;
+  bool enable_type_cast = false;
   bool remove_input_transpose = false;
   bool remove_output_transpose = false;
   bool disable_conv_bn = false;
@@ -78,25 +84,63 @@ struct CXXCodeGenOpts {
   int64_t batches_per_step = 1;
   bool check_model = false;
   API api = API::ODLA_05;
+  ChannelOrder channel_order = ChannelOrder::None;
+  bool format_code = false;
+  bool emit_header = false;
+  bool emit_obj = false;
+  bool emit_shared_lib = false;
+  const char* linked_odla_lib = nullptr;
+  bool save_temps = false;
+};
+
+#define HALO_MODEL_INFO_MAX_OUTPUT_NR 64
+struct ModelInfo {
+  size_t num_outputs;
+  size_t output_buf_sizes[HALO_MODEL_INFO_MAX_OUTPUT_NR];
 };
 
 int CompileTFGraph(const char* pb_buf, size_t pb_buf_size,
-                   const std::string& name, const std::string& temp_dir,
                    const std::vector<std::string>& input_shapes,
-                   const CXXCodeGenOpts& cg_opts);
+                   const CXXCodeGenOpts& cg_opts,
+                   const std::string& main_output_file, ModelInfo* model_info);
 
-int CompileTFGraph(const void* graphdef, const std::string& name,
-                   const std::string& temp_dir,
+int CompileTFGraph(const void* graphdef,
                    const std::vector<std::string>& input_shapes,
-                   const CXXCodeGenOpts& cg_opts);
+                   const CXXCodeGenOpts& cg_opts,
+                   const std::string& main_output_file, ModelInfo* model_info);
 
 int Compile(ModelFormat model_format, const std::vector<const char*>& models,
-            const std::vector<size_t>& model_sizes, const std::string& name,
-            const std::string& temp_dir, const std::string& target, int batch,
-            const std::vector<std::string>& input_shapes,
+            const std::vector<size_t>& model_sizes, const std::string& target,
+            int batch, const std::vector<std::string>& input_shapes,
             const std::vector<std::string>& inputs,
             const std::vector<std::string>& outputs,
-            const CXXCodeGenOpts& cg_opts);
+            const CXXCodeGenOpts& cg_opts, const std::string& main_output_file,
+            ModelInfo* model_info);
+
 } // namespace halo
+
+extern "C" {
+typedef struct CXXCodeGenOps HaloCodeGenOpts;
+typedef struct halo::ModelInfo HaloModelInfo;
+
+int halo_CompileTFPbGraph(const char* pb_buf, size_t pb_buf_size,
+                          size_t num_input_shapes, const char* input_shapes[],
+                          const HaloCodeGenOpts* cg_opts,
+                          const char* main_output_file,
+                          HaloModelInfo* model_info);
+
+int halo_CompileTFGraphdef(const void* graphdef, size_t num_input_shapes,
+                           const char* input_shapes[],
+                           const HaloCodeGenOpts* cg_opts,
+                           const char* main_output_file,
+                           HaloModelInfo* model_info);
+
+int halo_Compile(unsigned model_format, size_t num_models, const char* models[],
+                 const size_t* model_sizes[], const char* target, int batch,
+                 size_t num_input_shapes, const char* input_shapes[],
+                 size_t num_inputs, const char* inputs[], size_t num_outputs,
+                 const char* outputs[], const HaloCodeGenOpts& cg_opts,
+                 const char* main_output_file, HaloModelInfo* model_info);
+}
 
 #endif // HALO_HALO_H_

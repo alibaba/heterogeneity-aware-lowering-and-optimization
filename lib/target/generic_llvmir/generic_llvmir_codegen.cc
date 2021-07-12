@@ -99,6 +99,7 @@ llvm::Type* GenericLLVMIRCodeGen::SNTypeToLLVMType(DataType dt) {
     case DataType::UINT8: {
       return llvm::Type::getInt8Ty(GetLLVMContext());
     }
+    case DataType::FLOAT16:
     case DataType::INT16:
     case DataType::UINT16: {
       return llvm::Type::getInt16Ty(GetLLVMContext());
@@ -318,6 +319,13 @@ void GenericLLVMIRCodeGen::RunOnConstant(Constant& constant) {
       cv = llvm::ConstantDataArray::get(llvm_module_->getContext(), data);
       break;
     }
+    case DataType::FLOAT16: {
+      const void* data_ptr = constant.GetRawDataPtr();
+      llvm::ArrayRef<uint16_t> data(static_cast<const uint16_t*>(data_ptr),
+                                    sn_ty.GetTotalNumOfElements());
+      cv = llvm::ConstantDataArray::get(llvm_module_->getContext(), data);
+      break;
+    }
     case DataType::BOOL:
     case DataType::INT8:
     case DataType::UINT8: {
@@ -341,6 +349,7 @@ void GenericLLVMIRCodeGen::RunOnConstant(Constant& constant) {
   llvm::GlobalVariable* gv = llvm::dyn_cast<llvm::GlobalVariable>(v);
   HLCHECK(gv);
   if (gv != nullptr) {
+    gv->setVisibility(llvm::GlobalValue::HiddenVisibility);
     gv->setLinkage(constant_data_storage_ ==
                            ConstantDataStorage::DefinedAsStatic
                        ? llvm::GlobalValue::LinkageTypes::InternalLinkage

@@ -20,7 +20,7 @@
 namespace halo {
 
 GenericCXXConstantWriter::GenericCXXConstantWriter(std::ostream& os)
-    : GenericCXXCodeGen(/*"Generic CXX Constant Writer"*/ os, os) {}
+    : CodeGen("Generic CXX Constant Writer"), os_(os) {}
 
 void GenericCXXConstantWriter::RunOnConstant(const Constant& constant,
                                              std::ostream* os) {
@@ -29,7 +29,7 @@ void GenericCXXConstantWriter::RunOnConstant(const Constant& constant,
                  GenericCXXCodeGen::TensorTypeToCXXType(type, true));
   // "extern" is needed for CXX compiler to prevent name mangling.
   *os << "extern const " << value.type.name << " " << value.name << "["
-      << Join(type.GetDimSizes(), '*') << "] = {";
+      << GenericCXXCodeGen::Join(type.GetDimSizes(), '*') << "] = {";
   constant.PrintData(os, constant.GetResultType().GetTotalNumOfElements());
   *os << "};\n";
 }
@@ -38,6 +38,7 @@ bool GenericCXXConstantWriter::RunOnModule(Module* module) {
   os_ << "//===- Halo Compiler Generated File "
          "---------------------------------------===//\n\n";
   os_ << "#include <stdint.h>\n";
+  os_ << "#define odla_int64 int64_t\n";
 
   for (auto& c : module->Constants()) {
     RunOnConstant(*c, &os_);

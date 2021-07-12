@@ -23,7 +23,11 @@ set(SRCS
 )
 
 # dependences which need to be built first.
-set(DEPENDENCES TARGET_GENERIC_LLVMIR)
+set(DEPENDENCES TARGET_GENERIC_LLVMIR
+  LLVMX86Info
+  LLVMX86CodeGen
+  LLVMX86Desc
+)
 
 create_halo_object(TARGET_NAME ${NAME}
   TARGET_SRCS ${SRCS}
@@ -31,5 +35,5 @@ create_halo_object(TARGET_NAME ${NAME}
 )
 
 target_link_libraries(${NAME}
-   PUBLIC TARGET_GENERIC_LLVMIR
+   PUBLIC TARGET_GENERIC_LLVMIR ${DEPENDENCES}
 )

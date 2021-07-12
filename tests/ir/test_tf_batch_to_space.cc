@@ -21,8 +21,8 @@
 #include "halo/lib/transforms/type_legalizer.h"
 #include <fstream>
 
-#define str(s) std::string(#s)
-#define xstr(s) str(s)
+#define to_str(s) std::string(#s)
+#define xstr(s) to_str(s)
 
 using namespace halo;
 
@@ -87,15 +87,17 @@ static void build() {
 
   of_code.open(xstr(OUTPUT), std::ofstream::binary);
   of_constants.open(xstr(OUTPUT) + ".bin", std::ofstream::binary);
-
+  std::ostringstream os_code;
+  std::ostringstream os_header;
   PassManager pm(ctx);
   pm.AddTFExtensionLegalizerPass();
   pm.AddDCEPass();
   pm.AddTypeLegalizerPass(true);
   pm.AddInstSimplifyPass();
-  auto cg = pm.AddGenericCXXCodeGenPass(of_code, std::cout);
+  auto cg = pm.AddGenericCXXCodeGenPass(os_code, os_header);
   pm.AddX86ConstantWriterPass(of_constants);
   pm.Run(&m);
+  of_code << os_code.str();
 }
 
 int main() { build(); }

@@ -17,6 +17,7 @@
 add_subdirectory(cpu)
 add_subdirectory(generic_cpp)
 add_subdirectory(generic_llvmir)
+add_subdirectory(jit_compiler)
 add_subdirectory(triton)
 
 # name.

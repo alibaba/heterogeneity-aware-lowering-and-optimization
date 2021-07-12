@@ -26,10 +26,11 @@
 #include "halo/lib/pass/pass_manager.h"
 #include "halo/lib/transforms/fusion.h"
 #include "halo/utils/passes_helper.h"
+#include "halo/utils/path.h"
 
 namespace halo {
 
-static std::tuple<std::unique_ptr<Module>, Function*> Init(
+static std::tuple<std::unique_ptr<Module>, Function*> CreateModule(
     GlobalContext* ctx, const std::string& target) {
   ctx->SetTargetTriple(std::string(target));
   if (target.substr(0, 3) == "cxx") {
@@ -44,122 +45,160 @@ static std::tuple<std::unique_ptr<Module>, Function*> Init(
   return std::make_tuple(std::move(m), func);
 }
 
-static void PopulatePasses(PassManager* pm, const std::string& name,
-                           const std::string& temp_dir,
-                           const std::string& target, int batch,
-                           const std::vector<std::string>& input_shapes,
-                           const std::vector<std::string>& inputs,
-                           const std::vector<std::string>& outputs,
-                           const CXXCodeGenOpts& cg_opts) {
-  FusionOptions fusion_opts;
-  PopulateOptPasses(pm, target, input_shapes, inputs, outputs, batch, "",
-                    ChannelOrder::None, false, false, ModelFormat::TENSORFLOW,
-                    cg_opts, fusion_opts);
-  std::string code_fn = temp_dir + "/" + name + ".cc";
-  std::string weights_fn = temp_dir + "/" + name + ".bin";
-  std::string header_fn = temp_dir + "/" + name + ".h";
+static int InvokeCompiler(Module* m, const std::string& target, int batch,
+                          const std::vector<std::string>& input_shapes,
+                          const std::vector<std::string>& inputs,
+                          const std::vector<std::string>& outputs,
+                          const CXXCodeGenOpts& cg_opts,
+                          const std::string& main_output_file_name,
+                          ModelInfo* model_info) {
+  auto& ctx = m->GetGlobalContext();
+  ctx.SetVerbosity(1);
+  ctx.SetBasePath(GetBaseDir());
+  ctx.SetODLAIncludePath(FindODLAIncPath(ctx.GetBasePath(), {}));
+  ctx.SetODLALibraryPath(
+      FindODLALibPath(ctx.GetBasePath(), {}, cg_opts.linked_odla_lib));
 
-  std::ofstream out_code(code_fn, std::ofstream::binary);
-  std::ofstream out_constants(weights_fn, std::ofstream::binary);
-  std::ofstream out_header(header_fn, std::ofstream::binary);
+  PassManager pm(ctx);
+  FusionOptions fusion_opts;
+  PopulateOptPasses(&pm, target, input_shapes, inputs, outputs, batch, "",
+                    false, ModelFormat::TENSORFLOW, cg_opts, fusion_opts);
+  std::string ext = (cg_opts.dialect == halo::Dialect::C99) ? ".c" : ".cc";
   bool is_c_or_cxx_output =
       target.substr(0, 3) == "cxx" || target.substr(0, 2) == "cc";
+  std::ostringstream buf_code;
+  std::ostringstream buf_constants;
+  std::ostringstream buf_header;
 
-  PopulateCodeGenPasses(pm, &out_code, &out_constants, &out_header, &std::cerr,
+  PopulateCodeGenPasses(&pm, &buf_code, &buf_constants, &buf_header, &std::cerr,
                         target, is_c_or_cxx_output, false /*is_binary_output*/,
                         false /* EmitDataAsC */, false /*EmitCodeOnly*/,
                         false /* EmitLLVMIR */, false /* EmitTritonConfig */,
                         "" /*TritonConfigFile */, Quantization::None,
-                        "" /* PGQFile */, false /* RISCVOpt */, cg_opts);
+                        "" /* PGQFile */, false /* RISCVOpt */, cg_opts,
+                        main_output_file_name);
+  pm.Run(m);
+
+  if (!cg_opts.emit_shared_lib) {
+    std::ofstream out_code(main_output_file_name, std::ofstream::binary);
+    out_code << buf_code.str();
+  }
+  if (!cg_opts.emit_shared_lib) {
+    auto weights_fn = GetDerivedFileName(main_output_file_name, ".bin");
+    std::ofstream out_constants(weights_fn, std::ofstream::binary);
+    out_constants << buf_constants.str();
+  }
+  if (cg_opts.emit_header) {
+    auto header_fn = GetDerivedFileName(main_output_file_name, ".h");
+    std::ofstream out_header(header_fn, std::ofstream::binary);
+    out_header << buf_header.str();
+  }
+  if (model_info != nullptr) {
+    *model_info = ctx.GetModelInfo();
+  }
+  return 0;
 }
 
 HL_API_EXPORT
 int Compile(ModelFormat format, const std::vector<const void*>& model_defs,
-            const std::string& name, const std::string& temp_dir,
             const std::string& target, int batch,
             const std::vector<std::string>& input_shapes,
             const std::vector<std::string>& inputs,
             const std::vector<std::string>& outputs,
-            const CXXCodeGenOpts& cg_opts) {
+            const CXXCodeGenOpts& cg_opts,
+            const std::string& main_output_file_name, ModelInfo* model_info) {
   GlobalContext ctx;
   Function* func;
   std::unique_ptr<Module> m;
-  std::tie(m, func) = Init(&ctx, target);
+  std::tie(m, func) = CreateModule(&ctx, target);
+
   if (auto status = Parser::Parse(func, model_defs, format);
       status != Status::SUCCESS) {
     return 1;
   }
-  PassManager pm(ctx);
-  PopulatePasses(&pm, name, temp_dir, target, batch, input_shapes, inputs,
-                 outputs, cg_opts);
-  pm.Run(m.get());
-  return 0;
+
+  return InvokeCompiler(m.get(), target, batch, input_shapes, inputs, outputs,
+                        cg_opts, main_output_file_name, model_info);
 }
 
 HL_API_EXPORT
 int Compile(ModelFormat format, const std::vector<const char*>& models,
-            const std::vector<size_t>& model_sizes, const std::string& name,
-            const std::string& temp_dir, const std::string& target, int batch,
-            const std::vector<std::string>& input_shapes,
+            const std::vector<size_t>& model_sizes, const std::string& target,
+            int batch, const std::vector<std::string>& input_shapes,
             const std::vector<std::string>& inputs,
             const std::vector<std::string>& outputs,
-            const CXXCodeGenOpts& cg_opts) {
+            const CXXCodeGenOpts& cg_opts,
+            const std::string& main_output_file_name, ModelInfo* model_info) {
   GlobalContext ctx;
-  ctx.SetTargetTriple(std::string(target));
-  if (target.substr(0, 3) == "cxx") {
-    ctx.SetTargetTriple("x86_64"); // For binary constant writer.
-  }
-
-  Module m(ctx, "halo_module");
-
-  FunctionBuilder func_builder(&m);
-  std::string func_name = "model";
-  Function* func = func_builder.CreateFunction(func_name);
+  Function* func;
+  std::unique_ptr<Module> m;
+  std::tie(m, func) = CreateModule(&ctx, target);
   if (auto status = Parser::Parse(func, models, model_sizes, format);
       status != Status::SUCCESS) {
     return 1;
   }
-  PassManager pm(ctx);
-  FusionOptions fusion_opts;
-  PopulateOptPasses(&pm, target, input_shapes, inputs, outputs, batch, "",
-                    ChannelOrder::None, false, false, ModelFormat::TENSORFLOW,
-                    cg_opts, fusion_opts);
-  std::string code_fn = temp_dir + "/" + name + ".cc";
-  std::string weights_fn = temp_dir + "/" + name + ".bin";
-  std::string header_fn = temp_dir + "/" + name + ".h";
 
-  std::ofstream out_code(code_fn, std::ofstream::binary);
-  std::ofstream out_constants(weights_fn, std::ofstream::binary);
-  std::ofstream out_header(header_fn, std::ofstream::binary);
-  bool is_c_or_cxx_output =
-      target.substr(0, 3) == "cxx" || target.substr(0, 2) == "cc";
-
-  PopulateCodeGenPasses(&pm, &out_code, &out_constants, &out_header, &std::cerr,
-                        target, is_c_or_cxx_output, false /*is_binary_output*/,
-                        false /* EmitDataAsC */, false /*EmitCodeOnly*/,
-                        false /* EmitLLVMIR */, false /* EmitTritonConfig */,
-                        "" /*TritonConfigFile */, Quantization::None,
-                        "" /* PGQFile */, false /* RISCVOpt */, cg_opts);
-  pm.Run(&m);
-  return 0;
+  return InvokeCompiler(m.get(), target, batch, input_shapes, inputs, outputs,
+                        cg_opts, main_output_file_name, model_info);
 }
 
 HL_API_EXPORT
-int CompileTFGraph(const void* graphdef, const std::string& name,
-                   const std::string& temp_dir,
+int CompileTFGraph(const void* graphdef,
                    const std::vector<std::string>& input_shapes,
-                   const CXXCodeGenOpts& cg_opts) {
-  return Compile(ModelFormat::TENSORFLOW, {graphdef}, name, temp_dir, "cxx", 0,
-                 input_shapes, {}, {}, cg_opts);
+                   const CXXCodeGenOpts& cg_opts,
+                   const std::string& main_output_file, ModelInfo* model_info) {
+  return Compile(ModelFormat::TENSORFLOW, {graphdef}, "cxx", 0, input_shapes,
+                 {}, {}, cg_opts, main_output_file, model_info);
 }
 
 HL_API_EXPORT
 int CompileTFGraph(const char* pb_buf, size_t pb_buf_size,
-                   const std::string& name, const std::string& temp_dir,
                    const std::vector<std::string>& input_shapes,
-                   const CXXCodeGenOpts& cg_opts) {
-  return Compile(ModelFormat::TENSORFLOW, {pb_buf}, {pb_buf_size}, name,
-                 temp_dir, "cxx", 0, input_shapes, {}, {}, cg_opts);
+                   const CXXCodeGenOpts& cg_opts,
+                   const std::string& main_output_file, ModelInfo* model_info) {
+  const char* str = main_output_file.c_str();
+  const std::string new_str(str);
+  return Compile(ModelFormat::TENSORFLOW, {pb_buf}, {pb_buf_size}, "cxx", 0,
+                 input_shapes, {}, {}, cg_opts, new_str, model_info);
 }
 
 } // namespace halo
+
+// NOLINTNEXTLINE
+static std::vector<std::string> ToStrings(size_t n, const char* strs[]) {
+  std::vector<std::string> strs_v;
+  strs_v.reserve(n);
+  for (unsigned i = 0; i < n; ++i) {
+    strs_v.push_back(std::string(strs[i])); // NOLINT
+  }
+  return strs_v;
+}
+
+HL_API_EXPORT
+// NOLINTNEXTLINE
+int halo_CompileTFPbGraph(const char* pb_buf, size_t pb_buf_size,
+                          size_t num_input_shapes, const char* input_shapes[],
+                          const HaloCodeGenOpts* cg_opts,
+                          const char* main_output_file,
+                          HaloModelInfo* model_info) {
+  const halo::CXXCodeGenOpts& opts =
+      *(halo::CXXCodeGenOpts*)(cg_opts); // NOLINT
+  return halo::CompileTFGraph(pb_buf, pb_buf_size,
+                              ToStrings(num_input_shapes, input_shapes), opts,
+                              std::string(main_output_file), model_info);
+}
+
+HL_API_EXPORT
+// NOLINTNEXTLINE
+int halo_CompileTFGraphdef(const void* graphdef, size_t num_input_shapes,
+                           const char* input_shapes[],
+                           const HaloCodeGenOpts* cg_opts,
+                           const char* main_output_file,
+                           HaloModelInfo* model_info) {
+  const halo::CXXCodeGenOpts& opts =
+      *(halo::CXXCodeGenOpts*)(cg_opts); // NOLINT
+
+  return halo::CompileTFGraph(graphdef,
+                              ToStrings(num_input_shapes, input_shapes), opts,
+                              std::string(main_output_file), model_info);
+}

@@ -34,20 +34,21 @@ using namespace halo;
 
 static llvm::cl::opt<bool> PrintAnalysisReport(
     "print-analysis-report", llvm::cl::desc("Print analysis report"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> ConvertToIpuGraphDef(
     "convert-to-ipu-graphdef", llvm::cl::desc("Convert to IPU style graphdef"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<std::string> SplitNames(
     "split-names", llvm::cl::desc("Split names."),
     llvm::cl::desc(
-        "Specify split names like -split-name=xxx:yyy,aaa:bbb,mmm:nnn"));
+        "Specify split names like -split-name=xxx:yyy,aaa:bbb,mmm:nnn"),
+    llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<std::string> OutputGraphDefFile(
     "graphdef-file-name", llvm::cl::desc("output graphdef file name."),
-    llvm::cl::init("./converted_model.pb"));
+    llvm::cl::init("./converted_model.pb"), llvm::cl::cat(HaloOptCat));
 
 static void PopulatePassesAndRun(GlobalContext& ctx, Module& m,
                                  const llvm::cl::opt<signed>& batch,
@@ -56,14 +57,17 @@ static void PopulatePassesAndRun(GlobalContext& ctx, Module& m,
   std::vector<std::string> input_shapes(InputsShape.begin(), InputsShape.end());
   FusionOptions fusion_opts;
   CXXCodeGenOpts opts;
-  PopulateOptPasses(&pm, "cxx", input_shapes, {}, {}, batch, "",
-                    ChannelOrder::None, false, false, format, opts,
-                    fusion_opts);
-  pm.AddAnalyzerPass(&std::cout);
+  PopulateOptPasses(&pm, "cxx", input_shapes, {}, {}, batch, "", false, format,
+                    opts, fusion_opts);
+  AnalyzerOpts alz_opts;
+  alz_opts.batch_size = Batch;
+  alz_opts.print_details = PrintAnalysisReport;
+  pm.AddAnalyzerPass(&std::cout, alz_opts);
   pm.Run(&m);
 }
 
 int main(int argc, char** argv) {
+  llvm::cl::HideUnrelatedOptions(HaloOptCat);
   llvm::cl::ParseCommandLineOptions(argc, argv);
   GlobalContext ctx;
   ctx.SetBasePath(argv[0]);
@@ -72,7 +76,7 @@ int main(int argc, char** argv) {
 
   armory::Opts opts;
   opts.convert_to_ipu_graphdef = ConvertToIpuGraphDef;
-  opts.output_graphdef_filename = OutputGraphDefFile;
+  opts.output_graphdef_filename = OutputGraphDefFile.getValue();
 
   llvm::SmallVector<llvm::StringRef, 4> splitted;
   llvm::StringRef(SplitNames).split(splitted, ',');

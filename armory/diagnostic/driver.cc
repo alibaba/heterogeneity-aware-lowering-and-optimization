@@ -40,9 +40,10 @@ using namespace halo;
 
 static llvm::cl::opt<bool> PrintDiagnosticReport(
     "print-diagnostic-report", llvm::cl::desc("Print diagnostic report"),
-    llvm::cl::init(false));
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
 int main(int argc, char** argv) {
+  llvm::cl::HideUnrelatedOptions(HaloOptCat);
   llvm::cl::ParseCommandLineOptions(argc, argv);
   GlobalContext ctx;
   ctx.SetBasePath(argv[0]);

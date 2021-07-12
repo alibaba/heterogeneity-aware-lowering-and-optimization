@@ -26,6 +26,7 @@
 #include "halo/lib/framework/global_context.h"
 #include "halo/lib/ir/module.h"
 #include "halo/lib/pass/pass.h"
+#include "halo/lib/target/generic_cxx/code_formatter.h"
 #include "halo/lib/target/generic_cxx/generic_cxx_codegen.h"
 #include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
 #include "halo/lib/transforms/fusion.h"
@@ -58,18 +59,23 @@ class HL_API_EXPORT PassManager final {
   void Print(std::ostream& os) const;
 
   void Dump() const;
-  Pass* AddAnalyzerPass(std::ostream* os);
+  Pass* AddAnalyzerPass(std::ostream* os, const AnalyzerOpts& opts);
   Pass* AddARMBinaryWriterPass(std::ostream& os);
   Pass* AddARMConstantWriterPass(std::ostream& os);
   Pass* AddARMLLVMIRCodeGenPass(ConstantDataStorage constant_data_storage);
   Pass* AddCAFFEExtensionLegalizerPass();
+  Pass* AddCodeFormatterPass(std::ostringstream& code,
+                             std::ostringstream& header,
+                             const CXXCodeGenOpts& opts);
   Pass* AddDCEPass();
   Pass* AddDevicePlacementPass();
   Pass* AddFusionPass(const FusionOptions& opts);
   Pass* AddGenericConstantWriterPass(std::ostream& os, bool bitcode_format);
   Pass* AddGenericCXXConstantWriterPass(std::ostream& os);
-  Pass* AddGenericCXXCodeGenPass(std::ostream& os, std::ostream& header_os);
-  Pass* AddGenericCXXCodeGenPass(std::ostream& os, std::ostream& header_os,
+  Pass* AddGenericCXXCodeGenPass(std::ostringstream& os,
+                                 std::ostringstream& header_os);
+  Pass* AddGenericCXXCodeGenPass(std::ostringstream& os,
+                                 std::ostringstream& header_os,
                                  std::ostream& dynamic_check_os,
                                  const CXXCodeGenOpts& opts);
   Pass* AddGenericLLVMIRCodeGenPass();
@@ -87,6 +93,14 @@ class HL_API_EXPORT PassManager final {
                             bool remove_input_transpose,
                             bool remove_output_transpose, bool disable_conv_bn,
                             bool fuse_conv_bias);
+  Pass* AddLinkPass(const std::ostringstream& obj_code,
+                    const std::ostringstream& obj_constants,
+                    const std::string& output_file_name,
+                    const CXXCodeGenOpts& opts);
+  Pass* AddObjEmitPass(std::ostringstream& out,
+                       const std::ostringstream& source,
+                       const std::vector<std::string>& header_searchs,
+                       const CXXCodeGenOpts& opts);
   Pass* AddONNXExtensionLegalizerPass();
   Pass* AddOutputRewriterPass(const std::vector<std::string>& outputs);
   Pass* AddReorderChannelPass(bool channel_first);
@@ -95,7 +109,7 @@ class HL_API_EXPORT PassManager final {
   Pass* AddRISCVLLVMIRCodeGenPass(ConstantDataStorage constant_data_storage);
 
   Pass* AddRISCVLLVMIRCodeGenPass(ConstantDataStorage constant_data_storage,
-                                  std::string rt_lib_name);
+                                  const std::string& rt_lib_name);
   Pass* AddSplittingPass();
   Pass* AddTFExtensionLegalizerPass();
   Pass* AddTFLiteExtensionLegalizerPass();

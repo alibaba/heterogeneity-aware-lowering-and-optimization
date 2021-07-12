@@ -23,22 +23,19 @@
 namespace halo {
 
 void GenericCXXCodeGen::RunOnInstruction(OneHotInst* inst) {
-  const Def& lhs = inst->GetOperand(0);
-  const Def& rhs = inst->GetOperand(1);
-
-  CXXValue op0 = ir_mapping_[lhs];
-  CXXValue op1 = ir_mapping_[rhs];
-  CXXValue op_on = ir_mapping_[inst->GetOperand(2)];
-  CXXValue op_off = ir_mapping_[inst->GetOperand(3)];
-
-  const auto& lhs_type = lhs.GetType();
-  const auto& rhs_type = rhs.GetType();
+  CXXValue op_idx = ir_mapping_[inst->GetOperand(0)];
+  CXXValue op_depth = ir_mapping_[inst->GetOperand(1)];
+  // We assume the IR is transformed to match with ODLA def: on_off is a [2]
+  // shaped data.
+  CXXValue on_off_val = ir_mapping_[inst->GetOperand(2)];
   const auto& ret_type = inst->GetResultType();
+  const Constant* depth_c = DynCast<Constant>(inst->GetOperand(1));
+  HLCHECK(depth_c != nullptr && depth_c->GetResultType().IsScalar() &&
+          "Depth must be constant scalar");
 
-  CXXValue ret(inst->GetName(), op0.type);
-
-  EmitODLACall(ret, "odla_Onehot", ret_type.GetDataType(), lhs_type, op0,
-               rhs_type, op1, op_on, op_off, inst->GetAxis(), ret_type);
+  CXXValue ret(inst->GetName(), op_idx.type);
+  EmitODLACall(ret, "odla_OneHot", op_idx, depth_c->GetDataAsInt64(0),
+               on_off_val, inst->GetAxis(), EmitShape(ret_type));
   ir_mapping_[*inst] = ret;
 }
 

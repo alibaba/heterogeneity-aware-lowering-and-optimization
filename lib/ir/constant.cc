@@ -18,11 +18,12 @@
 #include "halo/lib/ir/constant.h"
 
 #include <algorithm>
+#include <climits>
 #include <iostream>
+#include <variant>
 
 #include "halo/lib/ir/function.h"
 #include "halo/lib/ir/module.h"
-
 namespace halo {
 
 Constant::Constant(GlobalContext& context, const std::string& name,
@@ -39,6 +40,66 @@ Constant::Constant(const Constant& from)
       data_layout_(from.data_layout_),
       data_(from.data_) {}
 
+struct Float {
+  // TODO(unknown): no infinity, underflow/overflow handling.
+ private:
+  Float() = delete;
+  static constexpr int BitsPerInt = CHAR_BIT * sizeof(int);
+  template <typename T, int exp, int mantissa>
+  static std::array<int, 3> Extract(T x) {
+    static_assert(exp + mantissa + 1 == sizeof(T) * CHAR_BIT);
+    int sign = x >> (exp + mantissa);
+    int m = x & ((1 << mantissa) - 1);
+    int e = (x >> mantissa) & ((1 << exp) - 1);
+    return {sign, e, m};
+  }
+
+  template <typename T, int exp, int mantissa>
+  static T Combine(int sign, int e, int m) {
+    static_assert(exp + mantissa + 1 == sizeof(T) * CHAR_BIT);
+    T x{0};
+    x = sign ? 1U << (exp + mantissa) : 0;
+    m >>= BitsPerInt - mantissa;
+    x |= m & ((1U << mantissa) - 1);
+    x |= (e & ((1U << exp) - 1)) << mantissa;
+    return x;
+  }
+  static constexpr int FP32Exp = 8;
+  static constexpr int FP32Mantissa = 23;
+  static constexpr int FP32ExpBias = 127;
+  static constexpr int FP16Exp = 5;
+  static constexpr int FP16Mantissa = 10;
+  static constexpr int FP16ExpBias = 15;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+  static inline float GetFP32(uint8_t sign, int32_t e, uint32_t m) {
+    uint32_t x =
+        Combine<uint32_t, FP32Exp, FP32Mantissa>(sign, e + FP32ExpBias, m);
+    return *(reinterpret_cast<float*>(&x)); // NOLINT.
+  }
+  static inline uint16_t GetFP16(uint8_t sign, int32_t e, uint32_t m) {
+    return Combine<uint16_t, FP16Exp, FP16Mantissa>(sign, e + FP16Exp, m);
+  }
+
+ public:
+  static inline uint16_t GetFP16(float x) {
+    uint32_t v = *(reinterpret_cast<int*>(&x)); // NOLINT.
+    auto components = Extract<uint32_t, FP32Exp, FP32Mantissa>(v);
+    components[1] -= FP32ExpBias;
+    components[2] <<= BitsPerInt - FP32Mantissa;
+    return GetFP16(components[0], components[1], components[2]);
+  }
+#pragma GCC diagnostic pop
+
+  static inline float GetFP32(uint16_t x) {
+    auto components = Extract<uint16_t, FP16Exp, FP16Mantissa>(x);
+    components[1] -= FP16ExpBias;
+    components[2] <<= BitsPerInt - FP16Mantissa;
+    return GetFP32(components[0], components[1], components[2]);
+  }
+};
+
 template <typename T>
 static void PrintValues(std::ostream* os, const T* ptr, size_t n) {
   for (size_t i = 0; i < n; ++i) {
@@ -46,6 +107,15 @@ static void PrintValues(std::ostream* os, const T* ptr, size_t n) {
       *os << ", ";
     }
     *os << ptr[i]; // NOLINT.
+  }
+}
+
+static void PrintFP16Values(std::ostream* os, const uint16_t* ptr, size_t n) {
+  for (size_t i = 0; i < n; ++i) {
+    if (i > 0) {
+      *os << ", ";
+    }
+    *os << Float::GetFP32(ptr[i]); // NOLINT.
   }
 }
 
@@ -115,6 +185,11 @@ void Constant::PrintData(std::ostream* os, size_t num_to_print) const {
     }
     case DataType::INT32: {
       PrintValues(os, GetDataPtr<int>(), num_to_print);
+      break;
+    }
+    case DataType::FLOAT16: {
+      PrintFP16Values(os, static_cast<const uint16_t*>(GetRawDataPtr()),
+                      num_to_print);
       break;
     }
     case DataType::FLOAT32: {

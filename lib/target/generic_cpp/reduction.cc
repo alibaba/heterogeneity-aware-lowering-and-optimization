@@ -71,6 +71,11 @@ void GenericCXXCodeGen::RunOnInstruction(ReduceL2Inst* inst) {
                             "odla_ReduceL2");
 }
 
+void GenericCXXCodeGen::RunOnInstruction(ReduceSumInst* inst) {
+  RunOnReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims(),
+                            "odla_ReduceSum");
+}
+
 void GenericCXXCodeGen::RunOnInstruction(ReduceLogSumInst* inst) {
   RunOnReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims(),
                             "odla_ReduceLogSum");

@@ -272,11 +272,12 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
   // Try constant folding
   const auto& ret_type = binary_inst->GetResultType();
 
+  KindPredicate pred = KindPredicate::INVALID;
+  if (opcode == OpCode::CMP) {
+    pred = DynCast<CmpInst>(binary_inst)->GetPredicator();
+  }
+
   if (ret_type.IsValid()) {
-    KindPredicate pred = KindPredicate::INVALID;
-    if (opcode == OpCode::CMP) {
-      pred = DynCast<CmpInst>(binary_inst)->GetPredicator();
-    }
     if (has_swapped) {
       std::swap(op0, op1);
     }
@@ -329,10 +330,11 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
     auto addend = cb.CreateConstant(orig_addend->GetName() + "_broadcasted_" +
                                         std::to_string(binary_inst->GetId()),
                                     op0_type, buf.data());
-    auto new_add = has_swapped ? builder.CreateBinary(binary_inst->GetName(),
-                                                      *addend, op0, opcode)
-                               : builder.CreateBinary(binary_inst->GetName(),
-                                                      op0, *addend, opcode);
+    auto new_add = has_swapped
+                       ? builder.CreateBinary(binary_inst->GetName(), *addend,
+                                              op0, opcode, pred)
+                       : builder.CreateBinary(binary_inst->GetName(), op0,
+                                              *addend, opcode, pred);
     new_add->GetResultsTypes()[0] = binary_inst->GetResultsTypes()[0];
     return {orig_def, *new_add};
   }
@@ -970,6 +972,11 @@ static void Pad(char* dst, const char* src, size_t elems_num, size_t elem_size,
   }
 }
 
+std::pair<Def, Def> InstSimplify::RunOnInstruction(NoOpInst* noop_inst) {
+  return {*noop_inst,
+          noop_inst->GetNumOfOperands() > 0 ? Def::GetUndefined() : *noop_inst};
+}
+
 std::pair<Def, Def> InstSimplify::RunOnInstruction(PadInst* pad_inst) {
   Def orig_def{pad_inst, 0};
   Def op0 = pad_inst->GetOperand(0);
@@ -1214,12 +1221,13 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(ZExtInst* inst) {
   auto op0 = inst->GetOperand(0);
   const auto& op0_type = op0.GetType();
   DataType src_dt = op0_type.GetDataType();
-  HLCHECK(halo::Type::IsIntegerType(src_dt) &&
-          halo::Type::IsIntegerType(ret_dt));
 
   if (!op0_type.IsValid() || !IsA<Constant>(op0)) {
     return {orig_def, orig_def};
   }
+
+  HLCHECK(halo::Type::IsIntegerType(src_dt) &&
+          halo::Type::IsIntegerType(ret_dt));
 
   ConstantBuilder cb(inst->GetParent()->GetParent());
   Constant* c_src = DynCast<Constant>(op0.GetOwner());
@@ -1464,6 +1472,21 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(ConcatInst* inst) {
         builder.CreateTranspose(new_concat->GetName() + "_t", {*new_concat});
     new_tr->SetPermutation(perm);
     return {orig_def, *new_tr};
+  }
+
+  // Skip empty inputs.
+  std::vector<Def> operands;
+  for (const auto& op : inst->GetOperands()) {
+    if (!op.GetType().IsValid() || op.GetType().GetTotalNumOfElements() != 0) {
+      operands.push_back(op);
+    }
+  }
+  if (operands.size() < inst->GetNumOfOperands()) {
+    IRBuilder builder(inst->GetParent());
+    builder.SetInsertAfter(inst);
+
+    auto new_concat = builder.Clone(*inst, operands);
+    return {orig_def, *new_concat};
   }
 
   for (size_t i = 0; i < inst->GetNumOfOperands(); ++i) {
@@ -1887,7 +1910,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SItoFPInst* inst) {
     auto* reshape_inst = DynCast<ReshapeInst>(op0);
     if (reshape_inst->GetNumberOfUses() == 1) {
       const auto& op_reshape = reshape_inst->GetOperand(0);
-      if (IsA<Argument>(op_reshape.GetOwner())) {
+      if (IsA<Argument>(op_reshape)) {
         Argument* arg = DynCast<Argument>(op_reshape);
         if (arg->GetNumberOfUses() == 1 && op_reshape.GetType().IsValid()) {
           arg->SetType(halo::Type{DataType::FLOAT32,
@@ -1896,11 +1919,6 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SItoFPInst* inst) {
         }
       }
     }
-  } else if (IsA<Argument>(op0.GetOwner()) && op0.GetType().IsValid() &&
-             DynCast<Argument>(op0.GetOwner())->GetNumberOfUses() == 1) {
-    Argument* arg = DynCast<Argument>(op0.GetOwner());
-    arg->SetType(halo::Type{DataType::FLOAT32, op0.GetType().GetDimSizes()});
-    return {orig_def, *arg};
   } else if (IsA<Constant>(op0)) {
     auto src_ty = op0.GetType().GetDataType();
     Constant* input = DynCast<Constant>(op0);
@@ -1923,15 +1941,15 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SItoFPInst* inst) {
 
 std::pair<Def, Def> InstSimplify::RunOnInstruction(OneHotInst* inst) {
   Def orig_def{inst, 0};
-  // work around on cxx target when backend doens't support onehot.
+  // work around on cxx target when backend doesn't support onehot.
   if (!simplify_for_preprocess_) {
     return {orig_def, orig_def};
   }
   auto on_value = inst->GetOperand(2);
-  auto off_value = inst->GetOperand(3);
   const auto& dst_type = inst->GetResultsTypes()[0];
-  if (!IsA<Constant>(on_value.GetOwner()) ||
-      !IsA<Constant>(off_value.GetOwner()) || !dst_type.IsValid()) {
+  if (!IsA<Constant>(on_value) ||
+      (inst->GetNumOfOperands() == 4 && !IsA<Constant>(inst->GetOperand(3))) ||
+      !dst_type.IsValid()) {
     return {orig_def, orig_def};
   }
 
@@ -1949,8 +1967,8 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(OneHotInst* inst) {
         }
       }
     }
-  } else if (IsA<Argument>(op0.GetOwner()) && op0.GetType().IsValid() &&
-             DynCast<Argument>(op0.GetOwner())->GetNumberOfUses() == 1) {
+  } else if (IsA<Argument>(op0) && op0.GetType().IsValid() &&
+             DynCast<Argument>(op0)->GetNumberOfUses() == 1) {
     Argument* arg = DynCast<Argument>(op0.GetOwner());
     arg->SetType(
         halo::Type{on_value.GetType().GetDataType(), dst_type.GetDimSizes()});

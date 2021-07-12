@@ -24,14 +24,16 @@
 #include "llvm/ADT/Triple.h"
 
 namespace halo {
+
 HL_UNUSED static void PopulateCodeGenPasses(
-    PassManager* pm, std::ostream* out_code, std::ostream* out_constants,
-    std::ostream* out_header, std::ostream* out_dynamic_check,
-    const std::string& target, bool is_c_or_cxx_output, bool is_binary_output,
-    bool emit_data_as_c, bool emit_code_only, bool emit_llvm_ir,
-    bool emit_triton_config, const std::string& triton_config_file,
-    Quantization quant_weights, const std::string& pgq_file, bool riscv_opt,
-    const CXXCodeGenOpts& opts) {
+    PassManager* pm, std::ostringstream* out_code,
+    std::ostringstream* out_constants, std::ostringstream* out_header,
+    std::ostream* out_dynamic_check, const std::string& target,
+    bool is_c_or_cxx_output, bool is_binary_output, bool emit_data_as_c,
+    bool emit_code_only, bool emit_llvm_ir, bool emit_triton_config,
+    const std::string& triton_config_file, Quantization quant_weights,
+    const std::string& pgq_file, bool riscv_opt, const CXXCodeGenOpts& opts,
+    const std::string& output_file_name) {
   auto constant_storage = ConstantDataStorage::DefinedAsStatic;
   if (opts.separate_constants) {
     constant_storage = ConstantDataStorage::DeclaredAsExternal;
@@ -39,17 +41,26 @@ HL_UNUSED static void PopulateCodeGenPasses(
 
   if (is_c_or_cxx_output) {
     pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
-    pm->AddGenericCXXCodeGenPass(std::ref(*out_code), std::ref(*out_header),
-                                 std::ref(*out_dynamic_check), opts);
+    pm->AddGenericCXXCodeGenPass(*out_code, *out_header, *out_dynamic_check,
+                                 opts);
     if (emit_data_as_c) {
-      pm->AddGenericCXXConstantWriterPass(std::ref(*out_constants));
+      pm->AddGenericCXXConstantWriterPass(*out_constants);
     } else {
-      pm->AddX86ConstantWriterPass(std::ref(*out_constants));
+      pm->AddX86ConstantWriterPass(*out_constants);
     }
     if (emit_triton_config) {
       pm->AddTritonConfigWriterPass(
           triton_config_file,
           opts.emit_dynamic_batch ? opts.max_batch_size : 0);
+    }
+    if (is_c_or_cxx_output && opts.format_code) {
+      pm->AddCodeFormatterPass(*out_code, *out_header, opts);
+    }
+    if (opts.emit_obj || opts.emit_shared_lib) {
+      pm->AddObjEmitPass(*out_code, *out_code, {}, opts);
+    }
+    if (opts.emit_shared_lib) {
+      pm->AddLinkPass(*out_code, *out_constants, output_file_name, opts);
     }
     return;
   }
@@ -57,10 +68,9 @@ HL_UNUSED static void PopulateCodeGenPasses(
   if (emit_llvm_ir) {
     pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
     pm->AddGenericLLVMIRCodeGenPass(constant_storage);
-    pm->AddGenericLLVMIRWriterPass(std::ref(*out_code), is_binary_output);
+    pm->AddGenericLLVMIRWriterPass(*out_code, is_binary_output);
     if (opts.separate_constants && !emit_code_only) {
-      pm->AddGenericConstantWriterPass(std::ref(*out_constants),
-                                       is_binary_output);
+      pm->AddGenericConstantWriterPass(*out_constants, is_binary_output);
     }
   } else {
     llvm::Triple triple(target);
@@ -68,19 +78,19 @@ HL_UNUSED static void PopulateCodeGenPasses(
       case llvm::Triple::ArchType::x86:
       case llvm::Triple::ArchType::x86_64: {
         pm->AddX86LLVMIRCodeGenPass(ConstantDataStorage::DeclaredAsExternal);
-        pm->AddX86BinaryWriterPass(std::ref(*out_code));
+        pm->AddX86BinaryWriterPass(*out_code);
         if (opts.separate_constants && !emit_code_only) {
           pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
-          pm->AddX86ConstantWriterPass(std::ref(*out_constants));
+          pm->AddX86ConstantWriterPass(*out_constants);
         }
         break;
       }
       case llvm::Triple::ArchType::aarch64: {
         pm->AddARMLLVMIRCodeGenPass(ConstantDataStorage::DeclaredAsExternal);
-        pm->AddARMBinaryWriterPass(std::ref(*out_code));
+        pm->AddARMBinaryWriterPass(*out_code);
         if (opts.separate_constants && !emit_code_only) {
           pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
-          pm->AddARMConstantWriterPass(std::ref(*out_constants));
+          pm->AddARMConstantWriterPass(*out_constants);
         }
         break;
       }
@@ -96,7 +106,7 @@ HL_UNUSED static void PopulateCodeGenPasses(
         pm->AddRISCVBinaryWriterPass(std::ref(*out_code));
         if (opts.separate_constants && !emit_code_only) {
           pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
-          pm->AddRISCVConstantWriterPass(std::ref(*out_constants));
+          pm->AddRISCVConstantWriterPass(*out_constants);
         }
 
         break;
@@ -114,8 +124,7 @@ static void PopulateOptPasses(PassManager* pm, const std::string& target,
                               const std::vector<std::string>& inputs,
                               const std::vector<std::string>& outputs,
                               int batch, const std::string& preprocess_scale,
-                              ChannelOrder channel_order, bool split_function,
-                              bool disable_type_cast, ModelFormat format,
+                              bool split_function, ModelFormat format,
                               const CXXCodeGenOpts& opts,
                               const FusionOptions& fusion_opts) {
   pm->AddInputLegalizerPass(batch, input_shapes, preprocess_scale);
@@ -142,15 +151,15 @@ static void PopulateOptPasses(PassManager* pm, const std::string& target,
       target.substr(0, 3) == "cxx", opts.disable_broadcasting,
       opts.remove_input_transpose, opts.remove_output_transpose,
       opts.disable_conv_bn, fusion_opts.ConvBias);
-  if (channel_order != ChannelOrder::None) {
-    pm->AddReorderChannelPass(channel_order == ChannelOrder::ChannelFirst);
+  if (opts.channel_order != ChannelOrder::None) {
+    pm->AddReorderChannelPass(opts.channel_order == ChannelOrder::ChannelFirst);
   }
   pm->AddFusionPass(fusion_opts);
   if (split_function) {
     pm->AddSplittingPass();
     pm->AddDevicePlacementPass();
   }
-  if (!disable_type_cast) {
+  if (opts.enable_type_cast) {
     pm->AddTypeCastPass();
   }
 }

@@ -19,6 +19,7 @@
 
 #include <experimental/filesystem>
 
+#include "halo/halo.h"
 #include "halo/lib/framework/data_layout.h"
 #include "halo/lib/target/codegen_object.h"
 #include "llvm/Config/llvm-config.h"
@@ -50,14 +51,25 @@ class GlobalContextImpl {
 
   CodeGenObject& GetCodeGenObject() noexcept { return code_gen_obj_; }
 
-  void SetBasePath(const char* path) noexcept {
-    namespace fs = std::experimental::filesystem;
-    const fs::path p(path);
-    base_path_ = fs::is_directory(p) ? p.string()
-                                     : p.parent_path().parent_path().string();
+  void SetBasePath(const std::string& path) noexcept { base_path_ = path; }
+  const std::string& GetBasePath() const noexcept { return base_path_; }
+
+  void SetODLAIncludePath(const std::string& path) noexcept {
+    odla_header_path_ = path;
+  }
+  const std::string& GetODLAIncludePath() const noexcept {
+    return odla_header_path_;
   }
 
-  const std::string& GetBasePath() const noexcept { return base_path_; }
+  void SetODLALibraryPath(const std::string& path) noexcept {
+    odla_lib_path_ = path;
+  }
+  const std::string& GetODLALibraryPath() const noexcept {
+    return odla_lib_path_;
+  }
+
+  void SetVerbosity(int verbosity) noexcept { verbosity_ = verbosity; }
+  int GetVerbosity() const noexcept { return verbosity_; }
 
   const std::string& GetTargetTriple() const noexcept { return triple_; }
   void SetTargetTriple(const std::string& triple) noexcept { triple_ = triple; }
@@ -66,6 +78,8 @@ class GlobalContextImpl {
   void SetProcessorName(const std::string& processor) noexcept {
     processor_ = processor;
   }
+
+  ModelInfo& GetModelInfo() noexcept { return model_info_; }
 
   void SetPrintPass(const bool is_print_pass) noexcept {
     is_print_pass_ = is_print_pass;
@@ -79,9 +93,13 @@ class GlobalContextImpl {
   DefaultDataLayout data_layout_;
   CodeGenObject code_gen_obj_;
   std::string base_path_{""};
+  std::string odla_header_path_{""};
+  std::string odla_lib_path_{""};
+  int verbosity_ = 0;
   std::string triple_{LLVM_HOST_TRIPLE};
   std::string processor_{"native"};
   bool is_print_pass_ = false;
+  ModelInfo model_info_{};
 };
 
 GlobalContext::GlobalContext() : impl_(std::make_unique<GlobalContextImpl>()) {}
@@ -97,12 +115,36 @@ const DataLayout& GlobalContext::GetDefaultDataLayout() const noexcept {
   return impl_->GetDefaultDataLayout();
 }
 
-void GlobalContext::SetBasePath(const char* path) noexcept {
+void GlobalContext::SetBasePath(const std::string& path) noexcept {
   impl_->SetBasePath(path);
 }
 
 const std::string& GlobalContext::GetBasePath() const noexcept {
   return impl_->GetBasePath();
+}
+
+void GlobalContext::SetVerbosity(int verbosity) noexcept {
+  impl_->SetVerbosity(verbosity);
+}
+
+int GlobalContext::GetVerbosity() const noexcept {
+  return impl_->GetVerbosity();
+}
+
+void GlobalContext::SetODLAIncludePath(const std::string& path) noexcept {
+  impl_->SetODLAIncludePath(path);
+}
+
+const std::string& GlobalContext::GetODLAIncludePath() const noexcept {
+  return impl_->GetODLAIncludePath();
+}
+
+void GlobalContext::SetODLALibraryPath(const std::string& path) noexcept {
+  impl_->SetODLALibraryPath(path);
+}
+
+const std::string& GlobalContext::GetODLALibraryPath() const noexcept {
+  return impl_->GetODLALibraryPath();
 }
 
 const CodeGenObject& GlobalContext::GetCodeGenObject() const noexcept {
@@ -127,6 +169,10 @@ const std::string& GlobalContext::GetProcessorName() const noexcept {
 
 void GlobalContext::SetProcessorName(const std::string& processor) noexcept {
   impl_->SetProcessorName(processor);
+}
+
+ModelInfo& GlobalContext::GetModelInfo() noexcept {
+  return impl_->GetModelInfo();
 }
 
 std::ostream& GlobalContext::Dbgs() noexcept { return std::cerr; }

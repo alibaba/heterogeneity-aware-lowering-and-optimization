@@ -41,6 +41,8 @@
 #include <string>
 #include <vector>
 
+#include "ODLA/odla_common.h"
+#include "ODLA/odla_value.h"
 #include "odla_popart.h"
 
 popart::DataType GetPopartType(odla_value_type type) {
@@ -98,10 +100,19 @@ const std::string& GetDirectionName(odla_rnn_direction direction) {
   return it->second;
 }
 
-popart::Shape GetPopartShape(odla_value_shape shape) {
+popart::Shape GetPopartShape(const odla_value_shape& shape) {
   popart::Shape dims(shape.size);
   for (int i = 0; i < shape.size; ++i) {
     dims[i] = shape.dims[i];
+  }
+  return dims;
+}
+
+odla_value_shape GetOdlaShape(const popart::Shape& shape) {
+  odla_value_shape dims;
+  dims.size = shape.size();
+  for (int i = 0; i < shape.size(); ++i) {
+    dims.dims[i] = shape[i];
   }
   return dims;
 }
@@ -117,6 +128,11 @@ std::unique_ptr<popart::IArray> MakeNDArrayWrapper(const odla_void* data_ptr,
       pArray = std::unique_ptr<popart::NDArrayWrapper<float>>(
           new popart::NDArrayWrapper<float>(reinterpret_cast<float*>(ptr),
                                             shape));
+      break;
+    }
+    case popart::DataType::FLOAT16: {
+      pArray = std::make_unique<popart::NDArrayWrapper<popart::float16_t>>(
+          reinterpret_cast<popart::float16_t*>(ptr), shape);
       break;
     }
     case popart::DataType::UINT32: {

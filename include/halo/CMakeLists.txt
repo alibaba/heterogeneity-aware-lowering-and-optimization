@@ -43,3 +43,5 @@ else()
 endif()
 
 add_custom_target(halo_version_h DEPENDS "${version_inc}")
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/version.h DESTINATION include/halo)
+install(FILES ${version_inc} DESTINATION include/halo)

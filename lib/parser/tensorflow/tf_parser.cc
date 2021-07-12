@@ -24,9 +24,11 @@
 
 #include <fstream>
 #include <map>
+#include <numeric>
 #include <set>
 #include <string_view>
 
+#include "function.pb.h"
 #include "graph.pb.h"
 #include "halo/lib/framework/common.h"
 #include "halo/lib/framework/type.h"
@@ -117,8 +119,14 @@ void TFParser::Init(BasicBlock* bb, Function* function,
 Status TFParser::ConvertToHaloIR(const tensorflow::GraphDef& graph_def) {
   int i = 0;
   Status s = Status::SUCCESS;
+  std::vector<const tensorflow::NodeDef*> ret_vals;
   for (const auto& cur_node : graph_def.node()) {
     VLOG(4) << "==========layer[" << i << "]==========";
+    if (cur_node.op() == "_Retval") {
+      ret_vals.push_back(&cur_node);
+      ++i;
+      continue;
+    }
     s = ConvertOneNode(ir_builder_.get(), cur_node, i++);
     if (s != Status::SUCCESS) {
       return s;
@@ -127,6 +135,25 @@ Status TFParser::ConvertToHaloIR(const tensorflow::GraphDef& graph_def) {
 
   VLOG(4) << "Total convert node num: " << graph_def.node_size();
   HLCHECK(graph_def.node_size() == i);
+  ConvertReturnNodes(ir_builder_.get(), ret_vals);
+
+  return Status::SUCCESS;
+}
+
+Status TFParser::ConvertReturnNodes(
+    IRBuilder* ir_builder,
+    const std::vector<const tensorflow::NodeDef*>& ret_vals) {
+  if (ret_vals.empty()) {
+    return Status::SUCCESS;
+  }
+  std::vector<Def> outputs;
+  for (auto& op : ret_vals) {
+    auto inputs = GetInputOperands(*op);
+    for (auto v : inputs) {
+      outputs.push_back(v);
+    }
+  }
+  ir_builder->CreateReturn("output", outputs);
   return Status::SUCCESS;
 }
 
@@ -170,11 +197,16 @@ void TFParser::RegisterOp() {
   func_lists_.emplace("Placeholder",
                       std::bind(&TFParser::ConvertPlaceholderNode, this,
                                 std::placeholders::_1, std::placeholders::_2));
+  func_lists_.emplace("_Arg",
+                      std::bind(&TFParser::ConvertPlaceholderNode, this,
+                                std::placeholders::_1, std::placeholders::_2));
 #include "tf_regist_op.h.inc"
 }
 
 static halo::DataType ProcessDataType(const tensorflow::DataType& data_type) {
   switch (data_type) {
+    case tensorflow::DT_HALF:
+      return DataType::FLOAT16;
     case tensorflow::DT_FLOAT:
       return DataType::FLOAT32;
     case tensorflow::DT_INT64:
@@ -196,7 +228,7 @@ static halo::DataType ProcessDataType(const tensorflow::DataType& data_type) {
     case tensorflow::DT_BOOL:
       return DataType::BOOL;
     default:
-      LOG(ERROR) << "Unsupported DataType";
+      LOG(ERROR) << "Unsupported DataType:" << data_type;
       return DataType::INVALID;
   }
 }
@@ -339,8 +371,16 @@ Tensor<int> TFParser::ProcessTensor<int>(
   }
 
   std::vector<int> v;
-  for (const auto& it : tensor_proto.int_val()) {
-    v.emplace_back(it);
+  v.reserve(std::accumulate(shape.begin(), shape.end(), 1,
+                            std::multiplies<int64_t>()));
+  if (data_type == DataType::FLOAT16) {
+    for (const auto& it : tensor_proto.half_val()) {
+      v.emplace_back(it);
+    }
+  } else {
+    for (const auto& it : tensor_proto.int_val()) {
+      v.emplace_back(it);
+    }
   }
   return Tensor<int>(data_type, shape, v);
 }
@@ -741,7 +781,7 @@ std::vector<Def> TFParser::GetInputOperands(
   size_t operand_num = node_def.input_size();
   for (size_t i = 0; i < operand_num; ++i) {
     std::string input_node_name = SkipFirstChar(node_def.input(i));
-    size_t pos = input_node_name.find(":");
+    size_t pos = input_node_name.find_last_of(':');
     std::string idx_str;
     std::unordered_map<std::string, IRObject*>::iterator it;
     if (pos != std::string::npos) {
@@ -761,6 +801,14 @@ std::vector<Def> TFParser::GetInputOperands(
       // those errors will be record in diagnostic report file
       // LOG(ERROR) << node_def.name() << " Node's " << i
       //<< "th operand:" << node_def.input(i) << " not found";
+      pos = input_node_name.find_first_of(':');
+      it = inst_name_to_ptr_.find(input_node_name.substr(0, pos));
+      if (it != inst_name_to_ptr_.end()) {
+        auto inst = it->second;
+        int idx = (idx_str.empty()) ? 0 : std::stoi(idx_str);
+        HLCHECK(0 <= idx && idx <= 1024);
+        operands.emplace_back(Def{inst, idx});
+      }
     }
   }
   return operands;
@@ -782,13 +830,18 @@ Status TFParser::ConvertPlaceholderNode(IRBuilder* ir_builder,
     Constant* inst = c_builder_->CreateConstant<int>(
         node_def.name(), Type{DataType::INT32, {1}}, {15});
     inst_name_to_ptr_.emplace(node_def.name(), inst);
-  } else if (attrs.Process<DataType>("dtype", &data_type)) {
+  } else if (attrs.Process<DataType>(node_def.op() == "_Arg" ? "T" : "dtype",
+                                     &data_type)) {
     // Add default shape if no shape info in placehold
     std::vector<int64_t> shape = {};
     attrs.Process<std::vector<int64_t>>("shape", &shape);
     Argument* arg = nullptr;
     arg = arg_builder_->CreateArgument(node_def.name(), Type(data_type, shape));
     inst_name_to_ptr_.emplace(node_def.name(), arg);
+    if (node_def.op() == "_Arg" && node_def.attr().contains("value")) {
+      // Handle special constant arg that has "value" attr.
+      ConvertConstNode(ir_builder, node_def);
+    }
   }
   return Status::SUCCESS;
 }
@@ -803,7 +856,8 @@ Constant* TFParser::CreateConstant(TFAttrs* attrs, DataType data_type,
       auto v = Tensor<T>::DecodeTensorContent(tensors.back().GetData().back());
       auto inst = c_builder_->CreateConstant(
           node_def.name(), Type(data_type, tensors.back().GetShape()), v);
-      inst_name_to_ptr_.emplace(node_def.name(), inst);
+      inst_name_to_ptr_[node_def.name()] =
+          inst; // override existing name with constant.
       return inst;
     }
   }
@@ -862,6 +916,37 @@ Status TFParser::ConvertConstNode(IRBuilder* ir_builder,
         inst_name_to_ptr_.emplace(node_def.name(), inst);
         break;
       }
+      case DataType::FLOAT16: {
+        IRObject* inst = nullptr;
+        std::vector<Tensor<std::string>> tensors;
+        std::vector<uint16_t> data;
+        if (attrs.Process<std::vector<Tensor<std::string>>>("value",
+                                                            &tensors)) {
+          HLCHECK(1 == tensors.size());
+          auto& tensor = tensors.back();
+          if (tensor.GetNeedDecode()) {
+            data =
+                Tensor<uint16_t>::DecodeTensorContent(tensor.GetData().back());
+          } else {
+            std::vector<Tensor<int32_t>> native_tensors;
+            attrs.Process<std::vector<Tensor<int32_t>>>("value",
+                                                        &native_tensors);
+            HLCHECK(1 == native_tensors.size());
+            const auto& orig_data = native_tensors.back().GetData();
+            data.reserve(orig_data.size());
+            for (auto v : orig_data) {
+              data.push_back(v);
+            }
+          }
+          Type ty(data_type, tensors.back().GetShape());
+          HLCHECK(data.size() ==
+                  static_cast<size_t>(ty.GetTotalNumOfElements()));
+          inst = c_builder_->CreateConstant(node_def.name(), ty, data.data());
+        }
+        HLCHECK(inst && "Unable to handle DT_HALF");
+        inst_name_to_ptr_.emplace(node_def.name(), inst);
+        break;
+      }
       case DataType::FLOAT32: {
         // check need decoded from tensor content
         std::vector<Tensor<std::string>> tensors;
@@ -898,6 +983,7 @@ Status TFParser::ConvertConstNode(IRBuilder* ir_builder,
         break;
       }
       default:
+        std::cerr << node_def.name();
         HLCHECK(0 && "Unsupported data type");
     }
   }

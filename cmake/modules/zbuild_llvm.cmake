@@ -15,14 +15,43 @@
 # ==============================================================================
 
 unset(CMAKE_CXX_FLAGS)
+set(ORIG_CXX_STD ${CMAKE_CXX_STANDARD})
+unset(CMAKE_CXX_STANDARD)
 set(LLVM_SRC_DIR ${CMAKE_SOURCE_DIR}/external/llvm-project/llvm)
 set(LLVM_CCACHE_BUILD ${HALO_CCACHE_BUILD})
 set(LLVM_ENABLE_EH OFF)
+set(LLVM_ENABLE_CXX1Y ON)
 
 set(LLVM_LIT_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/llvm/bin)
 
-add_subdirectory(${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm EXCLUDE_FROM_ALL)
+# Enable build clang libraries
+set(CLANG_SRC_DIR ${CMAKE_SOURCE_DIR}/external/llvm-project/clang)
+set(LLVM_ENABLE_PROJECTS_USED ON)
+set(LLVM_ENABLE_PROJECTS "clang")
+set(LLVM_EXTERNAL_CLANG_SOURCE_DIR ${CLANG_SRC_DIR})
 
+# Enable build lld libraries
+set(LLD_BUILD_TOOLS OFF)
+set(LLD_SRC_DIR ${CMAKE_SOURCE_DIR}/external/llvm-project/lld)
+set(LLVM_ENABLE_PROJECTS_USED ON)
+set(LLVM_ENABLE_PROJECTS "${LLVM_ENABLE_PROJECTS};lld")
+set(LLVM_EXTERNAL_LLD_SOURCE_DIR ${LLD_SRC_DIR})
+
+set(HALO_USE_SHARED_LLVM_LIBS AUTO CACHE STRING
+  "Link against shared LLVM libraries")
+set_property(CACHE HALO_USE_SHARED_LLVM_LIBS PROPERTY STRINGS AUTO ON OFF)
+set(BUILD_SHARED_LIBS OFF)
+if (HALO_USE_SHARED_LLVM_LIBS STREQUAL "AUTO")
+  if (CMAKE_BUILD_TYPE MATCHES DEBUG)
+    set(BUILD_SHARED_LIBS ON)
+  endif()
+else()
+  set(BUILD_SHARED_LIBS ${BUILD_LLVM_COMPONENTS_SHARED})
+endif()
+
+add_subdirectory(${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm EXCLUDE_FROM_ALL)
+add_llvm_external_project(clang ${CLANG_SRC_DIR})
+add_llvm_external_project(lld ${LLD_SRC_DIR})
 set(CMAKE_MODULE_PATH ${LLVM_SRC_DIR}/cmake/modules)
 include(DetermineGCCCompatible)
 
@@ -32,3 +61,5 @@ function(halo_tblgen ofn)
     ${CMAKE_CURRENT_BINARY_DIR}/${ofn} PARENT_SCOPE
   )
 endfunction()
+
+set(CMAKE_CXX_STANDARD ${ORIG_CXX_STD})

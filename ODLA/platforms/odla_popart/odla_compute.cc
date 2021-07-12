@@ -17,6 +17,7 @@
 // =============================================================================
 
 #include <ODLA/odla.h>
+#include <dlfcn.h>
 
 #include <algorithm>
 #include <cassert>
@@ -41,6 +42,7 @@
 #include <string>
 #include <vector>
 
+#include "ODLA/odla_common.h"
 #include "common.h"
 #include "odla_popart.h"
 
@@ -95,6 +97,7 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
 
 odla_status odla_CreateComputation(odla_computation* comp) {
   // Create graph builder
+  static void* custom_op_handle = nullptr;
   std::unique_ptr<popart::Builder> builder = popart::Builder::create();
 
   // Place Subgraph on IPU 0
@@ -105,6 +108,15 @@ odla_status odla_CreateComputation(odla_computation* comp) {
       new _odla_computation(std::move(builder))));
   g_comp = g_comps.back().get();
   *comp = g_comp;
+  if (custom_op_handle == nullptr) {
+    custom_op_handle = dlopen("libcustom_ops.so", RTLD_NOW | RTLD_GLOBAL);
+    if (custom_op_handle == nullptr) {
+      std::cerr << "Unable to open libcustom_ops " << dlerror() << std::endl;
+      assert(0);
+      return ODLA_FAILURE;
+    }
+  }
+
   return ODLA_SUCCESS;
 }
 
@@ -132,7 +144,6 @@ odla_status odla_CreateContext(odla_context* context) {
   auto session = popart::InferenceSession::createFromOnnxModel(
       proto, data_flow, device, popart::InputShapeInfo(), *opts);
   *context = new _odla_context(g_comp, std::move(session));
-  (*context)->comp = g_comp;
 
   // Compile graph, create engine and load into the IPU
   // use compileAndExport() to frozen engine to specified path
@@ -180,9 +191,27 @@ odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
                                  GetPopartShape(type.shape));
   popart::TensorId tensor_id =
       g_comp->builder->addInputTensor(tensor_info, name);
-  odla_value v = new _odla_value(tensor_id, tensor_info, name);
+  auto v = new _odla_value(tensor_id, tensor_info, name);
   g_comp->inputs_map[name] = v;
+  g_comp->input_values.push_back(v);
   return v;
+}
+
+odla_status odla_GetNumOfArgsFromComputation(const odla_computation computation,
+                                             odla_uint32* num_args) {
+  *num_args = computation->input_values.size();
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_GetArgFromComputationByIdx(const odla_computation computation,
+                                            const odla_uint32 arg_idx,
+                                            odla_value* arg_value) {
+  *arg_value = nullptr;
+  if (arg_idx >= computation->input_values.size()) {
+    return ODLA_FAILURE;
+  }
+  *arg_value = computation->input_values[arg_idx];
+  return ODLA_SUCCESS;
 }
 
 odla_value odla_CreateConstant(odla_value_type type, const void* data_ptr,
@@ -210,20 +239,38 @@ odla_status odla_BindToArgumentById(const odla_value_id value_id,
                                     const odla_void* data_ptr,
                                     odla_context context) {
   std::string name(reinterpret_cast<const char*>(value_id));
-  return odla_BindToArgument(g_comp->inputs_map[name], data_ptr, context);
+  return odla_BindToArgument(context->comp->inputs_map[name], data_ptr,
+                             context);
 }
 
 odla_status odla_SetValueAsOutput(const odla_value value) {
   g_comp->builder->addOutputTensor(value->tensor_id);
   g_comp->outputs_map[value->name] = value;
+  g_comp->output_values.push_back(value);
   return ODLA_SUCCESS;
 }
 
 odla_status odla_SetValuesAsOutput(const odla_values values) {
   for (int i = 0; i < values.size; ++i) {
-    g_comp->builder->addOutputTensor(values.values[i]->tensor_id);
-    g_comp->outputs_map[values.values[i]->name] = values.values[i];
+    odla_SetValueAsOutput(values.values[i]);
   }
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_GetNumOfOutputsFromComputation(
+    const odla_computation computation, odla_uint32* num_outputs) {
+  *num_outputs = computation->output_values.size();
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_GetOutputFromComputationByIdx(
+    const odla_computation computation, const odla_uint32 output_idx,
+    odla_value* output_value) {
+  *output_value = nullptr;
+  if (output_idx >= computation->output_values.size()) {
+    return ODLA_FAILURE;
+  }
+  *output_value = computation->output_values[output_idx];
   return ODLA_SUCCESS;
 }
 
@@ -239,5 +286,12 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
 odla_status odla_BindToOutputById(const odla_value_id value_id,
                                   odla_void* data_ptr, odla_context context) {
   std::string name(reinterpret_cast<const char*>(value_id));
-  return odla_BindToOutput(g_comp->outputs_map[name], data_ptr, context);
+  return odla_BindToOutput(context->comp->outputs_map[name], data_ptr, context);
+}
+
+odla_status odla_GetValueType(const odla_value value,
+                              odla_value_type* value_type) {
+  value_type->element_type = GetOdlaType(value->tensor_info.dataType());
+  value_type->shape = GetOdlaShape(value->tensor_info.shape());
+  return ODLA_SUCCESS;
 }

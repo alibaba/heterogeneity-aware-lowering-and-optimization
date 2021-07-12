@@ -21,7 +21,7 @@ jobs:
       - name: Build
         uses: ./halo/.github/actions/build
         with:
-          docker_image_variant: graphcore1.4.0-x86_64
+          docker_image_variant: graphcore2.0.1-x86_64
 
       - name: Upload
         uses: actions/upload-artifact@v2
