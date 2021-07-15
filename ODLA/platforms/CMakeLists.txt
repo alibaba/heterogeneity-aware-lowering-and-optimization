@@ -28,14 +28,7 @@ endif()
 
 option(ODLA_BUILD_POPART "Build ODLA Runtime Library for POPART" ON)
 if (ODLA_BUILD_POPART)
-  find_library(poplar NAMES poplar PATHS ${POPLAR_SDK_ROOT}/poplar-${POPLAR_VERSION}
-               PATH_SUFFIXES lib NO_DEFAULT_PATH)
-  if(NOT poplar)
-	  message(FATAL_ERROR "Popart library not found. Use -DODLA_BUILD_POPART=OFF ")
-  else()
-    message(STATUS "Found Popart library")
-    add_subdirectory(odla_popart)
-  endif()
+  add_subdirectory(odla_popart)
 endif()
 
 option(ODLA_BUILD_TRT "Build ODLA Runtime Library for TensorRT" ON)
