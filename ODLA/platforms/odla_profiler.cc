@@ -91,16 +91,39 @@ static odla_value_type GetValueType(const odla_value v) {
   return vt;
 }
 
-template <typename T>
-static std::string to_list(const T& vals) {
+static std::unordered_map<std::string, std::vector<std::string>> Uses;
+static void AddUses(odla_value_id dst, odla_value src) {
+  std::string dst_name = std::string(reinterpret_cast<char*>(dst));
+  odla_value_id src_id = nullptr;
+  odla_GetValueId(src, &src_id);
+  std::string src_name = std::string(reinterpret_cast<char*>(src_id));
+  Uses[dst_name].push_back(src_name);
+}
+
+static void AddUses(odla_value_id dst, const odla_values& srcs) {
+  for (int i = 0, e = srcs.size; i < e; ++i) {
+    AddUses(dst, srcs.values[i]);
+  }
+}
+
+template <typename T, bool AsString = false>
+static std::string ToList(const T& vals) {
   std::ostringstream oss;
   oss << "[";
   bool is_first = true;
-  for (auto x : vals) {
+  for (const auto& x : vals) {
+    constexpr bool is_str = std::is_same<const std::string&, decltype(x)>();
     if (!is_first) {
       oss << ", ";
     }
+    if (is_str) {
+      oss << '"';
+    }
     oss << x;
+    if (is_str) {
+      oss << '"';
+    }
+
     is_first = false;
   }
   oss << "]";
@@ -119,7 +142,7 @@ static void DumpValue(const std::string& fn_name, const void* ptr,
   std::vector<int> s(type.shape.dims, type.shape.dims + type.shape.size);
 
   ofs << "// Type: " << fn_name << "\n";
-  ofs << "// Shape: " << to_list(s) << "\n";
+  ofs << "// Shape: " << ToList(s) << "\n";
   const float* data = reinterpret_cast<const float*>(ptr);
   size_t len = GetTotalElements(type.shape);
   for (size_t i = 0; i < len; ++i) {
@@ -179,12 +202,12 @@ odla_status odla_ProfileValue(const std::string& fn_name, const void* ptr,
 
   OS() << "\n\"" << id << "\" : {";
   OS() << "\"op_type\": \"" << fn_name << "\", ";
-  OS() << "\"shape\": " << to_list(to_vec(type.shape)) << ", ";
+  OS() << "\"shape\": " << ToList(to_vec(type.shape)) << ", ";
   OS() << "\"channels\": " << ch_min.size() << ", ";
   OS() << "\"min_value\": " << min_value << ", ";
   OS() << "\"max_value\": " << max_value << ", ";
-  OS() << "\"channels_min\": " << to_list(ch_min) << ", ";
-  OS() << "\"channels_max\": " << to_list(ch_max);
+  OS() << "\"channels_min\": " << ToList(ch_min) << ", ";
+  OS() << "\"channels_max\": " << ToList(ch_max);
   OS() << "}";
   ++rec_cnt_;
   return ODLA_SUCCESS;
@@ -196,7 +219,9 @@ static odla_value profile(Args... args) {
   const auto& vt = GetValueType(ret);
   odla_value_id id = GetValueId(args...);
   assert(id != nullptr);
-  assert(vt.element_type == ODLA_FLOAT32);
+  if (vt.element_type != ODLA_FLOAT32) {
+    return ret;
+  }
   std::vector<float> buf(GetTotalElements(vt.shape));
   odla_GetValueData(ret, buf.data());
   odla_ProfileValue(fn_name, buf.data(), vt, reinterpret_cast<char*>(id));
@@ -243,7 +268,20 @@ void StartOneRun(const char* tag) {
 void StopOneRun() { OS() << "}\n"; }
 
 void StopProfiling() {
-  OS() << "}}";
+  OS() << "}, \n";
+  OS() << "\"NetworkInfo\": {\n";
+  bool is_first = true;
+  for (const auto& kv : Uses) {
+    OS() << (is_first ? "" : ", \n");
+    OS() << '"' << kv.first << "\" :{\n";
+    OS() << "  \"inputs\":";
+    OS() << ToList(kv.second);
+    OS() << "\n}";
+    is_first = false;
+  }
+  OS() << "}\n";
+  OS() << "}\n";
+
   if (ofs_.good()) {
     ofs_.close();
   }
@@ -259,6 +297,11 @@ odla_value odla_CreateValue(const odla_value_type value_type,
   g_value_types[ret] = value_type;
   g_value_ids[ret] = reinterpret_cast<char*>(value_id);
   return ret;
+}
+
+static constexpr const char fn_gvi[] = "odla_GetValueId";
+odla_status odla_GetValueId(const odla_value value, odla_value_id* value_id) {
+  return dispatch<fn_gvi, odla_status>(value, value_id);
 }
 
 static constexpr const char fn_sv[] = "odla_SetValueData";
@@ -331,6 +374,7 @@ odla_value odla_Clamp(odla_value input, odla_float32 lo, odla_float32 hi,
 static constexpr const char fn_concat[] = "odla_Concat";
 odla_value odla_Concat(odla_values inputs, odla_int32 axis,
                        odla_value_shape output_dims, const odla_value_id id) {
+  AddUses(id, inputs);
   return profile<fn_concat>(inputs, axis, output_dims, id);
 }
 
@@ -431,6 +475,7 @@ odla_value odla_MaxPool(odla_value input, odla_memory_layout input_layout,
                         const odla_uint32* paddings_back,
                         odla_value_shape output_dims,
                         const odla_value_id value_id) {
+  AddUses(value_id, input);
   return profile<fn_mp>(input, input_layout, window_dims, strides,
                         paddings_front, paddings_back, output_dims, value_id);
 }

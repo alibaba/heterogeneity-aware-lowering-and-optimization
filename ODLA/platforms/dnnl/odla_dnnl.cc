@@ -220,6 +220,13 @@ odla_value odla_CreateValue(odla_value_type type, const odla_value_id id) {
   return v;
 }
 
+odla_status odla_GetValueId(const odla_value value, odla_value_id* value_id) {
+  void* id_ptr =
+      const_cast<void*>(static_cast<const void*>(value->name.c_str()));
+  *value_id = static_cast<odla_value_id>(id_ptr);
+  return ODLA_SUCCESS;
+}
+
 odla_status odla_GetValueType(const odla_value value,
                               odla_value_type* value_type) {
   value_type->shape = value->shape;
