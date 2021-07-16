@@ -124,6 +124,16 @@ def get_image_ndarray(path, width, height):
         image = cv2.resize(image, (width, height))
     return image
 
+def merge_ranges(data, output_id, input_ids):
+    data_keys = ['min_value', 'max_value']
+    for in_id in input_ids:
+        data[output_id]['min_value'] = min(data[output_id]['min_value'],
+                                           data[in_id]['min_value'])
+        data[output_id]['max_value'] = max(data[output_id]['max_value'],
+                                           data[in_id]['max_value'])
+    for in_id in input_ids:
+        data[in_id]['min_value'] = data[output_id]['min_value']
+        data[in_id]['max_value'] = data[output_id]['max_value']
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -151,6 +161,10 @@ if __name__ == "__main__":
     parser.add_argument('-max-dim-chs-prof', '--max-dim-chs-prof',
                         dest='max_dim_chs_prof', type=int, default=sys.maxsize,
                         help='maximum dimension of tensors for channel-wise profiling')
+    parser.add_argument('-norm-ops', '--normalize-range-for-ops', dest='norm_ops', default='',
+                        help="normalize ranges for certain ops. "
+                              "Note that channel-wise info won't be merged. "
+                              "E.g. -norm-ops=concat,maxpool")
     parser.add_argument('-v', '--verbose', dest='verbose',
                         action='store_true', default=False)
     args = parser.parse_args()
@@ -227,6 +241,7 @@ if __name__ == "__main__":
     # Consolidate profiling results
     with open(prof_file, 'r') as f:
         prof_data = json.load(f)
+    network_info = prof_data['NetworkInfo']
     prof_data = prof_data['ProfilingResults']
     consolidated = {}
     for run, run_data in prof_data.items():
@@ -257,6 +272,12 @@ if __name__ == "__main__":
                 v = consolidated[layer_name]['channels_max']
                 consolidated[layer_name]['channels_max'] = max(
                     v, prof_vals['channels_max'])
+    norm_ops = args.norm_ops.upper().split(',')
+    norm_ops = { x if x.startswith('ODLA_') else 'ODLA_' + x for x in norm_ops}
+    for name, data in consolidated.items():
+        if data["op_type"].upper() in norm_ops:
+            merge_ranges(consolidated, name, network_info[name]['inputs'])
+
 
     # Compute scale and zp based on 8-bit quant rule
     for data in consolidated.values():
