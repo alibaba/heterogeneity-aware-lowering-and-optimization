@@ -64,6 +64,13 @@ let cat_ = cat_nn_activation,
   def Sigmoid : Inst<"Compute the sigmoid activation, element-wise."
                      " Return 1 / (1 + exp(-X1)).">;
 
+  def HardSigmoid : Inst<"A faster approximation of the sigmoid activation."> {
+    let attrs_ = [
+      Attr<"Value of alpha.", Float, "alpha", "0.2">,
+      Attr<"Value of beta.", Float, "beta", "0.5">
+    ];
+  }
+
   def Softmax : Inst<"Compute the softmax activation."> {
     let attrs_ = [Attr<"The dimension the softmax would be performed on.",
                        Integer, "axis", "-1">];

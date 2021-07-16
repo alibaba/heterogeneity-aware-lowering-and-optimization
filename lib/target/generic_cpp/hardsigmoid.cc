@@ -1,4 +1,4 @@
-//===- instructions.td ---------------------------------------*- tblgen -*-===//
+//===- sigmoid.cc ---------------------------------------------------------===//
 //
 // Copyright (C) 2019-2020 Alibaba Group Holding Limited.
 //
@@ -15,17 +15,21 @@
 // limitations under the License.
 // =============================================================================
 
-include "common_cast_instructions.td"
-include "common_instructions.td"
-include "common_reduction_instructions.td"
-include "controlflow_instructions.td"
-include "creator_instructions.td"
-include "math_binary_instructions.td"
-include "math_instructions.td"
-include "math_unary_instructions.td"
-include "nn_activation_instructions.td"
-include "nn_instructions.td"
-include "nn_cnn_instructions.td"
-include "nn_rnn_instructions.td"
-include "object_detection_instructions.td"
-include "customize_instructions.td"
+#include "halo/lib/target/generic_cxx/generic_cxx_codegen.h"
+
+namespace halo {
+
+void GenericCXXCodeGen::RunOnInstruction(HardSigmoidInst* inst) {
+  const Def& input = inst->GetOperand(0);
+  float alpha = inst->GetAlpha();
+  float beta = inst->GetBeta();
+
+  CXXValue op0 = ir_mapping_[input];
+
+  CXXValue ret(inst->GetName(), op0.type);
+
+  EmitODLACall(ret, "odla_HardSigmoid", op0, alpha, beta);
+
+  ir_mapping_[*inst] = ret;
+}
+} // namespace halo

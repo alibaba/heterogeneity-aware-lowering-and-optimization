@@ -332,6 +332,8 @@ def ONNX_Shape : ONNXExtension<"Shape">;
 
 def ONNX_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
 
+def ONNX_HardSigmoid : OpMapping<"HardSigmoid", HardSigmoid>;
+
 def ONNX_Sin : OpMapping<"Sin", Sin>;
 
 def ONNX_Sinh : OpMapping<"Sinh", Sinh>;
@@ -432,5 +434,13 @@ def ONNX_HgDequant : TFExtension<"HgDequant"> {
     ExtensionAttr<"op_name", String, "\"\"">,
     ExtensionAttr<"in_type", String, "\"INT8\"">,
     ExtensionAttr<"out_type", String, "\"FLOAT32\"">
+  ];
+}
+
+def ONNX_LSTM : OpMapping<"LSTM", LSTM> {
+  let attr_mapping_ = [
+    AttributeMapping<"hidden_size", "hidden_size", "1">,
+    AttributeMapping<"layout", "layout", "0">,
+    AttributeMapping<"direction", "direction", "FORWARD">
   ];
 }
