@@ -98,3 +98,46 @@ def EnumActivationType : EnumValueType<"ActivationType",
                                      "TANH",
                                      "SIGN_BIT"
                                      ]>;
+
+/// Image
+def EnumColorSpace: EnumValueType<"ColorSpace",
+                                    ["RGB",
+                                     "BGR",
+                                     "YUV",
+                                     "GRAY"]>;
+def EnumCvtColorType: EnumValueType<"CvtColorType",
+                                    ["RGB2Gray",
+                                     "RGB2BGR",
+                                     "BGR2RGB",
+                                     "RGB2YUV"]>;
+def EnumImageElementType: EnumValueType<"ImageElementType",
+                                    ["I8C1",
+                                     "I8C3",
+                                     "I32C1",
+                                     "I32C3",
+                                     "F32C1",
+                                     "F32C3"]>;
+def EnumRotateType: EnumValueType<"RotateType",
+                                  ["ROTATE_90_CLOCKWISE",
+                                   "ROTATE_180_CLOCKWISE",
+                                   "ROTATE_270_CLOCKWISE"]>;
+def EnumFlipType: EnumValueType<"FlipType",
+                                ["FLIP_VERTICAL",
+                                 "FLIP_HORIZONTAL",
+                                 "FLIP_BOTH"]>;
+def EnumNormType: EnumValueType<"NormType",
+                                ["NORM_MIN_MAX",
+                                 "NORM_L1",
+                                 "NORM_L2"]>;
+///Video
+def EnumVideoFormat: EnumValueType<"VideoFormat",
+                                    ["MP4",
+                                     "H264",
+                                     "H265"]>;
+///Pipeline
+def EnumMergeOrder: EnumValueType<"MergeOrder",
+                                    ["ORDERED",
+                                     "UNORDERED"]>;
+
+def EnumDirection
+    : EnumValueType<"Direction", ["FORWARD", "REVERSE", "BIDIRECTIONAL"]>;

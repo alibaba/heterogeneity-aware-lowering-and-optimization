@@ -35,6 +35,7 @@ set(SRCS
   generic_cxx_codegen.cc
   generic_cxx_constant_writer.cc
   lrn.cc
+  lstm.cc
   matmul.cc
   nms.cc
   onehot.cc
@@ -47,6 +48,7 @@ set(SRCS
   resize.cc
   return.cc
   sigmoid.cc
+  hardsigmoid.cc
   slice.cc
   softmax.cc
   tile.cc

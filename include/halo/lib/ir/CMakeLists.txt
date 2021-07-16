@@ -35,6 +35,7 @@ list(APPEND INST_TDS
   math_unary_instructions.td
   nn_activation_instructions.td
   nn_cnn_instructions.td
+  nn_rnn_instructions.td
   nn_instructions.td
   object_detection_instructions.td
   customize_instructions.td
