@@ -121,6 +121,7 @@ odla_status odla_CreateComputation(odla_computation* comp) {
 }
 
 odla_status odla_CreateContext(odla_context* context) {
+  *context = nullptr;
   // Create dataflow
   std::vector<popart::TensorId> ids;
   for (const auto& output : g_comp->outputs_map) {
@@ -135,7 +136,9 @@ odla_status odla_CreateContext(odla_context* context) {
   auto device = g_comp->opts.use_ipu_model
                     ? CreateIpuModelDevice(g_comp->opts.ipu_num)
                     : AcquireAvailableDevice(g_comp->opts.ipu_num);
-
+  if (device == nullptr) {
+    return ODLA_FAILURE;
+  }
   // Create and config SessionOptions
   auto opts = SessionOptions();
 
@@ -170,6 +173,9 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
   // Config StepIO
+  if (comp == nullptr || context == nullptr) {
+    return ODLA_FAILURE;
+  }
   std::map<popart::TensorId, popart::IArray&> inputs;
   for (auto& input : comp->inputs) {
     inputs.emplace(input.first, *input.second);
@@ -228,6 +234,9 @@ odla_value odla_CreateConstant(odla_value_type type, const void* data_ptr,
 
 odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                 odla_context context) {
+  if (context == nullptr || context->comp == nullptr || value == nullptr) {
+    return ODLA_FAILURE;
+  }
   std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
       data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
       context->comp->builder->getTensorShape(value->tensor_id));
@@ -238,6 +247,9 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
 odla_status odla_BindToArgumentById(const odla_value_id value_id,
                                     const odla_void* data_ptr,
                                     odla_context context) {
+  if (context == nullptr || context->comp == nullptr) {
+    return ODLA_FAILURE;
+  }
   std::string name(reinterpret_cast<const char*>(value_id));
   return odla_BindToArgument(context->comp->inputs_map[name], data_ptr,
                              context);
@@ -276,6 +288,9 @@ odla_status odla_GetOutputFromComputationByIdx(
 
 odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
                               odla_context context) {
+  if (context == nullptr || context->comp == nullptr || value == nullptr) {
+    return ODLA_FAILURE;
+  }
   std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
       data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
       context->comp->builder->getTensorShape(value->tensor_id));
@@ -285,6 +300,9 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
 
 odla_status odla_BindToOutputById(const odla_value_id value_id,
                                   odla_void* data_ptr, odla_context context) {
+  if (context == nullptr || context->comp == nullptr) {
+    return ODLA_FAILURE;
+  }
   std::string name(reinterpret_cast<const char*>(value_id));
   return odla_BindToOutput(context->comp->outputs_map[name], data_ptr, context);
 }
