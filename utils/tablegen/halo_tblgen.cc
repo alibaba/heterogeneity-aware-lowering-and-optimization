@@ -95,6 +95,9 @@ enum ActionType {
   GEN_INST_INFO,
   GEN_IRBUILDER_DECL,
   GEN_IRBUILDER_DEF,
+  GEN_TEST_MODEL,
+  GEN_CONFIG_MODEL,
+  GEN_REPORT_MODEL,
   PRINT_RECORDS,
 };
 
@@ -126,6 +129,11 @@ static llvm::cl::opt<ActionType> Action(
                    "Generation parser convert function defs"),
         clEnumValN(GEN_REGISTER_OP, "gen-register-op",
                    "Generation parser supported op register function"),
+        clEnumValN(GEN_TEST_MODEL, "gen-test-model", "Generation test model"),
+        clEnumValN(GEN_CONFIG_MODEL, "gen-config-model",
+                   "Generation config model"),
+        clEnumValN(GEN_REPORT_MODEL, "gen-report-model",
+                   "Generation report model"),
         clEnumValN(PRINT_RECORDS, "print-records",
                    "Print all records to stdout (default)")));
 
@@ -186,6 +194,18 @@ static bool HaloTableGenMain(llvm::raw_ostream& os,
     }
     case GEN_REGISTER_OP: {
       halo::EmitRegisterOp(records, os);
+      break;
+    }
+    case GEN_TEST_MODEL: {
+      halo::EmitTestModel(records, os);
+      break;
+    }
+    case GEN_CONFIG_MODEL: {
+      halo::EmitConfigModel(records, os);
+      break;
+    }
+    case GEN_REPORT_MODEL: {
+      halo::EmitReportModel(records, os);
       break;
     }
     case PRINT_RECORDS: {

@@ -28,6 +28,7 @@ add_tablegen(halo_tblgen HALO
   inst_class_emitter.cc
   inst_info_emitter.cc
   irbuilder_emitter.cc
+  modelzoo_emitter.cc
 )
 
 llvm_update_compile_flags(halo_tblgen)

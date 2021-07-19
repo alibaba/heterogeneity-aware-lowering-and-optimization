@@ -42,6 +42,7 @@ if (ODLA_BUILD_XNNPACK)
   list(APPEND HALO_TEST_DEPENDS odla_xnnpack)
 endif()
 
+add_subdirectory(benchmarks)
 
 configure_lit_site_cfg(
     ${CMAKE_CURRENT_SOURCE_DIR}/lit.site.cfg.in

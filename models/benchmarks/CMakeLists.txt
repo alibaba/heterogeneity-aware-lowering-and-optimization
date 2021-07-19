@@ -1,5 +1,5 @@
 # ==============================================================================
-# Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+# Copyright (C) 2019-2021 Alibaba Group Holding Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,30 +14,21 @@
 # limitations under the License
 # ==============================================================================
 
-# Name.
-set(NAME IR)
-
-# Source files.
-set(SRCS
-  argument.cc
-  attribute.cc
-  basic_block.cc
-  constant.cc
-  extension_instructions.cc
-  function.cc
-  instruction.cc
-  ir_builder.cc
-  module.cc
-  values.cc
+set(DEV_NAMES)
+list(APPEND DEV_NAMES
+  dnnl
+  tensorrt
 )
 
-# Dependences which need to be built first.
-set(DEPENDENCES
-  IRGEN
-  MODELGEN
-)
+file(GLOB tds "*.td")
+foreach(td_path IN LISTS tds)
+  string(REGEX REPLACE ".+/(.+)\\..*" "\\1" td_name ${td_path})
+  if (NOT ${td_name} MATCHES "model*")
+    add_models(${td_name} ${DEV_NAMES})
+  endif()
+endforeach()
 
-create_halo_object(TARGET_NAME ${NAME}
-  TARGET_SRCS ${SRCS}
-  TARGET_DEPENDENCES ${DEPENDENCES}
-)
+add_models_doc()
+
+
+add_models_target(MODELGEN)
