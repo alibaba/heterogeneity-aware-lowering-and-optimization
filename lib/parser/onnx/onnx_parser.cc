@@ -250,23 +250,23 @@ Status ONNXParser::ConvertToHaloIR(const onnx::GraphProto& graph_def) {
 }
 
 Status ONNXParser::ConvertOneNode(IRBuilder* ir_builder,
-                                  const onnx::NodeProto& cur_node) {
+                                  const onnx::NodeProto& node_def) {
   Status s = Status::SUCCESS;
-  auto fp = func_lists_.find(cur_node.op_type());
+  auto fp = func_lists_.find(node_def.op_type());
   if (fp != func_lists_.end()) {
-    s = (fp->second)(ir_builder, cur_node);
+    s = (fp->second)(ir_builder, node_def);
     if (s != Status::SUCCESS) {
       return s;
     }
   } else {
     if (opts_.print_diagnostic_report) {
-      ONNXParser::WriteCSVReport(cur_node, std::cout);
-      ConvertDummyNode(ir_builder, cur_node);
+      ONNXParser::WriteCSVReport(node_def, std::cout);
+      ConvertDummyNode(ir_builder, node_def);
     } else {
       LOG(ERROR)
           << "Convert function not found, Please check if it is supported: "
           << "Name: "
-          << "[" << cur_node.name() << "], Op: [" << cur_node.op_type()
+          << "[" << node_def.name() << "], Op: [" << node_def.op_type()
           << "], Index: "
           << "[" << -1 << "]";
       return Status::ASSERTION;
@@ -292,10 +292,14 @@ halo::DataType ONNXParser::ProcessDataType(int data_type) {
   switch (data_type) {
     case onnx::TensorProto::FLOAT:
       return DataType::FLOAT32;
+    case onnx::TensorProto::FLOAT16:
+      return DataType::FLOAT16;
     case onnx::TensorProto::INT64:
       return DataType::INT64;
     case onnx::TensorProto::INT32:
       return DataType::INT32;
+    case onnx::TensorProto::UINT32:
+      return DataType::UINT32;
     case onnx::TensorProto::INT16:
       return DataType::INT16;
     case onnx::TensorProto::INT8:
@@ -324,6 +328,8 @@ static size_t GetTensorDataSize(const onnx::TensorProto& tensor_proto) {
   switch (tensor_proto.data_type()) {
     case onnx::TensorProto::FLOAT:
       return tensor_proto.float_data_size();
+    case onnx::TensorProto::FLOAT16:
+      return tensor_proto.int32_data_size() * 2;
     case onnx::TensorProto::INT64:
       return tensor_proto.int64_data_size();
     case onnx::TensorProto::INT32:
@@ -351,6 +357,17 @@ void GetTensorData(const onnx::TensorProto& tensor, std::vector<float>& v,
                    size_t size) {
   for (size_t i = 0; i < size; ++i) {
     v.push_back(tensor.float_data(i));
+  }
+}
+
+template <>
+void GetTensorData(const onnx::TensorProto& tensor, std::vector<uint16_t>& v,
+                   size_t size) {
+  for (size_t i = 0; i < size / 2; ++i) {
+    int32_t x = tensor.int32_data(i);
+    const int16_t* v16 = reinterpret_cast<const int16_t*>(&x); // NOLINT.
+    v.push_back(v16[0]);                                       // NOLINT.
+    v.push_back(v16[1]);                                       // NOLINT.
   }
 }
 
@@ -393,7 +410,9 @@ Tensor<T> ONNXParser::ProcessTensor(const onnx::TensorProto& tensor_proto) {
     v = Tensor<T>::DecodeTensorContent(tensor_proto.raw_data());
   } else {
     // TODO(unknown): handle external storage
-    LOG(ERROR) << "Unsupported external data storage.";
+    HLCHECK(tensor_proto.data_location() ==
+            onnx::TensorProto::DataLocation::TensorProto_DataLocation_EXTERNAL);
+    HLCHECK(0 && "Unsupported external data storage.");
   }
 
   if (shape.empty() && v.size() > 1) {
@@ -411,6 +430,13 @@ IRObject* ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
       const Tensor<float> temp = ProcessTensor<float>(tensor_def);
       inst = c_builder->CreateConstant(
           tensor_def.name(), Type(data_type, temp.GetShape()), temp.GetData());
+      break;
+    }
+    case DataType::FLOAT16: {
+      const Tensor<uint16_t> temp = ProcessTensor<uint16_t>(tensor_def);
+      inst = c_builder->CreateConstant(tensor_def.name(),
+                                       Type(data_type, temp.GetShape()),
+                                       temp.GetData().data());
       break;
     }
     case DataType::INT32: {
@@ -443,10 +469,22 @@ IRObject* ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
 
 Status ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
                                     const onnx::NodeProto& cur_node) {
+  IRObject* inst = nullptr;
   for (const auto& attr : cur_node.attribute()) {
-    HLCHECK(attr.type() == onnx::AttributeProto::TENSOR);
-    HLCHECK(attr.has_t());
-    auto inst = ConvertConstNode(c_builder, attr.t());
+    if (attr.type() == onnx::AttributeProto::TENSOR) {
+      HLCHECK(attr.has_t());
+      inst = ConvertConstNode(c_builder, attr.t());
+    } else if (attr.type() == onnx::AttributeProto::INT) {
+      int64_t val = attr.i();
+      inst = c_builder->CreateConstant(cur_node.name(),
+                                       Type{DataType::INT64, {1}}, &val);
+    } else if (attr.type() == onnx::AttributeProto::FLOAT) {
+      float val = attr.f();
+      inst = c_builder->CreateConstant(cur_node.name(),
+                                       Type{DataType::FLOAT32, {1}}, &val);
+    }
+    HLCHECK(inst && "Unhandled attribute");
+
     if (inst->GetName().empty()) {
       // Fix constant node name is null in generated cpp code
       inst->SetName(cur_node.name());
@@ -461,12 +499,12 @@ Type ONNXParser::GetType(const onnx::ValueInfoProto& value_info_def) {
           "Unsupported value info type.");
   auto type_def = value_info_def.type().tensor_type();
   DataType data_type = ProcessDataType(type_def.elem_type());
-  auto shape_def = type_def.shape();
+  const auto& shape_def = type_def.shape();
   const int dim_size = shape_def.dim_size();
   std::vector<int64_t> shape;
   for (int i = 0; i < dim_size; ++i) {
-    auto dim_def = shape_def.dim(i);
-    if (dim_def.dim_value()) {
+    const auto& dim_def = shape_def.dim(i);
+    if (dim_def.dim_value() != 0) {
       shape.push_back(dim_def.dim_value());
     } else {
       shape.push_back(-1);
@@ -501,7 +539,7 @@ std::vector<Def> ONNXParser::GetInputOperands(const onnx::NodeProto& node_def) {
   std::unordered_map<std::string, std::pair<IRObject*, int>>::iterator it;
   for (size_t i = 0, operand_num = node_def.input_size(); i < operand_num;
        ++i) {
-    std::string input_node_name = node_def.input(i);
+    const auto& input_node_name = node_def.input(i);
     Value val = curr_scope_->Find(input_node_name);
     if (!val.IsNull()) {
       auto inst = val.GetOwner();
@@ -541,7 +579,7 @@ ONNXAttrs::ONNXAttrs(const onnx::NodeProto& node_def) {
 template <>
 bool ONNXAttrs::Process<onnx::GraphProto>(const std::string& key,
                                           onnx::GraphProto* value) {
-  if (!attr_map_.count(key)) {
+  if (attr_map_.count(key) == 0) {
     return false;
   }
 
@@ -553,7 +591,7 @@ bool ONNXAttrs::Process<onnx::GraphProto>(const std::string& key,
 template <>
 bool ONNXAttrs::Process<std::string>(const std::string& key,
                                      std::string* value) {
-  if (!attr_map_.count(key)) {
+  if (attr_map_.count(key) == 0) {
     return false;
   }
   value->clear();
@@ -564,7 +602,7 @@ bool ONNXAttrs::Process<std::string>(const std::string& key,
 
 template <>
 bool ONNXAttrs::Process<int64_t>(const std::string& key, int64_t* value) {
-  if (!attr_map_.count(key)) {
+  if (attr_map_.count(key) == 0) {
     return false;
   }
 
@@ -575,7 +613,7 @@ bool ONNXAttrs::Process<int64_t>(const std::string& key, int64_t* value) {
 
 template <>
 bool ONNXAttrs::Process<int>(const std::string& key, int* value) {
-  if (!attr_map_.count(key)) {
+  if (attr_map_.count(key) == 0) {
     return false;
   }
 
@@ -586,7 +624,7 @@ bool ONNXAttrs::Process<int>(const std::string& key, int* value) {
 
 template <>
 bool ONNXAttrs::Process<bool>(const std::string& key, bool* value) {
-  if (!attr_map_.count(key)) {
+  if (attr_map_.count(key) == 0) {
     return false;
   }
 
@@ -597,7 +635,7 @@ bool ONNXAttrs::Process<bool>(const std::string& key, bool* value) {
 
 template <>
 bool ONNXAttrs::Process<float>(const std::string& key, float* value) {
-  if (!attr_map_.count(key)) {
+  if (attr_map_.count(key) == 0) {
     return false;
   }
   HLCHECK(attr_map_.at(key).type() == onnx::AttributeProto::FLOAT);
@@ -608,7 +646,7 @@ bool ONNXAttrs::Process<float>(const std::string& key, float* value) {
 template <>
 bool ONNXAttrs::Process<std::vector<std::string>>(
     const std::string& key, std::vector<std::string>* value) {
-  if (!attr_map_.count(key)) {
+  if (attr_map_.count(key) == 0) {
     return false;
   }
   value->clear();
@@ -625,7 +663,7 @@ bool ONNXAttrs::Process<std::vector<std::string>>(
 template <>
 bool ONNXAttrs::Process<std::vector<int64_t>>(const std::string& key,
                                               std::vector<int64_t>* value) {
-  if (!attr_map_.count(key)) {
+  if (attr_map_.count(key) == 0) {
     return false;
   }
   value->clear();
@@ -641,7 +679,7 @@ bool ONNXAttrs::Process<std::vector<int64_t>>(const std::string& key,
 template <>
 bool ONNXAttrs::Process<std::vector<int>>(const std::string& key,
                                           std::vector<int>* value) {
-  if (!attr_map_.count(key)) {
+  if (attr_map_.count(key) == 0) {
     return false;
   }
   value->clear();
@@ -658,7 +696,7 @@ bool ONNXAttrs::Process<std::vector<int>>(const std::string& key,
 template <>
 bool ONNXAttrs::Process<std::vector<float>>(const std::string& key,
                                             std::vector<float>* value) {
-  if (!attr_map_.count(key)) {
+  if (attr_map_.count(key) == 0) {
     return false;
   }
   value->clear();
@@ -674,7 +712,7 @@ bool ONNXAttrs::Process<std::vector<float>>(const std::string& key,
 template <>
 bool ONNXAttrs::Process<std::vector<std::vector<int64_t>>>(
     const std::string& key, std::vector<std::vector<int64_t>>* value) {
-  if (!attr_map_.count(key)) {
+  if (attr_map_.count(key) == 0) {
     return false;
   }
   value->clear();
@@ -691,7 +729,7 @@ bool ONNXAttrs::Process<std::vector<std::vector<int64_t>>>(
 
 template <>
 bool ONNXAttrs::Process<Padding>(const std::string& key, Padding* padding) {
-  if (!attr_map_.count(key)) {
+  if (attr_map_.count(key) == 0) {
     return false;
   }
 
@@ -703,7 +741,7 @@ bool ONNXAttrs::Process<Padding>(const std::string& key, Padding* padding) {
       {"NOTSET", Padding::EXPLICIT},
   };
 
-  *padding = enum_map.count(attr_map_.at(key).s())
+  *padding = enum_map.count(attr_map_.at(key).s()) != 0
                  ? enum_map.at(attr_map_.at(key).s())
                  : Padding::INVALID;
   return true;
@@ -711,7 +749,7 @@ bool ONNXAttrs::Process<Padding>(const std::string& key, Padding* padding) {
 
 template <>
 bool ONNXAttrs::Process<DataType>(const std::string& key, DataType* data_type) {
-  if (!attr_map_.count(key)) {
+  if (attr_map_.count(key) == 0) {
     return false;
   }
 
@@ -722,7 +760,7 @@ bool ONNXAttrs::Process<DataType>(const std::string& key, DataType* data_type) {
 
 template <>
 bool ONNXAttrs::Process<PadMode>(const std::string& key, PadMode* pad_mode) {
-  if (!attr_map_.count(key)) {
+  if (attr_map_.count(key) == 0) {
     return false;
   }
 
@@ -736,7 +774,7 @@ bool ONNXAttrs::Process<PadMode>(const std::string& key, PadMode* pad_mode) {
   std::string mode = attr_map_.at(key).s();
   std::transform(mode.begin(), mode.end(), mode.begin(),
                  [](char c) { return std::toupper(c); });
-  *pad_mode = enum_map.count(mode) ? enum_map.at(mode) : PadMode::INVALID;
+  *pad_mode = enum_map.count(mode) != 0 ? enum_map.at(mode) : PadMode::INVALID;
   return true;
 }
 
@@ -765,7 +803,7 @@ Status ONNXParser::ConvertLoopNode(IRBuilder* ir_builder,
   }
   const auto& operands = GetInputOperands(cur_node);
   // first 2 inputs(loop_cnt/loop_cond) is optional
-  for (int i = operands.size() - 1; i >= 0; --i) {
+  for (int64_t i = operands.size() - 1; i >= 0; --i) {
     loop_arg_types_.push(operands[i].GetType());
   }
 
@@ -774,31 +812,31 @@ Status ONNXParser::ConvertLoopNode(IRBuilder* ir_builder,
   curr_scope_ = curr_scope_->CreateScope();
   attrs.Process<onnx::GraphProto>("body", &subgraph);
   auto loop_body = bb_builder_->CreateBasicBlock("bb_" + cur_node_name);
-  auto _ir_builder = std::make_unique<IRBuilder>(loop_body);
-  auto _arg_builder = std::make_unique<ArgumentBuilder>(loop_body);
-  auto _c_builder = std::make_unique<ConstantBuilder>(loop_body);
+  auto loop_ir_builder = std::make_unique<IRBuilder>(loop_body);
+  auto arg_builder = std::make_unique<ArgumentBuilder>(loop_body);
+  auto c_builder = std::make_unique<ConstantBuilder>(loop_body);
   std::set<std::string> const_input_names;
   for (int i = 0, const_inputs_size = subgraph.initializer_size();
        i < const_inputs_size; ++i) {
     const_input_names.emplace(subgraph.initializer(i).name());
-    ConvertConstNode(_c_builder.get(), subgraph.initializer(i));
+    ConvertConstNode(c_builder.get(), subgraph.initializer(i));
   }
 
   // Convert input
   auto input_infos_size = subgraph.input_size();
   for (int i = 0; i < input_infos_size; ++i) {
-    if (!const_input_names.count(subgraph.input(i).name())) {
-      ConvertSubPlaceholderNode(_arg_builder.get(), subgraph.input(i));
+    if (const_input_names.count(subgraph.input(i).name()) == 0) {
+      ConvertSubPlaceholderNode(arg_builder.get(), subgraph.input(i));
     }
   }
 
   for (int i = 0, node_size = subgraph.node_size(); i < node_size; ++i) {
     VLOG(1) << "sub node name: " << subgraph.node(i).name();
     if (subgraph.node(i).op_type() == "Constant") {
-      ConvertConstNode(_c_builder.get(), subgraph.node(i));
+      ConvertConstNode(c_builder.get(), subgraph.node(i));
       continue;
     }
-    ConvertOneNode(_ir_builder.get(), subgraph.node(i));
+    ConvertOneNode(loop_ir_builder.get(), subgraph.node(i));
   }
 
   // Convert output. Skip the first operand as "cond" is not a real output.
@@ -817,7 +855,7 @@ Status ONNXParser::ConvertLoopNode(IRBuilder* ir_builder,
     }
   }
   if (!outputs.empty()) {
-    _ir_builder->CreateReturn("output", outputs);
+    loop_ir_builder->CreateReturn("output", outputs);
   }
   curr_scope_ = curr_scope_->GetParent();
   auto loop = ir_builder->CreateLoop(cur_node.name(), operands);
