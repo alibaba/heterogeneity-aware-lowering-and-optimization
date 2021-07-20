@@ -51,7 +51,7 @@
 #endif
 
 thread_local odla_computation g_comp;
-static std::vector<std::unique_ptr<_odla_computation>> g_comps;
+thread_local std::vector<std::unique_ptr<_odla_computation>> g_comps;
 
 static std::shared_ptr<popart::DeviceInfo> AcquireAvailableDevice(
     int num_devices) {
