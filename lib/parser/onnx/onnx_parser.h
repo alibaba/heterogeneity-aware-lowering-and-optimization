@@ -113,7 +113,7 @@ class ONNXParser : public Parser {
                                    const onnx::ValueInfoProto& value_info_def);
   std::vector<Def> GetInputOperands(const onnx::NodeProto& node_def);
   void InsertIDToInstMap(const onnx::NodeProto& node_def, IRObject* inst);
-  Type GetType(const onnx::ValueInfoProto& value_info_def);
+  static Type GetType(const onnx::ValueInfoProto& value_info_def);
 
 /// create node function auto generatered by tablegen
 #include "onnx_convert.h.inc"
