@@ -570,11 +570,12 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
   Def op_axes = Def::GetUndefined();
   Def op_steps = Def::GetUndefined();
 
-  std::vector<int> steps(input_dims, 1);
+  int start_size = starts_type.GetTotalNumOfElements();
+  std::vector<int> steps(start_size, 1);
   if ((op_num == 3) || (op_num == 4)) {
     Constant* c_steps =
         cb.CreateConstant(ext->GetName() + "_steps",
-                          Type{DataType::INT32, {input_dims}}, steps.data());
+                          Type{DataType::INT32, {start_size}}, steps.data());
     op_steps = *c_steps;
     if (op_num == 3) {
       std::vector<int> data(input_dims);
@@ -1283,13 +1284,16 @@ enum LSTMLayout {
 };
 
 Direction DecodeLSTMDirection(const std::string& key) {
+  std::string key_lower = key;
+  std::transform(key.begin(), key.end(), key_lower.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
   static const std::unordered_map<std::string, Direction> enum_map{
       {"forward", Direction::FORWARD},
       {"reverse", Direction::REVERSE},
       {"bidirectional", Direction::BIDIRECTIONAL},
   };
 
-  auto it = enum_map.find(key);
+  auto it = enum_map.find(key_lower);
   return it == enum_map.end() ? Direction::INVALID : it->second;
 }
 
