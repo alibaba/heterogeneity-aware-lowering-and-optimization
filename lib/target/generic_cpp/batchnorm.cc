@@ -48,6 +48,22 @@ void GenericCXXCodeGen::RunOnInstruction(BatchNormInst* inst) {
   ir_mapping_[*inst] = ret;
 }
 
+void GenericCXXCodeGen::RunOnInstruction(GroupNormInst* inst) {
+  const Def& input = inst->GetOperand(0);
+  const Def& scale = inst->GetOperand(1);
+  const Def& bias = inst->GetOperand(2);
+
+  CXXValue op0 = ir_mapping_[input];
+  CXXValue op1 = ir_mapping_[scale];
+  CXXValue op2 = ir_mapping_[bias];
+
+  CXXValue ret(inst->GetName(), op0.type);
+  EmitODLACall(ret, "odla_GroupNormalization", op0, inst->GetDataFormat(),
+               inst->GetGroups(), inst->GetEpsilon(), op1, op2, 1, 0);
+
+  ir_mapping_[*inst] = ret;
+}
+
 void GenericCXXCodeGen::RunOnInstruction(InstanceNormInst* inst) {
   const Def& input = inst->GetOperand(0);
   const Def& scale = inst->GetOperand(1);
