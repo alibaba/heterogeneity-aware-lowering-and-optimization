@@ -238,6 +238,27 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_HardSigmoid(odla_value input, odla_float32 alpha, odla_float32 beta,
                  const odla_value_id value_id);
 
+//! \brief Group Normalization
+/*!
+  GroupNormalization normalizes the features within channel groups.
+  \param input the input value
+  \param input_layout the memory layout of input
+  \param groups the number of groups
+  \param epsilon the epsilon
+  \param scale optional scale value (can be NULL)
+  \param offset optional offset value (Default is NULL)
+  \param scalar_scale If `scale` is NULL, this value will be used.
+  \param scalar_offset if `offset` is NULL, this value will be used.
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_GroupNormalization(
+    odla_value input, odla_memory_layout input_layout, odla_int32 groups,
+    odla_float32 epsilon, odla_value scale, odla_value offset,
+    odla_float32 scalar_scale, odla_float32 scalar_offset,
+    const odla_value_id value_id);
+
 //! \brief Instance Normalization
 /*!
   InstanceNormalization computes the instance normalization as \n
