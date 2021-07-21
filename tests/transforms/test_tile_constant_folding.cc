@@ -42,7 +42,7 @@ void build() {
 
   PassManager pm(ctx);
   pm.AddTypeLegalizerPass();
-  pm.AddInstSimplifyPass(false, false, false, false, false, false);
+  pm.AddInstSimplifyPass(false, false, false, false, false, false, false);
   pm.AddDCEPass();
   pm.Run(&m);
 
