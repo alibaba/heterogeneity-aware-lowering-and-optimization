@@ -26,17 +26,19 @@ namespace halo {
 /// This pass simplififies instructions to reduce computation strength.
 class InstSimplify final : public BasicBlockPass {
  public:
-  InstSimplify() : InstSimplify(false, false, false, false, false, false) {}
+  InstSimplify()
+      : InstSimplify(false, false, false, false, false, false, false) {}
   InstSimplify(bool simplify_for_preprocess, bool disable_broadcasting,
                bool remove_input_transpose, bool remove_output_transpose,
-               bool disable_conv_bn, bool fuse_conv_bias)
+               bool disable_conv_bn, bool fuse_conv_bias, bool fuse_hardswish)
       : BasicBlockPass("Instruction Simplification"),
         simplify_for_preprocess_(simplify_for_preprocess),
         disable_broadcasting_(disable_broadcasting),
         remove_input_transpose_(remove_input_transpose),
         remove_output_transpose_(remove_output_transpose),
         disable_conv_bn_(disable_conv_bn),
-        fuse_conv_bias_(fuse_conv_bias) {}
+        fuse_conv_bias_(fuse_conv_bias),
+        fuse_hardswish_(fuse_hardswish) {}
 
   bool RunOnBasicBlock(BasicBlock* bb) override;
 
@@ -84,6 +86,7 @@ class InstSimplify final : public BasicBlockPass {
   bool fuse_conv_bias_;
   bool fuse_mul_matmul_ = true;
   bool fuse_fc_add_ = true;
+  bool fuse_hardswish_;
 };
 
 } // end namespace halo.

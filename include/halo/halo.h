@@ -89,6 +89,7 @@ struct CXXCodeGenOpts {
   bool remove_input_transpose = false;
   bool remove_output_transpose = false;
   bool disable_conv_bn = false;
+  bool fuse_hardswish = false;
   int64_t ipu_num = 1;
   int64_t batches_per_step = 1;
   bool check_model = false;

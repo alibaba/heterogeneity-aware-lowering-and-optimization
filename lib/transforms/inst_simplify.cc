@@ -227,7 +227,7 @@ static bool IsSameType(const Type& lhs, const Type& rhs) {
 
 static std::pair<Def, Def> RunOnMathBinaryInstruction(
     Instruction* binary_inst, bool disable_broadcasting, bool fuse_conv_bias,
-    bool fuse_matmul_mul, bool fuse_fully_connected) {
+    bool fuse_matmul_mul, bool fuse_fully_connected, bool fuse_hardswish) {
   Def orig_def{binary_inst, 0};
   auto op0 = binary_inst->GetOperand(0);
   auto op1 = binary_inst->GetOperand(1);
@@ -385,6 +385,35 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
     }
     if (new_inst != nullptr) {
       return {orig_def, *new_inst};
+    }
+  }
+
+  if (opc == OpCode::DIV && IsA<Constant>(op1) && fuse_hardswish) {
+    const Constant* c = DynCast<Constant>(op1);
+    constexpr int div_6 = 6;
+    constexpr int add_3 = 3;
+    if (c->HasSameValueOf(div_6)) {
+      auto op_mul0 = DynCast<MulInst>(op0)->GetOperand(0);
+      auto op_mul1 = DynCast<MulInst>(op0)->GetOperand(1);
+      auto opc_mul = DynCast<MulInst>(op0)->GetOpCode();
+      if (opc_mul == OpCode::MUL) {
+        auto op_relu6 = DynCast<Relu6Inst>(op_mul1)->GetOperand(0);
+        auto opc_relu6 = DynCast<Relu6Inst>(op_mul1)->GetOpCode();
+        if (opc_relu6 == OpCode::RELU6) {
+          auto op_add0 = DynCast<AddInst>(op_relu6)->GetOperand(0);
+          auto op_add1 = DynCast<AddInst>(op_relu6)->GetOperand(1);
+          auto opc_add = DynCast<AddInst>(op_relu6)->GetOpCode();
+          if (opc_add == OpCode::ADD && IsA<Constant>(op_add1)) {
+            const Constant* c_add = DynCast<Constant>(op_add1);
+            if (c_add->HasSameValueOf(add_3)) {
+              Instruction* new_inst = nullptr;
+              new_inst = builder.CreateHardSwish(
+                  "Hardswish_" + binary_inst->GetName(), op_add0);
+              return {orig_def, *new_inst};
+            }
+          }
+        }
+      }
     }
   }
 
@@ -732,7 +761,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Instruction* inst) {
     case OpCode::CMP: {
       return RunOnMathBinaryInstruction(inst, disable_broadcasting_,
                                         fuse_conv_bias_, fuse_mul_matmul_,
-                                        fuse_fc_add_);
+                                        fuse_fc_add_, fuse_hardswish_);
     }
     case OpCode::REDUCEMAX:
     case OpCode::REDUCEMIN:

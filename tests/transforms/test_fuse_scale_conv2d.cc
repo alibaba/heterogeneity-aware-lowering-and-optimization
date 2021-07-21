@@ -86,7 +86,7 @@ static void build() {
 
   PassManager pm(ctx);
   pm.AddTypeLegalizerPass(true);
-  pm.AddInstSimplifyPass(false, true, false, false, false, true);
+  pm.AddInstSimplifyPass(false, true, false, false, false, true, false);
   pm.AddDCEPass();
   auto cg = pm.AddGenericCXXCodeGenPass(os_code, os_header);
   pm.AddX86ConstantWriterPass(of_constants);

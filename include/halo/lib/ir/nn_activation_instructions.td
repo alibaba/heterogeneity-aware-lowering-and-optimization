@@ -76,6 +76,9 @@ let cat_ = cat_nn_activation,
     ];
   }
 
+  def HardSwish : Inst<"Compute the h-swish activation"
+                       "Return x * relu6(x + 3) / 6.">;
+
   def Softmax : Inst<"Compute the softmax activation."> {
     let attrs_ = [Attr<"The dimension the softmax would be performed on.",
                        Integer, "axis", "-1">];
