@@ -111,7 +111,9 @@ def ONNX_Elu : OpMapping<"Elu", Elu> {
   let attr_mapping_ = [ AttributeMapping<"alpha", "alpha", "1.0"> ];
 }
 
-def ONNX_Equal: OpMapping<"Equal", Equal>;
+def ONNX_Equal: OpMapping<"Equal", Cmp> {
+  let attr_mapping_ = [AttributeMapping<"", "predicator", "EQ">];
+}
 
 def ONNX_Exp : OpMapping<"Exp", Exp>;
 
@@ -151,12 +153,18 @@ def ONNX_GlobalAveragePool : OpMapping<"GlobalAveragePool", ReduceMean> {
 
 def ONNX_GlobalMaxPool : ONNXExtension<"GlobalMaxPool">;
 
-def ONNX_Greater: OpMapping<"Greater", Greater>;
+def ONNX_Greater : OpMapping<"Greater", Cmp> {
+  let attr_mapping_ = [AttributeMapping<"", "predicator", "GT">];
+}
 
 def ONNX_Identity : ONNXExtension<"Identity">;
 
 def ONNX_LeakyRelu : OpMapping<"LeakyRelu", LeakyRelu> {
   let attr_mapping_ = [ AttributeMapping<"alpha", "alpha", "0.01"> ];
+}
+
+def ONNX_Less : OpMapping<"Less", Cmp> {
+  let attr_mapping_ = [AttributeMapping<"", "predicator", "LT">];
 }
 
 def ONNX_Log : OpMapping<"Log", Log>;
