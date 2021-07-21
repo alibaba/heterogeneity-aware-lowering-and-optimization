@@ -59,6 +59,7 @@ class ONNXParser : public Parser {
     using ir_map = std::unordered_map<std::string, Value>;
 
    public:
+    bool Contains(const std::string& name);
     Value Find(const std::string& name);
     void Insert(const onnx::TensorProto& tensor, const Value& def);
     void Insert(const std::string& name, const Value& def);
@@ -101,6 +102,9 @@ class ONNXParser : public Parser {
   Status ConvertOneNode(IRBuilder* ir_builder, const onnx::NodeProto& node_def);
   IRObject* ConvertConstNode(ConstantBuilder* c_builder,
                              const onnx::TensorProto& tensor_def);
+  IRObject* ConvertConstNode(ConstantBuilder* c_builder,
+                             const onnx::TensorProto& tensor_def,
+                             const std::string& name);
   Status ConvertConstNode(ConstantBuilder* c_builder,
                           const onnx::NodeProto& cur_node);
   Status ConvertDummyNode(IRBuilder* ir_builder,

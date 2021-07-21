@@ -56,6 +56,21 @@ let cat_ = cat_nn in {
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
   }
 
+  def GroupNorm : Inst<"Group normalization."> {
+    let attrs_ = [
+      Attr<"Use to avoid division by zero.", Float, "epsilon", "0.00001">,
+      Attr<"Input data format.", EnumDataFormat, "data_format", "NHWC">,
+      Attr<"Number of groups", Integer, "groups", "-1">
+    ];
+    let ins_ = [
+      Arg<"The input image, shape is defined by data_format",
+          ArgType<[ F16, F32 ]>, 4D>,
+      Arg<"The scale Tensor", ArgType<[F16, F32]>, 4D>,
+      Arg<"The bias Tensor", ArgType<[F16, F32]>, 4D>
+    ];
+    let outs_ = [Arg<"The result.", MatchArgType<0> >];
+  }
+
   def InstanceNorm : Inst<"Instance normalization."> {
     let attrs_ = [
       Attr<"Use to avoid division by zero.", Float, "epsilon", "0.00001">,
