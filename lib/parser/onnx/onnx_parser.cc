@@ -58,8 +58,8 @@ ONNXParser::Scope* ONNXParser::Scope::CreateScope() {
 }
 
 void ONNXParser::Scope::Insert(const std::string& name, const Value& def) {
-  if (inst_name_to_ptr_.count(name)) {
-    std::cerr << "Dup :" << std::endl;
+  if (inst_name_to_ptr_.count(name) > 0) {
+    std::cerr << "Duplicated :" << std::endl;
     inst_name_to_ptr_[name].GetOwner()->Dump();
     def.GetOwner()->Dump();
     std::cerr << std::endl;

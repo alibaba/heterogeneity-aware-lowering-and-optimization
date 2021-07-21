@@ -944,6 +944,33 @@ static std::vector<Def> ConvertHgQuant(const ONNXExtensionInst* ext,
   return {input};
 }
 
+static std::vector<Def> ConvertIpuOp(const ONNXExtensionInst* ext,
+                                     IRBuilder* builder,
+                                     const std::string& op) {
+  auto op0 = ext->GetOperand(0);
+  const auto& type = op0.GetType();
+  if (!type.IsValid()) {
+    return {};
+  }
+  auto new_type = type;
+  if (op == "IpuAttentionMask") {
+    HLCHECK(ext->GetNumOfOperands() == 2);
+    const auto& op1_type = ext->GetOperand(1).GetType();
+    if (!op1_type.IsValid()) {
+      return {};
+    }
+    HLCHECK(type.GetNumOfDims() == 2);
+    auto batch = type.GetNumOfElementsInDim(0);
+    auto seq = type.GetNumOfElementsInDim(1);
+    new_type = Type{op1_type.GetDataType(), {batch, 1, seq, seq}};
+  }
+  builder->SetInsertAfter(ext);
+  auto new_inst =
+      builder->CreateCustom(ext->GetName(), ext->GetOperands(), 1, op);
+  new_inst->GetResultsTypes()[0] = new_type;
+  return {*new_inst};
+}
+
 static std::vector<Def> ConvertHgDeQuant(const ONNXExtensionInst* ext,
                                          IRBuilder* builder) {
   // HLCHECK(0 && "Wrong ConvertHgDeQuant");
@@ -1113,6 +1140,12 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::FLATTEN: {
       return ConvertFlatten(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::IPUATTENTIONMASK: {
+      return ConvertIpuOp(onnx_inst, builder, "IpuAttentionMask");
+    }
+    case ONNXExtOpCode::IPUGELU: {
+      return ConvertIpuOp(onnx_inst, builder, "IpuGelu");
     }
     case ONNXExtOpCode::IDENTITY: {
       return {onnx_inst->GetOperand(0)};
