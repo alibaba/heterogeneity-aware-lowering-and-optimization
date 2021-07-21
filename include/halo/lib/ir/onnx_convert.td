@@ -63,6 +63,10 @@ def ONNX_Cast : ONNXExtension<"Cast"> {
   let extension_attr_ = [ ExtensionAttr<"to", Integer, "0"> ];
 }
 
+def ONNX_IpuAttentionMask : ONNXExtension<"AttentionMask">;
+
+def ONNX_IpuGelu : ONNXExtension<"Gelu">;
+
 def ONNX_Clip : OpMapping<"Clip", Relu6>;
 
 def ONNX_Ceil : OpMapping<"Ceil", Ceil>;

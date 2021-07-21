@@ -32,6 +32,10 @@ namespace halo {
 
 ONNXParser::~ONNXParser() {}
 
+bool ONNXParser::Scope::Contains(const std::string& name) {
+  return inst_name_to_ptr_.count(name) != 0;
+}
+
 Value ONNXParser::Scope::Find(const std::string& name) {
   const static Value empty_value;
   auto it = inst_name_to_ptr_.find(name);
@@ -54,6 +58,12 @@ ONNXParser::Scope* ONNXParser::Scope::CreateScope() {
 }
 
 void ONNXParser::Scope::Insert(const std::string& name, const Value& def) {
+  if (inst_name_to_ptr_.count(name)) {
+    std::cerr << "Dup :" << std::endl;
+    inst_name_to_ptr_[name].GetOwner()->Dump();
+    def.GetOwner()->Dump();
+    std::cerr << std::endl;
+  }
   inst_name_to_ptr_[name] = def;
 }
 
@@ -165,6 +175,10 @@ Status ONNXParser::ConvertToHaloIR(const onnx::GraphProto& graph_def) {
   for (int i = 0; i < node_size; ++i) {
     // 1.Constant input not appear in graph constant inputs initializer list
     if (graph_def.node(i).op_type() == "Constant") {
+      const auto& name = graph_def.node(i).output(0);
+      if (curr_scope_->Contains(name)) {
+        continue;
+      }
       s = ConvertConstNode(c_builder_.get(), graph_def.node(i));
       if (s != Status::SUCCESS) {
         return s;
@@ -415,8 +429,8 @@ Tensor<T> ONNXParser::ProcessTensor(const onnx::TensorProto& tensor_proto) {
     HLCHECK(0 && "Unsupported external data storage.");
   }
 
-  if (shape.empty() && v.size() > 1) {
-    shape.push_back(v.size());
+  if (shape.empty() && !v.empty()) {
+    shape.push_back(1);
   }
   return Tensor<T>(data_type, shape, v);
 }
@@ -475,6 +489,9 @@ Status ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
                                     const onnx::NodeProto& cur_node) {
   IRObject* inst = nullptr;
   for (const auto& attr : cur_node.attribute()) {
+    if (attr.name() != "value") {
+      continue;
+    }
     if (attr.type() == onnx::AttributeProto::TENSOR) {
       HLCHECK(attr.has_t());
       inst = ConvertConstNode(c_builder, attr.t(), cur_node.output(0));
@@ -554,8 +571,8 @@ std::vector<Def> ONNXParser::GetInputOperands(const onnx::NodeProto& node_def) {
       operands.emplace_back(Def{inst, idx});
     } else {
       // those errors will be record in diagnostic report file
-      // LOG(ERROR) << node_def.name() << " Node's" << i
-      //<< "th operand:" << node_def.input(i) << " not found";
+      LOG(ERROR) << node_def.name() << " Node's" << i
+                 << "th operand:" << node_def.input(i) << " not found";
     }
   }
   return operands;
