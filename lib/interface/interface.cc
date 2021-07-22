@@ -53,7 +53,7 @@ static int InvokeCompiler(Module* m, const std::string& target, int batch,
                           const std::string& main_output_file_name,
                           ModelInfo* model_info) {
   auto& ctx = m->GetGlobalContext();
-  ctx.SetVerbosity(1);
+  ctx.SetVerbosity(0);
   ctx.SetBasePath(GetBaseDir());
   ctx.SetODLAIncludePath(FindODLAIncPath(ctx.GetBasePath(), {}));
   ctx.SetODLALibraryPath(

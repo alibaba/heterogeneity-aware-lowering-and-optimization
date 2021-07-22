@@ -208,7 +208,7 @@ std::string GenericCXXCodeGen::GetFunctionDecl(const Function& func,
                                                bool with_type,
                                                bool public_function) {
   const static std::string inference_func_decl =
-      "void model_run(int num_inputs, const void* inputs[],"
+      "int model_run(int num_inputs, const void* inputs[],"
       "int num_outputs, void* outputs[], int batch_size)";
   if (opts_.emit_inference_func_sig && func.IsEntryFunction() &&
       public_function) {
@@ -741,7 +741,9 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
   if (opts_.exec_mode == ExecMode::Compile) {
     os_ << "  static odla_context Ctx;\n";
     os_ << "  if (Ctx == " << EmitNull()
-        << ") {  odla_CreateContext(&Ctx); };\n";
+        << ") {  if (odla_CreateContext(&Ctx) != ODLA_SUCCESS) return "
+        << (opts_.emit_inference_func_sig ? "ODLA_FAILURE" : "") << "\n;";
+    os_ << "};\n";
     if (opts_.emit_dynamic_batch) {
       os_ << "odla_SetContextItem(Ctx, ODLA_RUN_BATCH_SIZE, "
              "(odla_item_value) &batch_size);\n";
@@ -774,10 +776,15 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
         << ");\n";
   }
   if (opts_.exec_mode == ExecMode::Compile) {
-    os_ << "  odla_ExecuteComputation(Comp, Ctx, "
+    os_ << "  odla_status status = odla_ExecuteComputation(Comp, Ctx, "
            "ODLA_COMPUTE_INFERENCE, "
         << EmitNull() << ");\n";
   }
+  os_ << " return "
+      << (opts_.exec_mode == ExecMode::Compile && opts_.emit_inference_func_sig
+              ? "status"
+              : "")
+      << "\n;";
   os_ << "}\n";
 }
 
