@@ -428,9 +428,12 @@ Tensor<T> ONNXParser::ProcessTensor(const onnx::TensorProto& tensor_proto) {
             onnx::TensorProto::DataLocation::TensorProto_DataLocation_EXTERNAL);
     HLCHECK(0 && "Unsupported external data storage.");
   }
-
-  if (shape.empty() && !v.empty()) {
-    shape.push_back(1);
+  auto elems = v.size();
+  if (data_type == DataType::FLOAT16) {
+    elems /= 2;
+  }
+  if (shape.empty() && elems > 1) {
+    shape.push_back(elems);
   }
   return Tensor<T>(data_type, shape, v);
 }
