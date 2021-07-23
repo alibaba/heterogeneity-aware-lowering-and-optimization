@@ -55,7 +55,7 @@ def ONNX_BatchNormalization : OpMapping<"BatchNormalization", BatchNorm> {
 def ONNX_GroupNormalization : OpMapping<"GroupNormalization", GroupNorm> {
   let attr_mapping_ = [
     AttributeMapping<"epsilon", "epsilon", "0.00001">,
-    AttributeMapping<"groups", "groups", "-1">,
+    AttributeMapping<"num_groups", "groups", "-1">,
     AttributeMapping<"", "data_format", "NCHW">];
 }
 
