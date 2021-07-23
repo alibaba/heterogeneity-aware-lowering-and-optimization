@@ -190,35 +190,35 @@ popart::StepIOCallback::InputCallback input_callback =
   odla_context ctx = ContextQueues::get_instance()->get_input_context();
   if(nullptr == ctx)
   {
-    std::cout << "Queue is empty when try to get" << std::endl;
-    std::cout << "Use the test_ctx" << std::endl;
+    std::cout << "input_callback -> Queue is empty when try to get" << std::endl;
+    std::cout << "input_callback -> Use the test_ctx" << std::endl;
     ctx = test_ctx;
     // exit(CB_NULL_QUEUE);
   }
   popart::IArray* p_array = ctx->get_data_by_tensor_id(id);
   if(NULL == p_array)
   {
-    std::cerr << "Can not find the tensor with id: " << id << " in ctx: " << ctx << std::endl;
+    std::cerr << "input_callback -> Can not find the tensor with id: " << id << " in ctx: " << ctx << std::endl;
     exit(CB_NULL_TENSOR);
   }
   popart::ConstVoidData data;
   data.data = p_array->data();
-  std::cout << "In input_callback, the p_array dataType is: " << p_array->dataType() << ", shape is: " << p_array->shape() << std::endl;
+  std::cout << "input_callback -> the p_array dataType is: " << p_array->dataType() << ", shape is: " << p_array->shape() << std::endl;
   data.info = popart::TensorInfo(p_array->dataType(), p_array->shape());
   return data;
 };
 
 popart::StepIOCallback::InputCompleteCallback input_complete_callback =
     [&](popart::TensorId id) -> void {
-  std::cout << "input complete callback called: " << id << std::endl;
+  std::cout << "input_complete_callback -> called: " << id << std::endl;
   odla_context ctx = ContextQueues::get_instance()->get_input_context();
   if(nullptr == ctx)
   {
-    std::cout << "Queue is empty when try to get" << std::endl;
-    // exit(CB_NULL_QUEUE);
+    std::cout << "input_complete_callback -> Queue is empty when try to get" << std::endl;
+    exit(CB_NULL_QUEUE);
   }
   if(ctx->all_tensors_visited()){
-    std::cout << "All tensors read for current context:" << ctx << std::endl;
+    std::cout << "input_complete_callback -> All tensors read for current context:" << ctx << std::endl;
     ContextQueues::get_instance()->all_tensor_read();
   }
 };
@@ -226,18 +226,18 @@ popart::StepIOCallback::InputCompleteCallback input_complete_callback =
 popart::StepIOCallback::OutputCallback output_callback =
     [&](popart::TensorId id) -> popart::MutableVoidData {
   popart::logging::info("output callback called {}", id);
-
+  std::cout << "output_callback -> called with id: " << id << std::endl;
   odla_context ctx = ContextQueues::get_instance()->get_output_context();
   if(nullptr == ctx)
   {
-    std::cout << "Queue is empty when try to get" << std::endl;
-    // exit(CB_NULL_QUEUE);
+    std::cout << "output_callback <- Queue is empty when try to get" << std::endl;
+    exit(CB_NULL_QUEUE);
   }
   popart::IArray* p_array = ctx->write_data_by_tensor_id(id);
   if(NULL == p_array)
   {
-    std::cerr << "Can not find the tensor with id: " << id << " in ctx: " << ctx << std::endl;
-    // exit(CB_NULL_TENSOR);
+    std::cerr << "output_callback <- Can not find the tensor with id: " << id << " in ctx: " << ctx << std::endl;
+    exit(CB_NULL_TENSOR);
   }
   popart::MutableVoidData data;
   data.data = p_array->data();
@@ -248,14 +248,15 @@ popart::StepIOCallback::OutputCallback output_callback =
 popart::StepIOCallback::OutputCompleteCallback output_complete_callback =
     [&](popart::TensorId id) -> void {
   popart::logging::info("output complete callback called {}", id);
+  std::cout << "output_complete_callback -> called with id: " << id << std::endl;
   odla_context ctx = ContextQueues::get_instance()->get_output_context();
   if(nullptr == ctx)
   {
-    std::cout << "Queue is empty when try to get" << std::endl;
+    std::cout << "output_complete_callback -> Queue is empty when try to get" << std::endl;
     // exit(CB_NULL_QUEUE);
   }
   if(ctx->all_tensors_written()){
-    std::cout << "All tensors written for current context waiting output: " << ctx << std::endl;
+    std::cout << "output_complete_callback -> All tensors written for current context waiting output: " << ctx << std::endl;
     ContextQueues::get_instance()->all_tensor_written();
     ctx->notify();  //解阻塞，返回吧
   }
