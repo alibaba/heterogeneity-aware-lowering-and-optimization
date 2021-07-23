@@ -101,6 +101,9 @@ class ONNXParser : public Parser {
   Status ConvertOneNode(IRBuilder* ir_builder, const onnx::NodeProto& node_def);
   IRObject* ConvertConstNode(ConstantBuilder* c_builder,
                              const onnx::TensorProto& tensor_def);
+  IRObject* ConvertConstNode(ConstantBuilder* c_builder,
+                             const onnx::TensorProto& tensor_def,
+                             const std::string& name);
   Status ConvertConstNode(ConstantBuilder* c_builder,
                           const onnx::NodeProto& cur_node);
   Status ConvertDummyNode(IRBuilder* ir_builder,

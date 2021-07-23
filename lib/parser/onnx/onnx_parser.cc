@@ -423,46 +423,50 @@ Tensor<T> ONNXParser::ProcessTensor(const onnx::TensorProto& tensor_proto) {
 
 IRObject* ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
                                        const onnx::TensorProto& tensor_def) {
+  return ConvertConstNode(c_builder, tensor_def, tensor_def.name());
+}
+
+IRObject* ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
+                                       const onnx::TensorProto& tensor_def,
+                                       const std::string& name) {
   DataType data_type = ProcessDataType(tensor_def.data_type());
   IRObject* inst = nullptr;
   switch (data_type) {
     case DataType::FLOAT32: {
       const Tensor<float> temp = ProcessTensor<float>(tensor_def);
-      inst = c_builder->CreateConstant(
-          tensor_def.name(), Type(data_type, temp.GetShape()), temp.GetData());
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
       break;
     }
     case DataType::FLOAT16: {
       const Tensor<uint16_t> temp = ProcessTensor<uint16_t>(tensor_def);
-      inst = c_builder->CreateConstant(tensor_def.name(),
-                                       Type(data_type, temp.GetShape()),
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
                                        temp.GetData().data());
       break;
     }
     case DataType::INT32: {
       const Tensor<int> temp = ProcessTensor<int>(tensor_def);
-      inst = c_builder->CreateConstant(
-          tensor_def.name(), Type(data_type, temp.GetShape()), temp.GetData());
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
       break;
     }
     case DataType::INT64: {
       const Tensor<int64_t> temp = ProcessTensor<int64_t>(tensor_def);
-      inst = c_builder->CreateConstant(
-          tensor_def.name(), Type(data_type, temp.GetShape()), temp.GetData());
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
       break;
     }
     case DataType::BOOL: {
       const Tensor<int8_t> temp = ProcessTensor<int8_t>(tensor_def);
-      inst = c_builder->CreateConstant(tensor_def.name(),
-                                       Type(DataType::BOOL, temp.GetShape()),
-                                       temp.GetData());
+      inst = c_builder->CreateConstant(
+          name, Type(DataType::BOOL, temp.GetShape()), temp.GetData());
       break;
     }
     default:
       HLCHECK(0 && "Unsupported data type");
   }
   if (inst != nullptr) {
-    curr_scope_->Insert(tensor_def, Value(inst, 0));
+    curr_scope_->Insert(name, Value(inst, 0));
   }
   return inst;
 }
@@ -473,8 +477,10 @@ Status ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
   for (const auto& attr : cur_node.attribute()) {
     if (attr.type() == onnx::AttributeProto::TENSOR) {
       HLCHECK(attr.has_t());
-      inst = ConvertConstNode(c_builder, attr.t());
-    } else if (attr.type() == onnx::AttributeProto::INT) {
+      inst = ConvertConstNode(c_builder, attr.t(), cur_node.output(0));
+      return Status::SUCCESS;
+    }
+    if (attr.type() == onnx::AttributeProto::INT) {
       int64_t val = attr.i();
       inst = c_builder->CreateConstant(cur_node.name(),
                                        Type{DataType::INT64, {1}}, &val);
