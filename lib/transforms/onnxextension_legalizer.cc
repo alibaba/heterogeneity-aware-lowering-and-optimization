@@ -556,8 +556,7 @@ static std::vector<Def> ConvertOneHot(const ONNXExtensionInst* ext,
     // split values to on-value and off-value
 
     const char* ptr = static_cast<const char*>(values->GetRawDataPtr());
-    size_t data_type_size =
-        values->GetElementSizeInBytes() / type.GetTotalNumOfElements();
+    size_t data_type_size = values->GetElementSizeInBytes();
     Type ty{data_type};
 
     Constant* off_value = cb.CreateConstant(name + "_off_value", ty,
