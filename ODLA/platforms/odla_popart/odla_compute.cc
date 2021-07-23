@@ -95,7 +95,7 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
       break;
     default:
       std::cerr << "Unsupported property type: " << type << std::endl;
-      return ODLA_FAILURE;
+      return ODLA_UNSUPPORTED_DATATYPE;
   }
 
   return ODLA_SUCCESS;
@@ -119,7 +119,7 @@ odla_status odla_CreateComputation(odla_computation* comp) {
     if (custom_op_handle == nullptr) {
       std::cerr << "Unable to open libcustom_ops " << dlerror() << std::endl;
       assert(0);
-      return ODLA_FAILURE;
+      return ODLA_DL_ERROR;
     }
   }
 
@@ -214,7 +214,7 @@ odla_status odla_GetArgFromComputationByIdx(const odla_computation computation,
                                             odla_value* arg_value) {
   *arg_value = nullptr;
   if (arg_idx >= computation->input_values.size()) {
-    return ODLA_FAILURE;
+    return ODLA_INVALID_PARAM;
   }
   *arg_value = computation->input_values[arg_idx];
   return ODLA_SUCCESS;
@@ -274,7 +274,7 @@ odla_status odla_GetOutputFromComputationByIdx(
     odla_value* output_value) {
   *output_value = nullptr;
   if (output_idx >= computation->output_values.size()) {
-    return ODLA_FAILURE;
+    return ODLA_INVALID_PARAM;
   }
   *output_value = computation->output_values[output_idx];
   return ODLA_SUCCESS;

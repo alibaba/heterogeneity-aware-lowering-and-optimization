@@ -136,6 +136,28 @@ typedef void odla_void;
 //! \brief Return status
 typedef enum {
   ODLA_SUCCESS,
+  //! \brief dlopen a shared library error
+  ODLA_DL_ERROR,
+  ODLA_FILE_NOT_EXIST,
+  //! \brief illegal input argument, such as nullptr
+  ODLA_INVALID_PARAM,
+  //! \brief allocate/deallocate memory error, out of memory error
+  ODLA_MEM_ERROR,
+  ODLA_UNSUPPORTED_DATATYPE,
+  ODLA_UNSUPPORTED_DEVICE_TYPE,
+  //! \brief odla op is not implemented yet
+  ODLA_UNSUPPORTED_OP,
+  //! \brief process timeout
+  ODLA_TIMEOUT,
+  //! \brief internal error
+  INTERNAL_LOGIC_ERR,
+  //! auto recoverable error
+  RECOVERABLE_ERR,
+  //! manual recoverable error, include partition reset and full reset type
+  PARTITION_RESET,
+  FULL_RESET,
+  //! unrecoverable error
+  UNRECOVERABLE_ERR,
   ODLA_FAILURE,
 } odla_status;
 
