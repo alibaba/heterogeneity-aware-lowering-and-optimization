@@ -45,6 +45,7 @@
 #include <mutex>
 #include <queue>
 #include <thread>
+#include <array>
 
 #include "ODLA/odla_common.h"
 #include "common.h"
@@ -89,24 +90,57 @@ std::mutex SingleComp::instance_mutex;
 //因为其他地方还在用这个thread_local的g_comp，所以还得保留这个
 thread_local odla_computation g_comp = SingleComp::get_instance()->get_comp();
 static bool pipeline_loop_running = true;
-static odla_context test_ctx = nullptr;
+//static odla_context test_ctx = nullptr;
 void pipeline_loop(odla_computation comp);
+
+/* 这里的数据可以只创建一次，循环使用，反正输入就是创建0，输出随便覆盖，因为后面不会使用
+   那，我们后面是把这个context，和这个queue的任务分开么？
+   在put的时候用一个wrapper把ctx包起来，里面包含状态信息和mutex，condition_variable，在返回输出的时候拆掉wrapper。
+   那这个wrapper是不是就会跟输入输出产生关联，需要加锁了？
+   还是继续用context，让他们去delete吧。那这里生成的谁负责delete？自己玩的，是在一个线程里面么？
+   因为输出要检查是不是所有的tensor都整完了，就是得有context和状态，
+ */
+odla_context create_empty_odla_context()
+{
+  //if(nullptr != test_ctx)
+  //  return test_ctx;
+  std::cout << "-----------------> create an empty input/output context" << std::endl;
+  odla_context ctx = new _odla_context(SingleComp::get_instance()->get_comp());
+  //initialize?
+  for(auto& value : ctx->comp->input_values){
+    std::size_t num_elements = 1;
+    for(auto& shape : value->tensor_info.shape())
+      num_elements *= shape;
+    float* data = new float[num_elements];
+    std::fill_n(data, num_elements, 0);
+    odla_BindToArgument(value, data, ctx);
+  }
+  for(auto& value : ctx->comp->output_values){
+    std::size_t num_elements = 1;
+    for(auto& shape : value->tensor_info.shape())
+      num_elements *= shape;
+    float* data = new float[num_elements];
+    std::fill_n(data, num_elements, 0);
+    odla_BindToOutput(value, data, ctx);
+  }
+  return ctx;
+}
 
 struct ContextQueues{
   std::queue<odla_context> input_queue_1;
   std::queue<odla_context> input_queue_2;
   std::queue<odla_context> wait_output_queue;
   std::mutex write_mutex;
-  std::queue<odla_context>& read_queue;
-  std::queue<odla_context>& write_queue;
-  ContextQueues():read_queue(input_queue_1)
-    ,write_queue(input_queue_2)
+  std::queue<odla_context>* read_queue;
+  std::queue<odla_context>* write_queue;
+  ContextQueues():read_queue(&input_queue_1)
+    ,write_queue(&input_queue_2)
     , input_ctx(nullptr), output_ctx(nullptr){}
   void put(odla_context ctx);
   odla_context get_input_context();
   void all_tensor_read(){
     std::cout << "ContextQueues::all_tensor_read(), ctx: " << input_ctx << " poped, and put into wait_output_queue" << std::endl;
-    read_queue.pop();
+    read_queue->pop();
     wait_output_queue.push(input_ctx);
     input_ctx = nullptr;
   }
@@ -127,6 +161,8 @@ struct ContextQueues{
       if(nullptr == p_context_queues){
         p_context_queues = new ContextQueues();
         std::cout << "Here is OK" << std::endl;
+        //Create empty context
+
         //启动thread
         std::thread pipeline_thread(pipeline_loop, SingleComp::get_instance()->get_comp());
         // std::thread pipeline_thread(pipeline_loop);
@@ -141,9 +177,9 @@ std::mutex ContextQueues::instance_mutex;
 
 void ContextQueues::put(odla_context ctx)
 {
-  std::cout << "Put context here" << std::endl;
+  std::cout << "ContextQueues::put -> ctx: " << ctx << std::endl;
   std::lock_guard<std::mutex> guard(write_mutex);
-  write_queue.push(ctx);
+  write_queue->push(ctx);
 }
 
 //这里先按照回调函数必须是串行的进行设计，那么get是回调时才会调用的，顺便把拿出来的ctx放到等待队列里面
@@ -153,17 +189,18 @@ odla_context ContextQueues::get_input_context()
     return input_ctx;
     //tensor_visited.clear();
   }
-  input_ctx = read_queue.front();
+  input_ctx = read_queue->front();
   if( nullptr == input_ctx)
   {
     std::lock_guard<std::mutex> guard(write_mutex);
-    std::queue<odla_context>& tmp = read_queue;
+    std::queue<odla_context>* tmp = read_queue;
     read_queue = write_queue;
     write_queue = tmp;
-    input_ctx = read_queue.front();
+    input_ctx = read_queue->front();
+    std::cout << "===============> switched the read write queue" << std::endl;
   }
   if(nullptr == input_ctx)
-    input_ctx = test_ctx;  //TODO: 必须指向一个context结构，可以包含空数据，因为是按照tensor多次读取的。需要保持状态？
+    input_ctx = create_empty_odla_context(); //test_ctx;  //TODO: 必须指向一个context结构，可以包含空数据，因为是按照tensor多次读取的。需要保持状态？
   // if(nullptr != ctx) //不能在这里直接pop，按tensor取的，得确保所有的tensor都取完了才行
   //   read_queue.pop();
   //   wait_output_queue.push(ctx);  //现在是如果没有数据就不push，后面如果没有数据的时候如果要补数据，跟这个context没关系？应该有关系吧，等数据的就是空吧，因为补的数据不会有别人等
@@ -187,24 +224,38 @@ popart::StepIOCallback::InputCallback input_callback =
   popart::logging::info("input callback called {}", id);
   (void)prefetch;
   //Get the data from the context queues
+  popart::ConstVoidData data;
   odla_context ctx = ContextQueues::get_instance()->get_input_context();
-  if(nullptr == ctx)
+  if(nullptr != ctx)
+  {
+    std::cout << "input_callback got ctx: " << ctx << std::endl;
+    popart::IArray* p_array = ctx->get_data_by_tensor_id(id);
+    if(NULL != p_array)
+    {
+      data.data = p_array->data();
+      std::cout << "input_callback -> the p_array dataType is: " << p_array->dataType() << ", shape is: " << p_array->shape() << std::endl;
+      data.info = popart::TensorInfo(p_array->dataType(), p_array->shape());
+    }
+    else
+    {
+      std::cerr << "input_callback -> Can not find the tensor with id: " << id << " in ctx: " << ctx << std::endl;
+      exit(CB_NULL_TENSOR);
+    }
+  }
+  else
   {
     std::cout << "input_callback -> Queue is empty when try to get" << std::endl;
-    std::cout << "input_callback -> Use the test_ctx" << std::endl;
-    ctx = test_ctx;
+    //std::cout << "input_callback -> Use the test_ctx" << std::endl;
+    std::cout << "input_callback -> return nullptr data" << std::endl;
+    //ctx = test_ctx;
     // exit(CB_NULL_QUEUE);
+    data.data = nullptr;
+    odla_computation comp = SingleComp::get_instance()->get_comp();
+    // auto search = comp->inputs_map.find(id);
+    // if(comp->inputs_map.end() != search)
+    //   data.info = search->second->tensor_info;
+    data.info = comp->inputs_map[id]->tensor_info;
   }
-  popart::IArray* p_array = ctx->get_data_by_tensor_id(id);
-  if(NULL == p_array)
-  {
-    std::cerr << "input_callback -> Can not find the tensor with id: " << id << " in ctx: " << ctx << std::endl;
-    exit(CB_NULL_TENSOR);
-  }
-  popart::ConstVoidData data;
-  data.data = p_array->data();
-  std::cout << "input_callback -> the p_array dataType is: " << p_array->dataType() << ", shape is: " << p_array->shape() << std::endl;
-  data.info = popart::TensorInfo(p_array->dataType(), p_array->shape());
   return data;
 };
 
@@ -253,11 +304,12 @@ popart::StepIOCallback::OutputCompleteCallback output_complete_callback =
   if(nullptr == ctx)
   {
     std::cout << "output_complete_callback -> Queue is empty when try to get" << std::endl;
-    // exit(CB_NULL_QUEUE);
+    exit(CB_NULL_QUEUE);
   }
   if(ctx->all_tensors_written()){
     std::cout << "output_complete_callback -> All tensors written for current context waiting output: " << ctx << std::endl;
     ContextQueues::get_instance()->all_tensor_written();
+    ctx->clear_visited_and_written();
     ctx->notify();  //解阻塞，返回吧
   }
 };
@@ -344,10 +396,10 @@ void pipeline_loop(odla_computation comp)
                               output_callback,
                               output_complete_callback);
   //循环吧
-  std::this_thread::sleep_for(std::chrono::seconds(10));
+  //std::this_thread::sleep_for(std::chrono::seconds(10));
   //int i=0;
   //while(pipeline_loop_running){
-  for(int i=0; i<10000; i++){
+  for(int i=0; i<10005; i++){
     std::cout << "LAIYA LAIYA, this is the " << i << " time for the inference" << std::endl;
     comp->session->run(stepio);
   }
@@ -417,8 +469,8 @@ odla_status odla_CreateComputation(odla_computation* comp) {
 odla_status odla_CreateContext(odla_context* context) {
   std::cout << "---> odla_CreateContext()" << std::endl;
   *context = new _odla_context(SingleComp::get_instance()->get_comp());
-  if(nullptr == test_ctx)
-    test_ctx = *context;
+  //if(nullptr == test_ctx)
+  //  test_ctx = *context;
   std::cout << "<--- odla_CreateContext()" << std::endl;
   return ODLA_SUCCESS;
 }
@@ -514,8 +566,8 @@ odla_value odla_CreateConstant(odla_value_type type, const void* data_ptr,
 
 odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                 odla_context context) {
-  std::cout << "---> odla_BindToArgument()" << std::endl;
-  context->clear_visited_and_written();
+  std::cout << "---> odla_BindToArgument() : " << context << std::endl;
+  // context->clear_visited_and_written();
   std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
       data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
       context->comp->builder->getTensorShape(value->tensor_id));
@@ -528,7 +580,7 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
 odla_status odla_BindToArgumentById(const odla_value_id value_id,
                                     const odla_void* data_ptr,
                                     odla_context context) {
-  std::cout << "---> odla_BindToArgumentById()" << std::endl;
+  std::cout << "---> odla_BindToArgumentById() : " << context << std::endl;
   std::string name(reinterpret_cast<const char*>(value_id));
   std::cout << "<--- odla_BindToArgumentById()" << std::endl;
   return odla_BindToArgument(context->comp->inputs_map[name], data_ptr,

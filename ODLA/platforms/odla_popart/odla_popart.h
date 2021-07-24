@@ -145,7 +145,7 @@ struct _odla_context {
     return (tensors_written.size() == outputs.size());
   }
   void clear_visited_and_written(){
-    std::cout << "For test, clear the visited and written record for the context reusing." << std::endl;
+    std::cout << "clear_visited_and_written() -> clear the visited and written record for the context reusing." << std::endl;
     tensors_visited.clear();
     tensors_written.clear();
   }

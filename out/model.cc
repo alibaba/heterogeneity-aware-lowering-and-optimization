@@ -40,10 +40,12 @@ void mnist_simple_init() {
 void mnist_simple(const float x[1 * 784], float out_y[1 * 10]) {
   mnist_simple_init();
   // static odla_context Ctx;
-  thread_local odla_context Ctx;
-  if (Ctx == nullptr) {
-    odla_CreateContext(&Ctx);
-  };
+  // thread_local odla_context Ctx;
+  // if (Ctx == nullptr) {
+  //   odla_CreateContext(&Ctx);
+  // };
+  odla_context Ctx = nullptr;
+  odla_CreateContext(&Ctx);
 
   odla_BindToArgumentById((const odla_value_id) "x", x, Ctx);
   odla_BindToOutputById((const odla_value_id) "y", out_y, Ctx);
