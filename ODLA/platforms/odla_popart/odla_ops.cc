@@ -313,16 +313,16 @@ odla_value odla_Softmax(odla_value input, odla_int32 axis,
 
 odla_value odla_GroupNormalization(odla_value input,
                                    odla_memory_layout input_layout,
-                                   odla_value mean, odla_value var,
-                                   odla_float32 epsilon, odla_value scale,
-                                   odla_value offset, odla_float32 scalar_scale,
+                                   odla_int32 group, odla_float32 epsilon,
+                                   odla_value scale, odla_value offset,
+                                   odla_float32 scalar_scale,
                                    odla_float32 scalar_offset,
                                    const odla_value_id id) {
   // TODO(unknown) mean var not in use, check group_norm/batch_norm
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
 
   auto outs = g_comp->builder->aiGraphcoreOpset1().groupnormalization(
-      {input->tensor_id, scale->tensor_id, offset->tensor_id}, 1, epsilon);
+      {input->tensor_id, scale->tensor_id, offset->tensor_id}, group, epsilon);
   return new _odla_value(outs[0],
                          {g_comp->builder->getTensorDataType(outs[0]),
                           g_comp->builder->getTensorShape(outs[0])},
