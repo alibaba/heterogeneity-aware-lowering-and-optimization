@@ -1,5 +1,6 @@
 // RUN: %cxx %s -o %t %flags %include %link
 // RUN: %t 2>&1| FileCheck %s
+// REQUIRES: halo_rtlib
 
 #include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/ir/values.h"
