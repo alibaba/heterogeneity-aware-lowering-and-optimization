@@ -99,7 +99,7 @@ std::string get_ModelProto()
   for(auto& tensorid : tensorIds){
     std::cout << "tensorid: " << tensorid << std::endl;
   }
-  auto modelProto = io::getModelFromString(proto);
+  //auto modelProto = io::getModelFromString(proto);
 
   return proto;
 }

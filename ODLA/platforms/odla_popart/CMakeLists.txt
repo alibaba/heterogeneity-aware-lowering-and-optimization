@@ -20,7 +20,7 @@ option(ODLA_BUILD_POPART_CUSTOM_OPS "Link with Popart custom ops" ON)
 add_odla_library(odla_popart SHARED common.cc odla_compute.cc
                                odla_ops_math.cc odla_ops_nn.cc
                                odla_ops_process.cc odla_ops.cc
-                               odla_ops_custom.cc
+                               odla_ops_custom.cc odla_pipeline.cc
                                )
 find_library(popart NAMES popart PATHS ${POPART_ROOT} PATH_SUFFIXES lib
              NO_DEFAULT_PATH)
