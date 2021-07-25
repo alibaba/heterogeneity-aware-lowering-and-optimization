@@ -37,10 +37,8 @@ std::shared_ptr<popart::DeviceInfo> acquireIpu() {
 
 } // unnamed namespace
 
-
-int main() {
-  std::list<int> inputs;
-
+std::string get_ModelProto()
+{
   Shape inShape = {1};
   TensorInfo inInfo{"INT32", inShape};
 
@@ -92,6 +90,10 @@ int main() {
   builder->addOutputTensor(out);
 
   auto proto      = builder->getModelProto();
+
+  //Print the pipline stage and ipu number
+
+  builder->saveModelProto("test.onnx");
   //std::cout << "proto is: \n" << proto << std::endl;
   auto tensorIds = builder->getValueTensorIds();
   for(auto& tensorid : tensorIds){
@@ -99,9 +101,17 @@ int main() {
   }
   auto modelProto = io::getModelFromString(proto);
 
+  return proto;
+}
+
+int main() {
+  std::list<int> inputs;
+
+  //auto proto = get_ModelProto();
+  std::string proto = "test.onnx";
   // Create the IR, adding outId as an anchor
   auto art      = AnchorReturnType("ALL");
-  auto dataFlow = DataFlow(6, {{out, art}});
+  auto dataFlow = DataFlow(6, {{"Sqrt:0", art}});
   auto device =
       DeviceManager::createDeviceManager().acquireAvailableDevice(4);
 

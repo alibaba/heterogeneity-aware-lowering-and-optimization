@@ -47,6 +47,8 @@
 #include <queue>
 #include <thread>
 #include <array>
+#include <fstream>
+#include <sstream>
 
 #include "ODLA/odla_common.h"
 #include "common.h"
@@ -337,10 +339,9 @@ std::unique_ptr<popart::SessionOptions> SessionOptions() {
       std::unique_ptr<popart::SessionOptions>(new popart::SessionOptions());
   
   // opts->virtualGraphMode = popart::VirtualGraphMode::Auto;
-  // 这里先手工分一下呗
-  
-  opts->virtualGraphMode = popart::VirtualGraphMode::Auto;
-  opts->enableStochasticRounding = true;
+  // opts->enableStochasticRounding = true;
+  opts->enablePipelining = true;
+  opts->virtualGraphMode = popart::VirtualGraphMode::Manual;
   std::cout << "<--- SessionOptions()" << std::endl;
   return opts;
 }
@@ -355,9 +356,13 @@ void pipeline_loop(odla_computation comp)
     std::cerr << "||-______________________________________-||" << std::endl;
   }
   std::cout << "Creating the data flow" << std::endl;
+  comp->opts.ipu_num = 2;
+  comp->opts.batches_per_step = 1000;
+
   // Create dataflow
   std::vector<popart::TensorId> ids;
   for (const auto& output : comp->outputs_map) {
+    std::cout << "dataflow tensorid: " << output.second->tensor_id << std::endl;
     ids.push_back(output.second->tensor_id);
   }
 
@@ -372,17 +377,29 @@ void pipeline_loop(odla_computation comp)
                     : AcquireAvailableDevice(comp->opts.ipu_num);
   std::cout << "MUMUMUMU" << std::endl;
   // Create and config SessionOptions
-  auto opts = SessionOptions();
+  auto opts = SessionOptions(); //Manual & pipeline
 
   std::cout << "-------------------------------------- tensorIds" << std::endl;
   auto tensorIds = comp->builder->getValueTensorIds();
+  int i = 0;
   for(auto& tensorid : tensorIds){
     std::cout << tensorid << std::endl;
   }
   // Create InferenceSession
-  auto proto = comp->builder->getModelProto();
+  // auto proto = comp->builder->getModelProto();
+  // // Save to onnx file
+  // comp->builder->saveModelProto("test_mnist.onnx");
+  // auto session = popart::InferenceSession::createFromOnnxModel(
+  //     proto, data_flow, device, popart::InputShapeInfo(), *opts);
   auto session = popart::InferenceSession::createFromOnnxModel(
-      proto, data_flow, device, popart::InputShapeInfo(), *opts);
+      "new_mnist.onnx", 
+      data_flow, 
+      device, 
+      popart::InputShapeInfo(), 
+      *opts//,
+      //popart::Patterns({popart::PreAliasPatternType::PostNRepl})
+      //    .enableRuntimeAsserts(false)
+      );
   comp->session = std::move(session);
   // Compile graph, create engine and load into the IPU
   // use compileAndExport() to frozen engine to specified path
@@ -400,10 +417,11 @@ void pipeline_loop(odla_computation comp)
   //std::this_thread::sleep_for(std::chrono::seconds(10));
   //int i=0;
   //while(pipeline_loop_running){
-  for(int i=0; i<10005; i++){
+  for(int i=0; i<10; i++){
     std::cout << "LAIYA LAIYA, this is the " << i << " time for the inference" << std::endl;
     comp->session->run(stepio);
   }
+  std::cout << "The run finished" << std::endl;
 }
 
 odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
