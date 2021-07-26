@@ -58,6 +58,35 @@
 
 void pipeline_loop(odla_computation comp);
 
+struct SingleComp {
+  odla_computation single_comp;
+  std::mutex comp_mutex;
+  bool comp_initialized = false;
+  static std::mutex instance_mutex;
+  static SingleComp* instance;
+  bool done = false;
+
+  odla_computation get_comp() { return single_comp; }
+  void init_comp(std::string stepio_mode_string,
+                int ipu_num, int batch_per_step);
+  bool is_done(){return done;}
+  void well_done(){done = true;}
+  static SingleComp* get_instance() {
+    if (nullptr == instance) {
+      std::lock_guard<std::mutex> guard(instance_mutex);
+      if (nullptr == instance) {
+        instance = new SingleComp();
+        // Create the single computation
+        std::unique_ptr<popart::Builder> builder = popart::Builder::create();
+        // Place Subgraph on IPU 0
+        builder->setAttribute(popart::sVirtualGraphAttribute, 0);
+        instance->single_comp = new _odla_computation(std::move(builder));
+      }
+    }
+    return instance;
+  }
+};
+
 struct ContextQueues {
   std::queue<odla_context> input_queue_1;
   std::queue<odla_context> input_queue_2;
@@ -203,7 +232,7 @@ class StepIOMode {
 };
 
 class Pipeline : public StepIOMode {
- public:
+public:
   Pipeline() {}
   ~Pipeline() {}
   virtual std::unique_ptr<popart::SessionOptions> sessionOptions();
@@ -211,10 +240,10 @@ class Pipeline : public StepIOMode {
                        odla_compute_mode mode, odla_device device);
 };
 
-class NoPipeline : public StepIOMode {
+class Sequence : public StepIOMode {
  public:
-  NoPipeline() {}
-  ~NoPipeline() {}
+  Sequence() {}
+  ~Sequence() {}
   virtual std::unique_ptr<popart::SessionOptions> sessionOptions();
   virtual void compute(odla_computation comp, odla_context context,
                        odla_compute_mode mode, odla_device device);
@@ -239,8 +268,10 @@ static StepIOMode* getStepIOMode(std::string mode)
         stepio_mode = new Pipeline();
       else if("multithread" == mode)
         stepio_mode = new MultiThread();
+      else if("sequence" == mode)
+        stepio_mode = new Sequence();
       else
-        stepio_mode = new NoPipeline();
+        std::cout << "unknown mode to create the StepIOMode: " << mode << std::endl;
     }
   }
   return stepio_mode;
