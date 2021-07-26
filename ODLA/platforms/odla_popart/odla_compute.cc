@@ -49,10 +49,10 @@ std::unique_ptr<popart::SessionOptions> SessionOptions() {
       std::unique_ptr<popart::SessionOptions>(new popart::SessionOptions());
   opts->enableStochasticRounding = true;
   if (g_comp->opts.enable_pipeline) {
-    g_comp->opts->enablePipelining = true;
-    g_comp->opts->virtualGraphMode = popart::VirtualGraphMode::Manual;
+    opts->enablePipelining = true;
+    opts->virtualGraphMode = popart::VirtualGraphMode::Manual;
   } else {
-    g_comp->opts->virtualGraphMode = popart::VirtualGraphMode::Auto;
+    opts->virtualGraphMode = popart::VirtualGraphMode::Auto;
   }
   return opts;
 }
