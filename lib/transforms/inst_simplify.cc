@@ -1967,13 +1967,14 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(OneHotInst* inst) {
         }
       }
     }
-  } else if (IsA<Argument>(op0) && op0.GetType().IsValid() &&
+  }
+  /* else if (IsA<Argument>(op0) && op0.GetType().IsValid() &&
              DynCast<Argument>(op0)->GetNumberOfUses() == 1) {
     Argument* arg = DynCast<Argument>(op0.GetOwner());
     arg->SetType(
         halo::Type{on_value.GetType().GetDataType(), dst_type.GetDimSizes()});
     return {orig_def, *arg};
-  }
+  }*/
   return {orig_def, orig_def};
 }
 

@@ -22,12 +22,21 @@ add_odla_library(odla_popart SHARED common.cc odla_compute.cc
                                odla_ops_process.cc odla_ops.cc
                                odla_ops_custom.cc odla_pipeline.cc
                                )
-find_library(popart NAMES popart PATHS ${POPART_ROOT} PATH_SUFFIXES lib
-             NO_DEFAULT_PATH)
-find_package(popart CONFIG COMPONENTS popart-only REQUIRED)
+if (NOT POPLAR_ROOT)
+  set(POPLAR_ROOT "/opt/poplar_sdk/poplar" CACHE STRING "Path of poplar root")
+endif()
+if (NOT POPART_ROOT)
+  set(POPART_ROOT "/opt/poplar_sdk/popart" CACHE STRING "Path of popart root")
+endif()
+
+list(APPEND CMAKE_PREFIX_PATH ${POPLAR_ROOT})
+list(APPEND CMAKE_PREFIX_PATH ${POPART_ROOT})
+find_package(popart 2.1.0... REQUIRED CONFIG COMPONENTS popart-only REQUIRED)
+
+message(STATUS "Found popart, version: ${popart_VERSION}")
 
 if (ODLA_BUILD_POPART_CUSTOM_OPS)
-  message(INFO "Build popart custom op")
+  message(STATUS "Build popart custom op")
   add_subdirectory(custom_ops)
 endif()
 
@@ -39,4 +48,3 @@ if (NOT ODLA_BUILD_POPART_USE_CXX11ABI)
 endif()
 
 target_link_libraries(odla_popart PUBLIC ODLA custom_ops popart-only)
-
