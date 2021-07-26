@@ -37,16 +37,20 @@ void mnist_simple_init() {
     Comp = mnist_simple_helper();
   }
 }
+
+#define SINGLE_THREAD_NO
 void mnist_simple(const float x[1 * 784], float out_y[1 * 10]) {
   mnist_simple_init();
-  // static odla_context Ctx;
-  // thread_local odla_context Ctx;
-  // if (Ctx == nullptr) {
-  //   odla_CreateContext(&Ctx);
-  // };
+#ifdef SINGLE_THREAD
+  static odla_context Ctx;
+  if (Ctx == nullptr) {
+    odla_CreateContext(&Ctx);
+  };
+#else
+  //thread_local odla_context Ctx;
   odla_context Ctx = nullptr;
   odla_CreateContext(&Ctx);
-
+#endif
   odla_BindToArgumentById((const odla_value_id) "x", x, Ctx);
   odla_BindToOutputById((const odla_value_id) "y", out_y, Ctx);
   odla_ExecuteComputation(Comp, Ctx, ODLA_COMPUTE_INFERENCE, nullptr);

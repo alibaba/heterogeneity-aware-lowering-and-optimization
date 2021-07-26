@@ -219,11 +219,14 @@ popart::StepIOCallback::OutputCompleteCallback output_complete_callback =
     std::cout << "output_complete_callback -> All tensors written for current context waiting output: " << ctx << std::endl;
     ContextQueues::get_instance()->all_tensor_written();
     ctx->clear_visited_and_written();
-    ctx->notify();  //unblock the request
+    odla_context temp_ctx = nullptr;
     if(ctx->deletable()){
-        std::cout << "Delete the context: " << ctx << std::endl;
-        delete ctx;
+        std::cout << "Delete the context after notify: " << ctx << std::endl;
+        temp_ctx = ctx;
     }
+    ctx->notify();  //unblock the request
+    if(temp_ctx)
+      delete temp_ctx;
   }
 };
 
@@ -265,21 +268,22 @@ void Pipeline::compute(odla_computation comp, odla_context context,
   std::cout << "<--- Pipeline::compute()" << std::endl;
 }
 
-std::unique_ptr<popart::SessionOptions> NoPipeline::sessionOptions() {
-  std::cout << "---> NoPipeline::sessionOptions()" << std::endl;
+std::unique_ptr<popart::SessionOptions> Sequence::sessionOptions() {
+  std::cout << "---> Sequence::sessionOptions()" << std::endl;
   auto opts =
       std::unique_ptr<popart::SessionOptions>(new popart::SessionOptions());
   opts->virtualGraphMode = popart::VirtualGraphMode::Auto;
   opts->enableStochasticRounding = true;
-  std::cout << "<--- NoPipeline::sessionOptions()" << std::endl;
+  std::cout << "<--- Sequence::sessionOptions()" << std::endl;
   return opts;
 }
 
-void NoPipeline::compute(odla_computation comp, odla_context context,
+void Sequence::compute(odla_computation comp, odla_context context,
                                 odla_compute_mode mode, odla_device device) 
 {
-  SingleComp::get_instance()->init_comp("singlethread", 1, 1);
-  std::cout << "---> NoPipeline::compute()" << std::endl;
+  SingleComp::get_instance()->init_comp("Sequence", 1, 1);
+  std::lock_guard<std::mutex> comp_guard(SingleComp::get_instance()->comp_mutex);
+  std::cout << "---> Sequence::compute()" << std::endl;
   // Config StepIO
   std::map<popart::TensorId, popart::IArray&> inputs;
   for (auto& input : context->inputs) {
@@ -293,7 +297,7 @@ void NoPipeline::compute(odla_computation comp, odla_context context,
   popart::StepIO stepio(inputs, outputs);
   // Run on ipu
   comp->session->run(stepio);
-  std::cout << "<--- NoPipeline::compute()" << std::endl;
+  std::cout << "<--- Sequence::compute()" << std::endl;
 }
 
 std::unique_ptr<popart::SessionOptions> MultiThread::sessionOptions() {

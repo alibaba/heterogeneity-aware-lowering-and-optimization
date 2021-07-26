@@ -94,33 +94,4 @@ struct _odla_context {
   virtual void clear_visited_and_written(){}
   virtual bool deletable(){return false;}
 };
-
-struct SingleComp {
-  odla_computation single_comp;
-  std::mutex initalization_mutex;
-  bool comp_initialized = false;
-  static std::mutex instance_mutex;
-  static SingleComp* instance;
-  bool done = false;
-
-  odla_computation get_comp() { return single_comp; }
-  void init_comp(std::string stepio_mode_string,
-                int ipu_num, int batch_per_step);
-  bool is_done(){return done;}
-  void well_done(){done = true;}
-  static SingleComp* get_instance() {
-    if (nullptr == instance) {
-      std::lock_guard<std::mutex> guard(instance_mutex);
-      if (nullptr == instance) {
-        instance = new SingleComp();
-        // Create the single computation
-        std::unique_ptr<popart::Builder> builder = popart::Builder::create();
-        // Place Subgraph on IPU 0
-        builder->setAttribute(popart::sVirtualGraphAttribute, 0);
-        instance->single_comp = new _odla_computation(std::move(builder));
-      }
-    }
-    return instance;
-  }
-};
 #endif
