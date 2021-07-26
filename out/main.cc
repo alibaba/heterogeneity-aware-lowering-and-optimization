@@ -99,35 +99,35 @@ int main(int argc, char** argv) {
 
   mnist_simple_init();
 
-  // for (int i = 0; i < nr_tests; ++i) {
-  //   std::array<float, 28 * 28> input;
-  //   std::array<float, 10> output;
-  //   std::transform(imgs[i].begin(), imgs[i].end(), input.begin(),
-  //                  [](char x) { return ((unsigned char)x) / 255.0F; });
-  //   mnist_simple(input.data(), output.data());
-  //   int pred = std::max_element(output.begin(), output.end()) - output.begin();
-  //   correct += (pred == labels[i]);
-  // }
-
-  //std::vector<std::thread> threads(THREAD_COUNT);
-  std::thread threads[THREAD_COUNT];
-  int start_index = 0;
-  for(int i=0; i < THREAD_COUNT; i++){
-    //threads.push_back(std::thread(inference, &imgs, &labels, start_index, 10000/THREAD_COUNT, &correct_mutex, &correct));
-    threads[i] = std::thread(inference, &imgs, &labels, start_index, 10000/THREAD_COUNT, &correct_mutex, &correct);
-    start_index += 10000/THREAD_COUNT;
+  bool singleThread = false;
+  
+  if(singleThread){
+    for (int i = 0; i < nr_tests; ++i) {
+      std::array<float, 28 * 28> input;
+      std::array<float, 10> output;
+      std::transform(imgs[i].begin(), imgs[i].end(), input.begin(),
+                    [](char x) { return ((unsigned char)x) / 255.0F; });
+      mnist_simple(input.data(), output.data());
+      int pred = std::max_element(output.begin(), output.end()) - output.begin();
+      correct += (pred == labels[i]);
+    }
   }
-  std::cout << "main thread problem?" << std::endl;
-  std::cout << "Join problem?" << std::endl;
-  std::this_thread::sleep_for(std::chrono::seconds(10));
-  for(int i=0; i < THREAD_COUNT; i++){
-    threads[i].join();
+  else
+  {
+    
+    std::thread threads[THREAD_COUNT];
+    int start_index = 0;
+    for(int i=0; i < THREAD_COUNT; i++){
+      threads[i] = std::thread(inference, &imgs, &labels, start_index, 10000/THREAD_COUNT, &correct_mutex, &correct);
+      start_index += 10000/THREAD_COUNT;
+    }
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    for(int i=0; i < THREAD_COUNT; i++){
+      threads[i].join();
+    }
   }
-  // for(auto& thread : threads){
-  //   thread.join();
-  //   std::cout << "No, quite normal" << std::endl;
-  // }
   mnist_simple_fini();
   std::cout << "Accuracy " << correct << "/" << nr_tests << " ("
             << correct * 100.0 / nr_tests << "%) \n";
+  std::cout << "================================== Test Finished ============================" << std::endl;
 }

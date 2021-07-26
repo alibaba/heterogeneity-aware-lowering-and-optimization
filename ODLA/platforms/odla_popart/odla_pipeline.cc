@@ -48,6 +48,7 @@
 #include <array>
 #include <fstream>
 #include <sstream>
+#include <bits/stdc++.h>
 
 #include "ODLA/odla_common.h"
 #include "common.h"
@@ -60,36 +61,39 @@
 
 ContextQueues* ContextQueues::p_context_queues = nullptr;
 std::mutex ContextQueues::instance_mutex;
-/* 这里的数据可以只创建一次，循环使用，反正输入就是创建0，输出随便覆盖，因为后面不会使用
-   那，我们后面是把这个context，和这个queue的任务分开么？
-   在put的时候用一个wrapper把ctx包起来，里面包含状态信息和mutex，condition_variable，在返回输出的时候拆掉wrapper。
-   那这个wrapper是不是就会跟输入输出产生关联，需要加锁了？
-   还是继续用context，让他们去delete吧。那这里生成的谁负责delete？自己玩的，是在一个线程里面么？
-   因为输出要检查是不是所有的tensor都整完了，就是得有context和状态，
- */
+
+static odla_context shared_data = nullptr;
+static std::mutex shared_data_mutext;
+
 odla_context create_empty_odla_context()
 {
-  //if(nullptr != test_ctx)
-  //  return test_ctx;
-  std::cout << "-----------------> create an empty input/output context" << std::endl;
-  odla_context ctx = new _odla_pipeline_zero(SingleComp::get_instance()->get_comp());
-  //initialize?
-  for(auto& value : ctx->comp->input_values){
-    std::size_t num_elements = 1;
-    for(auto& shape : value->tensor_info.shape())
-      num_elements *= shape;
-    float* data = new float[num_elements];
-    std::fill_n(data, num_elements, 0);
-    odla_BindToArgument(value, data, ctx);
+  if(!shared_data){
+    std::lock_guard<std::mutex> guard(shared_data_mutext);
+    if(!shared_data){
+      std::cout << "Creating the shared data for the _odla_pipeline_zero" << std::endl;
+      shared_data = new _odla_context(SingleComp::get_instance()->get_comp());
+      for(auto& value : shared_data->comp->input_values){
+        std::size_t num_elements = 1;
+        for(auto& shape : value->tensor_info.shape())
+          num_elements *= shape;
+        float* data = new float[num_elements];
+        std::fill_n(data, num_elements, 0);
+        odla_BindToArgument(value, data, shared_data);
+      }
+      for(auto& value : shared_data->comp->output_values){
+        std::size_t num_elements = 1;
+        for(auto& shape : value->tensor_info.shape())
+          num_elements *= shape;
+        float* data = new float[num_elements];
+        std::fill_n(data, num_elements, 0);
+        odla_BindToOutput(value, data, shared_data);
+      }
+    }
   }
-  for(auto& value : ctx->comp->output_values){
-    std::size_t num_elements = 1;
-    for(auto& shape : value->tensor_info.shape())
-      num_elements *= shape;
-    float* data = new float[num_elements];
-    std::fill_n(data, num_elements, 0);
-    odla_BindToOutput(value, data, ctx);
-  }
+  _odla_pipeline_zero* ctx = new _odla_pipeline_zero(SingleComp::get_instance()->get_comp());
+  ctx->shared_data = shared_data;
+
+  std::cout << "-----------------> created an empty input/output context: " << ctx << std::endl;
   return ctx;
 }
 
@@ -100,12 +104,10 @@ void ContextQueues::put(odla_context ctx)
   write_queue->push(ctx);
 }
 
-//这里先按照回调函数必须是串行的进行设计，那么get是回调时才会调用的，顺便把拿出来的ctx放到等待队列里面
 odla_context ContextQueues::get_input_context()
 {
   if(nullptr != input_ctx){
     return input_ctx;
-    //tensor_visited.clear();
   }
   input_ctx = read_queue->front();
   if( nullptr == input_ctx)
@@ -218,40 +220,27 @@ popart::StepIOCallback::OutputCompleteCallback output_complete_callback =
     ContextQueues::get_instance()->all_tensor_written();
     ctx->clear_visited_and_written();
     ctx->notify();  //unblock the request
+    if(ctx->deletable()){
+        std::cout << "Delete the context: " << ctx << std::endl;
+        delete ctx;
+    }
   }
 };
 
-// static std::shared_ptr<popart::DeviceInfo> AcquireAvailableDevice(
-//     int num_devices) {
-//   return popart::DeviceManager::createDeviceManager().acquireAvailableDevice(
-//       num_devices);
-// }
-
-// static std::shared_ptr<popart::DeviceInfo> CreateIpuModelDevice(
-//     int num_devices) {
-//   std::cout << "---> CreateIpuModelDevice()" << std::endl;
-//   std::map<std::string, std::string> deviceOpts{
-//       {"numIPUs", std::to_string(num_devices)}, {"tilesPerIPU", "1216"}};
-//   std::cout << "<--- CreateIpuModelDevice()" << std::endl;
-//   return popart::DeviceManager::createDeviceManager().createIpuModelDevice(
-//       deviceOpts);
-// }
-
 void pipeline_loop(odla_computation comp)
 {
-  SingleComp::get_instance()->init_comp(); //如果放到odla_ExecutionComputation，会直接拿到一个错误的ctx，活见鬼
+  SingleComp::get_instance()->init_comp("pipeline", 2, 10);
   std::cout << "=============> current comp is: " << comp << std::endl;
   //setup the stepio with allbacks
   popart::StepIOCallback stepio(input_callback,
                               input_complete_callback,
                               output_callback,
                               output_complete_callback);
-  //循环吧
-  //std::this_thread::sleep_for(std::chrono::seconds(10));
-  //int i=0;
-  //while(pipeline_loop_running){
-  for(int i=0; i<10; i++){
-    std::cout << "This is the " << i << " time for the inference" << std::endl;
+  int i=0;
+  while(!SingleComp::get_instance()->is_done()){
+    std::cout << "This is the " << i++ << " time for the inference" << std::endl;
+    if(i == INT_MAX)
+      i = 0;
     comp->session->run(stepio);
   }
   std::cout << "The pipeline loop finished" << std::endl;
@@ -289,7 +278,7 @@ std::unique_ptr<popart::SessionOptions> NoPipeline::sessionOptions() {
 void NoPipeline::compute(odla_computation comp, odla_context context,
                                 odla_compute_mode mode, odla_device device) 
 {
-  SingleComp::get_instance()->init_comp();
+  SingleComp::get_instance()->init_comp("singlethread", 1, 1);
   std::cout << "---> NoPipeline::compute()" << std::endl;
   // Config StepIO
   std::map<popart::TensorId, popart::IArray&> inputs;
