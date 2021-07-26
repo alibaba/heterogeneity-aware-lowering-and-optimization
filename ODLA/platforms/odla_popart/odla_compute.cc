@@ -47,8 +47,13 @@ static std::shared_ptr<popart::DeviceInfo> CreateIpuModelDevice(
 std::unique_ptr<popart::SessionOptions> SessionOptions() {
   auto opts =
       std::unique_ptr<popart::SessionOptions>(new popart::SessionOptions());
-  opts->virtualGraphMode = popart::VirtualGraphMode::Auto;
   opts->enableStochasticRounding = true;
+  if (g_comp->opts.enable_pipeline) {
+    g_comp->opts->enablePipelining = true;
+    g_comp->opts->virtualGraphMode = popart::VirtualGraphMode::Manual;
+  } else {
+    g_comp->opts->virtualGraphMode = popart::VirtualGraphMode::Auto;
+  }
   return opts;
 }
 
