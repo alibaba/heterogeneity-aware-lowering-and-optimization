@@ -81,16 +81,13 @@ struct ContextQueues {
   void all_tensor_read() {
     std::cout << "ContextQueues::all_tensor_read(), ctx: " << input_ctx
               << " poped, and put into wait_output_queue" << std::endl;
-    read_queue->pop();
+    if(!input_ctx->deletable()) //Only pop the non zero ctx, the zero one not in the queue
+        read_queue->pop();
     wait_output_queue.push(input_ctx);
     input_ctx = nullptr;
   }
-  void all_tensor_written() {
+  void all_tensor_written() { //Never delete a context here, only operate on the queue
     wait_output_queue.pop();
-    if(output_ctx->deletable()){
-        std::cout << "Delete the context: " << output_ctx << std::endl;
-        delete output_ctx;
-    }
     output_ctx = nullptr;
   }
 
@@ -179,10 +176,21 @@ struct _odla_pipeline : public _odla_context {
 };
 
 struct _odla_pipeline_zero : public _odla_pipeline {
+  odla_context shared_data = nullptr;
   _odla_pipeline_zero(odla_computation c) : _odla_pipeline(c) {}
   virtual void wait() {}
   virtual void notify() {}
   virtual bool deletable(){return true;}
+  virtual popart::IArray* get_data_by_tensor_id(popart::TensorId id) {
+    if(!shared_data)
+      return nullptr;
+    return shared_data->get_data_by_tensor_id(id);
+  }
+  virtual popart::IArray* write_data_by_tensor_id(popart::TensorId id) {
+    if(!shared_data)
+      return nullptr;
+    return shared_data->write_data_by_tensor_id(id);
+  }
 };
 
 class StepIOMode {

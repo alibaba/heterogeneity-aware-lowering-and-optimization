@@ -81,8 +81,14 @@ struct _odla_context {
   _odla_context(odla_computation c): comp(c) {}
   virtual void wait() {}
   virtual void notify() {}
-  virtual popart::IArray* get_data_by_tensor_id(popart::TensorId id) = 0;
-  virtual popart::IArray* write_data_by_tensor_id(popart::TensorId id) = 0;
+  virtual popart::IArray* get_data_by_tensor_id(popart::TensorId id){
+    auto iter = inputs.find(id);
+    return (inputs.end() == iter) ? NULL : &(*iter->second);
+  }
+  virtual popart::IArray* write_data_by_tensor_id(popart::TensorId id){
+    auto iter = outputs.find(id);
+    return (outputs.end() == iter) ? NULL : &(*iter->second);
+  }
   virtual bool all_tensors_visited(){return true;}
   virtual bool all_tensors_written(){return true;}
   virtual void clear_visited_and_written(){}
@@ -95,8 +101,13 @@ struct SingleComp {
   bool comp_initialized = false;
   static std::mutex instance_mutex;
   static SingleComp* instance;
+  bool done = false;
+
   odla_computation get_comp() { return single_comp; }
-  void init_comp();
+  void init_comp(std::string stepio_mode_string,
+                int ipu_num, int batch_per_step);
+  bool is_done(){return done;}
+  void well_done(){done = true;}
   static SingleComp* get_instance() {
     if (nullptr == instance) {
       std::lock_guard<std::mutex> guard(instance_mutex);

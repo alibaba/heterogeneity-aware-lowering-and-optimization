@@ -62,12 +62,7 @@ SingleComp* SingleComp::instance = nullptr;
 std::mutex SingleComp::instance_mutex;
 thread_local odla_computation g_comp = SingleComp::get_instance()->get_comp();
 
-#define ODLA_PIPELINE_TEST
-#ifdef ODLA_PIPELINE_TEST
-static std::string stepio_mode_string = "pipeline";
-#else
-static std::string stepio_mode_string = "multithread";
-#endif
+#define PIPELINE_MODE "pipeline"  //This version run a pipeline example
 
 static std::shared_ptr<popart::DeviceInfo> AcquireAvailableDevice(
     int num_devices) {
@@ -85,7 +80,11 @@ static std::shared_ptr<popart::DeviceInfo> CreateIpuModelDevice(
       deviceOpts);
 }
 
-void SingleComp::init_comp()
+void SingleComp::init_comp(
+  std::string stepio_mode_string,
+  int ipu_num,
+  int batch_per_step
+)
 {
   if(!comp_initialized)
   {
@@ -98,12 +97,9 @@ void SingleComp::init_comp()
         return;
       }
       std::cout << "============> The initialized comp is: " << single_comp << std::endl;
-      //For pipeline test
-#ifdef ODLA_PIPELINE_TEST
-      single_comp->opts.ipu_num = 2;
-      std::string proto = "new_mnist.onnx";
-#endif
-      single_comp->opts.batches_per_step = 1000;
+      
+      single_comp->opts.ipu_num = ipu_num;
+      single_comp->opts.batches_per_step = batch_per_step;
       // Create dataflow
       std::vector<popart::TensorId> ids;
       for (const auto& output : single_comp->outputs_map) {
@@ -120,12 +116,11 @@ void SingleComp::init_comp()
       // Create and config SessionOptions
       auto opts = getStepIOMode(stepio_mode_string)->sessionOptions(); //SessionOptions(); //Manual & pipeline
 
-
-      // Create InferenceSession
-#ifndef ODLA_PIPELINE_TEST
       auto proto = single_comp->builder->getModelProto();
-#endif
+      if(stepio_mode_string == "pipeline")
+        proto = "new_mnist.onnx";
       
+      // Create InferenceSession
       auto session = popart::InferenceSession::createFromOnnxModel(
           proto,
           data_flow, 
@@ -141,17 +136,6 @@ void SingleComp::init_comp()
     }
   }
 }
-
-// std::unique_ptr<popart::SessionOptions> SessionOptions() {
-//   //This should be different implementation from sharing & pipeline
-//   std::cout << "---> SessionOptions()" << std::endl;
-//   auto opts =
-//       std::unique_ptr<popart::SessionOptions>(new popart::SessionOptions());
-//   opts->enablePipelining = true;
-//   opts->virtualGraphMode = popart::VirtualGraphMode::Manual;
-//   std::cout << "<--- SessionOptions()" << std::endl;
-//   return opts;
-// }
 
 odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
                                     odla_item_value value) {
@@ -175,7 +159,6 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
 }
 
 odla_status odla_CreateComputation(odla_computation* comp) {
-  // Create graph builder
   std::cout << "---> odla_CreateComputation()" << std::endl;
   static void* custom_op_handle = nullptr;
   *comp = SingleComp::get_instance()->get_comp();
@@ -209,6 +192,8 @@ odla_status odla_DestroyContext(odla_context ctx) {
 }
 
 odla_status odla_DestroyComputation(odla_computation comp) {
+  std::cout << "Mark the computation done ..." << std::endl;
+  SingleComp::get_instance()->well_done();
   return ODLA_SUCCESS;
 }
 
@@ -216,12 +201,7 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
   std::cout << "---> odla_ExecuteComputation()" << std::endl;
-  //SingleComp::get_instance()->init_comp();
-  getStepIOMode(stepio_mode_string)->compute(comp, context, mode, device);
-  // //这个要去实现不同的ExecuteComputation
-  // //在这里直接把context加到Queue里面，这里面的逻辑可以放到从Queue里面取数据的部分完成。
-  // ContextQueues::get_instance()->put(context);
-  // context->wait();
+  getStepIOMode(PIPELINE_MODE)->compute(comp, context, mode, device);
   std::cout << "<--- odla_ExecuteComputation()" << std::endl;
   return ODLA_SUCCESS;
 }
