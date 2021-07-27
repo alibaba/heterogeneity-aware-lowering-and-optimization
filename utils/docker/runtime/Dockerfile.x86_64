@@ -1,25 +1,6 @@
 # syntax=docker/dockerfile:experimental
 ARG BASE_IMAGE
 
-# Build Protobuf
-FROM gcc:7.5.0 AS pb_builder
-WORKDIR /tmp
-RUN git clone --depth=1 https://github.com/protocolbuffers/protobuf.git -b v3.9.1 && \
-    cd protobuf && ./autogen.sh && \
-    ./configure --prefix=/tmp/install && make clean && \
-    make -j && make install && \
-    tar -cf /tmp/protobuf.tar ../install --transform 's,^install/,/usr/local/,'
-
-# Build Flatbuffer
-FROM rikorose/gcc-cmake:gcc-7 AS fb_builder
-WORKDIR /tmp
-RUN git clone --depth=1 https://github.com/google/flatbuffers.git -b v1.12.0 && \
-    cd flatbuffers && \
-    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=/tmp/install -DFLATBUFFERS_BUILD_SHAREDLIB=ON && \
-    make -j && make install && \
-    tar -cf /tmp/flatbuffer.tar ../install --transform 's,^install/,/usr/local/,'
-
 # Build DNNL
 FROM rikorose/gcc-cmake:gcc-7 AS dnnl_builder
 WORKDIR /tmp
@@ -32,8 +13,6 @@ RUN git clone --depth=1 https://github.com/oneapi-src/oneDNN.git --branch v1.7 &
 
 FROM ${BASE_IMAGE}
 
-RUN --mount=from=pb_builder,target=/pkg,source=/tmp tar xf /pkg/protobuf.tar -C /
-RUN --mount=from=fb_builder,source=/tmp,target=/pkg tar xf /pkg/flatbuffer.tar -C /
 RUN --mount=from=dnnl_builder,target=/pkg,source=/tmp tar xf /pkg/dnnl.tar -C /
 
 RUN echo "/usr/local/lib" >> /etc/ld.so.conf && ldconfig
