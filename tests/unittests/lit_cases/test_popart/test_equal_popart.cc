@@ -26,5 +26,5 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_equal | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_equal_popart.cc.tmp.main.cc.in"
