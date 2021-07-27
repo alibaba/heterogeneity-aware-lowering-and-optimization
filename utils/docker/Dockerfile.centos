@@ -79,6 +79,8 @@ RUN cd /tmp && \
     rpm -i ccache-3.7.7-1.el7.x86_64.rpm && rm /tmp/*.rpm
 ENV CCACHE_DIR=/cache
 
+RUN rpm --rebuilddb && yum install -y rpm-build && yum clean all
+
 # Install models & test cases
 COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:latest-model-zoo /models /models
 COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:latest-model-zoo /unittests /unittests
