@@ -21,10 +21,6 @@
 namespace halo {
 
 void GenericCXXCodeGen::RunOnInstruction(CustomInst* inst) {
-  const Def& lhs = inst->GetOperand(0);
-
-  CXXValue op0 = ir_mapping_[lhs];
-
   std::vector<CXXValue> rets;
   for (int i = 0; i < static_cast<int>(inst->GetNumOfResults()); i++) {
     rets.push_back({inst->GetName() + std::to_string(i),
@@ -32,7 +28,12 @@ void GenericCXXCodeGen::RunOnInstruction(CustomInst* inst) {
     ir_mapping_[Def(inst, i)] = rets[i];
   }
 
-  std::vector<CXXValue> inputs{op0};
+  std::vector<CXXValue> inputs;
+  inputs.reserve(inst->GetNumOfOperands());
+  for (auto& op : inst->GetOperands()) {
+    inputs.push_back(ir_mapping_[op]);
+  }
+
   const std::string op_name = "\"" + inst->GetOpname() + "\"";
   EmitODLACall(rets, "odla_CustomOp", inputs, op_name, op_name);
 }
