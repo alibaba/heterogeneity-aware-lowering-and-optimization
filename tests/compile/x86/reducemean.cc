@@ -2,6 +2,7 @@
 // RUN: %t > %t.obj
 // RUN: %cxx %s %t.obj %flags -static -o %t2
 // RUN: %t2  2>&1| FileCheck %s
+// REQUIRES: halo_rtlib
 
 #ifdef BUILD_IR
 #include "halo/lib/ir/ir_builder.h"

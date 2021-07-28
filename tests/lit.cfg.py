@@ -23,6 +23,9 @@ dnnl_dir = os.path.dirname(config.lib_dnnl_path)
 xnnpack_dir = os.path.join(os.path.dirname(
     config.lib_xnnpack_path), os.path.pardir)
 
+if config.lib_rt.upper() == "ON":
+    config.available_features.add('halo_rtlib')
+
 if len(tensorrt_dir):
     config.available_features.add('odla_tensorrt')
     tensorrt_dir = os.path.join(tensorrt_dir, os.path.pardir)

@@ -32,6 +32,10 @@ namespace halo {
 
 ONNXParser::~ONNXParser() {}
 
+bool ONNXParser::Scope::Contains(const std::string& name) {
+  return inst_name_to_ptr_.count(name) != 0;
+}
+
 Value ONNXParser::Scope::Find(const std::string& name) {
   const static Value empty_value;
   auto it = inst_name_to_ptr_.find(name);
@@ -54,6 +58,12 @@ ONNXParser::Scope* ONNXParser::Scope::CreateScope() {
 }
 
 void ONNXParser::Scope::Insert(const std::string& name, const Value& def) {
+  if (inst_name_to_ptr_.count(name) > 0) {
+    std::cerr << "Duplicated :" << std::endl;
+    inst_name_to_ptr_[name].GetOwner()->Dump();
+    def.GetOwner()->Dump();
+    std::cerr << std::endl;
+  }
   inst_name_to_ptr_[name] = def;
 }
 
@@ -165,6 +175,10 @@ Status ONNXParser::ConvertToHaloIR(const onnx::GraphProto& graph_def) {
   for (int i = 0; i < node_size; ++i) {
     // 1.Constant input not appear in graph constant inputs initializer list
     if (graph_def.node(i).op_type() == "Constant") {
+      const auto& name = graph_def.node(i).output(0);
+      if (curr_scope_->Contains(name)) {
+        continue;
+      }
       s = ConvertConstNode(c_builder_.get(), graph_def.node(i));
       if (s != Status::SUCCESS) {
         return s;
@@ -414,55 +428,62 @@ Tensor<T> ONNXParser::ProcessTensor(const onnx::TensorProto& tensor_proto) {
             onnx::TensorProto::DataLocation::TensorProto_DataLocation_EXTERNAL);
     HLCHECK(0 && "Unsupported external data storage.");
   }
-
-  if (shape.empty() && v.size() > 1) {
-    shape.push_back(v.size());
+  auto elems = v.size();
+  if (data_type == DataType::FLOAT16) {
+    elems /= 2;
+  }
+  if (shape.empty() && elems > 1) {
+    shape.push_back(elems);
   }
   return Tensor<T>(data_type, shape, v);
 }
 
 IRObject* ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
                                        const onnx::TensorProto& tensor_def) {
+  return ConvertConstNode(c_builder, tensor_def, tensor_def.name());
+}
+
+IRObject* ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
+                                       const onnx::TensorProto& tensor_def,
+                                       const std::string& name) {
   DataType data_type = ProcessDataType(tensor_def.data_type());
   IRObject* inst = nullptr;
   switch (data_type) {
     case DataType::FLOAT32: {
       const Tensor<float> temp = ProcessTensor<float>(tensor_def);
-      inst = c_builder->CreateConstant(
-          tensor_def.name(), Type(data_type, temp.GetShape()), temp.GetData());
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
       break;
     }
     case DataType::FLOAT16: {
       const Tensor<uint16_t> temp = ProcessTensor<uint16_t>(tensor_def);
-      inst = c_builder->CreateConstant(tensor_def.name(),
-                                       Type(data_type, temp.GetShape()),
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
                                        temp.GetData().data());
       break;
     }
     case DataType::INT32: {
       const Tensor<int> temp = ProcessTensor<int>(tensor_def);
-      inst = c_builder->CreateConstant(
-          tensor_def.name(), Type(data_type, temp.GetShape()), temp.GetData());
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
       break;
     }
     case DataType::INT64: {
       const Tensor<int64_t> temp = ProcessTensor<int64_t>(tensor_def);
-      inst = c_builder->CreateConstant(
-          tensor_def.name(), Type(data_type, temp.GetShape()), temp.GetData());
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
       break;
     }
     case DataType::BOOL: {
       const Tensor<int8_t> temp = ProcessTensor<int8_t>(tensor_def);
-      inst = c_builder->CreateConstant(tensor_def.name(),
-                                       Type(DataType::BOOL, temp.GetShape()),
-                                       temp.GetData());
+      inst = c_builder->CreateConstant(
+          name, Type(DataType::BOOL, temp.GetShape()), temp.GetData());
       break;
     }
     default:
       HLCHECK(0 && "Unsupported data type");
   }
   if (inst != nullptr) {
-    curr_scope_->Insert(tensor_def, Value(inst, 0));
+    curr_scope_->Insert(name, Value(inst, 0));
   }
   return inst;
 }
@@ -471,10 +492,15 @@ Status ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
                                     const onnx::NodeProto& cur_node) {
   IRObject* inst = nullptr;
   for (const auto& attr : cur_node.attribute()) {
+    if (attr.name() != "value") {
+      continue;
+    }
     if (attr.type() == onnx::AttributeProto::TENSOR) {
       HLCHECK(attr.has_t());
-      inst = ConvertConstNode(c_builder, attr.t());
-    } else if (attr.type() == onnx::AttributeProto::INT) {
+      inst = ConvertConstNode(c_builder, attr.t(), cur_node.output(0));
+      return Status::SUCCESS;
+    }
+    if (attr.type() == onnx::AttributeProto::INT) {
       int64_t val = attr.i();
       inst = c_builder->CreateConstant(cur_node.name(),
                                        Type{DataType::INT64, {1}}, &val);
@@ -548,8 +574,8 @@ std::vector<Def> ONNXParser::GetInputOperands(const onnx::NodeProto& node_def) {
       operands.emplace_back(Def{inst, idx});
     } else {
       // those errors will be record in diagnostic report file
-      // LOG(ERROR) << node_def.name() << " Node's" << i
-      //<< "th operand:" << node_def.input(i) << " not found";
+      LOG(ERROR) << node_def.name() << " Node's" << i
+                 << "th operand:" << node_def.input(i) << " not found";
     }
   }
   return operands;

@@ -1081,6 +1081,18 @@ static void RunOnInstruction(LoopInst* inst) {
 
 bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
+  // Dedup names.
+  std::unordered_map<std::string, int> names;
+  for (auto& it : *bb) {
+    auto inst = it.get();
+    const auto& name = inst->GetName();
+    int n = names[name];
+    if (n > 0) {
+      inst->SetName(name + "_" + std::to_string(n));
+    }
+    ++names[name];
+  }
+
   for (auto& it : *bb) {
     Instruction* inst = it.get();
     if (inst->HasValidResultTypes()) {
