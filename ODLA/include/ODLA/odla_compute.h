@@ -51,6 +51,8 @@ typedef enum {
   ODLA_BATCHES_PER_STEP,
   ODLA_USE_DATA_TYPE,
   ODLA_LOAD_ENGINE_MODE,
+  ODLA_ENABLE_ENGINE_CACHE,
+  ODLA_CACHE_DIR,
 } odla_item_type;
 
 //! \brief BF16 mode
