@@ -162,6 +162,13 @@ def CAFFE_InnerProduct: CAFFEExtension<"InnerProduct"> {
                          ExtensionAttr<"transpose", Bool, "false">];
 }
 
+def CAFFE_Flatten : CAFFEExtension<"Flatten"> {
+  let param_name_ = "flatten_param";
+  let extension_attr_ = [
+    ExtensionAttr<"axis", Integer, "1">
+  ];
+}
+
 def CAFFE_Dropout : CAFFEExtension<"Dropout">;
 
 def CAFFE_Upsample : CAFFEExtension<"Upsample"> {
