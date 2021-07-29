@@ -1443,6 +1443,104 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(CeilInst* inst) {
   return {orig_def, orig_def};
 }
 
+static Constant* FoldConcatConstant(ConcatInst* inst) {
+  if (!inst->GetResultType().IsValid()) {
+    return nullptr;
+  }
+
+  int num_inputs = inst->GetN();
+
+  std::vector<Constant*> input_cs(num_inputs);
+
+  for (int i = 0; i < num_inputs; ++i) {
+    Constant* opi = DynCast<Constant>(inst->GetOperand(i));
+
+    if (opi == nullptr) {
+      return nullptr;
+    }
+
+    input_cs[i] = opi;
+  }
+
+  const Type& op0_type = input_cs.at(0)->GetResultType();
+  int dim_num = static_cast<int>(op0_type.GetNumOfDims());
+
+  int64_t axis = inst->GetAxis();
+  if (axis < 0) {
+    axis += op0_type.GetNumOfDims();
+  }
+
+  int64_t total_num_elems = inst->GetResultType().GetTotalNumOfElements();
+  int element_byte_size = input_cs.at(0)->GetElementSizeInBytes();
+  int64_t total_bytes = total_num_elems * element_byte_size;
+
+  int base_size = element_byte_size;
+
+  auto data = std::make_unique<uint8_t[]>(total_bytes); // NOLINT
+  uint8_t* dst = data.get();
+
+  // Scalars and 1D-tensors need special treatement
+  if (op0_type.IsScalar() || dim_num == 1) {
+    for (Constant* c : input_cs) {
+      uint8_t num_bytes =
+          c->GetResultType().GetTotalNumOfElements() * element_byte_size;
+      const uint8_t* src =
+          static_cast<const uint8_t*>(c->GetRawDataPtr()); // NOLINT
+      std::copy_n(src, num_bytes, dst);
+      dst += num_bytes; // NOLINT
+    }
+
+    std::vector<int64_t> dims{total_num_elems};
+
+    ConstantBuilder cb(inst->GetParent()->GetParent());
+    std::string name = inst->GetName() + "_folding";
+    return cb.CreateConstant(name, inst->GetResultType(), data.get());
+  }
+
+  // Normal tensors
+  for (int64_t i = axis + 1; i < dim_num; ++i) {
+    base_size *= op0_type.GetNumOfElementsInDim(i);
+  }
+
+  int total_num_elements_along_axis = 0;
+  std::vector<int> chunk_sizes;
+  std::vector<const uint8_t*> src_ptrs;
+
+  for (Constant* opi : input_cs) {
+    int num_elements_along_axis =
+        opi->GetResultType().GetNumOfElementsInDim(axis);
+
+    chunk_sizes.push_back(num_elements_along_axis * base_size);
+
+    src_ptrs.push_back(
+        static_cast<const uint8_t*>(opi->GetRawDataPtr())); // NOLINT
+
+    total_num_elements_along_axis += num_elements_along_axis;
+  }
+
+  int group_num = 1;
+  for (int i = 0; i < axis; ++i) {
+    group_num *= op0_type.GetNumOfElementsInDim(i);
+  }
+
+  for (int i = 0; i < group_num; ++i) {
+    for (int j = 0; j < num_inputs; ++j) {
+      std::copy_n(src_ptrs[j], chunk_sizes[j], dst);
+      src_ptrs[j] += chunk_sizes[j]; // NOLINT
+      dst += chunk_sizes[j];         // NOLINT
+    }
+  }
+
+  std::vector<int64_t> dims(op0_type.GetDimSizes());
+  dims[axis] = total_num_elements_along_axis;
+
+  ConstantBuilder cb(inst->GetParent()->GetParent());
+  std::string name = inst->GetName() + "_folding";
+  Type new_type(op0_type.GetDataType(), dims);
+
+  return cb.CreateConstant(name, new_type, data.get());
+}
+
 std::pair<Def, Def> InstSimplify::RunOnInstruction(ConcatInst* inst) {
   Def orig_def{inst, 0};
   // Concat(Transpose(A), Transpose(B),...) => Transpose(Concat(A, B))
@@ -1495,32 +1593,117 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(ConcatInst* inst) {
     }
   }
 
-  int num_inputs = inst->GetN();
-  int axis = inst->GetAxis();
-  const auto& dst_type = inst->GetResultsTypes()[0];
-  if (!dst_type.IsValid() || axis != 0) {
+  if (!inst->GetResultsTypes()[0].IsValid()) {
     return {orig_def, orig_def};
   }
-  // Constant propagating on axis = 0
-  DataType dt = dst_type.GetDataType();
-  DefaultDataLayout data_layout;
 
-  size_t byte_per_element = data_layout.Bytes(dt);
-  size_t bytes = byte_per_element * dst_type.GetTotalNumOfElements();
-  std::vector<unsigned char> buf(bytes);
-  size_t offset = 0;
-  for (int i = 0; i < num_inputs; ++i) {
-    auto input = inst->GetOperand(i);
-    Constant* c_input = DynCast<Constant>(input.GetOwner());
-    size_t num_elements = input.GetType().GetTotalNumOfElements();
-    size_t copy_bytes = num_elements * byte_per_element;
-    std::copy_n(static_cast<unsigned char*>(c_input->GetRawDataPtr()),
-                copy_bytes, buf.begin() + offset);
-    offset += copy_bytes;
+  if (auto new_inst = FoldConcatConstant(inst)) {
+    return {orig_def, *new_inst};
   }
+
+  return {orig_def, orig_def};
+}
+
+class CopyTileData {
+ public:
+  CopyTileData(const void* src, void* dst, int64_t elem_byte_size,
+               const std::vector<int64_t>& dims,
+               const std::vector<int64_t>& multiplies)
+      : src_(static_cast<const uint8_t*>(src)),
+        dst_(static_cast<uint8_t*>(dst)),
+        elem_byte_size_(elem_byte_size),
+        dims_(dims),
+        multiplies_(multiplies) {}
+
+  void Run() { RunImpl(0); }
+
+ private:
+  void RunImpl(size_t index) {
+    if (index + 1 == dims_.size()) {
+      int64_t total_bytes = dims_[index] * elem_byte_size_;
+      int factor = multiplies_[index];
+
+      for (int i = 0; i < factor; ++i, dst_ += total_bytes) { // NOLINT
+        std::copy_n(src_, total_bytes, dst_);
+      }
+
+      src_ += total_bytes; // NOLINT
+
+    } else {
+      int num_elems = dims_[index];
+
+      // The dst_ will be increased in the following recursions.
+      const uint8_t* initial_dst = dst_;
+
+      for (int i = 0; i < num_elems; ++i) {
+        RunImpl(index + 1);
+      }
+
+      int factor = multiplies_[index];
+
+      int64_t total_bytes = dst_ - initial_dst;
+
+      for (int i = 1; i < factor; ++i, dst_ += total_bytes) { // NOLINT
+        std::copy_n(initial_dst, total_bytes, dst_);
+      }
+    }
+  }
+
+ private:
+  const uint8_t* src_;
+  uint8_t* dst_;
+  int64_t elem_byte_size_;
+  const std::vector<int64_t>& dims_;
+  const std::vector<int64_t>& multiplies_;
+};
+
+enum TileArgIndex { TILE_ARG_INPUT_IDX = 0, TILE_ARG_MULTIPLES_IDX = 1 };
+
+std::pair<Def, Def> InstSimplify::RunOnInstruction(TileInst* inst) {
+  Def orig_def{inst, 0};
+
+  if (!inst->GetResultType().IsValid()) {
+    return {orig_def, orig_def};
+  }
+
+  auto c_input = DynCast<Constant>(inst->GetOperand(TILE_ARG_INPUT_IDX));
+  if (c_input == nullptr || !c_input->GetResultType().IsValid()) {
+    return {orig_def, orig_def};
+  }
+
+  auto c_multiplies =
+      DynCast<Constant>(inst->GetOperand(TILE_ARG_MULTIPLES_IDX));
+  if (c_multiplies == nullptr || !c_multiplies->GetResultType().IsValid()) {
+    return {orig_def, orig_def};
+  }
+
+  const halo::Type& input_type = c_input->GetResultType();
+  const std::vector<int64_t>& input_dims = input_type.GetDimSizes();
+
+  std::vector<int64_t> multiplies(input_dims.size());
+  std::vector<int64_t> output_dims(input_dims);
+
+  for (size_t i = 0; i < output_dims.size(); ++i) {
+    int64_t m = c_multiplies->GetDataAsInt64(i);
+    multiplies[i] = m;
+    output_dims[i] *= m;
+  }
+
+  int64_t total_num_elems = std::accumulate(
+      output_dims.begin(), output_dims.end(), 1, std::multiplies<>{});
+
+  size_t total_byte_sizes = total_num_elems * c_input->GetElementSizeInBytes();
+  auto buffer = std::make_unique<uint8_t[]>(total_byte_sizes); // NOLINT
+
+  CopyTileData worker(c_input->GetRawDataPtr(), buffer.get(),
+                      c_input->GetElementSizeInBytes(), input_dims, multiplies);
+
+  worker.Run();
+
   ConstantBuilder cb(inst->GetParent()->GetParent());
-  Constant* c_ret =
-      cb.CreateConstant(inst->GetName() + "_folding", dst_type, buf.data());
+  std::string name = inst->GetName() + "_folding";
+  halo::Type output_type(input_type.GetDataType(), output_dims);
+  Constant* c_ret = cb.CreateConstant(name, output_type, buffer.get());
   return {orig_def, *c_ret};
 }
 
@@ -1757,6 +1940,193 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(RandomUniformInst* inst) {
   return {orig_def, orig_def};
 }
 
+template <typename T>
+static Constant* GetSlicedConstantDataRankOne(Instruction* inst,
+                                              Constant* input, int idx,
+                                              int len) {
+  const auto& dt = inst->GetResultType();
+  std::vector<T> data(dt.GetTotalNumOfElements());
+
+  HLCHECK(static_cast<size_t>(len) == data.size());
+  for (int i = 0; i < len; ++i) {
+    data[i] = input->GetData<T>(idx + i);
+  }
+  ConstantBuilder cb(inst->GetParent()->GetParent());
+  return cb.CreateConstant(inst->GetName(), dt, data.data());
+}
+
+struct SingleDim {
+  int64_t First;
+  int64_t Last;
+  int64_t DimSize;
+};
+
+class CopySliceData {
+ public:
+  CopySliceData(const void* src, void* dst, int element_byte_size,
+                std::vector<SingleDim> ranges)
+      : src_(static_cast<const uint8_t*>(src)),
+        dst_(static_cast<uint8_t*>(dst)),
+        group_offset_(0),
+        dst_offset_(0),
+        ranges_(std::move(ranges)),
+        scales_(ranges_.size() - 1),
+        element_size_(element_byte_size),
+        chunk_offset_(ranges_.back().First),
+        chunk_size_((ranges_.back().Last - ranges_.back().First) *
+                    element_size_) {
+    for (int i = static_cast<int>(ranges_.size()) - 1, acc = 1; i > 0; --i) {
+      acc *= ranges_[i].DimSize;
+      scales_[i - 1] = acc;
+    }
+  }
+
+  void Run() { RunImpl(0); }
+
+ private:
+  // TODO(lingqing.zz): refactor the recursion into an iteration.
+  void RunImpl(int dim) {
+    if (dim + 1 == static_cast<int>(ranges_.size())) {
+      int64_t src_offset = (group_offset_ + chunk_offset_) * element_size_;
+      std::copy_n(src_ + src_offset, chunk_size_, dst_ + dst_offset_); // NOLINT
+      dst_offset_ += chunk_size_;
+    } else {
+      int first = ranges_[dim].First;
+      int last = ranges_[dim].Last;
+
+      for (int i = first; i < last; ++i) {
+        int64_t delta = i * scales_[dim];
+        group_offset_ += delta;
+        RunImpl(dim + 1);
+        group_offset_ -= delta;
+      }
+    }
+  }
+
+ private:
+  const uint8_t* src_;
+  uint8_t* dst_;
+  int64_t group_offset_;
+  int64_t dst_offset_;
+  std::vector<SingleDim> ranges_;
+  std::vector<int> scales_;
+  int64_t element_size_;
+  int64_t chunk_offset_;
+  int64_t chunk_size_;
+};
+
+enum SliceArgIndex {
+  SLICE_ARG_INPUT_IDX = 0,
+  SLICE_ARG_STARTS_IDX = 1,
+  SLICE_ARG_SIZES_IDX = 2,
+  SLICE_ARG_STEPS_IDX = 3,
+  SLICE_ARG_AXES_IDX = 4
+};
+
+struct SliceParameters {
+  Constant* Input = nullptr;
+  Constant* Starts = nullptr;
+  Constant* Sizes = nullptr;
+  Constant* Steps = nullptr;
+  Constant* Axes = nullptr;
+};
+
+static bool IsFoldableSlice(SliceInst* inst, SliceParameters* params) {
+  Constant* c_input = DynCast<Constant>(inst->GetOperand(SLICE_ARG_INPUT_IDX));
+  if (c_input == nullptr || !c_input->GetResultType().IsValid()) {
+    return false;
+  }
+
+  Constant* starts_c =
+      DynCast<Constant>(inst->GetOperand(SLICE_ARG_STARTS_IDX));
+  if (starts_c == nullptr || !starts_c->GetResultType().IsValid()) {
+    return false;
+  }
+
+  Constant* slice_sizes_c =
+      DynCast<Constant>(inst->GetOperand(SLICE_ARG_SIZES_IDX));
+  if (slice_sizes_c == nullptr || !slice_sizes_c->GetResultType().IsValid()) {
+    return false;
+  }
+
+  if (inst->GetNumOfOperands() <= SLICE_ARG_STEPS_IDX) {
+    return false;
+  }
+
+  Constant* steps_c = DynCast<Constant>(inst->GetOperand(SLICE_ARG_STEPS_IDX));
+  if (steps_c == nullptr || !steps_c->GetResultType().IsValid()) {
+    return false;
+  }
+
+  // TODO(lingqing.zz): Relax the restriction.
+  if (!steps_c->HasSameValueOf(1)) {
+    return false;
+  }
+
+  if (inst->GetNumOfOperands() <= SLICE_ARG_AXES_IDX) {
+    return false;
+  }
+
+  Constant* axes_c = DynCast<Constant>(inst->GetOperand(SLICE_ARG_AXES_IDX));
+  if (axes_c == nullptr || !axes_c->GetResultType().IsValid()) {
+    return false;
+  }
+
+  params->Input = c_input;
+  params->Starts = starts_c;
+  params->Sizes = slice_sizes_c;
+  params->Steps = steps_c;
+  params->Axes = axes_c;
+
+  return true;
+}
+
+static Constant* FoldSliceInst(SliceInst* inst) {
+  SliceParameters params;
+
+  if (!IsFoldableSlice(inst, &params)) {
+    return nullptr;
+  }
+
+  const Type& axes_type = params.Axes->GetResultType();
+  int64_t axes_num = axes_type.GetTotalNumOfElements();
+
+  const Type& input_type = params.Input->GetResultType();
+  std::vector<int64_t> dims(input_type.GetDimSizes());
+  std::vector<SingleDim> ranges(input_type.GetNumOfDims());
+
+  for (size_t i = 0; i < input_type.GetNumOfDims(); ++i) {
+    ranges[i] = {0, dims[i], dims[i]};
+  }
+
+  for (int64_t i = 0; i < axes_num; ++i) {
+    int64_t axis = params.Axes->GetDataAsInt64(i);
+    int64_t start = params.Starts->GetDataAsInt64(i);
+    int64_t size = params.Sizes->GetDataAsInt64(i);
+
+    dims[axis] = size;
+    ranges[axis].First = start;
+    ranges[axis].Last = start + size;
+  }
+
+  int total_elements =
+      std::accumulate(dims.begin(), dims.end(), 1, std::multiplies<>{});
+  std::size_t bytes_size =
+      total_elements * params.Input->GetElementSizeInBytes();
+
+  auto data = std::make_unique<uint8_t[]>(bytes_size); // NOLINT
+
+  CopySliceData worker(params.Input->GetRawDataPtr(), data.get(),
+                       params.Input->GetElementSizeInBytes(),
+                       std::move(ranges));
+  worker.Run();
+
+  ConstantBuilder builder(inst->GetParent()->GetParent());
+  std::string name = inst->GetName() + "_folded";
+  Type slice_type(input_type.GetDataType(), dims);
+  return builder.CreateConstant(name, slice_type, data.get());
+}
+
 std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
   Def orig_def{inst, 0};
   auto op_len = inst->GetOperand(2);
@@ -1852,9 +2222,8 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
                 src_idx < op0.GetType().GetTotalNumOfElements());
         std::memcpy(&dst[i * es], &src[src_idx * es], es); // NOLINT
       }
-      ConstantBuilder cb(inst->GetParent()->GetParent());
-      auto c = cb.CreateConstant(inst->GetName(), dt, data.data());
-      return {orig_def, *c};
+    } else if (auto new_inst = FoldSliceInst(inst)) {
+      return {orig_def, *new_inst};
     }
   }
 
