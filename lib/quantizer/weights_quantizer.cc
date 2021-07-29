@@ -133,19 +133,19 @@ void WeightsQuantizer::RunOnConstant(Constant* val) {
     zp = std::clamp(zp, min_zp, max_zp);
   }
 
-  if (!quant_info_.empty()) {
-    // Check if a constant is a bias of conv/matmul.
-    if (val->GetNumberOfUses() == 1) {
-      auto user = val->GetIthResultUses(0).begin();
-      auto used_by = user->GetOwner();
-      if (user->GetIdx() == 2 &&
-          (IsA<Conv2DInst>(used_by) || IsA<MatMulInst>(used_by))) {
-        // Quant to Int32.
-        std::string input_name =
-            get_odla_name(*used_by->GetOperand(0).GetOwner());
-        std::string weight_name =
-            get_odla_name(*used_by->GetOperand(1).GetOwner());
+  // Check if a constant is a bias of conv/matmul.
+  if (val->GetNumberOfUses() == 1) {
+    auto user = val->GetIthResultUses(0).begin();
+    auto used_by = user->GetOwner();
+    if (user->GetIdx() == 2 &&
+        (IsA<Conv2DInst>(used_by) || IsA<MatMulInst>(used_by))) {
+      // Quant to Int32.
+      std::string input_name =
+          get_odla_name(*used_by->GetOperand(0).GetOwner());
+      std::string weight_name =
+          get_odla_name(*used_by->GetOperand(1).GetOwner());
 
+      if (!quant_info_.empty()) {
         auto input_it = quant_info_.find(input_name);
         if (input_it == quant_info_.end()) {
           std::cerr << "Missing quant info for " << input_name << "\n";
@@ -157,10 +157,10 @@ void WeightsQuantizer::RunOnConstant(Constant* val) {
           std::cerr << "Missing quant info for " << weight_name << "\n";
           return;
         }
-        float scale = input_it->second.scale * weight_it->second.scale;
-        QuantTo<int32_t>(val, DataType::INT32, scale, 0);
-        return;
+        scale = input_it->second.scale * weight_it->second.scale;
       }
+      QuantTo<int32_t>(val, DataType::INT32, scale, 0);
+      return;
     }
   }
   QuantTo<uint8_t>(val, DataType::UINT8, scale, zp);
@@ -188,6 +188,8 @@ bool WeightsQuantizer::RunOnModule(Module* m) {
       iss >> info.min_val >> comma >> info.max_val >> comma >> info.scale >>
           comma >> info.zp;
     }
+  } else {
+    std::wcout << "WARNING: Missing pgq file \n";
   }
 
   for (auto& func : *m) {
