@@ -101,6 +101,8 @@ int main(int argc, char** argv) {
 
   bool singleThread = false;
   
+  auto start = std::chrono::steady_clock::now();
+  //std::cout << "f(42) = " << fibonacci(42) << '\n';
   if(singleThread){
     for (int i = 0; i < nr_tests; ++i) {
       std::array<float, 28 * 28> input;
@@ -126,6 +128,9 @@ int main(int argc, char** argv) {
       threads[i].join();
     }
   }
+  auto end = std::chrono::steady_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end-start;
+  std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
   mnist_simple_fini();
   std::cout << "Accuracy " << correct << "/" << nr_tests << " ("
             << correct * 100.0 / nr_tests << "%) \n";
