@@ -147,7 +147,8 @@ static llvm::cl::opt<int> IpuNum(
     "ipu-num",
     llvm::cl::desc("Num of ipus, should consistent with subgraph num"),
     llvm::cl::init(1), llvm::cl::cat(HaloOptCat));
-
+static llvm::cl::opt<int> Shards("shards", llvm::cl::desc("Num of shards"),
+                                 llvm::cl::init(-1), llvm::cl::cat(HaloOptCat));
 static llvm::cl::opt<int> BatchesPerStep(
     "batches-per-step", llvm::cl::desc("Specify batches num for each step"),
     llvm::cl::init(1), llvm::cl::cat(HaloOptCat));
@@ -358,6 +359,7 @@ int main(int argc, char** argv) {
   cg_opts.enable_ipu_device = EnableIpuDevice;
   cg_opts.use_ipu_model = UseIpuModel;
   cg_opts.ipu_num = IpuNum;
+  cg_opts.num_shards = Shards;
   cg_opts.batches_per_step = BatchesPerStep;
   cg_opts.api = Api;
   cg_opts.disable_broadcasting = DisableBroadcasting;

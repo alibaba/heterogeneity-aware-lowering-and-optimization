@@ -91,6 +91,7 @@ struct CXXCodeGenOpts {
   bool emit_shared_lib = false;
   const char* linked_odla_lib = nullptr;
   bool save_temps = false;
+  int num_shards = -1;
 };
 
 #define HALO_MODEL_INFO_MAX_OUTPUT_NR 64

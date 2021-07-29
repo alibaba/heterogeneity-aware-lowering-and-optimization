@@ -162,6 +162,7 @@ static void PopulateOptPasses(PassManager* pm, const std::string& target,
   if (opts.enable_type_cast) {
     pm->AddTypeCastPass();
   }
+  pm->AddShardingPass(opts.num_shards);
 }
 } // namespace halo
 
