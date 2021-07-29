@@ -255,6 +255,23 @@ std::unique_ptr<popart::SessionOptions> Pipeline::sessionOptions() {
       std::unique_ptr<popart::SessionOptions>(new popart::SessionOptions());
   opts->enablePipelining = true;
   opts->virtualGraphMode = popart::VirtualGraphMode::Manual;
+  opts->autoRecomputation = popart::RecomputationType::Pipeline;
+  //opts->matmulOptions["use128BitConvUnitLoad"] = "true";
+  //opts->matmulOptions["enableMultiStageReduce"] = "false";
+  //opts->matmulOptions["enableFastReduce"] = "true";
+  opts->virtualGraphMode = popart::VirtualGraphMode::Manual;
+  opts->enableFloatingPointChecks = false;
+  opts->enableStochasticRounding = false;
+  opts->enableGroupedMatmuls = false;
+  opts->enablePrefetchDatastreams = true;
+  opts->enableOutlining = true;
+  std::string partials_type = "half";
+  opts->partialsTypeMatMuls = partials_type;
+  opts->convolutionOptions["partialsType"] = partials_type;
+  opts->outlineThreshold = 10.0;
+  opts->instrumentWithHardwareCycleCounter = false;
+  opts->disableGradAccumulationTensorStreams = true;
+  //opts->engineOptions = engine_options;
   std::cout << "<--- Pipeline::sessionOptions()" << std::endl;
   return opts;
 }
@@ -272,8 +289,24 @@ std::unique_ptr<popart::SessionOptions> Sequence::sessionOptions() {
   std::cout << "---> Sequence::sessionOptions()" << std::endl;
   auto opts =
       std::unique_ptr<popart::SessionOptions>(new popart::SessionOptions());
-  opts->virtualGraphMode = popart::VirtualGraphMode::Auto;
-  opts->enableStochasticRounding = true;
+  //opts->virtualGraphMode = popart::VirtualGraphMode::Auto;
+  //opts->enableStochasticRounding = true;
+  //opts->matmulOptions["use128BitConvUnitLoad"] = "true";
+  //opts->matmulOptions["enableMultiStageReduce"] = "false";
+  //opts->matmulOptions["enableFastReduce"] = "true";
+  opts->virtualGraphMode = popart::VirtualGraphMode::Manual;
+  opts->enableFloatingPointChecks = false;
+  opts->enableStochasticRounding = false;
+  opts->enableGroupedMatmuls = false;
+  opts->enablePrefetchDatastreams = true;
+  opts->enableOutlining = true;
+  std::string partials_type = "half";
+  opts->partialsTypeMatMuls = partials_type;
+  opts->convolutionOptions["partialsType"] = partials_type;
+  opts->outlineThreshold = 10.0;
+  opts->instrumentWithHardwareCycleCounter = false;
+  opts->disableGradAccumulationTensorStreams = true;
+  //opts->engineOptions = engine_options;
   std::cout << "<--- Sequence::sessionOptions()" << std::endl;
   return opts;
 }
@@ -304,8 +337,24 @@ std::unique_ptr<popart::SessionOptions> MultiThread::sessionOptions() {
   std::cout << "---> Pipeline::sessionOptions()" << std::endl;
   auto opts =
       std::unique_ptr<popart::SessionOptions>(new popart::SessionOptions());
-  opts->virtualGraphMode = popart::VirtualGraphMode::Auto;
-  opts->enableStochasticRounding = true;
+  //opts->virtualGraphMode = popart::VirtualGraphMode::Auto;
+  //opts->enableStochasticRounding = true;
+  //opts->matmulOptions["use128BitConvUnitLoad"] = "true";
+  //opts->matmulOptions["enableMultiStageReduce"] = "false";
+  //opts->matmulOptions["enableFastReduce"] = "true";
+  opts->virtualGraphMode = popart::VirtualGraphMode::Manual;
+  opts->enableFloatingPointChecks = false;
+  opts->enableStochasticRounding = false;
+  opts->enableGroupedMatmuls = false;
+  opts->enablePrefetchDatastreams = true;
+  opts->enableOutlining = true;
+  std::string partials_type = "half";
+  opts->partialsTypeMatMuls = partials_type;
+  opts->convolutionOptions["partialsType"] = partials_type;
+  opts->outlineThreshold = 10.0;
+  opts->instrumentWithHardwareCycleCounter = false;
+  opts->disableGradAccumulationTensorStreams = true;
+  //opts->engineOptions = engine_options;
   std::cout << "<--- Pipeline::sessionOptions()" << std::endl;
   return opts;
 }
