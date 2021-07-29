@@ -36,4 +36,8 @@ install(FILES ${CMAKE_BINARY_DIR}/odla_docs/latex/refman.pdf
         DESTINATION docs/odla RENAME ODLA_reference.pdf OPTIONAL)
 
 set(CPACK_GENERATOR "TBZ2")
+string(TOLOWER "${CPACK_SYSTEM_NAME}" os)
+if (os MATCHES "centos.*")
+  set(CPACK_GENERATOR "TBZ2;RPM")
+endif()
 include(CPack)

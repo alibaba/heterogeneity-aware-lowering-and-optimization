@@ -16,7 +16,7 @@
 
 cmake_minimum_required(VERSION 3.14.5)
 
-set(PROJECT_NAME "HALO")
+set(PROJECT_NAME "HALO" HOMEPAGE_URL "https://github.com/alibaba/heterogeneity-aware-lowering-and-optimization")
 set(PROJECT_VERSION "0.6.0")
 
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES C CXX ASM)

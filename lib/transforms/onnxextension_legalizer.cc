@@ -559,14 +559,14 @@ static std::vector<Def> ConvertOneHot(const ONNXExtensionInst* ext,
     size_t data_type_size = values->GetElementSizeInBytes();
     Type ty{data_type};
 
-    Constant* off_value = cb.CreateConstant(name + "_off_value", ty,
-                                            static_cast<const void*>(ptr));
+    // Constant* off_value = cb.CreateConstant(name + "_off_value", ty,
+    //                                        static_cast<const void*>(ptr));
     Constant* on_value = cb.CreateConstant(
         name + "_on_value", ty,
         static_cast<const void*>(&ptr[data_type_size])); // NOLINT
 
-    OneHotInst* new_inst =
-        builder->CreateOneHot(ext->GetName(), op0, op1, *off_value, *on_value);
+    OneHotInst* new_inst = builder->CreateOneHot(ext->GetName(), op0, op1,
+                                                 op2 /* off_on */, *on_value);
 
     new_inst->SetAxis(axis);
     return {*new_inst};
