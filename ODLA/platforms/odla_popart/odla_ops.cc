@@ -198,7 +198,7 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
 
   int rank = lhs->tensor_info.rank();
-
+  /*
   if (rank == 2) {
     std::vector<popart::TensorId> inputs{lhs->tensor_id, rhs->tensor_id};
     if (bias == nullptr || beta == 0) {
@@ -217,27 +217,33 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
                            {g_comp->builder->getTensorDataType(result),
                             g_comp->builder->getTensorShape(result)},
                            name);
-  }
+  }*/
   popart::TensorId lhs_trans = lhs->tensor_id;
-  if (rank > 2 && transpose_lhs) {
+  if (rank >= 2 && transpose_lhs) {
     if (rank == 4) {
       lhs_trans = g_comp->builder->aiOnnxOpset10().transpose(
           {lhs->tensor_id}, std::vector<int64_t>{0, 1, 3, 2});
     } else if (rank == 3) {
       lhs_trans = g_comp->builder->aiOnnxOpset10().transpose(
           {lhs->tensor_id}, std::vector<int64_t>{0, 2, 1});
+    } else if (rank == 2) {
+      lhs_trans = g_comp->builder->aiOnnxOpset10().transpose(
+          {lhs->tensor_id}, std::vector<int64_t>{1, 0});
     }
   }
 
   popart::TensorId rhs_trans = rhs->tensor_id;
   rank = rhs->tensor_info.rank();
-  if (rank > 2 && transpose_rhs) {
+  if (rank >= 2 && transpose_rhs) {
     if (rank == 4) {
       rhs_trans = g_comp->builder->aiOnnxOpset10().transpose(
           {rhs->tensor_id}, std::vector<int64_t>{0, 1, 3, 2});
     } else if (rank == 3) {
       rhs_trans = g_comp->builder->aiOnnxOpset10().transpose(
           {rhs->tensor_id}, std::vector<int64_t>{0, 2, 1});
+    } else if (rank == 2) {
+      rhs_trans = g_comp->builder->aiOnnxOpset10().transpose(
+          {rhs->tensor_id}, std::vector<int64_t>{1,0});
     }
   }
 

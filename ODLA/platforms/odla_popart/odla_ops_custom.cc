@@ -43,7 +43,27 @@ odla_values odla_CustomOp(odla_values inputs, const odla_char* op_name,
                                name);
     ret.size = 1;
     ret.values[0] = val;
-  } else {
+  }
+  else if(std::string(op_name) == "custom_IpuAttentionMask" ){
+    assert(inputs.size == 2);
+    assert(ids.size == 1);
+    const char* id = reinterpret_cast<const char*>(ids.value_ids[0]);
+    const auto& name = id != nullptr ? std::string(id) : "IpuAttentionMask";
+
+    const popart::OperatorIdentifier attention_mask(popart::Domain::ai_graphcore, 
+                                                    "AttentionMask", 1, 2, 1);
+    auto input_mask = inputs.values[0];
+    auto data = inputs.values[1];
+    popart::TensorId result = g_comp->builder->customOp(attention_mask, 1, 
+                          {input_mask->tensor_id, data->tensor_id}, 1, {{"dataType", data->tensor_info.data_type()}})[0];
+    auto val =  new _odla_value(result,
+                                {g_comp->builder->getTensorDataType(result),
+                                 g_comp->builder->getTensorShape(result)},
+                                name);
+    ret.size = 1;
+    ret.values[0] = val;
+  }
+  else {
     assert(0);
   }
   return ret;
