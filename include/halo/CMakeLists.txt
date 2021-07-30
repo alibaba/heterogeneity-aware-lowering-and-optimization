@@ -16,6 +16,13 @@
 
 add_subdirectory(lib)
 
+# Identify OS name.
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+  file(READ "/etc/os-release" os_content)
+  string(REGEX MATCH "PRETTY_NAME=\"(.*)\".VERSION_ID" OS_NAME "${os_content}")
+  set(OS_NAME "${CMAKE_MATCH_1}")
+endif()
+
 # Generate VCS info.
 set(version_inc "${CMAKE_CURRENT_BINARY_DIR}/version.inc")
 
@@ -29,17 +36,27 @@ if (halo_vc)
   add_custom_command(OUTPUT "${version_inc}"
     DEPENDS "${halo_vc}" "${get_version_script}"
     COMMAND
-    ${CMAKE_COMMAND} "-DHALO_SOURCE_DIR=${CMAKE_SOURCE_DIR}"
-                     "-DODLA_SOURCE_DIR=${CMAKE_SOURCE_DIR}/ODLA"
-                     "-DNAMES=\"HALO;ODLA\""
-                     "-DHEADER_FILE=${version_inc}"
-                     -P "${get_version_script}")
+    ${CMAKE_COMMAND} -DHALO_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+                     -DODLA_SOURCE_DIR=${CMAKE_SOURCE_DIR}/ODLA
+                     -DNAMES=HALO\;ODLA
+                     -DHEADER_FILE=${version_inc}
+                     -P ${get_version_script}
+    COMMAND echo "#define HALO_VERSION_MAJOR ${PROJECT_VERSION_MAJOR}" >> ${version_inc}
+    COMMAND echo "#define HALO_VERSION_MINOR ${PROJECT_VERSION_MINOR}" >> ${version_inc}
+    COMMAND echo "#define HALO_VERSION_PATCH ${PROJECT_VERSION_PATCH}" >> ${version_inc}
+    COMMAND echo "#define HALO_VERSION_STR \"${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}\"" >> ${version_inc}
+    COMMAND echo "#define HALO_BUILT_OS \"${OS_NAME}\"" >> ${version_inc}
+    VERBATIM
+  )
   set_source_files_properties("${version_inc}"
     PROPERTIES GENERATED TRUE
     HEADER_FILE_ONLY TRUE)
 else()
   message(WARNING "revision info unavailable")
-  file(WRITE "${version_inc}" "")
+  FILE(APPEND ${version_inc} "#define HALO_VERSION_MAJOR ${PROJECT_VERSION_MAJOR}")
+  FILE(APPEND ${version_inc} "#define HALO_VERSION_MINOR ${PROJECT_VERSION_MINOR}")
+  FILE(APPEND ${version_inc} "#define HALO_VERSION_MINOR ${PROJECT_VERSION_PATCH}")
+  FILE(APPEND ${version_inc} "#define HALO_BUILT_OS \"${OS_NAME}\"")
 endif()
 
 add_custom_target(halo_version_h DEPENDS "${version_inc}")
