@@ -62,6 +62,7 @@ odla_values odla_CustomOp(odla_values inputs, const odla_char* op_name,
                                 name);
     ret.size = 1;
     ret.values[0] = val;
+    std::cout << "custom_IpuAttentionMask finished and will return the value" << std::endl;
   }
   else {
     assert(0);
