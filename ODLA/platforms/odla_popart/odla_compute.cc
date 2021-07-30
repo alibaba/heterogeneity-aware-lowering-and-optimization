@@ -117,6 +117,7 @@ void SingleComp::init_comp(
       auto opts = getStepIOMode(stepio_mode_string)->sessionOptions(); //SessionOptions(); //Manual & pipeline
 
       auto proto = single_comp->builder->getModelProto();
+      single_comp->builder->saveModelProto("halo.onnx");
       if(stepio_mode_string == "pipeline")
         proto = "new_mnist.onnx";
       

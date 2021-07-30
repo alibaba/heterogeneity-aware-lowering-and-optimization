@@ -20,17 +20,14 @@ option(ODLA_BUILD_POPART_CUSTOM_OPS "Link with Popart custom ops" ON)
 add_odla_library(odla_popart SHARED common.cc odla_compute.cc
                                odla_ops_math.cc odla_ops_nn.cc
                                odla_ops_process.cc odla_ops.cc
-                               odla_ops_custom.cc
-                )
-
+                               odla_ops_custom.cc odla_pipeline.cc
+                               )
 if (NOT POPLAR_ROOT)
-  set(POPLAR_ROOT "/opt/poplar_sdk/poplar" CACHE PATH "Path of poplar root")
+  set(POPLAR_ROOT "/opt/poplar_sdk/poplar" CACHE STRING "Path of poplar root")
 endif()
 if (NOT POPART_ROOT)
-  set(POPART_ROOT "/opt/poplar_sdk/popart" CACHE PATH "Path of popart root")
+  set(POPART_ROOT "/opt/poplar_sdk/popart" CACHE STRING "Path of popart root")
 endif()
-set(POPLAR_ROOT ${POPLAR_ROOT} PARENT_SCOPE)
-set(POPART_ROOT ${POPART_ROOT} PARENT_SCOPE)
 
 list(APPEND CMAKE_PREFIX_PATH ${POPLAR_ROOT})
 list(APPEND CMAKE_PREFIX_PATH ${POPART_ROOT})
