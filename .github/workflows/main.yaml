@@ -161,3 +161,12 @@ jobs:
           docker run --rm localhost:5000/halo:sha-${{ github.sha }} --version
           docker rmi localhost:5000/halo:sha-${{ github.sha }}
           docker image prune -f
+
+      - name: Publish Release Artifacts
+        if: startsWith(github.ref, 'refs/tags')
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: download/*
+          name: ${{ steps.prepare.tag }}
