@@ -55,6 +55,10 @@ popart::DataType GetPopartType(odla_value_type type) {
       return popart::DataType::INT32;
     case ODLA_INT64:
       return popart::DataType::INT64;
+    case ODLA_UINT32:
+      return popart::DataType::UINT32;
+    case ODLA_UINT64:
+      return popart::DataType::UINT64;
     case ODLA_BOOL:
       return popart::DataType::BOOL;
     default:
@@ -74,6 +78,10 @@ odla_element_type GetOdlaType(popart::DataType type) {
       return ODLA_INT64;
     case popart::DataType::BOOL:
       return ODLA_BOOL;
+    case popart::DataType::UINT32:
+      return ODLA_UINT32;
+    case popart::DataType::UINT64:
+      return ODLA_UINT64;
     default:
       assert(false);
   }
