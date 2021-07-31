@@ -58,7 +58,7 @@ odla_value odla_Cast(odla_value input, odla_element_type target_type,
       value_id ? std::string(reinterpret_cast<const char*>(value_id)) : "Cast";
   const std::string& type_name = GetTypeName(target_type);
   popart::TensorId result =
-      g_comp->builder->aiOnnxOpset10().cast({input->tensor_id}, type_name);
+      g_comp->builder->aiOnnxOpset10().cast({input->tensor_id}, type_name, name);
 
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
@@ -77,7 +77,7 @@ odla_value odla_Concat(odla_values inputs, odla_int32 axis,
     onnx_inputs.emplace_back(inputs.values[i]->tensor_id);
   }
   popart::TensorId result =
-      g_comp->builder->aiOnnxOpset10().concat(onnx_inputs, axis);
+      g_comp->builder->aiOnnxOpset10().concat(onnx_inputs, axis, name);
 
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
@@ -96,9 +96,9 @@ odla_value odla_ExpandDims(odla_value input, odla_value_shape output_dims,
   }
   auto output_shape = odla_CreateConstant(
       {ODLA_INT64, {.size = 1, .dims = {output_dims.size}}}, shape_data.data(),
-      (const odla_value_id) "output_shape");
+      (const odla_value_id) (name + "output_shape").c_str());
   popart::TensorId result = g_comp->builder->aiOnnxOpset10().expand(
-      {input->tensor_id, output_shape->tensor_id});
+      {input->tensor_id, output_shape->tensor_id}, name);
 
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
@@ -125,7 +125,7 @@ odla_value odla_Pad(odla_value input, const odla_uint32* padding_front,
                  padding_from_back.end());
 
   popart::TensorId result = g_comp->builder->aiOnnxOpset10().pad(
-      {input->tensor_id}, padding, "constant", 0.0f);
+      {input->tensor_id}, padding, "constant", 0.0f, name);
 
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
@@ -149,9 +149,9 @@ odla_value odla_Resize(odla_value input, odla_interpolation_mode interpolation,
   }
   auto scales = odla_CreateConstant(
       {ODLA_FLOAT32, {.size = 1, .dims = {output_dims.size}}},
-      shape_data.data(), (const odla_value_id) "Scale_shape");
+      shape_data.data(), (const odla_value_id) (name + "Scale_shape").c_str() );
   popart::TensorId result = g_comp->builder->aiOnnxOpset10().resize(
-      {input->tensor_id, scales->tensor_id}, interpolation_mode_name);
+      {input->tensor_id, scales->tensor_id}, interpolation_mode_name, name);
 
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
@@ -165,7 +165,7 @@ odla_value odla_Shape(odla_value input, odla_value_shape output_dims,
       value_id ? std::string(reinterpret_cast<const char*>(value_id)) : "Shape";
 
   popart::TensorId result =
-      g_comp->builder->aiOnnxOpset10().shape({input->tensor_id});
+      g_comp->builder->aiOnnxOpset10().shape({input->tensor_id}, name);
 
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
@@ -184,7 +184,7 @@ odla_value odla_Squeeze(odla_value input, odla_size_t num_of_axes,
     axes_to_squeeze.emplace_back(axes[i]);
   }
   popart::TensorId result = g_comp->builder->aiOnnxOpset10().squeeze(
-      {input->tensor_id}, axes_to_squeeze);
+      {input->tensor_id}, axes_to_squeeze, name);
 
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
@@ -206,7 +206,7 @@ odla_value odla_Tile(odla_value input, const odla_uint32* repeat,
                           (const odla_value_id)((name + "_repeat").c_str()));
 
   popart::TensorId result = g_comp->builder->aiOnnxOpset10().tile(
-      {input->tensor_id, repeats_tensor->tensor_id});
+      {input->tensor_id, repeats_tensor->tensor_id}, name);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
