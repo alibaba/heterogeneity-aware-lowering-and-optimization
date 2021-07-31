@@ -36,7 +36,7 @@ odla_values odla_CustomOp(odla_values inputs, const odla_char* op_name,
     const auto& name = id != nullptr ? std::string(id) : "IpuGelu";
     auto input = inputs.values[0];
     popart::TensorId result =
-        g_comp->builder->aiGraphcoreOpset1().gelu({input->tensor_id});
+        g_comp->builder->aiGraphcoreOpset1().gelu({input->tensor_id}, name);
     auto val = new _odla_value(result,
                                {g_comp->builder->getTensorDataType(result),
                                 g_comp->builder->getTensorShape(result)},
@@ -55,7 +55,8 @@ odla_values odla_CustomOp(odla_values inputs, const odla_char* op_name,
     auto input_mask = inputs.values[0];
     auto data = inputs.values[1];
     popart::TensorId result = g_comp->builder->customOp(attention_mask, 1, 
-                          {input_mask->tensor_id, data->tensor_id}, 1, {{"dataType", data->tensor_info.data_type()}})[0];
+                          {input_mask->tensor_id, data->tensor_id}, 1, 
+                          {{"dataType", data->tensor_info.data_type()}}, name)[0];
     auto val =  new _odla_value(result,
                                 {g_comp->builder->getTensorDataType(result),
                                  g_comp->builder->getTensorShape(result)},
