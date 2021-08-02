@@ -116,7 +116,7 @@ int main(int argc, char** argv) {
   }
   else
   {
-    
+    std::cout << "==================== Using multithread mnist =====================" << std::endl;
     std::thread threads[THREAD_COUNT];
     int start_index = 0;
     for(int i=0; i < THREAD_COUNT; i++){
