@@ -182,7 +182,8 @@ odla_value odla_BatchMatmul(odla_value lhs, odla_bool lhs_trans, odla_value rhs,
   popart::TensorId result =
       g_comp->builder->aiOnnxOpset10().matmul({lhs->tensor_id, rhs->tensor_id}, name);
   //set the AMP
-  g_comp->builder->setAvailableMemoryProportion(result, 0.12f);
+  if(name.find("_FF_") != std::string::npos)  //only set the FF
+    g_comp->builder->setAvailableMemoryProportion(result, 0.14f);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -252,7 +253,8 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
   popart::TensorId result =
       g_comp->builder->aiOnnxOpset10().matmul({lhs_trans, rhs_trans}, name);
   // set the AMP
-  g_comp->builder->setAvailableMemoryProportion(result, 0.12f);
+  if(name.find("_FF_") != std::string::npos)  //only set the FF
+    g_comp->builder->setAvailableMemoryProportion(result, 0.14f);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
