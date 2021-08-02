@@ -62,7 +62,7 @@ SingleComp* SingleComp::instance = nullptr;
 std::mutex SingleComp::instance_mutex;
 thread_local odla_computation g_comp = SingleComp::get_instance()->get_comp();
 
-#define PIPELINE_MODE "sequence"  //This version run a pipeline example
+#define PIPELINE_MODE PARALLEL  //This version run a pipeline example
 
 static std::shared_ptr<popart::DeviceInfo> AcquireAvailableDevice(
     int num_devices) {
@@ -81,7 +81,7 @@ static std::shared_ptr<popart::DeviceInfo> CreateIpuModelDevice(
 }
 
 void SingleComp::init_comp(
-  std::string stepio_mode_string,
+  ExecutionMode mode,
   int ipu_num,
   int batch_per_step
 )
@@ -114,11 +114,11 @@ void SingleComp::init_comp(
                         ? CreateIpuModelDevice(single_comp->opts.ipu_num)
                         : AcquireAvailableDevice(single_comp->opts.ipu_num);
       // Create and config SessionOptions
-      auto opts = getStepIOMode(stepio_mode_string)->sessionOptions(); //SessionOptions(); //Manual & pipeline
+      auto opts = getStepIOMode(mode)->sessionOptions(); //SessionOptions(); //Manual & pipeline
 
       auto proto = single_comp->builder->getModelProto();
       single_comp->builder->saveModelProto("halo.onnx");
-      if(stepio_mode_string == "pipeline")
+      if(PIPELINE == mode)
         proto = "new_mnist.onnx";
       
       // Create InferenceSession

@@ -102,6 +102,7 @@ void ContextQueues::put(odla_context ctx)
   std::cout << "ContextQueues::put -> ctx: " << ctx << std::endl;
   std::lock_guard<std::mutex> guard(write_mutex);
   write_queue->push(ctx);
+  write_wait_queue->push(ctx);  //put the ctx to input & wait_output queue in same order.
 }
 
 odla_context ContextQueues::get_input_context()
@@ -109,27 +110,45 @@ odla_context ContextQueues::get_input_context()
   if(nullptr != input_ctx){
     return input_ctx;
   }
-  input_ctx = read_queue->front();
-  if( nullptr == input_ctx)
+  if(!read_queue->empty())
+    input_ctx = read_queue->front();
+  else  //read queue is empty, switch it
   {
     std::lock_guard<std::mutex> guard(write_mutex);
     std::queue<odla_context>* tmp = read_queue;
     read_queue = write_queue;
     write_queue = tmp;
-    input_ctx = read_queue->front();
     std::cout << "===============> switched the read write queue, now read queu size is: " << read_queue->size() << std::endl;
+    if(!read_queue->empty())
+      input_ctx = read_queue->front();
+    else{  //create a zero data if there's not data in the 2 queues
+      input_ctx = create_empty_odla_context();
+      write_wait_queue->push(input_ctx);  //Make it wait for the return for the empty data
+    }
   }
-  if(nullptr == input_ctx)  //create a zero data if there's not data in the 2 queues
-    input_ctx = create_empty_odla_context();
-  
+
   return input_ctx;
 }
 
 odla_context ContextQueues::get_output_context()
 {
-  output_ctx = wait_output_queue.front();
+  if(output_ctx != nullptr)
+    return output_ctx;
+  //output_ctx = wait_output_queue.front();
+  if(!read_wait_queue->empty())
+    output_ctx = read_wait_queue->front();
+  else{
+    //switch the wait queue
+    std::lock_guard<std::mutex> guard(write_mutex); //Use the same mutex to save 1 mutex lock for every put
+    std::queue<odla_context>* tmp = read_wait_queue;
+    read_wait_queue = write_wait_queue;
+    write_wait_queue = tmp;
+    std::cout << "===============> switched the read write wait queue, now read queu size is: " << read_wait_queue->size() << std::endl;
+  }
+  if(!read_wait_queue->empty())
+      output_ctx = read_wait_queue->front();
   if(nullptr == output_ctx)
-    std::cerr << "No context in the queue when an output gotten" << std::endl; //严重错误了，会导致数据匹配补上了，是不是可以考虑把输入的数据也放到输出里面，比较一下MD5来确保对应关系
+    std::cerr << " *** FATAL ERROR *** No context in the queue when an output gotten" << std::endl; //严重错误了，会导致数据匹配补上了，是不是可以考虑把输入的数据也放到输出里面，比较一下MD5来确保对应关系
   return output_ctx;
 }
 
@@ -139,6 +158,7 @@ odla_context ContextQueues::get_output_context()
 popart::StepIOCallback::InputCallback input_callback =
     [&](popart::TensorId id, bool prefetch) -> popart::ConstVoidData {
   popart::logging::info("input callback called {}", id);
+  std::cout << "input_callback called with id: " << id << std::endl;
   (void)prefetch;
   //Get the data from the context queues
   popart::ConstVoidData data;
@@ -158,6 +178,10 @@ popart::StepIOCallback::InputCallback input_callback =
       std::cerr << "input_callback -> Can not find the tensor with id: " << id << " in ctx: " << ctx << std::endl;
       exit(CB_NULL_TENSOR);
     }
+    if(ctx->all_tensors_visited()){
+      std::cout << "input_complete_callback -> All tensors read for current context:" << ctx << std::endl;
+      ContextQueues::get_instance()->all_tensor_read();
+    }
   }
   else  //the ctx should never be nullptr
   {
@@ -170,17 +194,17 @@ popart::StepIOCallback::InputCallback input_callback =
 
 popart::StepIOCallback::InputCompleteCallback input_complete_callback =
     [&](popart::TensorId id) -> void {
-  std::cout << "input_complete_callback -> called: " << id << std::endl;
-  odla_context ctx = ContextQueues::get_instance()->get_input_context();
-  if(nullptr == ctx)
-  {
-    std::cout << "input_complete_callback -> Queue is empty when try to get" << std::endl;
-    exit(CB_NULL_QUEUE);
-  }
-  if(ctx->all_tensors_visited()){
-    std::cout << "input_complete_callback -> All tensors read for current context:" << ctx << std::endl;
-    ContextQueues::get_instance()->all_tensor_read();
-  }
+  std::cout << "input_complete_callback -> called: " << id << ", nothing to do..." << std::endl;
+  // odla_context ctx = ContextQueues::get_instance()->get_input_context();
+  // if(nullptr == ctx)
+  // {
+  //   std::cout << "input_complete_callback -> Queue is empty when try to get" << std::endl;
+  //   exit(CB_NULL_QUEUE);
+  // }
+  // if(ctx->all_tensors_visited()){
+  //   std::cout << "input_complete_callback -> All tensors read for current context:" << ctx << std::endl;
+  //   ContextQueues::get_instance()->all_tensor_read();
+  // }
 };
 
 popart::StepIOCallback::OutputCallback output_callback =
@@ -232,7 +256,7 @@ popart::StepIOCallback::OutputCompleteCallback output_complete_callback =
 
 void pipeline_loop(odla_computation comp)
 {
-  SingleComp::get_instance()->init_comp("pipeline", 2, 10);
+  SingleComp::get_instance()->init_comp(PARALLEL, 1, 5); //TODO: should pass the parameter in for the ipu_num & batch per step
   std::cout << "=============> current comp is: " << comp << std::endl;
   //setup the stepio with allbacks
   popart::StepIOCallback stepio(input_callback,
@@ -240,11 +264,16 @@ void pipeline_loop(odla_computation comp)
                               output_callback,
                               output_complete_callback);
   int i=0;
-  while(!SingleComp::get_instance()->is_done()){
+  //while(!SingleComp::get_instance()->is_done()){
+  while(i < 400){
+    auto start = std::chrono::steady_clock::now();
     std::cout << "This is the " << i++ << " time for the inference" << std::endl;
     if(i == INT_MAX)
       i = 0;
     comp->session->run(stepio);
+    auto end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end-start;
+    std::cout << "[ "<< i << " ] times loop takes " << elapsed_seconds.count() << " s." << std::endl;
   }
   std::cout << "The pipeline loop finished" << std::endl;
 }
@@ -276,15 +305,6 @@ std::unique_ptr<popart::SessionOptions> Pipeline::sessionOptions() {
   return opts;
 }
 
-void Pipeline::compute(odla_computation comp, odla_context context,
-                                  odla_compute_mode mode,odla_device device) 
-{
-  std::cout << "---> Pipeline::compute()" << std::endl;
-  ContextQueues::get_instance()->put(context);
-  context->wait();
-  std::cout << "<--- Pipeline::compute()" << std::endl;
-}
-
 std::unique_ptr<popart::SessionOptions> Sequence::sessionOptions() {
   std::cout << "---> Sequence::sessionOptions()" << std::endl;
   auto opts =
@@ -314,7 +334,7 @@ std::unique_ptr<popart::SessionOptions> Sequence::sessionOptions() {
 void Sequence::compute(odla_computation comp, odla_context context,
                                 odla_compute_mode mode, odla_device device) 
 {
-  SingleComp::get_instance()->init_comp("Sequence", 1, 1);
+  SingleComp::get_instance()->init_comp(SEQUENCE, 1, 1);
   std::lock_guard<std::mutex> comp_guard(SingleComp::get_instance()->comp_mutex);
   std::cout << "---> Sequence::compute()" << std::endl;
   // Config StepIO
@@ -333,8 +353,17 @@ void Sequence::compute(odla_computation comp, odla_context context,
   std::cout << "<--- Sequence::compute()" << std::endl;
 }
 
-std::unique_ptr<popart::SessionOptions> MultiThread::sessionOptions() {
-  std::cout << "---> Pipeline::sessionOptions()" << std::endl;
+void Parallel::compute(odla_computation comp, odla_context context,
+                       odla_compute_mode mode,odla_device device) 
+{
+  std::cout << "---> Parallel::compute()" << std::endl;
+  ContextQueues::get_instance()->put(context);
+  context->wait();
+  std::cout << "<--- Parallel::compute()" << std::endl;
+}
+
+std::unique_ptr<popart::SessionOptions> Parallel::sessionOptions() {
+  std::cout << "---> Parallel::sessionOptions()" << std::endl;
   auto opts =
       std::unique_ptr<popart::SessionOptions>(new popart::SessionOptions());
   //opts->virtualGraphMode = popart::VirtualGraphMode::Auto;
@@ -355,6 +384,6 @@ std::unique_ptr<popart::SessionOptions> MultiThread::sessionOptions() {
   opts->instrumentWithHardwareCycleCounter = false;
   opts->disableGradAccumulationTensorStreams = true;
   //opts->engineOptions = engine_options;
-  std::cout << "<--- Pipeline::sessionOptions()" << std::endl;
+  std::cout << "<--- Parallel::sessionOptions()" << std::endl;
   return opts;
 }
