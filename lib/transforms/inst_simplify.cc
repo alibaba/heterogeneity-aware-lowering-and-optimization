@@ -443,7 +443,7 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
             if (c_add->HasSameValueOf(add_3)) {
               Instruction* new_inst = nullptr;
               new_inst = builder.CreateHardSwish(
-                  "Hardswish_" + binary_inst->GetName(), op_add0);
+                  binary_inst->GetName() + "_fused", op_add0);
               return {orig_def, *new_inst};
             }
           }
@@ -1399,8 +1399,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(BatchNormInst* inst) {
   IRBuilder builder(inst->GetParent());
   builder.SetInsertAfter(inst);
   auto new_mul = builder.CreateMul(inst->GetName() + "_mul", input, *new_scale);
-  auto new_add =
-      builder.CreateAdd(inst->GetName() + "_add", *new_mul, *new_offset);
+  auto new_add = builder.CreateAdd(inst->GetName(), *new_mul, *new_offset);
   return {orig_def, *new_add};
 }
 
