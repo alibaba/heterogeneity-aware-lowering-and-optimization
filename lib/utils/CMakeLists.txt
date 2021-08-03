@@ -20,15 +20,18 @@ set(NAME UTILS)
 # source files.
 set(SRCS
   path.cc
+  version.cc
 )
 
 # dependences which need to be built first.
 set(DEPENDENCES
+  halo_version_h
+  LLVMSupport
  )
 
 create_halo_object(TARGET_NAME ${NAME}
   TARGET_SRCS ${SRCS}
-  TARGET_DEPENDENCES LLVMSupport
+  TARGET_DEPENDENCES ${DEPENDENCES}
 )
 
 target_include_directories(${NAME} SYSTEM
