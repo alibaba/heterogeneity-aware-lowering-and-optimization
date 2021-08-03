@@ -117,8 +117,8 @@ jobs:
           echo "::set-output name=file::$(cd download && ls HALO-*-ubuntu*.bz2)"
           echo "::set-output name=date::$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           tag=latest
-          if [[ $GITHUB_REF == refs/tags/Release-* ]]; then
-            tag=${GITHUB_REF#refs/tags/Release-}
+          if [[ $GITHUB_REF == refs/tags/Release/* ]]; then
+            tag="Release-${GITHUB_REF#refs/tags/Release/}"
           elif [[ $GITHUB_REF == refs/tags/* ]]; then
             tag=${GITHUB_REF#refs/tags/}
           elif [[ $GITHUB_REF == refs/heads/* ]]; then
