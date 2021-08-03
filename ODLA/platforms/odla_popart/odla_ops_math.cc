@@ -48,8 +48,6 @@
 #error This library requires minimum ODLA version 0.5
 #endif
 
-extern thread_local odla_computation g_comp;
-
 odla_value odla_Abs(odla_value input, const odla_value_id value_id) {
   const auto& name =
       value_id ? std::string(reinterpret_cast<const char*>(value_id)) : "Abs";

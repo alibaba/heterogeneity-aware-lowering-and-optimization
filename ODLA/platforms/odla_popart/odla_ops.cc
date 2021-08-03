@@ -48,8 +48,6 @@
 #error This library requires minimum ODLA version 0.5
 #endif
 
-extern thread_local odla_computation g_comp;
-
 /* Ops */
 /* Binary Ops */
 odla_value odla_Add(odla_value lhs, const odla_value rhs,
@@ -333,10 +331,12 @@ odla_value odla_GroupNormalization(odla_value input,
 
   auto outs = g_comp->builder->aiGraphcoreOpset1().groupnormalization(
       {input->tensor_id, scale->tensor_id, offset->tensor_id}, group, epsilon, name);
+  std::set<popart::TensorId> ids(outs.begin(), outs.end());
+  g_comp->set_pipeline_stage(ids, name);
   return new _odla_value(outs[0],
                          {g_comp->builder->getTensorDataType(outs[0]),
                           g_comp->builder->getTensorShape(outs[0])},
-                         name);
+                         name, false);
 }
 
 odla_value odla_ArgMax(odla_value input, odla_int32 axis, odla_bool keep_dims,

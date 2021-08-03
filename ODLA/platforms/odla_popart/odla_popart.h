@@ -45,6 +45,33 @@
 #include <vector>
 #include <condition_variable>
 
+#define g_comp _odla_computation::instance()
+// enum ExecutionMode {PIPELINE, PARALLEL, SEQUENCE};
+
+class Execution {
+ public:
+  Execution() {}
+  ~Execution() {}
+  virtual void compute(odla_computation comp, odla_context context,
+                       odla_compute_mode mode, odla_device device) = 0;
+};
+
+class Sequence : public Execution {
+ public:
+  Sequence() {}
+  ~Sequence() {}
+  virtual void compute(odla_computation comp, odla_context context,
+                       odla_compute_mode mode, odla_device device);
+private:
+  std::mutex sequence_mutex;  //As global only has one sequence object, so we can use this mutex
+};
+
+class Parallel : public Execution{
+public:
+    virtual void compute(odla_computation comp, odla_context context,
+                       odla_compute_mode mode, odla_device device);
+};
+
 typedef struct TargetOpts {
   bool use_ipu_model;
   int64_t ipu_num;
@@ -57,21 +84,38 @@ struct _odla_value {
   std::string name;
 
   _odla_value(popart::TensorId id, popart::TensorInfo info,
-              const std::string& n)
-      : tensor_id(id), tensor_info(info), name(n) {}
+              const std::string& n, bool set_pipeline = true);
 };
 
 struct _odla_computation {
   std::unique_ptr<popart::Builder> builder;
   std::unique_ptr<popart::InferenceSession> session;
+  std::shared_ptr<popart::DeviceInfo> device;
+  popart::SessionOptions m_session_opts;
   std::unordered_map<std::string, odla_value> inputs_map;
   std::unordered_map<std::string, odla_value> outputs_map;
   std::vector<odla_value> input_values;
   std::vector<odla_value> output_values;
   target_opts opts;
 
-  _odla_computation(std::unique_ptr<popart::Builder> b)
-      : builder(std::move(b)), opts({false, 1, 1}) {}
+  // new members for pipeline
+  static _odla_computation* m_instance;
+  static _odla_computation* instance(){return m_instance;}
+  bool m_done;
+  std::mutex m_init_mutex;
+  Execution* m_executor;
+
+  _odla_computation();
+  
+  void init();
+  bool is_done(){return m_done;}
+  void mark_done(){m_done = true;}
+  void set_pipeline_stage(const popart::TensorId &nodeOutputName, const std::string& name);
+  void set_pipeline_stage(const std::set<popart::TensorId> &nodeOutputNames, const std::string& name);
+  void set_session_opts();
+  void set_executor();
+  void set_opts();
+  Execution* executor(){return m_executor;}
 };
 
 struct _odla_context {

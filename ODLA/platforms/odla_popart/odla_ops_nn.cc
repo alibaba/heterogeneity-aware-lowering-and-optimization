@@ -50,8 +50,6 @@
 #error This library requires minimum ODLA version 0.5
 #endif
 
-extern thread_local odla_computation g_comp;
-
 odla_value odla_AveragePool(odla_value input, odla_memory_layout input_layout,
                             const odla_uint32* window_dims,
                             const odla_uint32* strides,

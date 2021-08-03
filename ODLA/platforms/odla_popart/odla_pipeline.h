@@ -55,39 +55,9 @@
 #include "ODLA/odla_common.h"
 #include "common.h"
 #include "odla_popart.h"
+#include "popart_config.h"
 
-enum ExecutionMode {PIPELINE, PARALLEL, SEQUENCE};
 void pipeline_loop(odla_computation comp);
-
-struct SingleComp {
-  odla_computation single_comp;
-  std::mutex comp_mutex;
-  bool comp_initialized = false;
-  static std::mutex instance_mutex;
-  static SingleComp* instance;
-  bool done = false;
-
-  odla_computation get_comp() { return single_comp; }
-  void init_comp(ExecutionMode mode,
-                int ipu_num, int batch_per_step);
-  bool is_done(){return done;}
-  void well_done(){done = true;}
-  static SingleComp* get_instance() {
-    if (nullptr == instance) {
-      std::lock_guard<std::mutex> guard(instance_mutex);
-      if (nullptr == instance) {
-        std::cout << "Creating the single computation instance ..." << std::endl;
-        instance = new SingleComp();
-        // Create the single computation
-        std::unique_ptr<popart::Builder> builder = popart::Builder::create();
-        // Place Subgraph on IPU 0
-        builder->setAttribute(popart::sVirtualGraphAttribute, 0);
-        instance->single_comp = new _odla_computation(std::move(builder));
-      }
-    }
-    return instance;
-  }
-};
 
 struct ContextQueues {
   std::queue<odla_context> input_queue_1;
@@ -144,7 +114,7 @@ struct ContextQueues {
         std::cout << "ContextQueues created, starting the pipeline thread"
                   << std::endl;
         std::thread pipeline_thread(pipeline_loop,
-                                    SingleComp::get_instance()->get_comp());
+                                    _odla_computation::instance());
         std::cout << "Pipeline loop started" << std::endl;
         pipeline_thread.detach();
       }
@@ -244,62 +214,4 @@ struct _odla_pipeline_zero : public _odla_pipeline {
     return shared_data->write_data_by_tensor_id(id);
   }
 };
-
-class StepIOMode {
- public:
-  StepIOMode() {}
-  ~StepIOMode() {}
-  virtual std::unique_ptr<popart::SessionOptions> sessionOptions() = 0;
-  virtual void compute(odla_computation comp, odla_context context,
-                       odla_compute_mode mode, odla_device device) = 0;
-};
-
-class Sequence : public StepIOMode {
- public:
-  Sequence() {}
-  ~Sequence() {}
-  virtual std::unique_ptr<popart::SessionOptions> sessionOptions();
-  virtual void compute(odla_computation comp, odla_context context,
-                       odla_compute_mode mode, odla_device device);
-};
-
-class Parallel : public StepIOMode{
-public:
-    virtual std::unique_ptr<popart::SessionOptions> sessionOptions();
-    virtual void compute(odla_computation comp, odla_context context,
-                       odla_compute_mode mode, odla_device device);
-};
-
-class Pipeline : public Parallel {
-public:
-  Pipeline() {}
-  ~Pipeline() {}
-  virtual std::unique_ptr<popart::SessionOptions> sessionOptions();
-  //virtual void compute(odla_computation comp, odla_context context,
-  //                     odla_compute_mode mode, odla_device device);
-};
-
-static std::mutex stepio_mode_mutex;
-static StepIOMode* stepio_mode = nullptr;
-
-static StepIOMode* getStepIOMode(ExecutionMode mode)
-{
-  if(nullptr == stepio_mode)
-  {
-    std::lock_guard<std::mutex> guard(stepio_mode_mutex);
-    if(nullptr == stepio_mode)
-    {
-      if(PIPELINE == mode)
-        stepio_mode = new Pipeline();
-      else if(PARALLEL == mode)
-        stepio_mode = new Parallel();
-      else if(SEQUENCE == mode)
-        stepio_mode = new Sequence();
-      else
-        std::cout << "unknown mode to create the StepIOMode: " << mode << std::endl;
-    }
-  }
-  return stepio_mode;
-}
-
 #endif // ODLA_PIPELINE_H_

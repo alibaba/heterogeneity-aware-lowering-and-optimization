@@ -28,7 +28,6 @@
 #include <memory>
 #include <numeric>
 #include <popart/builder.hpp>
-#include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
@@ -53,90 +52,13 @@
 #include "common.h"
 #include "odla_popart.h"
 #include "odla_pipeline.h"
+#include "popart_config.h"
 
 #if !defined(ODLA_VERSION_NUMBER) || (ODLA_VERSION_NUMBER < 50)
 #error This library requires minimum ODLA version 0.5
 #endif
 
-SingleComp* SingleComp::instance = nullptr;
-std::mutex SingleComp::instance_mutex;
-thread_local odla_computation g_comp = SingleComp::get_instance()->get_comp();
-
-#define PIPELINE_MODE PARALLEL  //This version run a pipeline example
-
-static std::shared_ptr<popart::DeviceInfo> AcquireAvailableDevice(
-    int num_devices) {
-  return popart::DeviceManager::createDeviceManager().acquireAvailableDevice(
-      num_devices);
-}
-
-static std::shared_ptr<popart::DeviceInfo> CreateIpuModelDevice(
-    int num_devices) {
-  std::cout << "---> CreateIpuModelDevice()" << std::endl;
-  std::map<std::string, std::string> deviceOpts{
-      {"numIPUs", std::to_string(num_devices)}, {"tilesPerIPU", "1216"}};
-  std::cout << "<--- CreateIpuModelDevice()" << std::endl;
-  return popart::DeviceManager::createDeviceManager().createIpuModelDevice(
-      deviceOpts);
-}
-
-void SingleComp::init_comp(
-  ExecutionMode mode,
-  int ipu_num,
-  int batch_per_step
-)
-{
-  if(!comp_initialized)
-  {
-    std::lock_guard<std::mutex> guard(comp_mutex);
-    if(!comp_initialized)
-    {
-      if(nullptr != single_comp->session)
-      {
-        std::cerr << "||-______________________________________-||" << std::endl;
-        return;
-      }
-      std::cout << "============> The initialized comp is: " << single_comp << std::endl;
-      
-      single_comp->opts.ipu_num = ipu_num;
-      single_comp->opts.batches_per_step = batch_per_step;
-      // Create dataflow
-      std::vector<popart::TensorId> ids;
-      for (const auto& output : single_comp->outputs_map) {
-        std::cout << "dataflow tensorid: " << output.second->tensor_id << std::endl;
-        ids.push_back(output.second->tensor_id);
-      }
-      // Batches per step is a compile time constant value
-      popart::DataFlow data_flow(single_comp->opts.batches_per_step, ids,
-                                popart::AnchorReturnType("All"));
-      // Acquire IPU
-      auto device = single_comp->opts.use_ipu_model
-                        ? CreateIpuModelDevice(single_comp->opts.ipu_num)
-                        : AcquireAvailableDevice(single_comp->opts.ipu_num);
-      // Create and config SessionOptions
-      auto opts = getStepIOMode(mode)->sessionOptions(); //SessionOptions(); //Manual & pipeline
-
-      auto proto = single_comp->builder->getModelProto();
-      single_comp->builder->saveModelProto("halo.onnx");
-      if(PIPELINE == mode)
-        proto = "new_mnist.onnx";
-      
-      // Create InferenceSession
-      auto session = popart::InferenceSession::createFromOnnxModel(
-          proto,
-          data_flow, 
-          device, 
-          popart::InputShapeInfo(), 
-          *opts
-      );
-      single_comp->session = std::move(session);
-      single_comp->session->prepareDevice();
-      single_comp->session->setRandomSeed(0);  // Init seed
-      single_comp->session->weightsFromHost(); // Copy weights from host to IPU
-      comp_initialized = true;  //mark it as initialized
-    }
-  }
-}
+PopartConfig* PopartConfig::m_instance = new PopartConfig();
 
 odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
                                     odla_item_value value) {
@@ -162,7 +84,7 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
 odla_status odla_CreateComputation(odla_computation* comp) {
   std::cout << "---> odla_CreateComputation()" << std::endl;
   static void* custom_op_handle = nullptr;
-  *comp = SingleComp::get_instance()->get_comp();
+  *comp = _odla_computation::instance();
   if (custom_op_handle == nullptr) {
     custom_op_handle = dlopen("libcustom_ops.so", RTLD_NOW | RTLD_GLOBAL);
     if (custom_op_handle == nullptr) {
@@ -171,13 +93,16 @@ odla_status odla_CreateComputation(odla_computation* comp) {
       return ODLA_FAILURE;
     }
   }
+  //Read the config file
+  PopartConfig::instance()->load_config("Please_write_test_parameter_in_it");
+  _odla_computation::instance()->set_executor();
   std::cout << "<--- odla_CreateComputation()" << std::endl;
   return ODLA_SUCCESS;
 }
 
 odla_status odla_CreateContext(odla_context* context) {
   std::cout << "---> odla_CreateContext()" << std::endl;
-  *context = new _odla_pipeline(SingleComp::get_instance()->get_comp());
+  *context = new _odla_pipeline(_odla_computation::instance());
   std::cout << "<--- odla_CreateContext()" << std::endl;
   return ODLA_SUCCESS;
 }
@@ -194,7 +119,7 @@ odla_status odla_DestroyContext(odla_context ctx) {
 
 odla_status odla_DestroyComputation(odla_computation comp) {
   std::cout << "Mark the computation done ..." << std::endl;
-  SingleComp::get_instance()->well_done();
+  comp->mark_done();
   return ODLA_SUCCESS;
 }
 
@@ -202,7 +127,7 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
   std::cout << "---> odla_ExecuteComputation()" << std::endl;
-  getStepIOMode(PIPELINE_MODE)->compute(comp, context, mode, device);
+  comp->executor()->compute(comp, context, mode, device);
   std::cout << "<--- odla_ExecuteComputation()" << std::endl;
   return ODLA_SUCCESS;
 }
@@ -212,7 +137,7 @@ odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
   popart::TensorInfo tensor_info(GetPopartType(type),
                                  GetPopartShape(type.shape));
-  auto comp = SingleComp::get_instance()->get_comp();
+  auto comp = _odla_computation::instance();
   popart::TensorId tensor_id =
       comp->builder->addInputTensor(tensor_info, name);
   auto v = new _odla_value(tensor_id, tensor_info, name);
@@ -252,7 +177,7 @@ odla_value odla_CreateConstant(odla_value_type type, const void* data_ptr,
   popart::ConstVoidData data = {
       data_ptr, {GetPopartType(type), GetPopartShape(type.shape)}};
   popart::TensorId tensor_id =
-      SingleComp::get_instance()->get_comp()->builder->aiOnnxOpset10().constant(data, name);
+      _odla_computation::instance()->builder->aiOnnxOpset10().constant(data, name);
   std::cout << "<--- odla_CreateConstant()" << std::endl;
   return new _odla_value(tensor_id, tensor_info, name);
 }
@@ -280,7 +205,7 @@ odla_status odla_BindToArgumentById(const odla_value_id value_id,
 
 odla_status odla_SetValueAsOutput(const odla_value value) {
   std::cout << "---> odla_SetValueAsOutput()" << std::endl;
-  auto comp = SingleComp::get_instance()->get_comp();
+  auto comp = _odla_computation::instance();
   comp->builder->addOutputTensor(value->tensor_id);
   comp->outputs_map[value->name] = value;
   comp->output_values.push_back(value);
