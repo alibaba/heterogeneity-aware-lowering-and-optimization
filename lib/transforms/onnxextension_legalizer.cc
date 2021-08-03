@@ -418,6 +418,86 @@ static std::vector<Def> ConvertShape(const ONNXExtensionInst* ext,
   return {*c};
 }
 
+static Interpolation ParseInterpolation(const std::string& str) {
+  if (str == "nearest") {
+    return Interpolation::NEAREST;
+  }
+
+  if (str == "linear") {
+    return Interpolation::LINEAR;
+  }
+
+  if (str == "cubic") {
+    return Interpolation::CUBIC;
+  }
+
+  return Interpolation::INVALID;
+}
+
+static ResizeMode ParseResizeMode(const std::string& str) {
+  if (str == "half_pixel") {
+    return ResizeMode::HALF_PIXEL;
+  }
+
+  if (str == "align_corners") {
+    return ResizeMode::ALIGN_CORNERS;
+  }
+
+  if (str == "asymmetric") {
+    return ResizeMode::ASYMMETRIC;
+  }
+
+  return ResizeMode::INVALID;
+}
+
+enum {
+  ONNX_RESIZE_ARG_INPUT_IDX = 0,
+  ONNX_RESIZE_ARG_ROI_IDX = 1,
+  ONNX_RESIZE_ARG_SCALES_IDX = 2,
+  ONNX_RESIZE_ARG_SIZES_IDX = 1
+};
+
+static std::vector<Def> ConvertResize(const ONNXExtensionInst* ext,
+                                      IRBuilder* builder) {
+  Def input = ext->GetOperand(ONNX_RESIZE_ARG_INPUT_IDX);
+  if (!input.GetType().IsValid()) {
+    return {};
+  }
+
+  Def shape = Def::GetUndefined();
+  bool explicit_shape = true;
+
+  // roi and scales specified
+  if (ext->GetNumOfOperands() > ONNX_RESIZE_ARG_SCALES_IDX) {
+    shape = ext->GetOperand(ONNX_RESIZE_ARG_SCALES_IDX);
+  } else { // sizes specified
+    shape = ext->GetOperand(ONNX_RESIZE_ARG_SIZES_IDX);
+  }
+
+  if (Type::IsFloatingPointType(shape.GetType().GetDataType())) {
+    explicit_shape = false;
+  }
+
+  std::vector<Def> ir_operands{input, shape};
+
+  std::string co_trs_mode("half_pixel");
+  co_trs_mode =
+      FindAttributeValue(*ext, "coordinate_transformation_mode", co_trs_mode);
+
+  std::string mode("nearest");
+  mode = FindAttributeValue(*ext, "mode", mode);
+
+  builder->SetInsertAfter(ext);
+  ResizeInst* resize = builder->CreateResize(ext->GetName(), ir_operands);
+
+  resize->SetInterpolationMode(ParseInterpolation(mode));
+  resize->SetMode(ParseResizeMode(co_trs_mode));
+  resize->SetAxesMask(-1);
+  resize->SetExplicitShape(explicit_shape);
+
+  return {*resize};
+}
+
 static std::vector<Def> ConvertSqueeze(const ONNXExtensionInst* ext,
                                        IRBuilder* builder) {
   return ConvertSqueezeImpl<ONNXExtensionInst>(ext, builder, "axes");
@@ -1623,6 +1703,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::SLICE: {
       return ConvertSlice(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::RESIZE: {
+      return ConvertResize(onnx_inst, builder);
     }
     case ONNXExtOpCode::SQUEEZE: {
       return ConvertSqueeze(onnx_inst, builder);
