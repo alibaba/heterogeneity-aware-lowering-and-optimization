@@ -50,8 +50,6 @@
 #error This library requires minimum ODLA version 0.5
 #endif
 
-extern thread_local odla_computation g_comp;
-
 odla_value odla_Cast(odla_value input, odla_element_type target_type,
                      const odla_value_id value_id) {
   const auto& name =

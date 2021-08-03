@@ -23,8 +23,6 @@
 #include "common.h"
 #include "odla_popart.h"
 
-extern thread_local odla_computation g_comp;
-
 odla_values odla_CustomOp(odla_values inputs, const odla_char* op_name,
                           const odla_char* function_name,
                           const odla_value_ids ids, ...) {

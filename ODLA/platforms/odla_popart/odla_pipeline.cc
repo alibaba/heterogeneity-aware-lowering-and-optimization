@@ -54,6 +54,7 @@
 #include "common.h"
 #include "odla_popart.h"
 #include "odla_pipeline.h"
+#include "popart_config.h"
 
 #if !defined(ODLA_VERSION_NUMBER) || (ODLA_VERSION_NUMBER < 50)
 #error This library requires minimum ODLA version 0.5
@@ -71,7 +72,7 @@ odla_context create_empty_odla_context()
     std::lock_guard<std::mutex> guard(shared_data_mutext);
     if(!shared_data){
       std::cout << "Creating the shared data for the _odla_pipeline_zero" << std::endl;
-      shared_data = new _odla_context(SingleComp::get_instance()->get_comp());
+      shared_data = new _odla_context(_odla_computation::instance());
       for(auto& value : shared_data->comp->input_values){
         std::size_t num_elements = 1;
         for(auto& shape : value->tensor_info.shape())
@@ -90,7 +91,7 @@ odla_context create_empty_odla_context()
       }
     }
   }
-  _odla_pipeline_zero* ctx = new _odla_pipeline_zero(SingleComp::get_instance()->get_comp());
+  _odla_pipeline_zero* ctx = new _odla_pipeline_zero(_odla_computation::instance());
   ctx->shared_data = shared_data;
 
   std::cout << "-----------------> created an empty input/output context: " << ctx << std::endl;
@@ -256,7 +257,7 @@ popart::StepIOCallback::OutputCompleteCallback output_complete_callback =
 
 void pipeline_loop(odla_computation comp)
 {
-  SingleComp::get_instance()->init_comp(PARALLEL, 1, 5); //TODO: should pass the parameter in for the ipu_num & batch per step
+  comp->init();
   std::cout << "=============> current comp is: " << comp << std::endl;
   //setup the stepio with allbacks
   popart::StepIOCallback stepio(input_callback,
@@ -264,8 +265,8 @@ void pipeline_loop(odla_computation comp)
                               output_callback,
                               output_complete_callback);
   int i=0;
-  //while(!SingleComp::get_instance()->is_done()){
-  while(i < 400){
+  while(!_odla_computation::instance()->is_done()){
+  //while(i < 1000){
     auto start = std::chrono::steady_clock::now();
     std::cout << "This is the " << i++ << " time for the inference" << std::endl;
     if(i == INT_MAX)
@@ -276,114 +277,4 @@ void pipeline_loop(odla_computation comp)
     std::cout << "[ "<< i << " ] times loop takes " << elapsed_seconds.count() << " s." << std::endl;
   }
   std::cout << "The pipeline loop finished" << std::endl;
-}
-
-std::unique_ptr<popart::SessionOptions> Pipeline::sessionOptions() {
-  std::cout << "---> Pipeline::sessionOptions()" << std::endl;
-  auto opts =
-      std::unique_ptr<popart::SessionOptions>(new popart::SessionOptions());
-  opts->enablePipelining = true;
-  opts->virtualGraphMode = popart::VirtualGraphMode::Manual;
-  opts->autoRecomputation = popart::RecomputationType::Pipeline;
-  //opts->matmulOptions["use128BitConvUnitLoad"] = "true";
-  //opts->matmulOptions["enableMultiStageReduce"] = "false";
-  //opts->matmulOptions["enableFastReduce"] = "true";
-  opts->virtualGraphMode = popart::VirtualGraphMode::Manual;
-  opts->enableFloatingPointChecks = false;
-  opts->enableStochasticRounding = false;
-  opts->enableGroupedMatmuls = false;
-  opts->enablePrefetchDatastreams = true;
-  opts->enableOutlining = true;
-  std::string partials_type = "half";
-  opts->partialsTypeMatMuls = partials_type;
-  opts->convolutionOptions["partialsType"] = partials_type;
-  opts->outlineThreshold = 10.0;
-  opts->instrumentWithHardwareCycleCounter = false;
-  opts->disableGradAccumulationTensorStreams = true;
-  //opts->engineOptions = engine_options;
-  std::cout << "<--- Pipeline::sessionOptions()" << std::endl;
-  return opts;
-}
-
-std::unique_ptr<popart::SessionOptions> Sequence::sessionOptions() {
-  std::cout << "---> Sequence::sessionOptions()" << std::endl;
-  auto opts =
-      std::unique_ptr<popart::SessionOptions>(new popart::SessionOptions());
-  //opts->virtualGraphMode = popart::VirtualGraphMode::Auto;
-  //opts->enableStochasticRounding = true;
-  //opts->matmulOptions["use128BitConvUnitLoad"] = "true";
-  //opts->matmulOptions["enableMultiStageReduce"] = "false";
-  //opts->matmulOptions["enableFastReduce"] = "true";
-  opts->virtualGraphMode = popart::VirtualGraphMode::Manual;
-  opts->enableFloatingPointChecks = false;
-  opts->enableStochasticRounding = false;
-  opts->enableGroupedMatmuls = false;
-  opts->enablePrefetchDatastreams = true;
-  opts->enableOutlining = true;
-  std::string partials_type = "half";
-  opts->partialsTypeMatMuls = partials_type;
-  opts->convolutionOptions["partialsType"] = partials_type;
-  opts->outlineThreshold = 10.0;
-  opts->instrumentWithHardwareCycleCounter = false;
-  opts->disableGradAccumulationTensorStreams = true;
-  //opts->engineOptions = engine_options;
-  std::cout << "<--- Sequence::sessionOptions()" << std::endl;
-  return opts;
-}
-
-void Sequence::compute(odla_computation comp, odla_context context,
-                                odla_compute_mode mode, odla_device device) 
-{
-  SingleComp::get_instance()->init_comp(SEQUENCE, 1, 1);
-  std::lock_guard<std::mutex> comp_guard(SingleComp::get_instance()->comp_mutex);
-  std::cout << "---> Sequence::compute()" << std::endl;
-  // Config StepIO
-  std::map<popart::TensorId, popart::IArray&> inputs;
-  for (auto& input : context->inputs) {
-    inputs.emplace(input.first, *input.second);
-  }
-  std::map<popart::TensorId, popart::IArray&> outputs;
-  for (auto& output : context->outputs) {
-    outputs.emplace(output.first, *output.second);
-  }
-
-  popart::StepIO stepio(inputs, outputs);
-  // Run on ipu
-  comp->session->run(stepio);
-  std::cout << "<--- Sequence::compute()" << std::endl;
-}
-
-void Parallel::compute(odla_computation comp, odla_context context,
-                       odla_compute_mode mode,odla_device device) 
-{
-  std::cout << "---> Parallel::compute()" << std::endl;
-  ContextQueues::get_instance()->put(context);
-  context->wait();
-  std::cout << "<--- Parallel::compute()" << std::endl;
-}
-
-std::unique_ptr<popart::SessionOptions> Parallel::sessionOptions() {
-  std::cout << "---> Parallel::sessionOptions()" << std::endl;
-  auto opts =
-      std::unique_ptr<popart::SessionOptions>(new popart::SessionOptions());
-  //opts->virtualGraphMode = popart::VirtualGraphMode::Auto;
-  //opts->enableStochasticRounding = true;
-  //opts->matmulOptions["use128BitConvUnitLoad"] = "true";
-  //opts->matmulOptions["enableMultiStageReduce"] = "false";
-  //opts->matmulOptions["enableFastReduce"] = "true";
-  opts->virtualGraphMode = popart::VirtualGraphMode::Manual;
-  opts->enableFloatingPointChecks = false;
-  opts->enableStochasticRounding = false;
-  opts->enableGroupedMatmuls = false;
-  opts->enablePrefetchDatastreams = true;
-  opts->enableOutlining = true;
-  std::string partials_type = "half";
-  opts->partialsTypeMatMuls = partials_type;
-  opts->convolutionOptions["partialsType"] = partials_type;
-  opts->outlineThreshold = 10.0;
-  opts->instrumentWithHardwareCycleCounter = false;
-  opts->disableGradAccumulationTensorStreams = true;
-  //opts->engineOptions = engine_options;
-  std::cout << "<--- Parallel::sessionOptions()" << std::endl;
-  return opts;
 }
