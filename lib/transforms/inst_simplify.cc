@@ -931,10 +931,29 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(ResizeInst* inst) {
 }
 
 std::pair<Def, Def> InstSimplify::RunOnInstruction(Relu6Inst* inst) {
-  return SinkTranspose(
-      *inst, [](IRBuilder& builder, const std::string& name, const Def& op) {
-        return builder.CreateRelu6(name, op);
-      });
+  Def orig_def{inst, 0};
+  auto input = inst->GetOperand(0);
+  auto input_op = IsA<Conv2DInst>(input)
+                      ? DynCast<Conv2DInst>(input)->GetOpCode()
+                      : OpCode::INVALID;
+  bool is_profitable =
+      input_op == OpCode::CONV2D || input_op == OpCode::CONV2DTRANSPOSE;
+  if (!is_profitable || !opts_.fuse_conv_bn_relu) {
+    // return {orig_def, orig_def};
+    return SinkTranspose(
+        *inst, [](IRBuilder& builder, const std::string& name, const Def& op) {
+          return builder.CreateRelu6(name, op);
+        });
+  }
+  auto conv = DynCast<Conv2DInst>(input);
+  IRBuilder builder(conv->GetParent());
+  builder.SetInsertAfter(conv);
+  auto new_conv = builder.Clone(*conv, conv->GetOperands());
+  Conv2DInst* new_inst = DynCast<Conv2DInst>(new_conv);
+  new_inst->SetName(inst->GetName() + "_fuse");
+  // constexpr int hi = 6;
+  // new_inst->SetClamp({1, 0, hi});
+  return {orig_def, Def(new_inst, 0)};
 }
 
 std::pair<Def, Def> InstSimplify::RunOnInstruction(ShapeInst* inst) {
@@ -971,10 +990,28 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SigmoidInst* inst) {
 }
 
 std::pair<Def, Def> InstSimplify::RunOnInstruction(ReluInst* inst) {
-  return SinkTranspose(
-      *inst, [](IRBuilder& builder, const std::string& name, const Def& op) {
-        return builder.CreateRelu(name, op);
-      });
+  Def orig_def{inst, 0};
+  auto input = inst->GetOperand(0);
+  auto input_op = IsA<Conv2DInst>(input)
+                      ? DynCast<Conv2DInst>(input)->GetOpCode()
+                      : OpCode::INVALID;
+  bool is_profitable =
+      input_op == OpCode::CONV2D || input_op == OpCode::CONV2DTRANSPOSE;
+  if (!is_profitable || !opts_.fuse_conv_bn_relu) {
+    // return {orig_def, orig_def};
+    return SinkTranspose(
+        *inst, [](IRBuilder& builder, const std::string& name, const Def& op) {
+          return builder.CreateRelu(name, op);
+        });
+  }
+  auto conv = DynCast<Conv2DInst>(input);
+  IRBuilder builder(conv->GetParent());
+  builder.SetInsertAfter(conv);
+  auto new_conv = builder.Clone(*conv, conv->GetOperands());
+  Conv2DInst* new_inst = DynCast<Conv2DInst>(new_conv);
+  new_inst->SetName(inst->GetName() + "_fuse");
+  // new_inst->SetClamp({1, 0, 1});
+  return {orig_def, Def(new_inst, 0)};
 }
 
 std::pair<Def, Def> InstSimplify::RunOnInstruction(Conv2DInst* inst) {
