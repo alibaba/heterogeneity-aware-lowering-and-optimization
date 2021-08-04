@@ -19,43 +19,15 @@
 
 #ifndef ODLA_PIPELINE_H_
 #define ODLA_PIPELINE_H_
-
 #include <ODLA/odla.h>
-#include <dlfcn.h>
-
-#include <algorithm>
-#include <array>
-#include <cassert>
 #include <chrono>
-#include <cmath>
-#include <cstddef>
-#include <fstream>
-#include <functional>
-#include <memory>
 #include <mutex>
-#include <numeric>
-#include <popart/builder.hpp>
-#include <popart/dataflow.hpp>
-#include <popart/devicemanager.hpp>
-#include <popart/names.hpp>
-#include <popart/ndarraywrapper.hpp>
-#include <popart/session.hpp>
-#include <popart/sessionoptions.hpp>
-#include <popart/stepio.hpp>
-#include <popart/tensorinfo.hpp>
-#include <popart/voiddata.hpp>
 #include <queue>
-#include <random>
-#include <sstream>
-#include <stdexcept>
-#include <string>
 #include <thread>
-#include <vector>
 
 #include "ODLA/odla_common.h"
 #include "common.h"
 #include "odla_popart.h"
-#include "popart_config.h"
 
 void pipeline_loop(odla_computation comp);
 

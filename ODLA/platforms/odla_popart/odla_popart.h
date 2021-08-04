@@ -20,30 +20,13 @@
 #define ODLA_POPART_H_
 
 #include <ODLA/odla.h>
-
-#include <algorithm>
-#include <cassert>
-#include <chrono>
-#include <cmath>
-#include <cstddef>
-#include <functional>
-#include <memory>
-#include <numeric>
-#include <popart/builder.hpp>
-#include <popart/dataflow.hpp>
-#include <popart/devicemanager.hpp>
-#include <popart/names.hpp>
-#include <popart/ndarraywrapper.hpp>
-#include <popart/session.hpp>
-#include <popart/sessionoptions.hpp>
-#include <popart/stepio.hpp>
-#include <popart/tensorinfo.hpp>
-#include <popart/voiddata.hpp>
-#include <random>
-#include <stdexcept>
 #include <string>
 #include <vector>
 #include <condition_variable>
+#include <popart/builder.hpp>
+#include <popart/session.hpp>
+#include <popart/sessionoptions.hpp>
+#include <popart/tensorinfo.hpp>
 
 #define g_comp _odla_computation::instance()
 // enum ExecutionMode {PIPELINE, PARALLEL, SEQUENCE};

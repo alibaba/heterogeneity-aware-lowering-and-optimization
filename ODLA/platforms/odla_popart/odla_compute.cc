@@ -17,36 +17,12 @@
 // =============================================================================
 
 #include <ODLA/odla.h>
-#include <dlfcn.h>
-
-#include <algorithm>
-#include <cassert>
-#include <chrono>
-#include <cmath>
-#include <cstddef>
-#include <functional>
-#include <memory>
-#include <numeric>
 #include <popart/builder.hpp>
-#include <popart/devicemanager.hpp>
-#include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
-#include <popart/session.hpp>
-#include <popart/sessionoptions.hpp>
-#include <popart/stepio.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/voiddata.hpp>
-#include <popart/names.hpp>
-#include <random>
-#include <stdexcept>
 #include <string>
-#include <vector>
-#include <mutex>
-#include <queue>
-#include <thread>
-#include <array>
-#include <fstream>
-#include <sstream>
+#include <dlfcn.h>
 
 #include "ODLA/odla_common.h"
 #include "common.h"
@@ -92,7 +68,7 @@ odla_status odla_CreateComputation(odla_computation* comp) {
     }
   }
   //Read the config file
-  PopartConfig::instance()->load_config("Please_write_test_parameter_in_it");
+  PopartConfig::instance()->load_config("/home/jackz/repos/heterogeneity-aware-lowering-and-optimization/ODLA/platforms/odla_popart/config.json");
   _odla_computation::instance()->set_executor();
   std::cout << "<--- odla_CreateComputation()" << std::endl;
   return ODLA_SUCCESS;

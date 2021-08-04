@@ -16,36 +16,70 @@
 // limitations under the License.
 // =============================================================================
 
+#include <fstream>
+#include <iostream>
 #include "popart_config.h"
+#include "json.hpp"
+#include <typeinfo>
 
 PopartConfig* PopartConfig::m_instance = new PopartConfig();
 
 void PopartConfig::load_config(const std::string& file_path)
 {
-    //We need to implement the file reader  here
-    m_batch_per_step = 10;
-    m_execution_mode = PIPELINE;
-    m_load_onnx = false;
-    m_save_model = true;
-    m_load_onnx_path = "/home/jackz/repos/heterogeneity-aware-lowering-and-optimization/MLPerf/pipeline/new_halo.onnx";
-    m_save_model_path = "pipeline_test.onnx";
-    m_ipu_num = 2;
-    //set the pipeline setting
-    set_pipeline_setting("^embedding_", 0, 0);
-    for(int i = 0; i < 24; i++){
-        int ipu_idx = 0;
-        int pipeline_stage = 0;
-        std::string pattern = "^layer" + std::to_string(i) + "_";
-        if(i >= 12 ){
-            ipu_idx = 1;
-            pipeline_stage = 1;
-        }
-        set_pipeline_setting(pattern, ipu_idx, pipeline_stage);
+    using json = nlohmann::json;
+    //std::ifstream ifs("/home/jackz/repos/heterogeneity-aware-lowering-and-optimization/ODLA/platforms/odla_popart/config.json");
+    std::ifstream ifs(file_path);
+    json jf = json::parse(ifs);
+
+    m_version           = jf["version"].get<std::string>();
+    m_batch_per_step    = jf["batch_per_step"].get<int>();
+    m_ipu_num           = jf["ipu_num"].get<int>();
+    m_save_model        = jf["save_model"].get<bool>();
+    m_save_model_path   = jf["save_model_path"].get<std::string>();
+    m_load_onnx         = jf["load_onnx"].get<bool>();
+    m_load_onnx_path    = jf["load_onnx_path"].get<std::string>();
+    std::string execution_mode = jf["execution_mode"].get<std::string>();
+    if("pipeline" == execution_mode)
+        m_execution_mode = PIPELINE;
+    else if("parallel" == execution_mode)
+        m_execution_mode = PARALLEL;
+    else
+        m_execution_mode = SEQUENCE;
+
+    const json& rh = jf["pipeline"];
+    for (auto& element : rh.items()) {
+        set_pipeline_setting(element.key(), element.value()[0], element.value()[1]);
     }
-    set_pipeline_setting("^squad_", 1, 1);
-    // only set the split point, after which(included) the pipeline stage will be changed. So use the full name
-    // If you don't know the exactly node, the regex is OK, at many setting should set the same value multiple times
-    //set_pipeline_setting("layer12_", 1, 1);
+
+    print();
+    exit(0);
+}
+
+void PopartConfig::print()
+{
+    std::string line(80, '=');
+    std::cout << line << std::endl;
+    std::cout << "version: " << m_version << std::endl;
+    std::cout << "batch_per_step: " << m_batch_per_step << std::endl;
+    std::string mode[] = {"UNKNOWN", "PIPELINE", "PARALLEL", "SEQUENCE"};
+    std::cout << "execution_mode: " << mode[(long unsigned int)m_execution_mode] << std::endl;
+    std::cout << "ipu_num: " << m_ipu_num << std::endl;
+    std::string bool_value[] = {"false", "true"};
+    std::cout << "load_onnx: " << bool_value[(long unsigned int)m_load_onnx] << std::endl;
+    std::cout << "load_onnx_path: " << m_load_onnx_path << std::endl << std::endl;
+    std::cout << "save_model: " << bool_value[(long unsigned int)m_save_model] << std::endl;
+    std::cout << "save_model_path: " << m_save_model_path << std::endl;
+    for(auto &a : m_pipeline_setting)
+        std::cout << a.first << " <-----> [" << a.second[0] << ", " << a.second[1] << "]" << std::endl;
+    std::cout << line << std::endl;
+}
+
+void PopartConfig::set_pipeline_setting(const std::string& name_pattern, int ipu_idx, int pipeline_stage)
+{
+    std::vector<int> values;
+    values.push_back(ipu_idx);
+    values.push_back(pipeline_stage);
+    m_pipeline_setting[name_pattern] = values;
 }
 
 bool PopartConfig::get_pipeline_setting(const std::string& node_name, int64_t &ipu_idx, int64_t& pipeline_stage)
