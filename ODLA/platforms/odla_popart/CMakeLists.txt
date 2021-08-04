@@ -21,7 +21,7 @@ add_odla_library(odla_popart SHARED common.cc odla_compute.cc
                                odla_ops_math.cc odla_ops_nn.cc
                                odla_ops_process.cc odla_ops.cc
                                odla_ops_custom.cc odla_pipeline.cc
-                               odla_popart.cc
+                               odla_popart.cc popart_config.cc
                                )
 if (NOT POPLAR_ROOT)
   set(POPLAR_ROOT "/opt/poplar_sdk/poplar" CACHE STRING "Path of poplar root")

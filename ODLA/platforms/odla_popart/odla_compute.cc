@@ -58,8 +58,6 @@
 #error This library requires minimum ODLA version 0.5
 #endif
 
-PopartConfig* PopartConfig::m_instance = new PopartConfig();
-
 odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
                                     odla_item_value value) {
   std::cout << "---> odla_SetComputationItem()" << std::endl;

@@ -30,8 +30,8 @@ _odla_computation::_odla_computation():builder(popart::Builder::create()),
     m_done(false), m_executor(nullptr) 
 {
     // Place All Subgraph on IPU 0, when no pipeline
-    if(PopartConfig::instance()->no_pipeline())
-        builder->setAttribute(popart::sVirtualGraphAttribute, 0);
+    //if(PopartConfig::instance()->no_pipeline())
+    //    builder->setAttribute(popart::sVirtualGraphAttribute, 0);
 }
 
 void _odla_computation::init()
@@ -48,6 +48,7 @@ void _odla_computation::init()
                                     popart::AnchorReturnType("All"));
             // Acquire IPU
             if(opts.use_ipu_model){
+                std::cout << "Using IPU Model to run " << std::endl;
                 std::map<std::string, std::string> deviceOpts{
                     {"numIPUs", std::to_string(opts.ipu_num)}, {"tilesPerIPU", "1216"}};
                 device = popart::DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
@@ -62,8 +63,10 @@ void _odla_computation::init()
                 std::cout << "======> Load onnx file as pipeline mode to run: " << PopartConfig::instance()->load_onnx_path() << std::endl;
                 proto = PopartConfig::instance()->load_onnx_path();
             }
-            if(PopartConfig::instance()->save_model())
+            if(PopartConfig::instance()->save_model()){
                 builder->saveModelProto(PopartConfig::instance()->save_model_path());
+                std::cout << "The model saved to " << PopartConfig::instance()->save_model_path() << std::endl;
+            }
             
             // Create InferenceSession
             session = popart::InferenceSession::createFromOnnxModel(
@@ -113,9 +116,9 @@ void _odla_computation::set_session_opts()
         m_session_opts.enablePipelining = true;
         m_session_opts.autoRecomputation = popart::RecomputationType::Pipeline;
     }
-    //m_session_opts.matmulOptions["use128BitConvUnitLoad"] = "true";
-    //m_session_opts.matmulOptions["enableMultiStageReduce"] = "false";
-    //m_session_opts.matmulOptions["enableFastReduce"] = "true";
+    m_session_opts.matmulOptions["use128BitConvUnitLoad"] = "true";
+    m_session_opts.matmulOptions["enableMultiStageReduce"] = "false";
+    m_session_opts.matmulOptions["enableFastReduce"] = "true";
     m_session_opts.virtualGraphMode = popart::VirtualGraphMode::Manual;
     m_session_opts.enableFloatingPointChecks = false;
     m_session_opts.enableStochasticRounding = false;
@@ -167,6 +170,43 @@ void _odla_computation::set_pipeline_stage(const std::set<popart::TensorId> &nod
     }
 }
 
+void _odla_computation::set_pipeline_stage(const std::string& name)
+{
+    static bool global_ipu_number_set = false;
+    if(PopartConfig::instance()->no_pipeline()){
+        std::cout << "PIPELINE not used for this run " << std::endl;
+        if(!global_ipu_number_set){
+            std::cout << "Set the global virtual group to ipu 0" << std::endl;
+            builder->setAttribute(popart::sVirtualGraphAttribute, 0);
+        }
+        return;
+    }
+    // Use local static to record whether the pipeline_stage_setting changed
+    static int64_t previous_pipeline_stage_setting = -1;
+    auto found = PopartConfig::instance()->get_pipeline_setting(name, m_ipu_number, m_pipeline_stage);
+    if(found)
+    {
+        std::cout << "Found the pipeline setting change point with name: " << name 
+                    << ", for which and following with setting __ipu_number: " << m_ipu_number
+                    << ", __pipeline_stage: " << m_pipeline_stage << std::endl;
+    }
+    if(previous_pipeline_stage_setting != m_pipeline_stage)
+    {
+        std::cout << "pipeling setting will be: __ipu_number: " << m_ipu_number
+                      << ", __pipeline_stage: " << m_pipeline_stage 
+                      << ", from the node with name: " << name << std::endl;
+
+        if(builder->hasAttribute(popart::sVirtualGraphAttribute))
+            builder->clearAttribute(popart::sVirtualGraphAttribute);
+        if(builder->hasAttribute(popart::sPipelineStageAttribute))
+            builder->clearAttribute(popart::sPipelineStageAttribute);
+        
+        builder->setAttribute(popart::sVirtualGraphAttribute, m_ipu_number);
+        builder->setAttribute(popart::sPipelineStageAttribute, m_pipeline_stage);
+        previous_pipeline_stage_setting = m_pipeline_stage;
+    }
+}
+
 void Sequence::compute(odla_computation comp, odla_context context,
                                 odla_compute_mode mode, odla_device device) 
 {
@@ -201,13 +241,9 @@ void Parallel::compute(odla_computation comp, odla_context context,
 _odla_value::_odla_value(popart::TensorId id, popart::TensorInfo info,
     const std::string& n, bool set_pipeline /* = true */): tensor_id(id), tensor_info(info), name(n) 
 {
-    std::cout << "The tensor id is: " << id << " name is: " << name << std::endl;
-    if(id.size() == 0)
-    {
-        std::cout << "*** FATAL *** got a node without name, may be need some preprocessing before run in pipeline" << std::endl;
-    }
-    else if(set_pipeline)
+    if(set_pipeline)
         g_comp->set_pipeline_stage(id, name);
     else
         std::cout << "The tensor with id: " << id << " should be solved some where previously." << std::endl; 
+    //g_comp->set_pipeline_stage(name);
 }
