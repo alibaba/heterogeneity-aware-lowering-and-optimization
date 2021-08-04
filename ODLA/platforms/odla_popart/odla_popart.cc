@@ -29,9 +29,6 @@ _odla_computation::_odla_computation():builder(popart::Builder::create()),
     session(nullptr), device(nullptr), opts({false, 1, 1}), 
     m_done(false), m_executor(nullptr) 
 {
-    // Place All Subgraph on IPU 0, when no pipeline
-    //if(PopartConfig::instance()->no_pipeline())
-    //    builder->setAttribute(popart::sVirtualGraphAttribute, 0);
 }
 
 void _odla_computation::init()

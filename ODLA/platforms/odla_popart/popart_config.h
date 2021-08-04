@@ -25,25 +25,26 @@
 #include <regex>
 #include <iostream>
 /**
- * The attributes need for the configuration
+ * The configuration format like follows:
  * 
- *  {
- *      version:"1.0.0"
- *      batch_per_step:number
- *      execution_mode:"pipeline" | "parallel" | "sequence",
- *      ipu_num:number
- *      load_onnx:false | true,
- *      load_onnx_path:"path",
- *      
- *      pipeline:{
- *          "regex_1" : [ipu_num, pipeline_stage],
- *          "regex_2" : [ipu_num, pipeline_stage],
- *          ...
- *          "regex_3" : [ipu_num, pipeline_stage]
- *      },
- *      save_model:false | true,
- *      save_model_path:"path"
- *  }
+ * {
+ *   "version":"1.0.0",
+ *   "batch_per_step":10,
+ *   "execution_mode":"pipeline",
+ *   "ipu_num":2,
+ *   "load_onnx":false,
+ *   "load_onnx_path":"path",
+ *   "pipeline":{
+ *       "^embedding_"   : [0, 0],
+ *       "^layer[0-9]_"  : [0, 0],
+ *       "^layer1[0-1]_" : [0, 0],
+ *       "^layer1[2-9]_" : [1, 1],
+ *       "^layer2[0-3]_" : [1, 1],
+ *       "^squad_"       : [1, 1]
+ *   },
+ *   "save_model" : true,
+ *   "save_model_path":"pipeline_test.onnx"
+ * }
  */
 enum ExecutionMode {UNKNOWN, PIPELINE, PARALLEL, SEQUENCE};
 
@@ -80,12 +81,7 @@ public:
     bool get_pipeline_setting(const std::string& node_name, int64_t &ipu_idx, int64_t& pipeline_stage);
 
 private:
-    void set_pipeline_setting(const std::string& name_pattern, int ipu_idx, int pipeline_stage)
-    {
-        std::vector<int> values;
-        values.push_back(ipu_idx);
-        values.push_back(pipeline_stage);
-        m_pipeline_setting[name_pattern] = values;
-    }
+    void set_pipeline_setting(const std::string& name_pattern, int ipu_idx, int pipeline_stage);
+    void print();
 };
 #endif//POPART_CONFIG_H_
