@@ -938,8 +938,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Relu6Inst* inst) {
                       : OpCode::INVALID;
   bool is_profitable =
       input_op == OpCode::CONV2D || input_op == OpCode::CONV2DTRANSPOSE;
-  if (!is_profitable || !opts_.fuse_conv_bn_relu) {
-    // return {orig_def, orig_def};
+  if (!is_profitable || !opts_.fuse_conv_relu) {
     return SinkTranspose(
         *inst, [](IRBuilder& builder, const std::string& name, const Def& op) {
           return builder.CreateRelu6(name, op);
@@ -951,8 +950,6 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Relu6Inst* inst) {
   auto new_conv = builder.Clone(*conv, conv->GetOperands());
   Conv2DInst* new_inst = DynCast<Conv2DInst>(new_conv);
   new_inst->SetName(inst->GetName() + "_fuse");
-  // constexpr int hi = 6;
-  // new_inst->SetClamp({1, 0, hi});
   return {orig_def, Def(new_inst, 0)};
 }
 
@@ -997,8 +994,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(ReluInst* inst) {
                       : OpCode::INVALID;
   bool is_profitable =
       input_op == OpCode::CONV2D || input_op == OpCode::CONV2DTRANSPOSE;
-  if (!is_profitable || !opts_.fuse_conv_bn_relu) {
-    // return {orig_def, orig_def};
+  if (!is_profitable || !opts_.fuse_conv_relu) {
     return SinkTranspose(
         *inst, [](IRBuilder& builder, const std::string& name, const Def& op) {
           return builder.CreateRelu(name, op);
@@ -1010,7 +1006,6 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(ReluInst* inst) {
   auto new_conv = builder.Clone(*conv, conv->GetOperands());
   Conv2DInst* new_inst = DynCast<Conv2DInst>(new_conv);
   new_inst->SetName(inst->GetName() + "_fuse");
-  // new_inst->SetClamp({1, 0, 1});
   return {orig_def, Def(new_inst, 0)};
 }
 
