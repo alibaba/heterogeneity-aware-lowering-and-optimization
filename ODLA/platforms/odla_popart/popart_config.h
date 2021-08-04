@@ -24,8 +24,6 @@
 #include <vector>
 #include <regex>
 #include <iostream>
-//#include "odla_pipeline.h"
-
 /**
  * The attributes need for the configuration
  * 
@@ -64,7 +62,8 @@ private:
 public:
     PopartConfig(): m_version("1.0.0"), 
                     m_batch_per_step(1), m_execution_mode(UNKNOWN),
-                    m_load_onnx(false), m_save_model(false), m_ipu_num(1){}
+                    m_load_onnx(false), m_save_model(false), m_ipu_num(1)
+                    {std::cout << "PopartConfig instance created" << std::endl;}
     ~PopartConfig(){}
     static PopartConfig* instance(){return m_instance;}
     const std::string& version(){return m_version;}
@@ -77,48 +76,8 @@ public:
     const int ipu_num(){return m_ipu_num;}
     bool no_pipeline(){return m_pipeline_setting.empty();}
 
-    void load_config(const std::string& file_path)
-    {
-        //We need to implement the file reader  here
-        m_batch_per_step = 10;
-        m_execution_mode = PIPELINE;
-        m_load_onnx = false;
-        m_save_model = true;
-        m_load_onnx_path = "/home/jackz/repos/heterogeneity-aware-lowering-and-optimization/MLPerf/pipeline/new_halo.onnx";
-        m_save_model_path = "pipeline_test.onnx";
-        m_ipu_num = 2;
-        //set the pipeline setting
-        set_pipeline_setting("^embedding_", 0, 0);
-        for(int i = 0; i < 24; i++){
-            int ipu_idx = 0;
-            int pipeline_stage = 0;
-            std::string pattern = "^layer" + std::to_string(i) + "_";
-            if(i >= 12 ){
-                ipu_idx = 1;
-                pipeline_stage = 1;
-            }
-            set_pipeline_setting(pattern, ipu_idx, pipeline_stage);
-        }
-        set_pipeline_setting("^squad_", 1, 1);
-    }
-
-    bool get_pipeline_setting(const std::string& node_name, int64_t &ipu_idx, int64_t& pipeline_stage)
-    {
-        for(auto &v : m_pipeline_setting){
-            auto name_pattern = std::regex(v.first, std::regex::icase);
-            auto found = std::regex_search(node_name, name_pattern);
-            if(found){
-                std::cout << "node name: " << node_name << " matched with pattern: " << v.first 
-                        << ", will be put in ipu: " << v.second[0] 
-                        << ", pipeline stage: " << v.second[1] << std::endl;
-                ipu_idx = v.second[0];
-                pipeline_stage = v.second[1];
-                return true;
-            }
-        }
-        std::cerr << "*** Oops *** the node name: " << node_name << " did not match to any pattern !" << std::endl;
-        return false;
-    }
+    void load_config(const std::string& file_path);
+    bool get_pipeline_setting(const std::string& node_name, int64_t &ipu_idx, int64_t& pipeline_stage);
 
 private:
     void set_pipeline_setting(const std::string& name_pattern, int ipu_idx, int pipeline_stage)

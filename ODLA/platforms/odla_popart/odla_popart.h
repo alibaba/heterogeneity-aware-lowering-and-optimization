@@ -98,6 +98,8 @@ struct _odla_computation {
   std::unordered_map<std::string, odla_value> outputs_map;
   std::vector<odla_value> input_values;
   std::vector<odla_value> output_values;
+  int64_t m_ipu_number = 0;
+  int64_t m_pipeline_stage = 0;
   target_opts opts;
 
   // new members for pipeline
@@ -114,6 +116,7 @@ struct _odla_computation {
   void mark_done(){m_done = true;}
   void set_pipeline_stage(const popart::TensorId &nodeOutputName, const std::string& name);
   void set_pipeline_stage(const std::set<popart::TensorId> &nodeOutputNames, const std::string& name);
+  void set_pipeline_stage(const std::string& name);
   void set_session_opts();
   void set_executor();
   void set_opts();
