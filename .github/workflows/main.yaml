@@ -68,6 +68,7 @@ jobs:
       - name: build
         run: |
           mkdir -p /tmp/centos.cache
+          rm -fr ${{runner.workspace}}/$repo_name/output_centos
           mkdir -p ${{runner.workspace}}/$repo_name/output_centos
           docker pull $image_registry/computation/halo:$image_tag
           docker run --rm -v /tmp/centos.cache:/cache --tmpfs /build:exec --user=$UID:$GID \
