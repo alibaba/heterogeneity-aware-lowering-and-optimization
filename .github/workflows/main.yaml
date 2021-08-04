@@ -68,6 +68,7 @@ jobs:
       - name: build
         run: |
           mkdir -p /tmp/centos.cache
+          rm -fr ${{runner.workspace}}/$repo_name/output_centos
           mkdir -p ${{runner.workspace}}/$repo_name/output_centos
           docker pull $image_registry/computation/halo:$image_tag
           docker run --rm -v /tmp/centos.cache:/cache --tmpfs /build:exec --user=$UID:$GID \
@@ -117,8 +118,8 @@ jobs:
           echo "::set-output name=file::$(cd download && ls HALO-*-ubuntu*.bz2)"
           echo "::set-output name=date::$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           tag=latest
-          if [[ $GITHUB_REF == refs/tags/Release-* ]]; then
-            tag=${GITHUB_REF#refs/tags/Release-}
+          if [[ $GITHUB_REF == refs/tags/Release/* ]]; then
+            tag="Release-${GITHUB_REF#refs/tags/Release/}"
           elif [[ $GITHUB_REF == refs/tags/* ]]; then
             tag=${GITHUB_REF#refs/tags/}
           elif [[ $GITHUB_REF == refs/heads/* ]]; then

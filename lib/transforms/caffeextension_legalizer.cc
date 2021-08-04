@@ -159,6 +159,34 @@ static std::vector<Def> ConvertEltwise(const CAFFEExtensionInst* ext,
   return {*new_inst};
 }
 
+static std::vector<Def> ConvertFlatten(const CAFFEExtensionInst* ext,
+                                       IRBuilder* builder) {
+  auto input = ext->GetOperand(0);
+  const Type& input_type = input.GetType();
+  if (!input_type.IsValid()) {
+    return {};
+  }
+
+  HLCHECK(ext->GetNumOfAttributes() == 1);
+  const Attribute* attr = ext->GetAttributes()[0].get();
+  HLCHECK(attr->GetName() == "axis");
+  int axis = attr->GetValueAsInteger();
+  std::vector<int32_t> new_dims{1, 1};
+  for (int i = 0, e = input_type.GetNumOfDims(); i < e; ++i) {
+    if (i < axis) {
+      new_dims[0] *= input_type.GetNumOfElementsInDim(i);
+    } else {
+      new_dims[1] *= input_type.GetNumOfElementsInDim(i);
+    }
+  }
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  Constant* c = cb.CreateConstant(ext->GetName() + "_flatten_dims",
+                                  Type{DataType::INT32, {2}}, new_dims.data());
+  builder->SetInsertAfter(ext);
+  auto new_inst = builder->CreateReshape(ext->GetName(), {input, *c});
+  return {*new_inst};
+}
+
 static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
                                     IRBuilder* builder) {
   HLCHECK(ext->GetNumOfOperands() == 1);
@@ -625,6 +653,9 @@ static std::vector<Def> ConvertCAFFEExtension(
     }
     case CAFFEExtOpCode::DROPOUT: {
       return {caffe_inst->GetOperand(0)};
+    }
+    case CAFFEExtOpCode::FLATTEN: {
+      return ConvertFlatten(caffe_inst, builder);
     }
     case CAFFEExtOpCode::TILE: {
       return ConvertTile(caffe_inst, builder);
