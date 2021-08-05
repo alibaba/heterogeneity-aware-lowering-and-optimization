@@ -368,9 +368,20 @@ const std::vector<std::string> CAFFEParser::CreateExtraOperandsOrReturn(
 
     int data_size = blob.data_size();
     std::vector<float> tensor_data;
-    tensor_data.reserve(data_size);
-    for (int j = 0; j < data_size; ++j) {
-      tensor_data.emplace_back(blob.data(j));
+    if (data_size == 0) {
+      VLOG(1) << "Warning: No data in blob";
+      data_size = 1;
+      for (int j = 0; j < blob_shape.dim_size(); ++j) {
+        data_size *= blob_shape.dim(j);
+      }
+
+      for (int j = 0; j < data_size; ++j) tensor_data.emplace_back(0);
+
+    } else {
+      tensor_data.reserve(data_size);
+      for (int j = 0; j < data_size; ++j) {
+        tensor_data.emplace_back(blob.data(j));
+      }
     }
 
     std::string cur_node_name =
@@ -383,6 +394,7 @@ const std::vector<std::string> CAFFEParser::CreateExtraOperandsOrReturn(
                                            Type(data_type, shape), tensor_data);
     inst_name_to_ptr_.emplace(cur_node_name, inst);
   }
+
   return extra_inputs;
 }
 
