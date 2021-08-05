@@ -110,12 +110,12 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: artifact
-          path: download
+          path: /tmp/download
 
       - name: Prepare
         id: prepare
         run: |
-          echo "::set-output name=file::$(cd download && ls HALO-*-ubuntu*.bz2)"
+          echo "::set-output name=file::$(cd /tmp/download && ls HALO-*-ubuntu*.bz2)"
           echo "::set-output name=date::$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           tag=latest
           if [[ $GITHUB_REF == refs/tags/Release/* ]]; then
@@ -144,7 +144,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           file: halo/utils/docker/runtime/Dockerfile.x86_64
-          context: download
+          context: /tmp/download
           tags: |
             localhost:5000/halo:sha-${{ github.sha }}
             registry-intl.us-west-1.aliyuncs.com/computation/halo:${{steps.prepare.outputs.tag}}-runtime.x86_64-ubuntu18.04
@@ -171,5 +171,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: download/*
+          files: /tmp/download/*
           name: ${{ steps.prepare.tag }}
