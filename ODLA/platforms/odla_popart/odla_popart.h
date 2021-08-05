@@ -70,10 +70,10 @@ struct _odla_value {
               const std::string& n, bool set_pipeline = true);
 };
 
-struct _odla_computation {
+struct _odla_computation {  //destruct the computation when odla_destroycomputatin called.
   std::unique_ptr<popart::Builder> builder;
-  std::unique_ptr<popart::InferenceSession> session;
-  std::shared_ptr<popart::DeviceInfo> device;
+  std::unique_ptr<popart::InferenceSession> session; //TODO: clear the session, reset the session in destroy computation
+  std::shared_ptr<popart::DeviceInfo> device;        //
   popart::SessionOptions m_session_opts;
   std::unordered_map<std::string, odla_value> inputs_map;
   std::unordered_map<std::string, odla_value> outputs_map;
@@ -91,16 +91,19 @@ struct _odla_computation {
   Execution* m_executor;
 
   _odla_computation();
-  
+  // Make the the member to be private & public.
+  // ToDo: code stype use Camel or somthing, google style for the varialble name, lint layer. Pre commit - tool
   void init();
   bool is_done(){return m_done;}
   void mark_done(){m_done = true;}
   void set_pipeline_stage(const popart::TensorId &nodeOutputName, const std::string& name);
   void set_pipeline_stage(const std::set<popart::TensorId> &nodeOutputNames, const std::string& name);
-  void set_pipeline_stage(const std::string& name);
+  void set_pipeline_stage(const std::string& name, const popart::TensorId &nodeOutputName, bool tag);
+  void set_pipeline_stage(const std::string& name, const std::set<popart::TensorId> &nodeOutputNames);
   void set_session_opts();
   void set_executor();
   void set_opts();
+  bool has_pipeline();
   Execution* executor(){return m_executor;}
 };
 

@@ -15,31 +15,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // =============================================================================
-
-#include <ODLA/odla.h>
-
-//#include <algorithm>
-//#include <cassert>
-//#include <chrono>
-//#include <cmath>
-//#include <cstddef>
-//#include <functional>
-//#include <memory>
-//#include <numeric>
-#include <popart/builder.hpp>
-//#include <popart/dataflow.hpp>
-//#include <popart/devicemanager.hpp>
-//#include <popart/names.hpp>
-//#include <popart/ndarraywrapper.hpp>
-//#include <popart/session.hpp>
-//#include <popart/sessionoptions.hpp>
-//#include <popart/stepio.hpp>
-#include <popart/tensorinfo.hpp>
-//#include <popart/voiddata.hpp>
-//#include <random>
-//#include <stdexcept>
 #include <string>
 #include <vector>
+#include <regex>
+
+#include <ODLA/odla.h>
+#include <popart/builder.hpp>
+#include <popart/tensorinfo.hpp>
 
 #include "common.h"
 #include "odla_popart.h"
@@ -180,8 +162,7 @@ odla_value odla_BatchMatmul(odla_value lhs, odla_bool lhs_trans, odla_value rhs,
   popart::TensorId result =
       g_comp->builder->aiOnnxOpset10().matmul({lhs->tensor_id, rhs->tensor_id}, name);
   //set the AMP
-  if(name.find("_FF_") != std::string::npos)  //only set the FF
-    g_comp->builder->setAvailableMemoryProportion(result, 0.14f);
+  g_comp->builder->setAvailableMemoryProportion(result, 0.445f);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -250,9 +231,20 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
   // USE_BATCHED_MATMUL
   popart::TensorId result =
       g_comp->builder->aiOnnxOpset10().matmul({lhs_trans, rhs_trans}, name);
-  // set the AMP
-  if(name.find("_FF_") != std::string::npos)  //only set the FF
-    g_comp->builder->setAvailableMemoryProportion(result, 0.14f);
+  auto name_pattern = std::regex("(Attention_MatMul$)|Attention_MatMul(_[1-2])", std::regex::icase);
+  if(std::regex_search(name, name_pattern)){
+    std::cout << "=====> do not set the AMP on: " << name << std::endl;
+  }
+  else if(name != "Embedding_MatMul"){
+    std::cout << "=========> set the AMP for name: " << name << std::endl;
+    float amp = 0.445f;
+    auto pipeline_2 = std::regex("layer(1[2-9]|2[0-3])", std::regex::icase);
+    if(std::regex_search(name, pipeline_2)){
+        amp = 0.51f;
+        std::cout << "=========> set the AMP for name: " << name << " with amp: " << amp << std::endl;
+    }
+    g_comp->builder->setAvailableMemoryProportion(result, amp);
+  }
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},

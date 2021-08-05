@@ -95,7 +95,7 @@ struct ContextQueues {
   }
 };
 
-struct _odla_pipeline : public _odla_context {
+struct _odla_pipeline : public _odla_context { // re-name it to _odla_pipeline_context
   _odla_pipeline(odla_computation c) : _odla_context(c), visited(0), written(0) {}
 
   std::mutex context_mutex;
@@ -106,11 +106,11 @@ struct _odla_pipeline : public _odla_context {
       tensors_written; // Record the output tensor written by callback
   int visited;
   int written;
-  virtual void wait() {
+  virtual void wait() override {
     std::unique_lock<std::mutex> lock(context_mutex);
     context_cv.wait(lock);
   }
-  virtual void notify() {
+  virtual void notify() override {
     std::unique_lock<std::mutex> lock(context_mutex);
     context_cv.notify_one();
   }
