@@ -52,7 +52,6 @@ void PopartConfig::load_config(const std::string& file_path)
     }
 
     print();
-    exit(0);
 }
 
 void PopartConfig::print()

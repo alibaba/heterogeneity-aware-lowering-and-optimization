@@ -131,10 +131,8 @@ void _odla_computation::set_session_opts()
 }
 
 void _odla_computation::set_pipeline_stage(const popart::TensorId &nodeOutputName, const std::string& name){
-    if(PopartConfig::instance()->no_pipeline()){
-        std::cout << "PIPELINE not used for this run " << std::endl;
+    if(!has_pipeline())
         return;
-    }
     std::cout << "Arranging the tenor with id: [" << nodeOutputName << "], name:[" << name << "]" << std::endl;
     int64_t ipu_idx = -1;
     int64_t pipeline_stage = -1;
@@ -150,10 +148,8 @@ void _odla_computation::set_pipeline_stage(const popart::TensorId &nodeOutputNam
 }
 
 void _odla_computation::set_pipeline_stage(const std::set<popart::TensorId> &nodeOutputNames, const std::string& name){
-    if(PopartConfig::instance()->no_pipeline()){
-        std::cout << "PIPELINE not used for this run " << std::endl;
+    if(!has_pipeline())
         return;
-    }
     std::cout << "Arranging the tenor with name:[" << name << "]" << std::endl;
     int64_t ipu_idx = -1;
     int64_t pipeline_stage = -1;
@@ -167,41 +163,62 @@ void _odla_computation::set_pipeline_stage(const std::set<popart::TensorId> &nod
     }
 }
 
-void _odla_computation::set_pipeline_stage(const std::string& name)
+void _odla_computation::set_pipeline_stage(const std::string& name, const popart::TensorId &nodeOutputName, bool tag)
 {
-    static bool global_ipu_number_set = false;
-    if(PopartConfig::instance()->no_pipeline()){
-        std::cout << "PIPELINE not used for this run " << std::endl;
-        if(!global_ipu_number_set){
-            std::cout << "Set the global virtual group to ipu 0" << std::endl;
-            builder->setAttribute(popart::sVirtualGraphAttribute, 0);
-        }
+    if(!has_pipeline())
         return;
-    }
     // Use local static to record whether the pipeline_stage_setting changed
     static int64_t previous_pipeline_stage_setting = -1;
     auto found = PopartConfig::instance()->get_pipeline_setting(name, m_ipu_number, m_pipeline_stage);
-    if(found)
-    {
-        std::cout << "Found the pipeline setting change point with name: " << name 
-                    << ", for which and following with setting __ipu_number: " << m_ipu_number
-                    << ", __pipeline_stage: " << m_pipeline_stage << std::endl;
-    }
-    if(previous_pipeline_stage_setting != m_pipeline_stage)
-    {
-        std::cout << "pipeling setting will be: __ipu_number: " << m_ipu_number
-                      << ", __pipeline_stage: " << m_pipeline_stage 
-                      << ", from the node with name: " << name << std::endl;
+    // if(found)
+    // {
+    //     std::cout << "Found the pipeline setting change point with name: " << name 
+    //                 << ", for which and following with setting __ipu_number: " << m_ipu_number
+    //                 << ", __pipeline_stage: " << m_pipeline_stage << std::endl;
+    // }
+    // if(previous_pipeline_stage_setting != m_pipeline_stage)
+    // {
+    //     std::cout << "pipeling setting will be: __ipu_number: " << m_ipu_number
+    //                   << ", __pipeline_stage: " << m_pipeline_stage 
+    //                   << ", from the node with name: " << name << std::endl;
 
-        if(builder->hasAttribute(popart::sVirtualGraphAttribute))
-            builder->clearAttribute(popart::sVirtualGraphAttribute);
-        if(builder->hasAttribute(popart::sPipelineStageAttribute))
-            builder->clearAttribute(popart::sPipelineStageAttribute);
+    //     if(builder->hasAttribute(popart::sVirtualGraphAttribute))
+    //         builder->clearAttribute(popart::sVirtualGraphAttribute);
+    //     if(builder->hasAttribute(popart::sPipelineStageAttribute))
+    //         builder->clearAttribute(popart::sPipelineStageAttribute);
         
-        builder->setAttribute(popart::sVirtualGraphAttribute, m_ipu_number);
-        builder->setAttribute(popart::sPipelineStageAttribute, m_pipeline_stage);
-        previous_pipeline_stage_setting = m_pipeline_stage;
+    //     builder->setAttribute(popart::sVirtualGraphAttribute, m_ipu_number);
+    //     builder->setAttribute(popart::sPipelineStageAttribute, m_pipeline_stage);
+    //     previous_pipeline_stage_setting = m_pipeline_stage;
+    // }
+    builder->virtualGraph(nodeOutputName, m_ipu_number);
+    builder->pipelineStage(nodeOutputName, m_pipeline_stage);
+}
+
+void _odla_computation::set_pipeline_stage(const std::string& name, const std::set<popart::TensorId> &nodeOutputNames)
+{
+    if(!has_pipeline())
+        return;
+    // Use local static to record whether the pipeline_stage_setting changed
+    static int64_t previous_pipeline_stage_setting = -1;
+    auto found = PopartConfig::instance()->get_pipeline_setting(name, m_ipu_number, m_pipeline_stage);
+    builder->virtualGraph(nodeOutputNames, m_ipu_number);
+    builder->pipelineStage(nodeOutputNames, m_pipeline_stage);
+}
+
+bool _odla_computation::has_pipeline()
+{
+    static bool global_ipu_number_set = false;
+    if(PopartConfig::instance()->no_pipeline()){
+        if(!global_ipu_number_set){
+            std::cout << "PIPELINE not used for this run " << std::endl;
+            std::cout << "Set the global virtual group to ipu 0" << std::endl;
+            builder->setAttribute(popart::sVirtualGraphAttribute, 0);
+            global_ipu_number_set = true;
+        }
+        return false;
     }
+    return true;
 }
 
 void Sequence::compute(odla_computation comp, odla_context context,
@@ -231,7 +248,6 @@ void Parallel::compute(odla_computation comp, odla_context context,
 {
     std::cout << "---> Parallel::compute()" << std::endl;
     ContextQueues::get_instance()->put(context);
-    context->wait();
     std::cout << "<--- Parallel::compute()" << std::endl;
 }
 

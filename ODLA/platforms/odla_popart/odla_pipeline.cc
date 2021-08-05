@@ -78,6 +78,7 @@ void ContextQueues::put(odla_context ctx)
   std::lock_guard<std::mutex> guard(write_mutex);
   write_queue->push(ctx);
   write_wait_queue->push(ctx);  //put the ctx to input & wait_output queue in same order.
+  ctx->wait();  //block the request on the queue to wait for output
 }
 
 odla_context ContextQueues::get_input_context()
