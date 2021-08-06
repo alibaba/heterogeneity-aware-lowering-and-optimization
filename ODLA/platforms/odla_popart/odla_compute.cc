@@ -21,6 +21,9 @@
 #include <popart/ndarraywrapper.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/voiddata.hpp>
+#include <popart/devicemanager.hpp>
+#include <popart/session.hpp>
+#include <popart/popx/devicex.hpp>
 #include <string>
 #include <dlfcn.h>
 
@@ -93,6 +96,12 @@ odla_status odla_DestroyContext(odla_context ctx) {
 
 odla_status odla_DestroyComputation(odla_computation comp) {
   std::cout << "Mark the computation done ..." << std::endl;
+  if (comp->session != nullptr){
+    comp->session->getDevice().getDeviceInfo()->detach();
+    comp->session.reset();
+    assert(comp->session == nullptr);
+  }
+
   comp->mark_done();
   return ODLA_SUCCESS;
 }
