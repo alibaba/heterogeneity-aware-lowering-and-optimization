@@ -19,11 +19,36 @@
 #include <iostream>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
+#include <bits/stdc++.h>
 #include "odla_popart.h"
 #include "popart_config.h"
 #include "odla_pipeline.h"
 
 _odla_computation* _odla_computation::m_instance = new _odla_computation();
+
+void pipeline_loop(odla_computation comp)
+{
+  comp->init();
+  std::cout << "=============> current comp is: " << comp << std::endl;
+  //setup the stepio with allbacks
+  popart::StepIOCallback stepio(input_callback,
+                              input_complete_callback,
+                              output_callback,
+                              output_complete_callback);
+  int i=0;
+  while(!_odla_computation::instance()->is_done()){
+  //while(i < 1000){
+    auto start = std::chrono::steady_clock::now();
+    std::cout << "This is the " << i++ << " time for the inference" << std::endl;
+    if(i == INT_MAX)
+      i = 0;
+    comp->session->run(stepio);
+    auto end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end-start;
+    std::cout << "[ "<< i << " ] times loop takes " << elapsed_seconds.count() << " s." << std::endl;
+  }
+  std::cout << "The pipeline loop finished" << std::endl;
+}
 
 _odla_computation::_odla_computation():builder(popart::Builder::create()), 
     session(nullptr), device(nullptr), opts({false, 1, 1}), 

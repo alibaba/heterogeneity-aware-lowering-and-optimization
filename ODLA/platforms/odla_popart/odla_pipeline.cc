@@ -22,7 +22,6 @@
 #include <ODLA/odla.h>
 #include <popart/tensorinfo.hpp>
 #include <popart/voiddata.hpp>
-#include <bits/stdc++.h>
 
 #include "ODLA/odla_common.h"
 #include "common.h"
@@ -45,7 +44,7 @@ odla_context create_empty_odla_context()
   if(!shared_data){
     std::lock_guard<std::mutex> guard(shared_data_mutext);
     if(!shared_data){
-      std::cout << "Creating the shared data for the _odla_pipeline_zero" << std::endl;
+      std::cout << "Creating the shared data for the _odla_pipeline_empty_context" << std::endl;
       shared_data = new _odla_context(_odla_computation::instance());
       for(auto& value : shared_data->comp->input_values){
         std::size_t num_elements = 1;
@@ -65,19 +64,38 @@ odla_context create_empty_odla_context()
       }
     }
   }
-  _odla_pipeline_zero* ctx = new _odla_pipeline_zero(_odla_computation::instance());
+  _odla_pipeline_empty_context* ctx = new _odla_pipeline_empty_context(_odla_computation::instance());
   ctx->shared_data = shared_data;
 
   std::cout << "-----------------> created an empty input/output context: " << ctx << std::endl;
   return ctx;
 }
 
+ContextQueues* ContextQueues::get_instance() {
+  if (nullptr == p_context_queues) {
+    std::lock_guard<std::mutex> guard(instance_mutex);
+    if (nullptr == p_context_queues) {
+      std::cout << "Creating the ContextQueues singleton" << std::endl;
+      p_context_queues = new ContextQueues();
+      std::cout << "ContextQueues created, starting the pipeline thread"
+                << std::endl;
+      std::thread pipeline_thread(pipeline_loop,
+                                  _odla_computation::instance());
+      std::cout << "Pipeline loop started" << std::endl;
+      pipeline_thread.detach();
+    }
+  }
+  return p_context_queues;
+}
+
 void ContextQueues::put(odla_context ctx)
 {
   std::cout << "ContextQueues::put -> ctx: " << ctx << std::endl;
-  std::lock_guard<std::mutex> guard(write_mutex);
-  write_queue->push(ctx);
-  write_wait_queue->push(ctx);  //put the ctx to input & wait_output queue in same order.
+  {
+    std::lock_guard<std::mutex> guard(write_mutex);
+    write_queue->push(ctx);
+    write_wait_queue->push(ctx);  //put the ctx to input & wait_output queue in same order.
+  }
   ctx->wait();  //block the request on the queue to wait for output
 }
 
@@ -126,6 +144,26 @@ odla_context ContextQueues::get_output_context()
   if(nullptr == output_ctx)
     std::cerr << " *** FATAL ERROR *** No context in the queue when an output gotten" << std::endl; //严重错误了，会导致数据匹配补上了，是不是可以考虑把输入的数据也放到输出里面，比较一下MD5来确保对应关系
   return output_ctx;
+}
+
+void ContextQueues::all_tensor_read() {
+  std::cout << "ContextQueues::all_tensor_read(), ctx: " << input_ctx
+            << " poped, and put into wait_output_queue" << std::endl;
+  if(!input_ctx->deletable()) //Only pop the non zero ctx, the zero one not in the queue
+      read_queue->pop();
+  //wait_output_queue.push(input_ctx); //不用push了，进入的时候大家按顺序进入两个Queue
+  input_ctx = nullptr;
+}
+
+void ContextQueues::all_tensor_written() { //Never delete a context here, only operate on the queue
+  //wait_output_queue.pop();
+  if(!read_wait_queue->empty()) //There must be an element when all tensor written
+    read_wait_queue->pop(); //pop the first one from the read wait queue
+  else{ 
+    std::cerr << "*** FATAL ERROR *** when all_tensor_written, there is not a ctx in read_wait_queue" << std::endl;
+    exit(-1);
+  }
+  output_ctx = nullptr;
 }
 
 #define CB_NULL_QUEUE 100
@@ -229,27 +267,3 @@ popart::StepIOCallback::OutputCompleteCallback output_complete_callback =
       delete temp_ctx;
   }
 };
-
-void pipeline_loop(odla_computation comp)
-{
-  comp->init();
-  std::cout << "=============> current comp is: " << comp << std::endl;
-  //setup the stepio with allbacks
-  popart::StepIOCallback stepio(input_callback,
-                              input_complete_callback,
-                              output_callback,
-                              output_complete_callback);
-  int i=0;
-  while(!_odla_computation::instance()->is_done()){
-  //while(i < 1000){
-    auto start = std::chrono::steady_clock::now();
-    std::cout << "This is the " << i++ << " time for the inference" << std::endl;
-    if(i == INT_MAX)
-      i = 0;
-    comp->session->run(stepio);
-    auto end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end-start;
-    std::cout << "[ "<< i << " ] times loop takes " << elapsed_seconds.count() << " s." << std::endl;
-  }
-  std::cout << "The pipeline loop finished" << std::endl;
-}

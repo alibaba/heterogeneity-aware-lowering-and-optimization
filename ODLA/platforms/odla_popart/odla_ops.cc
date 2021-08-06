@@ -238,11 +238,11 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
   else if(name != "Embedding_MatMul"){
     std::cout << "=========> set the AMP for name: " << name << std::endl;
     float amp = 0.445f;
-    auto pipeline_2 = std::regex("layer(1[2-9]|2[0-3])", std::regex::icase);
-    if(std::regex_search(name, pipeline_2)){
-        amp = 0.51f;
-        std::cout << "=========> set the AMP for name: " << name << " with amp: " << amp << std::endl;
-    }
+    // auto pipeline_2 = std::regex("layer(1[2-9]|2[0-3])", std::regex::icase);
+    // if(std::regex_search(name, pipeline_2)){
+    //     amp = 0.51f;
+    //     std::cout << "=========> set the AMP for name: " << name << " with amp: " << amp << std::endl;
+    // }
     g_comp->builder->setAvailableMemoryProportion(result, amp);
   }
   return new _odla_value(result,
