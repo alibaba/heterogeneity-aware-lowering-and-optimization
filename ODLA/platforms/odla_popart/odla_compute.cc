@@ -94,7 +94,7 @@ odla_status odla_CreateComputation(odla_computation* comp) {
 
 odla_status odla_CreateContext(odla_context* context) {
   std::cout << "---> odla_CreateContext()" << std::endl;
-  *context = new _odla_pipeline(_odla_computation::instance());
+  *context = new _odla_pipeline_context(_odla_computation::instance());
   std::cout << "<--- odla_CreateContext()" << std::endl;
   return ODLA_SUCCESS;
 }

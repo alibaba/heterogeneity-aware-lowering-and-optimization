@@ -24,6 +24,7 @@
 #include <mutex>
 #include <queue>
 #include <thread>
+#include <popart/stepio.hpp>
 
 #include "ODLA/odla_common.h"
 #include "common.h"
@@ -43,6 +44,8 @@ struct ContextQueues {
   std::queue<odla_context>* write_wait_queue;
   odla_context input_ctx;  // the context which is under reading
   odla_context output_ctx; // the context which is under writing
+  static ContextQueues* p_context_queues;
+  static std::mutex instance_mutex;
 
   ContextQueues()
       : read_queue(&input_queue_1),
@@ -55,48 +58,13 @@ struct ContextQueues {
   void put(odla_context ctx);
   odla_context get_input_context();
   odla_context get_output_context();
-
-  void all_tensor_read() {
-    std::cout << "ContextQueues::all_tensor_read(), ctx: " << input_ctx
-              << " poped, and put into wait_output_queue" << std::endl;
-    if(!input_ctx->deletable()) //Only pop the non zero ctx, the zero one not in the queue
-        read_queue->pop();
-    //wait_output_queue.push(input_ctx); //不用push了，进入的时候大家按顺序进入两个Queue
-    input_ctx = nullptr;
-  }
-  void all_tensor_written() { //Never delete a context here, only operate on the queue
-    //wait_output_queue.pop();
-    if(!read_wait_queue->empty()) //There must be an element when all tensor written
-      read_wait_queue->pop(); //pop the first one from the read wait queue
-    else{ 
-      std::cerr << "*** FATAL ERROR *** when all_tensor_written, there is not a ctx in read_wait_queue" << std::endl;
-      exit(-1);
-    }
-    output_ctx = nullptr;
-  }
-
-  static ContextQueues* p_context_queues;
-  static std::mutex instance_mutex;
-  static ContextQueues* get_instance() {
-    if (nullptr == p_context_queues) {
-      std::lock_guard<std::mutex> guard(instance_mutex);
-      if (nullptr == p_context_queues) {
-        std::cout << "Creating the ContextQueues singleton" << std::endl;
-        p_context_queues = new ContextQueues();
-        std::cout << "ContextQueues created, starting the pipeline thread"
-                  << std::endl;
-        std::thread pipeline_thread(pipeline_loop,
-                                    _odla_computation::instance());
-        std::cout << "Pipeline loop started" << std::endl;
-        pipeline_thread.detach();
-      }
-    }
-    return p_context_queues;
-  }
+  void all_tensor_read();
+  void all_tensor_written();
+  static ContextQueues* get_instance();
 };
 
-struct _odla_pipeline : public _odla_context { // re-name it to _odla_pipeline_context
-  _odla_pipeline(odla_computation c) : _odla_context(c), visited(0), written(0) {}
+struct _odla_pipeline_context : public _odla_context {
+  _odla_pipeline_context(odla_computation c) : _odla_context(c), visited(0), written(0) {}
 
   std::mutex context_mutex;
   std::condition_variable context_cv;
@@ -169,9 +137,9 @@ struct _odla_pipeline : public _odla_context { // re-name it to _odla_pipeline_c
   }
 };
 
-struct _odla_pipeline_zero : public _odla_pipeline {
+struct _odla_pipeline_empty_context : public _odla_pipeline_context {
   odla_context shared_data = nullptr;
-  _odla_pipeline_zero(odla_computation c) : _odla_pipeline(c) {}
+  _odla_pipeline_empty_context(odla_computation c) : _odla_pipeline_context(c) {}
   virtual void wait() {}
   virtual void notify() {}
   virtual bool deletable(){return true;}
@@ -186,4 +154,10 @@ struct _odla_pipeline_zero : public _odla_pipeline {
     return shared_data->write_data_by_tensor_id(id);
   }
 };
+
+extern popart::StepIOCallback::InputCallback input_callback;
+extern popart::StepIOCallback::InputCompleteCallback input_complete_callback;
+extern popart::StepIOCallback::OutputCallback output_callback;
+extern popart::StepIOCallback::OutputCompleteCallback output_complete_callback;
+
 #endif // ODLA_PIPELINE_H_
