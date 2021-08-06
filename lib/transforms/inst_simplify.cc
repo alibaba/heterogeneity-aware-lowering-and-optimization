@@ -412,6 +412,9 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
           FuseToConvDeConv(DynCast<Conv2DTransposeInst>(op0), opc, op1_c);
     }
     if (new_inst != nullptr) {
+      if (fuse_conv_bias && opc == OpCode::ADD) {
+        new_inst->SetName(binary_inst->GetName() + "_fused");
+      }
       return {orig_def, *new_inst};
     }
   }
@@ -2279,7 +2282,8 @@ class CopySliceData {
   void RunImpl(int dim) {
     if (dim + 1 == static_cast<int>(ranges_.size())) {
       int64_t src_offset = (group_offset_ + chunk_offset_) * element_size_;
-      std::copy_n(src_ + src_offset, chunk_size_, dst_ + dst_offset_); // NOLINT
+      std::copy_n(src_ + src_offset, chunk_size_, // NOLINT
+                  dst_ + dst_offset_);            // NOLINT
       dst_offset_ += chunk_size_;
     } else {
       int first = ranges_[dim].First;
