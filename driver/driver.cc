@@ -110,6 +110,10 @@ static llvm::cl::opt<bool> DisableConvBN(
     "disable-convert-bn",
     llvm::cl::desc("disable convert Batch Normalization into mul/add"),
     llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
+static llvm::cl::opt<bool> FuseConvBias("fuse-conv-bias",
+                                        llvm::cl::desc("fuse conv bias"),
+                                        llvm::cl::init(false),
+                                        llvm::cl::cat(HaloOptCat));
 static llvm::cl::opt<bool> FuseHSwish("fuse-h-swish",
                                       llvm::cl::desc("fuse h-swish"),
                                       llvm::cl::init(false),
