@@ -25,6 +25,7 @@
 
 #include "common.h"
 #include "odla_popart.h"
+#include "popart_config.h"
 
 #if !defined(ODLA_VERSION_NUMBER) || (ODLA_VERSION_NUMBER < 50)
 #error This library requires minimum ODLA version 0.5
@@ -237,7 +238,7 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
   }
   else if(name != "Embedding_MatMul"){
     std::cout << "=========> set the AMP for name: " << name << std::endl;
-    float amp = 0.445f;
+    float amp = PopartConfig::instance()->amp();
     // auto pipeline_2 = std::regex("layer(1[2-9]|2[0-3])", std::regex::icase);
     // if(std::regex_search(name, pipeline_2)){
     //     amp = 0.51f;

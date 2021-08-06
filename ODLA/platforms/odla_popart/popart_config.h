@@ -50,6 +50,7 @@ enum ExecutionMode {UNKNOWN, PIPELINE, PARALLEL, SEQUENCE};
 
 class PopartConfig{
 private:
+    float amp_;
     std::string m_version;    // Version of the configuration file
     int m_batch_per_step;     // Batch per step for PIPELINE & PARALLEL execution mode
     ExecutionMode m_execution_mode;   // The execution mode {PIPELINE, PARALLEL, SEQUENCE}
@@ -68,6 +69,7 @@ public:
     ~PopartConfig(){}
     static PopartConfig* instance(){return m_instance;}
     const std::string& version(){return m_version;}
+    float amp(){return amp_;};
     int batch_per_step(){return m_batch_per_step;}
     ExecutionMode execution_mode(){return m_execution_mode;}
     bool load_onnx(){return m_load_onnx;}

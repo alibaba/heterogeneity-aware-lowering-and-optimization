@@ -31,6 +31,7 @@ void PopartConfig::load_config(const std::string& file_path)
     std::ifstream ifs(file_path);
     json jf = json::parse(ifs);
 
+    amp_                = jf["amp"].get<float>();
     m_version           = jf["version"].get<std::string>();
     m_batch_per_step    = jf["batch_per_step"].get<int>();
     m_ipu_num           = jf["ipu_num"].get<int>();
@@ -52,6 +53,8 @@ void PopartConfig::load_config(const std::string& file_path)
     }
 
     print();
+    // std::cout << "Just debug the config, exit ..." << std::endl;
+    // exit(0);
 }
 
 void PopartConfig::print()
@@ -59,6 +62,7 @@ void PopartConfig::print()
     std::string line(80, '=');
     std::cout << line << std::endl;
     std::cout << "version: " << m_version << std::endl;
+    std::cout << "amp: " << amp_ << std::endl;
     std::cout << "batch_per_step: " << m_batch_per_step << std::endl;
     std::string mode[] = {"UNKNOWN", "PIPELINE", "PARALLEL", "SEQUENCE"};
     std::cout << "execution_mode: " << mode[(long unsigned int)m_execution_mode] << std::endl;
