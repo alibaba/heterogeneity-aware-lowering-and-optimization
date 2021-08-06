@@ -37,7 +37,7 @@
 
 // GEN: static odla_computation Comp;
 
-// GEN: void func(const float input[3], float out_add1[3]) {
+// GEN: int func(const float input[3], float out_add1[3]) {
 // GEN:  func_init();
 // GEN:  odla_BindToArgumentById((const odla_value_id)"input", input, Ctx);
 // GEN:  odla_BindToOutputById((const odla_value_id)"add1", out_add1, Ctx);
