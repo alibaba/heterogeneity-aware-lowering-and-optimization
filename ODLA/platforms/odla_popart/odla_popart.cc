@@ -133,8 +133,7 @@ void _odla_computation::set_executor()
 void _odla_computation::set_session_opts()
 {
     //This should be passed in by config file or some where
-    ExecutionMode mode = PopartConfig::instance()->execution_mode();
-    if(PIPELINE == mode){
+    if(!PopartConfig::instance()->no_pipeline()){
         m_session_opts.enablePipelining = true;
         m_session_opts.autoRecomputation = popart::RecomputationType::Pipeline;
     }
@@ -261,10 +260,16 @@ void Sequence::compute(odla_computation comp, odla_context context,
     for (auto& output : context->outputs) {
         outputs.emplace(output.first, *output.second);
     }
-
+    static int i=0;
+    if(i == INT_MAX)
+      i = 0;
+    auto start = std::chrono::steady_clock::now();
     popart::StepIO stepio(inputs, outputs);
     // Run on ipu
     comp->session->run(stepio);
+    auto end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end-start;
+    std::cout << "[ "<< i++ << " ] [Sequence::compute] takes " << elapsed_seconds.count() << " s." << std::endl;
     std::cout << "<--- Sequence::compute()" << std::endl;
 }
 

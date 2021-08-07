@@ -168,9 +168,12 @@ odla_value odla_CreateConstant(odla_value_type type, const void* data_ptr,
 odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                 odla_context context) {
   std::cout << "---> odla_BindToArgument() : " << context << std::endl;
+  std::vector<int64_t> shape = context->comp->builder->getTensorShape(value->tensor_id);
+  if(PopartConfig::instance()->execution_mode() == SEQUENCE) //only the SEQUENCE model need to pass the data in once time
+    shape[0] *= PopartConfig::instance()->batch_per_step();
   std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
       data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
-      context->comp->builder->getTensorShape(value->tensor_id));
+      shape);
   context->inputs[value->tensor_id] = std::move(p_array);
   std::cout << "<--- odla_BindToArgument()" << std::endl;
   return ODLA_SUCCESS;
@@ -229,9 +232,12 @@ odla_status odla_GetOutputFromComputationByIdx(
 odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
                               odla_context context) {
   std::cout << "---> odla_BindToOutput()" << std::endl;
+  std::vector<int64_t> shape = context->comp->builder->getTensorShape(value->tensor_id);
+  if(PopartConfig::instance()->execution_mode() == SEQUENCE) //only the SEQUENCE model need to pass the data in once time
+    shape[0] *= PopartConfig::instance()->batch_per_step();
   std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
       data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
-      context->comp->builder->getTensorShape(value->tensor_id));
+      shape);
   context->outputs[value->tensor_id] = std::move(p_array);
   std::cout << "<--- odla_BindToOutput()" << std::endl;
   return ODLA_SUCCESS;
