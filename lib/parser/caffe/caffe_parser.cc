@@ -356,7 +356,7 @@ const std::vector<std::string> CAFFEParser::CreateExtraOperandsOrReturn(
     }
 
     std::string cur_node_name =
-        layer_param_weight.name() + "_" + std::to_string(i);
+        "w_" + layer_param_weight.name() + "_" + std::to_string(i);
     // std::string cur_op_name = layer_param_weight.type();
     // layer_param_weight.set_bottom(layer_param_weight.bottom_size(),
     // cur_node_name);
