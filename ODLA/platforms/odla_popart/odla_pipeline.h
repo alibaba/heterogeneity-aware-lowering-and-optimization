@@ -166,6 +166,7 @@ struct _odla_pipeline_context : public _odla_context {
   }
   inline bool all_tensors_visited() override {
     //return (tensors_visited.size() == inputs.size());
+    std::cout << "all_tensor_visited() in _odla_pipeline_context called with visited: " << visited << std::endl;
     return (visited == inputs.size());
   }
   inline bool all_tensors_written() override {
@@ -189,12 +190,20 @@ struct _odla_pipeline_empty_context : public _odla_pipeline_context {
   inline popart::IArray* get_data_by_tensor_id(popart::TensorId id) override {
     if(!shared_data)
       return nullptr;
+    visited++;
     return shared_data->get_data_by_tensor_id(id);
   }
   inline popart::IArray* write_data_by_tensor_id(popart::TensorId id) override {
     if(!shared_data)
       return nullptr;
+    written++;
     return shared_data->write_data_by_tensor_id(id);
+  }
+  inline bool all_tensors_visited() override {
+    return (visited == shared_data->inputs.size());
+  }
+  inline bool all_tensors_written() override {
+    return (written == shared_data->outputs.size());
   }
 };
 
