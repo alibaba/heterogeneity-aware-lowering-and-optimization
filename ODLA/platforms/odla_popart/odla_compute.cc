@@ -39,7 +39,7 @@
 
 odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
                                     odla_item_value value) {
-  std::cout << "---> odla_SetComputationItem()" << std::endl;
+  //std::cout << "---> odla_SetComputationItem()" << std::endl;
   switch (type) {
     case ODLA_USE_SIM_MODE:
       comp->opts.use_ipu_model = *(reinterpret_cast<bool*>(value));
@@ -60,7 +60,7 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
       std::cerr << "Unsupported property type: " << type << std::endl;
       return ODLA_UNSUPPORTED_DATATYPE;
   }
-  std::cout << "<--- odla_SetComputationItem()" << std::endl;
+  //std::cout << "<--- odla_SetComputationItem()" << std::endl;
   return ODLA_SUCCESS;
 }
 
@@ -77,7 +77,7 @@ odla_status odla_LoadExecutable(const odla_char* file_name,
 }
 
 odla_status odla_CreateComputation(odla_computation* comp) {
-  std::cout << "---> odla_CreateComputation()" << std::endl;
+  //std::cout << "---> odla_CreateComputation()" << std::endl;
   static void* custom_op_handle = nullptr;
   *comp = _odla_computation::instance();
   if (custom_op_handle == nullptr) {
@@ -91,59 +91,60 @@ odla_status odla_CreateComputation(odla_computation* comp) {
   //Read the config file
   PopartConfig::instance()->load_config("/home/jackz/repos/heterogeneity-aware-lowering-and-optimization/ODLA/platforms/odla_popart/config.json");
   _odla_computation::instance()->set_executor();
-  std::cout << "<--- odla_CreateComputation()" << std::endl;
+  QManager::instance()->createQ(PopartConfig::instance()->queue_type());
+  QManager::instance()->getQ()->init(PopartConfig::instance()->queue_capacity());
+  //std::cout << "<--- odla_CreateComputation()" << std::endl;
   return ODLA_SUCCESS;
 }
 
 odla_status odla_CreateContext(odla_context* context) {
-  std::cout << "---> odla_CreateContext()" << std::endl;
+  //std::cout << "---> odla_CreateContext()" << std::endl;
   *context = new _odla_pipeline_context(_odla_computation::instance());
-  std::cout << "<--- odla_CreateContext()" << std::endl;
+  //std::cout << "<--- odla_CreateContext()" << std::endl;
   return ODLA_SUCCESS;
 }
 
 odla_status odla_DestroyContext(odla_context ctx) {
-  std::cout << "---> odla_DestroyContext()" << std::endl;
+  //std::cout << "---> odla_DestroyContext()" << std::endl;
   if(nullptr != ctx)
     delete (ctx);
   else
     std::cerr << "Encounter a odla_DestroyContext with null ctx" << std::endl;
-  std::cout << "<--- odla_DestroyContext()" << std::endl;
+  //std::cout << "<--- odla_DestroyContext()" << std::endl;
   return ODLA_SUCCESS;
 }
 
 odla_status odla_DestroyComputation(odla_computation comp) {
-  if (comp->session != nullptr) {
-    comp->session->getDevice().getDeviceInfo()->detach();
-    comp->session.reset();
+  //std::cout << "Mark the computation done ..." << std::endl;
+  comp->mark_done();
+  int cnt = 0;
+  while(comp->thread_complete_){
+    //std::cout << "[" << cnt << "] Wating for the thread loop end..." << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    if(cnt++ > 50)
+    {
+      std::cerr << "Thread did not exit in 5 seconds, stop waiting..." << std::endl;
+    }
   }
-
-  if (g_comp == comp && g_comp != nullptr) {
-    g_comp = nullptr;
-  }
-
-  std::cout << "Mark the computation done ..." << std::endl;
   if (comp->session != nullptr){
     comp->session->getDevice().getDeviceInfo()->detach();
     comp->session.reset();
     assert(comp->session == nullptr);
   }
-
-  comp->mark_done();
   return ODLA_SUCCESS;
 }
 
 odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
-  std::cout << "---> odla_ExecuteComputation()" << std::endl;
+  //std::cout << "---> odla_ExecuteComputation()" << std::endl;
   comp->executor()->compute(comp, context, mode, device);
-  std::cout << "<--- odla_ExecuteComputation()" << std::endl;
+  //std::cout << "<--- odla_ExecuteComputation()" << std::endl;
   return ODLA_SUCCESS;
 }
 
 odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
-  std::cout << "---> odla_CreateArgument()" << std::endl;
+  //std::cout << "---> odla_CreateArgument()" << std::endl;
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
   popart::TensorInfo tensor_info(GetPopartType(type),
                                  GetPopartShape(type.shape));
@@ -153,34 +154,34 @@ odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
   auto v = new _odla_value(tensor_id, tensor_info, name);
   comp->inputs_map[name] = v;
   comp->input_values.push_back(v);
-  std::cout << "<--- odla_CreateArgument()" << std::endl;
+  //std::cout << "<--- odla_CreateArgument()" << std::endl;
   return v;
 }
 
 odla_status odla_GetNumOfArgsFromComputation(const odla_computation computation,
                                              odla_uint32* num_args) {
-  std::cout << "---> odla_GetNumOfArgsFromComputation()" << std::endl;
+  //std::cout << "---> odla_GetNumOfArgsFromComputation()" << std::endl;
   *num_args = computation->input_values.size();
-  std::cout << "<--- odla_GetNumOfArgsFromComputation()" << std::endl;
+  //std::cout << "<--- odla_GetNumOfArgsFromComputation()" << std::endl;
   return ODLA_SUCCESS;
 }
 
 odla_status odla_GetArgFromComputationByIdx(const odla_computation computation,
                                             const odla_uint32 arg_idx,
                                             odla_value* arg_value) {
-  std::cout << "---> odla_GetArgFromComputationByIdx()" << std::endl;
+  //std::cout << "---> odla_GetArgFromComputationByIdx()" << std::endl;
   *arg_value = nullptr;
   if (arg_idx >= computation->input_values.size()) {
     return ODLA_INVALID_PARAM;
   }
   *arg_value = computation->input_values[arg_idx];
-  std::cout << "<--- odla_GetArgFromComputationByIdx()" << std::endl;
+  //std::cout << "<--- odla_GetArgFromComputationByIdx()" << std::endl;
   return ODLA_SUCCESS;
 }
 
 odla_value odla_CreateConstant(odla_value_type type, const void* data_ptr,
                                const odla_value_id id) {
-  std::cout << "---> odla_CreateConstant()" << std::endl;
+  //std::cout << "---> odla_CreateConstant()" << std::endl;
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
   popart::TensorInfo tensor_info(GetPopartType(type),
                                  GetPopartShape(type.shape));
@@ -188,13 +189,13 @@ odla_value odla_CreateConstant(odla_value_type type, const void* data_ptr,
       data_ptr, {GetPopartType(type), GetPopartShape(type.shape)}};
   popart::TensorId tensor_id =
       _odla_computation::instance()->builder->aiOnnxOpset10().constant(data, name);
-  std::cout << "<--- odla_CreateConstant()" << std::endl;
+  //std::cout << "<--- odla_CreateConstant()" << std::endl;
   return new _odla_value(tensor_id, tensor_info, name);
 }
 
 odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                 odla_context context) {
-  std::cout << "---> odla_BindToArgument() : " << context << std::endl;
+  //std::cout << "---> odla_BindToArgument() : " << context << std::endl;
   std::vector<int64_t> shape = context->comp->builder->getTensorShape(value->tensor_id);
   if(PopartConfig::instance()->execution_mode() == SEQUENCE) //only the SEQUENCE model need to pass the data in once time
     shape[0] *= PopartConfig::instance()->batch_per_step();
@@ -202,63 +203,63 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
       data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
       shape);
   context->inputs[value->tensor_id] = std::move(p_array);
-  std::cout << "<--- odla_BindToArgument()" << std::endl;
+  //std::cout << "<--- odla_BindToArgument()" << std::endl;
   return ODLA_SUCCESS;
 }
 
 odla_status odla_BindToArgumentById(const odla_value_id value_id,
                                     const odla_void* data_ptr,
                                     odla_context context) {
-  std::cout << "---> odla_BindToArgumentById() : " << context << std::endl;
+  //std::cout << "---> odla_BindToArgumentById() : " << context << std::endl;
   std::string name(reinterpret_cast<const char*>(value_id));
-  std::cout << "<--- odla_BindToArgumentById()" << std::endl;
+  //std::cout << "<--- odla_BindToArgumentById()" << std::endl;
   return odla_BindToArgument(context->comp->inputs_map[name], data_ptr,
                              context);
 }
 
 odla_status odla_SetValueAsOutput(const odla_value value) {
-  std::cout << "---> odla_SetValueAsOutput()" << std::endl;
+  //std::cout << "---> odla_SetValueAsOutput()" << std::endl;
   auto comp = _odla_computation::instance();
   comp->builder->addOutputTensor(value->tensor_id);
   comp->outputs_map[value->name] = value;
   comp->output_values.push_back(value);
-  std::cout << "<--- odla_SetValueAsOutput()" << std::endl;
+  //std::cout << "<--- odla_SetValueAsOutput()" << std::endl;
   return ODLA_SUCCESS;
 }
 
 odla_status odla_SetValuesAsOutput(const odla_values values) {
-  std::cout << "---> odla_SetValuesAsOutput()" << std::endl;
+  //std::cout << "---> odla_SetValuesAsOutput()" << std::endl;
   for (int i = 0; i < values.size; ++i) {
     odla_SetValueAsOutput(values.values[i]);
   }
-  std::cout << "<--- odla_SetValuesAsOutput()" << std::endl;
+  //std::cout << "<--- odla_SetValuesAsOutput()" << std::endl;
   return ODLA_SUCCESS;
 }
 
 odla_status odla_GetNumOfOutputsFromComputation(
     const odla_computation computation, odla_uint32* num_outputs) {
-  std::cout << "---> odla_GetNumOfOutputsFromComputation()" << std::endl;
+  //std::cout << "---> odla_GetNumOfOutputsFromComputation()" << std::endl;
   *num_outputs = computation->output_values.size();
-  std::cout << "<--- odla_GetNumOfOutputsFromComputation()" << std::endl;
+  //std::cout << "<--- odla_GetNumOfOutputsFromComputation()" << std::endl;
   return ODLA_SUCCESS;
 }
 
 odla_status odla_GetOutputFromComputationByIdx(
     const odla_computation computation, const odla_uint32 output_idx,
     odla_value* output_value) {
-  std::cout << "---> odla_GetOutputFromComputationByIdx()" << std::endl;
+  //std::cout << "---> odla_GetOutputFromComputationByIdx()" << std::endl;
   *output_value = nullptr;
   if (output_idx >= computation->output_values.size()) {
     return ODLA_INVALID_PARAM;
   }
   *output_value = computation->output_values[output_idx];
-  std::cout << "<--- odla_GetOutputFromComputationByIdx()" << std::endl;
+  //std::cout << "<--- odla_GetOutputFromComputationByIdx()" << std::endl;
   return ODLA_SUCCESS;
 }
 
 odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
                               odla_context context) {
-  std::cout << "---> odla_BindToOutput()" << std::endl;
+  //std::cout << "---> odla_BindToOutput()" << std::endl;
   std::vector<int64_t> shape = context->comp->builder->getTensorShape(value->tensor_id);
   if(PopartConfig::instance()->execution_mode() == SEQUENCE) //only the SEQUENCE model need to pass the data in once time
     shape[0] *= PopartConfig::instance()->batch_per_step();
@@ -266,23 +267,23 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
       data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
       shape);
   context->outputs[value->tensor_id] = std::move(p_array);
-  std::cout << "<--- odla_BindToOutput()" << std::endl;
+  //std::cout << "<--- odla_BindToOutput()" << std::endl;
   return ODLA_SUCCESS;
 }
 
 odla_status odla_BindToOutputById(const odla_value_id value_id,
                                   odla_void* data_ptr, odla_context context) {
-  std::cout << "---> odla_BindToOutputById()" << std::endl;
+  //std::cout << "---> odla_BindToOutputById()" << std::endl;
   std::string name(reinterpret_cast<const char*>(value_id));
   return odla_BindToOutput(context->comp->outputs_map[name], data_ptr, context);
-  std::cout << "<--- odla_BindToOutputById()" << std::endl;
+  //std::cout << "<--- odla_BindToOutputById()" << std::endl;
 }
 
 odla_status odla_GetValueType(const odla_value value,
                               odla_value_type* value_type) {
-  std::cout << "---> odla_GetValueType()" << std::endl;
+  //std::cout << "---> odla_GetValueType()" << std::endl;
   value_type->element_type = GetOdlaType(value->tensor_info.dataType());
   value_type->shape = GetOdlaShape(value->tensor_info.shape());
-  std::cout << "<--- odla_GetValueType()" << std::endl;
+  //std::cout << "<--- odla_GetValueType()" << std::endl;
   return ODLA_SUCCESS;
 }

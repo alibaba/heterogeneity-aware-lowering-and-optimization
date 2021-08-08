@@ -234,10 +234,10 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
       g_comp->builder->aiOnnxOpset10().matmul({lhs_trans, rhs_trans}, name);
   auto name_pattern = std::regex("(Attention_MatMul$)|Attention_MatMul(_[1-2])", std::regex::icase);
   if(std::regex_search(name, name_pattern)){
-    std::cout << "=====> do not set the AMP on: " << name << std::endl;
+    // std::cout << "=====> do not set the AMP on: " << name << std::endl;
   }
   else if(name != "Embedding_MatMul"){
-    std::cout << "=========> set the AMP for name: " << name << std::endl;
+    // std::cout << "=========> set the AMP for name: " << name << std::endl;
     float amp = PopartConfig::instance()->amp();
     // auto pipeline_2 = std::regex("layer(1[2-9]|2[0-3])", std::regex::icase);
     // if(std::regex_search(name, pipeline_2)){
