@@ -195,9 +195,9 @@ void LockFreeQueue::put(odla_context ctx)
     cnt++;
     idx = tail_;
     new_idx = (idx+1) % capacity_;
-    if(new_idx == head_ && tail_.load() == idx)
-      throw std::out_of_range("[LockFreeQueue::put] the queue is full");
   }while(!tail_.compare_exchange_strong(idx, new_idx));
+  if(new_idx == wait_) // last item as the boundary
+    throw std::out_of_range("[LockFreeQueue::put] the queue is full");
   popart::logging::info(
     "[LockFreeQueue::put] Got the idx: {} for ctx: {} in {} times.", 
     idx, ctx, cnt);
@@ -214,6 +214,8 @@ odla_context LockFreeQueue::get_input_context() //read是callback单线程操作
       "[get_input_context] the queue is empty when read, add zero contexts");
     odla_context zero_ctx = create_empty_odla_context();
     put(zero_ctx);
+    popart::logging::info(
+      "After this we expect at least 4 read on this ctx: {}.", zero_ctx);
   }
   return buffer_[head_];
 }
@@ -228,6 +230,7 @@ odla_context LockFreeQueue::get_output_context()
 
 void LockFreeQueue::pop_input()
 {
+  popart::logging::info("pop_input called with ctx: {}", buffer_[head_]);
   head_ = (head_+1) % capacity_;
 }
 
