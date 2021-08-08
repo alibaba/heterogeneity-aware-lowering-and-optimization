@@ -60,6 +60,8 @@ private:
     bool m_save_model;    // Whether save the mode constructed by model.cc
     std::string m_save_model_path;    // The path where to save the model if save_model was set as true
     int m_ipu_num;    // The number of ipu to use
+    std::string queue_type_;     //the type of the queue used by parallel mode
+    int queue_capacity_;         //the capacity of the queue
     static PopartConfig* m_instance;
 public:
     PopartConfig(): m_version("1.0.0"), 
@@ -69,15 +71,17 @@ public:
     ~PopartConfig(){}
     static PopartConfig* instance(){return m_instance;}
     const std::string& version(){return m_version;}
-    float amp(){return amp_;};
-    int batch_per_step(){return m_batch_per_step;}
-    ExecutionMode execution_mode(){return m_execution_mode;}
-    bool load_onnx(){return m_load_onnx;}
-    bool save_model(){return m_save_model;}
-    const std::string& load_onnx_path(){return m_load_onnx_path;}
-    const std::string& save_model_path(){return m_save_model_path;}
-    const int ipu_num(){return m_ipu_num;}
-    bool no_pipeline(){return m_pipeline_setting.empty();}
+    inline float amp(){return amp_;};
+    inline int batch_per_step(){return m_batch_per_step;}
+    inline ExecutionMode execution_mode(){return m_execution_mode;}
+    inline bool load_onnx(){return m_load_onnx;}
+    inline bool save_model(){return m_save_model;}
+    inline const std::string& load_onnx_path(){return m_load_onnx_path;}
+    inline const std::string& save_model_path(){return m_save_model_path;}
+    inline const int ipu_num(){return m_ipu_num;}
+    inline bool no_pipeline(){return m_pipeline_setting.empty();}
+    inline std::string queue_type(){return queue_type_;}
+    inline int queue_capacity(){return queue_capacity_;}
 
     void load_config(const std::string& file_path);
     bool get_pipeline_setting(const std::string& node_name, int64_t &ipu_idx, int64_t& pipeline_stage);

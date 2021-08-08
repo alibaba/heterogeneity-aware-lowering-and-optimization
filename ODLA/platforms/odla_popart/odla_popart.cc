@@ -26,34 +26,27 @@
 
 _odla_computation* _odla_computation::m_instance = new _odla_computation();
 
-void pipeline_loop(odla_computation comp)
+void compute_loop(odla_computation comp)
 {
-  comp->init();
-  std::cout << "=============> current comp is: " << comp << std::endl;
   //setup the stepio with allbacks
   popart::StepIOCallback stepio(input_callback,
                               input_complete_callback,
                               output_callback,
                               output_complete_callback);
   int i=0;
-  while(!_odla_computation::instance()->is_done()){
-  //while(i < 1000){
+  while(!comp->is_done()){
+  //while(i < 11){
     auto start = std::chrono::steady_clock::now();
-    std::cout << "This is the " << i++ << " time for the inference" << std::endl;
+    popart::logging::info("This is the {} time for the inference", i++);
     if(i == INT_MAX)
       i = 0;
     comp->session->run(stepio);
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed_seconds = end-start;
-    std::cout << "[ "<< i << " ] times loop takes " << elapsed_seconds.count() << " s." << std::endl;
+    popart::logging::warn("[ {} ] times loop takes {} s.", i, elapsed_seconds.count());
   }
-  std::cout << "The pipeline loop finished" << std::endl;
-}
-
-_odla_computation::_odla_computation():builder(popart::Builder::create()), 
-    session(nullptr), device(nullptr), opts({false, 1, 1}), 
-    m_done(false), m_executor(nullptr) 
-{
+  popart::logging::warn("The pipeline loop finished");
+  comp->thread_complete_ = true;
 }
 
 void _odla_computation::init()
@@ -70,7 +63,7 @@ void _odla_computation::init()
                                     popart::AnchorReturnType("All"));
             // Acquire IPU
             if(opts.use_ipu_model){
-                std::cout << "Using IPU Model to run " << std::endl;
+                popart::logging::info("Using IPU Model to run.");
                 std::map<std::string, std::string> deviceOpts{
                     {"numIPUs", std::to_string(opts.ipu_num)}, {"tilesPerIPU", "1216"}};
                 device = popart::DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
@@ -82,12 +75,14 @@ void _odla_computation::init()
 
             auto proto = builder->getModelProto(); //So, the init must be called at odla_ExecuteCompute
             if(PopartConfig::instance()->load_onnx()){
-                std::cout << "======> Load onnx file as pipeline mode to run: " << PopartConfig::instance()->load_onnx_path() << std::endl;
+                popart::logging::info("Load onnx file as pipeline mode to run: {}", 
+                    PopartConfig::instance()->load_onnx_path());
                 proto = PopartConfig::instance()->load_onnx_path();
             }
             if(PopartConfig::instance()->save_model()){
                 builder->saveModelProto(PopartConfig::instance()->save_model_path());
-                std::cout << "The model saved to " << PopartConfig::instance()->save_model_path() << std::endl;
+                popart::logging::info("The model saved to ", 
+                    PopartConfig::instance()->save_model_path());
             }
             
             // Create InferenceSession
@@ -101,6 +96,13 @@ void _odla_computation::init()
             session->prepareDevice();
             session->setRandomSeed(0);  // Init seed
             session->weightsFromHost(); // Copy weights from host to IPU
+            //If in parallel mode, start the thread
+            ExecutionMode mode = PopartConfig::instance()->execution_mode();
+            if(PIPELINE == mode || PARALLEL == mode){
+                std::thread parallel_thread(compute_loop, this);
+                popart::logging::warn("Parallel loop has been started");
+                parallel_thread.detach();
+            }
         }
     }
 }
@@ -117,16 +119,17 @@ void _odla_computation::set_executor()
 {
     ExecutionMode mode = PopartConfig::instance()->execution_mode();
     if(PIPELINE == mode || PARALLEL == mode){
-        std::cout << "===============> set the executor as parallel" << std::endl;
+        popart::logging::info("set the executor as parallel");
         m_executor = new Parallel();
     }
     else if(SEQUENCE == mode){
-        std::cout << "===============> set the executor as sequence" << std::endl;
+        popart::logging::info("set the executor as sequence");
         m_executor = new Sequence();
     }
     else{
-        std::cerr << "*** FATAL *** unknown execution mode: " << mode << std::endl;
-        exit(-1);
+        throw std::invalid_argument(
+            "*** FATAL *** unknown execution mode: {}" + std::to_string(mode)
+            + ". Should be one of pipeline, parallel or sequence");
     }
 }
 
@@ -155,9 +158,8 @@ void _odla_computation::set_session_opts()
 }
 
 void _odla_computation::set_pipeline_stage(const popart::TensorId &nodeOutputName, const std::string& name){
-    if(!has_pipeline())
+    if(!use_pipeline())
         return;
-    std::cout << "Arranging the tenor with id: [" << nodeOutputName << "], name:[" << name << "]" << std::endl;
     int64_t ipu_idx = -1;
     int64_t pipeline_stage = -1;
     auto found = PopartConfig::instance()->get_pipeline_setting(name, ipu_idx, pipeline_stage);
@@ -165,16 +167,15 @@ void _odla_computation::set_pipeline_stage(const popart::TensorId &nodeOutputNam
       builder->virtualGraph(nodeOutputName, ipu_idx);
       builder->pipelineStage(nodeOutputName, pipeline_stage);
     }else{
-      std::cerr << " *** FATAL *** did not find a setting for node: " << nodeOutputName 
-                << ", name: " << name << " when do the pipeling" << std::endl;
-      //exit(-1);
+      popart::logging::info(
+        " *** FATAL *** no pipeline stting for node: {}, name: {}", 
+        nodeOutputName, name);
     }
 }
 
 void _odla_computation::set_pipeline_stage(const std::set<popart::TensorId> &nodeOutputNames, const std::string& name){
-    if(!has_pipeline())
+    if(!use_pipeline())
         return;
-    std::cout << "Arranging the tenor with name:[" << name << "]" << std::endl;
     int64_t ipu_idx = -1;
     int64_t pipeline_stage = -1;
     auto found = PopartConfig::instance()->get_pipeline_setting(name, ipu_idx, pipeline_stage);
@@ -182,46 +183,25 @@ void _odla_computation::set_pipeline_stage(const std::set<popart::TensorId> &nod
       builder->virtualGraph(nodeOutputNames, ipu_idx);
       builder->pipelineStage(nodeOutputNames, pipeline_stage);
     }else{
-      std::cerr << " *** FATAL *** did not find a setting for name: " << name << " when do the pipeling" << std::endl;
-      //exit(-1);
+      popart::logging::info(
+        " *** FATAL *** no pipeline stting for node with name: {}", name);
     }
 }
 
 void _odla_computation::set_pipeline_stage(const std::string& name, const popart::TensorId &nodeOutputName, bool tag)
 {
-    if(!has_pipeline())
+    if(!use_pipeline())
         return;
     // Use local static to record whether the pipeline_stage_setting changed
     static int64_t previous_pipeline_stage_setting = -1;
     auto found = PopartConfig::instance()->get_pipeline_setting(name, m_ipu_number, m_pipeline_stage);
-    // if(found)
-    // {
-    //     std::cout << "Found the pipeline setting change point with name: " << name 
-    //                 << ", for which and following with setting __ipu_number: " << m_ipu_number
-    //                 << ", __pipeline_stage: " << m_pipeline_stage << std::endl;
-    // }
-    // if(previous_pipeline_stage_setting != m_pipeline_stage)
-    // {
-    //     std::cout << "pipeling setting will be: __ipu_number: " << m_ipu_number
-    //                   << ", __pipeline_stage: " << m_pipeline_stage 
-    //                   << ", from the node with name: " << name << std::endl;
-
-    //     if(builder->hasAttribute(popart::sVirtualGraphAttribute))
-    //         builder->clearAttribute(popart::sVirtualGraphAttribute);
-    //     if(builder->hasAttribute(popart::sPipelineStageAttribute))
-    //         builder->clearAttribute(popart::sPipelineStageAttribute);
-        
-    //     builder->setAttribute(popart::sVirtualGraphAttribute, m_ipu_number);
-    //     builder->setAttribute(popart::sPipelineStageAttribute, m_pipeline_stage);
-    //     previous_pipeline_stage_setting = m_pipeline_stage;
-    // }
     builder->virtualGraph(nodeOutputName, m_ipu_number);
     builder->pipelineStage(nodeOutputName, m_pipeline_stage);
 }
 
 void _odla_computation::set_pipeline_stage(const std::string& name, const std::set<popart::TensorId> &nodeOutputNames)
 {
-    if(!has_pipeline())
+    if(!use_pipeline())
         return;
     // Use local static to record whether the pipeline_stage_setting changed
     static int64_t previous_pipeline_stage_setting = -1;
@@ -230,13 +210,13 @@ void _odla_computation::set_pipeline_stage(const std::string& name, const std::s
     builder->pipelineStage(nodeOutputNames, m_pipeline_stage);
 }
 
-bool _odla_computation::has_pipeline()
+bool _odla_computation::use_pipeline()
 {
     static bool global_ipu_number_set = false;
     if(PopartConfig::instance()->no_pipeline()){
         if(!global_ipu_number_set){
-            std::cout << "PIPELINE not used for this run " << std::endl;
-            std::cout << "Set the global virtual group to ipu 0" << std::endl;
+            popart::logging::info("PIPELINE not used for this run, "
+                "Set the global virtual group to ipu 0");
             builder->setAttribute(popart::sVirtualGraphAttribute, 0);
             global_ipu_number_set = true;
         }
@@ -250,7 +230,7 @@ void Sequence::compute(odla_computation comp, odla_context context,
 {
     comp->init();
     std::lock_guard<std::mutex> comp_guard(sequence_mutex);
-    std::cout << "---> Sequence::compute()" << std::endl;
+    popart::logging::info( ">>> Sequence::compute() with ctx: {}", context);
     // Config StepIO
     std::map<popart::TensorId, popart::IArray&> inputs;
     for (auto& input : context->inputs) {
@@ -269,16 +249,19 @@ void Sequence::compute(odla_computation comp, odla_context context,
     comp->session->run(stepio);
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed_seconds = end-start;
-    std::cout << "[ "<< i++ << " ] [Sequence::compute] takes " << elapsed_seconds.count() << " s." << std::endl;
-    std::cout << "<--- Sequence::compute()" << std::endl;
+    popart::logging::info("[ {} ] [Sequence::compute] takes {} s.", 
+        i++, elapsed_seconds.count());
+    popart::logging::info("<<< Sequence::compute() with ctx: {}", context);
 }
 
 void Parallel::compute(odla_computation comp, odla_context context,
                        odla_compute_mode mode,odla_device device) 
 {
-    std::cout << "---> Parallel::compute()" << std::endl;
-    ContextQueues::get_instance()->put(context);
-    std::cout << "<--- Parallel::compute()" << std::endl;
+    popart::logging::info(">>> Parallel::compute() with context: {}", context);
+    QManager::instance()->getQ()->put(context); //put the queues to wait list firstly
+    comp->init();
+    context->wait();
+    popart::logging::info("<<< Parallel::compute() with context {}", context);
 }
 
 _odla_value::_odla_value(popart::TensorId id, popart::TensorInfo info,
@@ -287,6 +270,5 @@ _odla_value::_odla_value(popart::TensorId id, popart::TensorInfo info,
     if(set_pipeline)
         g_comp->set_pipeline_stage(id, name);
     else
-        std::cout << "The tensor with id: " << id << " should be solved some where previously." << std::endl; 
-    //g_comp->set_pipeline_stage(name);
+        popart::logging::info("The tensor with id: {} solved previously.", id);
 }

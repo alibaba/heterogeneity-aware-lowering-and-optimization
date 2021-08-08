@@ -22,6 +22,7 @@
 #include <ODLA/odla.h>
 #include <string>
 #include <vector>
+#include <atomic>
 #include <condition_variable>
 #include <popart/builder.hpp>
 #include <popart/session.hpp>
@@ -87,15 +88,19 @@ struct _odla_computation {  //destruct the computation when odla_destroycomputat
   static _odla_computation* m_instance;
   static _odla_computation* instance(){return m_instance;}
   bool m_done;
+  bool thread_complete_;
   std::mutex m_init_mutex;
   Execution* m_executor;
 
-  _odla_computation();
+  _odla_computation():builder(popart::Builder::create()), 
+    session(nullptr), device(nullptr), opts({false, 1, 1}), 
+    m_done(false), m_executor(nullptr), 
+    thread_complete_(false) {}
   // Make the the member to be private & public.
   // ToDo: code stype use Camel or somthing, google style for the varialble name, lint layer. Pre commit - tool
   void init();
-  bool is_done(){return m_done;}
-  void mark_done(){m_done = true;}
+  inline bool is_done(){return m_done;}
+  inline void mark_done(){m_done = true;}
   void set_pipeline_stage(const popart::TensorId &nodeOutputName, const std::string& name);
   void set_pipeline_stage(const std::set<popart::TensorId> &nodeOutputNames, const std::string& name);
   void set_pipeline_stage(const std::string& name, const popart::TensorId &nodeOutputName, bool tag);
@@ -103,28 +108,29 @@ struct _odla_computation {  //destruct the computation when odla_destroycomputat
   void set_session_opts();
   void set_executor();
   void set_opts();
-  bool has_pipeline();
-  Execution* executor(){return m_executor;}
+  bool use_pipeline();
+  inline Execution* executor(){return m_executor;}
 };
 
 struct _odla_context {
   odla_computation comp;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> inputs;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> outputs;
-  _odla_context(odla_computation c): comp(c) {}
-  virtual void wait() {}
-  virtual void notify() {}
-  virtual popart::IArray* get_data_by_tensor_id(popart::TensorId id){
+  std::atomic<odla_context> next;
+  _odla_context(odla_computation c): comp(c), next(nullptr) {}
+  inline virtual void wait() {}
+  inline virtual void notify() {}
+  inline virtual popart::IArray* get_data_by_tensor_id(popart::TensorId id){
     auto iter = inputs.find(id);
     return (inputs.end() == iter) ? NULL : &(*iter->second);
   }
-  virtual popart::IArray* write_data_by_tensor_id(popart::TensorId id){
+  inline virtual popart::IArray* write_data_by_tensor_id(popart::TensorId id){
     auto iter = outputs.find(id);
     return (outputs.end() == iter) ? NULL : &(*iter->second);
   }
-  virtual bool all_tensors_visited(){return true;}
-  virtual bool all_tensors_written(){return true;}
-  virtual void clear_visited_and_written(){}
-  virtual bool deletable(){return false;}
+  inline virtual bool all_tensors_visited(){return true;}
+  inline virtual bool all_tensors_written(){return true;}
+  inline virtual void clear_visited_and_written(){}
+  inline virtual bool deletable(){return false;}
 };
 #endif

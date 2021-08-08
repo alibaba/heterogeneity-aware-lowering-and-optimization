@@ -21,13 +21,13 @@
 #include "popart_config.h"
 #include "json.hpp"
 #include <typeinfo>
+#include <popart/logging.hpp>
 
 PopartConfig* PopartConfig::m_instance = new PopartConfig();
 
 void PopartConfig::load_config(const std::string& file_path)
 {
     using json = nlohmann::json;
-    //std::ifstream ifs("/home/jackz/repos/heterogeneity-aware-lowering-and-optimization/ODLA/platforms/odla_popart/config.json");
     std::ifstream ifs(file_path);
     json jf = json::parse(ifs);
 
@@ -52,32 +52,47 @@ void PopartConfig::load_config(const std::string& file_path)
         set_pipeline_setting(element.key(), element.value()[0], element.value()[1]);
     }
 
+    if(jf.contains("queue_type"))
+        queue_type_ = jf["queue_type"].get<std::string>();
+    else
+        queue_type_ = "LockFreeQueue";
+    
+    if(jf.contains("queue_capacity"))
+        queue_capacity_ = jf["queue_capacity"].get<int>();
+    else
+        queue_capacity_ = 1024;
     print();
-    // std::cout << "Just debug the config, exit ..." << std::endl;
-    // exit(0);
 }
 
 void PopartConfig::print()
 {
     std::string line(80, '=');
-    std::cout << line << std::endl;
-    std::cout << "version: " << m_version << std::endl;
-    std::cout << "amp: " << amp_ << std::endl;
-    std::cout << "batch_per_step: " << m_batch_per_step << std::endl;
+    popart::logging::info(line);
+    popart::logging::info("version: {}", m_version);
+    popart::logging::info("amp: {}", amp_);
+    popart::logging::info("batch_per_step: {}", m_batch_per_step);
     std::string mode[] = {"UNKNOWN", "PIPELINE", "PARALLEL", "SEQUENCE"};
-    std::cout << "execution_mode: " << mode[(long unsigned int)m_execution_mode] << std::endl;
-    std::cout << "ipu_num: " << m_ipu_num << std::endl;
+    popart::logging::info("execution_mode: {}",
+        mode[(long unsigned int)m_execution_mode]);
+    popart::logging::info("ipu_num: {}", m_ipu_num);
     std::string bool_value[] = {"false", "true"};
-    std::cout << "load_onnx: " << bool_value[(long unsigned int)m_load_onnx] << std::endl;
-    std::cout << "load_onnx_path: " << m_load_onnx_path << std::endl << std::endl;
-    std::cout << "save_model: " << bool_value[(long unsigned int)m_save_model] << std::endl;
-    std::cout << "save_model_path: " << m_save_model_path << std::endl;
+    popart::logging::info("load_onnx: {}", 
+        bool_value[(long unsigned int)m_load_onnx]);
+    popart::logging::info("load_onnx_path: {}", m_load_onnx_path);
+    popart::logging::info("save_model: {}", 
+        bool_value[(long unsigned int)m_save_model]);
+    popart::logging::info("save_model_path: {}", m_save_model_path);
+    popart::logging::info("queue_type: {}", queue_type_);
+    popart::logging::info("queue_capacity: {}", queue_capacity_);
+    popart::logging::info("pipeline configuration:");
     for(auto &a : m_pipeline_setting)
-        std::cout << a.first << " <-----> [" << a.second[0] << ", " << a.second[1] << "]" << std::endl;
-    std::cout << line << std::endl;
+        popart::logging::info("{} <-----> [{}, {}]",
+            a.first, a.second[0], a.second[1]);
+    popart::logging::info(line);
 }
 
-void PopartConfig::set_pipeline_setting(const std::string& name_pattern, int ipu_idx, int pipeline_stage)
+void PopartConfig::set_pipeline_setting(
+    const std::string& name_pattern, int ipu_idx, int pipeline_stage)
 {
     std::vector<int> values;
     values.push_back(ipu_idx);
@@ -85,20 +100,23 @@ void PopartConfig::set_pipeline_setting(const std::string& name_pattern, int ipu
     m_pipeline_setting[name_pattern] = values;
 }
 
-bool PopartConfig::get_pipeline_setting(const std::string& node_name, int64_t &ipu_idx, int64_t& pipeline_stage)
+bool PopartConfig::get_pipeline_setting(
+    const std::string& node_name, int64_t &ipu_idx, int64_t& pipeline_stage)
 {
     for(auto &v : m_pipeline_setting){
         auto name_pattern = std::regex(v.first, std::regex::icase);
         auto found = std::regex_search(node_name, name_pattern);
         if(found){
-            std::cout << "node name: " << node_name << " matched with pattern: " << v.first 
-                    << ", will be put in ipu: " << v.second[0] 
-                    << ", pipeline stage: " << v.second[1] << std::endl;
+            popart::logging::info("node name: {} matched with pattern: {}"
+                ", will be put in ipu: {}, pipeline stage: {}", 
+                node_name, v.first, v.second[0], v.second[1]);
             ipu_idx = v.second[0];
             pipeline_stage = v.second[1];
             return true;
         }
     }
-    std::cerr << "*** Oops *** the node name: " << node_name << " did not match to any pattern !" << std::endl;
+    popart::logging::info(
+        "*** Oops *** the node name: {} did not match to any pattern!", 
+        node_name);
     return false;
 }

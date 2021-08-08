@@ -24,6 +24,7 @@
 #include <mutex>
 #include <queue>
 #include <thread>
+#include <atomic>
 #include <popart/stepio.hpp>
 
 #include "ODLA/odla_common.h"
@@ -32,7 +33,19 @@
 
 void pipeline_loop(odla_computation comp);
 
-struct ContextQueues {
+class Queue
+{
+public:
+  virtual void init(std::size_t capacity) = 0;
+  virtual void put(odla_context ctx) = 0;
+  virtual odla_context get_input_context() = 0;
+  virtual odla_context get_output_context() = 0;
+  virtual void pop_input() = 0;
+  virtual void pop_output() = 0;
+};
+
+class ContextQueues : public Queue {
+private:
   std::queue<odla_context> input_queue_1;
   std::queue<odla_context> input_queue_2;
   std::queue<odla_context> wait_output_queue_1;
@@ -44,23 +57,56 @@ struct ContextQueues {
   std::queue<odla_context>* write_wait_queue;
   odla_context input_ctx;  // the context which is under reading
   odla_context output_ctx; // the context which is under writing
-  static ContextQueues* p_context_queues;
-  static std::mutex instance_mutex;
 
+public:
   ContextQueues()
-      : read_queue(&input_queue_1),
-        write_queue(&input_queue_2),
-        read_wait_queue(&wait_output_queue_1),
-        write_wait_queue(&wait_output_queue_2),
-        input_ctx(nullptr),
-        output_ctx(nullptr) {}
+    : read_queue(&input_queue_1),
+      write_queue(&input_queue_2),
+      read_wait_queue(&wait_output_queue_1),
+      write_wait_queue(&wait_output_queue_2),
+      input_ctx(nullptr),
+      output_ctx(nullptr) {}
 
-  void put(odla_context ctx);
-  odla_context get_input_context();
-  odla_context get_output_context();
-  void all_tensor_read();
-  void all_tensor_written();
-  static ContextQueues* get_instance();
+  ~ContextQueues(){}
+  void init(std::size_t capacity) final{}
+  void put(odla_context ctx) final;
+  odla_context get_input_context() final;
+  odla_context get_output_context() final;
+  void pop_input() final;
+  void pop_output() final;
+};
+
+class LockFreeQueue : public Queue
+{
+private:
+  odla_context* buffer_;
+  std::size_t capacity_;
+  int head_;
+  std::atomic<int> tail_;
+  int wait_;
+public:
+  LockFreeQueue();
+  ~LockFreeQueue(){if(buffer_) delete[] buffer_;}
+  void init(std::size_t capacity);
+  void put(odla_context ctx) final;
+  odla_context get_input_context() final;
+  odla_context get_output_context() final;
+  void pop_input() final;
+  void pop_output() final;
+};
+
+class QManager
+{
+private:
+  Queue* queue_;
+  QManager():queue_(nullptr){}
+  ~QManager(){}
+  std::mutex create_mutex_;
+  static QManager* instance_;
+public:
+  void createQ(std::string queueType);
+  inline Queue* getQ(){return queue_;}
+  static inline QManager* instance(){return instance_;}
 };
 
 struct _odla_pipeline_context : public _odla_context {
@@ -74,15 +120,15 @@ struct _odla_pipeline_context : public _odla_context {
       tensors_written; // Record the output tensor written by callback
   int visited;
   int written;
-  virtual void wait() override {
+  inline void wait() override {
     std::unique_lock<std::mutex> lock(context_mutex);
     context_cv.wait(lock);
   }
-  virtual void notify() override {
+  inline void notify() override {
     std::unique_lock<std::mutex> lock(context_mutex);
     context_cv.notify_one();
   }
-  virtual popart::IArray* get_data_by_tensor_id(popart::TensorId id) {
+  inline popart::IArray* get_data_by_tensor_id(popart::TensorId id) override {
     // auto visited = tensors_visited.find(id);
     // if (tensors_visited.end() != visited) {
     //   std::cerr
@@ -100,7 +146,7 @@ struct _odla_pipeline_context : public _odla_context {
     visited++;
     return &(*(inputs[id]));
   }
-  virtual popart::IArray* write_data_by_tensor_id(popart::TensorId id) {
+  inline popart::IArray* write_data_by_tensor_id(popart::TensorId id) override {
     // auto written = tensors_written.find(id);
     // if (tensors_written.end() != written) {
     //   std::cerr << "write_data_by_tensor_id -> Multiple output callback on the "
@@ -118,18 +164,15 @@ struct _odla_pipeline_context : public _odla_context {
     written++;
     return &(*(outputs[id]));
   }
-  virtual bool all_tensors_visited() {
+  inline bool all_tensors_visited() override {
     //return (tensors_visited.size() == inputs.size());
     return (visited == inputs.size());
   }
-  virtual bool all_tensors_written() {
+  inline bool all_tensors_written() override {
     //return (tensors_written.size() == outputs.size());
     return (written == outputs.size());
   }
-  virtual void clear_visited_and_written() {
-    std::cout << "clear_visited_and_written() -> clear the visited and written "
-                 "record for the context reusing."
-              << std::endl;
+  inline void clear_visited_and_written() override {
     //tensors_visited.clear();
     //tensors_written.clear();
     visited=0;
@@ -140,15 +183,15 @@ struct _odla_pipeline_context : public _odla_context {
 struct _odla_pipeline_empty_context : public _odla_pipeline_context {
   odla_context shared_data = nullptr;
   _odla_pipeline_empty_context(odla_computation c) : _odla_pipeline_context(c) {}
-  virtual void wait() {}
-  virtual void notify() {}
-  virtual bool deletable(){return true;}
-  virtual popart::IArray* get_data_by_tensor_id(popart::TensorId id) {
+  inline void wait() override {}
+  inline void notify() override {}
+  inline bool deletable() override{return true;}
+  inline popart::IArray* get_data_by_tensor_id(popart::TensorId id) override {
     if(!shared_data)
       return nullptr;
     return shared_data->get_data_by_tensor_id(id);
   }
-  virtual popart::IArray* write_data_by_tensor_id(popart::TensorId id) {
+  inline popart::IArray* write_data_by_tensor_id(popart::TensorId id) override {
     if(!shared_data)
       return nullptr;
     return shared_data->write_data_by_tensor_id(id);

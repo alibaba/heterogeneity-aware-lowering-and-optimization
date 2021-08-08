@@ -19,6 +19,7 @@
 #include <mutex>
 #include <queue>
 #include <chrono>
+#include <thread>
 #include <ODLA/odla.h>
 #include <popart/tensorinfo.hpp>
 #include <popart/voiddata.hpp>
@@ -33,8 +34,7 @@
 #error This library requires minimum ODLA version 0.5
 #endif
 
-ContextQueues* ContextQueues::p_context_queues = nullptr;
-std::mutex ContextQueues::instance_mutex;
+QManager* QManager::instance_ = new QManager();
 
 static odla_context shared_data = nullptr;
 static std::mutex shared_data_mutext;
@@ -44,7 +44,8 @@ odla_context create_empty_odla_context()
   if(!shared_data){
     std::lock_guard<std::mutex> guard(shared_data_mutext);
     if(!shared_data){
-      std::cout << "Creating the shared data for the _odla_pipeline_empty_context" << std::endl;
+      popart::logging::info(
+        "Creating the shared data for the _odla_pipeline_empty_context");
       shared_data = new _odla_context(_odla_computation::instance());
       for(auto& value : shared_data->comp->input_values){
         std::size_t num_elements = 1;
@@ -64,39 +65,39 @@ odla_context create_empty_odla_context()
       }
     }
   }
-  _odla_pipeline_empty_context* ctx = new _odla_pipeline_empty_context(_odla_computation::instance());
+  _odla_pipeline_empty_context* ctx = 
+    new _odla_pipeline_empty_context(_odla_computation::instance());
   ctx->shared_data = shared_data;
 
-  std::cout << "-----------------> created an empty input/output context: " << ctx << std::endl;
+  popart::logging::info("created an empty input/output for context: {}.", ctx);
   return ctx;
 }
 
-ContextQueues* ContextQueues::get_instance() {
-  if (nullptr == p_context_queues) {
-    std::lock_guard<std::mutex> guard(instance_mutex);
-    if (nullptr == p_context_queues) {
-      std::cout << "Creating the ContextQueues singleton" << std::endl;
-      p_context_queues = new ContextQueues();
-      std::cout << "ContextQueues created, starting the pipeline thread"
-                << std::endl;
-      std::thread pipeline_thread(pipeline_loop,
-                                  _odla_computation::instance());
-      std::cout << "Pipeline loop started" << std::endl;
-      pipeline_thread.detach();
+void QManager::createQ(std::string queueType)
+{
+  if(nullptr == queue_){
+    std::lock_guard<std::mutex> guard(create_mutex_);
+    if(nullptr == queue_){
+      if(queueType == "ContextQueues")
+        queue_ = new ContextQueues();
+      else if(queueType == "LockFreeQueue")
+        queue_ = new LockFreeQueue();
+      else
+        throw std::invalid_argument("[QManager::createQ] invalid queueType: "
+                + queueType + ", should be ContextQueues or LockFreeQueue.");
+      popart::logging::info("Created queue with queueType: {}.", queueType);
     }
   }
-  return p_context_queues;
 }
 
 void ContextQueues::put(odla_context ctx)
 {
-  std::cout << "ContextQueues::put -> ctx: " << ctx << std::endl;
+  popart::logging::info("ContextQueues::put -> ctx: {}.", ctx);
   {
     std::lock_guard<std::mutex> guard(write_mutex);
     write_queue->push(ctx);
     write_wait_queue->push(ctx);  //put the ctx to input & wait_output queue in same order.
   }
-  ctx->wait();  //block the request on the queue to wait for output
 }
 
 odla_context ContextQueues::get_input_context()
@@ -112,7 +113,9 @@ odla_context ContextQueues::get_input_context()
     std::queue<odla_context>* tmp = read_queue;
     read_queue = write_queue;
     write_queue = tmp;
-    std::cout << "===============> switched the read write queue, now read queu size is: " << read_queue->size() << std::endl;
+    popart::logging::info(
+      "switched the read write queue, now read queu size is: {}.", 
+      read_queue->size());
     if(!read_queue->empty())
       input_ctx = read_queue->front();
     else{  //create a zero data if there's not data in the 2 queues
@@ -128,7 +131,6 @@ odla_context ContextQueues::get_output_context()
 {
   if(output_ctx != nullptr)
     return output_ctx;
-  //output_ctx = wait_output_queue.front();
   if(!read_wait_queue->empty())
     output_ctx = read_wait_queue->front();
   else{
@@ -137,133 +139,171 @@ odla_context ContextQueues::get_output_context()
     std::queue<odla_context>* tmp = read_wait_queue;
     read_wait_queue = write_wait_queue;
     write_wait_queue = tmp;
-    std::cout << "===============> switched the read write wait queue, now read queu size is: " << read_wait_queue->size() << std::endl;
+    popart::logging::info(
+      "switched the read write wait queue, now read queu size is: {}.", 
+      read_wait_queue->size());
   }
   if(!read_wait_queue->empty())
       output_ctx = read_wait_queue->front();
   if(nullptr == output_ctx)
-    std::cerr << " *** FATAL ERROR *** No context in the queue when an output gotten" << std::endl; //严重错误了，会导致数据匹配补上了，是不是可以考虑把输入的数据也放到输出里面，比较一下MD5来确保对应关系
+    throw std::out_of_range(
+      "*** FATAL ERROR *** No context in the queue when an output gotten");
   return output_ctx;
 }
 
-void ContextQueues::all_tensor_read() {
-  std::cout << "ContextQueues::all_tensor_read(), ctx: " << input_ctx
-            << " poped, and put into wait_output_queue" << std::endl;
+void ContextQueues::pop_input() {
+  popart::logging::info("ContextQueues::pop_input with ctx: {}", input_ctx);
   if(!input_ctx->deletable()) //Only pop the non zero ctx, the zero one not in the queue
       read_queue->pop();
-  //wait_output_queue.push(input_ctx); //不用push了，进入的时候大家按顺序进入两个Queue
   input_ctx = nullptr;
 }
 
-void ContextQueues::all_tensor_written() { //Never delete a context here, only operate on the queue
+void ContextQueues::pop_output() { //Never delete a context here, only operate on the queue
   //wait_output_queue.pop();
   if(!read_wait_queue->empty()) //There must be an element when all tensor written
     read_wait_queue->pop(); //pop the first one from the read wait queue
   else{ 
-    std::cerr << "*** FATAL ERROR *** when all_tensor_written, there is not a ctx in read_wait_queue" << std::endl;
-    exit(-1);
+    throw std::out_of_range(
+      "*** FATAL ERROR *** no ctx in read_wait_queue when pop_output called");
   }
   output_ctx = nullptr;
 }
 
-#define CB_NULL_QUEUE 100
-#define CB_NULL_TENSOR 101
+/*------------------------------------------------------------------------*/
+LockFreeQueue::LockFreeQueue():head_(0), tail_(0), wait_(0)
+{
+}
 
+void LockFreeQueue::init(std::size_t capacity)
+{
+  buffer_ = new odla_context[capacity];
+  if(nullptr == buffer_)
+    throw std::invalid_argument(
+      "LockFreeQueue::init failed to create buffer for queue with capacity : "
+       + std::to_string(capacity));
+  capacity_ = capacity;
+}
+
+void LockFreeQueue::put(odla_context ctx)
+{
+  int idx = 0;
+  int new_idx = 0;
+  int cnt = 0;
+  popart::logging::info(
+    "[LockFreeQueue::put] Finding a place to put ctx: {}", ctx);
+  do{
+    cnt++;
+    idx = tail_;
+    new_idx = (idx+1) % capacity_;
+    if(new_idx == head_ && tail_.load() == idx)
+      throw std::out_of_range("[LockFreeQueue::put] the queue is full");
+  }while(!tail_.compare_exchange_strong(idx, new_idx));
+  popart::logging::info(
+    "[LockFreeQueue::put] Got the idx: {} for ctx: {} in {} times.", 
+    idx, ctx, cnt);
+  buffer_[idx] = ctx;
+}
+
+odla_context LockFreeQueue::get_input_context() //read是callback单线程操作，并且不能马上出队，需要所有tensor都读完
+{
+  int i = 0;
+  while(head_ == tail_.load())
+  {
+    assert(i++<2);  //only loop once, it must find an element, otherwise wrong
+    popart::logging::info(
+      "[get_input_context] the queue is empty when read, add zero contexts");
+    odla_context zero_ctx = create_empty_odla_context();
+    put(zero_ctx);
+  }
+  return buffer_[head_];
+}
+
+odla_context LockFreeQueue::get_output_context()
+{
+  if(wait_ == tail_.load())
+    throw std::out_of_range(
+      "[LockFreeQueue] queue is empty when get_output_context().");
+  return buffer_[wait_];
+}
+
+void LockFreeQueue::pop_input()
+{
+  head_ = (head_+1) % capacity_;
+}
+
+void LockFreeQueue::pop_output()
+{
+  wait_ = (wait_ + 1) % capacity_;
+}
+
+
+/*======================================== step io callbacks =========================================*/
 popart::StepIOCallback::InputCallback input_callback =
     [&](popart::TensorId id, bool prefetch) -> popart::ConstVoidData {
-  popart::logging::info("input callback called {}", id);
-  std::cout << "input_callback called with id: " << id << std::endl;
-  (void)prefetch;
-  //Get the data from the context queues
-  popart::ConstVoidData data;
-  odla_context ctx = ContextQueues::get_instance()->get_input_context();
-  if(nullptr != ctx)
-  {
-    std::cout << "input_callback got ctx: " << ctx << std::endl;
-    popart::IArray* p_array = ctx->get_data_by_tensor_id(id);
-    if(nullptr != p_array)
-    {
-      data.data = p_array->data();
-      std::cout << "input_callback -> the p_array dataType is: " << p_array->dataType() << ", shape is: " << p_array->shape() << std::endl;
-      data.info = popart::TensorInfo(p_array->dataType(), p_array->shape());
-    }
-    else
-    {
-      std::cerr << "input_callback -> Can not find the tensor with id: " << id << " in ctx: " << ctx << std::endl;
-      exit(CB_NULL_TENSOR);
-    }
-    if(ctx->all_tensors_visited()){
-      std::cout << "input_complete_callback -> All tensors read for current context:" << ctx << std::endl;
-      ContextQueues::get_instance()->all_tensor_read();
-    }
+  // auto start = std::chrono::steady_clock::now();
+  
+  odla_context ctx = QManager::instance()->getQ()->get_input_context();
+  popart::logging::info("InputCallback called with id: {}, ctx: {}", id, ctx);
+  popart::IArray* p_array = ctx->get_data_by_tensor_id(id);
+  popart::ConstVoidData data(
+    p_array->data(),
+    popart::TensorInfo(p_array->dataType(), p_array->shape()));
+  if(ctx->all_tensors_visited()){
+    QManager::instance()->getQ()->pop_input();
   }
-  else  //the ctx should never be nullptr
-  {
-    std::cout << "input_callback -> Queue is empty when try to get" << std::endl;
-    std::cout << "input_callback -> return nullptr data" << std::endl;
-    exit(CB_NULL_QUEUE);
-  }
+
+  // auto end = std::chrono::steady_clock::now();
+  // std::chrono::duration<double> elapsed_seconds = end-start;
+  // popart::logging::info(
+  //   "[EYECATCHER] ctx: {} popart::StepIOCallback::InputCallback takes {} s."
+  //   , ctx, elapsed_seconds.count());
   return data;
 };
 
 popart::StepIOCallback::InputCompleteCallback input_complete_callback =
     [&](popart::TensorId id) -> void {
-  std::cout << "input_complete_callback -> called: " << id << ", nothing to do..." << std::endl;
-  // odla_context ctx = ContextQueues::get_instance()->get_input_context();
-  // if(nullptr == ctx)
-  // {
-  //   std::cout << "input_complete_callback -> Queue is empty when try to get" << std::endl;
-  //   exit(CB_NULL_QUEUE);
-  // }
-  // if(ctx->all_tensors_visited()){
-  //   std::cout << "input_complete_callback -> All tensors read for current context:" << ctx << std::endl;
-  //   ContextQueues::get_instance()->all_tensor_read();
-  // }
 };
 
 popart::StepIOCallback::OutputCallback output_callback =
     [&](popart::TensorId id) -> popart::MutableVoidData {
-  popart::logging::info("output callback called {}", id);
-  std::cout << "output_callback -> called with id: " << id << std::endl;
-  odla_context ctx = ContextQueues::get_instance()->get_output_context();
-  if(nullptr == ctx)
-  {
-    std::cout << "output_callback <- Queue is empty when try to get" << std::endl;
-    exit(CB_NULL_QUEUE);
-  }
+  // auto start = std::chrono::steady_clock::now();
+
+  odla_context ctx = QManager::instance()->getQ()->get_output_context();
+  popart::logging::info("OutputCallback called with id: {} ctx: {}", id, ctx);
   popart::IArray* p_array = ctx->write_data_by_tensor_id(id);
-  if(NULL == p_array)
-  {
-    std::cerr << "output_callback <- Can not find the tensor with id: " << id << " in ctx: " << ctx << std::endl;
-    exit(CB_NULL_TENSOR);
-  }
   popart::MutableVoidData data;
   data.data = p_array->data();
   data.info = popart::TensorInfo(p_array->dataType(), p_array->shape());
+
+  // auto end = std::chrono::steady_clock::now();
+  // std::chrono::duration<double> elapsed_seconds = end-start;
+  // popart::logging::info(
+  //   "[EYECATCHER] ctx: {} popart::StepIOCallback::OutputCallback takes {} s.",
+  //   ctx, elapsed_seconds.count());
   return data;
 };
 
 popart::StepIOCallback::OutputCompleteCallback output_complete_callback =
     [&](popart::TensorId id) -> void {
-  popart::logging::info("output complete callback called {}", id);
-  std::cout << "output_complete_callback -> called with id: " << id << std::endl;
-  odla_context ctx = ContextQueues::get_instance()->get_output_context();
-  if(nullptr == ctx)
-  {
-    std::cout << "output_complete_callback -> Queue is empty when try to get" << std::endl;
-    exit(CB_NULL_QUEUE);
-  }
+  // auto start = std::chrono::steady_clock::now();
+  odla_context ctx = QManager::instance()->getQ()->get_output_context();
+  popart::logging::info(
+    "OutputCompleteCallback called with id: {}, ctx: {}", id, ctx);
   if(ctx->all_tensors_written()){
-    std::cout << "output_complete_callback -> All tensors written for current context waiting output: " << ctx << std::endl;
-    ContextQueues::get_instance()->all_tensor_written();
+    popart::logging::info("All tensors written for ctx: {}", ctx);
+    QManager::instance()->getQ()->pop_output();
     ctx->clear_visited_and_written();
-    odla_context temp_ctx = nullptr;
     if(ctx->deletable()){
-        std::cout << "Delete the context after notify: " << ctx << std::endl;
-        temp_ctx = ctx;
+        ctx->notify();  //unblock the request
+        popart::logging::info("ctx: {} has been deleted", ctx);
     }
-    ctx->notify();  //unblock the request
-    if(temp_ctx)
-      delete temp_ctx;
+    else
+      ctx->notify();  //unblock the request
   }
+
+  // auto end = std::chrono::steady_clock::now();
+  // std::chrono::duration<double> elapsed_seconds = end-start;
+  // popart::logging::info(
+  //   "[EYECATCHER] ctx: {} OutputCompleteCallback takes {} s.", 
+  //   ctx, elapsed_seconds.count());
 };
