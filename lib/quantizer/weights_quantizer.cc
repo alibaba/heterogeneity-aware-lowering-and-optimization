@@ -83,8 +83,9 @@ void static QuantToFp16(Constant* val) {
 
 void WeightsQuantizer::RunOnConstant(Constant* val) {
   const auto& type = val->GetResultType();
-  // So far quint8 and float16 are supported.
-  HLCHECK(quant_ == Quantization::QUINT8 || quant_ == Quantization::FLOAT16);
+  // So far quint8/quint16/float16 are supported.
+  HLCHECK(quant_ == Quantization::QUINT8 || quant_ == Quantization::QUINT16 ||
+          quant_ == Quantization::FLOAT16);
   if (type.GetDataType() != DataType::FLOAT32) {
     return;
   }
@@ -159,11 +160,19 @@ void WeightsQuantizer::RunOnConstant(Constant* val) {
         }
         scale = input_it->second.scale * weight_it->second.scale;
       }
-      QuantTo<int32_t>(val, DataType::INT32, scale, 0);
+      if (quant_ == Quantization::QUINT8) {
+        QuantTo<int32_t>(val, DataType::INT32, scale, 0);
+      } else if (quant_ == Quantization::QUINT16) {
+        QuantTo<int64_t>(val, DataType::INT64, scale, 0);
+      }
       return;
     }
   }
-  QuantTo<uint8_t>(val, DataType::UINT8, scale, zp);
+  if (quant_ == Quantization::QUINT8) {
+    QuantTo<uint8_t>(val, DataType::UINT8, scale, zp);
+  } else if (quant_ == Quantization::QUINT16) {
+    QuantTo<uint16_t>(val, DataType::UINT16, scale, zp);
+  }
 }
 
 bool WeightsQuantizer::RunOnModule(Module* m) {

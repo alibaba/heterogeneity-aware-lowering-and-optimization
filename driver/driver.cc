@@ -227,6 +227,8 @@ static llvm::cl::opt<Quantization> QuantWeights(
                                 "Quantize weigths as quint8"),
                      clEnumValN(Quantization::FLOAT16, "float16",
                                 "Quantize weigths as float16")),
+    llvm::cl::values(clEnumValN(Quantization::QUINT16, "quint16",
+                                "Quantize weigths as quint16")),
     "quantize-weights", llvm::cl::desc("Emit weights as quantized"),
     llvm::cl::init(Quantization::None), llvm::cl::cat(HaloOptCat));
 
