@@ -296,8 +296,9 @@ popart::StepIOCallback::OutputCompleteCallback output_complete_callback =
     popart::logging::info("All tensors written for ctx: {}", ctx);
     QManager::instance()->getQ()->pop_output();
     ctx->clear_visited_and_written();
-    if(ctx->deletable()){
-        ctx->notify();  //unblock the request
+    if(ctx->deletable()){ //only empty context can be deleted,
+        ctx->notify();    // and no one will use the ctx after notify
+        delete ctx;
         popart::logging::info("ctx: {} has been deleted", ctx);
     }
     else
