@@ -80,7 +80,7 @@ struct _odla_context {
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> inputs;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> outputs;
 
-  _odla_context(odla_computation c): comp(c) {}
+  _odla_context(odla_computation c) : comp(c) {}
 };
 
 #endif

@@ -77,8 +77,8 @@ std::unique_ptr<popart::SessionOptions> SessionOptions() {
   const char* envEngineCachePath = getenv("ENGINE_CACHE_PATH");
   if (g_comp->opts.enable_engine_cache || envEngineCachePath != nullptr) {
     opts->enableEngineCaching = true;
-    opts->cachePath = g_comp->opts.enable_engine_cache ? 
-	              g_comp->opts.cache_dir : envEngineCachePath;
+    opts->cachePath = g_comp->opts.enable_engine_cache ? g_comp->opts.cache_dir
+	                                               : envEngineCachePath;
   }
   return opts;
 }
@@ -110,7 +110,7 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
 }
 
 odla_status odla_StoreExecutable(const odla_char* file_name,
-    odla_executable executable) {
+                                 odla_executable executable) {
   return ODLA_SUCCESS;
 }
 
@@ -143,7 +143,7 @@ odla_status odla_CreateComputation(odla_computation* comp) {
     }
   }
 
-    // Create dataflow
+  // Create dataflow
   std::vector<popart::TensorId> ids;
   for (const auto& output : g_comp->outputs_map) {
     ids.push_back(output.second->tensor_id);
