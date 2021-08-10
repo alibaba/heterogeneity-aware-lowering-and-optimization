@@ -17,6 +17,7 @@
 // =============================================================================
 #include <mutex>
 #include <iostream>
+#include <chrono>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <bits/stdc++.h>
@@ -44,6 +45,8 @@ void compute_loop(odla_computation comp)
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed_seconds = end-start;
     popart::logging::warn("[ {} ] times loop takes {} s.", i, elapsed_seconds.count());
+    while(QManager::instance()->getQ()->size() == 0)
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
   }
   popart::logging::warn("The pipeline loop finished");
   comp->thread_complete_ = true;
