@@ -42,6 +42,7 @@ public:
   virtual odla_context get_output_context() = 0;
   virtual void pop_input(odla_context ctx) = 0;
   virtual void pop_output(odla_context ctx) = 0;
+  virtual std::size_t size() = 0;
 };
 
 class ContextQueues : public Queue {
@@ -74,6 +75,7 @@ public:
   odla_context get_output_context() final;
   void pop_input(odla_context ctx) final;
   void pop_output(odla_context ctx) final;
+  std::size_t size() final {return input_queue_1.size() + input_queue_2.size();}
 };
 
 class LockFreeQueue : public Queue
@@ -94,6 +96,7 @@ public:
   odla_context get_output_context() final;
   void pop_input(odla_context ctx) final;
   void pop_output(odla_context ctx) final;
+  std::size_t size() final {return (tail_.load() - head_ + capacity_)%capacity_;}
 };
 
 class QManager
