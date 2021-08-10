@@ -40,8 +40,8 @@ public:
   virtual void put(odla_context ctx) = 0;
   virtual odla_context get_input_context() = 0;
   virtual odla_context get_output_context() = 0;
-  virtual void pop_input() = 0;
-  virtual void pop_output() = 0;
+  virtual void pop_input(odla_context ctx) = 0;
+  virtual void pop_output(odla_context ctx) = 0;
 };
 
 class ContextQueues : public Queue {
@@ -72,18 +72,19 @@ public:
   void put(odla_context ctx) final;
   odla_context get_input_context() final;
   odla_context get_output_context() final;
-  void pop_input() final;
-  void pop_output() final;
+  void pop_input(odla_context ctx) final;
+  void pop_output(odla_context ctx) final;
 };
 
 class LockFreeQueue : public Queue
 {
 private:
-  odla_context* buffer_;
+  //odla_context* buffer_;
+  std::atomic<odla_context>* buffer_;
   std::size_t capacity_;
-  int head_;
-  std::atomic<int> tail_;
-  int wait_;
+  uint32_t head_;
+  std::atomic<uint32_t> tail_;
+  uint32_t wait_;
 public:
   LockFreeQueue();
   ~LockFreeQueue(){if(buffer_) delete[] buffer_;}
@@ -91,8 +92,8 @@ public:
   void put(odla_context ctx) final;
   odla_context get_input_context() final;
   odla_context get_output_context() final;
-  void pop_input() final;
-  void pop_output() final;
+  void pop_input(odla_context ctx) final;
+  void pop_output(odla_context ctx) final;
 };
 
 class QManager

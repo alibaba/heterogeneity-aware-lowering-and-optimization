@@ -151,14 +151,14 @@ odla_context ContextQueues::get_output_context()
   return output_ctx;
 }
 
-void ContextQueues::pop_input() {
+void ContextQueues::pop_input(odla_context ctx) {
   popart::logging::info("ContextQueues::pop_input with ctx: {}", input_ctx);
   if(!input_ctx->deletable()) //Only pop the non zero ctx, the zero one not in the queue
       read_queue->pop();
   input_ctx = nullptr;
 }
 
-void ContextQueues::pop_output() { //Never delete a context here, only operate on the queue
+void ContextQueues::pop_output(odla_context ctx) { //Never delete a context here, only operate on the queue
   //wait_output_queue.pop();
   if(!read_wait_queue->empty()) //There must be an element when all tensor written
     read_wait_queue->pop(); //pop the first one from the read wait queue
@@ -176,19 +176,21 @@ LockFreeQueue::LockFreeQueue():head_(0), tail_(0), wait_(0)
 
 void LockFreeQueue::init(std::size_t capacity)
 {
-  buffer_ = new odla_context[capacity];
+  buffer_ = new std::atomic<odla_context>[capacity];
   if(nullptr == buffer_)
     throw std::invalid_argument(
       "LockFreeQueue::init failed to create buffer for queue with capacity : "
        + std::to_string(capacity));
+  for(int i=0; i < capacity; i++)
+    buffer_[i] = nullptr;
   capacity_ = capacity;
 }
 
 void LockFreeQueue::put(odla_context ctx)
 {
-  int idx = 0;
-  int new_idx = 0;
-  int cnt = 0;
+  uint32_t idx = 0;
+  uint32_t new_idx = 0;
+  uint32_t cnt = 0;
   popart::logging::info(
     "[LockFreeQueue::put] Finding a place to put ctx: {}", ctx);
   do{
@@ -196,28 +198,47 @@ void LockFreeQueue::put(odla_context ctx)
     idx = tail_;
     new_idx = (idx+1) % capacity_;
   }while(!tail_.compare_exchange_strong(idx, new_idx));
+
   if(new_idx == wait_) // last item as the boundary
-    throw std::out_of_range("[LockFreeQueue::put] the queue is full");
+    throw std::out_of_range("LockFreeQueue::put the queue is full");
   popart::logging::info(
     "[LockFreeQueue::put] Got the idx: {} for ctx: {} in {} times.", 
     idx, ctx, cnt);
-  buffer_[idx] = ctx;
+
+  odla_context null_value = nullptr;
+  cnt = 0;
+  while(!buffer_[idx].compare_exchange_strong(null_value, ctx)){  //avoid consumed by the head_ before written
+    if( cnt++ > 5)
+      throw std::runtime_error("LockFreeQueue::put No one should stop me");
+  }
+  popart::logging::info(
+      "[LockFreeQueue::put] Set the idx: {} for ctx: {} in {} times.", 
+      idx, ctx, cnt);
 }
 
-odla_context LockFreeQueue::get_input_context() //read是callback单线程操作，并且不能马上出队，需要所有tensor都读完
+odla_context LockFreeQueue::get_input_context() //only return the head_, ++ will be done when pop_input
 {
-  int i = 0;
+  uint32_t cnt = 0;
   while(head_ == tail_.load())
   {
-    assert(i++<2);  //only loop once, it must find an element, otherwise wrong
     popart::logging::info(
       "[get_input_context] the queue is empty when read, add zero contexts");
+    //return nullptr;
+    if(cnt++ > 1)
+      throw std::runtime_error("Must get one ctx in 2 fetch, as empty one created.");
     odla_context zero_ctx = create_empty_odla_context();
     put(zero_ctx);
     popart::logging::info(
       "After this we expect at least 4 read on this ctx: {}.", zero_ctx);
   }
-  return buffer_[head_];
+  cnt = 0;
+  while(buffer_[head_].load() == nullptr){
+    if(cnt++ > 2)
+      throw std::runtime_error("Must get a valid ctx in 3 times, tiny window");
+    popart::logging::info(
+      "Reading ctx with head_: {} encounter nullptr {} times.", head_, cnt);
+  }
+  return buffer_[head_].load();
 }
 
 odla_context LockFreeQueue::get_output_context()
@@ -225,17 +246,23 @@ odla_context LockFreeQueue::get_output_context()
   if(wait_ == tail_.load())
     throw std::out_of_range(
       "[LockFreeQueue] queue is empty when get_output_context().");
-  return buffer_[wait_];
+  return buffer_[wait_].load();
 }
 
-void LockFreeQueue::pop_input()
+void LockFreeQueue::pop_input(odla_context ctx)
 {
-  popart::logging::info("pop_input called with ctx: {}", buffer_[head_]);
+  popart::logging::info("pop_input called with ctx: {}", ctx);
+  assert(ctx == buffer_[head_].load());
   head_ = (head_+1) % capacity_;
 }
 
-void LockFreeQueue::pop_output()
+void LockFreeQueue::pop_output(odla_context ctx)
 {
+  if(wait_ == head_)
+    throw std::runtime_error("Got out before input all read on index "
+                            + std::to_string(wait_));
+  if(!buffer_[wait_].compare_exchange_strong(ctx, nullptr))
+    throw std::runtime_error("pop_output() there should not have competion");
   wait_ = (wait_ + 1) % capacity_;
 }
 
@@ -246,15 +273,24 @@ popart::StepIOCallback::InputCallback input_callback =
   // auto start = std::chrono::steady_clock::now();
   
   odla_context ctx = QManager::instance()->getQ()->get_input_context();
-  popart::logging::info("InputCallback called with id: {}, ctx: {}", id, ctx);
-  popart::IArray* p_array = ctx->get_data_by_tensor_id(id);
-  popart::ConstVoidData data(
-    p_array->data(),
-    popart::TensorInfo(p_array->dataType(), p_array->shape()));
-  if(ctx->all_tensors_visited()){
-    QManager::instance()->getQ()->pop_input();
+  popart::ConstVoidData data;
+  if(nullptr != ctx)
+  {
+    popart::logging::info("InputCallback called with id: {}, ctx: {}", id, ctx);
+    popart::IArray* p_array = ctx->get_data_by_tensor_id(id);
+    // popart::ConstVoidData data(
+    //   p_array->data(),
+    //   popart::TensorInfo(p_array->dataType(), p_array->shape()));
+    data.data = p_array->data();
+    data.info = popart::TensorInfo(p_array->dataType(), p_array->shape());
+    if(ctx->all_tensors_visited()){
+      QManager::instance()->getQ()->pop_input(ctx);
+    }
   }
-
+  else
+  {
+    data.data = nullptr;
+  }
   // auto end = std::chrono::steady_clock::now();
   // std::chrono::duration<double> elapsed_seconds = end-start;
   // popart::logging::info(
@@ -294,7 +330,7 @@ popart::StepIOCallback::OutputCompleteCallback output_complete_callback =
     "OutputCompleteCallback called with id: {}, ctx: {}", id, ctx);
   if(ctx->all_tensors_written()){
     popart::logging::info("All tensors written for ctx: {}", ctx);
-    QManager::instance()->getQ()->pop_output();
+    QManager::instance()->getQ()->pop_output(ctx);
     ctx->clear_visited_and_written();
     if(ctx->deletable()){ //only empty context can be deleted,
         ctx->notify();    // and no one will use the ctx after notify
