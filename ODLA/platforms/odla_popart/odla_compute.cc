@@ -78,7 +78,7 @@ std::unique_ptr<popart::SessionOptions> SessionOptions() {
   if (g_comp->opts.enable_engine_cache || envEngineCachePath != nullptr) {
     opts->enableEngineCaching = true;
     opts->cachePath = g_comp->opts.enable_engine_cache ? g_comp->opts.cache_dir
-	                                                : envEngineCachePath;
+                                                       : envEngineCachePath;
   }
   return opts;
 }
