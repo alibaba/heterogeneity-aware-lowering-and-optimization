@@ -331,13 +331,13 @@ int main(int argc, char** argv) {
       llvm::sys::path::append(file_name,
                               llvm::sys::path::parent_path(OutputFile),
                               TritonConfigFile);
-      TritonConfigFile = file_name.str();
+      TritonConfigFile = std::string(file_name);
     }
   }
   llvm::StringRef name(OutputFile);
 
   if (CheckModel) {
-    of_dynamic_check.open(GetDerivedFileName(name, ".main.cc.in"),
+    of_dynamic_check.open(GetDerivedFileName(name.str(), ".main.cc.in"),
                           std::ofstream::binary);
     out_dynamic_check = &of_dynamic_check;
   }
@@ -438,7 +438,7 @@ int main(int argc, char** argv) {
     if (OutputFile == "-") {
       std::cout.rdbuf(of_header.rdbuf());
     } else {
-      of_header.open(header_file_name.str());
+      of_header.open(std::string(header_file_name));
     }
     of_header << buf_header.str();
   }
@@ -455,7 +455,7 @@ int main(int argc, char** argv) {
     }
 
     std::ofstream of_constants;
-    of_constants.open(data_file_name.str(), std::ofstream::binary);
+    of_constants.open(std::string(data_file_name), std::ofstream::binary);
     of_constants << buf_constants.str();
   }
   return 0;
