@@ -117,15 +117,16 @@ odla_status odla_DestroyContext(odla_context ctx) {
 odla_status odla_DestroyComputation(odla_computation comp) {
   //std::cout << "Mark the computation done ..." << std::endl;
   comp->mark_done();
-  int cnt = 0;
-  while(comp->thread_complete_){
-    //std::cout << "[" << cnt << "] Wating for the thread loop end..." << std::endl;
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    if(cnt++ > 50)
-    {
-      std::cerr << "Thread did not exit in 5 seconds, stop waiting..." << std::endl;
-    }
-  }
+  // int cnt = 0;
+  // while(comp->thread_complete_){
+  //   //std::cout << "[" << cnt << "] Wating for the thread loop end..." << std::endl;
+  //   std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  //   if(cnt++ > 50)
+  //   {
+  //     std::cerr << "Thread did not exit in 5 seconds, stop waiting..." << std::endl;
+  //     break;
+  //   }
+  // }
   if (comp->session != nullptr){
     comp->session->getDevice().getDeviceInfo()->detach();
     comp->session.reset();
