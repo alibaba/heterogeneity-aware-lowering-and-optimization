@@ -15,13 +15,29 @@
 // limitations under the License.
 // =============================================================================
 
+#include <dlfcn.h>
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <cmath>
 #include <iostream>
+#include <popart/builder.hpp>
+#include <popart/devicemanager.hpp>
+#include <popart/logging.hpp>
+#include <popart/ndarraywrapper.hpp>
+#include <popart/op.hpp>
+#include <popart/op/l1.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/popx/opx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/session.hpp>
+#include <popart/tensordata.hpp>
+#include <popart/tensorinfo.hpp>
+#include <popart/tensornames.hpp>
 #include <string>
 #include <vector>
+
+using namespace popart;
 
 static const std::vector<std::string> ClassesNames{
 #include "coco_classes.txt"
@@ -86,7 +102,7 @@ static void decode(int orig_img_w, int orig_img_h, float* bb,
     }
   }
 }
-
+// Using Custom Op. Too Slow...
 std::vector<std::pair<std::string, std::array<float, 5>>> post_process_nhwc(
     int orig_img_w, int orig_img_h, float bb13[1 * 13 * 13 * 255],
     float bb26[1 * 26 * 26 * 255], float bb52[1 * 52 * 52 * 255]) {
@@ -96,56 +112,103 @@ std::vector<std::pair<std::string, std::array<float, 5>>> post_process_nhwc(
   decode<1, 13, 80>(orig_img_w, orig_img_h, bb13, anchor_masks[0]);
   decode<1, 26, 80>(orig_img_w, orig_img_h, bb26, anchor_masks[1]);
   decode<1, 52, 80>(orig_img_w, orig_img_h, bb52, anchor_masks[2]);
-
   // NMS
-  constexpr float score_thre = 0.3;
-  constexpr float iou_thre = 0.45;
+  float score_thre = 0.3;
+  float iou_thre = 0.45;
   std::vector<std::pair<std::string, std::array<float, 5>>> ret;
-  for (int cls = 0; cls < ClassesNames.size(); ++cls) {
-    std::vector<const float*> boxes;
-    boxes.reserve((13 * 13 + 26 * 26 + 52 * 52) * 3);
-    auto append = [&boxes](const float* start, int n, int cls, float thre) {
-      for (int i = 0; i < n; ++i) {
-        if (start[5 + cls] >= score_thre) {
-          boxes.push_back(start);
-        }
-        start += 85;
-      }
-    };
-    append(bb13, 13 * 13 * 3, cls, score_thre);
-    append(bb26, 26 * 26 * 3, cls, score_thre);
-    append(bb52, 52 * 52 * 3, cls, score_thre);
-    std::sort(boxes.begin(), boxes.end(),
-              [cls](const float* lhs, const float* rhs) {
-                return lhs[5 + cls] > rhs[5 + cls];
-              });
-    auto is_overlapping = [&boxes, iou_thre](const float* selected,
-                                             const float* curr) {
-      // assume origin is top left.
-      auto y_top = std::max(selected[0], curr[0]);
-      auto x_left = std::max(selected[1], curr[1]);
-      auto y_bot = std::min(selected[2], curr[2]);
-      auto x_right = std::min(selected[3], curr[3]);
-      if (x_right < x_left || y_bot < y_top) {
-        return false;
-      }
 
-      float comm_area = (x_right - x_left) * (y_bot - y_top);
-      float selected_area =
-          (selected[2] - selected[0]) * (selected[3] - selected[1]);
-      float curr_area = (curr[2] - curr[0]) * (curr[3] - curr[1]);
+  void* handle =
+      dlopen("vision/detection/yolo/build/libcustom_ops.so", RTLD_LAZY);
+  if (!handle) {
+    std::cerr << "Cannot open library: " << dlerror() << std::endl;
+  }
 
-      float iou = comm_area / (selected_area + curr_area - comm_area);
-      return iou > iou_thre;
-    };
+  const unsigned n1 = 13 * 13 * 3;
+  const unsigned n2 = 26 * 26 * 3;
+  const unsigned n3 = 52 * 52 * 3;
+  const unsigned n = n1 + n2 + n3;
+  auto builder = popart::Builder::create();
+  auto aiOnnx = builder->aiOnnxOpset9();
+  // Add input tensors
+  popart::TensorInfo inputInfo1{"FLOAT", std::vector<int64_t>{n1, 85}};
+  popart::TensorInfo inputInfo2{"FLOAT", std::vector<int64_t>{n2, 85}};
+  popart::TensorInfo inputInfo3{"FLOAT", std::vector<int64_t>{n3, 85}};
+  popart::TensorInfo inputInfo4{"FLOAT", std::vector<int64_t>{}};
+  popart::TensorInfo inputInfo5{"FLOAT", std::vector<int64_t>{}};
+  std::cout << "Adding input tensor\n";
+  auto input1 = builder->addInputTensor(inputInfo1);
+  auto input2 = builder->addInputTensor(inputInfo2);
+  auto input3 = builder->addInputTensor(inputInfo3);
+  auto inputbb = aiOnnx.concat({input1, input2, input3}, 0);
+  auto input4 = builder->addInputTensor(inputInfo4);
+  auto input5 = builder->addInputTensor(inputInfo5);
 
-    for (int i = 0, selected = 0, e = boxes.size(); i < e; ++i) {
-      if (i == 0 || !is_overlapping(boxes[selected], boxes[i])) {
-        selected = i;
-        ret.push_back({ClassesNames[cls],
-                       {boxes[i][0], boxes[i][1], boxes[i][2], boxes[i][3],
-                        boxes[i][5 + cls]}});
-      }
+  // Add operation
+  std::cout << "Adding custom operation nms(input)\n";
+  const popart::OperatorIdentifier nms(popart::Domain::ai_graphcore, "NMS", 1,
+                                       3, 2);
+  auto o = builder->customOp(nms, 1, {inputbb, input4, input5}, 2, {});
+  auto o1 = o[0];
+  auto o2 = o[1];
+
+  // Add output tensor
+  std::cout << "Adding output tensor o\n";
+  builder->addOutputTensor(o1);
+  builder->addOutputTensor(o2);
+
+  std::cout << "Getting model proto\n";
+  auto proto = builder->getModelProto();
+
+  std::cout << "Constructing DataFlow\n";
+  auto dataFlow = popart::DataFlow(1, {{o1, popart::AnchorReturnType("ALL")},
+                                       {o2, popart::AnchorReturnType("ALL")}});
+
+  std::map<std::string, std::string> deviceOpts{{"numIPUs", "1"},
+                                                {"tilesPerIPU", "40"}};
+  auto ipuModelDevice =
+      popart::DeviceManager::createDeviceManager().createIpuModelDevice(
+          deviceOpts);
+  // or acquireAvailableDevice();
+  std::cout << "Creating session from Onnx Model...\n";
+  auto session = popart::InferenceSession::createFromOnnxModel(proto, dataFlow,
+                                                               ipuModelDevice);
+  std::cout << "Creating session from Onnx Model...done\n";
+  Shape zeroDim{};
+  popart::NDArrayWrapper<float> inData1(bb13, {n1, 85});
+  popart::NDArrayWrapper<float> inData2(bb26, {n2, 85});
+  popart::NDArrayWrapper<float> inData3(bb52, {n3, 85});
+  popart::NDArrayWrapper<float> inData4(&iou_thre, zeroDim);
+  popart::NDArrayWrapper<float> inData5(&score_thre, zeroDim);
+  std::map<popart::TensorId, popart::IArray&> inputs = {{input1, inData1},
+                                                        {input2, inData2},
+                                                        {input3, inData3},
+                                                        {input4, inData4},
+                                                        {input5, inData5}};
+  // Prepare output tensor
+  std::vector<unsigned> selected_num(80);
+  std::vector<float> selected_info(80 * n * 5);
+  popart::NDArrayWrapper<float> outData1(selected_info.data(), {80, n, 5});
+  popart::NDArrayWrapper<uint32_t> outData2(selected_num.data(), {80});
+  std::map<popart::TensorId, popart::IArray&> anchors = {{o1, outData1},
+                                                         {o2, outData2}};
+  std::cout << "Preparing session device...\n";
+  session->prepareDevice();
+  std::cout << "Preparing session device...done\n";
+
+  popart::StepIO stepio(inputs, anchors);
+
+  std::cout << "Running..."
+            << "\n";
+  session->run(stepio);
+  std::cout << "Running...done"
+            << "\n";
+  for (int cls = 0, idx = 0; cls < ClassesNames.size(); ++cls, idx += n * 5) {
+    for (int i = 0, e = selected_num[cls]; i < e; ++i) {
+      int tmp = idx + i * 5;
+      ret.push_back(
+          {ClassesNames[cls],
+           {selected_info[tmp], selected_info[tmp + 1], selected_info[tmp + 2],
+            selected_info[tmp + 3], selected_info[tmp + 4]}});
     }
   }
   return ret;
