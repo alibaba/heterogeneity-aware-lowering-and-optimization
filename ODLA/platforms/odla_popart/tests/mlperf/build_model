@@ -1,0 +1,2 @@
+#!/bin/bash
+/home/jackz/repos/HALO/build/bin/halo -target cxx /home/jackz/repos/MLPerf/models/model.onnx -disable-broadcasting -o model.cc

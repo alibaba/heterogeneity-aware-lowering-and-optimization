@@ -1,0 +1,4 @@
+mkdir -p build
+g++ model.cc -I/home/jackz/repos/HALO/ODLA/include -c -o build/model.o 
+g++ main.cc -Ibuild -I/home/jackz/repos/HALO/ODLA/include -I../ -c -o build/main.o 
+g++ -o build/demo build/main.o build/model.o model.bin -L/home/jackz/repos/HALO/build/lib -lodla_popart -L/home/jackz/repos/cnpy/build -lcnpy -Wl,-rpath=/home/jackz/repos/HALO/build/lib -lpthread

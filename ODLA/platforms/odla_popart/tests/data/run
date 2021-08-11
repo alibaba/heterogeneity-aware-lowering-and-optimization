@@ -1,0 +1,3 @@
+python ../npz_wrapper.py --file-names indices masks positions segments squad_gemm \
+    --dtypes UINT32 UINT32 UINT32 UINT32 FP16 \
+    --batch-size 10 --batches-per-step 128 --out-file bs10_bps128.npz
