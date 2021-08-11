@@ -146,7 +146,8 @@ odla_status odla_CreateComputation(odla_computation* comp) {
 }
 
 odla_status odla_CreateContext(odla_context* context) {
-  // Create dataflow
+  *context = new _odla_context(g_comp);
+    // Create dataflow
   std::vector<popart::TensorId> ids;
   for (const auto& output : g_comp->outputs_map) {
     ids.push_back(output.second->tensor_id);
@@ -166,18 +167,16 @@ odla_status odla_CreateContext(odla_context* context) {
 
   // Create InferenceSession
   auto proto = g_comp->builder->getModelProto();
-  auto session = popart::InferenceSession::createFromOnnxModel(
+  g_comp->session = popart::InferenceSession::createFromOnnxModel(
       proto, data_flow, device, popart::InputShapeInfo(), *opts);
-  *context = new _odla_context(std::move(session));
-  g_comp->context = *context;
 
   // Compile graph, create engine and load into the IPU
   // use compileAndExport() to frozen engine to specified path
-  (*context)->session->prepareDevice();
+  g_comp->session->prepareDevice();
   // Init seed
-  (*context)->session->setRandomSeed(0);
+  g_comp->session->setRandomSeed(0);
   // Copy weights from host to IPU
-  (*context)->session->weightsFromHost();
+  g_comp->session->weightsFromHost();
 
   return ODLA_SUCCESS;
 }
@@ -190,10 +189,9 @@ odla_status odla_DestroyContext(odla_context ctx) {
 }
 
 odla_status odla_DestroyComputation(odla_computation comp) {
-  if (comp->context != nullptr) {
-    comp->context->session->getDevice().getDeviceInfo()->detach();
-    comp->context->session.reset();
-    odla_DestroyContext(comp->context);
+  if (comp->session != nullptr) {
+    comp->session->getDevice().getDeviceInfo()->detach();
+    comp->session.reset();
   }
   if (g_comp = nullptr) {
     delete g_comp;
@@ -216,7 +214,7 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
 
   popart::StepIO stepio(inputs, outputs);
   // Run on ipu
-  context->session->run(stepio);
+  g_comp->session->run(stepio);
   return ODLA_SUCCESS;
 }
 
@@ -264,8 +262,8 @@ odla_value odla_CreateConstant(odla_value_type type, const void* data_ptr,
 odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                 odla_context context) {
   std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
-      data_ptr, g_comp->builder->getTensorDataType(value->tensor_id),
-      g_comp->builder->getTensorShape(value->tensor_id));
+      data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
+      context->comp->builder->getTensorShape(value->tensor_id));
   context->inputs[value->tensor_id] = std::move(p_array);
   return ODLA_SUCCESS;
 }
@@ -312,8 +310,8 @@ odla_status odla_GetOutputFromComputationByIdx(
 odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
                               odla_context context) {
   std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
-      data_ptr, g_comp->builder->getTensorDataType(value->tensor_id),
-      g_comp->builder->getTensorShape(value->tensor_id));
+      data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
+      context->comp->builder->getTensorShape(value->tensor_id));
   context->outputs[value->tensor_id] = std::move(p_array);
   return ODLA_SUCCESS;
 }

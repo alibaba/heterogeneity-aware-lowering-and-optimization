@@ -64,11 +64,11 @@ struct _odla_value {
 
 struct _odla_computation {
   std::unique_ptr<popart::Builder> builder;
+  std::unique_ptr<popart::InferenceSession> session;
   std::unordered_map<std::string, odla_value> inputs_map;
   std::unordered_map<std::string, odla_value> outputs_map;
   std::vector<odla_value> input_values;
   std::vector<odla_value> output_values;
-  _odla_context* context;
   target_opts opts;
 
   _odla_computation(std::unique_ptr<popart::Builder> b)
@@ -76,12 +76,11 @@ struct _odla_computation {
 };
 
 struct _odla_context {
-  std::unique_ptr<popart::InferenceSession> session;
+  odla_computation comp;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> inputs;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> outputs;
 
-  _odla_context(std::unique_ptr<popart::InferenceSession> sess)
-     : session(std::move(sess)) {}
+  _odla_context(odla_computation c) : comp(c) {}
 };
 
 #endif
