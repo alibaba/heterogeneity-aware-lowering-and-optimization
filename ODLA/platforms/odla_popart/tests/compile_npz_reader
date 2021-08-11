@@ -1,0 +1,2 @@
+#!/bin/bash
+g++ -o npz_reader npz_reader.cc -L/home/jackz/repos/cnpy/build -lcnpy -lz --std=c++11
