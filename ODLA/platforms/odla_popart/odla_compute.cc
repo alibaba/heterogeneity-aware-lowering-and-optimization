@@ -38,6 +38,7 @@
 #include <popart/stepio.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/voiddata.hpp>
+#include <poplar/exceptions.hpp>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -216,7 +217,34 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
 
   popart::StepIO stepio(inputs, outputs);
   // Run on ipu
-  g_comp->session->run(stepio);
+  try {
+    g_comp->session->run(stepio);
+  } catch (poplar::application_runtime_error& e) {
+    popart::logging::info("Poplar exception application_runtime_error caught:");
+    return ODLA_INTERNAL_LOGIC_ERR;
+  } catch (poplar::recoverable_runtime_error& e) {
+    popart::logging::info("Poplar recoverable_runtime_error exception caught");
+    auto action = e.getRecoveryAction();
+    popart::logging::info("need to take action:{}", action);
+    if (action == poplar::RecoveryAction::IPU_RESET) {
+      return ODLA_RECOVERABLE_ERR;
+    } else if (action == poplar::RecoveryAction::PARTITION_RESET) {
+      return ODLA_PARTITION_RESET;
+    } else if (action == poplar::RecoveryAction::FULL_RESET) {
+      return ODLA_FULL_RESET;
+    }
+  } catch (poplar::unrecoverable_runtime_error& e) {
+    popart::logging::info(
+        "Poplar unrecoverable_runtime_error exception caught");
+    return ODLA_UNRECOVERABLE_ERR;
+  } catch (poplar::unknown_runtime_error& e) {
+    popart::logging::info("Poplar unknown runtime exception caught}");
+    return ODLA_UNRECOVERABLE_ERR;
+  } catch (...) {
+    popart::logging::info("Poplar unknown exception caught");
+    return ODLA_UNRECOVERABLE_ERR;
+  }
+
   return ODLA_SUCCESS;
 }
 
