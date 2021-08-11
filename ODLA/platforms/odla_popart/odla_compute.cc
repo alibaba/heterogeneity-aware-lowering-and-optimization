@@ -168,7 +168,7 @@ odla_status odla_CreateContext(odla_context* context) {
   auto proto = g_comp->builder->getModelProto();
   auto session = popart::InferenceSession::createFromOnnxModel(
       proto, data_flow, device, popart::InputShapeInfo(), *opts);
-  *context = new odla_context(g_comp, std::move(session));
+  *context = new _odla_context(std::move(session));
   g_comp->context = *context;
 
   // Compile graph, create engine and load into the IPU

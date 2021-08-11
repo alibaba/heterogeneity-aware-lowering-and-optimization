@@ -76,13 +76,12 @@ struct _odla_computation {
 };
 
 struct _odla_context {
-  odla_computation comp;
   std::unique_ptr<popart::InferenceSession> session;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> inputs;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> outputs;
 
-  _odla_context(odla_comptation c, std::unique_ptr<popart::InferenceSession> sess)
-     : comp(c), session(std::move(sess)) {}
+  _odla_context(std::unique_ptr<popart::InferenceSession> sess)
+     : session(std::move(sess)) {}
 };
 
 #endif
