@@ -28,6 +28,9 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/voiddata.hpp>
+#include <poplar/exceptions.hpp>
+#include <random>
+#include <stdexcept>
 #include <string>
 
 #include "ODLA/odla_common.h"
