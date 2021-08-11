@@ -32,6 +32,7 @@
 #include <popart/devicemanager.hpp>
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/stepio.hpp>
@@ -72,6 +73,12 @@ std::unique_ptr<popart::SessionOptions> SessionOptions() {
       std::unique_ptr<popart::SessionOptions>(new popart::SessionOptions());
   opts->virtualGraphMode = popart::VirtualGraphMode::Auto;
   opts->enableStochasticRounding = true;
+  const char* envEngineCachePath = getenv("ENGINE_CACHE_PATH");
+  if (g_comp->opts.enable_engine_cache || envEngineCachePath != nullptr) {
+    opts->enableEngineCaching = true;
+    opts->cachePath = g_comp->opts.enable_engine_cache ? g_comp->opts.cache_dir
+                                                       : envEngineCachePath;
+  }
   return opts;
 }
 
@@ -91,13 +98,25 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
       comp->opts.enable_engine_cache = *(reinterpret_cast<bool*>(value));
       break;
     case ODLA_CACHE_DIR:
-      comp->opts.cache_dir = *(reinterpret_cast<char**>(value));
+      comp->opts.cache_dir = (reinterpret_cast<char*>(value));
       break;
     default:
       std::cerr << "Unsupported property type: " << type << std::endl;
       return ODLA_FAILURE;
   }
 
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_StoreExecutable(const odla_char* file_name,
+                                 odla_executable executable) {
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_LoadExecutable(const odla_char* file_name,
+                                odla_executable* executable,
+                                odla_context* context,
+                                odla_computation* computation) {
   return ODLA_SUCCESS;
 }
 
@@ -149,7 +168,8 @@ odla_status odla_CreateContext(odla_context* context) {
   auto proto = g_comp->builder->getModelProto();
   auto session = popart::InferenceSession::createFromOnnxModel(
       proto, data_flow, device, popart::InputShapeInfo(), *opts);
-  *context = new _odla_context(g_comp, std::move(session));
+  *context = new odla_context(g_comp, std::move(session));
+  g_comp->context = *context;
 
   // Compile graph, create engine and load into the IPU
   // use compileAndExport() to frozen engine to specified path
@@ -163,12 +183,21 @@ odla_status odla_CreateContext(odla_context* context) {
 }
 
 odla_status odla_DestroyContext(odla_context ctx) {
-  delete (ctx);
+  if (ctx != nullptr) {
+      delete (ctx);
+  }
   return ODLA_SUCCESS;
 }
 
 odla_status odla_DestroyComputation(odla_computation comp) {
-  // g_comp.reset();
+  if (comp->context != nullptr) {
+    comp->context->session->getDevice().getDeviceInfo()->detach();
+    comp->context->session.reset();
+    odla_DestroyContext(comp->context);
+  }
+  if (g_comp = nullptr) {
+    delete g_comp;
+  }
   return ODLA_SUCCESS;
 }
 
@@ -177,11 +206,11 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_device device) {
   // Config StepIO
   std::map<popart::TensorId, popart::IArray&> inputs;
-  for (auto& input : comp->inputs) {
+  for (auto& input : context->inputs) {
     inputs.emplace(input.first, *input.second);
   }
   std::map<popart::TensorId, popart::IArray&> outputs;
-  for (auto& output : comp->outputs) {
+  for (auto& output : context->outputs) {
     outputs.emplace(output.first, *output.second);
   }
 
@@ -235,9 +264,9 @@ odla_value odla_CreateConstant(odla_value_type type, const void* data_ptr,
 odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                 odla_context context) {
   std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
-      data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
-      context->comp->builder->getTensorShape(value->tensor_id));
-  context->comp->inputs[value->tensor_id] = std::move(p_array);
+      data_ptr, g_comp->builder->getTensorDataType(value->tensor_id),
+      g_comp->builder->getTensorShape(value->tensor_id));
+  context->inputs[value->tensor_id] = std::move(p_array);
   return ODLA_SUCCESS;
 }
 
@@ -245,7 +274,7 @@ odla_status odla_BindToArgumentById(const odla_value_id value_id,
                                     const odla_void* data_ptr,
                                     odla_context context) {
   std::string name(reinterpret_cast<const char*>(value_id));
-  return odla_BindToArgument(context->comp->inputs_map[name], data_ptr,
+  return odla_BindToArgument(g_comp->inputs_map[name], data_ptr,
                              context);
 }
 
@@ -283,16 +312,16 @@ odla_status odla_GetOutputFromComputationByIdx(
 odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
                               odla_context context) {
   std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
-      data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
-      context->comp->builder->getTensorShape(value->tensor_id));
-  context->comp->outputs[value->tensor_id] = std::move(p_array);
+      data_ptr, g_comp->builder->getTensorDataType(value->tensor_id),
+      g_comp->builder->getTensorShape(value->tensor_id));
+  context->outputs[value->tensor_id] = std::move(p_array);
   return ODLA_SUCCESS;
 }
 
 odla_status odla_BindToOutputById(const odla_value_id value_id,
                                   odla_void* data_ptr, odla_context context) {
   std::string name(reinterpret_cast<const char*>(value_id));
-  return odla_BindToOutput(context->comp->outputs_map[name], data_ptr, context);
+  return odla_BindToOutput(g_comp->outputs_map[name], data_ptr, context);
 }
 
 odla_status odla_GetValueType(const odla_value value,
