@@ -96,7 +96,7 @@ public:
   odla_context get_output_context() final;
   void pop_input(odla_context ctx) final;
   void pop_output(odla_context ctx) final;
-  std::size_t size() final {return (tail_.load() - head_ + capacity_)%capacity_;}
+  std::size_t size() final {return (tail_.load() - wait_ + capacity_)%capacity_;}
 };
 
 class QManager
