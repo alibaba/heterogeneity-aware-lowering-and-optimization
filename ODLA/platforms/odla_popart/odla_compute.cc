@@ -89,7 +89,7 @@ odla_status odla_CreateComputation(odla_computation* comp) {
     }
   }
   //Read the config file
-  PopartConfig::instance()->load_config("/home/jackz/repos/heterogeneity-aware-lowering-and-optimization/ODLA/platforms/odla_popart/config.json");
+  PopartConfig::instance()->load_config("/home/jackz/repos/HALO/config.json");
   _odla_computation::instance()->set_executor();
   QManager::instance()->createQ(PopartConfig::instance()->queue_type());
   QManager::instance()->getQ()->init(PopartConfig::instance()->queue_capacity());
@@ -99,6 +99,7 @@ odla_status odla_CreateComputation(odla_computation* comp) {
 
 odla_status odla_CreateContext(odla_context* context) {
   //std::cout << "---> odla_CreateContext()" << std::endl;
+  g_comp->init(); // Place the init here to avoid long execution problem
   *context = new _odla_pipeline_context(_odla_computation::instance());
   //std::cout << "<--- odla_CreateContext()" << std::endl;
   return ODLA_SUCCESS;
