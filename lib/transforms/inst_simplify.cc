@@ -933,8 +933,8 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(ResizeInst* inst) {
 std::pair<Def, Def> InstSimplify::RunOnInstruction(Relu6Inst* inst) {
   Def orig_def{inst, 0};
   auto input = inst->GetOperand(0);
-  auto input_op = IsA<Conv2DInst>(input)
-                      ? DynCast<Conv2DInst>(input)->GetOpCode()
+  auto input_op = IsA<Instruction>(input)
+                      ? DynCast<Instruction>(input)->GetOpCode()
                       : OpCode::INVALID;
   bool is_profitable =
       input_op == OpCode::CONV2D || input_op == OpCode::CONV2DTRANSPOSE;
@@ -944,13 +944,13 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Relu6Inst* inst) {
           return builder.CreateRelu6(name, op);
         });
   }
-  auto conv = DynCast<Conv2DInst>(input);
-  IRBuilder builder(conv->GetParent());
-  builder.SetInsertAfter(conv);
-  auto new_conv = builder.Clone(*conv, conv->GetOperands());
-  Conv2DInst* new_inst = DynCast<Conv2DInst>(new_conv);
-  new_inst->SetName(inst->GetName() + "_fuse");
-  return {orig_def, Def(new_inst, 0)};
+
+  if (input_op == OpCode::CONV2D || input_op == OpCode::CONV2DTRANSPOSE) {
+    input.GetDef()->SetName(inst->GetName() + "_fused");
+    return {orig_def, input};
+  }
+
+  return {orig_def, orig_def};
 }
 
 std::pair<Def, Def> InstSimplify::RunOnInstruction(ShapeInst* inst) {
@@ -989,8 +989,8 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SigmoidInst* inst) {
 std::pair<Def, Def> InstSimplify::RunOnInstruction(ReluInst* inst) {
   Def orig_def{inst, 0};
   auto input = inst->GetOperand(0);
-  auto input_op = IsA<Conv2DInst>(input)
-                      ? DynCast<Conv2DInst>(input)->GetOpCode()
+  auto input_op = IsA<Instruction>(input)
+                      ? DynCast<Instruction>(input)->GetOpCode()
                       : OpCode::INVALID;
   bool is_profitable =
       input_op == OpCode::CONV2D || input_op == OpCode::CONV2DTRANSPOSE;
@@ -1000,13 +1000,12 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(ReluInst* inst) {
           return builder.CreateRelu(name, op);
         });
   }
-  auto conv = DynCast<Conv2DInst>(input);
-  IRBuilder builder(conv->GetParent());
-  builder.SetInsertAfter(conv);
-  auto new_conv = builder.Clone(*conv, conv->GetOperands());
-  Conv2DInst* new_inst = DynCast<Conv2DInst>(new_conv);
-  new_inst->SetName(inst->GetName() + "_fuse");
-  return {orig_def, Def(new_inst, 0)};
+
+  if (input_op == OpCode::CONV2D || input_op == OpCode::CONV2DTRANSPOSE) {
+    input.GetDef()->SetName(inst->GetName() + "_fused");
+    return {orig_def, input};
+  }
+  return {orig_def, orig_def};
 }
 
 std::pair<Def, Def> InstSimplify::RunOnInstruction(Conv2DInst* inst) {
