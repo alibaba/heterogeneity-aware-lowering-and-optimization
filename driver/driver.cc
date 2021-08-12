@@ -267,6 +267,11 @@ static llvm::cl::opt<std::string> PGQFile(
     llvm::cl::desc("Profiling file for quantization of biases"),
     llvm::cl::cat(HaloOptCat));
 
+static llvm::cl::opt<std::string> QuantTable(
+    "quant-tbl", llvm::cl::init("quant_infos"),
+    llvm::cl::desc("quant table name used for table gen"),
+    llvm::cl::cat(HaloOptCat));
+
 static llvm::cl::opt<bool> CheckModel("check-model",
                                       llvm::cl::desc("dynamic check model"),
                                       llvm::cl::init(false),
@@ -338,6 +343,7 @@ int main(int argc, char** argv) {
   if (PrintAll) {
     m.Dump();
   }
+
   ctx.SetVerbosity(Verbose ? 1 : 0);
   PassManager pm(ctx);
 
@@ -403,6 +409,10 @@ int main(int argc, char** argv) {
   cg_opts.linked_odla_lib = LinkODLALib.c_str();
   cg_opts.save_temps = SaveTemps;
   cg_opts.constant_decombine = ConstantDecombine;
+  cg_opts.quant_tbl = "";
+  if (QuantWeights != Quantization::None) {
+    cg_opts.quant_tbl = QuantTable;
+  }
 
   if (!TemplateFile.empty()) {
     auto path = FindTemplateFile(ctx.GetBasePath(), TemplateFile);

@@ -97,6 +97,7 @@ struct CXXCodeGenOpts {
   bool enable_anole_device = false;
   int64_t ipu_num = 1;
   int64_t batches_per_step = 1;
+  std::string quant_tbl = "";
   bool check_model = false;
   API api = API::ODLA_05;
   ChannelOrder channel_order = ChannelOrder::None;
