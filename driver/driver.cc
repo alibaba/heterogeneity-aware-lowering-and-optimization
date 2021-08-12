@@ -114,6 +114,9 @@ static llvm::cl::opt<bool> FuseConvBias("fuse-conv-bias",
                                         llvm::cl::desc("fuse conv bias"),
                                         llvm::cl::init(false),
                                         llvm::cl::cat(HaloOptCat));
+static llvm::cl::opt<bool> FuseMatMulMul(
+    "fuse-matmul-mul", llvm::cl::desc("fuse matmul && mul layer"),
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 static llvm::cl::opt<bool> FuseHSwish("fuse-h-swish",
                                       llvm::cl::desc("fuse h-swish"),
                                       llvm::cl::init(false),
@@ -277,7 +280,7 @@ static llvm::cl::opt<std::string> QuantTable(
     llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> CheckModel("check-model",
-                                      llvm::cl::desc("dynamic check model"),
+                                      llvm::cl::desc("Dynamic check model"),
                                       llvm::cl::init(false),
                                       llvm::cl::cat(HaloOptCat));
 
@@ -403,10 +406,11 @@ int main(int argc, char** argv) {
   cg_opts.separate_constants = SeparateConstants;
   cg_opts.disable_conv_bn = DisableConvBN;
   cg_opts.fuse_conv_bias = FuseConvBias;
-  cg_opts.fuse_mul_to_conv = FuseMultoConv;
+  cg_opts.fuse_matmul_mul = FuseMatMulMul;
   cg_opts.fuse_hardswish = FuseHSwish;
   cg_opts.fuse_conv_relu = FuseRelu;
   cg_opts.fuse_fully_connected = FuseFC;
+  cg_opts.fuse_mul_to_conv = FuseMultoConv;
   cg_opts.remove_input_transpose = RemoveInputTranspose;
   cg_opts.remove_output_transpose = RemoveOutputTranspose;
   cg_opts.format_code =
