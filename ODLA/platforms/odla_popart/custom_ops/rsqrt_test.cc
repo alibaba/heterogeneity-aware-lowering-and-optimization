@@ -15,6 +15,7 @@
 // =============================================================================
 
 #include <dlfcn.h>
+#include <iostream>
 #include <popart/builder.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/logging.hpp>
@@ -28,7 +29,6 @@
 #include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
-#include <iostream>
 
 // namespace CustomOperators {
 //   extern const popart::OperatorIdentifier Rsqrt_1;
@@ -50,7 +50,8 @@ int main(int argc, char const* argv[]) {
 
   // Add operation
   std::cout << "Adding custom operation rsqrt(input)\n";
-  const popart::OperatorIdentifier rsqrt(popart::Domain::ai_graphcore, "Rsqrt", 1, 1, 1);
+  const popart::OperatorIdentifier rsqrt(popart::Domain::ai_graphcore, "Rsqrt",
+                                         1, 1, 1);
   auto o = builder->customOp(rsqrt, 1, {input}, 1, {})[0];
   // auto o = builder->aiOnnxOpset10().sqrt({input});
 
@@ -71,19 +72,19 @@ int main(int argc, char const* argv[]) {
   // or acquireAvailableDevice();
 
   std::cout << "Creating session from Onnx Model...\n";
-  auto session = popart::InferenceSession::createFromOnnxModel(
-      proto, dataFlow, ipuModelDevice);
+  auto session = popart::InferenceSession::createFromOnnxModel(proto, dataFlow,
+                                                               ipuModelDevice);
   std::cout << "Creating session from Onnx Model...done\n";
 
   // Prepare input tensor
   float rawInputData[2] = {16.0f, 16.0f};
   popart::NDArrayWrapper<float> inData(rawInputData, {2});
-  std::map<popart::TensorId, popart::IArray &> inputs = {{input, inData}};
+  std::map<popart::TensorId, popart::IArray&> inputs = {{input, inData}};
 
   // Prepare output tensor
   float rawOutputData[2] = {0, 0};
   popart::NDArrayWrapper<float> outData(rawOutputData, {2});
-  std::map<popart::TensorId, popart::IArray &> anchors = {{o, outData}};
+  std::map<popart::TensorId, popart::IArray&> anchors = {{o, outData}};
 
   std::cout << "Preparing session device...\n";
   session->prepareDevice();

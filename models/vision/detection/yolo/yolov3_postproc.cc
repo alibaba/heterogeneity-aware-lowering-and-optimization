@@ -117,8 +117,10 @@ std::vector<std::pair<std::string, std::array<float, 5>>> post_process_nhwc(
   float iou_thre = 0.45;
   std::vector<std::pair<std::string, std::array<float, 5>>> ret;
 
-  void* handle =
-      dlopen("vision/detection/yolo/build/libcustom_ops.so", RTLD_LAZY);
+  void* handle = dlopen(
+
+      "/root/halo/ODLA/platforms/odla_popart/custom_ops/build/libcustom_ops.so",
+      RTLD_LAZY);
   if (!handle) {
     std::cerr << "Cannot open library: " << dlerror() << std::endl;
   }
