@@ -147,7 +147,7 @@ odla_status odla_CreateComputation(odla_computation* comp) {
 
 odla_status odla_CreateContext(odla_context* context) {
   *context = new _odla_context(g_comp);
-    // Create dataflow
+  // Create dataflow
   std::vector<popart::TensorId> ids;
   for (const auto& output : g_comp->outputs_map) {
     ids.push_back(output.second->tensor_id);
@@ -183,7 +183,7 @@ odla_status odla_CreateContext(odla_context* context) {
 
 odla_status odla_DestroyContext(odla_context ctx) {
   if (ctx != nullptr) {
-      delete (ctx);
+    delete (ctx);
   }
   return ODLA_SUCCESS;
 }
@@ -193,9 +193,11 @@ odla_status odla_DestroyComputation(odla_computation comp) {
     comp->session->getDevice().getDeviceInfo()->detach();
     comp->session.reset();
   }
-  if (g_comp = nullptr) {
-    delete g_comp;
+
+  if (g_comp == comp && g_comp != nullptr) {
+    g_comp = nullptr;
   }
+
   return ODLA_SUCCESS;
 }
 
@@ -272,8 +274,7 @@ odla_status odla_BindToArgumentById(const odla_value_id value_id,
                                     const odla_void* data_ptr,
                                     odla_context context) {
   std::string name(reinterpret_cast<const char*>(value_id));
-  return odla_BindToArgument(g_comp->inputs_map[name], data_ptr,
-                             context);
+  return odla_BindToArgument(g_comp->inputs_map[name], data_ptr, context);
 }
 
 odla_status odla_SetValueAsOutput(const odla_value value) {

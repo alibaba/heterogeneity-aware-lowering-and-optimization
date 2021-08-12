@@ -25,7 +25,7 @@ GROUPID=`id -g`
 OLD_ID=`docker ps -aq -f name=$CONTAINER_NAME -f status=running`
 
 if [ -z "$OLD_ID" ]; then
-  ID=`docker run $docker_run_flag --privileged --cap-add=SYS_PTRACE --security-opt seccomp=unconfined -t -d --name $CONTAINER_NAME -v $MOUNT_DIR:/host -v /home:/home -v /data:/data --tmpfs /tmp:exec --rm $IMAGE `
+  ID=`docker run $docker_run_flag --privileged --cap-add=SYS_PTRACE --security-opt seccomp=unconfined -t -d --name $CONTAINER_NAME -v $MOUNT_DIR:/host --tmpfs /tmp:exec --rm $IMAGE `
   docker exec --user root $ID groupadd -f -g $GROUPID $GROUP
   docker exec --user root $ID adduser --shell /bin/bash --uid $UID --gecos '' --ingroup $GROUP --disabled-password --home /home/$USER $USER
   docker exec --user root $ID bash -c "echo $USER ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USER && chmod 0440 /etc/sudoers.d/$USER"
