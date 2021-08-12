@@ -1,0 +1,19 @@
+{
+   "model":"model_path_with_name",
+   "thread_number":1,
+   "thread_buffer_cnt":3,
+   "duration":"4m",
+   "npz":"../data/bs10_bps128.npz",
+   "result":"test_result.npz",
+   "inputs":
+   {
+        "indices":["0", "UNIT32"], 
+        "masks":["1", "UNIT32"], 
+        "positions":["2", "UINT32"], 
+        "segments":["3", "UINT32"]
+   },
+   "outputs":
+   {
+        "squad_gemm":["0", "FP16"]
+   }
+}
