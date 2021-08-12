@@ -398,7 +398,9 @@ int main(int argc, char** argv) {
   cg_opts.enable_type_cast = !DisableTypeCast;
   cg_opts.separate_constants = SeparateConstants;
   cg_opts.disable_conv_bn = DisableConvBN;
+  cg_opts.fuse_conv_bias = FuseConvBias;
   cg_opts.fuse_hardswish = FuseHSwish;
+  cg_opts.fuse_conv_relu = FuseRelu;
   cg_opts.remove_input_transpose = RemoveInputTranspose;
   cg_opts.remove_output_transpose = RemoveOutputTranspose;
   cg_opts.format_code =
