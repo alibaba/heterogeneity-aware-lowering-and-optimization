@@ -231,7 +231,7 @@ bool _odla_computation::use_pipeline()
 void Sequence::compute(odla_computation comp, odla_context context,
                                 odla_compute_mode mode, odla_device device) 
 {
-    comp->init();
+    //comp->init();
     std::lock_guard<std::mutex> comp_guard(sequence_mutex);
     popart::logging::info( ">>> Sequence::compute() with ctx: {}", context);
     // Config StepIO
@@ -262,7 +262,7 @@ void Parallel::compute(odla_computation comp, odla_context context,
 {
     popart::logging::info(">>> Parallel::compute() with context: {}", context);
     QManager::instance()->getQ()->put(context); //put the queues to wait list firstly
-    comp->init();
+    //comp->init();
     context->wait();
     popart::logging::info("<<< Parallel::compute() with context {}", context);
 }
