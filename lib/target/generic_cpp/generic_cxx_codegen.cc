@@ -107,6 +107,14 @@ static void EmitBanner(std::ostream* os, std::ostream* header_os, API api) {
   *os << "#include " << GetIncludeFile(api) << "\n\n";
 }
 
+static void EmitQuantInfos(std::ostream* os, const std::string& q_tbl_name) {
+  static const std::string quant_tbl(q_tbl_name);
+  static const std::string quant_tbl_size(q_tbl_name + "_size");
+
+  *os << "extern const odla_value_quant_info " + quant_tbl + "[];\n";
+  *os << "extern const int " + quant_tbl_size + ";\n\n";
+}
+
 static std::string GetBF16Mode(BF16Mode mode) {
   switch (mode) {
     case BF16Mode::Accuracy: {
@@ -130,6 +138,8 @@ bool GenericCXXCodeGen::RunOnModule(Module* module) {
   if (emit_banner) {
     EmitBanner(&os_, &header_os_, GetAPI());
   }
+
+  EmitQuantInfos(&os_, opts_.quant_tbl);
 
   for (auto& func : *module) {
     if (func->IsEntryFunction()) {
