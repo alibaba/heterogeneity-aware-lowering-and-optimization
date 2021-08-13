@@ -22,7 +22,7 @@ class Fusion<dag patternToMatch, dag result> {
     dag result_ = result;
     string option_name_;
     string option_desc_;
-    string copy_attrs_from_;
+    string copy_attrs_from_ = "";
 }
 
 def ConvBias : Fusion<(Add(Conv2D:$c $op0, $op1), $op2) , (Conv2D $op0, $op1, $op2)> {
@@ -36,3 +36,9 @@ def MatmulBias : Fusion<(Add(MatMul:$c $op0, $op1), $op2) , (MatMul $op0, $op1, 
     let option_desc_ = "Fuse bias into matmul/fc";
     let copy_attrs_from_ = "c";
 }
+
+def SigmoidMul: Fusion<(Mul$op0, (Sigmoid:$c $op0)), (Swish $op0)>{
+    let option_name_ = "fuse-swish";
+    let option_desc_ = "Fuse mul-sigmoid into swish";
+}
+

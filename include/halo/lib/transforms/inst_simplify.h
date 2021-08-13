@@ -87,6 +87,7 @@ class InstSimplify final : public BasicBlockPass {
   bool fuse_mul_matmul_ = true;
   bool fuse_fc_add_ = true;
   bool fuse_hardswish_;
+  bool fuse_to_swish_;
 };
 
 } // end namespace halo.

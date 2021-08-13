@@ -196,6 +196,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(SoftplusInst*) override;
   virtual void RunOnInstruction(SoftsignInst*) override;
   virtual void RunOnInstruction(StackInst*) override;
+  virtual void RunOnInstruction(SwishInst*) override;
   virtual void RunOnInstruction(HardSigmoidInst*) override;
   virtual void RunOnInstruction(HardSwishInst*) override;
   virtual void RunOnInstruction(SinInst*) override;
@@ -250,6 +251,7 @@ class GenericCXXCodeGen : public CodeGen {
   void EmitODLAArgs(const DataFormat& arg);
   void EmitODLAArgs(const std::vector<halo::Type>& arg);
   void EmitODLAArgs(const std::vector<std::string>& arg);
+
   template <typename T>
   void EmitODLAArgs(const ArgWithComment<T>& arg) {
     EmitODLAArgs(arg.arg_);
@@ -264,6 +266,7 @@ class GenericCXXCodeGen : public CodeGen {
   void EmitODLAArgs(const T& arg) {
     os_ << arg;
   }
+
   template <typename T, typename... Targs>
   void EmitODLAArgs(T arg, Targs... args) {
     EmitODLAArgs(arg);

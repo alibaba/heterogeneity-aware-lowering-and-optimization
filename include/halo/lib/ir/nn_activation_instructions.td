@@ -69,6 +69,9 @@ let cat_ = cat_nn_activation,
   def Sigmoid : Inst<"Compute the sigmoid activation, element-wise."
                      " Return 1 / (1 + exp(-X1)).">;
 
+  def Swish : Inst<"Compute the swish activation, element-wise."
+                     " Return x * sigmoid(x).">;
+
   def HardSigmoid : Inst<"A faster approximation of the sigmoid activation."> {
     let attrs_ = [
       Attr<"Value of alpha.", Float, "alpha", "0.2">,
