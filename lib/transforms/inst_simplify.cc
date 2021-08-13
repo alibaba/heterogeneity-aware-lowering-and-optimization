@@ -255,8 +255,7 @@ static std::pair<Def, Def> RunOnMathUnaryInstruction(Instruction* inst) {
 
 static std::pair<Def, Def> RunOnMathBinaryInstruction(
     Instruction* binary_inst, bool disable_broadcasting, bool fuse_conv_bias,
-    bool fuse_matmul_mul, bool fuse_fully_connected, bool fuse_hardswish,
-    bool fuse_to_swish) {
+    bool fuse_hardswish, bool fuse_matmul_mul, bool fuse_fully_connected) {
   Def orig_def{binary_inst, 0};
   auto op0 = binary_inst->GetOperand(0);
   auto op1 = binary_inst->GetOperand(1);
@@ -305,12 +304,6 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
     std::vector<char> data(dl.DataLayout::Bytes(ty), 0);
     auto zero = cb.CreateConstant(binary_inst->GetName(), ty, data.data());
     return {orig_def, *zero};
-  }
-
-  if (opc == OpCode::MUL && fuse_to_swish && IsA<SigmoidInst>(op1)) {
-    auto new_inst =
-        builder.CreateSigmoid(binary_inst->GetName() + "_fused", op0);
-    return {orig_def, *new_inst};
   }
 
   // fuse to fully_connected
@@ -795,8 +788,9 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Instruction* inst) {
     case OpCode::SUB:
     case OpCode::CMP: {
       return RunOnMathBinaryInstruction(
-          inst, disable_broadcasting_, fuse_conv_bias_, fuse_mul_matmul_,
-          fuse_fc_add_, fuse_hardswish_, fuse_to_swish_);
+          inst, opts_.disable_broadcasting, opts_.fuse_conv_bias,
+          opts_.fuse_hardswish, opts_.fuse_matmul_mul,
+          opts_.fuse_fully_connected);
     }
     case OpCode::REDUCEMAX:
     case OpCode::REDUCEMIN:

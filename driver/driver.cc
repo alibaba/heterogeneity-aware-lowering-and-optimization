@@ -114,6 +114,14 @@ static llvm::cl::opt<bool> FuseHSwish("fuse-h-swish",
                                       llvm::cl::desc("fuse h-swish"),
                                       llvm::cl::init(false),
                                       llvm::cl::cat(HaloOptCat));
+static llvm::cl::opt<bool> FuseRelu("remove-relu-after-conv",
+                                    llvm::cl::desc("remove relu after conv"),
+                                    llvm::cl::init(false),
+                                    llvm::cl::cat(HaloOptCat));
+static llvm::cl::opt<bool> FuseFC("fuse-fully-connected",
+                                  llvm::cl::desc("fuse to fully-connected"),
+                                  llvm::cl::init(true),
+                                  llvm::cl::cat(HaloOptCat));
 static llvm::cl::opt<bool> EmitCodeOnly(
     "code-only", llvm::cl::desc("Generate the code only"),
     llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
