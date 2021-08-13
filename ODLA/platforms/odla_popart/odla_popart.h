@@ -60,6 +60,8 @@ typedef struct TargetOpts {
   bool use_ipu_model;
   int64_t ipu_num;
   int64_t batches_per_step;
+  bool enable_engine_cache;
+  const char* cache_dir;
 } target_opts;
 
 struct _odla_value {

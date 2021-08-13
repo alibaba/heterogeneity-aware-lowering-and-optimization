@@ -48,7 +48,9 @@ class Analyzer final : public ModulePass {
     std::vector<std::vector<int64_t>> input_shape;
     std::vector<int64_t> output_shape;
 
-    float io_mem = 0;
+    size_t io_mem = 0;
+    // op fusion estimate
+    size_t op_fs_mem = 0;
     float weight_mem = 0;
 
     // Note that FLOPS and FLOPs are different:
@@ -61,8 +63,11 @@ class Analyzer final : public ModulePass {
   };
 
   struct TensorInfo {
-    size_t Liveness = 0;
-    size_t Size = 0;
+    size_t liveness = 0;
+    size_t op_size = 0;
+    size_t ip_size = 0;
+    size_t knl_sz = 0;
+    halo::OpCode op;
   };
 
   Analyzer(std::ostream* os, const AnalyzerOpts& opts)
@@ -82,6 +87,7 @@ class Analyzer final : public ModulePass {
   void RunOnInstruction(Conv2DInst* inst);
   void RunOnInstruction(GemmInst* inst);
   void RunOnInstruction(MatMulInst* inst);
+  void RunOnInstruction(NonMaxSuppressionInst* inst);
   void RunOnInstruction(PoolingMaxInst* inst);
   void RunOnInstruction(PoolingAvgInst* inst);
   void RunOnInstruction(BatchNormInst* inst);
@@ -110,7 +116,8 @@ class Analyzer final : public ModulePass {
   std::ostream* os_;
   std::vector<Analyzer::NodeInfo> node_infos_;
   AnalyzerOpts opts_;
-  std::unordered_map<std::string, TensorInfo> AliveTensor; // live tensor buffer
+  // alive tensor buffer
+  std::unordered_map<std::string, TensorInfo> AliveTensor;
 };
 
 } // namespace halo

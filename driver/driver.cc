@@ -270,8 +270,8 @@ static llvm::cl::opt<bool> SaveTemps(
 #undef HALO_FUSION_CMD_OPTIONS_DECL
 
 static void PrintVersion(llvm::raw_ostream& os) {
-  os << "  Version:\t" << HALO_MAJOR << '.' << HALO_MINOR << '.' << HALO_PATCH
-     << '\n';
+  os << "  Version:\t" << HALO_VERSION_MAJOR << '.' << HALO_VERSION_MINOR << '.'
+     << HALO_VERSION_PATCH << '\n';
 #ifdef HALO_REVISION
   os << "  HALO Repo:" << HALO_REPOSITORY << " Rev:" << HALO_REVISION << '\n';
 #endif

@@ -55,7 +55,7 @@ macro(add_halo_subdirectory)
   set(CORE_COMPONENTS ${CORE_COMPONENTS} PARENT_SCOPE)
   set(CORE_COMPONENTS_OBJECTS ${CORE_COMPONENTS_OBJECTS} PARENT_SCOPE)
 endmacro(add_halo_subdirectory)
- 
+
 
 # NORTTI: Disable RTTI
 # NOEXCEPTIONS: Disable exception support.
@@ -87,7 +87,7 @@ function(set_halo_compile_flags)
     if(_WERROR)
       list(APPEND HALO_COMPILE_FLAGS -pedantic -Wall -Werror)
     endif()
-  endif()   
+  endif()
   set(HALO_COMPILE_FLAGS ${HALO_COMPILE_FLAGS} PARENT_SCOPE)
 endfunction(set_halo_compile_flags)
 
