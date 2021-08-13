@@ -29,6 +29,11 @@ inline const T& GetAttributeValue(const Attribute& attr) {
 }
 
 template <>
+inline const std::string& GetAttributeValue(const Attribute& attr) {
+  return attr.GetValueAsString();
+}
+
+template <>
 inline const std::vector<int>& GetAttributeValue(const Attribute& attr) {
   return attr.GetValueAsIntegerList();
 }

@@ -21,18 +21,68 @@
 
 namespace halo {
 
+const char* StringifyDirection(Direction direction) {
+  const char* str = nullptr;
+
+  switch (direction) {
+    case Direction::FORWARD:
+      str = "ODLA_RNN_FORWARD";
+      break;
+    case Direction::REVERSE:
+      str = "ODLA_RNN_REVERSE";
+      break;
+    case Direction::BIDIRECTIONAL:
+      str = "ODLA_RNN_BIDIRECTIONAL";
+      break;
+    default:
+      HLCHECK(false && "Invalid direction value");
+  }
+
+  return str;
+}
+
+enum LSTMArgIndex {
+  LSTM_ARG_X_IDX = 0,
+  LSTM_ARG_W_IDX = 1,
+  LSTM_ARG_R_IDX = 2,
+  LSTM_ARG_B_IDX = 3,
+  LSTM_ARG_SEQUENCE_LENGTH_IDX = 4,
+  LSTM_ARG_INITIAL_H_IDX = 5,
+  LSTM_ARG_INITIAL_C_IDX = 6,
+  LSTM_ARG_P_IDX = 7
+};
+
 void GenericCXXCodeGen::RunOnInstruction(LSTMInst* inst) {
-  const Def& x = inst->GetOperand(0);
-  const Def& w = inst->GetOperand(1);
-  const Def& r = inst->GetOperand(2);
-  const Def& b = inst->GetOperand(3);
+  const Def& x = inst->GetOperand(LSTM_ARG_X_IDX);
+  const Def& w = inst->GetOperand(LSTM_ARG_W_IDX);
+  const Def& r = inst->GetOperand(LSTM_ARG_R_IDX);
+  const Def& b = inst->GetOperand(LSTM_ARG_B_IDX);
+  const Def& sequence_lens = inst->GetOperand(LSTM_ARG_SEQUENCE_LENGTH_IDX);
+
+  size_t num_ops = inst->GetNumOfOperands();
+
+  ir_mapping_[Def::GetUndefined()] = CXXValue("nullptr", CXXType("void"));
+
+  const Def& initial_h = num_ops > LSTM_ARG_INITIAL_H_IDX
+                             ? inst->GetOperand(LSTM_ARG_INITIAL_H_IDX)
+                             : Def::GetUndefined();
+
+  const Def& initial_c = num_ops > LSTM_ARG_INITIAL_C_IDX
+                             ? inst->GetOperand(LSTM_ARG_INITIAL_C_IDX)
+                             : Def::GetUndefined();
+
+  const Def& p = num_ops > LSTM_ARG_P_IDX ? inst->GetOperand(LSTM_ARG_P_IDX)
+                                          : Def::GetUndefined();
 
   CXXValue op_x = ir_mapping_[x];
   CXXValue op_w = ir_mapping_[w];
   CXXValue op_r = ir_mapping_[r];
   CXXValue op_b = ir_mapping_[b];
+  CXXValue op_sequence_lens = ir_mapping_[sequence_lens];
+  CXXValue op_initial_h = ir_mapping_[initial_h];
+  CXXValue op_initial_c = ir_mapping_[initial_c];
+  CXXValue op_p = ir_mapping_[p];
 
-  uint32_t seq_len = x.GetType().GetNumOfElementsInDim(0);
   uint32_t hidden_size = r.GetType().GetNumOfElementsInDim(2);
 
   std::vector<CXXValue> rets;
@@ -43,21 +93,13 @@ void GenericCXXCodeGen::RunOnInstruction(LSTMInst* inst) {
   rets.emplace_back(inst->GetName() + "_c",
                     TensorTypeToCXXType(inst->GetResultsTypes()[2], false));
 
-  std::string op_direction("ODLA_RNN_FORWARD");
-  Direction direction = inst->GetDirection();
+  const char* str = StringifyDirection(inst->GetDirection());
 
-  if (direction == Direction::REVERSE) {
-    op_direction = "ODLA_RNN_REVERSE";
-  } else if (direction == Direction::BIDIRECTIONAL) {
-    op_direction = "ODLA_RNN_BIDIRECTIONAL";
-  } else {
-    HLCHECK(direction == Direction::FORWARD);
-  }
-
-  std::string outputs = "ODLA_RNN_HIDDEN_CELL_STATE";
+  const char* outputs = "ODLA_RNN_HIDDEN_CELL_STATE";
 
   EmitODLACall(rets, "odla_LSTM", op_x, EmitShape(w.GetType()), op_w, op_r,
-               op_b, seq_len, hidden_size, op_direction, outputs);
+               op_b, op_sequence_lens, op_initial_c, op_initial_c, op_p,
+               hidden_size, str, outputs);
 
   ir_mapping_[Def(inst, 0)] = rets[0];
   ir_mapping_[Def(inst, 1)] = rets[1];

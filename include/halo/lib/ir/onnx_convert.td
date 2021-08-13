@@ -437,10 +437,10 @@ def ONNX_HgDequant : TFExtension<"HgDequant"> {
   ];
 }
 
-def ONNX_LSTM : OpMapping<"LSTM", LSTM> {
-  let attr_mapping_ = [
-    AttributeMapping<"hidden_size", "hidden_size", "1">,
-    AttributeMapping<"layout", "layout", "0">,
-    AttributeMapping<"direction", "direction", "FORWARD">
+def ONNX_LSTM : ONNXExtension<"LSTM"> {
+  let extension_attr_ = [
+    ExtensionAttr<"hidden_size", Integer, "1">,
+    ExtensionAttr<"layout", Integer, "0">,
+    ExtensionAttr<"direction", String, "\"FORWARD\"">
   ];
 }

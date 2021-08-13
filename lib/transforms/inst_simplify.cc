@@ -1978,6 +1978,43 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(OneHotInst* inst) {
   return {orig_def, orig_def};
 }
 
+enum LSTMArgIndex {
+  LSTM_ARG_X_IDX = 0,
+  LSTM_ARG_W_IDX = 1,
+  LSTM_ARG_R_IDX = 2,
+  LSTM_ARG_B_IDX = 3,
+  LSTM_ARG_SEQUENCE_LENGTH_IDX = 4,
+  LSTM_ARG_INITIAL_H_IDX = 5,
+  LSTM_ARG_INITIAL_C_IDX = 6,
+  LSTM_ARG_P_IDX = 7
+};
+
+static bool FixUpLSTM(LSTMInst* inst) {
+  bool changed = false;
+
+  // Drop the last few all-zero operands
+  while (true) {
+    size_t num_ops = inst->GetNumOfOperands();
+    if (num_ops <= LSTM_ARG_INITIAL_H_IDX) {
+      break;
+    }
+
+    HLCHECK(num_ops > 0);
+    size_t op_idx = num_ops - 1;
+
+    Constant* op = DynCast<Constant>(inst->GetOperand(op_idx));
+    if (nullptr == op || !op->HasSameValueOf(0.0)) {
+      break;
+    }
+
+    inst->ResetOperand(op_idx);
+    inst->GetOperands().pop_back();
+    changed = true;
+  }
+
+  return changed;
+}
+
 bool InstSimplify::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
   for (auto& inst_t : *bb) {
@@ -2004,6 +2041,10 @@ bool InstSimplify::RunOnBasicBlock(BasicBlock* bb) {
         // Replace all uses
         inst->ReplaceAllUsesWith(ret.first.GetIdx(), ret.second);
       }
+    }
+
+    if (auto lstm = DynCast<LSTMInst>(inst)) {
+      changed |= FixUpLSTM(lstm);
     }
   }
   return changed;
