@@ -151,12 +151,11 @@ def CAFFE_LRN : OpMapping<"LRN", LRN> {
   ];
 }
 
-def CAFFE_BatchNorm : OpMapping<"BatchNorm", BatchNorm> {
+def CAFFE_BatchNorm :CAFFEExtension <"BatchNorm"> {
   let param_name_ = "batch_norm_param";
-  let attr_mapping_ = [
-    AttributeMapping<"eps", "epsilon", "0.00001">,
-    AttributeMapping<"", "data_format", "NCHW">
-  ];
+  let optional_attrs_ = ["eps","use_global_stats",];
+  let extension_attr_ = [ExtensionAttr<"eps", Float, "0.00001">,
+                         ExtensionAttr<"use_global_stats", Bool, "true">];
 }
 
 def CAFFE_Power : CAFFEExtension<"Power"> {

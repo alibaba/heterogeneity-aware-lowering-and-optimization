@@ -22,13 +22,7 @@ namespace halo {
 void GenericCXXCodeGen::RunOnInstruction(BatchNormInst* inst) {
   const Def& input = inst->GetOperand(0);
   const Def& mean = inst->GetOperand(3);
-  Def var = Def::GetUndefined();
-  if (inst->GetNumOfOperands() == 4) {
-    VLOG(1) << "Warning: Var not provided";
-    var = mean;
-  } else {
-    var = inst->GetOperand(4);
-  }
+  const Def& var = inst->GetOperand(4);
 
   CXXValue op0 = ir_mapping_[input];
   CXXValue op1 = ir_mapping_[mean];
