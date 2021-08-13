@@ -1,22 +1,11 @@
 #include <fstream>
 #include <iostream>
+#include <vector>
+#include <thread>
+#include <iomanip>
+#include <ODLA/odla.h>
 #include "common.h"
 #include "json.hpp"
-#include "cnpy.h"
-#include <ODLA/odla.h>
-
-#include <algorithm>
-#include <array>
-#include <fstream>
-#include <iostream>
-#include <vector>
-#include <ctime>
-#include <ODLA/odla.h>
-#include <thread>
-#include <cstring>
-#include <iomanip>
-
-#include "model.h"
 #include "cnpy.h"
 
 Config* Config::_instance = new Config();
@@ -171,9 +160,9 @@ void inference(int thread_id, cnpy::npz_t* all_data, BaseTest* test){
     test->save_latency_results(latencies, results);
 }
 
-void BaseTest::start()
+void BaseTest::start(const std::string& config_file)
 {
-    Config::instance()->load("test_config.json");
+    Config::instance()->load(config_file);
     assert(Config::instance()->thread_buffer_cnt() > 2);  //Ensure more than 2 data can compare
     cnpy::npz_t* all_data = prepare_data();
 

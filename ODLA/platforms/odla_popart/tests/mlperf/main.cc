@@ -1,21 +1,10 @@
-#include <algorithm>
-#include <array>
-#include <fstream>
-#include <iostream>
-#include <vector>
-#include <ctime>
 #include <ODLA/odla.h>
-#include <thread>
-#include <cstring>
-#include <iomanip>
-
 #include "model.h"
 #include "cnpy.h"
 #include "common.h"
 
 using namespace std;
 
-//static cnpy::npz_t *all_data = nullptr;
 class MLPerfTest : public BaseTest{
 public:
   MLPerfTest(){};
@@ -30,8 +19,14 @@ public:
   }
 };
 
-int main(){
+int main(int argc, char* argv[]){
+  if(argc < 3)
+    throw std::invalid_argument("Must have 2 parameters: --config <config.json>");
+  std::string param(argv[1]);
+  std::string config_file(argv[2]);
+  if(param != "--config")
+    throw std::invalid_argument("Usage --config <config.json>");
   MLPerfTest test;
-  test.start();
+  test.start(config_file);
   model_fini();
 }

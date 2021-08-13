@@ -1,21 +1,9 @@
 #include <string>
 #include <map>
 #include <chrono>
-#include "json.hpp"
-#include "cnpy.h"
-
-#include <algorithm>
-#include <array>
-#include <fstream>
-#include <iostream>
 #include <vector>
-#include <ctime>
 #include <ODLA/odla.h>
-#include <thread>
-#include <cstring>
-#include <iomanip>
-
-#include "model.h"
+#include "json.hpp"
 #include "cnpy.h"
 
 #ifndef __COMMON__H_
@@ -129,7 +117,7 @@ class BaseTest{
 public:
     BaseTest(){};
     ~BaseTest(){};
-    void start();
+    void start(const std::string& config_file);
     virtual void do_inference(cnpy::npz_t& data) = 0;
     void save_latency_results(const std::vector<float>& latencies, 
         const std::map<std::string, std::vector<cnpy::NpyArray>>& results); 
