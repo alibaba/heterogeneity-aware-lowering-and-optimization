@@ -1,5 +1,5 @@
 # ==============================================================================
-# Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+# Copyright (C) 2019-2021 Alibaba Group Holding Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,13 +56,13 @@ set(SRCS
   return.cc
   shrink.cc
   sigmoid.cc
-  hardsigmoid.cc
   slice.cc
   softmax.cc
   softplus.cc
   softsign.cc
-  tfidf.cc
+  swish.cc
   templated_cxx_codegen.cc
+  tfidf.cc
   tile.cc
   topk.cc
   transpose.cc
