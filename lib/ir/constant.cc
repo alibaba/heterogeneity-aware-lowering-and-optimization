@@ -289,6 +289,10 @@ bool Constant::IsScalarOne() const {
   return type.GetTotalNumOfElements() == 1 && HasSameValueOf(1);
 }
 
+bool Constant::IsFullOfZeros() const {
+  return std::all_of(data_.begin(), data_.end(), [](auto x) { return x == 0; });
+}
+
 bool Constant::HasSameValueOf(float x) const {
   const Type& type = GetResultType();
   for (int64_t i = 0, e = type.GetTotalNumOfElements(); i < e; ++i) {
