@@ -765,6 +765,27 @@ static std::vector<Def> ConvertRelu(const CAFFEExtensionInst* ext,
   return {*relu};
 }
 
+static std::vector<Def> ConvertBatchNorm(const CAFFEExtensionInst* ext,
+                                         IRBuilder* builder) {
+  HLCHECK(ext->GetNumOfOperands() > 1);
+  auto input = ext->GetOperand(0);
+  // const auto& input_type = input.GetType();
+
+  bool has_use_global_stats =
+      FindAttributeValue(*ext, "use_global_stats", false);
+
+  if (has_use_global_stats) {
+    // use the stored mean/variance estimates.
+    auto bn = builder->CreateBatchNorm(ext->GetName(), ext->GetOperands());
+    bn->SetDataFormat(DataFormat::NCHW);
+    return {*bn};
+  }
+  // compute mean and var
+  auto bn = builder->CreateInstanceNorm(ext->GetName(), ext->GetOperands());
+  bn->SetDataFormat(DataFormat::NCHW);
+  return {*bn};
+}
+
 static std::vector<Def> ConvertCAFFEExtension(
     const CAFFEExtensionInst* caffe_inst, IRBuilder* builder) {
   builder->SetInsertAfter(caffe_inst);
@@ -816,6 +837,9 @@ static std::vector<Def> ConvertCAFFEExtension(
     }
     case CAFFEExtOpCode::RELU: {
       return ConvertRelu(caffe_inst, builder);
+    }
+    case CAFFEExtOpCode::BATCHNORM: {
+      return ConvertBatchNorm(caffe_inst, builder);
     }
     default: {
       HLCHECK(0 && "Unhandled");
