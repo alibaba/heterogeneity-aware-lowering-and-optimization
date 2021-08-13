@@ -869,27 +869,6 @@ bool ONNXAttrs::Process<PadMode>(const std::string& key, PadMode* pad_mode) {
   return true;
 }
 
-template <>
-bool ONNXAttrs::Process<Direction>(const std::string& key,
-                                   Direction* direction) {
-  if (!attr_map_.count(key)) {
-    return false;
-  }
-
-  HLCHECK(attr_map_.at(key).type() == onnx::AttributeProto::STRING);
-  static const std::unordered_map<std::string, Direction> enum_map{
-      {"forward", Direction::FORWARD},
-      {"reverse", Direction::REVERSE},
-      {"bidirectional", Direction::BIDIRECTIONAL},
-  };
-
-  std::string name = attr_map_.at(key).s();
-  auto it = enum_map.find(name);
-  *direction = it == enum_map.end() ? Direction::INVALID : it->second;
-
-  return true;
-}
-
 Status ONNXParser::ConvertDummyNode(IRBuilder* ir_builder,
                                     const onnx::NodeProto& node_def) {
   std::vector<Def> operands = GetInputOperands(node_def);
