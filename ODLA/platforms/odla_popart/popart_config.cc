@@ -25,31 +25,76 @@
 
 PopartConfig* PopartConfig::m_instance = new PopartConfig();
 
-void PopartConfig::load_config(const std::string& file_path)
+void PopartConfig::use_default()
+{
+    amp_                = 0.6;
+    m_version           = "1.0.0";
+    m_batch_per_step    = 1;
+    m_ipu_num           = 1;
+    m_save_model        = false;
+    m_save_model_path   = "odla_popart_saved.onnx";
+    m_load_onnx         = false;
+    m_load_onnx_path    = "not_set.onnx";
+    m_execution_mode    = SEQUENCE;
+    queue_type_         = "LockFreeQueue";
+    queue_capacity_     = 1024 * 1024;
+}
+
+void PopartConfig::load_config(const char* file_path)
+{
+    use_default();
+    if(file_path != nullptr)
+        load_from_file(file_path);            
+    print();
+}
+
+void PopartConfig::load_from_file(const std::string& file_path)
 {
     using json = nlohmann::json;
     std::ifstream ifs(file_path);
+    if(!ifs.good())
+        throw std::invalid_argument(std::string("Configuraton file [") 
+                + file_path + "] was not found.");
     json jf = json::parse(ifs);
 
-    amp_                = jf["amp"].get<float>();
-    m_version           = jf["version"].get<std::string>();
-    m_batch_per_step    = jf["batch_per_step"].get<int>();
-    m_ipu_num           = jf["ipu_num"].get<int>();
-    m_save_model        = jf["save_model"].get<bool>();
-    m_save_model_path   = jf["save_model_path"].get<std::string>();
-    m_load_onnx         = jf["load_onnx"].get<bool>();
-    m_load_onnx_path    = jf["load_onnx_path"].get<std::string>();
-    std::string execution_mode = jf["execution_mode"].get<std::string>();
-    if("pipeline" == execution_mode)
-        m_execution_mode = PIPELINE;
-    else if("parallel" == execution_mode)
-        m_execution_mode = PARALLEL;
-    else
-        m_execution_mode = SEQUENCE;
-
-    const json& rh = jf["pipeline"];
-    for (auto& element : rh.items()) {
-        set_pipeline_setting(element.key(), element.value()[0], element.value()[1]);
+    if(jf.contains("amp")) {
+        amp_ = jf["amp"].get<float>();
+    }
+    if(jf.contains("version")) {
+        m_version = jf["version"].get<std::string>();
+    }
+    if(jf.contains("batch_per_step")) { 
+        m_batch_per_step    = jf["batch_per_step"].get<int>();
+    }
+    if(jf.contains("ipu_num")) {
+        m_ipu_num = jf["ipu_num"].get<int>();
+    }
+    if(jf.contains("save_model")) {
+        m_save_model = jf["save_model"].get<bool>();
+    }
+    if(jf.contains("save_model_path")){ 
+        m_save_model_path = jf["save_model_path"].get<std::string>();
+    }
+    if(jf.contains("load_onnx")) {
+        m_load_onnx = jf["load_onnx"].get<bool>();
+    }
+    if(jf.contains("load_onnx_path")) { 
+        m_load_onnx_path = jf["load_onnx_path"].get<std::string>();
+    }
+    if(jf.contains("execution_mode")){
+        std::string execution_mode = jf["execution_mode"].get<std::string>();
+        if("pipeline" == execution_mode)
+            m_execution_mode = PIPELINE;
+        else if("parallel" == execution_mode)
+            m_execution_mode = PARALLEL;
+        else
+            m_execution_mode = SEQUENCE;
+    }
+    if(jf.contains("pipeline")){
+        const json& rh = jf["pipeline"];
+        for (auto& element : rh.items()) {
+            set_pipeline_setting(element.key(), element.value()[0], element.value()[1]);
+        }
     }
 
     if(jf.contains("queue_type"))
@@ -60,8 +105,7 @@ void PopartConfig::load_config(const std::string& file_path)
     if(jf.contains("queue_capacity"))
         queue_capacity_ = jf["queue_capacity"].get<int>();
     else
-        queue_capacity_ = 1024;
-    print();
+        queue_capacity_ = 1024 * 1024;
 }
 
 void PopartConfig::print()

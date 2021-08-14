@@ -273,5 +273,5 @@ _odla_value::_odla_value(popart::TensorId id, popart::TensorInfo info,
     if(set_pipeline)
         g_comp->set_pipeline_stage(id, name);
     else
-        popart::logging::info("The tensor with id: {} solved previously.", id);
+        popart::logging::debug("The tensor with id: {} solved previously.", id);
 }

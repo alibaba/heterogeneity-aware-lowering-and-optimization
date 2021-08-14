@@ -63,6 +63,8 @@ private:
     std::string queue_type_;     //the type of the queue used by parallel mode
     int queue_capacity_;         //the capacity of the queue
     static PopartConfig* m_instance;
+    void use_default();
+    void load_from_file(const std::string& file_path);
 public:
     PopartConfig(): m_version("1.0.0"), 
                     m_batch_per_step(1), m_execution_mode(UNKNOWN),
@@ -83,7 +85,7 @@ public:
     inline std::string queue_type(){return queue_type_;}
     inline int queue_capacity(){return queue_capacity_;}
 
-    void load_config(const std::string& file_path);
+    void load_config(const char* file_path);
     bool get_pipeline_setting(const std::string& node_name, int64_t &ipu_idx, int64_t& pipeline_stage);
 
 private:

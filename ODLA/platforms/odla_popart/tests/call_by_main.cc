@@ -1,145 +1,65 @@
-#include <algorithm>
-#include <array>
-#include <fstream>
-#include <iostream>
-#include <vector>
-#include <ctime>
 #include <ODLA/odla.h>
-#include <thread>
-
+#include <dlfcn.h>
+#include <iostream>
 #include "model.h"
-#inlcude "cnpy.handling"
+#include "cnpy.h"
+#include "common.h"
 
 using namespace std;
 
-#define TOTAL_DATA_NUM 1280
-
-struct Float {
-  // TODO(unknown): no infinity, underflow/overflow handling.
-  Float() = delete;
-  static constexpr int BitsPerByte = 8;
-  template <typename T, int exp, int mantissa>
-  static std::array<int, 3> Extract(T x) {
-    static_assert(exp + mantissa + 1 == sizeof(T) * BitsPerByte);
-    int sign = x >> (exp + mantissa);
-    int m = x & ((1 << mantissa) - 1);
-    int e = (x >> mantissa) & ((1 << exp) - 1);
-    return {sign, e, m};
-  }
-
-  template <typename T, int exp, int mantissa>
-  static T Combine(int sign, int e, int m) {
-    static_assert(exp + mantissa + 1 == sizeof(T) * BitsPerByte);
-    T x{0};
-    x = sign ? 1U << (exp + mantissa) : 0;
-    m >>= 32 - mantissa;
-    x |= m & ((1U << mantissa) - 1);
-    x |= (e & ((1U << exp) - 1)) << mantissa;
-    return x;
-  }
-  static constexpr int FP32Exp = 8;
-  static constexpr int FP32Mantissa = 23;
-  static constexpr int FP32ExpBias = 127;
-  static constexpr int FP16Exp = 5;
-  static constexpr int FP16Mantissa = 10;
-  static constexpr int FP16ExpBias = 15;
-
-  static float GetFP32(uint16_t x) {
-    auto components = Extract<uint16_t, FP16Exp, FP16Mantissa>(x);
-    components[1] -= FP16ExpBias;
-    components[2] <<= 32 - FP16Mantissa;
-    // Underflow.
-    if (components[1] == -FP16ExpBias) {
-      while (components[2] > 0) {
-        --components[1];
-        components[2] <<= 1;
-      }
-      components[2] <<= 1;
-    }
-    return GetFP32(components[0], components[1], components[2]);
-  }
-
-  static float GetFP32(uint8_t sign, int32_t e, uint32_t m) {
-    uint32_t x =
-        Combine<uint32_t, FP32Exp, FP32Mantissa>(sign, e + FP32ExpBias, m);
-    return *(reinterpret_cast<float*>(&x)); // NOLINT.
-  }
-};
-
-struct in_out_data{
-  cnpy::npz* input;
-  std::array<odla_float16, 384*2*10>* out_Squad_Gemm;
-};
-
-void prepare_one_data(in_out_data* one_data){
-  static int data_index = 0;
-  static cnpy::npz_t* one_npz = nullptr;
-  if(0 == data_index++) //only one inputs copy
+class CallByMainTest : public BaseTest{
+public:
+  CallByMainTest(){};
+  ~CallByMainTest(){};
+  void do_inference(cnpy::npz_t& data) final
   {
-    one_npz = new cnpy::npz_t();
-    *one_npz = cnpy::npz_load("one.npz");    
-    std::cout << "Loaded the npz file" << std::endl;
-  }
-  one_data->input = one_npz;
-  one_data->out_Squad_Gemm = new std::array<odla_float16, 384*2*10>();
-  std::cout << "[ " << data_index << " ] prepared for the test ..." << std::endl;
-}
-static in_out_data* all_data = nullptr;
-
-void prepare_data()
-{
-  all_data = new in_out_data[TOTAL_DATA_NUM];
-  for(int i=0; i < TOTAL_DATA_NUM; i++)
-    prepare_one_data(all_data+i);
-}
-
-void inference(int start, int count, in_out_data* all_data){
-  for(int i=start; i < start + count; i++){
-    in_out_data* data = (all_data)+i;
-    auto start_t = std::chrono::steady_clock::now();
-	  model((*(data->input))["indices"].data<std::uint32_t>()), 
-            (*(data->input))["masks"].data<std::uint32_t>()),
-            (*(data->input))["positions"].data<std::uint32_t>()),
-            (*(data->input))["segments"].data<std::uint32_t>()), 
-            data->out_Squad_Gemm->data());
-    auto end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end-start_t;
-    std::cout << "[" << i << "] @@@@@ request latency is: " << elapsed_seconds.count() << "s" << std::endl;
-  }
-}
-
-#define THREAD_COUNT 32
-
-int main(){
-
-  prepare_data();
-  bool single_thread = false;
-
-  auto start = std::chrono::steady_clock::now();
-  if(single_thread){
-    for (int step=0; step<TOTAL_DATA_NUM; step++){
-      in_out_data* data = all_data+step;
-	    if(100 == step)
-		    start = std::chrono::steady_clock::now();
-      model(data->indices, data->masks, data->positions, 
-            data->segments, data->out_Squad_Gemm->data());
-	  }
-  }
-  else{
-    std::thread threads[THREAD_COUNT];
-    int start_index = 0;
-    int count = TOTAL_DATA_NUM/THREAD_COUNT;
-    for(int i=0; i < THREAD_COUNT; i++){
-      threads[i] = std::thread(inference, start_index, count, all_data);
-      start_index += count;
+    int num_inputs = Config::instance()->inputs().size();
+    int num_outputs = Config::instance()->outputs().size();
+    const void** inputs = new const void*[num_inputs];
+    void** outputs = new void*[num_outputs];
+    for(auto &input : Config::instance()->inputs())
+    {
+      int idx = std::stoi(input.second[0]);
+      inputs[idx] = data[input.first].data<unsigned char>();  //no matter the type of the data, just return a pointer to it
     }
-    cout << "Threads started, wait for all threads end." << std::endl;
-    for(int i=0; i < THREAD_COUNT; i++){
-      threads[i].join();
+    for(auto &output : Config::instance()->outputs())
+    {
+      int idx = std::stoi(output.second[0]);
+      outputs[idx] = data[output.first].data<unsigned char>(); 
     }
+    
+    model_run(num_inputs, inputs, num_outputs, outputs, 0);  //The batch was not used
+
+    delete[] inputs;
+    delete[] outputs;
   }
-  auto end = std::chrono::steady_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end-start;
-  std::cout << "The total run time including compile is: " << elapsed_seconds.count() << "s" << std::endl;
-  model_fini();
+
+  void prerequisites() final
+  { 
+  }
+
+  void finish() final
+  {
+    model_fini();
+  }
+};
+
+template<typename T>
+static void check(T* h) {
+    if(!h) {
+        std::cerr << dlerror();
+        exit(1);
+    }
+}
+
+int main(int argc, char* argv[]){
+  if(argc < 3)
+    throw std::invalid_argument("Must have 2 parameters: --config <config.json>");
+  std::string param(argv[1]);
+  std::string config_file(argv[2]);
+  if(param != "--config")
+    throw std::invalid_argument("Usage --config <config.json>");
+  
+  CallByMainTest test;
+  test.start(config_file);
 }

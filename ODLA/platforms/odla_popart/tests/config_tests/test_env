@@ -1,0 +1,5 @@
+#!/bin/bash
+ln -s /home/jackz/repos/HALO/ODLA/platforms/odla_popart/tests/mlperf/build build
+ln -s /home/jackz/repos/HALO/ODLA/platforms/odla_popart/tests/data data
+ln -s /home/jackz/repos/HALO/ODLA/platforms/odla_popart/tests/configs configs
+ln -s /home/jackz/repos/HALO/ODLA/platforms/odla_popart/tests tests

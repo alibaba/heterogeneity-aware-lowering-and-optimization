@@ -26,6 +26,7 @@
 #include <popart/popx/devicex.hpp>
 #include <string>
 #include <dlfcn.h>
+#include <cstdlib>
 
 #include "ODLA/odla_common.h"
 #include "common.h"
@@ -77,10 +78,12 @@ odla_status odla_CreateComputation(odla_computation* comp) {
     }
   }
   //Read the config file
-  PopartConfig::instance()->load_config("/home/jackz/repos/HALO/config.json");
+  PopartConfig::instance()->load_config(std::getenv("ODLA_POPART_CONFIG")); //"/home/jackz/repos/HALO/config.json");
   _odla_computation::instance()->set_executor();
-  QManager::instance()->createQ(PopartConfig::instance()->queue_type());
-  QManager::instance()->getQ()->init(PopartConfig::instance()->queue_capacity());
+  if(PopartConfig::instance()->execution_mode() == PARALLEL || PopartConfig::instance()->execution_mode() == PIPELINE){
+    QManager::instance()->createQ(PopartConfig::instance()->queue_type());
+    QManager::instance()->getQ()->init(PopartConfig::instance()->queue_capacity());
+  }
   //std::cout << "<--- odla_CreateComputation()" << std::endl;
   return ODLA_SUCCESS;
 }

@@ -88,6 +88,8 @@ struct Float {
 ***************************************************************/
 class Config{
 private:
+    std::string _call_method;
+    std::uint32_t _dlopen_times;
     std::string _model_path;
     std::uint32_t _thread_number;
     std::uint32_t _duration;
@@ -101,6 +103,8 @@ private:
 public:
     ~Config(){};
     static Config* instance(){return _instance;}
+    const std::string& call_method(){return _call_method;}
+    const std::uint32_t dlopen_times(){return _dlopen_times;}
     const std::string& model_path(){return _model_path;}
     const std::uint32_t thread_number(){return _thread_number;}
     const std::uint32_t thread_buffer_cnt(){return _thread_buffer_cnt;}
@@ -119,6 +123,8 @@ public:
     ~BaseTest(){};
     void start(const std::string& config_file);
     virtual void do_inference(cnpy::npz_t& data) = 0;
+    virtual void prerequisites() = 0;
+    virtual void finish() = 0;
     void save_latency_results(const std::vector<float>& latencies, 
         const std::map<std::string, std::vector<cnpy::NpyArray>>& results); 
 private:
