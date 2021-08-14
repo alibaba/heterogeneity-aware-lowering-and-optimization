@@ -107,6 +107,11 @@ void BaseTest::save_latency_results(const std::vector<float>& latencies,
             }
             cnpy::npz_save<float>(result_file, result.first, &float_result[0], {result.second[0].num_vals}, "a");
         }
+        else if(outputs[result.first][1] == "FP32"){
+            cnpy::npz_save<float>(result_file, result.first, 
+                result.second[0].data<float>(), 
+                {result.second[0].num_vals}, "a");
+        }
         else if(outputs[result.first][1] == "UNIT32")
             cnpy::npz_save<std::uint32_t>(result_file, result.first, 
                 result.second[0].data<std::uint32_t>(), 
