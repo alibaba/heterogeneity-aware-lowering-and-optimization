@@ -444,8 +444,8 @@ void Converter::ProcessExtensionAttributesImpl(
 }
 
 static void SetAttribute(const std::string& attr_name, const std::string& value,
-                         bool spatial_only, int element_index, int indent,
-                         llvm::raw_ostream& os) {
+                         bool spatial_only, int element_index, bool revert,
+                         int indent, llvm::raw_ostream& os) {
   if (spatial_only) {
     // TODO(unknown): expand dim according to data format
     os.indent(indent);
@@ -456,8 +456,11 @@ static void SetAttribute(const std::string& attr_name, const std::string& value,
     attr_value += ".at(" + std::to_string(element_index) + ")";
   }
   os.indent(indent);
-  os << "inst->Set" << tablegen::Attr::SetAccessName(attr_name) << "("
-     << attr_value << ");\n";
+  os << "inst->Set" << tablegen::Attr::SetAccessName(attr_name) << "(";
+  if (revert) {
+    os << "!";
+  }
+  os << attr_value << ");\n";
 }
 
 void Converter::ProcessAttributes(
@@ -479,6 +482,7 @@ void Converter::ProcessAttributes(
       std::string default_value =
           attr_mapping_record->getValueAsString("attr_value_").str();
       bool spatial_only = attr_mapping_record->getValueAsBit("expand_dims_");
+      bool revert = attr_mapping_record->getValueAsBit("revert_");
       int index = attr_mapping_record->getValueAsInt("index_");
       if (index != -1) {
         std::ostringstream ss;
@@ -499,7 +503,7 @@ void Converter::ProcessAttributes(
         os.indent(indent_num);
         os << "attrs.Process<" << cpp_type << ">(\"" << extern_attr_name
            << "\", &" << sn_attr_name << ");\n";
-        SetAttribute(sn_attr_name, sn_attr_name, spatial_only, index,
+        SetAttribute(sn_attr_name, sn_attr_name, spatial_only, index, revert,
                      indent_num, os);
         os.indent(indent_num);
         os << "\n";
@@ -539,6 +543,7 @@ void Converter::ProcessAttributesForCaffe(
       std::string default_value =
           attr_mapping_record->getValueAsString("attr_value_").str();
       bool spatial_only = attr_mapping_record->getValueAsBit("expand_dims_");
+      bool revert = attr_mapping_record->getValueAsBit("revert_");
       int index = attr_mapping_record->getValueAsInt("index_");
       if (index != -1) {
         std::ostringstream ss;
@@ -581,7 +586,7 @@ void Converter::ProcessAttributesForCaffe(
              << "attrs." << extern_attr_name << "();\n";
         }
         SetAttribute(sn_attr_name, extern_attr_name, spatial_only, index,
-                     indent_num, os);
+                     revert, indent_num, os);
         if (optional_attrs.count(extern_attr_name) != 0) {
           os << "  }";
         }

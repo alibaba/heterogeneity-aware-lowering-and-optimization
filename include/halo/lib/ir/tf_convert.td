@@ -67,7 +67,7 @@ def TF_StridedSlice : TFExtension<"StridedSlice"> {
 
 def TF_Sum : OpMapping<"Sum", ReduceSum> {
   let attr_mapping_ = [
-    AttributeMapping<"keep_dims", "keep_dims", "false">
+    AttributeMapping<"keep_dims", "keep_dims", "false", -1, 0, 1>
   ];
 }
 
@@ -201,7 +201,7 @@ def TF_MatMul: OpMapping<"MatMul", MatMul> {
 
 def TF_Max : OpMapping<"Max", ReduceMax> {
   let attr_mapping_ = [
-    AttributeMapping<"keep_dims", "keep_dims", "false">,
+    AttributeMapping<"keep_dims", "keep_dims", "false", -1, 0, 1>,
     AttributeMapping<"axis", "axis", "{}">];
 }
 
@@ -219,7 +219,7 @@ def TF_MaxPool : OpMapping<"MaxPool", PoolingMax> {
 
 def TF_Mean : OpMapping<"Mean", ReduceMean> {
   let attr_mapping_ = [
-    AttributeMapping<"keep_dims", "keep_dims", "false">,
+    AttributeMapping<"keep_dims", "keep_dims", "false", -1, 0, 1>,
     AttributeMapping<"axis", "axis", "{}">
   ];
 }
@@ -247,7 +247,7 @@ def TF_Pack : OpMapping<"Pack", Stack> {
 
 def TF_Prod : OpMapping<"Prod", ReduceProduct> {
   let attr_mapping_ = [
-    AttributeMapping<"keep_dims", "keep_dims", "false">,
+    AttributeMapping<"keep_dims", "keep_dims", "false", -1, 0, 1>,
     AttributeMapping<"axis", "axis", "{}">];
 }
 

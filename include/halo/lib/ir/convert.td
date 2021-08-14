@@ -28,12 +28,14 @@ class AttributeMapping<string extern_attr_name,
                        string sn_attr,
                        string attr_value,
                        int index = -1,
-                       bit expand_dims = 0> {
+                       bit expand_dims = 0,
+                       bit revert = 0> {
   string extern_attr_name_ = extern_attr_name;
   string sn_attr_ = sn_attr;
   string attr_value_ = attr_value;
   int index_ = index;
   bit expand_dims_ = expand_dims;
+  bit revert_ = revert;
 }
 
 class ExtensionAttr<string extern_attr_name,
