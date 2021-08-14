@@ -40,6 +40,7 @@ void GenericCXXCodeGen::RunOnReductionInstruction(
       axis.push_back(i);
     }
   }
+  std::cout << "======> " << keep_dims << "\n";
 
   EmitODLACall(ret, odla_func_name, op0, axis.size(), axis, keep_dims,
                EmitShape(ret_type));

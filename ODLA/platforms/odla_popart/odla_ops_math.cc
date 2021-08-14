@@ -367,7 +367,7 @@ odla_value odla_ReduceSum(odla_value input, odla_size_t num_of_axes,
   const auto& name = value_id
                          ? std::string(reinterpret_cast<const char*>(value_id))
                          : "ReduceSum";
-
+  std::cout << "===>odla: " << keep_dims << "\n";
   std::vector<int64_t> axes_vec;
   for (int64_t i = 0; i < num_of_axes; i++) {
     axes_vec.push_back(axes[i]);
