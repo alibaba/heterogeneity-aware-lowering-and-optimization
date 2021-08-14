@@ -1,0 +1,11 @@
+#!/bin/bash
+TEST_NAME=main_seq_pipe_sgl
+# use 1 ipu config to test no pipeline
+export ODLA_POPART_CONFIG=configs/config.json
+export POPART_LOG_LEVEL=INFO
+# test_main.json poits to bs10 model & bs10 bps128 test data
+build/run_main --config configs/test_main.json 2>&1 | tee test.log
+echo "=================== test finished ============================="
+python3 tests/npz_reader.py --npz-file test_result.npz
+mv test_result.npz logs/$TEST_NAME.npz
+mv test.log logs/$TEST_NAME.log
