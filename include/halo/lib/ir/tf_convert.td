@@ -67,7 +67,7 @@ def TF_StridedSlice : TFExtension<"StridedSlice"> {
 
 def TF_Sum : OpMapping<"Sum", ReduceSum> {
   let attr_mapping_ = [
-    AttributeMapping<"keep_dims", "keep_dims", "false">
+    AttributeMapping<"keep_dims", "keep_dims", "true">
   ];
 }
 
