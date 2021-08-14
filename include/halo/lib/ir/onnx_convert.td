@@ -122,6 +122,8 @@ def ONNX_Elu : OpMapping<"Elu", Elu> {
   let attr_mapping_ = [ AttributeMapping<"alpha", "alpha", "1.0"> ];
 }
 
+def ONNX_Erf : OpMapping<"Erf", Erf>;
+
 def ONNX_Equal: OpMapping<"Equal", Cmp> {
   let attr_mapping_ = [AttributeMapping<"", "predicator", "EQ">];
 }
