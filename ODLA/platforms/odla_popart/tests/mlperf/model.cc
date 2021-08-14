@@ -325,19 +325,14 @@ extern const int Embedding_Constant_0[];
 extern const odla_float16 Embedding_Constant_0_1[2];
 extern const odla_float16 Embedding_OneHot_on_value[];
 extern "C" {
-void model(const unsigned int indices[3840],
-           const unsigned int input_mask[3840],
-           const unsigned int positions[3840],
-           const unsigned int segments[3840],
-           odla_float16 out_Squad_Gemm[3840 * 2]);
-void model_init();
-void model_fini();
-odla_computation model_helper();
+int model_run(int num_inputs, const void *inputs[], int num_outputs,
+              void *outputs[], int batch_size);
+int model_init();
+int model_fini();
+int model_helper(odla_computation comp);
 };
 static odla_computation Comp;
-odla_computation model_helper() {
-  odla_computation comp;
-  odla_CreateComputation(&comp);
+int model_helper(odla_computation comp) {
   auto indices = odla_CreateArgument({ODLA_UINT32, {.size = 1, .dims = {3840}}},
                                      (const odla_value_id)("indices"));
   auto input_mask =
@@ -4031,29 +4026,63 @@ odla_computation model_helper() {
       Layer23_FF_GroupNormalization, 0, Squad_SquadW_, 0, 1, 0, Squad_SquadB_,
       {.size = 2, .dims = {3840, 2}}, (const odla_value_id) "Squad_Gemm");
   odla_SetValueAsOutput(Squad_Gemm);
-  return comp;
+  return ODLA_SUCCESS;
 }
-void model_fini() { odla_DestroyComputation(Comp); }
-void model_init() {
-  if (Comp == nullptr) {
-    Comp = model_helper();
+int model_fini() {
+  if (Comp != nullptr) {
+    return odla_DestroyComputation(Comp);
   }
+  return ODLA_SUCCESS;
 }
-void model(const unsigned int indices[3840],
-           const unsigned int input_mask[3840],
-           const unsigned int positions[3840],
-           const unsigned int segments[3840],
-           odla_float16 out_Squad_Gemm[3840 * 2]) {
-  model_init();
+int model_init() {
+  odla_status status = ODLA_SUCCESS;
+  if (Comp == nullptr) {
+    status = odla_CreateComputation(&Comp);
+    if (status != ODLA_SUCCESS) {
+      return status;
+    }
+    status = (odla_status)model_helper(Comp);
+  }
+  return status;
+}
+int model_run(int num_inputs, const void *inputs[], int num_outputs,
+              void *outputs[], int batch_size) {
+  odla_status status = ODLA_SUCCESS;
+  status = (odla_status)model_init();
+  if (status != ODLA_SUCCESS) {
+    return status;
+  }
   static odla_context Ctx;
   if (Ctx == nullptr) {
-    odla_CreateContext(&Ctx);
-  };
-  odla_BindToArgumentById((const odla_value_id) "indices", indices, Ctx);
-  odla_BindToArgumentById((const odla_value_id) "input_mask", input_mask, Ctx);
-  odla_BindToArgumentById((const odla_value_id) "positions", positions, Ctx);
-  odla_BindToArgumentById((const odla_value_id) "segments", segments, Ctx);
-  odla_BindToOutputById((const odla_value_id) "Squad_Gemm", out_Squad_Gemm,
-                        Ctx);
-  odla_ExecuteComputation(Comp, Ctx, ODLA_COMPUTE_INFERENCE, nullptr);
+    status = odla_CreateContext(&Ctx);
+    if (status != ODLA_SUCCESS) {
+      return status;
+    }
+  }
+  status =
+      odla_BindToArgumentById((const odla_value_id) "indices", inputs[0], Ctx);
+  if (status != ODLA_SUCCESS) {
+    return status;
+  }
+  status = odla_BindToArgumentById((const odla_value_id) "input_mask",
+                                   inputs[1], Ctx);
+  if (status != ODLA_SUCCESS) {
+    return status;
+  }
+  status = odla_BindToArgumentById((const odla_value_id) "positions", inputs[2],
+                                   Ctx);
+  if (status != ODLA_SUCCESS) {
+    return status;
+  }
+  status =
+      odla_BindToArgumentById((const odla_value_id) "segments", inputs[3], Ctx);
+  if (status != ODLA_SUCCESS) {
+    return status;
+  }
+  status = odla_BindToOutputById((const odla_value_id) "Squad_Gemm", outputs[0],
+                                 Ctx);
+  if (status != ODLA_SUCCESS) {
+    return status;
+  }
+  return odla_ExecuteComputation(Comp, Ctx, ODLA_COMPUTE_INFERENCE, nullptr);
 }

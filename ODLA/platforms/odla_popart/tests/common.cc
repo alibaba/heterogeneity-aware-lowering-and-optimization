@@ -15,7 +15,17 @@ void Config::load(const std::string& file_path)
     using json = nlohmann::json;
     std::ifstream ifs(file_path);
     json jf = json::parse(ifs);
-
+    
+    std::vector<std::string> required = {"call_method", "dlopen_times", "model",
+        "thread_number", "npz", "inputs", "outputs", "result", 
+        "thread_buffer_cnt", "duration"
+    };
+    for(auto &name : required)
+        if(!jf.contains(name))
+            throw std::invalid_argument("[" + name + "] must be configured in the config file");
+    
+    _call_method        = jf["call_method"].get<std::string>();
+    _dlopen_times       = jf["dlopen_times"].get<std::uint32_t>();
     _model_path         = jf["model"].get<std::string>();
     _thread_number      = jf["thread_number"].get<std::uint32_t>();
     _npz_file_path      = jf["npz"].get<std::string>();
@@ -41,6 +51,8 @@ void Config::print()
 {
     std::string line(80, '=');
     std::cout << line << std::endl;
+    std::cout << "call methoud: " << _call_method << std::endl;
+    std::cout << "dlopen_times: " << _dlopen_times << std::endl;
     std::cout << "model path: " << _model_path << std::endl;
     std::cout << "npz file path: " << _npz_file_path << std::endl;
     std::cout << "thread number: " << _thread_number << std::endl;
@@ -136,7 +148,7 @@ void inference(int thread_id, cnpy::npz_t* all_data, BaseTest* test){
         idx = (idx+1) % Config::instance()->thread_buffer_cnt();  //in case the data was not written before reused.
         auto start = std::chrono::steady_clock::now();
 
-        test->do_inference(data);
+        test->do_inference(data); //should implement this for different caller
 
         auto end = std::chrono::steady_clock::now();
         std::chrono::duration<float, std::milli> elapsed_milliseconds = end-start;
@@ -166,6 +178,8 @@ void BaseTest::start(const std::string& config_file)
     assert(Config::instance()->thread_buffer_cnt() > 2);  //Ensure more than 2 data can compare
     cnpy::npz_t* all_data = prepare_data();
 
+    prerequisites();
+
     auto start = std::chrono::steady_clock::now();
     if(Config::instance()->thread_number() == 1){
         inference(0, all_data, this);
@@ -184,4 +198,6 @@ void BaseTest::start(const std::string& config_file)
     std::chrono::duration<double> elapsed_seconds = end-start;
     std::cout << "The total run time including compile is: " << elapsed_seconds.count() << "s" << std::endl;
     delete[] all_data;
+
+    finish();
 }

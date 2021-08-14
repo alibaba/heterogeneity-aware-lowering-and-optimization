@@ -1,8 +1,8 @@
 {
     "version":"1.0.0",
     "amp":0.445,
-    "batch_per_step":10,
-    "execution_mode":"pipeline",
+    "batch_per_step":128,
+    "execution_mode":"sequence",
     "ipu_num":2,
     "load_onnx":false,
     "load_onnx_path":"path",
@@ -16,6 +16,6 @@
     },
     "queue_type":"LockFreeQueue",
     "queue_capacity":1048576,
-    "save_model" : true,
+    "save_model" : false,
     "save_model_path":"pipeline_test.onnx"
 }
