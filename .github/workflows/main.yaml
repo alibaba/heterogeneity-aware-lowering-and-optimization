@@ -34,7 +34,7 @@ jobs:
             .github/
             third_party/
 
-  checkout:
+  build_ubuntu:
     runs-on: [self-hosted]
     steps:
       - name: checkout
@@ -43,10 +43,6 @@ jobs:
           path: halo
           submodules: recursive
 
-  build_ubuntu:
-    runs-on: [self-hosted]
-    needs: [checkout]
-    steps:
       - name: build
         uses: ./halo/.github/actions/build
         with:
@@ -62,8 +58,13 @@ jobs:
 
   build_centos7:
     runs-on: [self-hosted]
-    needs: [checkout]
     steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          path: halo
+          submodules: recursive
+
       - name: build
         run: |
           mkdir -p /tmp/centos.cache
