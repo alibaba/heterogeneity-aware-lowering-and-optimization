@@ -233,13 +233,15 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
   popart::TensorId result =
       g_comp->builder->aiOnnxOpset10().matmul({lhs_trans, rhs_trans}, name);
   auto name_pattern = std::regex("(Attention_MatMul$)|Attention_MatMul(_[1-2])", std::regex::icase);
-  if(std::regex_search(name, name_pattern)){
+  //if(std::regex_search(name, name_pattern)){
     // std::cout << "=====> do not set the AMP on: " << name << std::endl;
-  }
-  else if(name != "Embedding_MatMul"){
-    float amp = PopartConfig::instance()->amp();
-    g_comp->builder->setAvailableMemoryProportion(result, amp);
-  }
+  //}
+  //else if(name != "Embedding_MatMul"){
+  //  float amp = PopartConfig::instance()->amp();
+  //  g_comp->builder->setAvailableMemoryProportion(result, amp);
+  //}
+  float amp = PopartConfig::instance()->amp();
+  g_comp->builder->setAvailableMemoryProportion(result, amp);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},

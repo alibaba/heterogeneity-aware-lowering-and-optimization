@@ -124,6 +124,8 @@ struct _odla_pipeline_context : public _odla_context {
       tensors_written; // Record the output tensor written by callback
   int visited;
   int written;
+  std::chrono::time_point<std::chrono::steady_clock> start;
+  std::chrono::time_point<std::chrono::steady_clock> end;
   inline void wait() override {
     std::unique_lock<std::mutex> lock(context_mutex);
     context_cv.wait(lock);
@@ -147,6 +149,8 @@ struct _odla_pipeline_context : public _odla_context {
     //   tensors_visited.insert(id);
     //   return &(*iter->second);
     // }
+    if(visited == 0)
+      start = std::chrono::steady_clock::now();
     visited++;
     return &(*(inputs[id]));
   }
@@ -175,6 +179,11 @@ struct _odla_pipeline_context : public _odla_context {
   }
   inline bool all_tensors_written() override {
     //return (tensors_written.size() == outputs.size());
+    if(written == outputs.size()){
+      end = std::chrono::steady_clock::now();
+      std::chrono::duration<float, std::milli> elapsed_ms = end-start;
+      popart::logging::info("[ODLA_POPART_TPUT] The time run for ctx: {} is [{}]", this, elapsed_ms.count());
+    }
     return (written == outputs.size());
   }
   inline void clear_visited_and_written() override {

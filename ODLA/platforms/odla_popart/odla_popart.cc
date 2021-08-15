@@ -149,7 +149,7 @@ void _odla_computation::set_session_opts()
     m_session_opts.virtualGraphMode = popart::VirtualGraphMode::Manual;
     m_session_opts.enableFloatingPointChecks = false;
     m_session_opts.enableStochasticRounding = false;
-    m_session_opts.enableGroupedMatmuls = false;
+    //m_session_opts.enableGroupedMatmuls = false;
     m_session_opts.enablePrefetchDatastreams = true;
     m_session_opts.enableOutlining = true;
     std::string partials_type = "half";
