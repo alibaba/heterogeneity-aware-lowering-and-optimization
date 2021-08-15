@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <type_traits>
 #include <unordered_set>
 
 #include "halo/api/halo_data.h"
@@ -475,8 +476,8 @@ static void RunOnInstruction(Conv2DTransposeInst* inst) {
   }
 }
 
-static void RunOnCommonReductionInstruction(Instruction* inst,
-                                            std::vector<int32_t> axis,
+template <typename T>
+static void RunOnCommonReductionInstruction(T* inst, std::vector<int32_t> axis,
                                             bool keep_dims) {
   const auto& input_type = inst->GetOperand(0).GetType();
   if (!input_type.IsValid()) {
@@ -528,6 +529,11 @@ static void RunOnCommonReductionInstruction(Instruction* inst,
     dt = DataType::INT32;
   }
 
+  constexpr bool is_arg_inst =
+      std::is_same<T, ArgmaxInst>() || std::is_same<T, ArgminInst>();
+  if constexpr (!is_arg_inst) { // NOLINT
+    inst->SetAxis(axis);
+  }
   inst->GetResultsTypes()[0] = halo::Type{dt, ret_shape};
 }
 
