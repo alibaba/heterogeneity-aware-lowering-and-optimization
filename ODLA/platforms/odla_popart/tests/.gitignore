@@ -3,3 +3,9 @@
 **/build
 *.log
 *.bin
+*.onnx
+*.o
+*.out
+model.cc
+model.h
+

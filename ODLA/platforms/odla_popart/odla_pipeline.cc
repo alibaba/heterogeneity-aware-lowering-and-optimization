@@ -191,6 +191,8 @@ void LockFreeQueue::put(odla_context ctx)
   uint32_t idx = 0;
   uint32_t new_idx = 0;
   uint32_t cnt = 0;
+  if(ctx == nullptr)
+    throw std::invalid_argument("LockFreeQueue::put null ctx received");
   popart::logging::info(
     "[LockFreeQueue::put] Finding a place to put ctx: {}", ctx);
   do{
@@ -219,6 +221,7 @@ void LockFreeQueue::put(odla_context ctx)
 odla_context LockFreeQueue::get_input_context() //only return the head_, ++ will be done when pop_input
 {
   uint32_t cnt = 0;
+  popart::logging::info("LockFreeQueue::get_input_context queue has size: {}", size());
   while(head_ == tail_.load())
   {
     popart::logging::info(
@@ -233,8 +236,10 @@ odla_context LockFreeQueue::get_input_context() //only return the head_, ++ will
   }
   cnt = 0;
   while(buffer_[head_].load() == nullptr){
-    if(cnt++ > 2)
-      throw std::runtime_error("Must get a valid ctx in 3 times, tiny window");
+    if(cnt++ > 666)
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    if(cnt++ > 6666)
+      throw std::runtime_error("Must get a valid ctx in 6666 times idx: " + std::to_string(head_));
     popart::logging::info(
       "Reading ctx with head_: {} encounter nullptr {} times.", head_, cnt);
   }
@@ -258,7 +263,7 @@ void LockFreeQueue::pop_input(odla_context ctx)
 
 void LockFreeQueue::pop_output(odla_context ctx)
 {
-  if(wait_ == head_)
+  if(wait_ >= head_)
     throw std::runtime_error("Got out before input all read on index "
                             + std::to_string(wait_));
   if(!buffer_[wait_].compare_exchange_strong(ctx, nullptr))
