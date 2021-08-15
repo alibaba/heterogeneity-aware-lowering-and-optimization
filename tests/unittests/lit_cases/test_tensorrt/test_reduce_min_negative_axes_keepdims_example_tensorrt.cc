@@ -25,5 +25,5 @@
 // RUN: %t_tensorrt.exe 0.0001 0 tensorrt %data_path/test_reduce_min_negative_axes_keepdims_example | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_reduce_min_negative_axes_keepdims_example_tensorrt.cc.tmp.main.cc.in"
