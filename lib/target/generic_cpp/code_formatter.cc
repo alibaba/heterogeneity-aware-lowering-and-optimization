@@ -73,9 +73,9 @@ static bool FormatCode(std::ostringstream& input, bool is_cxx) {
       llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs>(new clang::DiagnosticIDs),
       new clang::DiagnosticOptions);
   clang::SourceManager source_mgr(diag, files);
-  vfs->addFileNoOwn(assumed_file_name, 0, code_buf.get());
+  vfs->addFileNoOwn(assumed_file_name, 0, code_buf->getMemBufferRef());
   clang::FileID id =
-      source_mgr.createFileID(files.getFile(assumed_file_name),
+      source_mgr.createFileID(files.getFile(assumed_file_name).get(),
                               clang::SourceLocation(), clang::SrcMgr::C_User);
   clang::Rewriter rewriter(source_mgr, clang::LangOptions());
   clang::tooling::applyAllReplacements(replaces, rewriter);

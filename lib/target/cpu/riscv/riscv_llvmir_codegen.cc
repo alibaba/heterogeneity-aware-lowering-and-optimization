@@ -97,7 +97,7 @@ bool RISCVBinaryWriter::RunOnModule(Module* module) {
       module->GetGlobalContext().GetCodeGenObject().GetLLVMModule();
 
   GetRISCVTargetMachine(ctx)->addPassesToEmitFile(
-      pm, buf, nullptr, llvm::TargetMachine::CodeGenFileType::CGFT_ObjectFile);
+      pm, buf, nullptr, llvm::CodeGenFileType::CGFT_ObjectFile);
   pm.run(*llvm_module);
   return false;
 }

@@ -59,7 +59,7 @@ bool GenericConstantWriter::RunOnModule(Module* module) {
   target_machine_->setOptLevel(llvm::CodeGenOpt::Level::None);
   std::vector<const char*> args;
   HLCHECK(target_machine_);
-  llvm_module_ = llvm::make_unique<llvm::Module>(
+  llvm_module_ = std::make_unique<llvm::Module>(
       module->GetName() + "_constants", GetLLVMContext());
   llvm_module_->setDataLayout(target_machine_->createDataLayout());
   llvm_module_->setTargetTriple(target_machine_->getTargetTriple().getTriple());
@@ -111,8 +111,7 @@ void ELFConstantWriter::WriteToBuf() {
     // Go through the slow path.
     llvm::legacy::PassManager pm;
     target_machine_->addPassesToEmitFile(
-        pm, buf, nullptr,
-        llvm::TargetMachine::CodeGenFileType::CGFT_ObjectFile);
+        pm, buf, nullptr, llvm::CodeGenFileType::CGFT_ObjectFile);
     pm.run(*llvm_module_);
     llvm_os.flush();
     return;
@@ -121,7 +120,7 @@ void ELFConstantWriter::WriteToBuf() {
   llvm::LLVMTargetMachine* ltm =
       static_cast<llvm::LLVMTargetMachine*>(tm); // NOLINT
   llvm::MachineModuleInfo mmi(ltm);
-  mmi.doInitialization(*llvm_module_);
+  mmi.initialize();
   llvm::MCContext& mctx = mmi.getContext();
   const llvm::MCInstrInfo& mii = *tm->getMCInstrInfo();
   std::unique_ptr<llvm::MCCodeEmitter> mce(
@@ -139,17 +138,17 @@ void ELFConstantWriter::WriteToBuf() {
   llvm::TargetLoweringObjectFile* objfile_lowering = tm->getObjFileLowering();
   objfile_lowering->Initialize(mctx, *tm);
   mc_streamer->InitSections(false);
-  mc_streamer->EmitVersionForTarget(triple, llvm_module_->getSDKVersion());
-  asm_printer->EmitStartOfAsmFile(*llvm_module_);
+  mc_streamer->emitVersionForTarget(triple, llvm_module_->getSDKVersion());
+  asm_printer->emitStartOfAsmFile(*llvm_module_);
 
   for (const auto& gv : llvm_module_->globals()) {
     //  AsmPrinter::EmitGlobalVariable(&gv) is slow because it emits each
     //  element one by one.
     llvm::MCSymbol* gv_sym = asm_printer->getSymbol(&gv);
-    asm_printer->EmitVisibility(gv_sym, gv.getVisibility(),
+    asm_printer->emitVisibility(gv_sym, gv.getVisibility(),
                                 true /* definition */);
     HLCHECK(gv.hasInitializer());
-    mc_streamer->EmitSymbolAttribute(gv_sym, llvm::MCSA_ELF_TypeObject);
+    mc_streamer->emitSymbolAttribute(gv_sym, llvm::MCSA_ELF_TypeObject);
     llvm::SectionKind sec_kind =
         llvm::TargetLoweringObjectFile::getKindForGlobal(&gv, *tm);
 
@@ -159,7 +158,7 @@ void ELFConstantWriter::WriteToBuf() {
     unsigned align = 0;
     if (const llvm::GlobalVariable* gvar =
             llvm::dyn_cast<llvm::GlobalVariable>(&gv)) {
-      align = dl.getPreferredAlignment(gvar);
+      align = dl.getPreferredAlign(gvar).value();
     }
     align = std::max(gv.getAlignment(), align);
 
@@ -168,27 +167,26 @@ void ELFConstantWriter::WriteToBuf() {
 
     mc_streamer->SwitchSection(section);
 
-    asm_printer->EmitLinkage(&gv, gv_sym);
-    asm_printer->EmitAlignment(llvm::Log2_32(align), &gv);
+    asm_printer->emitLinkage(&gv, gv_sym);
+    asm_printer->emitAlignment(llvm::Align(align), &gv);
 
-    mc_streamer->EmitLabel(gv_sym);
+    mc_streamer->emitLabel(gv_sym);
 
     const llvm::Constant* cv = gv.getInitializer();
     const llvm::ConstantDataSequential* cds = nullptr;
     if (cds = llvm::dyn_cast<llvm::ConstantDataSequential>(cv);
         cds != nullptr) {
       size_t bytes = dl.getTypeAllocSize(cds->getType());
-      mc_streamer->EmitBytes(cds->getRawDataValues()); // NOLINT
+      mc_streamer->emitBytes(cds->getRawDataValues()); // NOLINT
       size_t emitted_bytes =
-          dl.getTypeAllocSize(cds->getType()->getElementType()) *
-          cds->getNumElements();
+          dl.getTypeAllocSize(cds->getElementType()) * cds->getNumElements();
       HLCHECK(emitted_bytes == cds->getRawDataValues().size());
       HLCHECK(bytes >= emitted_bytes);
       if (size_t paddings = bytes - emitted_bytes) {
-        mc_streamer->EmitZeros(paddings);
+        mc_streamer->emitZeros(paddings);
       }
     } else {
-      asm_printer->EmitGlobalConstant(dl, cv);
+      asm_printer->emitGlobalConstant(dl, cv);
     }
     mc_streamer->emitELFSize(gv_sym, llvm::MCConstantExpr::create(size, mctx));
   }
