@@ -30,7 +30,7 @@ set(SRCS
 )
 
 # dependences which need to be built first.
-set(DEPENDENCES IR)
+set(DEPENDENCES IR intrinsics_gen)
 
 create_halo_object(TARGET_NAME ${NAME}
   TARGET_SRCS ${SRCS}
