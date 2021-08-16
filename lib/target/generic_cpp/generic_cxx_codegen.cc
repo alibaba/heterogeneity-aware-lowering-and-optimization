@@ -139,7 +139,9 @@ bool GenericCXXCodeGen::RunOnModule(Module* module) {
     EmitBanner(&os_, &header_os_, GetAPI());
   }
 
-  EmitQuantInfos(&os_, opts_.quant_tbl);
+  if (!opts_.quant_tbl.empty()) {
+    EmitQuantInfos(&os_, opts_.quant_tbl);
+  }
 
   for (auto& func : *module) {
     if (func->IsEntryFunction()) {
