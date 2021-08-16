@@ -526,7 +526,7 @@ static void RunOnCommonReductionInstruction(T* inst, std::vector<int32_t> axis,
 
   if (inst->GetOpCode() == OpCode::ARGMAX ||
       inst->GetOpCode() == OpCode::ARGMIN) {
-    dt = DataType::INT32;
+    dt = DataType::INT64;
   }
 
   constexpr bool is_arg_inst =
