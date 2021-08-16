@@ -2662,6 +2662,11 @@ enum LSTMArgIndex {
   LSTM_ARG_P_IDX = 7
 };
 
+enum LSTMLayout {
+  LSTM_LAYOUT_NORMAL = 0,
+  LSTM_LAYOUT_TRANSFORMED = 1,
+};
+
 static bool FixUpLSTM(LSTMInst* inst) {
   bool changed = false;
 
@@ -2683,6 +2688,31 @@ static bool FixUpLSTM(LSTMInst* inst) {
     inst->ResetOperand(op_idx);
     inst->GetOperands().pop_back();
     changed = true;
+  }
+
+  if (LSTM_ARG_SEQUENCE_LENGTH_IDX + 1 == inst->GetNumOfOperands()) {
+    // Now the sequence_lens is the last argument
+
+    const Type& type_x = inst->GetOperand(LSTM_ARG_X_IDX).GetType();
+
+    int64_t seq_length = type_x.GetNumOfElementsInDim(0);
+    int64_t batch_size = type_x.GetNumOfElementsInDim(1);
+
+    if (LSTM_LAYOUT_NORMAL != inst->GetLayout()) {
+      std::swap(seq_length, batch_size);
+    }
+
+    Constant* op =
+        DynCast<Constant>(inst->GetOperand(LSTM_ARG_SEQUENCE_LENGTH_IDX));
+
+    if (nullptr != op) {
+      // If the sequence_lens was filled with default values, drop it.
+      if (op->HasSameValueOf(seq_length)) {
+        inst->ResetOperand(LSTM_ARG_SEQUENCE_LENGTH_IDX);
+        inst->GetOperands().pop_back();
+        changed = true;
+      }
+    }
   }
 
   return changed;

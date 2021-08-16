@@ -72,9 +72,13 @@ void GenericCXXCodeGen::RunOnInstruction(LSTMInst* inst) {
   const Def& w = inst->GetOperand(LSTM_ARG_W_IDX);
   const Def& r = inst->GetOperand(LSTM_ARG_R_IDX);
   const Def& b = inst->GetOperand(LSTM_ARG_B_IDX);
-  const Def& sequence_lens = inst->GetOperand(LSTM_ARG_SEQUENCE_LENGTH_IDX);
 
   size_t num_ops = inst->GetNumOfOperands();
+
+  const Def& sequence_lens =
+      num_ops > LSTM_ARG_SEQUENCE_LENGTH_IDX
+          ? inst->GetOperand(LSTM_ARG_SEQUENCE_LENGTH_IDX)
+          : Def::GetUndefined();
 
   const Def& initial_h = num_ops > LSTM_ARG_INITIAL_H_IDX
                              ? inst->GetOperand(LSTM_ARG_INITIAL_H_IDX)
