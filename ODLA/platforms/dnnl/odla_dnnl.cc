@@ -1532,6 +1532,14 @@ odla_value odla_ReduceSum(odla_value input, odla_size_t num_of_axes,
                    keep_dims, output_dims, id);
 }
 
+odla_value odla_ReduceSumSquare(odla_value input, odla_size_t num_of_axes,
+                                const odla_uint32* axes, odla_bool keep_dims,
+                                odla_value_shape output_dims,
+                                const odla_value_id id) {
+  auto sq = odla_Mul(input, input, (odla_value_id) "square");
+  return odla_ReduceSum(sq, num_of_axes, axes, keep_dims, output_dims, id);
+}
+
 odla_value odla_ReduceMean(odla_value input, odla_size_t num_of_axes,
                            const odla_uint32* axes, odla_bool keep_dims,
                            odla_value_shape output_dims,
