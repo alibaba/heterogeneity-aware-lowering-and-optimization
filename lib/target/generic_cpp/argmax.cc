@@ -28,8 +28,22 @@ void GenericCXXCodeGen::RunOnInstruction(ArgmaxInst* inst) {
   CXXValue ret(inst->GetName(), op0.type);
   const auto& axis = inst->GetAxis();
 
-  EmitODLACall(ret, "odla_ArgMax", op0, axis, inst->GetKeepDims(), false,
-               ret_type);
+  EmitODLACall(ret, "odla_ArgMax", op0, axis, inst->GetKeepDims(),
+               inst->GetSelectLastIndex(), ret_type);
+  ir_mapping_[*inst] = ret;
+}
+
+void GenericCXXCodeGen::RunOnInstruction(ArgminInst* inst) {
+  const Def& input = inst->GetOperand(0);
+
+  CXXValue op0 = ir_mapping_[input];
+  const auto& ret_type = inst->GetResultType();
+
+  CXXValue ret(inst->GetName(), op0.type);
+  const auto& axis = inst->GetAxis();
+
+  EmitODLACall(ret, "odla_ArgMin", op0, axis, inst->GetKeepDims(),
+               inst->GetSelectLastIndex(), ret_type);
   ir_mapping_[*inst] = ret;
 }
 
