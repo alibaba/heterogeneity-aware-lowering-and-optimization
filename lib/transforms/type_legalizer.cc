@@ -577,12 +577,21 @@ static void RunOnInstruction(ReduceSumSquareInst* inst) {
   RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
 }
 
-static void RunOnInstruction(ArgmaxInst* inst) {
+template <typename T>
+static void RunOnArgMinMaxInst(T* inst) {
   std::vector<int32_t> axis;
   if (inst->GetNumOfOperands() < 2) {
     axis.push_back(inst->GetAxis());
   }
   RunOnCommonReductionInstruction(inst, axis, inst->GetKeepDims());
+}
+
+static void RunOnInstruction(ArgmaxInst* inst) {
+  return RunOnArgMinMaxInst(inst);
+}
+
+static void RunOnInstruction(ArgminInst* inst) {
+  return RunOnArgMinMaxInst(inst);
 }
 
 template <typename T>
