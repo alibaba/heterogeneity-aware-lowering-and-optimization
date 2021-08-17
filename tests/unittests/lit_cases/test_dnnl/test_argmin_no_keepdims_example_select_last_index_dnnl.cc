@@ -25,5 +25,5 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_argmin_no_keepdims_example_select_last_index | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_argmin_no_keepdims_example_select_last_index_dnnl.cc.tmp.main.cc.in"
