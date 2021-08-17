@@ -888,6 +888,11 @@ odla_value odla_Exp(odla_value input, const odla_value_id value_id) {
                           value_id);
 }
 
+odla_value odla_Log(odla_value input, const odla_value_id value_id) {
+  return unary_eltwise_op(dnnl::algorithm::eltwise_log, input, 0.f, 0.f,
+                          value_id);
+}
+
 odla_value odla_Sqrt(odla_value input, const odla_value_id value_id) {
   auto v = unary_eltwise_op(dnnl::algorithm::eltwise_sqrt, input, 0.f, 0.f,
                             value_id);
@@ -1522,6 +1527,17 @@ odla_value odla_ReduceL2(odla_value input, odla_size_t num_of_axes,
                          odla_value_shape output_dims, const odla_value_id id) {
   return reduce_op(dnnl::algorithm::reduction_norm_lp_sum, input, num_of_axes,
                    axes, keep_dims, output_dims, id, 2 /* P */);
+}
+
+odla_value odla_ReduceLogSum(odla_value input, odla_size_t num_of_axes,
+                             const odla_uint32* axes, odla_bool keep_dims,
+                             odla_value_shape output_dims,
+                             const odla_value_id id) {
+  const auto& name = std::string(reinterpret_cast<const char*>(id)) + "_extra";
+  return odla_Log(
+      odla_ReduceSum(input, num_of_axes, axes, keep_dims, output_dims,
+                     (const odla_value_id)name.c_str()),
+      id);
 }
 
 odla_value odla_ReduceMax(odla_value input, odla_size_t num_of_axes,
