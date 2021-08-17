@@ -25,5 +25,5 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_argmin_default_axis_example_select_last_index | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_argmin_default_axis_example_select_last_index_popart.cc.tmp.main.cc.in"
