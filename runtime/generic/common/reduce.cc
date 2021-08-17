@@ -16,6 +16,7 @@
 // =============================================================================
 
 #include <algorithm>
+#include <cstdint>
 #include <cstring>
 
 extern "C" {
@@ -125,7 +126,7 @@ void _sn_rt_reduce_mean_f32(float* result, const float* data,
   }
 }
 
-void _sn_rt_argmax_f32(int* result, const float* data, const int64_t* shape,
+void _sn_rt_argmax_f32(int64_t* result, const float* data, const int64_t* shape,
                        const int32_t* axis, int64_t num_of_elements,
                        int32_t dim, int32_t axis_dim) {
   // axis is a scalar for argmax/argmin

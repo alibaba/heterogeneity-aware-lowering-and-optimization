@@ -57,20 +57,21 @@ int main() { Build(); }
 
 #else
 
+#include <stdint.h>
 #include <stdio.h>
 
 extern "C" {
-extern void func(float* input, int* output);
+extern void func(float* input, int64_t* output);
 }
 
 int main() {
   float input[] = {5.0,  1.0, 20.0, 2.0, 30.0, 1.0,
                    40.0, 2.0, 55.0, 1.0, 30.0, 2.0};
-  int output[3];
+  int64_t output[3];
   func(input, output);
   // CHECK: 2 2 0
   for (int i = 0; i < 3; ++i) {
-    printf("%d ", output[i]);
+    printf("%ld ", output[i]);
   }
 }
 #endif

@@ -107,8 +107,13 @@ llvm::Type* GenericLLVMIRCodeGen::SNTypeToLLVMType(DataType dt) {
     case DataType::FLOAT32: {
       return llvm::Type::getFloatTy(GetLLVMContext());
     }
+    case DataType::UINT32:
     case DataType::INT32: {
       return llvm::Type::getInt32Ty(GetLLVMContext());
+    }
+    case DataType::INT64:
+    case DataType::UINT64: {
+      return llvm::Type::getInt64Ty(GetLLVMContext());
     }
     default: {
       HLCHECK(0 && "Unhandled Type");

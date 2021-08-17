@@ -74,7 +74,7 @@ let cat_ = cat_common_reduction,
                    Bool, "keep_dims", "true">],
     ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >,
             OptionalArg<"The axis.", ArgType<[I32]>, 0D>],
-    outs_ = [Arg<"The result", ArgType<[I32]> >] in {
+    outs_ = [Arg<"The result", ArgType<[I64]> >] in {
 
   def Argmax : Inst<"Computes the indices of the largest value of the input"
                     " along the specified axis.">;
