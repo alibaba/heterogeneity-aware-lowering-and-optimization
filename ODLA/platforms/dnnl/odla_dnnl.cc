@@ -766,7 +766,9 @@ static odla_value broadcast_func(odla_value& input, odla_value_shape shape) {
   for (int i = 0; i < shape.size; i++) {
     skip_broadcast &= (input->shape.dims[i] == shape.dims[i]);
   }
-  if (skip_broadcast) return input;
+  if (skip_broadcast) {
+    return input;
+  }
   std::vector<int64_t> strides_v(input->shape.size, 0);
   std::function<void()> op;
   auto ln = GetTotalElements(shape);
@@ -1482,7 +1484,8 @@ odla_value odla_Softmax(odla_value input, odla_int32 axis,
 static odla_value reduce_op(dnnl::algorithm alg, odla_value input,
                             odla_size_t num_of_axes, const odla_uint32* axes,
                             odla_bool keep_dims, odla_value_shape output_dims,
-                            const odla_value_id id) {
+                            const odla_value_id id, float p = 0,
+                            float eps = 0) {
   std::function<void()> op;
   auto dnnl_out_dims = getDims(input->shape);
 
@@ -1498,8 +1501,7 @@ static odla_value reduce_op(dnnl::algorithm alg, odla_value input,
                                      input->mem.get_desc().data_type(),
                                      getFormatTag(input->shape));
   auto ret_mem = dnnl::memory(output_md, g_comp->eng);
-  auto reduction_desc =
-      dnnl::reduction::desc(alg, input_md, output_md, 0.f, 0.f);
+  auto reduction_desc = dnnl::reduction::desc(alg, input_md, output_md, p, eps);
   auto pd = dnnl::reduction::primitive_desc(reduction_desc, g_comp->eng);
   auto prim = dnnl::reduction(pd);
   add_op(prim, {{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, ret_mem}});
@@ -1508,11 +1510,33 @@ static odla_value reduce_op(dnnl::algorithm alg, odla_value input,
   return v;
 }
 
+odla_value odla_ReduceL1(odla_value input, odla_size_t num_of_axes,
+                         const odla_uint32* axes, odla_bool keep_dims,
+                         odla_value_shape output_dims, const odla_value_id id) {
+  return reduce_op(dnnl::algorithm::reduction_norm_lp_sum, input, num_of_axes,
+                   axes, keep_dims, output_dims, id, 1 /* P */);
+}
+
+odla_value odla_ReduceL2(odla_value input, odla_size_t num_of_axes,
+                         const odla_uint32* axes, odla_bool keep_dims,
+                         odla_value_shape output_dims, const odla_value_id id) {
+  return reduce_op(dnnl::algorithm::reduction_norm_lp_sum, input, num_of_axes,
+                   axes, keep_dims, output_dims, id, 2 /* P */);
+}
+
 odla_value odla_ReduceMax(odla_value input, odla_size_t num_of_axes,
                           const odla_uint32* axes, odla_bool keep_dims,
                           odla_value_shape output_dims,
                           const odla_value_id id) {
   return reduce_op(dnnl::algorithm::reduction_max, input, num_of_axes, axes,
+                   keep_dims, output_dims, id);
+}
+
+odla_value odla_ReduceMean(odla_value input, odla_size_t num_of_axes,
+                           const odla_uint32* axes, odla_bool keep_dims,
+                           odla_value_shape output_dims,
+                           const odla_value_id id) {
+  return reduce_op(dnnl::algorithm::reduction_mean, input, num_of_axes, axes,
                    keep_dims, output_dims, id);
 }
 
@@ -1538,14 +1562,6 @@ odla_value odla_ReduceSumSquare(odla_value input, odla_size_t num_of_axes,
                                 const odla_value_id id) {
   auto sq = odla_Mul(input, input, (odla_value_id) "square");
   return odla_ReduceSum(sq, num_of_axes, axes, keep_dims, output_dims, id);
-}
-
-odla_value odla_ReduceMean(odla_value input, odla_size_t num_of_axes,
-                           const odla_uint32* axes, odla_bool keep_dims,
-                           odla_value_shape output_dims,
-                           const odla_value_id id) {
-  return reduce_op(dnnl::algorithm::reduction_mean, input, num_of_axes, axes,
-                   keep_dims, output_dims, id);
 }
 
 odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
