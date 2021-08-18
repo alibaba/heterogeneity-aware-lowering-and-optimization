@@ -423,10 +423,11 @@ Tensor<T> ONNXParser::ProcessTensor(const onnx::TensorProto& tensor_proto) {
   } else if (!tensor_proto.raw_data().empty()) {
     v = Tensor<T>::DecodeTensorContent(tensor_proto.raw_data());
   } else {
-    // TODO(unknown): handle external storage
-    HLCHECK(tensor_proto.data_location() ==
-            onnx::TensorProto::DataLocation::TensorProto_DataLocation_EXTERNAL);
-    HLCHECK(0 && "Unsupported external data storage.");
+    // TODO(unknown): handle external storage and empty tensor, e.g. roi of
+    // Resize module HLCHECK(tensor_proto.data_location() ==
+    //         onnx::TensorProto::DataLocation::TensorProto_DataLocation_EXTERNAL);
+    // HLCHECK(0 && "Unsupported external data storage.");
+    LOG(WARNING) << "Unsupported external data storage or empty tensor.";
   }
   auto elems = v.size();
   if (data_type == DataType::FLOAT16) {

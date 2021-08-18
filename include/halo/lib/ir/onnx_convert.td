@@ -22,8 +22,23 @@ def ONNX_Acos : OpMapping<"Acos", ACos>;
 def ONNX_Acosh : OpMapping<"Acosh", ACosh>;
 def ONNX_Add : OpMapping<"Add", Add>;
 def ONNX_And : OpMapping<"And", And>;
-// def ONNX_ArgMax
-// def ONNX_ArgMin
+
+def ONNX_ArgMax : OpMapping<"ArgMax", Argmax> {
+ let attr_mapping_ = [
+   AttributeMapping<"axis", "axis", "0">,
+   AttributeMapping<"", "keep_dims", "false">,
+   AttributeMapping<"select_last_index", "select_last_index", "false">
+ ];
+}
+
+def ONNX_ArgMin : OpMapping<"ArgMin", Argmin> {
+ let attr_mapping_ = [
+   AttributeMapping<"axis", "axis", "0">,
+   AttributeMapping<"", "keep_dims", "false">,
+   AttributeMapping<"select_last_index", "select_last_index", "false">
+ ];
+}
+
 def ONNX_Asin : OpMapping<"Asin", ASin>;
 def ONNX_Asinh : OpMapping<"Asinh", ASinh>;
 def ONNX_Atan : OpMapping<"Atan", ATan>;
@@ -121,6 +136,8 @@ def ONNX_Dropout : ONNXExtension<"Dropout">;
 def ONNX_Elu : OpMapping<"Elu", Elu> {
   let attr_mapping_ = [ AttributeMapping<"alpha", "alpha", "1.0"> ];
 }
+
+def ONNX_Erf : OpMapping<"Erf", Erf>;
 
 def ONNX_Equal: OpMapping<"Equal", Cmp> {
   let attr_mapping_ = [AttributeMapping<"", "predicator", "EQ">];
@@ -285,6 +302,13 @@ def ONNX_ReduceLogSumExp : OpMapping<"ReduceLogSumExp", ReduceLogSumExp> {
 }
 
 def ONNX_ReduceMean: OpMapping<"ReduceMean", ReduceMean> {
+  let attr_mapping_ = [
+    AttributeMapping<"keepdims", "keep_dims", "true">,
+    AttributeMapping<"axes", "axis", "{}">
+  ];
+}
+
+def ONNX_ReduceMax: OpMapping<"ReduceMax", ReduceMax> {
   let attr_mapping_ = [
     AttributeMapping<"keepdims", "keep_dims", "true">,
     AttributeMapping<"axes", "axis", "{}">
