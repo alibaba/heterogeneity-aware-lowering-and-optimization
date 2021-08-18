@@ -143,10 +143,10 @@ void _odla_computation::set_session_opts()
         m_session_opts.enablePipelining = true;
         m_session_opts.autoRecomputation = popart::RecomputationType::Pipeline;
     }
-    m_session_opts.matmulOptions["use128BitConvUnitLoad"] = "true";
-    m_session_opts.matmulOptions["enableMultiStageReduce"] = "false";
-    m_session_opts.matmulOptions["enableFastReduce"] = "true";
-    m_session_opts.virtualGraphMode = popart::VirtualGraphMode::Manual;
+    //m_session_opts.matmulOptions["use128BitConvUnitLoad"] = "true";
+    //m_session_opts.matmulOptions["enableMultiStageReduce"] = "false";
+    //m_session_opts.matmulOptions["enableFastReduce"] = "true";
+    m_session_opts.virtualGraphMode = popart::VirtualGraphMode::Auto;
     m_session_opts.enableFloatingPointChecks = false;
     m_session_opts.enableStochasticRounding = false;
     //m_session_opts.enableGroupedMatmuls = false;

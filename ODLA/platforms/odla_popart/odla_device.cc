@@ -121,7 +121,7 @@ odla_status odla_AllocateDevice(const odla_vendor vendor,
       odla_dev->device = dev_mngr.createCpuDevice();
       break;
     default:
-      std::cerr << "Non supported device type." << std::endl;
+      //std::cerr << "Non supported device type." << std::endl;
       return ODLA_FAILURE;
   }
   *device = odla_dev;
