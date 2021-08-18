@@ -174,7 +174,7 @@ struct _odla_pipeline_context : public _odla_context {
   }
   inline bool all_tensors_visited() override {
     //return (tensors_visited.size() == inputs.size());
-    std::cout << "all_tensor_visited() in _odla_pipeline_context called with visited: " << visited << std::endl;
+    //std::cout << "all_tensor_visited() in _odla_pipeline_context called with visited: " << visited << std::endl;
     return (visited == inputs.size());
   }
   inline bool all_tensors_written() override {

@@ -74,7 +74,7 @@ public:
 
   void grow(poplar::program::Sequence& prog) const final {
 
-    Tensor x = getInTensor(0).getPoplarTensor();
+    Tensor x = getInTensor(0);
 
     Tensor sign = popops::signum(graph().getPoplarGraph(), x, prog);
     Tensor y = popops::abs(graph().getPoplarGraph(), x, prog);
@@ -99,7 +99,7 @@ public:
     popops::addInPlace(graph().getPoplarGraph(), y, 1.0f, prog);
     popops::mulInPlace(graph().getPoplarGraph(), y, sign, prog);
 
-    setOutTensor(0, snap::Tensor{y, graph()});
+    setOutTensor(0, y);
   }
 };
 

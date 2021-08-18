@@ -84,7 +84,7 @@ odla_status odla_CreateComputation(odla_computation* comp) {
   if (custom_op_handle == nullptr) {
     custom_op_handle = dlopen("libcustom_ops.so", RTLD_NOW | RTLD_GLOBAL);
     if (custom_op_handle == nullptr) {
-      std::cerr << "Unable to open libcustom_ops " << dlerror() << std::endl;
+      //std::cerr << "Unable to open libcustom_ops " << dlerror() << std::endl;
       assert(0);
       return ODLA_DL_ERROR;
     }
@@ -113,7 +113,7 @@ odla_status odla_DestroyContext(odla_context ctx) {
   if(nullptr != ctx)
     delete (ctx);
   else
-    std::cerr << "Encounter a odla_DestroyContext with null ctx" << std::endl;
+    ;//std::cerr << "Encounter a odla_DestroyContext with null ctx" << std::endl;
   //std::cout << "<--- odla_DestroyContext()" << std::endl;
   return ODLA_SUCCESS;
 }

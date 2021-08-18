@@ -69,7 +69,7 @@ public:
     PopartConfig(): m_version("1.0.0"), 
                     m_batch_per_step(1), m_execution_mode(UNKNOWN),
                     m_load_onnx(false), m_save_model(false), m_ipu_num(1)
-                    {std::cout << "PopartConfig instance created" << std::endl;}
+                    {/*std::cout << "PopartConfig instance created" << std::endl;*/}
     ~PopartConfig(){}
     static PopartConfig* instance(){return m_instance;}
     const std::string& version(){return m_version;}
