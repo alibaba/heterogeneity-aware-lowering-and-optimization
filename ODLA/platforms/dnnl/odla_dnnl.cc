@@ -1564,6 +1564,14 @@ odla_value odla_ReduceMin(odla_value input, odla_size_t num_of_axes,
                    keep_dims, output_dims, id);
 }
 
+odla_value odla_ReduceProd(odla_value input, odla_size_t num_of_axes,
+                           const odla_uint32* axes, odla_bool keep_dims,
+                           odla_value_shape output_dims,
+                           const odla_value_id id) {
+  return reduce_op(dnnl::algorithm::reduction_mul, input, num_of_axes, axes,
+                   keep_dims, output_dims, id);
+}
+
 odla_value odla_ReduceSum(odla_value input, odla_size_t num_of_axes,
                           const odla_uint32* axes, odla_bool keep_dims,
                           odla_value_shape output_dims,

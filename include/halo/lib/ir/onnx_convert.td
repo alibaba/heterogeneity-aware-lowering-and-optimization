@@ -329,6 +329,13 @@ def ONNX_ReduceSum : OpMapping<"ReduceSum", ReduceSum> {
   ];
 }
 
+def ONNX_ReduceProd: OpMapping<"ReduceProd", ReduceProduct> {
+  let attr_mapping_ = [
+    AttributeMapping<"keepdims", "keep_dims", "true">,
+    AttributeMapping<"axes", "axis", "{}">
+  ];
+}
+
 def ONNX_ReduceSumSquare : OpMapping<"ReduceSumSquare", ReduceSumSquare> {
   let attr_mapping_ = [
     AttributeMapping<"keepdims", "keep_dims", "true">,

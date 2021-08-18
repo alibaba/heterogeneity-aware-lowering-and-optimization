@@ -39,7 +39,8 @@ bool GenericCXXConstantWriter::RunOnModule(Module* module) {
          "---------------------------------------===//\n\n";
   os_ << "#include <stdint.h>\n";
   os_ << "#define odla_int64 int64_t\n";
-
+  constexpr std::streamsize precision = 10;
+  os_.precision(precision);
   for (auto& c : module->Constants()) {
     RunOnConstant(*c, &os_);
   }
