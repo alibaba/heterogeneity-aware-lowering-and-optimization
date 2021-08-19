@@ -717,14 +717,14 @@ static odla_value binary_eltwise_s32(dnnl::algorithm alg, dnnl::memory lhs_mem,
   return v;
 }
 
-static void expand_dims(odla_value& src, odla_value& dst) {
+static void expand_dims(odla_value_shape& src, odla_value_shape& dst) {
   // src shape is [1,5], dst shape is [1,4,1], we expand src shape to [1,1,5]
   // src shape is [64], dst shape is [1,64,128], we expand src shape to [1,64,1]
   // src shape is [64], dst shape is [1,64,64], we expand src shape to [1,1,64]
   // src shape is [7,31,64], dst shape is [2,31,64,64], failed
 
-  const int src_n = src->shape.size;
-  const int dst_n = dst->shape.size;
+  const int src_n = src.size;
+  const int dst_n = dst.size;
   odla_value_shape new_shape;
 
   auto CompareDims = [src, dst, src_n](int loc,
@@ -732,12 +732,11 @@ static void expand_dims(odla_value& src, odla_value& dst) {
     int src_idx = src_n - 1;
     int dst_idx = loc;
     for (int k = 0; k < src_n; k++) {
-      if (dst->shape.dims[dst_idx - k] != src->shape.dims[src_idx - k] &&
-          dst->shape.dims[dst_idx - k] != 1 &&
-          src->shape.dims[src_idx - k] != 1) {
+      if (dst.dims[dst_idx - k] != src.dims[src_idx - k] &&
+          dst.dims[dst_idx - k] != 1 && src.dims[src_idx - k] != 1) {
         return false;
       }
-      new_shape.dims[dst_idx - k] = src->shape.dims[src_idx - k];
+      new_shape.dims[dst_idx - k] = src.dims[src_idx - k];
     }
     return true;
   };
@@ -758,90 +757,60 @@ static void expand_dims(odla_value& src, odla_value& dst) {
   }
 
   new_shape.size = dst_n;
-  src->shape = new_shape;
+  src = new_shape;
 }
 
-static odla_value broadcast_func(odla_value& input, odla_value_shape shape) {
-  bool skip_broadcast = true;
-  for (int i = 0; i < shape.size; i++) {
-    skip_broadcast &= (input->shape.dims[i] == shape.dims[i]);
-  }
-  if (skip_broadcast) {
-    return input;
-  }
-  std::vector<int64_t> strides_v(input->shape.size, 0);
-  std::function<void()> op;
-  auto ln = GetTotalElements(shape);
-  auto rn = GetTotalElements(input->shape);
-  if (rn != 1) { // if there is only one elemets, it's strides = 0
-    for (int i = shape.size - 1, s = 1; i >= 0; --i) {
-      if (input->shape.dims[i] != shape.dims[i]) {
-        assert(input->shape.dims[i] == 1);
-      } else {
-        strides_v[i] = s;
-        s *= input->shape.dims[i];
-      }
+static dnnl::memory broadcast_mem(const dnnl::memory orig_mem,
+                                  const odla_value_shape& orig_shape,
+                                  const odla_value_shape& target_shape) {
+  assert(orig_shape.size == target_shape.size); // dims are already expanded.
+  std::vector<int64_t> strides_v(target_shape.size, 0);
+  for (int i = target_shape.size - 1, s = 1; i >= 0; --i) {
+    if (orig_shape.dims[i] != target_shape.dims[i]) {
+      assert(orig_shape.dims[i] == 1);
+    } else {
+      strides_v[i] = s;
+      s *= orig_shape.dims[i];
     }
   }
   auto src_md =
-      dnnl::memory::desc(getDims(shape), input->mem.get_desc().data_type(),
+      dnnl::memory::desc(getDims(target_shape), orig_mem.get_desc().data_type(),
                          dnnl::memory::dims(strides_v));
-  auto ret_md = dnnl::memory::desc(
-      getDims(shape), input->mem.get_desc().data_type(), getFormatTag(shape));
-  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
-  auto reorder_pd =
-      dnnl::reorder::primitive_desc(g_comp->eng, src_md, g_comp->eng, ret_md);
-  auto reorder_prim = dnnl::reorder(reorder_pd);
-  add_op(reorder_prim, {{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, ret_mem}});
-  return CreateValue(ret_mem, shape, nullptr);
+  return dnnl::memory(src_md, g_comp->eng, orig_mem.get_data_handle());
 }
 
-std::pair<odla_value, odla_value> broadcast_op(odla_value lhs, odla_value rhs) {
+static std::pair<dnnl::memory, dnnl::memory> broadcast_operands(
+    const odla_value& lhs, const odla_value& rhs) {
   auto dims_lhs = lhs->shape;
   auto dims_rhs = rhs->shape;
+  auto rank = std::max(dims_lhs.size, dims_rhs.size);
   if (dims_lhs.size != dims_rhs.size) {
-    auto& from = dims_lhs.size > dims_rhs.size ? rhs : lhs;
-    auto& to = dims_lhs.size > dims_rhs.size ? lhs : rhs;
+    auto& from = dims_lhs.size > dims_rhs.size ? dims_rhs : dims_lhs;
+    auto& to = dims_lhs.size > dims_rhs.size ? dims_lhs : dims_rhs;
     expand_dims(from, to);
   }
-  uint32_t repeat_lhs[10];
-  uint32_t repeat_rhs[10];
   odla_value_shape tiled_shape;
-  for (int i = 0; i < lhs->shape.size; i++) {
-    auto curr_output_dim = lhs->shape.dims[i] >= rhs->shape.dims[i]
-                               ? lhs->shape.dims[i]
-                               : rhs->shape.dims[i];
-    repeat_lhs[i] = curr_output_dim / lhs->shape.dims[i];
-    repeat_rhs[i] = curr_output_dim / rhs->shape.dims[i];
-    tiled_shape.dims[i] = curr_output_dim;
+  for (int i = 0; i < rank; i++) {
+    tiled_shape.dims[i] = std::max(dims_lhs.dims[i], dims_rhs.dims[i]);
   }
   tiled_shape.size = lhs->shape.size;
-  auto new_lhs = broadcast_func(lhs, tiled_shape);
-  auto new_rhs = broadcast_func(rhs, tiled_shape);
-  lhs->shape = dims_lhs;
-  rhs->shape = dims_rhs;
-  return std::pair<odla_value, odla_value>(new_lhs, new_rhs);
+  return {broadcast_mem(lhs->mem, dims_lhs, tiled_shape),
+          broadcast_mem(rhs->mem, dims_rhs, tiled_shape)};
 }
 
 static odla_value binary_eltwise(dnnl::algorithm algo, odla_value lhs,
                                  odla_value rhs, const odla_value_id id) {
-  if (lhs->mem.get_data_handle() != rhs->mem.get_data_handle()) {
-    auto new_inputs = broadcast_op(lhs, rhs);
-    lhs = new_inputs.first;
-    rhs = new_inputs.second;
-  }
+  auto new_mems = broadcast_operands(lhs, rhs);
+  auto lhs_m = new_mems.first;
+  auto rhs_m = new_mems.second;
+
   auto type = lhs->mem.get_desc().data_type();
   if (type == dnnl::memory::data_type::s32) {
-    return binary_eltwise_s32(algo, lhs->mem, rhs->mem, lhs->shape, id);
+    return binary_eltwise_s32(algo, lhs_m, rhs_m, lhs->shape, id);
   }
-  const auto& dims_lhs = lhs->shape;
-  const auto& dims_rhs = rhs->shape;
-  auto lhs_md = dnnl::memory::desc(
-      getDims(dims_lhs), lhs->mem.get_desc().data_type(), getStrides(dims_lhs));
-  auto rhs_md = lhs_md;
-  auto ret_md = lhs_md;
+  auto ret_md = getMemoryDesc(lhs->shape, type);
   auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
-  dnnl::binary::desc bd(algo, lhs_md, rhs_md, ret_md);
+  dnnl::binary::desc bd(algo, lhs_m.get_desc(), rhs_m.get_desc(), ret_md);
   dnnl::binary::primitive_desc pd(bd, g_comp->eng);
   dnnl::primitive prim = dnnl::binary(pd);
 
