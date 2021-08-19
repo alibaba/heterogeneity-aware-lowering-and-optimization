@@ -1,6 +1,12 @@
 import os
 import lit.formats
 
+# Pass environment variables to tests
+passthrough_env_vars = ['CUDA_VISIBLE_DEVICES']
+for var in passthrough_env_vars:
+    if var in os.environ:
+        config.environment[var] = os.environ[var]
+
 config.name = "Halo Model Tests"
 
 # Setup source root.
@@ -30,7 +36,7 @@ config.environment['PATH'] = os.path.pathsep.join(
 config.substitutions.append(('%models_root', config.environment['MODELS_ROOT']))
 config.substitutions.append(('%test_temp_dir', config.environment['TEST_TEMP_DIR']))
 
-lit_config.parallelism_groups['modeltest'] = 5
+lit_config.parallelism_groups['modeltest'] = 8
 config.parallelism_group = 'modeltest'
 
 config.test_format = lit.formats.ShTest("0")
