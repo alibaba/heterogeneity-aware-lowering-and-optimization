@@ -25,5 +25,5 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_reduce_log_sum_desc_axes | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_reduce_log_sum_desc_axes_dnnl.cc.tmp.main.cc.in"

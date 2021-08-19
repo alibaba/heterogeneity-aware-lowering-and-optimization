@@ -16,6 +16,7 @@
 // =============================================================================
 
 #include <algorithm>
+#include <set>
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/Support/CommandLine.h"
@@ -34,7 +35,8 @@ static llvm::StringRef GetDagName(const llvm::DagInit* dag) {
 }
 
 static void EmitMatcher(llvm::raw_ostream* os, llvm::DagInit* pat,
-                        llvm::StringRef var_name) {
+                        llvm::StringRef var_name,
+                        std::set<std::string>* op_names) {
   int n = pat->arg_size();
   *os << "  if (!ValidateOpSizeAndCode(" << var_name << ", " << n
       << ", OpCode::" << GetDagName(pat).upper() << ")) {return ret;}\n";
@@ -51,9 +53,14 @@ static void EmitMatcher(llvm::raw_ostream* os, llvm::DagInit* pat,
     if (op_name.empty()) {
       op_name = var_name.str() + "_op_" + std::to_string(i);
     }
-
-    *os << "  auto " << op_name << " = " << var_name << "->GetOperand(" << i
-        << ");\n";
+    if (op_names->count(op_name) > 0) {
+      *os << "  if (" << op_name << " != " << var_name << "->GetOperand(" << i
+          << ")) { return ret;}\n";
+    } else {
+      *os << "  auto " << op_name << " = " << var_name << "->GetOperand(" << i
+          << ");\n";
+      op_names->insert(op_name);
+    }
 
     if (llvm::isa<llvm::DagInit>(arg)) {
       llvm::DagInit* dag = llvm::cast<llvm::DagInit>(arg);
@@ -61,7 +68,7 @@ static void EmitMatcher(llvm::raw_ostream* os, llvm::DagInit* pat,
       *os << "  if (!IsA<Instruction>(" << op_name << ")) { return ret;}\n";
       *os << "  auto " << op_inst << " = DynCast<Instruction>(" << op_name
           << ");\n";
-      EmitMatcher(os, dag, op_inst);
+      EmitMatcher(os, dag, op_inst, op_names);
     }
   }
 }
@@ -76,7 +83,8 @@ static void EmitMatcher(llvm::raw_ostream* os, const llvm::Record* rec) {
   *os << "  std::pair<Def, Def> ret{Def{" << var_name << ", 0}, Def{"
       << var_name << ", 0}};\n";
 
-  EmitMatcher(os, pat, "inst");
+  std::set<std::string> names;
+  EmitMatcher(os, pat, "inst", &names);
   //*os << "if ("
   // Create fusion instr.
   const std::string fused = var_name + "_fused";
@@ -87,13 +95,13 @@ static void EmitMatcher(llvm::raw_ostream* os, const llvm::Record* rec) {
   }
   arg_list += "}";
   *os << "  auto " << fused << " = builder->Create" << GetDagName(result) << "("
-      << var_name << "->GetName() + \"_fused\", " << arg_list << "); \n";
+      << var_name << "->GetName() + \"_fused\", " << arg_list << ");\n";
   if (auto src = rec->getValueAsString("copy_attrs_from_"); !src.empty()) {
     *os << "  " << fused << "->CopyAttrsFrom(" << src << ");\n";
   }
   *os << "  " << fused << "->GetResultsTypes() = inst->GetResultsTypes();\n";
   *os << "  ret.second = Def(" << fused << ", 0);\n";
-  *os << "  return ret; \n}\n";
+  *os << "  return ret;\n}\n";
 }
 
 void EmitFusion(const llvm::RecordKeeper& records, llvm::raw_ostream& os) {

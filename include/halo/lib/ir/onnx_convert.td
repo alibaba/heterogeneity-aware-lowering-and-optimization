@@ -308,7 +308,28 @@ def ONNX_ReduceMean: OpMapping<"ReduceMean", ReduceMean> {
   ];
 }
 
+def ONNX_ReduceMax: OpMapping<"ReduceMax", ReduceMax> {
+  let attr_mapping_ = [
+    AttributeMapping<"keepdims", "keep_dims", "true">,
+    AttributeMapping<"axes", "axis", "{}">
+  ];
+}
+
 def ONNX_ReduceMin: OpMapping<"ReduceMin", ReduceMin> {
+  let attr_mapping_ = [
+    AttributeMapping<"keepdims", "keep_dims", "true">,
+    AttributeMapping<"axes", "axis", "{}">
+  ];
+}
+
+def ONNX_ReduceSum : OpMapping<"ReduceSum", ReduceSum> {
+  let attr_mapping_ = [
+    AttributeMapping<"keepdims", "keep_dims", "true">,
+    AttributeMapping<"axes", "axis", "{}">
+  ];
+}
+
+def ONNX_ReduceProd: OpMapping<"ReduceProd", ReduceProduct> {
   let attr_mapping_ = [
     AttributeMapping<"keepdims", "keep_dims", "true">,
     AttributeMapping<"axes", "axis", "{}">
