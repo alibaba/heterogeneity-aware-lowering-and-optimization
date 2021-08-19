@@ -129,6 +129,13 @@ def ONNX_Cos: OpMapping<"Cos", Cos>;
 
 def ONNX_Cosh : OpMapping<"Cosh", Cosh>;
 
+def ONNX_CumSum : OpMapping<"CumSum", CumSum> {
+  let attr_mapping_ = [
+    AttributeMapping<"exclusive", "exclusive", "false">,
+    AttributeMapping<"reverse", "reverse", "false">
+  ];
+}
+
 def ONNX_Div : OpMapping<"Div", Div>;
 
 def ONNX_Dropout : ONNXExtension<"Dropout">;

@@ -156,6 +156,7 @@ static int GetDataSize(dnnl::memory::data_type dt) {
 static dnnl::memory::data_type getDataType(const odla_element_type ty) {
   dnnl::memory::data_type dt;
   switch (ty) {
+    case ODLA_FLOAT64: // FIXME: This is a temporarily workaround.
     case ODLA_FLOAT32:
       dt = dnnl::memory::data_type::f32;
       break;
@@ -300,8 +301,6 @@ static dnnl::memory cast_op(odla_value& input, dnnl::memory::data_type dt) {
   return cast_odla_mem(src_mem, input->shape, dt, input->is_const);
 }
 
-extern "C" {
-
 odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
                                     odla_item_value value) {
   switch (type) {
@@ -404,7 +403,7 @@ odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
   dnnl::memory::desc md = getMemoryDesc(type);
   dnnl::memory mem = dnnl::memory(md, g_comp->eng);
   odla_value v = CreateValue(mem, type.shape, id);
-  if (type.element_type == ODLA_INT64) {
+  if (type.element_type == ODLA_INT64 || type.element_type == ODLA_FLOAT64) {
     v->elem_size = 8;
   }
   g_comp->inputs[name] = v;
@@ -1460,7 +1459,6 @@ static odla_value reduce_op(dnnl::algorithm alg, odla_value input,
                             odla_bool keep_dims, odla_value_shape output_dims,
                             const odla_value_id id, float p = 0,
                             float eps = 0) {
-  std::function<void()> op;
   auto dnnl_out_dims = getDims(input->shape);
 
   for (int i = 0; i < num_of_axes; i++) {
@@ -1583,6 +1581,72 @@ odla_value odla_ReduceSumSquare(odla_value input, odla_size_t num_of_axes,
                                 const odla_value_id id) {
   auto sq = odla_Mul(input, input, (odla_value_id) "square");
   return odla_ReduceSum(sq, num_of_axes, axes, keep_dims, output_dims, id);
+}
+
+template <typename T>
+void DoCumSum(const T* input_ptr, T* output_ptr, int axis,
+              const odla_value_shape& shape, bool exclusion, bool reverse) {
+  if (axis < 0) {
+    axis += shape.size;
+  }
+
+  auto rank = shape.size;
+  auto dim = shape.dims[axis];
+  auto elems_from_axis = GetCountFromAxis(shape, axis);
+  auto extents_on_axis = elems_from_axis / dim;
+  auto elems_before_axis = GetTotalElements(shape) / elems_from_axis;
+  for (int64_t i = 0; i < elems_before_axis; ++i) {
+    for (int64_t j = 0; j < extents_on_axis; ++j) {
+      auto idx = (reverse == 0) ? 0 : dim - 1;
+      T acc = 0;
+      int step = (reverse == 0) ? 1 : -1;
+      for (int k = 0; k < dim; ++k) {
+        auto offset = i * elems_from_axis + idx * extents_on_axis + j;
+        T curr = input_ptr[offset];
+        output_ptr[offset] = (exclusion == 0) ? acc + curr : acc;
+        acc += curr;
+        idx += step;
+      }
+    }
+  }
+}
+
+odla_value odla_CumSum(odla_value input, odla_value axis, odla_bool exclusion,
+                       odla_bool reverse, const odla_value_id id) {
+  const auto& shape = input->shape;
+  auto elem_n = GetTotalElements(input->shape);
+  auto dt = input->mem.get_desc().data_type();
+  auto ret_md = getMemoryDesc(shape, dt);
+  assert(dt == dnnl::memory::data_type::f32);
+  bool is_double = input->elem_size == 8 && dt == dnnl::memory::data_type::f32;
+  auto ret_mem =
+      is_double ? dnnl::memory(ret_md, g_comp->eng,
+                               g_comp->CreateBuffer(elem_n * sizeof(double)))
+                : dnnl::memory(ret_md, g_comp->eng);
+
+  void* output_ptr = ret_mem.get_data_handle();
+
+  std::function<void()> op = [shape, input, axis, exclusion, reverse,
+                              output_ptr, is_double]() {
+    const void* input_ptr = input->mem.get_data_handle();
+    int ax = ((const int*)axis->mem.get_data_handle())[0];
+    if (is_double) {
+      DoCumSum<double>(static_cast<const double*>(input_ptr),
+                       static_cast<double*>(output_ptr), ax, shape,
+                       exclusion != 0, reverse != 0);
+    } else {
+      DoCumSum<float>(static_cast<const float*>(input_ptr),
+                      static_cast<float*>(output_ptr), ax, shape,
+                      exclusion != 0, reverse != 0);
+    }
+  };
+  add_op(op);
+  InterpretIfNeeded();
+  odla_value v = CreateValue(ret_mem, input->shape, id);
+  if (input->elem_size == 8) {
+    v->elem_size = 8;
+  }
+  return v;
 }
 
 odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
@@ -2052,5 +2116,3 @@ odla_value odla_ArgMin(odla_value input, odla_int32 axis, odla_bool keep_dims,
   return arg_min_max(false, input, axis, keep_dims, return_last_index,
                      output_value_type, value_id);
 }
-
-} // C extern

@@ -26,5 +26,5 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_cumsum_1d_exclusive | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_cumsum_1d_exclusive_dnnl.cc.tmp.main.cc.in"
