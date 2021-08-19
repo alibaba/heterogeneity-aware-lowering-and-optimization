@@ -308,6 +308,8 @@ halo::DataType ONNXParser::ProcessDataType(int data_type) {
       return DataType::FLOAT32;
     case onnx::TensorProto::FLOAT16:
       return DataType::FLOAT16;
+    case onnx::TensorProto::DOUBLE:
+      return DataType::FLOAT64;
     case onnx::TensorProto::INT64:
       return DataType::INT64;
     case onnx::TensorProto::INT32:
@@ -344,6 +346,8 @@ static size_t GetTensorDataSize(const onnx::TensorProto& tensor_proto) {
       return tensor_proto.float_data_size();
     case onnx::TensorProto::FLOAT16:
       return tensor_proto.int32_data_size() * 2;
+    case onnx::TensorProto::DOUBLE:
+      return tensor_proto.double_data_size();
     case onnx::TensorProto::INT64:
       return tensor_proto.int64_data_size();
     case onnx::TensorProto::INT32:
@@ -450,6 +454,12 @@ IRObject* ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
   DataType data_type = ProcessDataType(tensor_def.data_type());
   IRObject* inst = nullptr;
   switch (data_type) {
+    case DataType::FLOAT64: {
+      const Tensor<double> temp = ProcessTensor<double>(tensor_def);
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
+      break;
+    }
     case DataType::FLOAT32: {
       const Tensor<float> temp = ProcessTensor<float>(tensor_def);
       inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
