@@ -30,7 +30,7 @@ config.environment['PATH'] = os.path.pathsep.join(
 config.substitutions.append(('%models_root', config.environment['MODELS_ROOT']))
 config.substitutions.append(('%test_temp_dir', config.environment['TEST_TEMP_DIR']))
 
-lit_config.parallelism_groups['modeltest'] = 7
+lit_config.parallelism_groups['modeltest'] = 5
 config.parallelism_group = 'modeltest'
 
 config.test_format = lit.formats.ShTest("0")

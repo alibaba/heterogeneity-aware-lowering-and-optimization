@@ -62,17 +62,17 @@ static void Link(const std::string& output_file,
     }
     std::cerr << "\n";
   }
-  lld::elf::link(args, false);
+  lld::elf::link(args, false, llvm::outs(), llvm::errs());
 }
 
 static std::string WriteToTempFile(const std::ostringstream& data) {
   constexpr int len = 128;
   llvm::SmallString<len> obj_file;
   llvm::sys::fs::createTemporaryFile("halo_jit" /* prefix */, "o", obj_file);
-  std::ofstream ofs(obj_file.str(), std::ofstream::binary);
+  std::ofstream ofs(std::string(obj_file), std::ofstream::binary);
   ofs << data.str();
   ofs.close();
-  return obj_file.str();
+  return std::string(obj_file);
 }
 
 bool halo::GenericJITLinker::RunOnModule(Module* module) {

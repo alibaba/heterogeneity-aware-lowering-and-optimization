@@ -25,5 +25,5 @@
 // RUN: %t_tensorrt.exe 0.0001 0 tensorrt %data_path/test_logsoftmax_default_axis_expanded | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_logsoftmax_default_axis_expanded_tensorrt.cc.tmp.main.cc.in"

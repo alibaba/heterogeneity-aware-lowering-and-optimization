@@ -25,5 +25,5 @@
 // RUN: %t_tensorrt.exe 0.0001 0 tensorrt %data_path/test_argmin_default_axis_random_select_last_index | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_argmin_default_axis_random_select_last_index_tensorrt.cc.tmp.main.cc.in"

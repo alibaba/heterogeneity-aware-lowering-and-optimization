@@ -22,6 +22,7 @@
 #include "llvm-c/Target.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Support/Casting.h"
+#include "llvm/Support/Host.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/raw_os_ostream.h"
 #include "llvm/Target/TargetMachine.h"
@@ -91,7 +92,7 @@ bool X86BinaryWriter::RunOnModule(Module* module) {
       module->GetGlobalContext().GetCodeGenObject().GetLLVMModule();
 
   GetX86TargetMachine(ctx)->addPassesToEmitFile(
-      pm, buf, nullptr, llvm::TargetMachine::CodeGenFileType::CGFT_ObjectFile);
+      pm, buf, nullptr, llvm::CodeGenFileType::CGFT_ObjectFile);
   pm.run(*llvm_module);
   return false;
 }
