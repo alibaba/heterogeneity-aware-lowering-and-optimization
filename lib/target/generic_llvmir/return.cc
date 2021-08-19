@@ -22,6 +22,7 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/Support/Alignment.h"
 #include "llvm/Support/Casting.h"
 
 namespace halo {
@@ -36,15 +37,14 @@ void GenericLLVMIRCodeGen::RunOnInstruction(ReturnInst* inst) {
     if (val->getType()->isPointerTy()) {
       auto elem_type = val->getType()->getPointerElementType();
       if (elem_type->isVectorTy() || elem_type->isArrayTy()) {
-        elem_type =
-            llvm::cast<llvm::SequentialType>(elem_type)->getElementType();
+        elem_type = llvm::cast<llvm::VectorType>(elem_type)->getElementType();
       }
       auto alignment =
           llvm_module_->getDataLayout().getABITypeAlignment(elem_type);
       auto elem_size =
           llvm_module_->getDataLayout().getTypeAllocSize(elem_type);
       ir_builder->CreateMemCpy(
-          ptr, alignment, val, alignment,
+          ptr, llvm::MaybeAlign(alignment), val, llvm::MaybeAlign(alignment),
           ir_builder->getInt64(op.GetType().GetTotalNumOfElements() *
                                elem_size));
     } else {

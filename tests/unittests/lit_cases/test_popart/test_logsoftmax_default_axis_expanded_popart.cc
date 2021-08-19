@@ -25,5 +25,5 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_logsoftmax_default_axis_expanded | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_logsoftmax_default_axis_expanded_popart.cc.tmp.main.cc.in"

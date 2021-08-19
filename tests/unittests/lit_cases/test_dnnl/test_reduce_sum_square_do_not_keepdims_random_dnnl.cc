@@ -22,8 +22,8 @@
 // RUN: %halo_compiler -target cxx -batch-size 1 %halo_compile_flags %data_path/test_reduce_sum_square_do_not_keepdims_random/model.onnx -o %t.cc
 // RUN: %cxx -c -fPIC -o %t.o %t.cc -I%odla_path/include
 // RUN: %cxx -g %s %t.o %t.bin -I%T -I%odla_path/include -I%unittests_path -I%data_path/test_reduce_sum_square_do_not_keepdims_random/test_data_set_0 %odla_link %device_link -lodla_dnnl -o %t_dnnl.exe -Wno-deprecated-declarations
-// RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_reduce_sum_square_do_not_keepdims_random | FileCheck %s
+// RUN: %t_dnnl.exe 0.0003 0 dnnl %data_path/test_reduce_sum_square_do_not_keepdims_random | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_reduce_sum_square_do_not_keepdims_random_dnnl.cc.tmp.main.cc.in"

@@ -88,6 +88,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(AddInst*) override;
   virtual void RunOnInstruction(AndInst*) override;
   virtual void RunOnInstruction(ArgmaxInst*) override;
+  virtual void RunOnInstruction(ArgminInst*) override;
   virtual void RunOnInstruction(ASinInst*) override;
   virtual void RunOnInstruction(ASinhInst*) override;
   virtual void RunOnInstruction(ATanInst*) override;
@@ -147,6 +148,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(ReduceMeanInst*) override;
   virtual void RunOnInstruction(ReduceMaxInst*) override;
   virtual void RunOnInstruction(ReduceMinInst*) override;
+  virtual void RunOnInstruction(ReduceProductInst*) override;
   virtual void RunOnInstruction(ReluInst*) override;
   virtual void RunOnInstruction(Relu6Inst*) override;
   virtual void RunOnInstruction(ReshapeInst*) override;

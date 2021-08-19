@@ -2,10 +2,15 @@ import os
 import lit.formats
 import urllib
 
+# Pass environment variables to tests
+passthrough_env_vars = ['CUDA_VISIBLE_DEVICES']
+for var in passthrough_env_vars:
+    if var in os.environ:
+        config.environment[var] = os.environ[var]
+
 unittest_build_path = os.path.join(config.halo_build_dir, 'tests/unittests')
 data_path = os.path.join(config.halo_build_dir, 'tests/unittests/data')
-if not os.path.exists(unittest_build_path):
-    os.makedirs(unittest_build_path)
+os.makedirs(unittest_build_path, exist_ok = True)
 if not os.path.exists(data_path):
     # TODO: read from /unittests directly.
     os.system('cp -r /unittests ' + data_path)

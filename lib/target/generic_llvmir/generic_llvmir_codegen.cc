@@ -107,8 +107,13 @@ llvm::Type* GenericLLVMIRCodeGen::SNTypeToLLVMType(DataType dt) {
     case DataType::FLOAT32: {
       return llvm::Type::getFloatTy(GetLLVMContext());
     }
+    case DataType::UINT32:
     case DataType::INT32: {
       return llvm::Type::getInt32Ty(GetLLVMContext());
+    }
+    case DataType::INT64:
+    case DataType::UINT64: {
+      return llvm::Type::getInt64Ty(GetLLVMContext());
     }
     default: {
       HLCHECK(0 && "Unhandled Type");
@@ -146,7 +151,8 @@ llvm::Type* GenericLLVMIRCodeGen::TensorTypeToLLVMType(const halo::Type& type,
   bool use_vector = type.GetTotalNumOfElements() <= GetMaxVectorSize();
 
   llvm::Type* ret = use_vector ? static_cast<llvm::Type*>(llvm::VectorType::get(
-                                     elem_type, type.GetTotalNumOfElements()))
+                                     elem_type, type.GetTotalNumOfElements(),
+                                     /* scalable = */ false))
                                : static_cast<llvm::Type*>(llvm::ArrayType::get(
                                      elem_type, type.GetTotalNumOfElements()));
 
@@ -195,7 +201,7 @@ bool GenericLLVMIRCodeGen::RunOnModule(Module* module) {
   }
 
   llvm_module_ =
-      llvm::make_unique<llvm::Module>(module->GetName(), GetLLVMContext());
+      std::make_unique<llvm::Module>(module->GetName(), GetLLVMContext());
   llvm_module_->setDataLayout(target_machine_->createDataLayout());
   llvm_module_->setTargetTriple(target_machine_->getTargetTriple().getTriple());
   for (auto& func : *module) {

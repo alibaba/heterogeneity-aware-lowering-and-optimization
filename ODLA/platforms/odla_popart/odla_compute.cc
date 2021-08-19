@@ -87,6 +87,12 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
     case ODLA_BATCHES_PER_STEP:
       comp->opts.batches_per_step = *(reinterpret_cast<int*>(value));
       break;
+    case ODLA_ENABLE_ENGINE_CACHE:
+      comp->opts.enable_engine_cache = *(reinterpret_cast<bool*>(value));
+      break;
+    case ODLA_CACHE_DIR:
+      comp->opts.cache_dir = *(reinterpret_cast<char**>(value));
+      break;
     default:
       std::cerr << "Unsupported property type: " << type << std::endl;
       return ODLA_FAILURE;
