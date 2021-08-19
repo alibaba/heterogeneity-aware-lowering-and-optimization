@@ -1540,6 +1540,34 @@ odla_value odla_ReduceLogSum(odla_value input, odla_size_t num_of_axes,
       id);
 }
 
+odla_value odla_ReduceLogSumExp(odla_value input, odla_size_t num_of_axes,
+                                const odla_uint32* axes, odla_bool keep_dims,
+                                odla_value_shape output_dims,
+                                const odla_value_id id) {
+  const auto& name = std::string(reinterpret_cast<const char*>(id));
+  odla_value_shape keep_dim_shape = input->shape;
+  for (int i = 0; i < num_of_axes; ++i) {
+    keep_dim_shape.dims[axes[i]] = 1;
+  }
+  std::string name_max = name + "_max";
+  std::string name_reshape = name + "_reshape";
+  std::string name_exp = name + "_exp";
+  std::string name_logsum = name + "_logsum";
+  std::string name_sub = name + "_sub";
+  auto reduce_max =
+      odla_ReduceMax(input, num_of_axes, axes, keep_dims, output_dims,
+                     (const odla_value_id)name_max.c_str());
+  auto reduce_max_keep_dim = odla_Reshape(
+      reduce_max, keep_dim_shape, (const odla_value_id)name_reshape.c_str());
+  auto exp_delta = odla_Exp(odla_Sub(input, reduce_max_keep_dim,
+                                     (const odla_value_id)name_sub.c_str()),
+                            (const odla_value_id)name_exp.c_str());
+  return odla_Add(
+      odla_ReduceLogSum(exp_delta, num_of_axes, axes, keep_dims, output_dims,
+                        (const odla_value_id)name_logsum.c_str()),
+      reduce_max, id);
+}
+
 odla_value odla_ReduceMax(odla_value input, odla_size_t num_of_axes,
                           const odla_uint32* axes, odla_bool keep_dims,
                           odla_value_shape output_dims,

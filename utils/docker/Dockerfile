@@ -203,6 +203,11 @@ RUN cd /tmp && git clone --depth=1 https://github.com/oneapi-src/oneDNN.git --br
     cmake -G Ninja -DDNNL_BUILD_EXAMPLES=OFF -DDNNL_BUILD_TESTS=OFF -DDNNL_ENABLE_PRIMITIVE_CACHE=ON -DCMAKE_INSTALL_PREFIX=/opt/dnnl && \
     ninja install
 
+# Install Parallel
+RUN apt-get update && \
+    apt install parallel --no-install-recommends && \
+    apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
 # Install Eigen
 RUN cd /tmp && wget https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.tar.bz2 && \
     tar jxvf eigen-3.3.7.tar.bz2 && mv eigen-3.3.7 /opt
