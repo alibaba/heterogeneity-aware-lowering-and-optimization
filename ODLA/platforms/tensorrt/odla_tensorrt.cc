@@ -1343,6 +1343,14 @@ odla_value odla_ReduceSumSquare(odla_value input, odla_size_t num_of_axes,
                 output_dims, id);
 }
 
+odla_value odla_ReduceProd(odla_value input, odla_size_t num_of_axes,
+                           const odla_uint32* axes, odla_bool keep_dims,
+                           odla_value_shape output_dims,
+                           const odla_value_id id) {
+  return reduce(input, nvinfer1::ReduceOperation::kPROD, num_of_axes, axes,
+                keep_dims, output_dims, id);
+}
+
 odla_value odla_LRN(odla_value input, odla_memory_layout input_layout,
                     odla_int32 window_size, odla_float32 alpha,
                     odla_float32 beta, odla_float32 bias,
