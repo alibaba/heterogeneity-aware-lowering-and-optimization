@@ -220,19 +220,16 @@ void LockFreeQueue::put(odla_context ctx)
 
 odla_context LockFreeQueue::get_input_context() //only return the head_, ++ will be done when pop_input
 {
-  uint32_t cnt = 0;
+  std::uint32_t cnt = 0;
   popart::logging::info("LockFreeQueue::get_input_context queue has size: {}", size());
   while(head_ == tail_.load())
   {
     popart::logging::info(
       "[get_input_context] the queue is empty when read, add zero contexts");
-    //return nullptr;
     if(cnt++ > 1)
       throw std::runtime_error("Must get one ctx in 2 fetch, as empty one created.");
     odla_context zero_ctx = create_empty_odla_context();
     put(zero_ctx);
-    popart::logging::info(
-      "After this we expect at least 4 read on this ctx: {}.", zero_ctx);
   }
   cnt = 0;
   while(buffer_[head_].load() == nullptr){
@@ -263,7 +260,7 @@ void LockFreeQueue::pop_input(odla_context ctx)
 
 void LockFreeQueue::pop_output(odla_context ctx)
 {
-  if(wait_ >= head_)
+  if(wait_ == head_)
     throw std::runtime_error("Got out before input all read on index "
                             + std::to_string(wait_));
   if(!buffer_[wait_].compare_exchange_strong(ctx, nullptr))
@@ -271,13 +268,51 @@ void LockFreeQueue::pop_output(odla_context ctx)
   wait_ = (wait_ + 1) % capacity_;
 }
 
+odla_context LockFreeQueue::get_ctx_by_tensor(const popart::TensorId& id)
+{
+  std::uint32_t idx = -1;
+  odla_context ctx = nullptr;
+  // Get current index
+  auto iter = _tensor_to_idx.find(id);
+  if (_tensor_to_idx.end() == iter)
+    idx = 0;
+  else
+    idx = iter->second;
+  //Check whether is empty, tail alwasy points to the first element not written
+  std::uint32_t cnt = 0;
+  popart::logging::info("LockFreeQueue::get_ctx_by_tensor queue has size: {}", size());
+  while(idx == tail_.load())
+  {
+    popart::logging::info(
+      "[get_ctx_by_tensor] the queue is empty when read, add zero contexts");
+    if(cnt++ > 1)
+      throw std::runtime_error("[get_ctx_by_tensor] Must get one ctx in 2 fetch, as empty one created.");
+    odla_context zero_ctx = create_empty_odla_context();
+    put(zero_ctx);
+  }
+  //The idx not equals to tail_, means there should be ctx written, but need to check has it been written?
+  cnt = 0;
+  while(buffer_[idx].load() == nullptr){
+    if(cnt++ > 666)
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    if(cnt++ > 6666)
+      throw std::runtime_error("[get_ctx_by_tensor] Must get a valid ctx in 6666 times idx: {}" + std::to_string(idx));
+    popart::logging::info(
+      "[get_ctx_by_tensor] Reading ctx with idx: {} encounter nullptr {} times.", idx, cnt);
+  }
+  ctx = buffer_[idx].load();
+  popart::logging::info("LockFreeQueue::get_ctx_by_tensor tensorid:{} got ctx:{} with idx: {}", id, ctx, idx); 
+  //Update the index of the tensor to next
+  _tensor_to_idx[id] = (idx + 1) % capacity_;
+  return ctx;
+}
 
 /*======================================== step io callbacks =========================================*/
 popart::StepIOCallback::InputCallback input_callback =
     [&](popart::TensorId id, bool prefetch) -> popart::ConstVoidData {
   // auto start = std::chrono::steady_clock::now();
   
-  odla_context ctx = QManager::instance()->getQ()->get_input_context();
+  odla_context ctx = QManager::instance()->getQ()->get_ctx_by_tensor(id); //get_input_context();
   popart::ConstVoidData data;
   if(nullptr != ctx)
   {
