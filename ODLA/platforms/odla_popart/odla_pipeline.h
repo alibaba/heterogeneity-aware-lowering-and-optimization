@@ -39,6 +39,7 @@ public:
   virtual void init(std::size_t capacity) = 0;
   virtual void put(odla_context ctx) = 0;
   virtual odla_context get_input_context() = 0;
+  virtual odla_context get_ctx_by_tensor(const popart::TensorId& id) = 0;
   virtual odla_context get_output_context() = 0;
   virtual void pop_input(odla_context ctx) = 0;
   virtual void pop_output(odla_context ctx) = 0;
@@ -72,6 +73,7 @@ public:
   void init(std::size_t capacity) final{}
   void put(odla_context ctx) final;
   odla_context get_input_context() final;
+  odla_context get_ctx_by_tensor(const popart::TensorId& id) final {return nullptr;}
   odla_context get_output_context() final;
   void pop_input(odla_context ctx) final;
   void pop_output(odla_context ctx) final;
@@ -84,15 +86,17 @@ private:
   //odla_context* buffer_;
   std::atomic<odla_context>* buffer_;
   std::size_t capacity_;
-  uint32_t head_;
+  std::uint32_t head_;
   std::atomic<uint32_t> tail_;
-  uint32_t wait_;
+  std::uint32_t wait_;
+  std::map<popart::TensorId, std::uint32_t> _tensor_to_idx;
 public:
   LockFreeQueue();
   ~LockFreeQueue(){if(buffer_) delete[] buffer_;}
   void init(std::size_t capacity);
   void put(odla_context ctx) final;
   odla_context get_input_context() final;
+  odla_context get_ctx_by_tensor(const popart::TensorId& id) final;
   odla_context get_output_context() final;
   void pop_input(odla_context ctx) final;
   void pop_output(odla_context ctx) final;
@@ -149,8 +153,6 @@ struct _odla_pipeline_context : public _odla_context {
     //   tensors_visited.insert(id);
     //   return &(*iter->second);
     // }
-    if(visited == 0)
-      start = std::chrono::steady_clock::now();
     visited++;
     return &(*(inputs[id]));
   }
@@ -169,12 +171,19 @@ struct _odla_pipeline_context : public _odla_context {
     //   tensors_written.insert(id);
     //   return &(*iter->second);
     // }
+    if(written == 0){
+       end = std::chrono::steady_clock::now();
+       std::chrono::duration<float, std::milli> elapsed_ms = end-start;
+       popart::logging::info("[ODLA_POPART_TPUT] The time run for ctx: {} is [{}]", this, elapsed_ms.count());
+    }
     written++;
     return &(*(outputs[id]));
   }
   inline bool all_tensors_visited() override {
     //return (tensors_visited.size() == inputs.size());
     //std::cout << "all_tensor_visited() in _odla_pipeline_context called with visited: " << visited << std::endl;
+    if(visited == inputs.size())
+      start = std::chrono::steady_clock::now();
     return (visited == inputs.size());
   }
   inline bool all_tensors_written() override {

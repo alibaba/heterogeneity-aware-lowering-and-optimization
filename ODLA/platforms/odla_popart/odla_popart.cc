@@ -89,16 +89,16 @@ void _odla_computation::init()
             }
             
             // Create InferenceSession
-            session = popart::InferenceSession::createFromOnnxModel(
+            auto new_session = popart::InferenceSession::createFromOnnxModel(
                 proto,
                 data_flow, 
                 device, 
                 popart::InputShapeInfo(), 
                 m_session_opts
             );
-            session->prepareDevice();
-            session->setRandomSeed(0);  // Init seed
-            session->weightsFromHost(); // Copy weights from host to IPU
+            new_session->prepareDevice();
+            new_session->setRandomSeed(0);  // Init seed
+            new_session->weightsFromHost(); // Copy weights from host to IPU
             //If in parallel mode, start the thread
             ExecutionMode mode = PopartConfig::instance()->execution_mode();
             if(PIPELINE == mode || PARALLEL == mode){
@@ -106,6 +106,7 @@ void _odla_computation::init()
                 popart::logging::warn("Parallel loop has been started");
                 parallel_thread.detach();
             }
+            session = std::move(new_session); //set session after all initialization done.
         }
     }
 }
@@ -141,15 +142,16 @@ void _odla_computation::set_session_opts()
     //This should be passed in by config file or some where
     if(!PopartConfig::instance()->no_pipeline()){
         m_session_opts.enablePipelining = true;
-        m_session_opts.autoRecomputation = popart::RecomputationType::Pipeline;
+        //m_session_opts.autoRecomputation = popart::RecomputationType::Pipeline;
+        m_session_opts.virtualGraphMode = popart::VirtualGraphMode::Manual;
+    }else{
+        m_session_opts.virtualGraphMode = popart::VirtualGraphMode::Auto;
     }
     //m_session_opts.matmulOptions["use128BitConvUnitLoad"] = "true";
     //m_session_opts.matmulOptions["enableMultiStageReduce"] = "false";
     //m_session_opts.matmulOptions["enableFastReduce"] = "true";
-    m_session_opts.virtualGraphMode = popart::VirtualGraphMode::Auto;
     m_session_opts.enableFloatingPointChecks = false;
     m_session_opts.enableStochasticRounding = false;
-    //m_session_opts.enableGroupedMatmuls = false;
     m_session_opts.enablePrefetchDatastreams = true;
     m_session_opts.enableOutlining = true;
     std::string partials_type = "half";

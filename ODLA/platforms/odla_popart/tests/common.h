@@ -98,6 +98,7 @@ private:
     std::map<std::string, std::vector<std::string>> _outputs;
     std::string _result_file;
     std::uint32_t _thread_buffer_cnt;
+    std::uint32_t _step_num_to_profile;
     static Config* _instance;
     Config(){};
 public:
@@ -108,6 +109,7 @@ public:
     const std::string& model_path(){return _model_path;}
     const std::uint32_t thread_number(){return _thread_number;}
     const std::uint32_t thread_buffer_cnt(){return _thread_buffer_cnt;}
+    const std::uint32_t step_num_to_profile(){return _step_num_to_profile;}
     const std::uint32_t duration(){return _duration;}
     const std::string& npz_file_path(){return _npz_file_path;}
     const std::string& result_file(){return _result_file;}

@@ -33,6 +33,10 @@ void Config::load(const std::string& file_path)
     _outputs            = jf["outputs"].get<std::map<std::string, std::vector<std::string>>>();
     _result_file        = jf["result"].get<std::string>();
     _thread_buffer_cnt  = jf["thread_buffer_cnt"].get<std::uint32_t>();
+    if(jf.contains("step_num_to_profile"))
+        _step_num_to_profile = jf["step_num_to_profile"].get<std::uint32_t>();
+    else
+        _step_num_to_profile = 0;
     std::string tmp_du  = jf["duration"].get<std::string>();
     char unit = tmp_du.back();
     tmp_du.pop_back();
@@ -171,6 +175,12 @@ void inference(int thread_id, cnpy::npz_t* all_data, BaseTest* test){
         else if(time_left / 10 != counter){
             std::cout << "\r[Time left: " << std::setw(20) << time_left << "]" << std::flush;
             counter = time_left / 10;
+        }
+        static int loop_cnt = 0;
+        auto step_num_to_loop = Config::instance()->step_num_to_profile();
+        if( step_num_to_loop > 0 && loop_cnt++ >= step_num_to_loop ){
+            std::cout << "End for the profiling in " << step_num_to_loop << " times." << std::endl;
+            break;
         }
     }
     std::cout << "==================== Inference loop finished ==============================" << std::endl;
