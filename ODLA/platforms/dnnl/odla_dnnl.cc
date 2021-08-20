@@ -15,7 +15,7 @@
 // limitations under the License.
 // =============================================================================
 
-#include <ODLA/odla.h>
+#include "odla_dnnl.h"
 
 #include <cassert>
 #include <cmath>
@@ -26,9 +26,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "ODLA/odla_common.h"
-#include "ODLA/odla_compute.h"
-#include "dnnl.hpp"
 #include "dnnl_threadpool_iface.hpp"
 #include "dnnl_utils.h"
 
@@ -36,221 +33,24 @@
 #error This library requires minimum ODLA version 0.5
 #endif
 
-struct _odla_value {
-  dnnl::memory mem;
-  bool is_const;
-  uint8_t elem_size;
-  odla_value_shape shape;
-  std::string name;
-  _odla_value(const dnnl::memory& m, const odla_value_shape& shape_,
-              const std::string& id)
-      : mem(m), is_const(false), shape(shape_), name(id), elem_size(4) {
-    if (shape.size == 0) {
-      shape.size = 1;
-      shape.dims[0] = 1;
-    }
-  }
-};
-
-typedef struct TargetOpts {
-  odla_bf16_mode bf16_mode;
-} target_opts;
-
-struct operation {
-  void execute(dnnl::stream& stream) {
-    if (func) {
-      return func();
-    }
-    prim.execute(stream, args);
-  }
-  dnnl::primitive prim;
-  std::function<void()> func;
-  std::unordered_map<int, dnnl::memory> args;
-};
-
-struct _odla_computation {
-  dnnl::engine eng;
-  // std::vector<dnnl::primitive> primitives;
-  // std::vector<std::unordered_map<int, dnnl::memory>> args;
-  std::vector<operation> ops;
-  std::vector<std::unique_ptr<_odla_value>> vals;
-  std::unordered_map<std::string, odla_value> inputs;
-  std::unordered_map<std::string, odla_value> outputs;
-  std::vector<odla_value> input_vals;
-  std::vector<odla_value> output_vals;
-  std::unordered_map<std::string, std::pair<odla_value, void*>> outputs_v;
-  target_opts opts;
-  std::vector<std::vector<char>> bufs;
-  void* CreateBuffer(size_t len) {
-    bufs.push_back(std::vector<char>(len));
-    return bufs.back().data();
-  }
-  _odla_computation() : eng(dnnl::engine::kind::cpu, 0), opts({BF16_DISABLE}) {}
-};
-
 struct _odla_context {
   odla_computation comp;
   std::unique_ptr<dnnl::stream> stream;
 };
 
-static dnnl::memory::format_tag getFormatTag(const odla_value_shape& od) {
-  static const dnnl::memory::format_tag tags[] = {
-      dnnl::memory::format_tag::undef,  dnnl::memory::format_tag::a,
-      dnnl::memory::format_tag::ab,     dnnl::memory::format_tag::abc,
-      dnnl::memory::format_tag::abcd,   dnnl::memory::format_tag::abcde,
-      dnnl::memory::format_tag::abcdef,
-  };
-  return (od.size <= 0 || od.size > 6) ? tags[0] : tags[od.size];
-}
-
-static dnnl::memory::format_tag getFormatTag(odla_memory_layout layout,
-                                             unsigned group = 1) {
-  switch (layout) {
-    case ODLA_CHANNELS_FIRST:
-      return dnnl::memory::format_tag::nchw;
-    case ODLA_CHANNELS_LAST:
-      return dnnl::memory::format_tag::nhwc;
-    case ODLA_SIO:
-      return (group > 1) ? dnnl::memory::format_tag::hwigo
-                         : dnnl::memory::format_tag::hwio;
-    case ODLA_OIS:
-      return (group > 1) ? dnnl::memory::format_tag::goihw
-                         : dnnl::memory::format_tag::oihw;
-    case ODLA_IOS:
-      return (group > 1) ? dnnl::memory::format_tag::giohw
-                         : dnnl::memory::format_tag::iohw;
-    default:
-      assert(0);
-      return dnnl::memory::format_tag::any;
-  }
-}
-
-static int64_t GetTotalElements(const odla_value_shape& dims) {
-  return std::accumulate(dims.dims, dims.dims + dims.size, 1,
-                         std::multiplies<size_t>());
-}
-
-// The strides used by DNNL's memory desc.
-static dnnl::memory::dims getStrides(const odla_value_shape& od) {
-  std::vector<int64_t> strides(od.size, 1);
-  for (int i = od.size - 2; i >= 0; --i)
-    strides[i] = strides[i + 1] * od.dims[i + 1];
-  auto dims = dnnl::memory::dims(strides);
-  return dims;
-}
-
-static int GetDataSize(dnnl::memory::data_type dt) {
-  switch (dt) {
-    case dnnl::memory::data_type::s8:
-      return 1;
-    case dnnl::memory::data_type::bf16:
-      return 2;
-    case dnnl::memory::data_type::f32:
-    case dnnl::memory::data_type::s32:
-      return 4;
-  }
-  assert(0 && "invalid data type");
-  return 0;
-}
-
-static dnnl::memory::data_type getDataType(const odla_element_type ty) {
-  dnnl::memory::data_type dt;
-  switch (ty) {
-    case ODLA_FLOAT64: // FIXME: This is a temporarily workaround.
-    case ODLA_FLOAT32:
-      dt = dnnl::memory::data_type::f32;
-      break;
-    case ODLA_INT8:
-      dt = dnnl::memory::data_type::s8;
-      break;
-    case ODLA_INT32:
-      dt = dnnl::memory::data_type::s32;
-      break;
-    case ODLA_INT64:
-      dt = dnnl::memory::data_type::s32; // FIXME:
-      break;
-    case ODLA_BFLOAT16:
-      dt = dnnl::memory::data_type::bf16;
-      break;
-    default:
-      dt = dnnl::memory::data_type::undef;
-  }
-  return dt;
-}
-
-// get shape total element size.
-static inline int64_t GetCountFromAxis(const odla_value_shape& shape,
-                                       const odla_int32 axis) {
-  int64_t size = 1;
-  for (int i = axis; i < shape.size; i++) {
-    size = size * shape.dims[i];
-  }
-  return size;
-}
-
-template <typename Tin, typename Tout>
-static void ArgMax(const Tin* input, Tout* output, odla_int32 axis,
-                   const odla_value_shape& shape, bool return_last_index,
-                   bool is_arg_max) {
-  axis = axis < 0 ? shape.size + axis : axis;
-  auto dim = shape.dims[axis];
-  // Distance between values of axis in blob
-  auto axis_elems = GetCountFromAxis(shape, axis);
-  auto axis_dist = axis_elems / dim;
-  auto num = GetCountFromAxis(shape, 0) / axis_elems;
-
-  auto cmp = [return_last_index, is_arg_max](Tin curr, Tin val) {
-    return (is_arg_max && curr > val) || (!is_arg_max && curr < val) ||
-           (curr == val && return_last_index);
-  };
-  for (int64_t i = 0; i < num; ++i) {
-    for (int64_t j = 0; j < axis_dist; ++j) {
-      Tin val = input[i * axis_elems + j];
-      int64_t idx = 0;
-      for (int k = 1; k < dim; ++k) {
-        const Tin& curr = input[i * axis_elems + k * axis_dist + j];
-        if (cmp(curr, val)) {
-          val = curr;
-          idx = k;
-        }
-      }
-      output[i * axis_dist + j] = idx;
-    }
-  }
-}
-
-static dnnl::memory::dims getDims(const odla_value_shape& od) {
-  auto dims = dnnl::memory::dims(od.dims, od.dims + od.size);
-  return dims;
-}
-
-static dnnl::memory::desc getMemoryDesc(const odla_value_shape& dims,
-                                        dnnl::memory::data_type ty) {
-  return dnnl::memory::desc(getDims(dims), ty, getFormatTag(dims));
-}
-
-static dnnl::memory::desc getMemoryDesc(const odla_value_shape& dims,
-                                        odla_element_type ty) {
-  return dnnl::memory::desc(getDims(dims), getDataType(ty), getFormatTag(dims));
-}
-
-static dnnl::memory::desc getMemoryDesc(const odla_value_type& ty) {
-  return getMemoryDesc(ty.shape, ty.element_type);
-}
-
 thread_local odla_computation g_comp;
 static std::vector<std::unique_ptr<_odla_computation>> g_comps;
 thread_local bool g_interpret_mode = false;
 
-static void add_op(dnnl::primitive prim,
-                   const std::unordered_map<int, dnnl::memory>& args) {
+void add_op(dnnl::primitive prim,
+            const std::unordered_map<int, dnnl::memory>& args) {
   operation op;
   op.prim = prim;
   op.args = args;
   g_comp->ops.emplace_back(op);
 }
 
-static void add_op(std::function<void()> func) {
+void add_op(std::function<void()> func) {
   operation op;
   op.func = func;
   g_comp->ops.emplace_back(op);
@@ -266,20 +66,9 @@ struct Initializer {
 static Initializer interpreter_initializer;
 #endif
 
-static odla_value CreateValue(const dnnl::memory& mem,
-                              const odla_value_shape shape,
-                              const odla_value_id id) {
-  std::string name = id == nullptr ? "" : std::string((const char*)id);
-  auto v = std::make_unique<_odla_value>(mem, shape, name);
-  auto ret = v.get();
-  g_comp->vals.push_back(std::move(v));
-  return ret;
-}
-
-static dnnl::memory cast_odla_mem(dnnl::memory src_mem,
-                                  const odla_value_shape shape,
-                                  const dnnl::memory::data_type dt,
-                                  const bool is_const) {
+dnnl::memory cast_odla_mem(dnnl::memory src_mem, const odla_value_shape shape,
+                           const dnnl::memory::data_type dt,
+                           const bool is_const) {
   auto dst_md = dnnl::memory::desc(getDims(shape), dt, getFormatTag(shape));
   auto dst_mem = dnnl::memory(dst_md, g_comp->eng);
   auto r = dnnl::reorder(src_mem, dst_mem);
@@ -366,7 +155,7 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
   return ODLA_SUCCESS;
 }
 
-static void InterpretIfNeeded() {
+void InterpretIfNeeded() {
 #if ODLA_DNNL_BUILD_AS_INTERPRETER
   if (!g_interpret_mode) {
     return;
@@ -1454,201 +1243,6 @@ odla_value odla_Softmax(odla_value input, odla_int32 axis,
   return v;
 }
 
-static odla_value reduce_op(dnnl::algorithm alg, odla_value input,
-                            odla_size_t num_of_axes, const odla_uint32* axes,
-                            odla_bool keep_dims, odla_value_shape output_dims,
-                            const odla_value_id id, float p = 0,
-                            float eps = 0) {
-  auto dnnl_out_dims = getDims(input->shape);
-
-  for (int i = 0; i < num_of_axes; i++) {
-    dnnl_out_dims[axes[i]] = 1;
-  }
-
-  auto type = input->mem.get_desc().data_type();
-  auto output_md =
-      dnnl::memory::desc(dnnl_out_dims, input->mem.get_desc().data_type(),
-                         getFormatTag(input->shape));
-  auto input_md = dnnl::memory::desc(getDims(input->shape),
-                                     input->mem.get_desc().data_type(),
-                                     getFormatTag(input->shape));
-  auto ret_mem = dnnl::memory(output_md, g_comp->eng);
-  auto reduction_desc = dnnl::reduction::desc(alg, input_md, output_md, p, eps);
-  auto pd = dnnl::reduction::primitive_desc(reduction_desc, g_comp->eng);
-  auto prim = dnnl::reduction(pd);
-  add_op(prim, {{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, ret_mem}});
-  InterpretIfNeeded();
-  odla_value v = CreateValue(ret_mem, output_dims, id);
-  return v;
-}
-
-odla_value odla_ReduceL1(odla_value input, odla_size_t num_of_axes,
-                         const odla_uint32* axes, odla_bool keep_dims,
-                         odla_value_shape output_dims, const odla_value_id id) {
-  return reduce_op(dnnl::algorithm::reduction_norm_lp_sum, input, num_of_axes,
-                   axes, keep_dims, output_dims, id, 1 /* P */);
-}
-
-odla_value odla_ReduceL2(odla_value input, odla_size_t num_of_axes,
-                         const odla_uint32* axes, odla_bool keep_dims,
-                         odla_value_shape output_dims, const odla_value_id id) {
-  return reduce_op(dnnl::algorithm::reduction_norm_lp_sum, input, num_of_axes,
-                   axes, keep_dims, output_dims, id, 2 /* P */);
-}
-
-odla_value odla_ReduceLogSum(odla_value input, odla_size_t num_of_axes,
-                             const odla_uint32* axes, odla_bool keep_dims,
-                             odla_value_shape output_dims,
-                             const odla_value_id id) {
-  const auto& name = std::string(reinterpret_cast<const char*>(id)) + "_extra";
-  return odla_Log(
-      odla_ReduceSum(input, num_of_axes, axes, keep_dims, output_dims,
-                     (const odla_value_id)name.c_str()),
-      id);
-}
-
-odla_value odla_ReduceLogSumExp(odla_value input, odla_size_t num_of_axes,
-                                const odla_uint32* axes, odla_bool keep_dims,
-                                odla_value_shape output_dims,
-                                const odla_value_id id) {
-  const auto& name = std::string(reinterpret_cast<const char*>(id));
-  odla_value_shape keep_dim_shape = input->shape;
-  for (int i = 0; i < num_of_axes; ++i) {
-    keep_dim_shape.dims[axes[i]] = 1;
-  }
-  std::string name_max = name + "_max";
-  std::string name_reshape = name + "_reshape";
-  std::string name_exp = name + "_exp";
-  std::string name_logsum = name + "_logsum";
-  std::string name_sub = name + "_sub";
-  auto reduce_max =
-      odla_ReduceMax(input, num_of_axes, axes, keep_dims, output_dims,
-                     (const odla_value_id)name_max.c_str());
-  auto reduce_max_keep_dim = odla_Reshape(
-      reduce_max, keep_dim_shape, (const odla_value_id)name_reshape.c_str());
-  auto exp_delta = odla_Exp(odla_Sub(input, reduce_max_keep_dim,
-                                     (const odla_value_id)name_sub.c_str()),
-                            (const odla_value_id)name_exp.c_str());
-  return odla_Add(
-      odla_ReduceLogSum(exp_delta, num_of_axes, axes, keep_dims, output_dims,
-                        (const odla_value_id)name_logsum.c_str()),
-      reduce_max, id);
-}
-
-odla_value odla_ReduceMax(odla_value input, odla_size_t num_of_axes,
-                          const odla_uint32* axes, odla_bool keep_dims,
-                          odla_value_shape output_dims,
-                          const odla_value_id id) {
-  return reduce_op(dnnl::algorithm::reduction_max, input, num_of_axes, axes,
-                   keep_dims, output_dims, id);
-}
-
-odla_value odla_ReduceMean(odla_value input, odla_size_t num_of_axes,
-                           const odla_uint32* axes, odla_bool keep_dims,
-                           odla_value_shape output_dims,
-                           const odla_value_id id) {
-  return reduce_op(dnnl::algorithm::reduction_mean, input, num_of_axes, axes,
-                   keep_dims, output_dims, id);
-}
-
-odla_value odla_ReduceMin(odla_value input, odla_size_t num_of_axes,
-                          const odla_uint32* axes, odla_bool keep_dims,
-                          odla_value_shape output_dims,
-                          const odla_value_id id) {
-  return reduce_op(dnnl::algorithm::reduction_min, input, num_of_axes, axes,
-                   keep_dims, output_dims, id);
-}
-
-odla_value odla_ReduceProd(odla_value input, odla_size_t num_of_axes,
-                           const odla_uint32* axes, odla_bool keep_dims,
-                           odla_value_shape output_dims,
-                           const odla_value_id id) {
-  return reduce_op(dnnl::algorithm::reduction_mul, input, num_of_axes, axes,
-                   keep_dims, output_dims, id);
-}
-
-odla_value odla_ReduceSum(odla_value input, odla_size_t num_of_axes,
-                          const odla_uint32* axes, odla_bool keep_dims,
-                          odla_value_shape output_dims,
-                          const odla_value_id id) {
-  return reduce_op(dnnl::algorithm::reduction_sum, input, num_of_axes, axes,
-                   keep_dims, output_dims, id);
-}
-
-odla_value odla_ReduceSumSquare(odla_value input, odla_size_t num_of_axes,
-                                const odla_uint32* axes, odla_bool keep_dims,
-                                odla_value_shape output_dims,
-                                const odla_value_id id) {
-  auto sq = odla_Mul(input, input, (odla_value_id) "square");
-  return odla_ReduceSum(sq, num_of_axes, axes, keep_dims, output_dims, id);
-}
-
-template <typename T>
-void DoCumSum(const T* input_ptr, T* output_ptr, int axis,
-              const odla_value_shape& shape, bool exclusion, bool reverse) {
-  if (axis < 0) {
-    axis += shape.size;
-  }
-
-  auto rank = shape.size;
-  auto dim = shape.dims[axis];
-  auto elems_from_axis = GetCountFromAxis(shape, axis);
-  auto extents_on_axis = elems_from_axis / dim;
-  auto elems_before_axis = GetTotalElements(shape) / elems_from_axis;
-  for (int64_t i = 0; i < elems_before_axis; ++i) {
-    for (int64_t j = 0; j < extents_on_axis; ++j) {
-      auto idx = (reverse == 0) ? 0 : dim - 1;
-      T acc = 0;
-      int step = (reverse == 0) ? 1 : -1;
-      for (int k = 0; k < dim; ++k) {
-        auto offset = i * elems_from_axis + idx * extents_on_axis + j;
-        T curr = input_ptr[offset];
-        output_ptr[offset] = (exclusion == 0) ? acc + curr : acc;
-        acc += curr;
-        idx += step;
-      }
-    }
-  }
-}
-
-odla_value odla_CumSum(odla_value input, odla_value axis, odla_bool exclusion,
-                       odla_bool reverse, const odla_value_id id) {
-  const auto& shape = input->shape;
-  auto elem_n = GetTotalElements(input->shape);
-  auto dt = input->mem.get_desc().data_type();
-  auto ret_md = getMemoryDesc(shape, dt);
-  assert(dt == dnnl::memory::data_type::f32);
-  bool is_double = input->elem_size == 8 && dt == dnnl::memory::data_type::f32;
-  auto ret_mem =
-      is_double ? dnnl::memory(ret_md, g_comp->eng,
-                               g_comp->CreateBuffer(elem_n * sizeof(double)))
-                : dnnl::memory(ret_md, g_comp->eng);
-
-  void* output_ptr = ret_mem.get_data_handle();
-
-  std::function<void()> op = [shape, input, axis, exclusion, reverse,
-                              output_ptr, is_double]() {
-    const void* input_ptr = input->mem.get_data_handle();
-    int ax = ((const int*)axis->mem.get_data_handle())[0];
-    if (is_double) {
-      DoCumSum<double>(static_cast<const double*>(input_ptr),
-                       static_cast<double*>(output_ptr), ax, shape,
-                       exclusion != 0, reverse != 0);
-    } else {
-      DoCumSum<float>(static_cast<const float*>(input_ptr),
-                      static_cast<float*>(output_ptr), ax, shape,
-                      exclusion != 0, reverse != 0);
-    }
-  };
-  add_op(op);
-  InterpretIfNeeded();
-  odla_value v = CreateValue(ret_mem, input->shape, id);
-  if (input->elem_size == 8) {
-    v->elem_size = 8;
-  }
-  return v;
-}
-
 odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
                      odla_bool transpose_rhs, odla_float32 alpha,
                      odla_float32 beta, odla_value bias,
@@ -2054,65 +1648,4 @@ odla_value odla_Tile(odla_value input, const odla_uint32* repeat,
   odla_value v = CreateValue(ret_mem, output_dims, value_id);
   v->is_const = true;
   return v;
-}
-
-static odla_value arg_min_max(bool is_arg_max, odla_value input,
-                              odla_int32 axis, odla_bool keep_dims,
-                              odla_bool return_last_index,
-                              const odla_value_type& output_value_type,
-                              const odla_value_id value_id) {
-  size_t elem_n = GetTotalElements(output_value_type.shape);
-  dnnl::memory::desc md = getMemoryDesc(output_value_type);
-  dnnl::memory dst_mem =
-      (output_value_type.element_type == ODLA_INT64)
-          ? dnnl::memory(md, g_comp->eng,
-                         g_comp->CreateBuffer(elem_n * sizeof(int64_t)))
-          : dnnl::memory(md, g_comp->eng);
-  std::function<void()> op;
-  if (input->mem.get_desc().data_type() != dnnl::memory::data_type::f32) {
-    input->mem = cast_odla_mem(input->mem, input->shape,
-                               dnnl::memory::data_type::f32, false);
-  }
-
-  if (output_value_type.element_type == ODLA_INT64) {
-    op = [input, dst_mem, axis, return_last_index, is_arg_max]() {
-      ArgMax<float, int64_t>(static_cast<float*>(input->mem.get_data_handle()),
-                             static_cast<int64_t*>(dst_mem.get_data_handle()),
-                             axis, input->shape, return_last_index != 0,
-                             is_arg_max);
-    };
-  } else if (output_value_type.element_type == ODLA_INT32) {
-    op = [input, dst_mem, axis, return_last_index, is_arg_max]() {
-      ArgMax<float, int32_t>(static_cast<float*>(input->mem.get_data_handle()),
-                             static_cast<int32_t*>(dst_mem.get_data_handle()),
-                             axis, input->shape, return_last_index != 0,
-                             is_arg_max);
-    };
-  } else {
-    assert(0);
-  }
-
-  add_op(op);
-  InterpretIfNeeded();
-  auto v = CreateValue(dst_mem, output_value_type.shape, value_id);
-  if (output_value_type.element_type == ODLA_INT64) {
-    v->elem_size = 8;
-  }
-  return v;
-}
-
-odla_value odla_ArgMax(odla_value input, odla_int32 axis, odla_bool keep_dims,
-                       odla_bool return_last_index,
-                       odla_value_type output_value_type,
-                       const odla_value_id value_id) {
-  return arg_min_max(true, input, axis, keep_dims, return_last_index,
-                     output_value_type, value_id);
-}
-
-odla_value odla_ArgMin(odla_value input, odla_int32 axis, odla_bool keep_dims,
-                       odla_bool return_last_index,
-                       odla_value_type output_value_type,
-                       const odla_value_id value_id) {
-  return arg_min_max(false, input, axis, keep_dims, return_last_index,
-                     output_value_type, value_id);
 }
