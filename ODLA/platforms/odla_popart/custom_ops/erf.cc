@@ -97,7 +97,7 @@ class ErfOpx : public popart::popx::ElementWiseUnaryOpx {
     popops::addInPlace(graph().getPoplarGraph(), y, 1.0f, prog);
     popops::mulInPlace(graph().getPoplarGraph(), y, sign, prog);
 
-    setOutTensor(0, y);
+    setOutTensor(0, snap::Tensor{y, graph()});
   }
 };
 
