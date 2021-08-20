@@ -78,6 +78,20 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_AveragePool(
     const odla_uint32* paddings_front, const odla_uint32* paddings_back,
     odla_value_shape output_dims, const odla_value_id value_id);
 
+//! \brief Hardmax computation
+/*!
+  Hardmax computes one-hot tensor for the location of the highest value alone
+  with specified axis.
+
+  \param input the input value
+  \param axis the dimension alone with hardmax will perform on
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Hardmax(odla_value input, odla_int32 axis, const odla_value_id value_id);
+
 /*!
   Local Response Normalization normalizes over local regions on \p input
   The result can then be scaled and biased.

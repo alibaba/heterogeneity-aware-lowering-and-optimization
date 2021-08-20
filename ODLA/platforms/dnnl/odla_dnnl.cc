@@ -1243,6 +1243,47 @@ odla_value odla_Softmax(odla_value input, odla_int32 axis,
   return v;
 }
 
+template <typename T>
+static void DoHardmax(const int* max_val_indices, T* output_ptr, int axis,
+                      const odla_value_shape& shape) {
+  auto dim = shape.dims[axis];
+  auto elems_from_axis = GetCountFromAxis(shape, axis);
+  auto extents_on_axis = elems_from_axis / dim;
+  auto elems_before_axis = GetTotalElements(shape) / elems_from_axis;
+  for (int64_t i = 0; i < elems_before_axis; ++i) {
+    for (int64_t j = 0; j < extents_on_axis; ++j) {
+      for (int idx = 0; idx < dim; ++idx) {
+        auto offset_dst = i * elems_from_axis + idx * extents_on_axis + j;
+        auto offset_src = i * extents_on_axis + j;
+        output_ptr[offset_dst] = (idx == max_val_indices[offset_src]) ? 1 : 0;
+      }
+    }
+  }
+}
+
+odla_value odla_Hardmax(odla_value input, odla_int32 axis,
+                        const odla_value_id id) {
+  auto arg_max = odla_ArgMax(input, axis, 1 /* keep dims */, 0 /* no reverse */,
+                             {ODLA_INT32, input->shape}, nullptr);
+  const auto& shape = input->shape;
+  auto type = input->mem.get_desc().data_type();
+  assert(type == dnnl::memory::data_type::f32);
+  axis = axis < 0 ? shape.size - 1 : axis;
+  auto ret_md = input->mem.get_desc();
+  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
+  const void* input_ptr = arg_max->mem.get_data_handle();
+  void* output_ptr = ret_mem.get_data_handle();
+  std::function<void()> op = [input_ptr, output_ptr, axis, shape]() {
+    DoHardmax<float>(static_cast<const int32_t*>(input_ptr),
+                     static_cast<float*>(output_ptr), axis, shape);
+  };
+
+  add_op(op);
+
+  InterpretIfNeeded();
+  return CreateValue(ret_mem, input->shape, id);
+}
+
 odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
                      odla_bool transpose_rhs, odla_float32 alpha,
                      odla_float32 beta, odla_value bias,

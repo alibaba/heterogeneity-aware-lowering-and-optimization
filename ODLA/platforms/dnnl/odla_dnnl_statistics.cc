@@ -153,7 +153,6 @@ void DoCumSum(const T* input_ptr, T* output_ptr, int axis,
     axis += shape.size;
   }
 
-  auto rank = shape.size;
   auto dim = shape.dims[axis];
   auto elems_from_axis = GetCountFromAxis(shape, axis);
   auto extents_on_axis = elems_from_axis / dim;

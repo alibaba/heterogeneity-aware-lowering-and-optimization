@@ -25,5 +25,5 @@
 // RUN: %t_tensorrt.exe 0.0001 0 tensorrt %data_path/test_softmax_axis_1 | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_softmax_axis_1_tensorrt.cc.tmp.main.cc.in"
