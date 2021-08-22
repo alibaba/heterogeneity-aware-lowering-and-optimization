@@ -1,0 +1,55 @@
+#!/bin/bash
+echo $0 $1 $2
+if [ $# -lt 2 ]
+then
+	echo "Usage: ./run_model test_config.json odla_popart.json"
+	exit 0
+fi
+TEST_NAME=${1##*/}
+TEST_NAME=${TEST_NAME%%.*}
+BPS=${2%%.*}
+BPS=${BPS##*_}
+LOG_NAME=$TEST_NAME-$BPS
+# use 1 ipu config to test no pipeline
+#export POPLAR_ENGINE_OPTIONS='{"autoReport.all":"true", "debug.allowOutOfMemory":"true", "autoReport.directory":"./report"}'
+export PVTI_OPTIONS='{"enable":"true"}'
+HALO_DIR=/data/jackz/ODLA_POPART/mine/heterogeneity-aware-lowering-and-optimization
+export LD_LIBRARY_PATH=/data/jackz/ODLA_POPART/cnpy/build/:$HALO_DIR/build/lib:$LD_LIBRARY_PATH
+export ODLA_POPART_CONFIG=$2 #odla_popart_configs/odla_popart_load.json
+export POPART_LOG_LEVEL=INFO
+
+echo "The test name is: $TEST_NAME"
+echo "The odla config is $ODLA_POPART_CONFIG"
+echo "The test log & result will be saved with name $LOG_NAME"
+
+echo "Remove model.cc"
+rm model.cc -rf
+echo "Remove built model.so"
+rm build/* -rf
+echo "Remove onnx model"
+rm *.onnx -rf
+echo "Remove test configs"
+rm *.json
+echo "================================================="
+echo "Copy the $TEST_NAME.cc to model.cc"
+cp models_cc/$TEST_NAME.cc model.cc
+echo "Compile the model.so"
+./compile_so
+echo "Copy the model"
+cp models_onnx/$TEST_NAME.onnx model.onnx
+# run the model.cc to get a onnx?
+ldd build/model.so|grep odla
+echo "Please ensure the libodla_popart.so version & press enter to continue ..."
+read no_use
+#
+build/run_so --config test_configs/$TEST_NAME.json 2>&1 | tee test.log
+
+#build/run_so --config qtc_bs1.json 2>&1 | tee test.log
+#echo "=================== test finished ============================="
+python npz_reader.py --npz-file test_result.npz 2>&1 >> test.log
+echo "The End to End statistics:"
+python npz_reader.py --npz-file test_result.npz
+echo "Save test result to logs/$LOG_NAME.npz"
+mv test_result.npz logs/$LOG_NAME.npz
+echo "Save test log to logs/$LOG_NAME.log"
+mv test.log logs/$LOG_NAME.log
