@@ -90,7 +90,7 @@ odla_status odla_CreateComputation(odla_computation* comp) {
 
 odla_status odla_CreateContext(odla_context* context) {
   //std::cout << "---> odla_CreateContext()" << std::endl;
-  g_comp->init(); // Place the init here to avoid long execution problem
+  _odla_computation::instance(false)->init(); // Place the init here to avoid long execution problem
   *context = new _odla_pipeline_context(_odla_computation::instance());
   //std::cout << "<--- odla_CreateContext()" << std::endl;
   return ODLA_SUCCESS;
@@ -98,7 +98,7 @@ odla_status odla_CreateContext(odla_context* context) {
 
 odla_status odla_DestroyContext(odla_context ctx) {
   //std::cout << "---> odla_DestroyContext()" << std::endl;
-  if(nullptr != ctx)
+  if(nullptr != ctx && ctx->hold("odla_DestroyContext"))
     delete (ctx);
   else
     ;//std::cerr << "Encounter a odla_DestroyContext with null ctx" << std::endl;
@@ -131,6 +131,8 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
   //std::cout << "---> odla_ExecuteComputation()" << std::endl;
+  if(!context->hold("odla_ExecuteComputation"))
+    return ODLA_FAILURE;
   comp->executor()->compute(comp, context, mode, device);
   //std::cout << "<--- odla_ExecuteComputation()" << std::endl;
   return ODLA_SUCCESS;
@@ -189,12 +191,15 @@ odla_value odla_CreateConstant(odla_value_type type, const void* data_ptr,
 odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                 odla_context context) {
   //std::cout << "---> odla_BindToArgument() : " << context << std::endl;
+  if(!context->hold("odla_BindToArgument"))
+    return ODLA_FAILURE;
   std::vector<int64_t> shape = context->comp->builder->getTensorShape(value->tensor_id);
   if(PopartConfig::instance()->execution_mode() == SEQUENCE) //only the SEQUENCE model need to pass the data in once time
     shape[0] *= PopartConfig::instance()->batch_per_step();
   std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
       data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
       shape);
+  popart::logging::info("Bind the value to input {}", value->tensor_id);
   context->inputs[value->tensor_id] = std::move(p_array);
   //std::cout << "<--- odla_BindToArgument()" << std::endl;
   return ODLA_SUCCESS;
@@ -204,6 +209,8 @@ odla_status odla_BindToArgumentById(const odla_value_id value_id,
                                     const odla_void* data_ptr,
                                     odla_context context) {
   //std::cout << "---> odla_BindToArgumentById() : " << context << std::endl;
+  if(!context->hold("odla_BindToArgumentById"))
+    return ODLA_FAILURE;
   std::string name(reinterpret_cast<const char*>(value_id));
   //std::cout << "<--- odla_BindToArgumentById()" << std::endl;
   return odla_BindToArgument(context->comp->inputs_map[name], data_ptr,
@@ -252,6 +259,8 @@ odla_status odla_GetOutputFromComputationByIdx(
 
 odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
                               odla_context context) {
+  if(!context->hold("odla_BindToOutput"))
+    return ODLA_FAILURE;
   //std::cout << "---> odla_BindToOutput()" << std::endl;
   std::vector<int64_t> shape = context->comp->builder->getTensorShape(value->tensor_id);
   if(PopartConfig::instance()->execution_mode() == SEQUENCE) //only the SEQUENCE model need to pass the data in once time
@@ -267,6 +276,8 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
 odla_status odla_BindToOutputById(const odla_value_id value_id,
                                   odla_void* data_ptr, odla_context context) {
   //std::cout << "---> odla_BindToOutputById()" << std::endl;
+  if(!context->hold("odla_BindToOutputById"))
+    return ODLA_FAILURE;
   std::string name(reinterpret_cast<const char*>(value_id));
   return odla_BindToOutput(context->comp->outputs_map[name], data_ptr, context);
   //std::cout << "<--- odla_BindToOutputById()" << std::endl;

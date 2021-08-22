@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 #include <atomic>
+#include <thread>
 #include <condition_variable>
 #include <popart/builder.hpp>
 #include <popart/session.hpp>
@@ -88,11 +89,16 @@ struct _odla_computation {  //destruct the computation when odla_destroycomputat
 
   // new members for pipeline
   static _odla_computation* m_instance;
-  static _odla_computation* instance(){return m_instance;}
+  static _odla_computation* instance(bool hold_it = true){
+      if(hold_it)
+          m_instance->hold(); 
+      return m_instance;
+  }
   bool m_done;
   bool thread_complete_;
   std::mutex m_init_mutex;
   Execution* m_executor;
+  std::thread::id thread_id_of_holder;
 
   _odla_computation():builder(popart::Builder::create()), 
     session(nullptr), device(nullptr), opts({false, 1, 1}), 
@@ -111,6 +117,7 @@ struct _odla_computation {  //destruct the computation when odla_destroycomputat
   void set_executor();
   void set_opts();
   bool use_pipeline();
+  bool hold();
   inline Execution* executor(){return m_executor;}
 };
 
@@ -120,6 +127,7 @@ struct _odla_context {
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> outputs;
   std::atomic<odla_context> next;
   _odla_context(odla_computation c): comp(c), next(nullptr) {}
+  std::thread::id thread_id_of_holder;
   inline virtual void wait() {}
   inline virtual void notify() {}
   inline virtual popart::IArray* get_data_by_tensor_id(popart::TensorId id){
@@ -134,5 +142,6 @@ struct _odla_context {
   inline virtual bool all_tensors_written(){return true;}
   inline virtual void clear_visited_and_written(){}
   inline virtual bool deletable(){return false;}
+  bool hold(const std::string& function_name);
 };
 #endif
