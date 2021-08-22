@@ -44,7 +44,7 @@ void compute_loop(odla_computation comp)
     comp->session->run(stepio);
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed_seconds = end-start;
-    popart::logging::warn("[ {} ] times loop takes {} s.", i, elapsed_seconds.count());
+    popart::logging::warn("[ {} ] ONE_STEP takes {} s.", i, elapsed_seconds.count());
     while(QManager::instance()->getQ()->size() == 0)
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
   }
@@ -162,6 +162,29 @@ void _odla_computation::set_session_opts()
     m_session_opts.disableGradAccumulationTensorStreams = true;
 }
 
+bool _odla_computation::hold()
+{
+    auto this_thread_id = std::this_thread::get_id();
+    std::stringstream ss;
+    ss << std::this_thread::get_id();
+    if(thread_id_of_holder == std::thread::id())
+    {
+        thread_id_of_holder = this_thread_id;
+        popart::logging::info("The odla_computation {} was held by thread {}", this, this_thread_id);
+        return true;
+    }else if(thread_id_of_holder == this_thread_id){
+        return true;
+    }else{
+        std::stringstream ss_holder;
+        ss_holder << thread_id_of_holder;
+        //throw std::runtime_error("The odla_computation has been held by thread: " 
+        //      + ss_holder.str() + ", when thread" + ss.str() + " try to hold it.");
+        popart::logging::err("The odla_computation {} has been held by thread: {}"
+              ", when thread {} try to hold it.", this, thread_id_of_holder, this_thread_id);
+    }
+    return false;
+}
+
 void _odla_computation::set_pipeline_stage(const popart::TensorId &nodeOutputName, const std::string& name){
     if(!use_pipeline())
         return;
@@ -228,6 +251,29 @@ bool _odla_computation::use_pipeline()
         return false;
     }
     return true;
+}
+
+bool _odla_context::hold(const std::string& function_name)
+{
+    auto this_thread_id = std::this_thread::get_id();
+    std::stringstream ss;
+    ss << std::this_thread::get_id();
+    if(thread_id_of_holder == std::thread::id()) // held by nobody
+    {
+        thread_id_of_holder = this_thread_id;
+        popart::logging::info("[{}] The context {} has been held", this_thread_id, this);
+        return true;
+    }else if(thread_id_of_holder == this_thread_id){ // held by this thread
+        return true;
+    }else{ //held by other thread
+        std::stringstream ss_holder;
+        ss_holder << thread_id_of_holder;
+        popart::logging::err("[{}] odla_context {} has been held by thread: {}" 
+              ", when try to hold it in function {}.", 
+              this_thread_id, this, thread_id_of_holder, function_name);
+        throw std::runtime_error("Multiple threads try to hold the same context");
+    }
+    return false;
 }
 
 void Sequence::compute(odla_computation comp, odla_context context,

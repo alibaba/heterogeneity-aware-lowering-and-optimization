@@ -174,7 +174,7 @@ struct _odla_pipeline_context : public _odla_context {
     if(written == 0){
        end = std::chrono::steady_clock::now();
        std::chrono::duration<float, std::milli> elapsed_ms = end-start;
-       popart::logging::info("[ODLA_POPART_TPUT] The time run for ctx: {} is [{}]", this, elapsed_ms.count());
+       popart::logging::info("ONE_REQEUST for ctx: {} took: {} ms", this, elapsed_ms.count());
     }
     written++;
     return &(*(outputs[id]));
@@ -182,22 +182,33 @@ struct _odla_pipeline_context : public _odla_context {
   inline bool all_tensors_visited() override {
     //return (tensors_visited.size() == inputs.size());
     //std::cout << "all_tensor_visited() in _odla_pipeline_context called with visited: " << visited << std::endl;
-    if(visited == inputs.size())
+    if(inputs.size() != comp->input_values.size()){
+      popart::logging::err("ctx {} inputs.size() is {}, does not match graph inputs size {}", 
+                            this, inputs.size(), comp->input_values.size());
+      throw std::runtime_error("input size of context did not match the graph inputs size.");
+    }
+    if(visited == inputs.size()){
       start = std::chrono::steady_clock::now();
-    return (visited == inputs.size());
+      return true;
+    }
+    return false;
   }
   inline bool all_tensors_written() override {
     //return (tensors_written.size() == outputs.size());
-    if(written == outputs.size()){
-      end = std::chrono::steady_clock::now();
-      std::chrono::duration<float, std::milli> elapsed_ms = end-start;
-      popart::logging::info("[ODLA_POPART_TPUT] The time run for ctx: {} is [{}]", this, elapsed_ms.count());
+    if(outputs.size() != comp->output_values.size()){
+      popart::logging::err("ctx {} outputs.size() is {}, does not match graph outputs size {}",
+                            this, outputs.size(), comp->output_values.size());
+      throw std::runtime_error("output size of context did not match the graph outputs size.");
     }
-    return (written == outputs.size());
+    if(written == outputs.size()){
+      return true;
+    }
+    return false;
   }
   inline void clear_visited_and_written() override {
     //tensors_visited.clear();
     //tensors_written.clear();
+    
     visited=0;
     written=0;
   }

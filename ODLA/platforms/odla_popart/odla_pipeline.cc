@@ -253,7 +253,7 @@ odla_context LockFreeQueue::get_output_context()
 
 void LockFreeQueue::pop_input(odla_context ctx)
 {
-  popart::logging::info("pop_input called with ctx: {}", ctx);
+  popart::logging::info("pop_input called with ctx: {}, head_: {}", ctx, head_);
   assert(ctx == buffer_[head_].load());
   head_ = (head_+1) % capacity_;
 }
