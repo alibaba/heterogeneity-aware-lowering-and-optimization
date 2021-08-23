@@ -1,20 +1,3 @@
-//===- demo.cc ------------------------------------------------------------===//
-//
-// Copyright (C) 2019-2020 Alibaba Group Holding Limited.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//   http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-// =============================================================================
-
 #include <test_util.h>
 
 #include <array>
@@ -79,24 +62,21 @@ static Mat detect(Mat& src_image, bool print_image_info) {
 
   permute_2d(&input, 416 * 416, 3);
 #endif
+
   auto begin_time = Now();
   yolo_v3(input.data(), out_13.data(), out_26.data(), out_52.data());
   auto end_time = Now();
-  auto t = GetDuration(begin_time, end_time);
-  auto rate = 1.0 / t;
 
 #ifdef USE_NCHW
   permute_2d(&out_13, 255, 13 * 13);
   permute_2d(&out_26, 255, 26 * 26);
   permute_2d(&out_52, 255, 52 * 52);
 #endif
-  auto post_process_begin_time = Now();
+
   auto ret = post_process_nhwc(src_image.cols, src_image.rows, out_13.data(),
                                out_26.data(), out_52.data());
-  auto post_process_end_time = Now();
-  auto post_process_t =
-      GetDuration(post_process_begin_time, post_process_end_time);
-  std::cout << "post_proces: " << post_process_t << "s\n";
+  auto t = GetDuration(begin_time, end_time);
+  auto rate = 1.0 / t;
 
   std::string vendor = "Unknown";
 #define str(x) #x
@@ -173,12 +153,12 @@ int main(int argc, char** argv) {
       Mat frame;
       vid >> frame;
       if (frame.empty()) break;
-      auto dst = detect(frame, true);
+      auto dst = detect(frame, false);
       out.write(dst);
     }
     vid.release();
   } else {
-    const std::string output_file{"/tmp/result.jpg"};
+    const std::string output_file{"out/result.jpg"};
     std::cout << "Detecting for image, output: " << output_file << std::endl;
 
     Mat src_image = imread(argv[1], CV_LOAD_IMAGE_COLOR); // Read the file
