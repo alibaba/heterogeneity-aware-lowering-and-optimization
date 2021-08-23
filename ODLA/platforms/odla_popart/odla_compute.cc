@@ -19,29 +19,6 @@
 #include <ODLA/odla.h>
 #include <dlfcn.h>
 
-#include <algorithm>
-#include <cassert>
-#include <chrono>
-#include <cmath>
-#include <cstddef>
-#include <functional>
-#include <memory>
-#include <numeric>
-#include <popart/builder.hpp>
-#include <popart/dataflow.hpp>
-#include <popart/devicemanager.hpp>
-#include <popart/names.hpp>
-#include <popart/ndarraywrapper.hpp>
-#include <popart/session.hpp>
-#include <popart/sessionoptions.hpp>
-#include <popart/stepio.hpp>
-#include <popart/tensorinfo.hpp>
-#include <popart/voiddata.hpp>
-#include <random>
-#include <stdexcept>
-#include <string>
-#include <vector>
-
 #include "ODLA/odla_common.h"
 #include "common.h"
 #include "odla_popart.h"
@@ -70,8 +47,13 @@ static std::shared_ptr<popart::DeviceInfo> CreateIpuModelDevice(
 std::unique_ptr<popart::SessionOptions> SessionOptions() {
   auto opts =
       std::unique_ptr<popart::SessionOptions>(new popart::SessionOptions());
-  opts->virtualGraphMode = popart::VirtualGraphMode::Auto;
   opts->enableStochasticRounding = true;
+  if (g_comp->opts.enable_pipeline) {
+    opts->enablePipelining = true;
+    opts->virtualGraphMode = popart::VirtualGraphMode::Manual;
+  } else {
+    opts->virtualGraphMode = popart::VirtualGraphMode::Auto;
+  }
   return opts;
 }
 
@@ -175,19 +157,28 @@ odla_status odla_DestroyComputation(odla_computation comp) {
 odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
-  // Config StepIO
-  std::map<popart::TensorId, popart::IArray&> inputs;
-  for (auto& input : comp->inputs) {
-    inputs.emplace(input.first, *input.second);
-  }
-  std::map<popart::TensorId, popart::IArray&> outputs;
-  for (auto& output : comp->outputs) {
-    outputs.emplace(output.first, *output.second);
-  }
+  if (comp->opts.enable_pipeline) {
+    // Config StepIO
+    std::map<popart::TensorId, popart::IArray&> inputs;
+    for (auto& input : comp->inputs) {
+      inputs.emplace(input.first, *input.second);
+    }
+    std::map<popart::TensorId, popart::IArray&> outputs;
+    for (auto& output : comp->outputs) {
+      outputs.emplace(output.first, *output.second);
+    }
 
-  popart::StepIO stepio(inputs, outputs);
-  // Run on ipu
-  context->session->run(stepio);
+    popart::StepIO stepio(inputs, outputs);
+    // Run on ipu
+    context->session->run(stepio);
+  } else {
+    popart::StepIOCallback stepio(
+        comp->input_callback, comp->input_complete_callback,
+        comp->output_callback, comp->output_complete_callback);
+    for (int i = 0; i < comp->opts.batches_per_step; ++i) {
+      context->session->run(stepio);
+    }
+  }
   return ODLA_SUCCESS;
 }
 
@@ -234,10 +225,36 @@ odla_value odla_CreateConstant(odla_value_type type, const void* data_ptr,
 
 odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                 odla_context context) {
-  std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
-      data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
-      context->comp->builder->getTensorShape(value->tensor_id));
-  context->comp->inputs[value->tensor_id] = std::move(p_array);
+  if (g_comp->opts.enable_pipeline) {
+    popart::StepIOCallback::InputCallback input_callback =
+        [&](popart::TensorId id, bool prefetch) -> popart::ConstVoidData {
+      popart::logging::info("input callback called {}", id);
+      (void)prefetch;
+      popart::ConstVoidData data;
+      if (g_comp->in_queue.empty()) {
+        std::cout << "Input queue is empty\n";
+        return data;
+      }
+      data.data = g_comp->in_queue.front().data;
+      data.info = value->tensor_info;
+      return data;
+    };
+
+    popart::StepIOCallback::InputCompleteCallback input_complete_callback =
+        [&](popart::TensorId id) -> void {
+      popart::logging::info("input complete callback called {}", id);
+      if (!g_comp->in_queue.empty()) {
+        g_comp->in_queue.pop();
+      }
+    };
+    g_comp->input_callback = input_callback;
+    g_comp->input_complete_callback = input_complete_callback;
+  } else {
+    std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
+        data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
+        context->comp->builder->getTensorShape(value->tensor_id));
+    context->comp->inputs[value->tensor_id] = std::move(p_array);
+  }
   return ODLA_SUCCESS;
 }
 
@@ -250,9 +267,24 @@ odla_status odla_BindToArgumentById(const odla_value_id value_id,
 }
 
 odla_status odla_SetValueAsOutput(const odla_value value) {
-  g_comp->builder->addOutputTensor(value->tensor_id);
-  g_comp->outputs_map[value->name] = value;
-  g_comp->output_values.push_back(value);
+  if (g_comp->opts.enable_pipeline) {
+    popart::StepIOCallback::OutputCompleteCallback output_complete_callback =
+        [&](popart::TensorId id) -> void {
+      popart::logging::info("output complete callback called {}", id);
+      while (!g_comp->out_queue.empty()) {
+        odla_value out_v = g_comp->out_queue.front();
+        g_comp->builder->addOutputTensor(out_v->tensor_id);
+        g_comp->outputs_map[out_v->name] = out_v;
+        g_comp->output_values.push_back(out_v);
+        g_comp->out_queue.pop();
+      }
+    };
+    g_comp->output_complete_callback = output_complete_callback;
+  } else {
+    g_comp->builder->addOutputTensor(value->tensor_id);
+    g_comp->outputs_map[value->name] = value;
+    g_comp->output_values.push_back(value);
+  }
   return ODLA_SUCCESS;
 }
 
@@ -282,10 +314,27 @@ odla_status odla_GetOutputFromComputationByIdx(
 
 odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
                               odla_context context) {
-  std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
-      data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
-      context->comp->builder->getTensorShape(value->tensor_id));
-  context->comp->outputs[value->tensor_id] = std::move(p_array);
+  assert(data_ptr != nullptr);
+  if (g_comp->opts.enable_pipeline) {
+    popart::StepIOCallback::OutputCallback output_callback =
+        [&](popart::TensorId id) -> popart::MutableVoidData {
+      popart::logging::info("output callback called {}", id);
+
+      popart::MutableVoidData data;
+      data.data = data_ptr;
+      data.info = value->tensor_info;
+      auto v = std::make_unique<_odla_value>(value->tensor_id,
+                                             value->tensor_info, value->name);
+      g_comp->out_queue.push(v.get());
+      return data;
+    };
+    g_comp->output_callback = output_callback;
+  } else {
+    std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
+        data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
+        context->comp->builder->getTensorShape(value->tensor_id));
+    context->comp->outputs[value->tensor_id] = std::move(p_array);
+  }
   return ODLA_SUCCESS;
 }
 
