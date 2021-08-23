@@ -165,8 +165,7 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
     inputs.push_back(bias->tensor_id);
   }
   auto result = g_comp->builder->aiOnnxOpset10().conv(
-      {input->tensor_id, kernel->tensor_id}, dim_dilations, group, kernel_shape,
-      pads, dim_strides);
+      inputs, dim_dilations, group, kernel_shape, pads, dim_strides);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
