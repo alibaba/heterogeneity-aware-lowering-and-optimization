@@ -17,10 +17,10 @@ custom_op:  erf.cc rsqrt.cc nms.cc
 	$(CXX) $^ $(LDLIBS) $(CXXFLAGS) $(INCLUDES) -o $(TARGET)
 
 rsqrt_test: rsqrt_test.cc custom_op
-	$(CXX) -std=c++14 rsqrt_test.cc -lpopart -lpoplar -lpopops -ldl -DONNX_NAMESPACE=onnx -o rsqrt_test -D_GLIBCXX_USE_CXX11_ABI=1
+	$(CXX) $(CXXFLAGS) rsqrt_test.cc -lpopart -lpoplar -lpopops -ldl -o rsqrt_test
 
 erf_test: erf_test.cc custom_op
-	$(CXX) -std=c++14 erf_test.cc -lpopart -lpoplar -lpopops -ldl -DONNX_NAMESPACE=onnx -o erf_test -D_GLIBCXX_USE_CXX11_ABI=1
+	$(CXX) $(CXXFLAGS) erf_test.cc -lpopart -lpoplar -lpopops -ldl -o erf_test
 
 .PHONY: clean
 clean:

@@ -112,7 +112,8 @@ NMSOpx::NMSOpx(popart::Op* op, popart::popx::Devicex* devicex)
   const auto& target = graph().getTarget();
   numTiles_ = target.getTilesPerIPU();
   numWorkers_ = target.getNumWorkerContexts();
-  graph().addCodelets("../ODLA/platforms/odla_popart/custom_ops/codelets.cpp");
+  graph().addCodelets(
+      "../ODLA/platforms/odla_popart/custom_ops/codelets_nms.cpp");
 }
 
 void NMSOpx::grow(poplar::program::Sequence& prog) const {

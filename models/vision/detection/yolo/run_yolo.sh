@@ -5,6 +5,7 @@ if [[ $# != 0 ]];then
   export TEST_TEMP_DIR=`dirname $1`
 fi
 
+make -C $curr_dir clean
 make -C $curr_dir
 
 out_dir=${TEST_TEMP_DIR}
