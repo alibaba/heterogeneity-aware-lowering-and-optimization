@@ -61,10 +61,11 @@ def ONNX_AveragePool : OpMapping<"AveragePool", PoolingAvg> {
     ExtensionAttr<"storage_order", Integer, "0">];
 }
 
-def ONNX_BatchNormalization : OpMapping<"BatchNormalization", BatchNorm> {
-  let attr_mapping_ = [
+let attr_mapping_ = [
     AttributeMapping<"epsilon", "epsilon", "0.00001">,
-    AttributeMapping<"", "data_format", "NCHW">];
+    AttributeMapping<"", "data_format", "NCHW">] in {
+  def ONNX_BatchNormalization : OpMapping<"BatchNormalization", BatchNorm>;
+  def ONNX_InstanceNormalization : OpMapping<"InstanceNormalization", InstanceNorm>;
 }
 
 def ONNX_GroupNormalization : OpMapping<"GroupNormalization", GroupNorm> {
