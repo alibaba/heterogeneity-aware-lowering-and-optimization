@@ -26,6 +26,10 @@
 #include <unordered_map>
 #include <vector>
 
+#include "ODLA/odla_common.h"
+#include "ODLA/odla_value.h"
+#include "ODLA/ops/odla_ops_math.h"
+#include "ODLA/ops/odla_ops_nn.h"
 #include "dnnl_threadpool_iface.hpp"
 #include "dnnl_utils.h"
 
@@ -304,6 +308,25 @@ odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
   }
 
   return v;
+}
+
+template <typename T>
+static odla_value CreateConstantFromScalar(odla_element_type dt, const T& v,
+                                           int rank = 1,
+                                           odla_value_id id = nullptr) {
+  void* buf = g_comp->CreateBuffer(sizeof(v));
+  memcpy(buf, &v, sizeof(v));
+  odla_value_shape shape;
+  shape.size = rank;
+  for (int i = 0; i < rank; ++i) {
+    shape.dims[i] = 1;
+  }
+  return odla_CreateConstant({dt, shape}, buf, id);
+}
+
+static odla_value CreateConstantFromScalar(float v, int rank = 1,
+                                           odla_value_id id = nullptr) {
+  return CreateConstantFromScalar(ODLA_FLOAT32, v, rank, id);
 }
 
 odla_status odla_SetValueAsOutput(const odla_value val) {
@@ -1127,8 +1150,7 @@ odla_value odla_BatchNormalization(odla_value input,
     // make a tensor [scale, bias].
     auto get_value = [channels](odla_value x, float scalar) {
       if (x == nullptr) {
-        x = odla_CreateConstant({ODLA_FLOAT32, {2, {1, 1}}}, &scalar,
-                                nullptr); // FIXME: copy to buf
+        x = CreateConstantFromScalar(scalar, 2);
       }
       return odla_Reshape(x, {2, {1, channels}}, nullptr);
     };
@@ -1217,6 +1239,51 @@ odla_value odla_LRN(odla_value input, odla_memory_layout input_layout,
   InterpretIfNeeded();
 
   return v;
+}
+
+odla_value odla_InstanceNormalization(
+    odla_value input, odla_memory_layout input_layout, odla_float32 epsilon,
+    odla_value scale, odla_value offset, odla_float32 scalar_scale,
+    odla_float32 scalar_offset, const odla_value_id value_id) {
+  bool ch_first = input_layout == odla_memory_layout::ODLA_CHANNELS_FIRST;
+  auto mean_shape = input->shape;
+  int rank = input->shape.size;
+  std::vector<odla_uint32> axes;
+  int m = 1;
+  axes.reserve(rank - 2);
+
+  if (ch_first) {
+    for (int i = 2; i < rank; ++i) {
+      axes.push_back(i);
+      mean_shape.dims[i] = 1;
+      m *= input->shape.dims[i];
+    }
+  } else {
+    for (int i = 1; i < rank - 1; ++i) {
+      axes.push_back(i);
+      mean_shape.dims[i] = 1;
+      m *= input->shape.dims[i];
+    }
+  }
+
+  auto scale_shape = mean_shape;
+  scale_shape.dims[0] = 1;
+  if (ch_first) {
+    scale = odla_Reshape(scale, scale_shape, nullptr);
+    offset = odla_Reshape(offset, scale_shape, nullptr);
+  }
+
+  auto elems = CreateConstantFromScalar(static_cast<float>(m));
+  auto eps = CreateConstantFromScalar(epsilon);
+  auto mean = odla_ReduceMean(input, rank - 2, axes.data(), 1 /* keep_dims */,
+                              mean_shape, nullptr);
+  auto x_minus_mean = odla_Sub(input, mean, nullptr);
+  auto var = odla_Div(odla_ReduceSumSquare(x_minus_mean, rank - 2, axes.data(),
+                                           1, mean_shape, nullptr),
+                      elems, nullptr);
+  auto norm = odla_Div(
+      x_minus_mean, odla_Sqrt(odla_Add(var, eps, nullptr), nullptr), nullptr);
+  return odla_Add(odla_Mul(norm, scale, nullptr), offset, value_id);
 }
 
 odla_value odla_Softmax(odla_value input, odla_int32 axis,
