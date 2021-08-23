@@ -322,7 +322,10 @@ def ONNX_Sinh : OpMapping<"Sinh", Sinh>;
 // onnx slice op operands order is different from halo ir
 def ONNX_Slice : ONNXExtension<"Slice">;
 
-def ONNX_Softmax : OpMapping<"Softmax", Softmax>;
+let attr_mapping_ = [AttributeMapping<"axis", "axis", "-1">] in {
+  def ONNX_Hardmax : OpMapping<"Hardmax", Hardmax>;
+  def ONNX_Softmax : OpMapping<"Softmax", Softmax>;
+}
 
 def ONNX_Split : ONNXExtension<"Split"> {
   let extension_attr_ = [
