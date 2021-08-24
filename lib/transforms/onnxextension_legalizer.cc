@@ -191,6 +191,54 @@ static std::vector<Def> ConvertConstantOfShape(const ONNXExtensionInst* ext,
   return {};
 }
 
+static std::vector<Def> ConvertEyeLike(const ONNXExtensionInst* ext,
+                                       IRBuilder* builder) {
+  auto type = ext->GetOperand(0).GetType();
+  if (!type.IsValid()) {
+    return {};
+  }
+  HLCHECK(type.GetNumOfDims() == 2);
+  int k = FindAttributeValue<int>(*ext, "k", 0);
+  auto elem_type = ONNXParser::ProcessDataType(
+      FindAttributeValue<int>(*ext, "dtype", -1), true /* allow_invalid */);
+  if (elem_type == DataType::INVALID) {
+    elem_type = type.GetDataType();
+  }
+  if (elem_type == DataType::INVALID) {
+    elem_type = DataType::FLOAT32;
+  }
+
+  auto rows = type.GetNumOfElementsInDim(0);
+  auto cols = type.GetNumOfElementsInDim(1);
+  type = halo::Type{elem_type, {rows, cols}};
+  DefaultDataLayout dl;
+  auto elem_size = dl.Bytes(elem_type);
+  static const float f32 = 1.0F;
+  static const int32_t i32 = 1;
+  static const double f64 = 1.0;
+  static const int64_t i64 = 1;
+  static const int8_t i8 = 1;
+  static const std::unordered_map<DataType, const void*> bufs{
+      {DataType::FLOAT32, &f32},
+      {DataType::FLOAT64, &f64},
+      {DataType::INT32, &i32},
+      {DataType::INT64, &i64},
+      {DataType::INT8, &i8}};
+  auto it = bufs.find(elem_type);
+  HLCHECK(it != bufs.end());
+  std::vector<char> data(rows * cols * elem_size);
+  for (int r = 0; r < rows; ++r) {
+    for (int c = 0; c < cols; ++c) {
+      if (c == r + k) {
+        memcpy(&data[elem_size * (r * cols + c)], it->second, elem_size);
+      }
+    }
+  }
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  auto c = cb.CreateConstant(ext->GetName(), type, data.data());
+  return {*c};
+}
+
 static std::vector<Def> ConvertPad(const ONNXExtensionInst* ext,
                                    IRBuilder* builder) {
   std::vector<int32_t> paddings;
@@ -1149,6 +1197,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::CONSTANTOFSHAPE: {
       return ConvertConstantOfShape(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::EYELIKE: {
+      return ConvertEyeLike(onnx_inst, builder);
     }
     case ONNXExtOpCode::NONZERO: {
       return ConvertNonZero(onnx_inst, builder);
