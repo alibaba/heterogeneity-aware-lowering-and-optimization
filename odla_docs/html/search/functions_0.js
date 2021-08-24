@@ -93,7 +93,7 @@ var searchData=
   ['odla_5fhardmax_393',['odla_Hardmax',['../odla__ops__nn_8h.html#a7a4a08a273ca98082fd2600d13d5eb63',1,'odla_ops_nn.h']]],
   ['odla_5fhardsigmoid_394',['odla_HardSigmoid',['../odla__ops__nn_8h.html#a3c93f0a511c7379c31528912aee2c60b',1,'odla_ops_nn.h']]],
   ['odla_5finitdevice_395',['odla_InitDevice',['../odla__device_8h.html#a3d5955591890ff2437fbdfe8fa6e5ef1',1,'odla_device.h']]],
-  ['odla_5finstancenormalization_396',['odla_InstanceNormalization',['../odla__ops__nn_8h.html#a5d1a23c3a6af0219533ad553cdaf2216',1,'odla_ops_nn.h']]],
+  ['odla_5finstancenormalization_396',['odla_InstanceNormalization',['../odla__ops__nn_8h.html#a5f7042cbc5391c1780df9482f08b0c5a',1,'odla_ops_nn.h']]],
   ['odla_5finverse_397',['odla_Inverse',['../odla__ops__math_8h.html#a6d311a18906a9fad09bc95639d0d857f',1,'odla_ops_math.h']]],
   ['odla_5flaunchexecutable_398',['odla_LaunchExecutable',['../odla__compute_8h.html#ab56d87ed06d5f3bfb180ea8ba343130b',1,'odla_compute.h']]],
   ['odla_5fleakyrelu_399',['odla_LeakyRelu',['../odla__ops__nn_8h.html#a1fb9261fccb2ccd982d21ffb6487dcdf',1,'odla_ops_nn.h']]],

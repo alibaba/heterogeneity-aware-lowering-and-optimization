@@ -128,7 +128,7 @@ var searchData=
   ['odla_5fhardmax_125',['odla_Hardmax',['../odla__ops__nn_8h.html#a7a4a08a273ca98082fd2600d13d5eb63',1,'odla_ops_nn.h']]],
   ['odla_5fhardsigmoid_126',['odla_HardSigmoid',['../odla__ops__nn_8h.html#a3c93f0a511c7379c31528912aee2c60b',1,'odla_ops_nn.h']]],
   ['odla_5finitdevice_127',['odla_InitDevice',['../odla__device_8h.html#a3d5955591890ff2437fbdfe8fa6e5ef1',1,'odla_device.h']]],
-  ['odla_5finstancenormalization_128',['odla_InstanceNormalization',['../odla__ops__nn_8h.html#a5d1a23c3a6af0219533ad553cdaf2216',1,'odla_ops_nn.h']]],
+  ['odla_5finstancenormalization_128',['odla_InstanceNormalization',['../odla__ops__nn_8h.html#a5f7042cbc5391c1780df9482f08b0c5a',1,'odla_ops_nn.h']]],
   ['odla_5fint16_129',['odla_int16',['../odla__common_8h.html#a6fecbc127ee239fc550a1568bd0f44c2',1,'odla_common.h']]],
   ['odla_5fint32_130',['odla_int32',['../odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203',1,'odla_common.h']]],
   ['odla_5fint64_131',['odla_int64',['../odla__common_8h.html#a4c8498c0bc04a3dc2e8683c1c9bd3aa9',1,'odla_common.h']]],
