@@ -1423,10 +1423,17 @@ odla_value odla_InstanceNormalization(
   std::vector<nvinfer1::ITensor*> inputs = {input->tensor, scale->tensor,
                                             offset->tensor};
   const static char* plugin_name = "InstanceNormalization_TRT";
-  const static char* plugin_ver = "1";
+  const static char* plugin_ver = "001";
   auto creator = getPluginRegistry()->getPluginCreator(plugin_name, plugin_ver);
   std::vector<nvinfer1::PluginField> f;
+  int nb_chs = input->type.shape.dims[1];
   f.emplace_back("epsilon", &epsilon, nvinfer1::PluginFieldType::kFLOAT32, 1);
+  assert(scale->const_layer != nullptr && offset->const_layer != nullptr);
+  f.emplace_back("scales", scale->const_layer->getWeights().values,
+                 nvinfer1::PluginFieldType::kFLOAT32, nb_chs);
+  f.emplace_back("bias", offset->const_layer->getWeights().values,
+                 nvinfer1::PluginFieldType::kFLOAT32, nb_chs);
+
   nvinfer1::PluginFieldCollection plugin_data;
   plugin_data.nbFields = f.size();
   plugin_data.fields = f.data();
