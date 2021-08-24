@@ -303,7 +303,7 @@ odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
 
   odla_value v = CreateValue(mem, type.shape, id);
   v->is_const = true;
-  if (type.element_type == ODLA_INT64) {
+  if (type.element_type == ODLA_INT64 || type.element_type == ODLA_FLOAT64) {
     v->elem_size = 8;
   }
 

@@ -302,7 +302,7 @@ void ONNXParser::RegisterOp() {
 #include "onnx_regist_op.h.inc"
 }
 
-halo::DataType ONNXParser::ProcessDataType(int data_type) {
+halo::DataType ONNXParser::ProcessDataType(int data_type, bool allow_invalid) {
   switch (data_type) {
     case onnx::TensorProto::FLOAT:
       return DataType::FLOAT32;
@@ -327,7 +327,9 @@ halo::DataType ONNXParser::ProcessDataType(int data_type) {
     case onnx::TensorProto::BOOL:
       return DataType::BOOL;
     default:
-      LOG(ERROR) << "Unsupported DataType.";
+      if (!allow_invalid) {
+        LOG(ERROR) << "Unsupported DataType.";
+      }
       return DataType::INVALID;
   }
 }

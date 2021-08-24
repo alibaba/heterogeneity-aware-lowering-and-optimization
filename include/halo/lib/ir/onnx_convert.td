@@ -68,6 +68,12 @@ let attr_mapping_ = [
   def ONNX_InstanceNormalization : OpMapping<"InstanceNormalization", InstanceNorm>;
 }
 
+def ONNX_Eyelike : ONNXExtension<"EyeLike"> {
+  let extension_attr_ = [
+    ExtensionAttr<"dtype", Integer, "-1">,
+    ExtensionAttr<"k", Integer, "0"> ];
+}
+
 def ONNX_GroupNormalization : OpMapping<"GroupNormalization", GroupNorm> {
   let attr_mapping_ = [
     AttributeMapping<"epsilon", "epsilon", "0.00001">,
