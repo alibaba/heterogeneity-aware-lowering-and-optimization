@@ -29,6 +29,7 @@
 #include "halo/lib/ir/constant.h"
 #include "halo/lib/ir/extension_instructions.h"
 #include "halo/lib/ir/ir_builder.h"
+#include "halo/lib/ir/math_instructions.h"
 #include "halo/lib/transforms/transforms_util.h"
 #include "onnx_parser.h"
 
@@ -1055,6 +1056,21 @@ static std::vector<Def> ConvertHgDeQuant(const ONNXExtensionInst* ext,
   return {input};
 }
 
+static bool FixupTranspose(TransposeInst* inst) {
+  if (inst->GetPermutation().empty() &&
+      inst->GetOperand(0).GetType().IsValid()) {
+    // When permutation attribute is empty, revese all axes.
+    int rank = inst->GetOperand(0).GetType().GetNumOfDims();
+    std::vector<int> perm(rank);
+    for (int i = rank - 1; i >= 0; --i) {
+      perm[rank - i - 1] = i;
+    }
+    inst->SetPermutation(perm);
+    return true;
+  }
+  return false;
+}
+
 static bool FixupLoopBody(LoopInst* inst) {
   // For ONNX, the loop has 2 + N inputs: (iter_num, condition, loop vars...),
   // 1 + N + K outputs: (cond, loop vars ...,  scan_outputs...).
@@ -1202,6 +1218,8 @@ bool ONNXExtensionLegalizer::RunOnBasicBlock(BasicBlock* bb) {
       }
     } else if (inst->GetOpCode() == OpCode::LOOP) {
       changed |= FixupLoopBody(DynCast<LoopInst>(inst));
+    } else if (inst->GetOpCode() == OpCode::TRANSPOSE) {
+      changed |= FixupTranspose(DynCast<TransposeInst>(inst));
     }
   }
   return changed;
