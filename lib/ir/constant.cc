@@ -200,6 +200,10 @@ void Constant::PrintData(std::ostream* os, size_t num_to_print) const {
       PrintValues(os, GetDataPtr<int64_t>(), num_to_print);
       break;
     }
+    case DataType::FLOAT64: {
+      PrintValues(os, GetDataPtr<double>(), num_to_print);
+      break;
+    }
     default:
       HLCHECK(0 && "Unimplemented data type.");
   }

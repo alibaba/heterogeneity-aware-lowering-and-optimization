@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <type_traits>
 #include <unordered_set>
 
 #include "halo/api/halo_data.h"
@@ -475,8 +476,8 @@ static void RunOnInstruction(Conv2DTransposeInst* inst) {
   }
 }
 
-static void RunOnCommonReductionInstruction(Instruction* inst,
-                                            std::vector<int32_t> axis,
+template <typename T>
+static void RunOnCommonReductionInstruction(T* inst, std::vector<int32_t> axis,
                                             bool keep_dims) {
   const auto& input_type = inst->GetOperand(0).GetType();
   if (!input_type.IsValid()) {
@@ -525,9 +526,14 @@ static void RunOnCommonReductionInstruction(Instruction* inst,
 
   if (inst->GetOpCode() == OpCode::ARGMAX ||
       inst->GetOpCode() == OpCode::ARGMIN) {
-    dt = DataType::INT32;
+    dt = DataType::INT64;
   }
 
+  constexpr bool is_arg_inst =
+      std::is_same<T, ArgmaxInst>() || std::is_same<T, ArgminInst>();
+  if constexpr (!is_arg_inst) { // NOLINT
+    inst->SetAxis(axis);
+  }
   inst->GetResultsTypes()[0] = halo::Type{dt, ret_shape};
 }
 
@@ -571,12 +577,21 @@ static void RunOnInstruction(ReduceSumSquareInst* inst) {
   RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
 }
 
-static void RunOnInstruction(ArgmaxInst* inst) {
+template <typename T>
+static void RunOnArgMinMaxInst(T* inst) {
   std::vector<int32_t> axis;
   if (inst->GetNumOfOperands() < 2) {
     axis.push_back(inst->GetAxis());
   }
   RunOnCommonReductionInstruction(inst, axis, inst->GetKeepDims());
+}
+
+static void RunOnInstruction(ArgmaxInst* inst) {
+  return RunOnArgMinMaxInst(inst);
+}
+
+static void RunOnInstruction(ArgminInst* inst) {
+  return RunOnArgMinMaxInst(inst);
 }
 
 template <typename T>

@@ -56,8 +56,8 @@ class CodeGenActionFactory : public clang::tooling::FrontendActionFactory {
     return success;
   }
 
-  clang::FrontendAction* create() override {
-    return new clang::EmitObjAction();
+  std::unique_ptr<clang::FrontendAction> create() override {
+    return std::make_unique<clang::EmitObjAction>();
   }
 
  private:
@@ -129,7 +129,7 @@ bool halo::CXXJITCompiler::RunOnModule(Module* module) {
     llvm::sys::fs::createTemporaryFile("halo_jit" /* prefix */,
                                        is_cxx ? "cc" : "c", c_file);
     std::cerr << "HALO intermediate ODLA file: " << c_file.str().str() << "\n";
-    std::ofstream ofs(c_file.str(), std::ofstream::binary);
+    std::ofstream ofs(llvm::StringRef(c_file).str(), std::ofstream::binary);
     ofs << source;
   }
 

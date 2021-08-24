@@ -99,6 +99,11 @@ bool Type::HasNativeType<float>(DataType dt) {
 }
 
 template <>
+bool Type::HasNativeType<double>(DataType dt) {
+  return dt == DataType::FLOAT64;
+}
+
+template <>
 bool Type::HasNativeType<int64_t>(DataType dt) {
   return dt == DataType::INT64 || dt == DataType::UINT64;
 }
