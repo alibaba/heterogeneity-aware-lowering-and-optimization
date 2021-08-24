@@ -638,6 +638,14 @@ odla_value odla_Add(odla_value lhs, odla_value rhs, const odla_value_id id) {
   return binary_eltwise(dnnl::algorithm::binary_add, lhs, rhs, id);
 }
 
+odla_value odla_Max(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  return binary_eltwise(dnnl::algorithm::binary_max, lhs, rhs, id);
+}
+
+odla_value odla_Min(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  return binary_eltwise(dnnl::algorithm::binary_min, lhs, rhs, id);
+}
+
 odla_value odla_Mul(odla_value lhs, odla_value rhs, const odla_value_id id) {
   if (lhs == rhs) {
     return unary_eltwise_op(dnnl::algorithm::eltwise_square, lhs, 1.f, 0.f, id);

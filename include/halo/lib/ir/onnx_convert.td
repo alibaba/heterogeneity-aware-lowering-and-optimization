@@ -89,7 +89,12 @@ def ONNX_IpuAttentionMask : ONNXExtension<"AttentionMask">;
 
 def ONNX_IpuGelu : ONNXExtension<"Gelu">;
 
-def ONNX_Clip : OpMapping<"Clip", Relu6>;
+def ONNX_Clip : ONNXExtension<"Clip"> {
+  let extension_attr_ = [
+    ExtensionAttr<"max", Float, "std::numeric_limits<float>::max()">,
+    ExtensionAttr<"min", Float, "std::numeric_limits<float>::lowest()">
+  ];
+}
 
 def ONNX_Ceil : OpMapping<"Ceil", Ceil>;
 // def ONNX_Compress
