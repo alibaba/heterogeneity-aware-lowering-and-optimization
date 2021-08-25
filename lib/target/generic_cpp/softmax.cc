@@ -19,6 +19,17 @@
 
 namespace halo {
 
+void GenericCXXCodeGen::RunOnInstruction(HardmaxInst* inst) {
+  const Def& input = inst->GetOperand(0);
+
+  CXXValue op0 = ir_mapping_[input];
+
+  CXXValue ret(inst->GetName(), op0.type);
+
+  EmitODLACall(ret, "odla_Hardmax", op0, inst->GetAxis());
+  ir_mapping_[*inst] = ret;
+}
+
 void GenericCXXCodeGen::RunOnInstruction(SoftmaxInst* inst) {
   const Def& input = inst->GetOperand(0);
 

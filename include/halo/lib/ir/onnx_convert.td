@@ -22,8 +22,23 @@ def ONNX_Acos : OpMapping<"Acos", ACos>;
 def ONNX_Acosh : OpMapping<"Acosh", ACosh>;
 def ONNX_Add : OpMapping<"Add", Add>;
 def ONNX_And : OpMapping<"And", And>;
-// def ONNX_ArgMax
-// def ONNX_ArgMin
+
+def ONNX_ArgMax : OpMapping<"ArgMax", Argmax> {
+ let attr_mapping_ = [
+   AttributeMapping<"axis", "axis", "0">,
+   AttributeMapping<"", "keep_dims", "false">,
+   AttributeMapping<"select_last_index", "select_last_index", "false">
+ ];
+}
+
+def ONNX_ArgMin : OpMapping<"ArgMin", Argmin> {
+ let attr_mapping_ = [
+   AttributeMapping<"axis", "axis", "0">,
+   AttributeMapping<"", "keep_dims", "false">,
+   AttributeMapping<"select_last_index", "select_last_index", "false">
+ ];
+}
+
 def ONNX_Asin : OpMapping<"Asin", ASin>;
 def ONNX_Asinh : OpMapping<"Asinh", ASinh>;
 def ONNX_Atan : OpMapping<"Atan", ATan>;
@@ -114,6 +129,13 @@ def ONNX_Cos: OpMapping<"Cos", Cos>;
 
 def ONNX_Cosh : OpMapping<"Cosh", Cosh>;
 
+def ONNX_CumSum : OpMapping<"CumSum", CumSum> {
+  let attr_mapping_ = [
+    AttributeMapping<"exclusive", "exclusive", "false">,
+    AttributeMapping<"reverse", "reverse", "false">
+  ];
+}
+
 def ONNX_Div : OpMapping<"Div", Div>;
 
 def ONNX_Dropout : ONNXExtension<"Dropout">;
@@ -121,6 +143,8 @@ def ONNX_Dropout : ONNXExtension<"Dropout">;
 def ONNX_Elu : OpMapping<"Elu", Elu> {
   let attr_mapping_ = [ AttributeMapping<"alpha", "alpha", "1.0"> ];
 }
+
+def ONNX_Erf : OpMapping<"Erf", Erf>;
 
 def ONNX_Equal: OpMapping<"Equal", Cmp> {
   let attr_mapping_ = [AttributeMapping<"", "predicator", "EQ">];
@@ -256,53 +280,19 @@ def ONNX_PRelu: OpMapping<"PRelu", PRelu>;
 
 def ONNX_Reciprocal : OpMapping<"Reciprocal", Rcp>;
 
-def ONNX_ReduceL1 : OpMapping<"ReduceL1", ReduceL1> {
-  let attr_mapping_ = [
+let attr_mapping_ = [
     AttributeMapping<"keepdims", "keep_dims", "true">,
-    AttributeMapping<"axes", "axis", "{}">
-  ];
-}
-
-def ONNX_ReduceL2 : OpMapping<"ReduceL2", ReduceL2> {
-  let attr_mapping_ = [
-    AttributeMapping<"keepdims", "keep_dims", "true">,
-    AttributeMapping<"axes", "axis", "{}">
-  ];
-}
-
-def ONNX_ReduceLogSum : OpMapping<"ReduceLogSum", ReduceLogSum> {
-  let attr_mapping_ = [
-    AttributeMapping<"keepdims", "keep_dims", "true">,
-    AttributeMapping<"axes", "axis", "{}">
-  ];
-}
-
-def ONNX_ReduceLogSumExp : OpMapping<"ReduceLogSumExp", ReduceLogSumExp> {
-  let attr_mapping_ = [
-    AttributeMapping<"keepdims", "keep_dims", "true">,
-    AttributeMapping<"axes", "axis", "{}">
-  ];
-}
-
-def ONNX_ReduceMean: OpMapping<"ReduceMean", ReduceMean> {
-  let attr_mapping_ = [
-    AttributeMapping<"keepdims", "keep_dims", "true">,
-    AttributeMapping<"axes", "axis", "{}">
-  ];
-}
-
-def ONNX_ReduceMin: OpMapping<"ReduceMin", ReduceMin> {
-  let attr_mapping_ = [
-    AttributeMapping<"keepdims", "keep_dims", "true">,
-    AttributeMapping<"axes", "axis", "{}">
-  ];
-}
-
-def ONNX_ReduceSumSquare : OpMapping<"ReduceSumSquare", ReduceSumSquare> {
-  let attr_mapping_ = [
-    AttributeMapping<"keepdims", "keep_dims", "true">,
-    AttributeMapping<"axes", "axis", "{}">
-  ];
+    AttributeMapping<"axes", "axis", "{}"> ] in {
+  def ONNX_ReduceL1 : OpMapping<"ReduceL1", ReduceL1>;
+  def ONNX_ReduceL2 : OpMapping<"ReduceL2", ReduceL2>;
+  def ONNX_ReduceLogSum : OpMapping<"ReduceLogSum", ReduceLogSum>;
+  def ONNX_ReduceLogSumExp : OpMapping<"ReduceLogSumExp", ReduceLogSumExp>;
+  def ONNX_ReduceMean: OpMapping<"ReduceMean", ReduceMean>;
+  def ONNX_ReduceMax: OpMapping<"ReduceMax", ReduceMax>;
+  def ONNX_ReduceMin: OpMapping<"ReduceMin", ReduceMin>;
+  def ONNX_ReduceSum : OpMapping<"ReduceSum", ReduceSum>;
+  def ONNX_ReduceProd: OpMapping<"ReduceProd", ReduceProduct>;
+  def ONNX_ReduceSumSquare : OpMapping<"ReduceSumSquare", ReduceSumSquare>;
 }
 
 def ONNX_Relu : OpMapping<"Relu", Relu>;
@@ -332,7 +322,10 @@ def ONNX_Sinh : OpMapping<"Sinh", Sinh>;
 // onnx slice op operands order is different from halo ir
 def ONNX_Slice : ONNXExtension<"Slice">;
 
-def ONNX_Softmax : OpMapping<"Softmax", Softmax>;
+let attr_mapping_ = [AttributeMapping<"axis", "axis", "-1">] in {
+  def ONNX_Hardmax : OpMapping<"Hardmax", Hardmax>;
+  def ONNX_Softmax : OpMapping<"Softmax", Softmax>;
+}
 
 def ONNX_Split : ONNXExtension<"Split"> {
   let extension_attr_ = [

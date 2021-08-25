@@ -71,10 +71,12 @@ let cat_ = cat_common_reduction,
 let cat_ = cat_common_reduction,
     attrs_ = [Attr<"Axis along which to reduce.", Integer, "axis", "0">,
               Attr<"Indicate whether to keep the reduced dimension.",
-                   Bool, "keep_dims", "true">],
+                   Bool, "keep_dims", "true">,
+              Attr<"Select the last occurrence of the value if multiple candidates are available",
+                    Bool, "select_last_index", "false">],
     ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >,
             OptionalArg<"The axis.", ArgType<[I32]>, 0D>],
-    outs_ = [Arg<"The result", ArgType<[I32]> >] in {
+    outs_ = [Arg<"The result", ArgType<[I64]> >] in {
 
   def Argmax : Inst<"Computes the indices of the largest value of the input"
                     " along the specified axis.">;
@@ -82,4 +84,17 @@ let cat_ = cat_common_reduction,
   def Argmin : Inst<"Computes the indices of the smallest value of the input"
                     " along the specified axis.">;
 
+}
+
+let cat_ = cat_common_reduction in {
+  def CumSum : Inst<"Computes cumulative sum of the input alone the specified axis."> {
+    let attrs_ = [
+      Attr<"Axis along which to do accumulation.", Integer, "axis", "0">,
+      Attr<"Exclude the first element from sum.", Bool, "exclusive", "false">,
+      Attr<"Reverse the direction of accumulation.", Bool, "reverse", "false">
+    ];
+    let ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32,F64]> >,
+            OptionalArg<"The axis.", ArgType<[I32]>, 0D>];
+    let outs_ = [Arg<"The result", MatchArgType<0> >];
+  }
 }

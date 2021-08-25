@@ -164,6 +164,8 @@ bool Type::HasNativeType<uint32_t>(DataType dt);
 template <>
 bool Type::HasNativeType<float>(DataType dt);
 template <>
+bool Type::HasNativeType<double>(DataType dt);
+template <>
 bool Type::HasNativeType<int64_t>(DataType dt);
 template <>
 bool Type::HasNativeType<uint64_t>(DataType dt);

@@ -26,13 +26,19 @@ else()
   message(STATUS "Found GCC10: ${DNNL_COMPILER}, build odla_dnnl with bf16 support!")
 endif()
 
-add_odla_library(odla_dnnl SHARED odla_dnnl.cc)
+set(ODLA_DNNL_SRC
+  odla_dnnl.cc
+  odla_dnnl_statistics.cc
+)
+
+add_odla_library(odla_dnnl SHARED ${ODLA_DNNL_SRC})
+
 find_library(dnnl NAMES dnnl PATHS ${DNNL_ROOT} PATH_SUFFIXES lib NO_DEFAULT_PATH)
 target_include_directories(odla_dnnl PRIVATE ${DNNL_ROOT}/include)
 target_link_libraries(odla_dnnl ODLA ${dnnl})
 target_compile_options(odla_dnnl PRIVATE ${DNNL_CXX_FLAGS})
 
-add_odla_library(odla_dnnl_interpreter SHARED odla_dnnl.cc)
+add_odla_library(odla_dnnl_interpreter SHARED ${ODLA_DNNL_SRC})
 target_include_directories(odla_dnnl_interpreter PRIVATE ${DNNL_ROOT}/include)
 target_compile_definitions(odla_dnnl_interpreter PRIVATE ODLA_DNNL_BUILD_AS_INTERPRETER)
 target_link_libraries(odla_dnnl_interpreter ODLA ${dnnl})

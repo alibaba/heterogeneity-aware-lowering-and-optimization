@@ -176,6 +176,9 @@ CXXType GenericCXXCodeGen::SNTypeToCXXType(DataType dt) {
     case DataType::FLOAT32: {
       return (CXXType("float"));
     }
+    case DataType::FLOAT64: {
+      return (CXXType("odla_float64"));
+    }
     case DataType::INT32: {
       return (CXXType("int"));
     }
@@ -331,6 +334,9 @@ std::string GenericCXXCodeGen::GetODLAType(DataType type) const noexcept {
     case DataType::FLOAT32: {
       return "ODLA_FLOAT32";
     }
+    case DataType::FLOAT64: {
+      return "ODLA_FLOAT64";
+    }
     case DataType::INT32: {
       return "ODLA_INT32";
     }
@@ -381,6 +387,9 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
     switch (dtype) {
       case DataType::FLOAT32:
         data_type_str = "float";
+        break;
+      case DataType::FLOAT64:
+        data_type_str = "double";
         break;
       case DataType::INT32:
         data_type_str = "int32_t";

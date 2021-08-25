@@ -71,6 +71,11 @@ void GenericCXXCodeGen::RunOnInstruction(ReduceL2Inst* inst) {
                             "odla_ReduceL2");
 }
 
+void GenericCXXCodeGen::RunOnInstruction(ReduceProductInst* inst) {
+  RunOnReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims(),
+                            "odla_ReduceProd");
+}
+
 void GenericCXXCodeGen::RunOnInstruction(ReduceSumInst* inst) {
   RunOnReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims(),
                             "odla_ReduceSum");
@@ -89,6 +94,19 @@ void GenericCXXCodeGen::RunOnInstruction(ReduceLogSumExpInst* inst) {
 void GenericCXXCodeGen::RunOnInstruction(ReduceSumSquareInst* inst) {
   RunOnReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims(),
                             "odla_ReduceSumSquare");
+}
+
+void GenericCXXCodeGen::RunOnInstruction(CumSumInst* inst) {
+  const Def& input = inst->GetOperand(0);
+  const Def& dims = inst->GetOperand(1);
+
+  CXXValue op0 = ir_mapping_[input];
+  CXXValue op1 = ir_mapping_[dims];
+
+  CXXValue ret(inst->GetName(), op0.type);
+  EmitODLACall(ret, "odla_CumSum", op0, op1, inst->GetExclusive(),
+               inst->GetReverse());
+  ir_mapping_[*inst] = ret;
 }
 
 } // namespace halo

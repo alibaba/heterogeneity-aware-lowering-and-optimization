@@ -1343,6 +1343,14 @@ odla_value odla_ReduceSumSquare(odla_value input, odla_size_t num_of_axes,
                 output_dims, id);
 }
 
+odla_value odla_ReduceProd(odla_value input, odla_size_t num_of_axes,
+                           const odla_uint32* axes, odla_bool keep_dims,
+                           odla_value_shape output_dims,
+                           const odla_value_id id) {
+  return reduce(input, nvinfer1::ReduceOperation::kPROD, num_of_axes, axes,
+                keep_dims, output_dims, id);
+}
+
 odla_value odla_LRN(odla_value input, odla_memory_layout input_layout,
                     odla_int32 window_size, odla_float32 alpha,
                     odla_float32 beta, odla_float32 bias,
@@ -1670,6 +1678,16 @@ odla_value odla_ArgMax(odla_value input, odla_int32 axis, odla_bool keep_dims,
                        const odla_value_id id) {
   unsigned reduce_axes = axis < 0 ? input->type.shape.size - 1 : axis;
   auto topk = g_comp->network->addTopK(*input, nvinfer1::TopKOperation::kMAX, 1,
+                                       1 << reduce_axes);
+  return CreateValue(topk->getOutput(1), output_value_type, id);
+}
+
+odla_value odla_ArgMin(odla_value input, odla_int32 axis, odla_bool keep_dims,
+                       odla_bool return_last_index,
+                       odla_value_type output_value_type,
+                       const odla_value_id id) {
+  unsigned reduce_axes = axis < 0 ? input->type.shape.size - 1 : axis;
+  auto topk = g_comp->network->addTopK(*input, nvinfer1::TopKOperation::kMIN, 1,
                                        1 << reduce_axes);
   return CreateValue(topk->getOutput(1), output_value_type, id);
 }
