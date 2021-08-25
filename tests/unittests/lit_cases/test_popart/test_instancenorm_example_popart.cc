@@ -27,5 +27,5 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_instancenorm_example | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_instancenorm_example_popart.cc.tmp.main.cc.in"

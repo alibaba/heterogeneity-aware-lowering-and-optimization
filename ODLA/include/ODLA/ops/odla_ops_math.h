@@ -156,6 +156,10 @@ odla_Clamp(odla_value input, odla_float32 lo, odla_float32 hi,
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Det(odla_value input, const odla_value_id value_id);
 
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_CumSum(odla_value input, odla_value axis, odla_bool exclusion,
+            odla_bool reverse, const odla_value_id value_id);
+
 //! \brief Division
 /*!
   Div returns the element-wise binary division of \p lhs and \p rhs.

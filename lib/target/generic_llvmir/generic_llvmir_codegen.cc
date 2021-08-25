@@ -305,6 +305,14 @@ void GenericLLVMIRCodeGen::RunOnConstant(Constant& constant) {
                : llvm::ConstantDataArray::get(llvm_module_->getContext(), data);
       break;
     }
+    case DataType::FLOAT64: {
+      llvm::ArrayRef<double> data(constant.GetDataPtr<double>(),
+                                  sn_ty.GetTotalNumOfElements());
+      cv = use_vector
+               ? llvm::ConstantDataVector::get(llvm_module_->getContext(), data)
+               : llvm::ConstantDataArray::get(llvm_module_->getContext(), data);
+      break;
+    }
     case DataType::INT64: {
       llvm::ArrayRef<uint64_t> data(constant.GetDataPtr<uint64_t>(),
                                     sn_ty.GetTotalNumOfElements());

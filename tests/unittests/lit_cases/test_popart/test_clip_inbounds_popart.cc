@@ -27,5 +27,5 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_clip_inbounds | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_clip_inbounds_popart.cc.tmp.main.cc.in"

@@ -38,7 +38,7 @@ bool GenericCXXConstantWriter::RunOnModule(Module* module) {
   os_ << "//===- Halo Compiler Generated File "
          "---------------------------------------===//\n\n";
   os_ << "#include <stdint.h>\n";
-  os_ << "#define odla_int64 int64_t\n";
+  os_ << "#include <ODLA/odla.h>\n";
   constexpr std::streamsize precision = 10;
   os_.precision(precision);
   for (auto& c : module->Constants()) {
