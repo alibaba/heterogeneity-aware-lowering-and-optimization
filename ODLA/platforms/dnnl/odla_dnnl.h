@@ -134,6 +134,7 @@ static inline dnnl::memory::format_tag getFormatTag(odla_memory_layout layout,
 
 static inline int GetDataSize(dnnl::memory::data_type dt) {
   switch (dt) {
+    case dnnl::memory::data_type::u8:
     case dnnl::memory::data_type::s8:
       return 1;
     case dnnl::memory::data_type::bf16:
@@ -155,6 +156,9 @@ static inline dnnl::memory::data_type getDataType(const odla_element_type ty) {
       break;
     case ODLA_INT8:
       dt = dnnl::memory::data_type::s8;
+      break;
+    case ODLA_UINT8:
+      dt = dnnl::memory::data_type::u8;
       break;
     case ODLA_INT32:
       dt = dnnl::memory::data_type::s32;
