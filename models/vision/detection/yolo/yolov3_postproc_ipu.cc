@@ -103,7 +103,7 @@ static void decode(int orig_img_w, int orig_img_h, float* bb,
     }
   }
 }
-// Using Custom Op. Too Slow...
+
 std::vector<std::pair<std::string, std::array<float, 5>>> post_process_nhwc(
     int orig_img_w, int orig_img_h, float bb13[1 * 13 * 13 * 255],
     float bb26[1 * 26 * 26 * 255], float bb52[1 * 52 * 52 * 255]) {

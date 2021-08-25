@@ -65,3 +65,51 @@ class NonMaxSuppressionVertex : public Vertex {
     return true;
   }
 };
+
+class DecodeVertex : public Vertex {
+ public:
+  Vector<InOut<Vector<float>>> boxes;
+  Input<Vector<unsigned>> anchors;
+  Input<unsigned> orig_img_w;
+  Input<unsigned> orig_img_h;
+  Input<unsigned> dim;
+
+  bool compute() {
+    unsigned num_anchors = 3;
+    unsigned cls_num = boxes[0].size() - 5;
+    float scale = std::min(416.0 / *orig_img_h, 416.0 / *orig_img_w);
+    float new_shape_h = std::round(*orig_img_h * scale);
+    float new_shape_w = std::round(*orig_img_w * scale);
+    float offset_h = (416 - new_shape_h) / 2.0 / 416;
+    float offset_w = (416 - new_shape_w) / 2.0 / 416;
+    float scale_h = 416 / new_shape_h;
+    float scale_w = 416 / new_shape_w;
+    for (int grid_y = 0; grid_y < *dim; ++grid_y) {
+      for (int grid_x = 0; grid_x < *dim; ++grid_x) {
+        for (int a = 0; a < num_anchors; ++a) {
+          auto box = boxes[grid_y * (*dim) + grid_x];
+          auto dx = ((box[0] / (box[0] + 1)) + grid_x) / *dim; // dx
+          dx = (dx - offset_w) * scale_w;
+          float dy = ((box[1] / (box[1] + 1)) + grid_y) / *dim; // dy
+          dy = (dy - offset_h) * scale_h;
+
+          float dw = (box[2] * anchors[a << 1]) / 416 * scale_w;
+          float dh = (box[3] * anchors[a << 1 | 1]) / 416 * scale_h;
+
+          box[0] = (dy - dh / 2.0) * *orig_img_h; // y_min
+          box[1] = (dx - dw / 2.0) * *orig_img_w; // x min
+          box[2] = (dy + dh / 2.0) * *orig_img_h; // y_max
+          box[3] = (dx + dw / 2.0) * *orig_img_w; // x max
+
+          float confidence = (box[5]) / (box[5]);
+          box[5] = confidence;
+
+          for (int c = 0; c < cls_num; ++c) {
+            box[5 + c] = (box[5 + c]) / ((box[5 + c]) + 1) * confidence;
+          }
+        }
+      }
+    }
+    return true;
+  }
+};

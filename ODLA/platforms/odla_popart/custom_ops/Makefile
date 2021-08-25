@@ -4,7 +4,6 @@ LDLIBS = -shared -lpopart -lpoplar -lpopops -lpoputil
 INCLUDES = -Iinclude -I third_party/include -I third_party/onnx
 
 BUILD_DIR = build
-SOURCES = rsqrt.cc erf.cc
 TARGET = $(BUILD_DIR)/libcustom_ops.so
 
 all: create_build_dir custom_op rsqrt_test
@@ -13,7 +12,7 @@ all: create_build_dir custom_op rsqrt_test
 create_build_dir:
 	mkdir -p $(BUILD_DIR)
 
-custom_op:  erf.cc rsqrt.cc nms.cc 
+custom_op:  erf.cc rsqrt.cc nms.cc postprocess.cc
 	$(CXX) $^ $(LDLIBS) $(CXXFLAGS) $(INCLUDES) -o $(TARGET)
 
 rsqrt_test: rsqrt_test.cc custom_op
