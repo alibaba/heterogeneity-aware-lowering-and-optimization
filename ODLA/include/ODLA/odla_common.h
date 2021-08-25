@@ -150,14 +150,14 @@ typedef enum {
   //! \brief process timeout
   ODLA_TIMEOUT,
   //! \brief internal error
-  INTERNAL_LOGIC_ERR,
+  ODLA_INTERNAL_LOGIC_ERR,
   //! auto recoverable error
-  RECOVERABLE_ERR,
+  ODLA_RECOVERABLE_ERR,
   //! manual recoverable error, include partition reset and full reset type
-  PARTITION_RESET,
-  FULL_RESET,
+  ODLA_PARTITION_RESET,
+  ODLA_FULL_RESET,
   //! unrecoverable error
-  UNRECOVERABLE_ERR,
+  ODLA_UNRECOVERABLE_ERR,
   ODLA_FAILURE,
 } odla_status;
 
