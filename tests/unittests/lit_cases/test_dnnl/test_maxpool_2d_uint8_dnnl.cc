@@ -25,5 +25,5 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_maxpool_2d_uint8 | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_maxpool_2d_uint8_dnnl.cc.tmp.main.cc.in"

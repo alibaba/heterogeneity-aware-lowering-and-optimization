@@ -403,6 +403,12 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
       case DataType::BOOL:
         data_type_str = "bool";
         break;
+      case DataType::INT8:
+        data_type_str = "signed char";
+        break;
+      case DataType::UINT8:
+        data_type_str = "unsigned char";
+        break;
       default:
         HLCHECK(0);
     }

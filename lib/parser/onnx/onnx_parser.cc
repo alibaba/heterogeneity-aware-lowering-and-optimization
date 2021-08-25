@@ -486,10 +486,17 @@ IRObject* ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
                                        temp.GetData());
       break;
     }
+    case DataType::UINT8: {
+      const Tensor<uint8_t> temp = ProcessTensor<uint8_t>(tensor_def);
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
+      break;
+    }
+    case DataType::INT8:
     case DataType::BOOL: {
       const Tensor<int8_t> temp = ProcessTensor<int8_t>(tensor_def);
-      inst = c_builder->CreateConstant(
-          name, Type(DataType::BOOL, temp.GetShape()), temp.GetData());
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
       break;
     }
     default:

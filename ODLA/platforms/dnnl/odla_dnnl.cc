@@ -153,8 +153,14 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
   for (auto& output_pair : outputs_v) {
     auto& src_val = output_pair.second.first;
     auto& dst_ptr = output_pair.second.second;
+    auto elem_size = src_val->elem_size;
+    auto dt = src_val->mem.get_desc().data_type();
+    if (dt == dnnl::memory::data_type::s8 ||
+        dt == dnnl::memory::data_type::u8) {
+      elem_size = 1;
+    }
     memcpy(dst_ptr, src_val->mem.get_data_handle(),
-           GetTotalElements(src_val->shape) * src_val->elem_size);
+           GetTotalElements(src_val->shape) * elem_size);
   }
   return ODLA_SUCCESS;
 }
