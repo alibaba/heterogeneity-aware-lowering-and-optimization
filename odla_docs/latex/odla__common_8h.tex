@@ -99,8 +99,24 @@ enum {\bfseries odla\+\_\+element\+\_\+type} \{ \newline
 {\bfseries ODLA\+\_\+\+BOOL}
  \}
 \item 
-\mbox{\Hypertarget{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}\label{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}} 
-enum \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} \{ {\bfseries ODLA\+\_\+\+SUCCESS}
+enum \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} \{ \newline
+{\bfseries ODLA\+\_\+\+SUCCESS}
+, \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a6d455c06ecdf45fe88b1e126ca213087}{ODLA\+\_\+\+DL\+\_\+\+ERROR}}
+, {\bfseries ODLA\+\_\+\+FILE\+\_\+\+NOT\+\_\+\+EXIST}
+, \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a5b894b19f9456cae708edc778f63218f}{ODLA\+\_\+\+INVALID\+\_\+\+PARAM}}
+, \newline
+\mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a3bbe59e41327500a9a709ae05af34dd1}{ODLA\+\_\+\+MEM\+\_\+\+ERROR}}
+, {\bfseries ODLA\+\_\+\+UNSUPPORTED\+\_\+\+DATATYPE}
+, {\bfseries ODLA\+\_\+\+UNSUPPORTED\+\_\+\+DEVICE\+\_\+\+TYPE}
+, \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29abb64d0b5146c0236d571cb897384853e}{ODLA\+\_\+\+UNSUPPORTED\+\_\+\+OP}}
+, \newline
+\mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a2a2087e4e487e8ec867e356bdcc95f00}{ODLA\+\_\+\+TIMEOUT}}
+, \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a0c19e9d42ae016f5b9dc9a7054077d13}{ODLA\+\_\+\+INTERNAL\+\_\+\+LOGIC\+\_\+\+ERR}}
+, \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a78d98eb3ea302582a487afa76c9f1344}{ODLA\+\_\+\+RECOVERABLE\+\_\+\+ERR}}
+, \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a4f2a588c748813827894ececed6a4547}{ODLA\+\_\+\+PARTITION\+\_\+\+RESET}}
+, \newline
+{\bfseries ODLA\+\_\+\+FULL\+\_\+\+RESET}
+, \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a7f249f9bdd98e4745333b2c83ac73a7c}{ODLA\+\_\+\+UNRECOVERABLE\+\_\+\+ERR}}
 , {\bfseries ODLA\+\_\+\+FAILURE}
  \}
 \begin{DoxyCompactList}\small\item\em Return status. \end{DoxyCompactList}\end{DoxyCompactItemize}
@@ -320,3 +336,79 @@ Definition at line 70 of file odla\+\_\+common.\+h.
 
 Definition at line 67 of file odla\+\_\+common.\+h.
 
+
+
+\doxysubsection{Enumeration Type Documentation}
+\mbox{\Hypertarget{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}\label{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}} 
+\index{odla\_common.h@{odla\_common.h}!odla\_status@{odla\_status}}
+\index{odla\_status@{odla\_status}!odla\_common.h@{odla\_common.h}}
+\doxysubsubsection{\texorpdfstring{odla\_status}{odla\_status}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}}}
+
+
+
+Return status. 
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_DL\_ERROR@{ODLA\_DL\_ERROR}!odla\_common.h@{odla\_common.h}}\index{odla\_common.h@{odla\_common.h}!ODLA\_DL\_ERROR@{ODLA\_DL\_ERROR}}}\mbox{\Hypertarget{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a6d455c06ecdf45fe88b1e126ca213087}\label{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a6d455c06ecdf45fe88b1e126ca213087}} 
+ODLA\+\_\+\+DL\+\_\+\+ERROR&dlopen a shared library error \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_INVALID\_PARAM@{ODLA\_INVALID\_PARAM}!odla\_common.h@{odla\_common.h}}\index{odla\_common.h@{odla\_common.h}!ODLA\_INVALID\_PARAM@{ODLA\_INVALID\_PARAM}}}\mbox{\Hypertarget{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a5b894b19f9456cae708edc778f63218f}\label{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a5b894b19f9456cae708edc778f63218f}} 
+ODLA\+\_\+\+INVALID\+\_\+\+PARAM&illegal input argument, such as nullptr \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_MEM\_ERROR@{ODLA\_MEM\_ERROR}!odla\_common.h@{odla\_common.h}}\index{odla\_common.h@{odla\_common.h}!ODLA\_MEM\_ERROR@{ODLA\_MEM\_ERROR}}}\mbox{\Hypertarget{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a3bbe59e41327500a9a709ae05af34dd1}\label{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a3bbe59e41327500a9a709ae05af34dd1}} 
+ODLA\+\_\+\+MEM\+\_\+\+ERROR&allocate/deallocate memory error, out of memory error \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_UNSUPPORTED\_OP@{ODLA\_UNSUPPORTED\_OP}!odla\_common.h@{odla\_common.h}}\index{odla\_common.h@{odla\_common.h}!ODLA\_UNSUPPORTED\_OP@{ODLA\_UNSUPPORTED\_OP}}}\mbox{\Hypertarget{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29abb64d0b5146c0236d571cb897384853e}\label{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29abb64d0b5146c0236d571cb897384853e}} 
+ODLA\+\_\+\+UNSUPPORTED\+\_\+\+OP&odla op is not implemented yet \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_TIMEOUT@{ODLA\_TIMEOUT}!odla\_common.h@{odla\_common.h}}\index{odla\_common.h@{odla\_common.h}!ODLA\_TIMEOUT@{ODLA\_TIMEOUT}}}\mbox{\Hypertarget{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a2a2087e4e487e8ec867e356bdcc95f00}\label{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a2a2087e4e487e8ec867e356bdcc95f00}} 
+ODLA\+\_\+\+TIMEOUT&process timeout \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_INTERNAL\_LOGIC\_ERR@{ODLA\_INTERNAL\_LOGIC\_ERR}!odla\_common.h@{odla\_common.h}}\index{odla\_common.h@{odla\_common.h}!ODLA\_INTERNAL\_LOGIC\_ERR@{ODLA\_INTERNAL\_LOGIC\_ERR}}}\mbox{\Hypertarget{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a0c19e9d42ae016f5b9dc9a7054077d13}\label{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a0c19e9d42ae016f5b9dc9a7054077d13}} 
+ODLA\+\_\+\+INTERNAL\+\_\+\+LOGIC\+\_\+\+ERR&internal error \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_RECOVERABLE\_ERR@{ODLA\_RECOVERABLE\_ERR}!odla\_common.h@{odla\_common.h}}\index{odla\_common.h@{odla\_common.h}!ODLA\_RECOVERABLE\_ERR@{ODLA\_RECOVERABLE\_ERR}}}\mbox{\Hypertarget{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a78d98eb3ea302582a487afa76c9f1344}\label{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a78d98eb3ea302582a487afa76c9f1344}} 
+ODLA\+\_\+\+RECOVERABLE\+\_\+\+ERR&auto recoverable error \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_PARTITION\_RESET@{ODLA\_PARTITION\_RESET}!odla\_common.h@{odla\_common.h}}\index{odla\_common.h@{odla\_common.h}!ODLA\_PARTITION\_RESET@{ODLA\_PARTITION\_RESET}}}\mbox{\Hypertarget{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a4f2a588c748813827894ececed6a4547}\label{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a4f2a588c748813827894ececed6a4547}} 
+ODLA\+\_\+\+PARTITION\+\_\+\+RESET&manual recoverable error, include partition reset and full reset type \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_UNRECOVERABLE\_ERR@{ODLA\_UNRECOVERABLE\_ERR}!odla\_common.h@{odla\_common.h}}\index{odla\_common.h@{odla\_common.h}!ODLA\_UNRECOVERABLE\_ERR@{ODLA\_UNRECOVERABLE\_ERR}}}\mbox{\Hypertarget{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a7f249f9bdd98e4745333b2c83ac73a7c}\label{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a7f249f9bdd98e4745333b2c83ac73a7c}} 
+ODLA\+\_\+\+UNRECOVERABLE\+\_\+\+ERR&unrecoverable error \\
+\hline
+
+\end{DoxyEnumFields}
+
+
+Definition at line 137 of file odla\+\_\+common.\+h.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{137              \{}
+\DoxyCodeLine{138   ODLA\_SUCCESS,}
+\DoxyCodeLine{140   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a6d455c06ecdf45fe88b1e126ca213087}{ODLA\_DL\_ERROR}},}
+\DoxyCodeLine{141   ODLA\_FILE\_NOT\_EXIST,}
+\DoxyCodeLine{143   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a5b894b19f9456cae708edc778f63218f}{ODLA\_INVALID\_PARAM}},}
+\DoxyCodeLine{145   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a3bbe59e41327500a9a709ae05af34dd1}{ODLA\_MEM\_ERROR}},}
+\DoxyCodeLine{146   ODLA\_UNSUPPORTED\_DATATYPE,}
+\DoxyCodeLine{147   ODLA\_UNSUPPORTED\_DEVICE\_TYPE,}
+\DoxyCodeLine{149   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29abb64d0b5146c0236d571cb897384853e}{ODLA\_UNSUPPORTED\_OP}},}
+\DoxyCodeLine{151   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a2a2087e4e487e8ec867e356bdcc95f00}{ODLA\_TIMEOUT}},}
+\DoxyCodeLine{153   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a0c19e9d42ae016f5b9dc9a7054077d13}{ODLA\_INTERNAL\_LOGIC\_ERR}},}
+\DoxyCodeLine{155   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a78d98eb3ea302582a487afa76c9f1344}{ODLA\_RECOVERABLE\_ERR}},}
+\DoxyCodeLine{157   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a4f2a588c748813827894ececed6a4547}{ODLA\_PARTITION\_RESET}},}
+\DoxyCodeLine{158   ODLA\_FULL\_RESET,}
+\DoxyCodeLine{160   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a7f249f9bdd98e4745333b2c83ac73a7c}{ODLA\_UNRECOVERABLE\_ERR}},}
+\DoxyCodeLine{161   ODLA\_FAILURE,}
+\DoxyCodeLine{162 \} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}};}
+
+\end{DoxyCode}
