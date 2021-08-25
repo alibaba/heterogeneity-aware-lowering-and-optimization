@@ -222,31 +222,25 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
   }
   catch (poplar::application_runtime_error &e) {
     popart::logging::info("Poplar exception application_runtime_error caught:");
-    return INTERNAL_LOGIC_ERR;
-  }
-  catch (poplar::recoverable_runtime_error &e) {
+    return ODLA_INTERNAL_LOGIC_ERR;
+  } catch (poplar::recoverable_runtime_error &e) {
     popart::logging::info("Poplar recoverable_runtime_error exception caught");
     auto action = e.getRecoveryAction();
     popart::logging::info("need to take action:{}", action);
     if (action == poplar::RecoveryAction::IPU_RESET) {
       return RECOVERABLE_ERR;
-    }
-    else if (action == poplar::RecoveryAction::PARTITION_RESET) {
+    } else if (action == poplar::RecoveryAction::PARTITION_RESET) {
       return PARTITION_RESET; 
-    }
-    else if (action == poplar::RecoveryAction::FULL_RESET) {
+    } else if (action == poplar::RecoveryAction::FULL_RESET) {
       return FULL_RESET;
     }
-  }
-  catch (poplar::unrecoverable_runtime_error &e) {
+  } catch (poplar::unrecoverable_runtime_error &e) {
     popart::logging::info("Poplar unrecoverable_runtime_error exception caught");
     return UNRECOVERABLE_ERR; 
-  }
-  catch(poplar::unknown_runtime_error &e) {
-    popart::logging::info("Poplar unknown exception caught}");
+  } catch(poplar::unknown_runtime_error &e) {
+    popart::logging::info("Poplar unknown runtime exception caught}");
     return UNRECOVERABLE_ERR;
-  }
-  catch(...) {
+  } catch(...) {
     popart::logging::info("Poplar unknown exception caught");
     return UNRECOVERABLE_ERR;
   }
