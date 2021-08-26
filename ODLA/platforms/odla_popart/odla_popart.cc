@@ -44,9 +44,14 @@ void compute_loop(odla_computation comp)
     comp->session->run(stepio);
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed_seconds = end-start;
-    popart::logging::warn("[ {} ] ONE_STEP takes {} s.", i, elapsed_seconds.count());
-    while(QManager::instance()->getQ()->size() == 0)
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    popart::logging::warn("[ {} ] ONE_STEP takes {} s. Check whether more inference tasks wating.", i, elapsed_seconds.count());
+    //Make wait on CPU if there's not inference task
+    start = std::chrono::steady_clock::now();
+    while(!comp->is_done() && QManager::instance()->getQ()->size() == 0)
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    end = std::chrono::steady_clock::now();
+    std::chrono::duration<double, std::milli> elapsed_ms = end-start;
+    popart::logging::warn("Found new tasks in {} ms.", elapsed_ms.count());
   }
   popart::logging::warn("The pipeline loop finished");
   comp->thread_complete_ = true;
@@ -152,7 +157,7 @@ void _odla_computation::set_session_opts()
     //m_session_opts.matmulOptions["enableFastReduce"] = "true";
     m_session_opts.enableFloatingPointChecks = false;
     m_session_opts.enableStochasticRounding = false;
-    m_session_opts.enablePrefetchDatastreams = true;
+    m_session_opts.enablePrefetchDatastreams = false; //true;
     m_session_opts.enableOutlining = true;
     std::string partials_type = "half";
     m_session_opts.partialsTypeMatMuls = partials_type;

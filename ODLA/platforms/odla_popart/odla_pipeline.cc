@@ -283,6 +283,16 @@ odla_context LockFreeQueue::get_ctx_by_tensor(const popart::TensorId& id)
   popart::logging::info("LockFreeQueue::get_ctx_by_tensor queue has size: {}", size());
   while(idx == tail_.load())
   {
+    bool got_data = false;
+    for(int i=0; i<5; i++){
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      if(idx != tail_.load()){
+        got_data = true;
+        break;
+      }
+    }
+    if(got_data)
+      break;
     popart::logging::info(
       "[get_ctx_by_tensor] the queue is empty when read, add zero contexts");
     if(cnt++ > 1)
