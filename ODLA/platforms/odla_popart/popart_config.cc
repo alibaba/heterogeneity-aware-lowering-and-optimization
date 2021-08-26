@@ -151,7 +151,7 @@ bool PopartConfig::get_pipeline_setting(
         auto name_pattern = std::regex(v.first, std::regex::icase);
         auto found = std::regex_search(node_name, name_pattern);
         if(found){
-            popart::logging::info("node name: {} matched with pattern: {}"
+            popart::logging::debug("node name: {} matched with pattern: {}"
                 ", will be put in ipu: {}, pipeline stage: {}", 
                 node_name, v.first, v.second[0], v.second[1]);
             ipu_idx = v.second[0];

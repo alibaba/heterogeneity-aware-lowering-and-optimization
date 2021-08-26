@@ -83,9 +83,10 @@ odla_value odla_Div(odla_value lhs, odla_value rhs, const odla_value_id id) {
 odla_value odla_Erf(odla_value input, const odla_value_id id) {
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
 
-  const popart::OperatorIdentifier erf(popart::Domain::ai_graphcore, "Erf", 1,
-                                       1, 1);
-  auto result = g_comp->builder->customOp(erf, 1, {input->tensor_id}, 1, {}, name)[0];
+  //const popart::OperatorIdentifier erf(popart::Domain::ai_graphcore, "Erf", 1,
+  //                                     1, 1);
+  //auto result = g_comp->builder->customOp(erf, 1, {input->tensor_id}, 1, {}, name)[0];
+  auto result = g_comp->builder->aiOnnxOpset10().erf({input->tensor_id}, name);
 
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
