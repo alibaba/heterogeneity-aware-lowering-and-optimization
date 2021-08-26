@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <climits>
+#include <cmath>
 #include <iostream>
 #include <variant>
 
@@ -107,6 +108,42 @@ static void PrintValues(std::ostream* os, const T* ptr, size_t n) {
       *os << ", ";
     }
     *os << ptr[i]; // NOLINT.
+  }
+}
+
+template <typename T>
+static void PrintFPValue(std::ostream* os, const T& x) {
+  if (std::isnan(x)) {
+    *os << "NAN";
+    return;
+  }
+  if (std::isinf(x)) {
+    if (x < 0) {
+      *os << "-";
+    }
+    *os << "INFINITY";
+    return;
+  }
+  *os << x;
+}
+
+template <>
+void PrintValues<float>(std::ostream* os, const float* ptr, size_t n) {
+  for (size_t i = 0; i < n; ++i) {
+    if (i > 0) {
+      *os << ", ";
+    }
+    PrintFPValue(os, ptr[i]); // NOLINT.
+  }
+}
+
+template <>
+void PrintValues<double>(std::ostream* os, const double* ptr, size_t n) {
+  for (size_t i = 0; i < n; ++i) {
+    if (i > 0) {
+      *os << ", ";
+    }
+    PrintFPValue(os, ptr[i]); // NOLINT.
   }
 }
 
