@@ -31,8 +31,6 @@ fi
 
 cmake_flags="$cmake_flags -DHALO_USE_STATIC_PROTOBUF=ON -DCPACK_SYSTEM_NAME=ubuntu-i686"
 
-DOCKER_ID=`docker ps -aq -f name=$CONTAINER_NAME -f status=running`
-
 gid=$(id -g ${USER})
 group=$(id -g -n ${USER})
 uid=$(id -u ${USER})
