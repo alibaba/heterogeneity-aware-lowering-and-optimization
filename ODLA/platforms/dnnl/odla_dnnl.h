@@ -28,6 +28,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "ODLA/odla_common.h"
 #include "dnnl.hpp"
 
 extern thread_local odla_computation g_comp;
@@ -43,11 +44,17 @@ struct _odla_value {
   dnnl::memory mem;
   bool is_const;
   uint8_t elem_size;
+  odla_element_type elem_type; // TODO: use odla_value_type
   odla_value_shape shape;
   std::string name;
   _odla_value(const dnnl::memory& m, const odla_value_shape& shape_,
               const std::string& id)
-      : mem(m), is_const(false), shape(shape_), name(id), elem_size(4) {
+      : mem(m),
+        is_const(false),
+        shape(shape_),
+        name(id),
+        elem_type(ODLA_FLOAT32),
+        elem_size(4) {
     if (shape.size == 0) {
       shape.size = 1;
       shape.dims[0] = 1;
@@ -169,6 +176,10 @@ static inline dnnl::memory::data_type getDataType(const odla_element_type ty) {
       break;
     case ODLA_BFLOAT16:
       dt = dnnl::memory::data_type::bf16;
+      break;
+    case ODLA_STRING:
+      dt = dnnl::memory::data_type::u8; // Actual storage is pointer but DNNL
+      // has no word-sized type.
       break;
     default:
       dt = dnnl::memory::data_type::undef;

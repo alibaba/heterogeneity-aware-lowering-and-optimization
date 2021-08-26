@@ -45,4 +45,8 @@ void GenericCXXCodeGen::RunOnInstruction(ZExtInst* inst) {
 void GenericCXXCodeGen::RunOnInstruction(FPtoFPInst* inst) {
   RunOnCastInstruction(inst);
 }
+void GenericCXXCodeGen::RunOnInstruction(ConvertFromStringInst* inst) {
+  RunOnCastInstruction(inst);
+}
+
 } // end namespace halo

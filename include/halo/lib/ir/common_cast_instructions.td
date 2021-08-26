@@ -33,4 +33,8 @@ let cat_ = cat_common_cast,
   def ZExt : Inst<"Perform zero-extension on X1">;
 
   def FPtoFP : Inst<"Cast the element of input X1 between different floating point format">;
+
+  def ConvertFromString: Inst<"Parse input strings into specified data type">;
+
+  def ConvertToString: Inst<"Convert input data into string">;
 }

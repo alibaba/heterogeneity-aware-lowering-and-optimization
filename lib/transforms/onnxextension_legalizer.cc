@@ -380,6 +380,10 @@ static std::vector<Def> ConvertCast(const ONNXExtensionInst* ext,
       new_inst->SetDataType(dst_type);
       return {*new_inst};
     }
+  } else if (src_type == DataType::STRING) {
+    auto cast = builder->CreateConvertFromString(ext->GetName(), op0);
+    cast->SetDataType(dst_type);
+    return {*cast};
   }
   HLCHECK(0 && "unhandled cast");
   return {};

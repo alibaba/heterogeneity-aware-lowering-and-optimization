@@ -202,6 +202,7 @@ odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
   dnnl::memory::desc md = getMemoryDesc(type);
   dnnl::memory mem = dnnl::memory(md, g_comp->eng);
   odla_value v = CreateValue(mem, type.shape, id);
+  v->elem_type = type.element_type;
   if (type.element_type == ODLA_INT64 || type.element_type == ODLA_FLOAT64) {
     v->elem_size = 8;
   }
@@ -494,7 +495,25 @@ odla_value odla_Gather(odla_value params, const odla_value indices,
 
 odla_value odla_Cast(odla_value input, odla_element_type target_type,
                      const odla_value_id id) {
-  auto dst_mem = cast_op(input, getDataType(target_type));
+  dnnl::memory dst_mem;
+  if (input->elem_type == ODLA_STRING) {
+    dnnl::memory::desc md = getMemoryDesc({target_type, input->shape});
+    dst_mem = dnnl::memory(md, g_comp->eng);
+    void* dst = dst_mem.get_data_handle();
+    int n = GetTotalElements(input->shape);
+    auto str_to_val = [input, dst, n]() {
+      const char** strs =
+          static_cast<const char**>(input->mem.get_data_handle());
+      float* vals = static_cast<float*>(dst);
+      for (int i = 0; i < n; ++i) {
+        vals[i] = std::stof(strs[i]);
+        std::cout << strs[i] << "--" << vals[i] << std::endl;
+      }
+    };
+    add_op(str_to_val);
+  } else {
+    dst_mem = cast_op(input, getDataType(target_type));
+  }
   InterpretIfNeeded();
   return CreateValue(dst_mem, input->shape, id);
 }
