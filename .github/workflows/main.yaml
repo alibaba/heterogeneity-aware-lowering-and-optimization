@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           path: halo
-          submodules: recursive
+          submodules: false
           clean: false
       - name: Lint
         uses: DoozyX/clang-format-lint-action@v0.11
