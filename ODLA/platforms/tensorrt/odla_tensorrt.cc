@@ -20,8 +20,11 @@
 #include <NvInferRuntime.h>
 #include <ODLA/odla.h>
 #include <bits/stdint-intn.h>
+#include <cuda.h>
 #include <cuda_runtime.h>
 
+#include <time.h>
+#include <ctime>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -31,10 +34,12 @@
 #include <numeric>
 #include <unordered_map>
 #include <vector>
+#include <mutex>
 
 #include "plugins/initPlugin.h"
 
 using namespace nvinfer1;
+using namespace std;
 
 #if !defined(ODLA_VERSION_NUMBER) || (ODLA_VERSION_NUMBER < 50)
 #error This library requires minimum ODLA version 0.5
@@ -173,8 +178,7 @@ struct _odla_computation {
       network = builder->createNetworkV2(flags);
 #endif
     }
-  }
-
+  } 
   ~_odla_computation() {
     if (!load_engine_mode) {
       builder->destroy();
@@ -189,6 +193,8 @@ struct _odla_context {
   odla_computation comp = nullptr;
   nvinfer1::ICudaEngine* engine = nullptr;
   nvinfer1::IExecutionContext* ctx = nullptr;
+  void* temp_input_ptr = nullptr;
+  void* temp_output_ptr = nullptr;
 #if NV_TENSORRT_MAJOR >= 7
   nvinfer1::IBuilderConfig* builder_cfg = nullptr;
   nvinfer1::IOptimizationProfile* builder_profile = nullptr;
@@ -210,6 +216,7 @@ struct _odla_context {
   std::unordered_map<std::string, InputPtrInfo> input_ptrs;
 
   int run_batch_size = 0;
+  // CUdeviceptr cumemalloc_address;
   _odla_context(odla_computation comp) : comp(comp) {
     if (!comp->load_engine_mode) {
 #if NV_TENSORRT_MAJOR < 7
@@ -238,7 +245,6 @@ struct _odla_context {
         builder_cfg->addOptimizationProfile(builder_profile);
       }
       builder_cfg->setMaxWorkspaceSize(comp->max_workspace_size);
-
       if (comp->fp16_mode) {
         builder_cfg->setFlag(BuilderFlag::kFP16);
         builder_cfg->setFlag(BuilderFlag::kSTRICT_TYPES);
@@ -509,13 +515,18 @@ odla_status odla_SetContextItem(odla_context context, odla_item_type type,
   switch (type) {
     case ODLA_RUN_BATCH_SIZE:
       context->run_batch_size = *(reinterpret_cast<int*>(value));
+      // odla_value_shape real_shape = value->type.shape;
+      // size_t bytes = 
+      //   GetTotalElements(real_shape) * GetElementSize(value->type.element_type);
+      // CUdeviceptr dev_ptr;
+      // CHECK(cuMemAlloc(&dev_ptr, bytes));
+      // context->cumemalloc_address = dev_ptr;
       break;
 
     default:
       std::cerr << "Unsupported property type: " << type << std::endl;
       return ODLA_FAILURE;
   }
-
   return ODLA_SUCCESS;
 }
 
@@ -534,7 +545,15 @@ odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
   auto input = g_comp->network->addInput(name, GetNVDataType(type.element_type),
                                          GetNVDims(type.shape));
   odla_value v = CreateValue(input, type, id);
-  g_comp->inputs[name] = v;
+  g_comp->inputs[name] = v; //inputs[input] = v
+  // odla_value_shape real_shape = v->type.shape;
+  // std::cerr << "odla_value_shape:" << real_shape << "\n";
+  // size_t bytes = 
+  //     GetTotalElements(real_shape) * GetTotalElements(v->type.element_type);
+  // CHECK(cudaMalloc(&dev_ptr, bytes));
+  // void* validated_data_ptr = 
+  //     ValidateValuePtr(value->type, const_cast<void*>(data_ptr));
+  // // CHECK(cudaMemcpy(dev_ptr, ))
   g_comp->input_vals.push_back(v);
   return v;
 }
@@ -576,7 +595,7 @@ odla_status odla_SetValueAsOutput(const odla_value val) {
   val->tensor->setName(name);
   g_comp->network->markOutput(*val->tensor);
   return ODLA_SUCCESS;
-}
+} 
 odla_status odla_GetNumOfOutputsFromComputation(
     const odla_computation computation, odla_uint32* num_outputs) {
   *num_outputs = computation->output_vals.size();
@@ -594,8 +613,11 @@ odla_status odla_GetOutputFromComputationByIdx(
   return ODLA_SUCCESS;
 }
 
+//这里 每运行一个batch都会运行
 odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                 odla_context context) {
+  // CUdeviceptr dev_ptr;
+  clock_t startTime, endTime;
   void* dev_ptr = nullptr;
   odla_value_shape real_shape = value->type.shape;
   if ((g_comp && g_comp->is_dynamic_batch) || context->run_batch_size) {
@@ -603,13 +625,31 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
   }
   size_t bytes =
       GetTotalElements(real_shape) * GetElementSize(value->type.element_type);
-  CHECK(cudaMalloc(&dev_ptr, bytes));
+  // CHECK(cuMemAlloc(&dev_ptr, bytes));
+  // CHECK(cudaMalloc(&dev_ptr, bytes));
+  // 在这里检测一下有没有预先cudamalloc过，如果有过，将数据传到对应地址
+  // CUdeviceptr dev_ptr = context->cumemalloc_addres;
+  // std::cerr << "context->temp_input_ptr:" << context->temp_input_ptr << "\n";
+  if (context->temp_input_ptr == nullptr) {
+    CHECK(cudaMalloc(&(context->temp_input_ptr), bytes));
+  }
+  dev_ptr = context->temp_input_ptr;
   void* validated_data_ptr =
       ValidateValuePtr(value->type, const_cast<void*>(data_ptr));
+  // void* pagelocked_buffer = context->input_ptrs[value->name].host_ptr;
+  // startTime = clock();
+  // CHECK(cuMemcpyHtoD(dev_ptr, validated_data_ptr, bytes));
   CHECK(cudaMemcpy(dev_ptr, validated_data_ptr, bytes, cudaMemcpyHostToDevice));
-
+  // endTime = clock();
+  // std::cout << "the run time is:" << (double) (endTime - startTime) /CLOCKS_PER_SEC << "s" << std::endl;
+  // std::ofstream outf;  
+  // outf.open("odla_cudamemcpy_times.txt", std::ios::app);
+  // outf << (double) (endTime - startTime) /CLOCKS_PER_SEC << std::endl;
+  // outf.close();   
+  // void* dev1_ptr; 
+  // dev1_ptr = (void*) dev_ptr;
+  // CHECK(cudaMemcpy(dev_ptr, validated_data_ptr, bytes, cudaMemcpyHostToDevice));
   context->input_ptrs[value->name] = {.host_ptr = data_ptr, .dev_ptr = dev_ptr};
-
   return ODLA_SUCCESS;
 }
 
@@ -623,6 +663,7 @@ odla_status odla_BindToArgumentById(const odla_value_id value_id,
 
 odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
                               odla_context context) {
+  // CUdeviceptr dst;
   void* dst = nullptr;
   odla_value_shape real_shape = value->type.shape;
   if ((g_comp && g_comp->is_dynamic_batch) || context->run_batch_size) {
@@ -630,8 +671,11 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
   }
   size_t bytes =
       GetTotalElements(real_shape) * GetElementSize(value->type.element_type);
-
-  CHECK(cudaMalloc(&dst, bytes));
+  if (context->temp_output_ptr == nullptr){
+    CHECK(cudaMalloc(&(context->temp_output_ptr), bytes));
+  }
+  dst = context->temp_output_ptr;
+  // CHECK(cudaMalloc(&dst, bytes));
 
   context->output_ptrs[value->name] = {
       .host_ptr = data_ptr, .dev_ptr = dst, .len = bytes, .vt = value->type};
@@ -852,6 +896,9 @@ odla_status odla_GetValueType(const odla_value value,
 odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
+  
+  // clock_t startTime, endTime;
+  
   std::vector<void*> buffers;
   auto add_to_buffer = [&](const std::string& name, void* ptr) {
     int idx = context->engine->getBindingIndex(name.c_str());
@@ -863,9 +910,14 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     }
   };
   for (auto& kv : context->input_ptrs) {
-    add_to_buffer(kv.first, kv.second.dev_ptr);
+    // void* kv_second_devptr;
+    // kv_second_devptr = (void*) kv.second.dev_ptr;
+    add_to_buffer(kv.first, kv.second.dev_ptr); //kv.first: input, kv.second.dev_ptr: 0x7f7698600000
   }
   for (auto& kv : context->output_ptrs) {
+    // void* kv_second_devptr;
+    // kv_second_devptr = (void*) kv.second.dev_ptr;
+    // add_to_buffer(kv.first, kv_second_devptr);
     add_to_buffer(kv.first, kv.second.dev_ptr);
   }
   if (comp->is_dynamic_batch) {
@@ -894,12 +946,10 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                        cudaMemcpyDeviceToHost));
     }
   }
-
   // copy results and free temp buffers.
-  for (auto& ptr : buffers) {
-    CHECK(cudaFree(ptr));
-  }
-
+  // for (auto& ptr : buffers) {
+  //   CHECK(cudaFree(ptr));
+  // }
   context->input_ptrs.clear();
   context->output_ptrs.clear();
   return ODLA_SUCCESS;
