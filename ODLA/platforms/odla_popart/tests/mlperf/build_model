@@ -1,3 +1,0 @@
-#!/bin/bash
-/home/jackz/repos/HALO/build/bin/halo -target cxx /home/jackz/repos/MLPerf/models/model.onnx \
-    -disable-broadcasting --emit-inference-func-sig -o model.cc

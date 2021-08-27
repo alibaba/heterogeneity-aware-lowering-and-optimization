@@ -1,9 +1,0 @@
-#!/bin/bash
-TEST_NAME=cfg_env_set_valid
-export ODLA_POPART_CONFIG=configs/config.json
-export POPART_LOG_LEVEL=INFO
-build/run_main --config configs/test_main.json 2>&1 | tee test.log
-echo "=================== test finished ============================="
-python3 tests/npz_reader.py --npz-file test_result.npz
-mv test_result.npz logs/$TEST_NAME.npz
-mv test.log logs/$TEST_NAME.log
