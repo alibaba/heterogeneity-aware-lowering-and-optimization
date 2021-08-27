@@ -308,6 +308,8 @@ halo::DataType ONNXParser::ProcessDataType(int data_type, bool allow_invalid) {
       return DataType::FLOAT32;
     case onnx::TensorProto::FLOAT16:
       return DataType::FLOAT16;
+    case onnx::TensorProto::BFLOAT16:
+      return DataType::BFLOAT16;
     case onnx::TensorProto::DOUBLE:
       return DataType::FLOAT64;
     case onnx::TensorProto::INT64:
@@ -318,6 +320,8 @@ halo::DataType ONNXParser::ProcessDataType(int data_type, bool allow_invalid) {
       return DataType::UINT32;
     case onnx::TensorProto::INT16:
       return DataType::INT16;
+    case onnx::TensorProto::UINT16:
+      return DataType::UINT16;
     case onnx::TensorProto::INT8:
       return DataType::INT8;
     case onnx::TensorProto::UINT8:
@@ -347,6 +351,7 @@ static size_t GetTensorDataSize(const onnx::TensorProto& tensor_proto) {
     case onnx::TensorProto::FLOAT:
       return tensor_proto.float_data_size();
     case onnx::TensorProto::FLOAT16:
+    case onnx::TensorProto::BFLOAT16:
       return tensor_proto.int32_data_size() * 2;
     case onnx::TensorProto::DOUBLE:
       return tensor_proto.double_data_size();
@@ -354,6 +359,9 @@ static size_t GetTensorDataSize(const onnx::TensorProto& tensor_proto) {
       return tensor_proto.int64_data_size();
     case onnx::TensorProto::INT32:
       return tensor_proto.int32_data_size();
+    case onnx::TensorProto::INT16:
+    case onnx::TensorProto::UINT16:
+      return tensor_proto.int32_data_size() * 2;
     case onnx::TensorProto::INT8:
     case onnx::TensorProto::UINT8:
     case onnx::TensorProto::STRING:
@@ -476,8 +484,16 @@ IRObject* ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
                                        temp.GetData());
       break;
     }
-    case DataType::FLOAT16: {
+    case DataType::UINT16:
+    case DataType::FLOAT16:
+    case DataType::BFLOAT16: {
       const Tensor<uint16_t> temp = ProcessTensor<uint16_t>(tensor_def);
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData().data());
+      break;
+    }
+    case DataType::INT16: {
+      const Tensor<int16_t> temp = ProcessTensor<int16_t>(tensor_def);
       inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
                                        temp.GetData().data());
       break;

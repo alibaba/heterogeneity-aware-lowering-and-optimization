@@ -173,6 +173,9 @@ CXXType GenericCXXCodeGen::SNTypeToCXXType(DataType dt) {
     case DataType::FLOAT16: {
       return (CXXType("odla_float16"));
     }
+    case DataType::BFLOAT16: {
+      return (CXXType("odla_bfloat16"));
+    }
     case DataType::FLOAT32: {
       return (CXXType("float"));
     }
@@ -334,6 +337,9 @@ std::string GenericCXXCodeGen::GetODLAType(DataType type) const noexcept {
     case DataType::FLOAT16: {
       return "ODLA_FLOAT16";
     }
+    case DataType::BFLOAT16: {
+      return "ODLA_BFLOAT16";
+    }
     case DataType::FLOAT32: {
       return "ODLA_FLOAT32";
     }
@@ -397,6 +403,10 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
       case DataType::FLOAT64:
         data_type_str = "double";
         break;
+      case DataType::FLOAT16:
+      case DataType::BFLOAT16:
+        data_type_str = "uint16_t";
+        break;
       case DataType::INT32:
         data_type_str = "int32_t";
         break;
@@ -416,7 +426,7 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
         data_type_str = "unsigned char";
         break;
       case DataType::STRING:
-        data_type_str = "char* const";
+        data_type_str = "const char*";
         break;
       default:
         HLCHECK(0);
@@ -445,7 +455,7 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
       const auto elem_nums = type.GetTotalNumOfElements();
       data_type.clear();
       data_type = convert_data_type(type.GetDataType());
-      oss << "  extern const " << data_type;
+      oss << "  extern " << data_type << " const ";
       oss << "  input_" << i << "[" << elem_nums << "];\n";
       oss << "  inputs.push_back(input_" << i << ");\n";
       i++;
@@ -459,7 +469,7 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
       const auto elem_nums = type.GetTotalNumOfElements();
       data_type.clear();
       data_type = convert_data_type(type.GetDataType());
-      oss << "  extern const " << data_type;
+      oss << "  extern " << data_type << " const";
       oss << "  output_" << i << "[" << elem_nums << "];\n";
       oss << "  output_refs.push_back(output_" << i << ");\n";
       oss << "  " << data_type << " out_" << i << "[" << elem_nums
@@ -842,10 +852,10 @@ void GenericCXXCodeGen::RunOnConstant(Constant& constant, bool decl) {
   if (decl) {
     CXXValue value(constant.GetName(), TensorTypeToCXXType(type, true));
     if (constant.IsScalarOne()) {
-      os_ << "extern const " << value.type.name << " " << value.name
+      os_ << "extern " << value.type.name << " const " << value.name
           << "[1];\n";
     } else {
-      os_ << "extern const " << value.type.name << " " << value.name << "["
+      os_ << "extern " << value.type.name << " const " << value.name << "["
           << Join(type.GetDimSizes(), '*') << "];\n";
     }
     ir_mapping_[constant] = value;

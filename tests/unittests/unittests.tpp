@@ -15,6 +15,8 @@
 // limitations under the License.
 // =============================================================================
 
+#include <cstring>
+
 template <typename T>
 static bool is_nan(const T& x) {
   return x != x;
@@ -177,6 +179,56 @@ void UnitTests::CheckResult(const std::vector<size_t>& num_elems,
 #endif
   std::cout << "Result Pass\n";
 }
+
+template <>
+void UnitTests::CheckResult<const char*>(const std::vector<size_t>& num_elems,
+                              void* out[],
+                              const void* out_ref[],
+                              string test_case_dir,
+                              string device_name,
+                              long long times,
+                              double thre) {
+  string test_case_name = test_case_dir.substr(
+                          test_case_dir.find_last_of("/") + 1);
+  string report_file_name = "tmp/" + test_case_name
+                           + "_" + device_name + ".txt";
+  int thre_str = (int)thre;
+#if DEBUG_PRINT
+  ostringstream oss;
+  ofstream outfile(report_file_name);
+
+  oss << "time: " << times;
+  }
+#endif
+  for (size_t i = 0; i < num_elems.size(); ++i) {
+    const char* const* out_data = reinterpret_cast<const char*const *>(out[i]);
+    const char* const * out_ref_data = reinterpret_cast<const char*const*>(out_ref[i]);
+    size_t elem_size = num_elems[i];
+    for (size_t j = 0; j < elem_size; ++j) {
+      const char* str_ref = out_ref_data[j];
+      const char* str_out = out_data[j];
+      if (std::strncmp(str_ref, str_out, thre_str) != 0) {
+#if DEBUG_PRINT
+        oss << " result: FAIL  [" << i <<", "<< j << "]: " << out_data[j]
+            << " expects: " << out_ref_data[j] << "\n";
+        outfile << oss.str();
+        outfile.close();
+#endif
+        std::cout << " Result: Fail  [" << i <<", "<< j << "]: " << out_data[j]
+                  << " expects: " << out_ref_data[j] << " threshold: "<< thre <<"\n";
+        return;
+      }
+    }
+  }
+#if DEBUG_PRINT
+  oss << " result: PASS";
+  outfile << oss.str();
+  outfile.close();
+#endif
+  std::cout << "Result Pass\n";
+
+                              }
+
 
 void UnitTests::TimeBegin() {
   _start = chrono::high_resolution_clock::now();

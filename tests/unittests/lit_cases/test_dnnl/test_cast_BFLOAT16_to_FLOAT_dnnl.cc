@@ -25,5 +25,5 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_cast_BFLOAT16_to_FLOAT | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_cast_BFLOAT16_to_FLOAT_dnnl.cc.tmp.main.cc.in"

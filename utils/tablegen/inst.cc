@@ -32,6 +32,7 @@ Type::Type(const llvm::Record* record) {
   Is2DArray = record->getValueAsBit("is_2d_array_");
   IsUnsigned = record->getValueAsBit("is_unsigned_");
   IsQuantized = record->getValueAsBit("is_quantized_");
+  AltName = record->getValueAsString("alt_name");
 }
 
 void Type::EmitDoc(llvm::raw_ostream& o) const {

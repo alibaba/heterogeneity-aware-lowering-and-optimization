@@ -25,6 +25,7 @@
 
 #include "halo/api/halo_data.h"
 #include "halo/lib/framework/common.h"
+#include "halo/lib/framework/data_layout.h"
 #include "halo/lib/ir/common_instructions.h"
 #include "halo/lib/ir/constant.h"
 #include "halo/lib/ir/extension_instructions.h"
@@ -139,55 +140,14 @@ static std::vector<Def> ConvertNonZero(const ONNXExtensionInst* ext,
 static std::vector<Def> ConvertConstantOfShape(const ONNXExtensionInst* ext,
                                                IRBuilder* builder) {
   auto input = ext->GetOperand(0);
-  const Type& input_type = input.GetType();
-  if (!input_type.IsValid()) {
-    return {};
-  }
-  if (!IsA<Constant>(input)) {
-    return {};
-  }
-
-  HLCHECK(input_type.GetDataType() == DataType::INT64);
   auto dt = ext->GetAttributes()[0]->GetValueAsEnumDataType();
 
-  const Constant* shape = DynCast<Constant>(input);
-  HLCHECK(shape->GetResultType().GetNumOfDims() == 1);
-  auto ranks = shape->GetResultType().GetTotalNumOfElements();
-  std::vector<int64_t> dims(ranks);
-  for (int i = 0; i < ranks; ++i) {
-    dims[i] = shape->GetData<int64_t>(i);
-  }
-  Type dst_ty{dt, dims};
-  ConstantBuilder cb(ext->GetParent()->GetParent());
-  Constant* c = nullptr;
   const auto& val = ext->GetAttributes()[1];
-  HLCHECK(val->GetName() == "value");
-  switch (dt) {
-    case DataType::INT32: {
-      std::vector<int32_t> data(dst_ty.GetTotalNumOfElements(),
-                                val->GetValueAsInteger());
-      c = cb.CreateConstant(ext->GetName(), dst_ty, data.data());
-      break;
-    }
-    case DataType::INT64: {
-      std::vector<int64_t> data(dst_ty.GetTotalNumOfElements(),
-                                val->GetValueAsInteger());
-      c = cb.CreateConstant(ext->GetName(), dst_ty, data.data());
-      break;
-    }
-    case DataType::FLOAT32: {
-      std::vector<float> data(dst_ty.GetTotalNumOfElements(),
-                              val->GetValueAsFloat());
-      c = cb.CreateConstant(ext->GetName(), dst_ty, data.data());
-      break;
-    }
-    default: {
-    }
-  }
-  if (c != nullptr) {
-    return {*c};
-  }
-  return {};
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  auto value = cb.CreateConstant(ext->GetName() + "_value", halo::Type{dt, {1}},
+                                 val->GetDataImpl());
+  auto reshape = builder->CreateReshape(ext->GetName(), *value, input);
+  return {*reshape};
 }
 
 static std::vector<Def> ConvertEyeLike(const ONNXExtensionInst* ext,
@@ -363,6 +323,17 @@ static std::vector<Def> ConvertCast(const ONNXExtensionInst* ext,
   if (src_type == dst_type) {
     return {op0};
   }
+  if (src_type == DataType::STRING) {
+    auto cast = builder->CreateConvertFromString(ext->GetName(), op0);
+    cast->SetDataType(dst_type);
+    return {*cast};
+  }
+  if (dst_type == DataType::STRING) {
+    auto cast = builder->CreateConvertToString(ext->GetName(), op0);
+    cast->SetDataType(dst_type);
+    return {*cast};
+  }
+
   if (Type::IsIntegerType(src_type)) {
     if (Type::IsIntegerType(dst_type)) {
       ZExtInst* new_inst = builder->CreateZExt(ext->GetName(), op0);
@@ -380,12 +351,14 @@ static std::vector<Def> ConvertCast(const ONNXExtensionInst* ext,
       new_inst->SetDataType(dst_type);
       return {*new_inst};
     }
-  } else if (src_type == DataType::STRING) {
-    auto cast = builder->CreateConvertFromString(ext->GetName(), op0);
-    cast->SetDataType(dst_type);
-    return {*cast};
+    if (Type::IsFloatingPointType(dst_type)) {
+      auto new_inst = builder->CreateFPtoFP(ext->GetName(), op0);
+      new_inst->SetDataType(dst_type);
+      return {*new_inst};
+    }
+  } else {
+    HLCHECK(0 && "unhandled cast");
   }
-  HLCHECK(0 && "unhandled cast");
   return {};
 }
 
@@ -655,8 +628,15 @@ static std::vector<Def> ConvertOneHot(const ONNXExtensionInst* ext,
     return {*new_inst};
   }
 
-  HLCHECK(0 && "unhandled OneHot");
-  return {};
+  // Get on value.
+  const int32_t one_v = 1;
+  auto one = cb.CreateConstant(name + "_one", halo::Type{DataType::INT32, {1}},
+                               &one_v);
+  auto on_value = builder->CreateSlice("split_on", {op2, *one, *one});
+  OneHotInst* new_inst = builder->CreateOneHot(ext->GetName(), op0, op1,
+                                               op2 /* off_on */, *on_value);
+  new_inst->SetAxis(axis);
+  return {*new_inst};
 }
 
 static std::vector<Def> ConvertGatherElements(const ONNXExtensionInst* ext,

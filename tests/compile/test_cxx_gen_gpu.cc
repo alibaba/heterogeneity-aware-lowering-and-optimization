@@ -29,8 +29,8 @@
 
 // GEN: include <ODLA/odla.h>
 
-// GEN: extern const float w0[3];
-// GEN: extern const float w1[3];
+// GEN: extern float const w0[3];
+// GEN: extern float const w1[3];
 
 // GEN: static odla_computation Comp;
 

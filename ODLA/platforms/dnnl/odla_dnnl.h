@@ -174,6 +174,7 @@ static inline dnnl::memory::data_type getDataType(const odla_element_type ty) {
     case ODLA_INT64:
       dt = dnnl::memory::data_type::s32; // FIXME:
       break;
+    case ODLA_FLOAT16:
     case ODLA_BFLOAT16:
       dt = dnnl::memory::data_type::bf16;
       break;

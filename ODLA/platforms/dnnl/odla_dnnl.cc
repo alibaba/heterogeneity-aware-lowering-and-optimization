@@ -17,12 +17,16 @@
 
 #include "odla_dnnl.h"
 
+#include <bits/stdint-uintn.h>
+
 #include <cassert>
+#include <climits>
 #include <cmath>
 #include <cstddef>
 #include <cstring>
 #include <iostream>
 #include <numeric>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -91,7 +95,7 @@ static dnnl::memory cast_op(odla_value& input, dnnl::memory::data_type dt) {
                                    getFormatTag(input->shape));
   auto src_mem =
       dnnl::memory(src_md, g_comp->eng, input->mem.get_data_handle());
-  return cast_odla_mem(src_mem, input->shape, dt, input->is_const);
+  return cast_odla_mem(input->mem, input->shape, dt, input->is_const);
 }
 
 odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
@@ -153,10 +157,20 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
   for (auto& output_pair : outputs_v) {
     auto& src_val = output_pair.second.first;
     auto& dst_ptr = output_pair.second.second;
-    auto elem_size = src_val->elem_size;
     auto dt = src_val->mem.get_desc().data_type();
-    if (dt == dnnl::memory::data_type::s8 ||
-        dt == dnnl::memory::data_type::u8) {
+
+    auto elem_size =
+        (src_val->elem_type == ODLA_FLOAT64 ||
+         src_val->elem_type == ODLA_INT64 || src_val->elem_type == ODLA_STRING)
+            ? 8
+            : src_val->elem_size;
+    elem_size = (src_val->elem_type == ODLA_FLOAT16 ||
+                 src_val->elem_type == ODLA_BFLOAT16)
+                    ? 2
+                    : elem_size;
+    if (src_val->elem_type != ODLA_STRING &&
+        (dt == dnnl::memory::data_type::s8 ||
+         dt == dnnl::memory::data_type::u8)) {
       elem_size = 1;
     }
     memcpy(dst_ptr, src_val->mem.get_data_handle(),
@@ -493,29 +507,195 @@ odla_value odla_Gather(odla_value params, const odla_value indices,
   return CreateValue(ret_mem, output_dims, id);
 }
 
+struct Float {
+  // TODO(unknown): no infinity, underflow/overflow handling.
+ private:
+  Float() = delete;
+  static constexpr int BitsPerInt = CHAR_BIT * sizeof(int);
+  template <typename T, int exp, int mantissa>
+  static std::array<int, 3> Extract(T x) {
+    static_assert(exp + mantissa + 1 == sizeof(T) * CHAR_BIT);
+    int sign = x >> (exp + mantissa);
+    int m = x & ((1 << mantissa) - 1);
+    int e = (x >> mantissa) & ((1 << exp) - 1);
+    return {sign, e, m};
+  }
+
+  template <typename T, int exp, int mantissa>
+  static T Combine(int sign, int e, int m) {
+    static_assert(exp + mantissa + 1 == sizeof(T) * CHAR_BIT);
+    T x{0};
+    x = sign ? 1U << (exp + mantissa) : 0;
+    m >>= BitsPerInt - mantissa;
+    x |= m & ((1U << mantissa) - 1);
+    x |= (e & ((1U << exp) - 1)) << mantissa;
+    return x;
+  }
+  static constexpr int FP32Exp = 8;
+  static constexpr int FP32Mantissa = 23;
+  static constexpr int FP32ExpBias = 127;
+  static constexpr int FP16Exp = 5;
+  static constexpr int FP16Mantissa = 10;
+  static constexpr int FP16ExpBias = 15;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+  static inline float GetFP32(uint8_t sign, int32_t e, uint32_t m) {
+    uint32_t x =
+        Combine<uint32_t, FP32Exp, FP32Mantissa>(sign, e + FP32ExpBias, m);
+    return *(reinterpret_cast<float*>(&x)); // NOLINT.
+  }
+  static inline uint16_t GetFP16(uint8_t sign, int32_t e, uint32_t m) {
+    return Combine<uint16_t, FP16Exp, FP16Mantissa>(sign, e + FP16ExpBias, m);
+  }
+
+ public:
+  static inline uint16_t GetFP16(float x) {
+    uint32_t v = *(reinterpret_cast<int*>(&x)); // NOLINT.
+    auto components = Extract<uint32_t, FP32Exp, FP32Mantissa>(v);
+    components[1] -= FP32ExpBias;
+    components[2] <<= BitsPerInt - FP32Mantissa;
+    return GetFP16(components[0], components[1], components[2]);
+  }
+#pragma GCC diagnostic pop
+
+  static inline float GetFP32(uint16_t x) {
+    auto components = Extract<uint16_t, FP16Exp, FP16Mantissa>(x);
+    components[1] -= FP16ExpBias;
+    components[2] <<= BitsPerInt - FP16Mantissa;
+    return GetFP32(components[0], components[1], components[2]);
+  }
+};
+
 odla_value odla_Cast(odla_value input, odla_element_type target_type,
                      const odla_value_id id) {
   dnnl::memory dst_mem;
-  if (input->elem_type == ODLA_STRING) {
-    dnnl::memory::desc md = getMemoryDesc({target_type, input->shape});
-    dst_mem = dnnl::memory(md, g_comp->eng);
-    void* dst = dst_mem.get_data_handle();
-    int n = GetTotalElements(input->shape);
-    auto str_to_val = [input, dst, n]() {
-      const char** strs =
-          static_cast<const char**>(input->mem.get_data_handle());
-      float* vals = static_cast<float*>(dst);
-      for (int i = 0; i < n; ++i) {
-        vals[i] = std::stof(strs[i]);
-        std::cout << strs[i] << "--" << vals[i] << std::endl;
+  dnnl::memory::desc dst_md = getMemoryDesc({target_type, input->shape});
+  int n = GetTotalElements(input->shape);
+  if (target_type == ODLA_STRING) {
+    auto buf = g_comp->CreateBuffer(sizeof(void*) * n);
+    dst_mem = dnnl::memory(dst_md, g_comp->eng, buf);
+    auto to_str = [input, buf, n]() {
+      const char** dst = static_cast<const char**>(buf);
+      if (input->elem_type == ODLA_FLOAT32) {
+        const float* src =
+            static_cast<const float*>(input->mem.get_data_handle());
+        for (int i = 0; i < n; ++i) {
+          const std::string& str = std::to_string((src[i]));
+          auto str_buf = static_cast<char*>(g_comp->CreateBuffer(
+              str.size() + 1)); // TODO: better memory manage
+          strcpy(str_buf, str.c_str());
+          dst[i] = str_buf;
+        }
+      } else {
+        for (int i = 0; i < n; ++i) {
+          dst[i] = "UNSUPPORTED";
+        }
       }
     };
-    add_op(str_to_val);
+    add_op(to_str);
+
+  } else if (input->elem_type == ODLA_STRING) {
+    if (target_type == ODLA_FLOAT32) {
+      dst_mem = dnnl::memory(dst_md, g_comp->eng);
+      void* dst = dst_mem.get_data_handle();
+      auto str_to_val = [input, dst, n]() {
+        const char** strs =
+            static_cast<const char**>(input->mem.get_data_handle());
+        float* vals = static_cast<float*>(dst);
+        for (int i = 0; i < n; ++i) {
+          vals[i] = std::stof(strs[i]); // NOLINT.
+        }
+      };
+      add_op(str_to_val);
+    }
+  } else if (input->elem_type == ODLA_FLOAT16) {
+    if (target_type == ODLA_FLOAT32) {
+      dst_mem = dnnl::memory(dst_md, g_comp->eng);
+      float* dst = static_cast<float*>(dst_mem.get_data_handle());
+      auto cast = [input, dst, n]() {
+        const uint16_t* src =
+            static_cast<const uint16_t*>(input->mem.get_data_handle());
+        for (int i = 0; i < n; ++i) {
+          dst[i] = Float::GetFP32(src[i]); // NOLINT.
+        }
+      };
+      add_op(cast);
+    } else if (target_type == ODLA_FLOAT64) {
+      auto buf = g_comp->CreateBuffer(sizeof(double) * n);
+      dst_mem = dnnl::memory(dst_md, g_comp->eng, buf);
+      double* dst = static_cast<double*>(buf);
+      auto cast = [input, dst, n]() {
+        const uint16_t* src =
+            static_cast<const uint16_t*>(input->mem.get_data_handle());
+        for (int i = 0; i < n; ++i) {
+          // TOOD: change to cast(cast(fp32), fp64).
+          dst[i] = Float::GetFP32(src[i]); // NOLINT.
+        }
+      };
+      add_op(cast);
+    }
+  } else if (input->elem_type == ODLA_FLOAT32) {
+    if (target_type == ODLA_FLOAT64) {
+      auto buf = g_comp->CreateBuffer(sizeof(double) * n);
+      dst_mem = dnnl::memory(dst_md, g_comp->eng, buf);
+      double* dst = static_cast<double*>(buf);
+      auto cast = [input, dst, n]() {
+        const float* src =
+            static_cast<const float*>(input->mem.get_data_handle());
+        for (int i = 0; i < n; ++i) {
+          dst[i] = src[i]; // NOLINT.
+        }
+      };
+      add_op(cast);
+    } else if (target_type == ODLA_FLOAT16) {
+      auto buf = g_comp->CreateBuffer(sizeof(uint16_t) * n);
+      dst_mem = dnnl::memory(dst_md, g_comp->eng, buf);
+      uint16_t* dst = static_cast<uint16_t*>(buf);
+      auto cast = [input, dst, n]() {
+        const float* src =
+            static_cast<const float*>(input->mem.get_data_handle());
+        for (int i = 0; i < n; ++i) {
+          dst[i] = Float::GetFP16(src[i]); // NOLINT.
+        }
+      };
+      add_op(cast);
+    } else if (target_type == ODLA_BFLOAT16) {
+      dst_mem = cast_op(input, getDataType(target_type));
+    }
+  } else if (input->elem_type == ODLA_FLOAT64) {
+    if (target_type == ODLA_FLOAT32) {
+      dst_mem = dnnl::memory(dst_md, g_comp->eng);
+      float* dst = static_cast<float*>(dst_mem.get_data_handle());
+      auto cast = [input, dst, n]() {
+        const double* src =
+            static_cast<const double*>(input->mem.get_data_handle());
+        float* vals = static_cast<float*>(dst);
+        for (int i = 0; i < n; ++i) {
+          dst[i] = src[i]; // NOLINT.
+        }
+      };
+      add_op(cast);
+    } else if (target_type == ODLA_FLOAT16) {
+      dst_mem = dnnl::memory(dst_md, g_comp->eng);
+      uint16_t* dst = static_cast<uint16_t*>(dst_mem.get_data_handle());
+      auto cast = [input, dst, n]() {
+        const double* src =
+            static_cast<const double*>(input->mem.get_data_handle());
+        for (int i = 0; i < n; ++i) {
+          // Narrowing first. TODO://
+          dst[i] = Float::GetFP16(src[i]); // NOLINT.
+        }
+      };
+      add_op(cast);
+    }
   } else {
     dst_mem = cast_op(input, getDataType(target_type));
   }
   InterpretIfNeeded();
-  return CreateValue(dst_mem, input->shape, id);
+  auto v = CreateValue(dst_mem, input->shape, id);
+  v->elem_type = target_type;
+  return v;
 }
 
 static odla_value unary_eltwise_op(
