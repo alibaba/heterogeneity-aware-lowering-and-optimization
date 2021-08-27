@@ -25,7 +25,6 @@
 
 #include "halo/api/halo_data.h"
 #include "halo/lib/framework/common.h"
-#include "halo/lib/ir/common_reduction_instructions.h"
 #include "halo/lib/ir/constant.h"
 #include "halo/lib/ir/math_instructions.h"
 
@@ -190,6 +189,14 @@ static void RunOnInstruction(SItoFPInst* inst) {
 }
 
 static void RunOnInstruction(FPtoFPInst* inst) {
+  RunOnCastInstruction(inst, inst->GetDataType());
+}
+
+static void RunOnInstruction(ConvertFromStringInst* inst) {
+  RunOnCastInstruction(inst, inst->GetDataType());
+}
+
+static void RunOnInstruction(ConvertToStringInst* inst) {
   RunOnCastInstruction(inst, inst->GetDataType());
 }
 
