@@ -157,6 +157,19 @@ void inference(int thread_id, cnpy::npz_t* all_data, BaseTest* test){
         idx = (idx+1) % Config::instance()->thread_buffer_cnt();  //in case the data was not written before reused.
         auto start = std::chrono::steady_clock::now();
 
+        //check the time interval
+        {
+            std::lock_guard<std::mutex> guard(test->time_mutex);
+            start = std::chrono::steady_clock::now();
+            std::chrono::duration<float, std::milli> interval = start - test->previous_issue_time;
+            while(interval.count() < 5){
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                start = std::chrono::steady_clock::now();
+                interval = start - test->previous_issue_time;
+            }
+            test->previous_issue_time = start; //update the issue time, then go to issue an inference
+        }
+        
         test->do_inference(data); //should implement this for different caller
 
         auto end = std::chrono::steady_clock::now();
@@ -196,6 +209,7 @@ void BaseTest::start(const std::string& config_file)
     prerequisites();
 
     auto start = std::chrono::steady_clock::now();
+    previous_issue_time = start;
     if(Config::instance()->thread_number() == 1){
         inference(0, all_data, this);
     }

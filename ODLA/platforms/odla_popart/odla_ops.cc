@@ -202,16 +202,17 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
                            name);
   }*/
   popart::TensorId lhs_trans = lhs->tensor_id;
+  std::string transpose_name = std::string(name) + "_transpose";
   if (rank >= 2 && transpose_lhs) {
     if (rank == 4) {
       lhs_trans = g_comp->builder->aiOnnxOpset10().transpose(
-          {lhs->tensor_id}, std::vector<int64_t>{0, 1, 3, 2}, name);
+          {lhs->tensor_id}, std::vector<int64_t>{0, 1, 3, 2}, transpose_name);
     } else if (rank == 3) {
       lhs_trans = g_comp->builder->aiOnnxOpset10().transpose(
-          {lhs->tensor_id}, std::vector<int64_t>{0, 2, 1}, name);
+          {lhs->tensor_id}, std::vector<int64_t>{0, 2, 1}, transpose_name);
     } else if (rank == 2) {
       lhs_trans = g_comp->builder->aiOnnxOpset10().transpose(
-          {lhs->tensor_id}, std::vector<int64_t>{1, 0}, name);
+          {lhs->tensor_id}, std::vector<int64_t>{1, 0}, transpose_name);
     }
   }
 
@@ -220,27 +221,20 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
   if (rank >= 2 && transpose_rhs) {
     if (rank == 4) {
       rhs_trans = g_comp->builder->aiOnnxOpset10().transpose(
-          {rhs->tensor_id}, std::vector<int64_t>{0, 1, 3, 2}, name);
+          {rhs->tensor_id}, std::vector<int64_t>{0, 1, 3, 2}, transpose_name);
     } else if (rank == 3) {
       rhs_trans = g_comp->builder->aiOnnxOpset10().transpose(
-          {rhs->tensor_id}, std::vector<int64_t>{0, 2, 1}, name);
+          {rhs->tensor_id}, std::vector<int64_t>{0, 2, 1}, transpose_name);
     } else if (rank == 2) {
       rhs_trans = g_comp->builder->aiOnnxOpset10().transpose(
-          {rhs->tensor_id}, std::vector<int64_t>{1,0}, name);
+          {rhs->tensor_id}, std::vector<int64_t>{1,0}, transpose_name);
     }
   }
 
   // USE_BATCHED_MATMUL
   popart::TensorId result =
       g_comp->builder->aiOnnxOpset10().matmul({lhs_trans, rhs_trans}, name);
-  auto name_pattern = std::regex("(Attention_MatMul$)|Attention_MatMul(_[1-2])", std::regex::icase);
-  //if(std::regex_search(name, name_pattern)){
-    // std::cout << "=====> do not set the AMP on: " << name << std::endl;
-  //}
-  //else if(name != "Embedding_MatMul"){
-  //  float amp = PopartConfig::instance()->amp();
-  //  g_comp->builder->setAvailableMemoryProportion(result, amp);
-  //}
+
   float amp = PopartConfig::instance()->amp();
   g_comp->builder->setAvailableMemoryProportion(result, amp);
   return new _odla_value(result,
