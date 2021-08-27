@@ -126,7 +126,8 @@ class Constant : public IRObject {
 
   /// Print the constant info.
   void Print(std::ostream& os) const override;
-  void PrintData(std::ostream* os, size_t num_to_print) const;
+  void PrintData(std::ostream* os, size_t num_to_print,
+                 bool human_friendly) const;
   /// Check Special constant
   bool IsScalarZero() const;
   bool IsScalarOne() const;
