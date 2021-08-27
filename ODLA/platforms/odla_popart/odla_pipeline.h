@@ -118,7 +118,8 @@ public:
 };
 
 struct _odla_pipeline_context : public _odla_context {
-  _odla_pipeline_context(odla_computation c) : _odla_context(c), visited(0), written(0) {}
+  _odla_pipeline_context(odla_computation c) : _odla_context(c), visited(0), 
+    written(0), got_output(false) {}
 
   std::mutex context_mutex;
   std::condition_variable context_cv;
@@ -128,14 +129,19 @@ struct _odla_pipeline_context : public _odla_context {
       tensors_written; // Record the output tensor written by callback
   int visited;
   int written;
+  bool got_output;
   std::chrono::time_point<std::chrono::steady_clock> start;
   std::chrono::time_point<std::chrono::steady_clock> end;
   inline void wait() override {
-    std::unique_lock<std::mutex> lock(context_mutex);
-    context_cv.wait(lock);
+    while(!got_output){ //wait forever for the output
+      std::unique_lock<std::mutex> lock(context_mutex);
+      context_cv.wait_for(lock, std::chrono::milliseconds(100));
+    }
+    got_output = false; // reset the flag incase context reused.
   }
   inline void notify() override {
     std::unique_lock<std::mutex> lock(context_mutex);
+    got_output=true;
     context_cv.notify_one();
   }
   inline popart::IArray* get_data_by_tensor_id(popart::TensorId id) override {
@@ -174,7 +180,7 @@ struct _odla_pipeline_context : public _odla_context {
     if(written == 0){
        end = std::chrono::steady_clock::now();
        std::chrono::duration<float, std::milli> elapsed_ms = end-start;
-       popart::logging::info("ONE_REQEUST for ctx: {} took: {} ms", this, elapsed_ms.count());
+       popart::logging::info("ONE_REQUEST for ctx: {} took: {} ms", this, elapsed_ms.count());
     }
     written++;
     return &(*(outputs[id]));

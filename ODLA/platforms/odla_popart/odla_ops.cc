@@ -164,7 +164,8 @@ odla_value odla_BatchMatmul(odla_value lhs, odla_bool lhs_trans, odla_value rhs,
   popart::TensorId result =
       g_comp->builder->aiOnnxOpset10().matmul({lhs->tensor_id, rhs->tensor_id}, name);
   //set the AMP
-  g_comp->builder->setAvailableMemoryProportion(result, 0.445f);
+  float amp = PopartConfig::instance()->amp();
+  g_comp->builder->setAvailableMemoryProportion(result, amp);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -315,13 +316,10 @@ odla_value odla_GroupNormalization(odla_value input,
 
   auto outs = g_comp->builder->aiGraphcoreOpset1().groupnormalization(
       {input->tensor_id, scale->tensor_id, offset->tensor_id}, group, epsilon, name);
-  //Set the pipeline information
-  std::set<popart::TensorId> ids(outs.begin(), outs.end());
-  g_comp->set_pipeline_stage(ids, name);
   return new _odla_value(outs[0],
                          {g_comp->builder->getTensorDataType(outs[0]),
                           g_comp->builder->getTensorShape(outs[0])},
-                         name, false);
+                         name);
 }
 
 odla_value odla_ArgMax(odla_value input, odla_int32 axis, odla_bool keep_dims,

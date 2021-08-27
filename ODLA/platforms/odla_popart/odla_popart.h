@@ -70,8 +70,8 @@ struct _odla_value {
   popart::TensorInfo tensor_info;
   std::string name;
 
-  _odla_value(popart::TensorId id, popart::TensorInfo info,
-              const std::string& n, bool set_pipeline = true);
+  _odla_value(popart::TensorId id, popart::TensorInfo info, 
+    const std::string& n):tensor_id(id), tensor_info(info), name(n){}
 };
 
 struct _odla_computation {  //destruct the computation when odla_destroycomputatin called.
@@ -109,10 +109,6 @@ struct _odla_computation {  //destruct the computation when odla_destroycomputat
   void init();
   inline bool is_done(){return m_done;}
   inline void mark_done(){m_done = true;}
-  void set_pipeline_stage(const popart::TensorId &nodeOutputName, const std::string& name);
-  void set_pipeline_stage(const std::set<popart::TensorId> &nodeOutputNames, const std::string& name);
-  void set_pipeline_stage(const std::string& name, const popart::TensorId &nodeOutputName, bool tag);
-  void set_pipeline_stage(const std::string& name, const std::set<popart::TensorId> &nodeOutputNames);
   std::string set_pipeline_stage();
   void set_session_opts();
   void set_executor();
