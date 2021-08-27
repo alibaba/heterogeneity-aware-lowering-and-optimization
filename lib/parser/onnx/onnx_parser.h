@@ -93,7 +93,8 @@ class ONNXParser : public Parser {
   ONNXParser(const ONNXParser&) = delete;
   ONNXParser& operator=(const ONNXParser&) = delete;
 
-  static halo::DataType ProcessDataType(int data_type);
+  static halo::DataType ProcessDataType(int data_type,
+                                        bool allow_invalid = false);
   static void WriteCSVReport(const onnx::NodeProto& cur_node, std::ostream& os);
 
  private:

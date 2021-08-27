@@ -75,7 +75,7 @@ void GenericCXXCodeGen::RunOnInstruction(InstanceNormInst* inst) {
 
   CXXValue ret(inst->GetName(), op0.type);
   EmitODLACall(ret, "odla_InstanceNormalization", op0, inst->GetDataFormat(),
-               "nullptr", "nullptr", inst->GetEpsilon(), op1, op2, 1, 0);
+               inst->GetEpsilon(), op1, op2, 1, 0);
 
   ir_mapping_[*inst] = ret;
 }

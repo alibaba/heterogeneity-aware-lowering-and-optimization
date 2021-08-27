@@ -128,7 +128,7 @@ odla_status odla_AllocateDevice(const odla_vendor vendor,
       break;
     default:
       std::cerr << "Non supported device type." << std::endl;
-      return ODLA_FAILURE;
+      return ODLA_UNSUPPORTED_DEVICE_TYPE;
   }
   *device = odla_dev;
   return ODLA_SUCCESS;

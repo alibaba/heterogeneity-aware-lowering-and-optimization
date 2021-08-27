@@ -56,6 +56,7 @@ typedef unsigned __int16 odla_float16;  /**< 16-bit floating point type */
 typedef unsigned __int16 odla_bfloat16; /**< 16-bit brain floating point type */
 typedef float odla_float32;             /**< 32-bit floating point type */
 typedef double odla_float64;            /**< 64-bit floating point type */
+typedef const char* odla_string; /**< pointer to NULL-terminated string */
 
 #else
 
@@ -88,6 +89,7 @@ typedef __UINT16_TYPE__ odla_float16;  /**< 16-bit floating point type */
 typedef __UINT16_TYPE__ odla_bfloat16; /**< 16-bit brain floating point type */
 typedef float odla_float32;            /**< 32-bit floating point type */
 typedef double odla_float64;           /**< 64-bit floating point type */
+typedef const char* odla_string;       /**< pointer to NULL-terminated string */
 #endif
 
 #ifndef NULL
@@ -122,6 +124,7 @@ typedef enum {
   ODLA_FLOAT64,
 
   ODLA_BOOL,
+  ODLA_STRING,
 } odla_element_type;
 
 //! \brief char
@@ -136,6 +139,28 @@ typedef void odla_void;
 //! \brief Return status
 typedef enum {
   ODLA_SUCCESS,
+  //! \brief dlopen a shared library error
+  ODLA_DL_ERROR,
+  ODLA_FILE_NOT_EXIST,
+  //! \brief illegal input argument, such as nullptr
+  ODLA_INVALID_PARAM,
+  //! \brief allocate/deallocate memory error, out of memory error
+  ODLA_MEM_ERROR,
+  ODLA_UNSUPPORTED_DATATYPE,
+  ODLA_UNSUPPORTED_DEVICE_TYPE,
+  //! \brief odla op is not implemented yet
+  ODLA_UNSUPPORTED_OP,
+  //! \brief process timeout
+  ODLA_TIMEOUT,
+  //! \brief internal error
+  ODLA_INTERNAL_LOGIC_ERR,
+  //! auto recoverable error
+  ODLA_RECOVERABLE_ERR,
+  //! manual recoverable error, include partition reset and full reset type
+  ODLA_PARTITION_RESET,
+  ODLA_FULL_RESET,
+  //! unrecoverable error
+  ODLA_UNRECOVERABLE_ERR,
   ODLA_FAILURE,
 } odla_status;
 

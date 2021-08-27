@@ -65,6 +65,7 @@ class DefaultDataLayout : public DataLayout {
       case DataType::FLOAT32: {
         return 32;
       }
+      case DataType::FLOAT64:
       case DataType::INT64:
       case DataType::UINT64: {
         return 64;

@@ -1343,6 +1343,14 @@ odla_value odla_ReduceSumSquare(odla_value input, odla_size_t num_of_axes,
                 output_dims, id);
 }
 
+odla_value odla_ReduceProd(odla_value input, odla_size_t num_of_axes,
+                           const odla_uint32* axes, odla_bool keep_dims,
+                           odla_value_shape output_dims,
+                           const odla_value_id id) {
+  return reduce(input, nvinfer1::ReduceOperation::kPROD, num_of_axes, axes,
+                keep_dims, output_dims, id);
+}
+
 odla_value odla_LRN(odla_value input, odla_memory_layout input_layout,
                     odla_int32 window_size, odla_float32 alpha,
                     odla_float32 beta, odla_float32 bias,
@@ -1409,17 +1417,23 @@ odla_value odla_BatchNormalization(odla_value input,
 }
 
 odla_value odla_InstanceNormalization(
-    odla_value input, odla_memory_layout input_layout, odla_value mean,
-    odla_value var, odla_float32 epsilon, odla_value scale, odla_value offset,
-    odla_float32 scalar_scale, odla_float32 scalar_offset,
-    const odla_value_id value_id) {
+    odla_value input, odla_memory_layout input_layout, odla_float32 epsilon,
+    odla_value scale, odla_value offset, odla_float32 scalar_scale,
+    odla_float32 scalar_offset, const odla_value_id value_id) {
   std::vector<nvinfer1::ITensor*> inputs = {input->tensor, scale->tensor,
                                             offset->tensor};
   const static char* plugin_name = "InstanceNormalization_TRT";
-  const static char* plugin_ver = "1";
+  const static char* plugin_ver = "001";
   auto creator = getPluginRegistry()->getPluginCreator(plugin_name, plugin_ver);
   std::vector<nvinfer1::PluginField> f;
+  int nb_chs = input->type.shape.dims[1];
   f.emplace_back("epsilon", &epsilon, nvinfer1::PluginFieldType::kFLOAT32, 1);
+  assert(scale->const_layer != nullptr && offset->const_layer != nullptr);
+  f.emplace_back("scales", scale->const_layer->getWeights().values,
+                 nvinfer1::PluginFieldType::kFLOAT32, nb_chs);
+  f.emplace_back("bias", offset->const_layer->getWeights().values,
+                 nvinfer1::PluginFieldType::kFLOAT32, nb_chs);
+
   nvinfer1::PluginFieldCollection plugin_data;
   plugin_data.nbFields = f.size();
   plugin_data.fields = f.data();

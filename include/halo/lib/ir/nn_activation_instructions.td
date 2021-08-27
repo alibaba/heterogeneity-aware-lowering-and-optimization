@@ -69,6 +69,12 @@ let cat_ = cat_nn_activation,
                        Integer, "axis", "-1">];
   }
 
+  def Hardmax : Inst<"Compute the hardmax."
+                    " Return one-hot tensor for the location of the highest value alone with specified axis."> {
+    let attrs_ = [Attr<"The dimension the hardmax would be performed on.",
+                       Integer, "axis", "-1">];
+  }
+
 }
 
 let cat_ = cat_nn_activation,

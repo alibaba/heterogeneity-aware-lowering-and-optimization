@@ -85,3 +85,16 @@ let cat_ = cat_common_reduction,
                     " along the specified axis.">;
 
 }
+
+let cat_ = cat_common_reduction in {
+  def CumSum : Inst<"Computes cumulative sum of the input alone the specified axis."> {
+    let attrs_ = [
+      Attr<"Axis along which to do accumulation.", Integer, "axis", "0">,
+      Attr<"Exclude the first element from sum.", Bool, "exclusive", "false">,
+      Attr<"Reverse the direction of accumulation.", Bool, "reverse", "false">
+    ];
+    let ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32,F64]> >,
+            OptionalArg<"The axis.", ArgType<[I32]>, 0D>];
+    let outs_ = [Arg<"The result", MatchArgType<0> >];
+  }
+}

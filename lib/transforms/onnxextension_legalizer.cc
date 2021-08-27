@@ -29,6 +29,7 @@
 #include "halo/lib/ir/constant.h"
 #include "halo/lib/ir/extension_instructions.h"
 #include "halo/lib/ir/ir_builder.h"
+#include "halo/lib/ir/math_instructions.h"
 #include "halo/lib/transforms/transforms_util.h"
 #include "onnx_parser.h"
 
@@ -67,7 +68,6 @@ static std::vector<Def> ConvertUnsqueeze(const ONNXExtensionInst* ext,
       ext->GetName() + "_unsqueeze",
       Type{DataType::INT64, {static_cast<int64_t>(new_dims.size())}},
       new_dims.data());
-  builder->SetInsertAfter(ext);
   auto new_inst = builder->CreateReshape(ext->GetName(), {input, *c});
   return {*new_inst};
 }
@@ -190,6 +190,54 @@ static std::vector<Def> ConvertConstantOfShape(const ONNXExtensionInst* ext,
   return {};
 }
 
+static std::vector<Def> ConvertEyeLike(const ONNXExtensionInst* ext,
+                                       IRBuilder* builder) {
+  auto type = ext->GetOperand(0).GetType();
+  if (!type.IsValid()) {
+    return {};
+  }
+  HLCHECK(type.GetNumOfDims() == 2);
+  int k = FindAttributeValue<int>(*ext, "k", 0);
+  auto elem_type = ONNXParser::ProcessDataType(
+      FindAttributeValue<int>(*ext, "dtype", -1), true /* allow_invalid */);
+  if (elem_type == DataType::INVALID) {
+    elem_type = type.GetDataType();
+  }
+  if (elem_type == DataType::INVALID) {
+    elem_type = DataType::FLOAT32;
+  }
+
+  auto rows = type.GetNumOfElementsInDim(0);
+  auto cols = type.GetNumOfElementsInDim(1);
+  type = halo::Type{elem_type, {rows, cols}};
+  DefaultDataLayout dl;
+  auto elem_size = dl.Bytes(elem_type);
+  static const float f32 = 1.0F;
+  static const int32_t i32 = 1;
+  static const double f64 = 1.0;
+  static const int64_t i64 = 1;
+  static const int8_t i8 = 1;
+  static const std::unordered_map<DataType, const void*> bufs{
+      {DataType::FLOAT32, &f32},
+      {DataType::FLOAT64, &f64},
+      {DataType::INT32, &i32},
+      {DataType::INT64, &i64},
+      {DataType::INT8, &i8}};
+  auto it = bufs.find(elem_type);
+  HLCHECK(it != bufs.end());
+  std::vector<char> data(rows * cols * elem_size);
+  for (int r = 0; r < rows; ++r) {
+    for (int c = 0; c < cols; ++c) {
+      if (c == r + k) {
+        memcpy(&data[elem_size * (r * cols + c)], it->second, elem_size);
+      }
+    }
+  }
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  auto c = cb.CreateConstant(ext->GetName(), type, data.data());
+  return {*c};
+}
+
 static std::vector<Def> ConvertPad(const ONNXExtensionInst* ext,
                                    IRBuilder* builder) {
   std::vector<int32_t> paddings;
@@ -228,7 +276,6 @@ static std::vector<Def> ConvertPad(const ONNXExtensionInst* ext,
   auto* pad_amt =
       cb.CreateConstant(ext->GetName() + "_amt",
                         Type{DataType::INT32, {rank, 2}}, padding_data.data());
-  builder->SetInsertAfter(ext);
   auto pad_inst =
       builder->CreatePad(ext->GetName(), {ext->GetOperand(0), *pad_amt});
   return {*pad_inst};
@@ -239,7 +286,6 @@ static std::vector<Def> ConvertSum(const ONNXExtensionInst* ext,
   // Conver to a chain of adds.
   auto n = ext->GetNumOfOperands();
   HLCHECK(n >= 2);
-  builder->SetInsertAfter(ext);
   auto op0 = builder->CreateAdd(ext->GetName(), ext->GetOperand(0),
                                 ext->GetOperand(1));
   for (unsigned i = 2; i < n; ++i) {
@@ -272,7 +318,6 @@ static std::vector<Def> ConvertFlatten(const ONNXExtensionInst* ext,
   ConstantBuilder cb(ext->GetParent()->GetParent());
   Constant* c = cb.CreateConstant(ext->GetName() + "_flatten_dims",
                                   Type{DataType::INT32, {2}}, new_dims.data());
-  builder->SetInsertAfter(ext);
   auto new_inst = builder->CreateReshape(ext->GetName(), {input, *c});
   return {*new_inst};
 }
@@ -309,7 +354,6 @@ static std::vector<Def> ConvertCast(const ONNXExtensionInst* ext,
   // onnx::DataType is not equal to halo::DataType
   const auto& dst_type = ONNXParser::ProcessDataType(attr->GetValueAsInteger());
 
-  builder->SetInsertAfter(ext);
   auto op0 = ext->GetOperand(0);
   const Type& input_type = op0.GetType();
   if (!input_type.IsValid()) {
@@ -341,13 +385,51 @@ static std::vector<Def> ConvertCast(const ONNXExtensionInst* ext,
   return {};
 }
 
+static std::vector<Def> ConvertClip(const ONNXExtensionInst* ext,
+                                    IRBuilder* builder) {
+  auto num_ops = ext->GetNumOfOperands();
+  HLCHECK(num_ops > 0 && num_ops <= 3);
+  auto input = ext->GetOperand(0);
+  auto in_min = num_ops >= 2 ? ext->GetOperand(1) : Def::GetUndefined();
+  auto in_max = num_ops >= 3 ? ext->GetOperand(2) : Def::GetUndefined();
+  if (num_ops == 1) {
+    constexpr int relu6_max = 6;
+    float min =
+        FindAttributeValue(*ext, "min", std::numeric_limits<float>::lowest());
+    float max =
+        FindAttributeValue(*ext, "max", std::numeric_limits<float>::max());
+    if (min == 0 && max == relu6_max) {
+      // special case.
+      return {*builder->CreateRelu6(ext->GetName(), ext->GetOperand(0))};
+    }
+    ConstantBuilder cb(ext->GetParent()->GetParent());
+
+    if (min != std::numeric_limits<float>::lowest()) {
+      in_min = *cb.CreateConstant(ext->GetName() + "_min",
+                                  Type{DataType::FLOAT32, {1}}, &min);
+    }
+    if (max != std::numeric_limits<float>::max()) {
+      in_max = *cb.CreateConstant(ext->GetName() + "_max",
+                                  Type{DataType::FLOAT32, {1}}, &max);
+    }
+  }
+  if (in_min != Def::GetUndefined()) {
+    input = *builder->CreateMaximum(
+        (num_ops == 2) ? ext->GetName() : ext->GetName() + "_min", input,
+        in_min);
+  }
+  if (in_max != Def::GetUndefined()) {
+    input = *builder->CreateMinimum(ext->GetName(), input, in_max);
+  }
+  return {input};
+}
+
 static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
                                      IRBuilder* builder) {
   // Operands: input [begin] [end] [axes] [step]
   // For opset 1, begin/end/axes are attributs.
   auto op_num = ext->GetNumOfOperands();
   HLCHECK(op_num >= 1 && op_num != 2 && op_num <= 5);
-  builder->SetInsertAfter(ext);
   ConstantBuilder cb(ext->GetParent()->GetParent());
 
   // Normalize Slice-1 to Slice.
@@ -384,8 +466,6 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
   if (!input_type.IsValid()) {
     return {};
   }
-
-  builder->SetInsertAfter(ext);
 
   if (!IsA<Constant>(op_starts) || !IsA<Constant>(op_ends)) {
     auto op_len =
@@ -530,7 +610,6 @@ static std::vector<Def> ConvertOneHot(const ONNXExtensionInst* ext,
   const std::string& name = ext->GetName();
   ConstantBuilder cb(ext->GetParent()->GetParent());
 
-  builder->SetInsertAfter(ext);
   auto op0 = ext->GetOperand(0);
   auto op1 = ext->GetOperand(1);
   auto op2 = ext->GetOperand(2);
@@ -624,7 +703,6 @@ static std::vector<Def> ConvertGatherElements(const ONNXExtensionInst* ext,
         Type{DataType::INT64, {static_cast<int64_t>(new_dims.size())}},
         new_dims.data());
 
-    builder->SetInsertAfter(ext);
     auto reshape =
         builder->CreateReshape(ext->GetName() + "_reshape", idx_op, *c);
     auto new_inst = builder->CreateGather(ext->GetName(), {input_op, *reshape});
@@ -649,8 +727,6 @@ static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
   HLCHECK(((axis >= 0) && (axis < input_dims)) && "Invalid axis.");
   std::vector<int> empty;
   const auto& splits = FindAttributeValue(*ext, "split", empty);
-
-  builder->SetInsertAfter(ext);
 
   ConstantBuilder cb(ext->GetParent()->GetParent());
   // If no axes operand, assumes all axes are sliced and steps are 1.
@@ -762,7 +838,6 @@ std::vector<Def> ConvertGlobalMaxPooling(const ONNXExtensionInst* ext,
     inst->SetRoundMode(0);
   };
 
-  builder->SetInsertAfter(ext);
   Instruction* inst = nullptr;
   inst = builder->CreatePoolingMax(ext->GetName(), ext->GetOperand(0));
   set_pooling_attributes(DynCast<PoolingMaxInst>(inst));
@@ -789,7 +864,6 @@ static std::vector<Def> ConvertHgEngine(const ONNXExtensionInst* ext,
                                         IRBuilder* builder) {
   auto n = ext->GetNumOfOperands();
   HLCHECK(n >= 1);
-  builder->SetInsertAfter(ext);
   int attr_idx = 0;
   auto hg_engine = builder->CreateHgEngine(ext->GetName(), ext->GetOperands());
 
@@ -851,7 +925,6 @@ static std::vector<Def> ConvertHgQuant(const ONNXExtensionInst* ext,
   }
   int channel_size = input_type.GetDimSizes()[channel_idx];
 
-  builder->SetInsertAfter(ext);
   ConstantBuilder cb(ext->GetParent()->GetParent());
   Constant* c_scale = nullptr;
   Constant* c_bias = nullptr;
@@ -963,7 +1036,6 @@ static std::vector<Def> ConvertIpuOp(const ONNXExtensionInst* ext,
     auto seq = type.GetNumOfElementsInDim(1);
     new_type = Type{op1_type.GetDataType(), {batch, 1, seq, seq}};
   }
-  builder->SetInsertAfter(ext);
   auto new_inst =
       builder->CreateCustom(ext->GetName(), ext->GetOperands(), 1, op);
   new_inst->GetResultsTypes()[0] = new_type;
@@ -1002,7 +1074,6 @@ static std::vector<Def> ConvertHgDeQuant(const ONNXExtensionInst* ext,
     channel_idx = 1;
   }
   int channel_size = input_type.GetDimSizes()[channel_idx];
-  builder->SetInsertAfter(ext);
   ConstantBuilder cb(ext->GetParent()->GetParent());
   Constant* c_scale = nullptr;
   Constant* c_bias = nullptr;
@@ -1053,6 +1124,21 @@ static std::vector<Def> ConvertHgDeQuant(const ONNXExtensionInst* ext,
   }
 
   return {input};
+}
+
+static bool FixupTranspose(TransposeInst* inst) {
+  if (inst->GetPermutation().empty() &&
+      inst->GetOperand(0).GetType().IsValid()) {
+    // When permutation attribute is empty, revese all axes.
+    int rank = inst->GetOperand(0).GetType().GetNumOfDims();
+    std::vector<int> perm(rank);
+    for (int i = rank - 1; i >= 0; --i) {
+      perm[rank - i - 1] = i;
+    }
+    inst->SetPermutation(perm);
+    return true;
+  }
+  return false;
 }
 
 static bool FixupLoopBody(LoopInst* inst) {
@@ -1109,9 +1195,14 @@ static bool FixupLoopBody(LoopInst* inst) {
 
 static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
                                              IRBuilder* builder) {
+  builder->SetInsertAfter(onnx_inst);
+
   switch (onnx_inst->GetExtOpCode()) {
     case ONNXExtOpCode::CAST: {
       return ConvertCast(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::CLIP: {
+      return ConvertClip(onnx_inst, builder);
     }
     case ONNXExtOpCode::SHAPE: {
       return ConvertShape(onnx_inst, builder);
@@ -1133,6 +1224,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::CONSTANTOFSHAPE: {
       return ConvertConstantOfShape(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::EYELIKE: {
+      return ConvertEyeLike(onnx_inst, builder);
     }
     case ONNXExtOpCode::NONZERO: {
       return ConvertNonZero(onnx_inst, builder);
@@ -1202,6 +1296,8 @@ bool ONNXExtensionLegalizer::RunOnBasicBlock(BasicBlock* bb) {
       }
     } else if (inst->GetOpCode() == OpCode::LOOP) {
       changed |= FixupLoopBody(DynCast<LoopInst>(inst));
+    } else if (inst->GetOpCode() == OpCode::TRANSPOSE) {
+      changed |= FixupTranspose(DynCast<TransposeInst>(inst));
     }
   }
   return changed;

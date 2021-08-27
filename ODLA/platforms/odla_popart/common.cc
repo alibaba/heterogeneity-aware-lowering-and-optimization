@@ -63,6 +63,7 @@ popart::DataType GetPopartType(odla_value_type type) {
       return popart::DataType::BOOL;
     default:
       assert(false);
+      return popart::DataType::UNDEFINED;
   }
 }
 

@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <climits>
+#include <cmath>
 #include <iostream>
 #include <variant>
 
@@ -34,11 +35,22 @@ Constant::Constant(GlobalContext& context, const std::string& name,
   SetData(ty, data_ptr, do_splat);
 }
 
+Constant::Constant(GlobalContext& context, const std::string& name,
+                   const Type& type, const std::vector<std::string>& strings)
+    : IRObject(context, name, 1),
+      parent_(nullptr),
+      data_layout_(context.GetDefaultDataLayout()) {
+  HLCHECK(type.GetDataType() == DataType::STRING);
+  HLCHECK(type.IsValid());
+  SetData(type, strings);
+}
+
 Constant::Constant(const Constant& from)
     : IRObject(from.GetGlobalContext(), from.GetName(), 1),
       parent_(nullptr),
       data_layout_(from.data_layout_),
-      data_(from.data_) {}
+      data_(from.data_),
+      string_data_(from.string_data_) {}
 
 struct Float {
   // TODO(unknown): no infinity, underflow/overflow handling.
@@ -110,6 +122,42 @@ static void PrintValues(std::ostream* os, const T* ptr, size_t n) {
   }
 }
 
+template <typename T>
+static void PrintFPValue(std::ostream* os, const T& x) {
+  if (std::isnan(x)) {
+    *os << "NAN";
+    return;
+  }
+  if (std::isinf(x)) {
+    if (x < 0) {
+      *os << "-";
+    }
+    *os << "INFINITY";
+    return;
+  }
+  *os << x;
+}
+
+template <>
+void PrintValues<float>(std::ostream* os, const float* ptr, size_t n) {
+  for (size_t i = 0; i < n; ++i) {
+    if (i > 0) {
+      *os << ", ";
+    }
+    PrintFPValue(os, ptr[i]); // NOLINT.
+  }
+}
+
+template <>
+void PrintValues<double>(std::ostream* os, const double* ptr, size_t n) {
+  for (size_t i = 0; i < n; ++i) {
+    if (i > 0) {
+      *os << ", ";
+    }
+    PrintFPValue(os, ptr[i]); // NOLINT.
+  }
+}
+
 static void PrintFP16Values(std::ostream* os, const uint16_t* ptr, size_t n) {
   for (size_t i = 0; i < n; ++i) {
     if (i > 0) {
@@ -119,7 +167,17 @@ static void PrintFP16Values(std::ostream* os, const uint16_t* ptr, size_t n) {
   }
 }
 
+void Constant::SetData(const Type& ty,
+                       const std::vector<std::string>& strings) {
+  HLCHECK(ty.GetDataType() == DataType::STRING);
+  auto& results = GetResultsTypes();
+  results.resize(1);
+  results[0] = ty;
+  string_data_ = strings;
+}
+
 void Constant::SetData(const Type& ty, const void* data_ptr, bool do_splat) {
+  HLCHECK(ty.GetDataType() != DataType::STRING);
   auto& results = GetResultsTypes();
   results.resize(1);
   results[0] = ty;
@@ -168,6 +226,16 @@ void PrintValues<bool>(std::ostream* os, const bool* ptr, size_t n) {
   }
 }
 
+static void PrintValues(std::ostream* os,
+                        const std::vector<std::string>& strings, size_t n) {
+  for (size_t i = 0; i < n; ++i) {
+    if (i > 0) {
+      *os << ", ";
+    }
+    *os << '"' << strings[i] << '"';
+  }
+}
+
 void Constant::PrintData(std::ostream* os, size_t num_to_print) const {
   const Type& type = GetResultType();
   switch (type.GetDataType()) {
@@ -198,6 +266,14 @@ void Constant::PrintData(std::ostream* os, size_t num_to_print) const {
     }
     case DataType::INT64: {
       PrintValues(os, GetDataPtr<int64_t>(), num_to_print);
+      break;
+    }
+    case DataType::FLOAT64: {
+      PrintValues(os, GetDataPtr<double>(), num_to_print);
+      break;
+    }
+    case DataType::STRING: {
+      PrintValues(os, string_data_, num_to_print);
       break;
     }
     default:

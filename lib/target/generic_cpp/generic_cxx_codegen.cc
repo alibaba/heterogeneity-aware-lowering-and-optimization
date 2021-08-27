@@ -176,6 +176,9 @@ CXXType GenericCXXCodeGen::SNTypeToCXXType(DataType dt) {
     case DataType::FLOAT32: {
       return (CXXType("float"));
     }
+    case DataType::FLOAT64: {
+      return (CXXType("odla_float64"));
+    }
     case DataType::INT32: {
       return (CXXType("int"));
     }
@@ -187,6 +190,9 @@ CXXType GenericCXXCodeGen::SNTypeToCXXType(DataType dt) {
     }
     case DataType::BOOL: {
       return (CXXType("bool"));
+    }
+    case DataType::STRING: {
+      return (CXXType("odla_string"));
     }
     default: {
       HLCHECK(0 && "Unhandled Type");
@@ -331,6 +337,9 @@ std::string GenericCXXCodeGen::GetODLAType(DataType type) const noexcept {
     case DataType::FLOAT32: {
       return "ODLA_FLOAT32";
     }
+    case DataType::FLOAT64: {
+      return "ODLA_FLOAT64";
+    }
     case DataType::INT32: {
       return "ODLA_INT32";
     }
@@ -342,6 +351,9 @@ std::string GenericCXXCodeGen::GetODLAType(DataType type) const noexcept {
     }
     case DataType::BOOL: {
       return "ODLA_BOOL";
+    }
+    case DataType::STRING: {
+      return "ODLA_STRING";
     }
     default: {
       return "INVALID";
@@ -382,6 +394,9 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
       case DataType::FLOAT32:
         data_type_str = "float";
         break;
+      case DataType::FLOAT64:
+        data_type_str = "double";
+        break;
       case DataType::INT32:
         data_type_str = "int32_t";
         break;
@@ -393,6 +408,15 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
         break;
       case DataType::BOOL:
         data_type_str = "bool";
+        break;
+      case DataType::INT8:
+        data_type_str = "signed char";
+        break;
+      case DataType::UINT8:
+        data_type_str = "unsigned char";
+        break;
+      case DataType::STRING:
+        data_type_str = "char* const";
         break;
       default:
         HLCHECK(0);
