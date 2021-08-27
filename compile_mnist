@@ -1,3 +1,0 @@
-g++ out/model.cc -IODLA/include -pthread -c -o out/model.o
-g++ out/main.cc -Iout -c -pthread -o out/main.o
-g++ -o out/demo out/main.o out/model.o out/model.bin -Lbuild/lib -lodla_popart -Wl,-rpath=build/lib -lpthread -pthread

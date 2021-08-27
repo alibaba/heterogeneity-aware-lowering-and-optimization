@@ -88,7 +88,7 @@ private:
   std::uint32_t head_;
   std::atomic<uint32_t> tail_;
   std::uint32_t wait_;
-  std::map<popart::TensorId, std::uint32_t> _tensor_to_idx;
+  std::map<popart::TensorId, std::uint32_t> tensor_to_idx_;
 public:
   LockFreeQueue();
   ~LockFreeQueue(){if(buffer_) delete[] buffer_;}
