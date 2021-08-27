@@ -50,3 +50,8 @@ if (NOT ODLA_BUILD_POPART_USE_CXX11ABI)
 endif()
 
 target_link_libraries(odla_popart PUBLIC ODLA custom_ops popart-only)
+
+target_include_directories(odla_popart PRIVATE
+   ${CMAKE_CURRENT_SOURCE_DIR}/custom_ops/third_party/onnx/
+   ${CMAKE_CURRENT_SOURCE_DIR}/custom_ops/third_party/include/
+)

@@ -113,6 +113,7 @@ struct _odla_computation {  //destruct the computation when odla_destroycomputat
   void set_pipeline_stage(const std::set<popart::TensorId> &nodeOutputNames, const std::string& name);
   void set_pipeline_stage(const std::string& name, const popart::TensorId &nodeOutputName, bool tag);
   void set_pipeline_stage(const std::string& name, const std::set<popart::TensorId> &nodeOutputNames);
+  std::string set_pipeline_stage();
   void set_session_opts();
   void set_executor();
   void set_opts();

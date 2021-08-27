@@ -2,6 +2,7 @@
 #include <map>
 #include <chrono>
 #include <vector>
+#include <mutex>
 #include <ODLA/odla.h>
 #include "json.hpp"
 #include "cnpy.h"
@@ -121,7 +122,10 @@ public:
 
 class BaseTest{
 public:
-    BaseTest(){};
+    std::mutex time_mutex;
+    std::uint32_t running_num;
+    std::chrono::time_point<std::chrono::steady_clock> previous_issue_time;
+    BaseTest():running_num(0){};
     ~BaseTest(){};
     void start(const std::string& config_file);
     virtual void do_inference(cnpy::npz_t& data) = 0;

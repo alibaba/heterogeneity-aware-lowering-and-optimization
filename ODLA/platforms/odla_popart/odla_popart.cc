@@ -20,7 +20,10 @@
 #include <chrono>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <bits/stdc++.h>
+#include "onnx/onnx.pb.h"
 #include "odla_popart.h"
 #include "popart_config.h"
 #include "odla_pipeline.h"
@@ -81,7 +84,8 @@ void _odla_computation::init()
             // Create and config SessionOptions
             set_session_opts();
 
-            auto proto = builder->getModelProto(); //So, the init must be called at odla_ExecuteCompute
+            //auto proto = builder->getModelProto(); //So, the init must be called at odla_ExecuteCompute
+            auto proto = set_pipeline_stage();
             if(PopartConfig::instance()->load_onnx()){
                 popart::logging::info("Load onnx file as pipeline mode to run: {}", 
                     PopartConfig::instance()->load_onnx_path());
@@ -89,7 +93,7 @@ void _odla_computation::init()
             }
             if(PopartConfig::instance()->save_model()){
                 builder->saveModelProto(PopartConfig::instance()->save_model_path());
-                popart::logging::info("The model saved to ", 
+                popart::logging::info("The model saved to {}", 
                     PopartConfig::instance()->save_model_path());
             }
             
@@ -193,32 +197,44 @@ bool _odla_computation::hold()
 void _odla_computation::set_pipeline_stage(const popart::TensorId &nodeOutputName, const std::string& name){
     if(!use_pipeline())
         return;
-    int64_t ipu_idx = -1;
-    int64_t pipeline_stage = -1;
+    int64_t ipu_idx = 1;
+    int64_t pipeline_stage = 1;
     auto found = PopartConfig::instance()->get_pipeline_setting(name, ipu_idx, pipeline_stage);
-    if(found){
+    if(name.find("tensordict") != std::string::npos)
+      std::cout << "do not apply pipeline stage to the input" << std::endl;
+    else{
       builder->virtualGraph(nodeOutputName, ipu_idx);
       builder->pipelineStage(nodeOutputName, pipeline_stage);
-    }else{
-      popart::logging::info(
-        " *** FATAL *** no pipeline stting for node: {}, name: {}", 
-        nodeOutputName, name);
     }
+    //if(found){
+    //  builder->virtualGraph(nodeOutputName, ipu_idx);
+    //  builder->pipelineStage(nodeOutputName, pipeline_stage);
+    //}else{
+    //  popart::logging::info(
+    //    " *** FATAL *** no pipeline stting for node: {}, name: {}", 
+    //    nodeOutputName, name);
+    //}
 }
 
 void _odla_computation::set_pipeline_stage(const std::set<popart::TensorId> &nodeOutputNames, const std::string& name){
     if(!use_pipeline())
         return;
-    int64_t ipu_idx = -1;
-    int64_t pipeline_stage = -1;
+    int64_t ipu_idx = 1;
+    int64_t pipeline_stage = 1;
     auto found = PopartConfig::instance()->get_pipeline_setting(name, ipu_idx, pipeline_stage);
-    if(found){
+    if(name.find("tensordict") != std::string::npos)
+      std::cout << "do not apply pipeline stage to the input" << std::endl;
+    else{
       builder->virtualGraph(nodeOutputNames, ipu_idx);
       builder->pipelineStage(nodeOutputNames, pipeline_stage);
-    }else{
-      popart::logging::info(
-        " *** FATAL *** no pipeline stting for node with name: {}", name);
     }
+    //if(found){
+    //  builder->virtualGraph(nodeOutputNames, ipu_idx);
+    //  builder->pipelineStage(nodeOutputNames, pipeline_stage);
+    //}else{
+    //  popart::logging::info(
+    //    " *** FATAL *** no pipeline stting for node with name: {}", name);
+    //}
 }
 
 void _odla_computation::set_pipeline_stage(const std::string& name, const popart::TensorId &nodeOutputName, bool tag)
@@ -241,6 +257,66 @@ void _odla_computation::set_pipeline_stage(const std::string& name, const std::s
     auto found = PopartConfig::instance()->get_pipeline_setting(name, m_ipu_number, m_pipeline_stage);
     builder->virtualGraph(nodeOutputNames, m_ipu_number);
     builder->pipelineStage(nodeOutputNames, m_pipeline_stage);
+}
+
+std::string _odla_computation::set_pipeline_stage() {
+    //get the modelProto
+    std::cout << "---------------------------------------------------------------" << std::endl;
+    std::stringstream input(this->builder->getModelProto());
+    ONNX_NAMESPACE::ModelProto model_proto;
+    google::protobuf::io::IstreamInputStream input_stream(&input);
+    google::protobuf::io::CodedInputStream coded_input_stream(&input_stream);
+    coded_input_stream.SetTotalBytesLimit(std::numeric_limits<int>::max(), -1);
+    model_proto.ParseFromCodedStream(&coded_input_stream);
+    auto ptr_graph = model_proto.mutable_graph();
+    ONNX_NAMESPACE::GraphProto &graph = *ptr_graph;
+    for(unsigned node_i = 0; node_i < graph.node_size(); node_i++) {
+        auto ptr_node = graph.mutable_node(node_i);
+        ONNX_NAMESPACE::NodeProto &node = *ptr_node;
+        if(!node.has_name())
+            throw std::runtime_error("node of onnx has no name");
+        int64_t ipu_idx = 1;
+        int64_t pipeline_stage = 1;
+        auto found = PopartConfig::instance()->get_pipeline_setting(node.name(), ipu_idx, pipeline_stage);
+        //if(found){
+            popart::logging::info("Node {} will be put to ipu {} stage {}", node.name(), ipu_idx, pipeline_stage);
+        /*}else{
+            popart::logging::info(
+                " *** FATAL *** no pipeline stting for node with name: {}", node.name());
+        }*/
+        bool found_ipu_att = false;
+        bool found_stage_att = false;
+        for(unsigned att_i = 0; att_i < node.attribute_size(); att_i++) {
+            auto ptr_att = node.mutable_attribute(att_i);
+            ONNX_NAMESPACE::AttributeProto &att = *ptr_att;
+            if(att.name() == popart::sVirtualGraphAttribute){
+                found_ipu_att = true;
+                att.set_i(ipu_idx);
+                std::cout << node.name() << "------------>@@@@@@@@@@@@@@@@@@@@@" << ipu_idx << std::endl;
+            }
+            else if(att.name() == popart::sPipelineStageAttribute){
+                found_stage_att = true;
+                att.set_i(pipeline_stage);
+                std::cout << node.name() << "----------->&&&&&&&&&&&&&&&&&&&&&&&&&" << pipeline_stage << std::endl;
+            }
+        }
+        if(!found_ipu_att){
+            auto new_att = node.add_attribute();
+            new_att->set_name(popart::sVirtualGraphAttribute);
+            new_att->set_i(ipu_idx);
+            std::cout << node.name() << "@@@@@@@@@@@@@@@@@@@@@xxxxxxxxxxx" << ipu_idx << std::endl;
+        }
+        if(!found_stage_att){
+            auto new_att = node.add_attribute();
+            new_att->set_name(popart::sPipelineStageAttribute);
+            new_att->set_i(pipeline_stage);
+            std::cout << node.name() << "&&&&&&&&&&&&&&&&&&&&&&&&&xxxxxxxxxxxxxxxxx" << pipeline_stage << std::endl;
+        }
+    }
+    std::string pipelined_model;
+    model_proto.SerializeToString(&pipelined_model);
+    std::cout << pipelined_model << std::endl;
+    return pipelined_model;
 }
 
 bool _odla_computation::use_pipeline()

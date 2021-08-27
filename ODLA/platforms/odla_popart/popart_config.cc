@@ -159,7 +159,7 @@ bool PopartConfig::get_pipeline_setting(
             return true;
         }
     }
-    popart::logging::info(
+    popart::logging::debug(
         "*** Oops *** the node name: {} did not match to any pattern!", 
         node_name);
     return false;
