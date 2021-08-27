@@ -1,7 +1,0 @@
-#!/bin/bash
-mkdir -p build
-g++ ../common.cc -I/home/jackz/repos/HALO/ODLA/include -I../ -c -o build/common.o
-g++ model.cc -I/home/jackz/repos/HALO/ODLA/include -c -o build/model.o
-g++ ../call_by_main.cc -Ibuild -I/home/jackz/repos/HALO/ODLA/include -I./ -c -o build/main.o
-g++ -o build/run_main build/main.o build/model.o build/common.o model.bin -L/home/jackz/repos/HALO/build/lib \
-    -lodla_popart -L/home/jackz/repos/cnpy/build -lcnpy -lz -Wl,-rpath=/home/jackz/repos/HALO/build/lib -lpthread
