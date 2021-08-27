@@ -23,21 +23,22 @@
 #include <typeinfo>
 #include <popart/logging.hpp>
 
-PopartConfig* PopartConfig::m_instance = new PopartConfig();
+PopartConfig* PopartConfig::instance_ = new PopartConfig();
 
 void PopartConfig::use_default()
 {
     amp_                = 0.6;
-    m_version           = "1.0.0";
-    m_batch_per_step    = 1;
-    m_ipu_num           = 1;
-    m_save_model        = false;
-    m_save_model_path   = "odla_popart_saved.onnx";
-    m_load_onnx         = false;
-    m_load_onnx_path    = "not_set.onnx";
-    m_execution_mode    = SEQUENCE;
+    version_            = "1.0.0";
+    batches_per_step_   = 1;
+    ipu_num_            = 1;
+    save_model_         = false;
+    save_model_path_    = "odla_popart_saved.onnx";
+    load_onnx_          = false;
+    load_onnx_path_     = "not_set.onnx";
+    execution_mode_     = SEQUENCE;
     queue_type_         = "LockFreeQueue";
     queue_capacity_     = 1024 * 1024;
+    debug_              = false;
 }
 
 void PopartConfig::load_config(const char* file_path)
@@ -61,34 +62,34 @@ void PopartConfig::load_from_file(const std::string& file_path)
         amp_ = jf["amp"].get<float>();
     }
     if(jf.contains("version")) {
-        m_version = jf["version"].get<std::string>();
+        version_ = jf["version"].get<std::string>();
     }
-    if(jf.contains("batch_per_step")) { 
-        m_batch_per_step    = jf["batch_per_step"].get<int>();
+    if(jf.contains("batches_per_step")) { 
+        batches_per_step_    = jf["batches_per_step"].get<int>();
     }
     if(jf.contains("ipu_num")) {
-        m_ipu_num = jf["ipu_num"].get<int>();
+        ipu_num_ = jf["ipu_num"].get<int>();
     }
     if(jf.contains("save_model")) {
-        m_save_model = jf["save_model"].get<bool>();
+        save_model_ = jf["save_model"].get<bool>();
     }
     if(jf.contains("save_model_path")){ 
-        m_save_model_path = jf["save_model_path"].get<std::string>();
+        save_model_path_ = jf["save_model_path"].get<std::string>();
     }
     if(jf.contains("load_onnx")) {
-        m_load_onnx = jf["load_onnx"].get<bool>();
+        load_onnx_ = jf["load_onnx"].get<bool>();
     }
     if(jf.contains("load_onnx_path")) { 
-        m_load_onnx_path = jf["load_onnx_path"].get<std::string>();
+        load_onnx_path_ = jf["load_onnx_path"].get<std::string>();
     }
     if(jf.contains("execution_mode")){
         std::string execution_mode = jf["execution_mode"].get<std::string>();
         if("pipeline" == execution_mode)
-            m_execution_mode = PIPELINE;
+            execution_mode_ = PIPELINE;
         else if("parallel" == execution_mode)
-            m_execution_mode = PARALLEL;
+            execution_mode_ = PARALLEL;
         else
-            m_execution_mode = SEQUENCE;
+            execution_mode_ = SEQUENCE;
     }
     if(jf.contains("pipeline")){
         const json& rh = jf["pipeline"];
@@ -106,30 +107,33 @@ void PopartConfig::load_from_file(const std::string& file_path)
         queue_capacity_ = jf["queue_capacity"].get<int>();
     else
         queue_capacity_ = 1024 * 1024;
+    if(jf.contains("debug"))
+        debug_ = jf["debug"].get<bool>();
 }
 
 void PopartConfig::print()
 {
     std::string line(80, '=');
     popart::logging::info(line);
-    popart::logging::info("version: {}", m_version);
+    popart::logging::info("version: {}", version_);
     popart::logging::info("amp: {}", amp_);
-    popart::logging::info("batch_per_step: {}", m_batch_per_step);
+    popart::logging::info("batch_per_step: {}", batches_per_step_);
     std::string mode[] = {"UNKNOWN", "PIPELINE", "PARALLEL", "SEQUENCE"};
     popart::logging::info("execution_mode: {}",
-        mode[(long unsigned int)m_execution_mode]);
-    popart::logging::info("ipu_num: {}", m_ipu_num);
+        mode[(long unsigned int)execution_mode_]);
+    popart::logging::info("ipu_num: {}", ipu_num_);
     std::string bool_value[] = {"false", "true"};
     popart::logging::info("load_onnx: {}", 
-        bool_value[(long unsigned int)m_load_onnx]);
-    popart::logging::info("load_onnx_path: {}", m_load_onnx_path);
+        bool_value[(long unsigned int)load_onnx_]);
+    popart::logging::info("load_onnx_path: {}", load_onnx_path_);
     popart::logging::info("save_model: {}", 
-        bool_value[(long unsigned int)m_save_model]);
-    popart::logging::info("save_model_path: {}", m_save_model_path);
+        bool_value[(long unsigned int)save_model_]);
+    popart::logging::info("save_model_path: {}", save_model_path_);
     popart::logging::info("queue_type: {}", queue_type_);
     popart::logging::info("queue_capacity: {}", queue_capacity_);
+    popart::logging::info("debug: {}", bool_value[(long unsigned int)debug_]);
     popart::logging::info("pipeline configuration:");
-    for(auto &a : m_pipeline_setting)
+    for(auto &a : pipeline_setting_)
         popart::logging::info("{} <-----> [{}, {}]",
             a.first, a.second[0], a.second[1]);
     popart::logging::info(line);
@@ -141,13 +145,13 @@ void PopartConfig::set_pipeline_setting(
     std::vector<int> values;
     values.push_back(ipu_idx);
     values.push_back(pipeline_stage);
-    m_pipeline_setting[name_pattern] = values;
+    pipeline_setting_[name_pattern] = values;
 }
 
 bool PopartConfig::get_pipeline_setting(
     const std::string& node_name, int64_t &ipu_idx, int64_t& pipeline_stage)
 {
-    for(auto &v : m_pipeline_setting){
+    for(auto &v : pipeline_setting_){
         auto name_pattern = std::regex(v.first, std::regex::icase);
         auto found = std::regex_search(node_name, name_pattern);
         if(found){
@@ -159,8 +163,12 @@ bool PopartConfig::get_pipeline_setting(
             return true;
         }
     }
-    popart::logging::debug(
-        "*** Oops *** the node name: {} did not match to any pattern!", 
-        node_name);
+    auto default_setting_iter = pipeline_setting_.find("^__all_unmatched__$");
+    if(default_setting_iter != pipeline_setting_.end()) {
+        ipu_idx = default_setting_iter->second[0];
+        pipeline_stage = default_setting_iter->second[1];
+        return true;
+    }
+    throw std::runtime_error("Node: " + node_name + " was not configured to any ipu or stage for pipeline");
     return false;
 }

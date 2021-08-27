@@ -51,39 +51,41 @@ enum ExecutionMode {UNKNOWN, PIPELINE, PARALLEL, SEQUENCE};
 class PopartConfig{
 private:
     float amp_;
-    std::string m_version;    // Version of the configuration file
-    int m_batch_per_step;     // Batch per step for PIPELINE & PARALLEL execution mode
-    ExecutionMode m_execution_mode;   // The execution mode {PIPELINE, PARALLEL, SEQUENCE}
-    bool m_load_onnx; // Whether load onnx model to run instead of the model constructed. Use for test
-    std::string m_load_onnx_path; // The path of onnx model file to load if load_onnx set to be true
-    std::map<std::string, std::vector<int>> m_pipeline_setting;   // The pipeline settings if execution_mode was set as PIPELINE
-    bool m_save_model;    // Whether save the mode constructed by model.cc
-    std::string m_save_model_path;    // The path where to save the model if save_model was set as true
-    int m_ipu_num;    // The number of ipu to use
+    std::string version_;    // Version of the configuration file
+    int batches_per_step_;     // Batch per step for PIPELINE & PARALLEL execution mode
+    ExecutionMode execution_mode_;   // The execution mode {PIPELINE, PARALLEL, SEQUENCE}
+    bool load_onnx_; // Whether load onnx model to run instead of the model constructed. Use for test
+    std::string load_onnx_path_; // The path of onnx model file to load if load_onnx set to be true
+    std::map<std::string, std::vector<int>> pipeline_setting_;   // The pipeline settings if execution_mode was set as PIPELINE
+    bool save_model_;    // Whether save the mode constructed by model.cc
+    std::string save_model_path_;    // The path where to save the model if save_model was set as true
+    int ipu_num_;    // The number of ipu to use
     std::string queue_type_;     //the type of the queue used by parallel mode
     int queue_capacity_;         //the capacity of the queue
-    static PopartConfig* m_instance;
+    bool debug_;    // In debug mode, override the option setting by configuration file
+    static PopartConfig* instance_;
     void use_default();
     void load_from_file(const std::string& file_path);
 public:
-    PopartConfig(): m_version("1.0.0"), 
-                    m_batch_per_step(1), m_execution_mode(UNKNOWN),
-                    m_load_onnx(false), m_save_model(false), m_ipu_num(1)
+    PopartConfig(): version_("1.0.0"), 
+                    batches_per_step_(1), execution_mode_(UNKNOWN),
+                    load_onnx_(false), save_model_(false), ipu_num_(1)
                     {/*std::cout << "PopartConfig instance created" << std::endl;*/}
     ~PopartConfig(){}
-    static PopartConfig* instance(){return m_instance;}
-    const std::string& version(){return m_version;}
+    static PopartConfig* instance(){return instance_;}
+    const std::string& version(){return version_;}
     inline float amp(){return amp_;};
-    inline int batch_per_step(){return m_batch_per_step;}
-    inline ExecutionMode execution_mode(){return m_execution_mode;}
-    inline bool load_onnx(){return m_load_onnx;}
-    inline bool save_model(){return m_save_model;}
-    inline const std::string& load_onnx_path(){return m_load_onnx_path;}
-    inline const std::string& save_model_path(){return m_save_model_path;}
-    inline const int ipu_num(){return m_ipu_num;}
-    inline bool no_pipeline(){return m_pipeline_setting.empty();}
+    inline int batches_per_step(){return batches_per_step_;}
+    inline ExecutionMode execution_mode(){return execution_mode_;}
+    inline bool load_onnx(){return load_onnx_;}
+    inline bool save_model(){return save_model_;}
+    inline const std::string& load_onnx_path(){return load_onnx_path_;}
+    inline const std::string& save_model_path(){return save_model_path_;}
+    inline const int ipu_num(){return ipu_num_;}
+    inline bool no_pipeline(){return pipeline_setting_.empty();}
     inline std::string queue_type(){return queue_type_;}
     inline int queue_capacity(){return queue_capacity_;}
+    inline bool debug(){return debug_;}
 
     void load_config(const char* file_path);
     bool get_pipeline_setting(const std::string& node_name, int64_t &ipu_idx, int64_t& pipeline_stage);
