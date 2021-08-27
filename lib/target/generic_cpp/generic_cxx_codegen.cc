@@ -191,6 +191,9 @@ CXXType GenericCXXCodeGen::SNTypeToCXXType(DataType dt) {
     case DataType::BOOL: {
       return (CXXType("bool"));
     }
+    case DataType::STRING: {
+      return (CXXType("odla_string"));
+    }
     default: {
       HLCHECK(0 && "Unhandled Type");
     }
@@ -349,6 +352,9 @@ std::string GenericCXXCodeGen::GetODLAType(DataType type) const noexcept {
     case DataType::BOOL: {
       return "ODLA_BOOL";
     }
+    case DataType::STRING: {
+      return "ODLA_STRING";
+    }
     default: {
       return "INVALID";
     }
@@ -408,6 +414,9 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
         break;
       case DataType::UINT8:
         data_type_str = "unsigned char";
+        break;
+      case DataType::STRING:
+        data_type_str = "char* const";
         break;
       default:
         HLCHECK(0);

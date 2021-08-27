@@ -27,6 +27,7 @@
 #include "halo/lib/target/codegen_object.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/GlobalVariable.h"
@@ -348,6 +349,36 @@ void GenericLLVMIRCodeGen::RunOnConstant(Constant& constant) {
       cv = llvm::ConstantDataArray::get(llvm_module_->getContext(), data);
       break;
     }
+    case DataType::STRING: {
+      int64_t n = constant.GetResultType().GetTotalNumOfElements();
+      std::vector<llvm::Constant*> strs(n);
+      auto char_ptr_ty = SNTypeToLLVMType(DataType::INT8)->getPointerTo();
+      llvm::Constant* zero =
+          llvm::ConstantInt::get(SNTypeToLLVMType(DataType::INT32), 0);
+      for (int64_t i = 0; i < n; ++i) {
+        const auto& str = constant.GetData<std::string>(i);
+        llvm::ArrayRef<char> data(str.c_str(), str.size() + 1);
+        auto str_constant =
+            llvm::ConstantDataArray::get(llvm_module_->getContext(), data);
+
+        llvm::GlobalVariable* str_gv = llvm::dyn_cast<llvm::GlobalVariable>(
+            llvm_module_->getOrInsertGlobal("", str_constant->getType()));
+        HLCHECK(str_gv != nullptr);
+        str_gv->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+        str_gv->setConstant(true);
+        str_gv->setVisibility(llvm::GlobalValue::HiddenVisibility);
+        str_gv->setLinkage(llvm::GlobalValue::LinkageTypes::PrivateLinkage);
+        str_gv->setInitializer(str_constant);
+
+        auto str_ptr = llvm::ConstantExpr::getGetElementPtr(
+            str_gv->getType()->getElementType(), str_gv,
+            llvm::ArrayRef<llvm::Value*>{zero, zero});
+        strs[i] = str_ptr;
+      }
+      cv = llvm::ConstantArray::get(llvm::ArrayType::get(char_ptr_ty, n),
+                                    llvm::ArrayRef<llvm::Constant*>(strs));
+      break;
+    }
     default: {
       HLCHECK(0 && "Unsupported type");
     }
@@ -382,7 +413,7 @@ void GenericLLVMIRCodeGen::RunOnBasicBlock(llvm::Function* llvm_func,
       llvm::BasicBlock::Create(GetLLVMContext(), bb.GetName(), llvm_func);
   ir_mapping_[bb] = llvm_bb;
   llvm::IRBuilder<> ir_builder(llvm_bb);
-  // current_llvm_builder_ is only available in thihs function.
+  // current_llvm_builder_ is only available in this function.
   current_llvm_builder_ = &ir_builder;
 
   for (auto& inst : bb) {
