@@ -28,9 +28,10 @@ void GenericCXXConstantWriter::RunOnConstant(const Constant& constant,
   CXXValue value(constant.GetName(),
                  GenericCXXCodeGen::TensorTypeToCXXType(type, true));
   // "extern" is needed for CXX compiler to prevent name mangling.
-  *os << "extern const " << value.type.name << " " << value.name << "["
+  *os << "extern " << value.type.name << " const " << value.name << "["
       << GenericCXXCodeGen::Join(type.GetDimSizes(), '*') << "] = {";
-  constant.PrintData(os, constant.GetResultType().GetTotalNumOfElements());
+  constant.PrintData(os, constant.GetResultType().GetTotalNumOfElements(),
+                     false);
   *os << "};\n";
 }
 
