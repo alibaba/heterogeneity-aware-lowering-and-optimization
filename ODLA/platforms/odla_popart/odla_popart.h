@@ -118,8 +118,7 @@ struct _odla_context {
   odla_computation comp;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> inputs;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> outputs;
-  std::atomic<odla_context> next;
-  _odla_context(odla_computation c): comp(c), next(nullptr) {}
+  _odla_context(odla_computation c): comp(c) {}
   std::thread::id thread_id_of_holder;
   inline virtual void wait() {}
   inline virtual void notify() {}

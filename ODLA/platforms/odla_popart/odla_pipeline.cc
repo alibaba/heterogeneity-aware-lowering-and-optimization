@@ -273,8 +273,8 @@ odla_context LockFreeQueue::get_ctx_by_tensor(const popart::TensorId& id)
   std::uint32_t idx = -1;
   odla_context ctx = nullptr;
   // Get current index
-  auto iter = _tensor_to_idx.find(id);
-  if (_tensor_to_idx.end() == iter)
+  auto iter = tensor_to_idx_.find(id);
+  if (tensor_to_idx_.end() == iter)
     idx = 0;
   else
     idx = iter->second;
@@ -313,7 +313,7 @@ odla_context LockFreeQueue::get_ctx_by_tensor(const popart::TensorId& id)
   ctx = buffer_[idx].load();
   popart::logging::info("LockFreeQueue::get_ctx_by_tensor tensorid:{} got ctx:{} with idx: {}", id, ctx, idx); 
   //Update the index of the tensor to next
-  _tensor_to_idx[id] = (idx + 1) % capacity_;
+  tensor_to_idx_[id] = (idx + 1) % capacity_;
   return ctx;
 }
 
