@@ -74,48 +74,44 @@ struct _odla_value {
     const std::string& n):tensor_id(id), tensor_info(info), name(n){}
 };
 
-struct _odla_computation {  //destruct the computation when odla_destroycomputatin called.
+struct _odla_computation {  
   std::unique_ptr<popart::Builder> builder;
-  std::unique_ptr<popart::InferenceSession> session; //TODO: clear the session, reset the session in destroy computation
-  std::shared_ptr<popart::DeviceInfo> device;        //
-  popart::SessionOptions m_session_opts;
+  std::unique_ptr<popart::InferenceSession> session;
+  std::shared_ptr<popart::DeviceInfo> device;
+  popart::SessionOptions session_opts_;
   std::unordered_map<std::string, odla_value> inputs_map;
   std::unordered_map<std::string, odla_value> outputs_map;
   std::vector<odla_value> input_values;
   std::vector<odla_value> output_values;
-  int64_t m_ipu_number = 0;
-  int64_t m_pipeline_stage = 0;
   target_opts opts;
 
   // new members for pipeline
-  static _odla_computation* m_instance;
+  static _odla_computation* instance_;
   static _odla_computation* instance(bool hold_it = true){
       if(hold_it)
-          m_instance->hold(); 
-      return m_instance;
+          instance_->hold(); 
+      return instance_;
   }
-  bool m_done;
+  bool done_;
   bool thread_complete_;
-  std::mutex m_init_mutex;
-  Execution* m_executor;
+  std::mutex init_mutex_;
+  Execution* executor_;
   std::thread::id thread_id_of_holder;
 
   _odla_computation():builder(popart::Builder::create()), 
     session(nullptr), device(nullptr), opts({false, 1, 1}), 
-    m_done(false), m_executor(nullptr), 
+    done_(false), executor_(nullptr), 
     thread_complete_(false) {}
-  // Make the the member to be private & public.
-  // ToDo: code stype use Camel or somthing, google style for the varialble name, lint layer. Pre commit - tool
   void init();
-  inline bool is_done(){return m_done;}
-  inline void mark_done(){m_done = true;}
+  inline bool is_done(){return done_;}
+  inline void mark_done(){done_ = true;}
   std::string set_pipeline_stage();
   void set_session_opts();
   void set_executor();
   void set_opts();
   bool use_pipeline();
   bool hold();
-  inline Execution* executor(){return m_executor;}
+  inline Execution* executor(){return executor_;}
 };
 
 struct _odla_context {

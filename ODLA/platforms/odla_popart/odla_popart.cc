@@ -28,7 +28,7 @@
 #include "popart_config.h"
 #include "odla_pipeline.h"
 
-_odla_computation* _odla_computation::m_instance = new _odla_computation();
+_odla_computation* _odla_computation::instance_ = new _odla_computation();
 
 void compute_loop(odla_computation comp)
 {
@@ -62,7 +62,7 @@ void compute_loop(odla_computation comp)
 void _odla_computation::init()
 {
     if(!session){
-        std::lock_guard<std::mutex> guard(m_init_mutex);
+        std::lock_guard<std::mutex> guard(init_mutex_);
         if(!session){
             set_opts(); //Test code
             //Cretate the dataflow
@@ -82,8 +82,8 @@ void _odla_computation::init()
                 device = popart::DeviceManager::createDeviceManager().acquireAvailableDevice(opts.ipu_num);
             // Create and config SessionOptions
             set_session_opts();
-
-            builder = popart::Builder::createFromOnnxModel(set_pipeline_stage());
+	    if(use_pipeline())
+                builder = popart::Builder::createFromOnnxModel(set_pipeline_stage());
             auto proto = builder->getModelProto(); //So, the init must be called at odla_ExecuteCompute
             if(PopartConfig::instance()->load_onnx()){
                 popart::logging::info("Load onnx file as pipeline mode to run: {}", 
@@ -102,7 +102,7 @@ void _odla_computation::init()
                 data_flow, 
                 device, 
                 popart::InputShapeInfo(), 
-                m_session_opts
+                session_opts_
             );
             new_session->prepareDevice();
             new_session->setRandomSeed(0);  // Init seed
@@ -142,11 +142,11 @@ void _odla_computation::set_executor()
     ExecutionMode mode = PopartConfig::instance()->execution_mode();
     if(PIPELINE == mode || PARALLEL == mode){
         popart::logging::info("set the executor as parallel");
-        m_executor = new Parallel();
+        executor_ = new Parallel();
     }
     else if(SEQUENCE == mode){
         popart::logging::info("set the executor as sequence");
-        m_executor = new Sequence();
+        executor_ = new Sequence();
     }
     else{
         throw std::invalid_argument(
@@ -159,25 +159,25 @@ void _odla_computation::set_session_opts()
 {
     //This should be passed in by config file or some where
     if(!PopartConfig::instance()->no_pipeline()){
-        m_session_opts.enablePipelining = true;
-        //m_session_opts.autoRecomputation = popart::RecomputationType::Pipeline;
-        m_session_opts.virtualGraphMode = popart::VirtualGraphMode::Manual;
+        session_opts_.enablePipelining = true;
+        //session_opts_.autoRecomputation = popart::RecomputationType::Pipeline;
+        session_opts_.virtualGraphMode = popart::VirtualGraphMode::Manual;
     }else{
-        m_session_opts.virtualGraphMode = popart::VirtualGraphMode::Auto;
+        session_opts_.virtualGraphMode = popart::VirtualGraphMode::Auto;
     }
-    //m_session_opts.matmulOptions["use128BitConvUnitLoad"] = "true";
-    //m_session_opts.matmulOptions["enableMultiStageReduce"] = "false";
-    //m_session_opts.matmulOptions["enableFastReduce"] = "true";
-    m_session_opts.enableFloatingPointChecks = false;
-    m_session_opts.enableStochasticRounding = false;
-    m_session_opts.enablePrefetchDatastreams = false; //true;
-    m_session_opts.enableOutlining = true;
+    //session_opts_.matmulOptions["use128BitConvUnitLoad"] = "true";
+    //session_opts_.matmulOptions["enableMultiStageReduce"] = "false";
+    //session_opts_.matmulOptions["enableFastReduce"] = "true";
+    session_opts_.enableFloatingPointChecks = false;
+    session_opts_.enableStochasticRounding = false;
+    session_opts_.enablePrefetchDatastreams = false; //true;
+    session_opts_.enableOutlining = true;
     std::string partials_type = "half";
-    m_session_opts.partialsTypeMatMuls = partials_type;
-    m_session_opts.convolutionOptions["partialsType"] = partials_type;
-    m_session_opts.outlineThreshold = 10.0;
-    m_session_opts.instrumentWithHardwareCycleCounter = false;
-    m_session_opts.disableGradAccumulationTensorStreams = true;
+    session_opts_.partialsTypeMatMuls = partials_type;
+    session_opts_.convolutionOptions["partialsType"] = partials_type;
+    session_opts_.outlineThreshold = 10.0;
+    session_opts_.instrumentWithHardwareCycleCounter = false;
+    session_opts_.disableGradAccumulationTensorStreams = true;
 }
 
 bool _odla_computation::hold()
@@ -195,9 +195,7 @@ bool _odla_computation::hold()
     }else{
         std::stringstream ss_holder;
         ss_holder << thread_id_of_holder;
-        //throw std::runtime_error("The odla_computation has been held by thread: " 
-        //      + ss_holder.str() + ", when thread" + ss.str() + " try to hold it.");
-        popart::logging::err("The odla_computation {} has been held by thread: {}"
+        popart::logging::warn("The odla_computation {} has been held by thread: {}"
               ", when thread {} try to hold it.", this, thread_id_of_holder, this_thread_id);
     }
     return false;
@@ -205,7 +203,7 @@ bool _odla_computation::hold()
 
 std::string _odla_computation::set_pipeline_stage() {
     popart::logging::info("Setting pipeline stage for the model");
-    std::stringstream input(this->builder->getModelProto());
+    std::stringstream input(builder->getModelProto());
     ONNX_NAMESPACE::ModelProto model_proto;
     google::protobuf::io::IstreamInputStream input_stream(&input);
     google::protobuf::io::CodedInputStream coded_input_stream(&input_stream);
@@ -297,7 +295,6 @@ bool _odla_context::hold(const std::string& function_name)
 void Sequence::compute(odla_computation comp, odla_context context,
                                 odla_compute_mode mode, odla_device device) 
 {
-    //comp->init();
     std::lock_guard<std::mutex> comp_guard(sequence_mutex);
     popart::logging::info( ">>> Sequence::compute() with ctx: {}", context);
     // Config StepIO
@@ -328,7 +325,6 @@ void Parallel::compute(odla_computation comp, odla_context context,
 {
     popart::logging::info(">>> Parallel::compute() with context: {}", context);
     QManager::instance()->getQ()->put(context); //put the queues to wait list firstly
-    //comp->init();
     context->wait();
     popart::logging::info("<<< Parallel::compute() with context {}", context);
 }

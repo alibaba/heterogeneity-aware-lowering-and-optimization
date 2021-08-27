@@ -320,17 +320,12 @@ odla_context LockFreeQueue::get_ctx_by_tensor(const popart::TensorId& id)
 /*======================================== step io callbacks =========================================*/
 popart::StepIOCallback::InputCallback input_callback =
     [&](popart::TensorId id, bool prefetch) -> popart::ConstVoidData {
-  // auto start = std::chrono::steady_clock::now();
-  
   odla_context ctx = QManager::instance()->getQ()->get_ctx_by_tensor(id); //get_input_context();
   popart::ConstVoidData data;
   if(nullptr != ctx)
   {
     popart::logging::info("InputCallback called with id: {}, ctx: {}", id, ctx);
     popart::IArray* p_array = ctx->get_data_by_tensor_id(id);
-    // popart::ConstVoidData data(
-    //   p_array->data(),
-    //   popart::TensorInfo(p_array->dataType(), p_array->shape()));
     data.data = p_array->data();
     data.info = popart::TensorInfo(p_array->dataType(), p_array->shape());
     if(ctx->all_tensors_visited()){
@@ -341,11 +336,6 @@ popart::StepIOCallback::InputCallback input_callback =
   {
     data.data = nullptr;
   }
-  // auto end = std::chrono::steady_clock::now();
-  // std::chrono::duration<double> elapsed_seconds = end-start;
-  // popart::logging::info(
-  //   "[EYECATCHER] ctx: {} popart::StepIOCallback::InputCallback takes {} s."
-  //   , ctx, elapsed_seconds.count());
   return data;
 };
 
@@ -355,7 +345,6 @@ popart::StepIOCallback::InputCompleteCallback input_complete_callback =
 
 popart::StepIOCallback::OutputCallback output_callback =
     [&](popart::TensorId id) -> popart::MutableVoidData {
-  // auto start = std::chrono::steady_clock::now();
 
   odla_context ctx = QManager::instance()->getQ()->get_output_context();
   popart::logging::info("OutputCallback called with id: {} ctx: {}", id, ctx);
@@ -364,17 +353,11 @@ popart::StepIOCallback::OutputCallback output_callback =
   data.data = p_array->data();
   data.info = popart::TensorInfo(p_array->dataType(), p_array->shape());
 
-  // auto end = std::chrono::steady_clock::now();
-  // std::chrono::duration<double> elapsed_seconds = end-start;
-  // popart::logging::info(
-  //   "[EYECATCHER] ctx: {} popart::StepIOCallback::OutputCallback takes {} s.",
-  //   ctx, elapsed_seconds.count());
   return data;
 };
 
 popart::StepIOCallback::OutputCompleteCallback output_complete_callback =
     [&](popart::TensorId id) -> void {
-  // auto start = std::chrono::steady_clock::now();
   odla_context ctx = QManager::instance()->getQ()->get_output_context();
   popart::logging::info(
     "OutputCompleteCallback called with id: {}, ctx: {}", id, ctx);
@@ -390,10 +373,4 @@ popart::StepIOCallback::OutputCompleteCallback output_complete_callback =
     else
       ctx->notify();  //unblock the request
   }
-
-  // auto end = std::chrono::steady_clock::now();
-  // std::chrono::duration<double> elapsed_seconds = end-start;
-  // popart::logging::info(
-  //   "[EYECATCHER] ctx: {} OutputCompleteCallback takes {} s.", 
-  //   ctx, elapsed_seconds.count());
 };
