@@ -101,6 +101,8 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(CumSumInst*) override;
   virtual void RunOnInstruction(CustomInst*) override;
   virtual void RunOnInstruction(ConcatInst*) override;
+  virtual void RunOnInstruction(ConvertFromStringInst*) override;
+  virtual void RunOnInstruction(ConvertToStringInst*) override;
   virtual void RunOnInstruction(DivInst*) override;
   virtual void RunOnInstruction(ErfInst*) override;
   virtual void RunOnInstruction(ExpInst*) override;
