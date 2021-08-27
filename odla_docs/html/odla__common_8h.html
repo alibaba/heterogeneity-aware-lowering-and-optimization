@@ -131,8 +131,6 @@ Typedefs</h2></td></tr>
 <tr class="separator:aeaf2b4ed87e14f5bbf792ab782aa73f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a956bdf1765e13ccacb04cbf02de7d0b3"><td class="memItemLeft" align="right" valign="top">typedef double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__common_8h.html#a956bdf1765e13ccacb04cbf02de7d0b3">odla_float64</a></td></tr>
 <tr class="separator:a956bdf1765e13ccacb04cbf02de7d0b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abd5c0aa787a6e04de64aef40f80c8cc2"><td class="memItemLeft" align="right" valign="top">typedef const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__common_8h.html#abd5c0aa787a6e04de64aef40f80c8cc2">odla_string</a></td></tr>
-<tr class="separator:abd5c0aa787a6e04de64aef40f80c8cc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a86f265601c0773152f4e193a8614c0ac"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="odla__common_8h.html#a6b80c6921b4b4e20c95df868e20c8afd">odla_uint32</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__common_8h.html#a86f265601c0773152f4e193a8614c0ac">odla_bool</a></td></tr>
 <tr class="separator:a86f265601c0773152f4e193a8614c0ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a70ab5c97f8e2150ab1c252e6fa33d38b"><td class="memItemLeft" align="right" valign="top"><a id="a70ab5c97f8e2150ab1c252e6fa33d38b"></a>
@@ -177,32 +175,13 @@ Enumerations</h2></td></tr>
 , <b>ODLA_FLOAT64</b>
 , <br />
 &#160;&#160;<b>ODLA_BOOL</b>
-, <b>ODLA_STRING</b>
 <br />
  }</td></tr>
 <tr class="separator:a6218e6a4a89e7525ee0506df9bf2d934"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a32d12bc3360c8b8891c225a703f7db29"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> { <br />
-&#160;&#160;<b>ODLA_SUCCESS</b>
-, <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a6d455c06ecdf45fe88b1e126ca213087">ODLA_DL_ERROR</a>
-, <b>ODLA_FILE_NOT_EXIST</b>
-, <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a5b894b19f9456cae708edc778f63218f">ODLA_INVALID_PARAM</a>
-, <br />
-&#160;&#160;<a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a3bbe59e41327500a9a709ae05af34dd1">ODLA_MEM_ERROR</a>
-, <b>ODLA_UNSUPPORTED_DATATYPE</b>
-, <b>ODLA_UNSUPPORTED_DEVICE_TYPE</b>
-, <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29abb64d0b5146c0236d571cb897384853e">ODLA_UNSUPPORTED_OP</a>
-, <br />
-&#160;&#160;<a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a2a2087e4e487e8ec867e356bdcc95f00">ODLA_TIMEOUT</a>
-, <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a0c19e9d42ae016f5b9dc9a7054077d13">ODLA_INTERNAL_LOGIC_ERR</a>
-, <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a78d98eb3ea302582a487afa76c9f1344">ODLA_RECOVERABLE_ERR</a>
-, <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a4f2a588c748813827894ececed6a4547">ODLA_PARTITION_RESET</a>
-, <br />
-&#160;&#160;<b>ODLA_FULL_RESET</b>
-, <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a7f249f9bdd98e4745333b2c83ac73a7c">ODLA_UNRECOVERABLE_ERR</a>
+<tr class="memitem:a32d12bc3360c8b8891c225a703f7db29"><td class="memItemLeft" align="right" valign="top"><a id="a32d12bc3360c8b8891c225a703f7db29"></a>enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> { <b>ODLA_SUCCESS</b>
 , <b>ODLA_FAILURE</b>
-<br />
  }</td></tr>
-<tr class="memdesc:a32d12bc3360c8b8891c225a703f7db29"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return status.  <a href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">More...</a><br /></td></tr>
+<tr class="memdesc:a32d12bc3360c8b8891c225a703f7db29"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return status. <br /></td></tr>
 <tr class="separator:a32d12bc3360c8b8891c225a703f7db29"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -223,7 +202,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>16-bit brain floating point type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00089">89</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00088">88</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -240,7 +219,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>boolean type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00099">99</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00097">97</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -257,7 +236,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>16-bit floating point type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00088">88</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00087">87</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -274,7 +253,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>32-bit floating point type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00090">90</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00089">89</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -291,7 +270,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>64-bit floating point type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00091">91</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00090">90</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -308,7 +287,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>16-bit signed integer type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00065">65</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00064">64</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -325,7 +304,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>32-bit signed integer type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00066">66</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00065">65</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -342,7 +321,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>64-bit signed integer type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00067">67</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00066">66</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -359,7 +338,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>8-bit signed integer type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00064">64</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00063">63</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -376,7 +355,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>16-bit signed quantized integer type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00075">75</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00074">74</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -393,7 +372,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>32-bit signed quantized integer type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00076">76</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00075">75</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -410,7 +389,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>64-bit signed quantized integer type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00077">77</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00076">76</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -427,7 +406,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>8-bit signed quantized integer type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00074">74</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00073">73</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -444,7 +423,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>16-bit unsigned quantized integer type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00081">81</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00080">80</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -461,7 +440,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>32-bit unsigned quantized integer type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00083">83</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00082">82</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -478,7 +457,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>64-bit unsigned quantized integer type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00085">85</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00084">84</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -495,24 +474,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>8-bit unsigned quantized integer type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00079">79</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
-
-</div>
-</div>
-<a id="abd5c0aa787a6e04de64aef40f80c8cc2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abd5c0aa787a6e04de64aef40f80c8cc2">&#9670;&nbsp;</a></span>odla_string</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef const char* <a class="el" href="odla__common_8h.html#abd5c0aa787a6e04de64aef40f80c8cc2">odla_string</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>pointer to NULL-terminated string </p>
-
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00092">92</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00078">78</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -529,7 +491,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>16-bit unsigned integer type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00069">69</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00068">68</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -546,7 +508,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>32-bit unsigned integer type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00070">70</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00069">69</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -563,7 +525,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>64-bit unsigned integer type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00071">71</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00070">70</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
 </div>
 </div>
@@ -580,74 +542,8 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 <p>8-bit unsigned integer type </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00068">68</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00067">67</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
 
-</div>
-</div>
-<h2 class="groupheader">Enumeration Type Documentation</h2>
-<a id="a32d12bc3360c8b8891c225a703f7db29"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a32d12bc3360c8b8891c225a703f7db29">&#9670;&nbsp;</a></span>odla_status</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Return status. </p>
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a32d12bc3360c8b8891c225a703f7db29a6d455c06ecdf45fe88b1e126ca213087"></a>ODLA_DL_ERROR&#160;</td><td class="fielddoc"><p>dlopen a shared library error </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a32d12bc3360c8b8891c225a703f7db29a5b894b19f9456cae708edc778f63218f"></a>ODLA_INVALID_PARAM&#160;</td><td class="fielddoc"><p>illegal input argument, such as nullptr </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a32d12bc3360c8b8891c225a703f7db29a3bbe59e41327500a9a709ae05af34dd1"></a>ODLA_MEM_ERROR&#160;</td><td class="fielddoc"><p>allocate/deallocate memory error, out of memory error </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a32d12bc3360c8b8891c225a703f7db29abb64d0b5146c0236d571cb897384853e"></a>ODLA_UNSUPPORTED_OP&#160;</td><td class="fielddoc"><p>odla op is not implemented yet </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a32d12bc3360c8b8891c225a703f7db29a2a2087e4e487e8ec867e356bdcc95f00"></a>ODLA_TIMEOUT&#160;</td><td class="fielddoc"><p>process timeout </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a32d12bc3360c8b8891c225a703f7db29a0c19e9d42ae016f5b9dc9a7054077d13"></a>ODLA_INTERNAL_LOGIC_ERR&#160;</td><td class="fielddoc"><p>internal error </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a32d12bc3360c8b8891c225a703f7db29a78d98eb3ea302582a487afa76c9f1344"></a>ODLA_RECOVERABLE_ERR&#160;</td><td class="fielddoc"><p>auto recoverable error </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a32d12bc3360c8b8891c225a703f7db29a4f2a588c748813827894ececed6a4547"></a>ODLA_PARTITION_RESET&#160;</td><td class="fielddoc"><p>manual recoverable error, include partition reset and full reset type </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a32d12bc3360c8b8891c225a703f7db29a7f249f9bdd98e4745333b2c83ac73a7c"></a>ODLA_UNRECOVERABLE_ERR&#160;</td><td class="fielddoc"><p>unrecoverable error </p>
-</td></tr>
-</table>
-
-<p class="definition">Definition at line <a class="el" href="odla__common_8h_source.html#l00140">140</a> of file <a class="el" href="odla__common_8h_source.html">odla_common.h</a>.</p>
-<div class="fragment"><div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;             {</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;  ODLA_SUCCESS,</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;  <a class="code" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a6d455c06ecdf45fe88b1e126ca213087">ODLA_DL_ERROR</a>,</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;  ODLA_FILE_NOT_EXIST,</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;  <a class="code" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a5b894b19f9456cae708edc778f63218f">ODLA_INVALID_PARAM</a>,</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;  <a class="code" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a3bbe59e41327500a9a709ae05af34dd1">ODLA_MEM_ERROR</a>,</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;  ODLA_UNSUPPORTED_DATATYPE,</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;  ODLA_UNSUPPORTED_DEVICE_TYPE,</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;  <a class="code" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29abb64d0b5146c0236d571cb897384853e">ODLA_UNSUPPORTED_OP</a>,</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;  <a class="code" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a2a2087e4e487e8ec867e356bdcc95f00">ODLA_TIMEOUT</a>,</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;  <a class="code" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a0c19e9d42ae016f5b9dc9a7054077d13">ODLA_INTERNAL_LOGIC_ERR</a>,</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;  <a class="code" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a78d98eb3ea302582a487afa76c9f1344">ODLA_RECOVERABLE_ERR</a>,</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;  <a class="code" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a4f2a588c748813827894ececed6a4547">ODLA_PARTITION_RESET</a>,</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;  ODLA_FULL_RESET,</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;  <a class="code" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a7f249f9bdd98e4745333b2c83ac73a7c">ODLA_UNRECOVERABLE_ERR</a>,</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;  ODLA_FAILURE,</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;} <a class="code" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a>;</div>
-<div class="ttc" id="aodla__common_8h_html_a32d12bc3360c8b8891c225a703f7db29"><div class="ttname"><a href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a></div><div class="ttdeci">odla_status</div><div class="ttdoc">Return status.</div><div class="ttdef"><b>Definition:</b> <a href="odla__common_8h_source.html#l00140">odla_common.h:140</a></div></div>
-<div class="ttc" id="aodla__common_8h_html_a32d12bc3360c8b8891c225a703f7db29a0c19e9d42ae016f5b9dc9a7054077d13"><div class="ttname"><a href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a0c19e9d42ae016f5b9dc9a7054077d13">ODLA_INTERNAL_LOGIC_ERR</a></div><div class="ttdeci">@ ODLA_INTERNAL_LOGIC_ERR</div><div class="ttdoc">internal error</div><div class="ttdef"><b>Definition:</b> <a href="odla__common_8h_source.html#l00156">odla_common.h:156</a></div></div>
-<div class="ttc" id="aodla__common_8h_html_a32d12bc3360c8b8891c225a703f7db29a2a2087e4e487e8ec867e356bdcc95f00"><div class="ttname"><a href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a2a2087e4e487e8ec867e356bdcc95f00">ODLA_TIMEOUT</a></div><div class="ttdeci">@ ODLA_TIMEOUT</div><div class="ttdoc">process timeout</div><div class="ttdef"><b>Definition:</b> <a href="odla__common_8h_source.html#l00154">odla_common.h:154</a></div></div>
-<div class="ttc" id="aodla__common_8h_html_a32d12bc3360c8b8891c225a703f7db29a3bbe59e41327500a9a709ae05af34dd1"><div class="ttname"><a href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a3bbe59e41327500a9a709ae05af34dd1">ODLA_MEM_ERROR</a></div><div class="ttdeci">@ ODLA_MEM_ERROR</div><div class="ttdoc">allocate/deallocate memory error, out of memory error</div><div class="ttdef"><b>Definition:</b> <a href="odla__common_8h_source.html#l00148">odla_common.h:148</a></div></div>
-<div class="ttc" id="aodla__common_8h_html_a32d12bc3360c8b8891c225a703f7db29a4f2a588c748813827894ececed6a4547"><div class="ttname"><a href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a4f2a588c748813827894ececed6a4547">ODLA_PARTITION_RESET</a></div><div class="ttdeci">@ ODLA_PARTITION_RESET</div><div class="ttdoc">manual recoverable error, include partition reset and full reset type</div><div class="ttdef"><b>Definition:</b> <a href="odla__common_8h_source.html#l00160">odla_common.h:160</a></div></div>
-<div class="ttc" id="aodla__common_8h_html_a32d12bc3360c8b8891c225a703f7db29a5b894b19f9456cae708edc778f63218f"><div class="ttname"><a href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a5b894b19f9456cae708edc778f63218f">ODLA_INVALID_PARAM</a></div><div class="ttdeci">@ ODLA_INVALID_PARAM</div><div class="ttdoc">illegal input argument, such as nullptr</div><div class="ttdef"><b>Definition:</b> <a href="odla__common_8h_source.html#l00146">odla_common.h:146</a></div></div>
-<div class="ttc" id="aodla__common_8h_html_a32d12bc3360c8b8891c225a703f7db29a6d455c06ecdf45fe88b1e126ca213087"><div class="ttname"><a href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a6d455c06ecdf45fe88b1e126ca213087">ODLA_DL_ERROR</a></div><div class="ttdeci">@ ODLA_DL_ERROR</div><div class="ttdoc">dlopen a shared library error</div><div class="ttdef"><b>Definition:</b> <a href="odla__common_8h_source.html#l00143">odla_common.h:143</a></div></div>
-<div class="ttc" id="aodla__common_8h_html_a32d12bc3360c8b8891c225a703f7db29a78d98eb3ea302582a487afa76c9f1344"><div class="ttname"><a href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a78d98eb3ea302582a487afa76c9f1344">ODLA_RECOVERABLE_ERR</a></div><div class="ttdeci">@ ODLA_RECOVERABLE_ERR</div><div class="ttdoc">auto recoverable error</div><div class="ttdef"><b>Definition:</b> <a href="odla__common_8h_source.html#l00158">odla_common.h:158</a></div></div>
-<div class="ttc" id="aodla__common_8h_html_a32d12bc3360c8b8891c225a703f7db29a7f249f9bdd98e4745333b2c83ac73a7c"><div class="ttname"><a href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a7f249f9bdd98e4745333b2c83ac73a7c">ODLA_UNRECOVERABLE_ERR</a></div><div class="ttdeci">@ ODLA_UNRECOVERABLE_ERR</div><div class="ttdoc">unrecoverable error</div><div class="ttdef"><b>Definition:</b> <a href="odla__common_8h_source.html#l00163">odla_common.h:163</a></div></div>
-<div class="ttc" id="aodla__common_8h_html_a32d12bc3360c8b8891c225a703f7db29abb64d0b5146c0236d571cb897384853e"><div class="ttname"><a href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29abb64d0b5146c0236d571cb897384853e">ODLA_UNSUPPORTED_OP</a></div><div class="ttdeci">@ ODLA_UNSUPPORTED_OP</div><div class="ttdoc">odla op is not implemented yet</div><div class="ttdef"><b>Definition:</b> <a href="odla__common_8h_source.html#l00152">odla_common.h:152</a></div></div>
-</div><!-- fragment -->
 </div>
 </div>
 </div><!-- contents -->
