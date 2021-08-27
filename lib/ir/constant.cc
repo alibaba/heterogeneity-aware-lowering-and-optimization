@@ -83,26 +83,25 @@ struct Float {
   static constexpr int FP16Mantissa = 10;
   static constexpr int FP16ExpBias = 15;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstrict-aliasing"
   static inline float GetFP32(uint8_t sign, int32_t e, uint32_t m) {
     uint32_t x =
         Combine<uint32_t, FP32Exp, FP32Mantissa>(sign, e + FP32ExpBias, m);
-    return *(reinterpret_cast<float*>(&x)); // NOLINT.
+    const void* p = &x;
+    return *(reinterpret_cast<const float*>(p)); // NOLINT.
   }
   static inline uint16_t GetFP16(uint8_t sign, int32_t e, uint32_t m) {
-    return Combine<uint16_t, FP16Exp, FP16Mantissa>(sign, e + FP16Exp, m);
+    return Combine<uint16_t, FP16Exp, FP16Mantissa>(sign, e + FP16ExpBias, m);
   }
 
  public:
   static inline uint16_t GetFP16(float x) {
-    uint32_t v = *(reinterpret_cast<int*>(&x)); // NOLINT.
+    const void* p = &x;
+    uint32_t v = *(reinterpret_cast<const int*>(p)); // NOLINT.
     auto components = Extract<uint32_t, FP32Exp, FP32Mantissa>(v);
     components[1] -= FP32ExpBias;
     components[2] <<= BitsPerInt - FP32Mantissa;
     return GetFP16(components[0], components[1], components[2]);
   }
-#pragma GCC diagnostic pop
 
   static inline float GetFP32(uint16_t x) {
     auto components = Extract<uint16_t, FP16Exp, FP16Mantissa>(x);
@@ -158,12 +157,31 @@ void PrintValues<double>(std::ostream* os, const double* ptr, size_t n) {
   }
 }
 
-static void PrintFP16Values(std::ostream* os, const uint16_t* ptr, size_t n) {
+static void PrintFP16Values(std::ostream* os, const uint16_t* ptr, size_t n,
+                            bool human_friendly) {
   for (size_t i = 0; i < n; ++i) {
     if (i > 0) {
       *os << ", ";
     }
-    *os << Float::GetFP32(ptr[i]); // NOLINT.
+    if (human_friendly) {
+      *os << Float::GetFP32(ptr[i]); // NOLINT.
+      ;
+    } else {
+      *os << ptr[i]; // NOLINT.
+    }
+  }
+}
+
+static void PrintBF16Values(std::ostream* os, const uint16_t* ptr, size_t n,
+                            bool human_friendly) {
+  for (size_t i = 0; i < n; ++i) {
+    if (i > 0) {
+      *os << ", ";
+    }
+    constexpr int shift_amt = 16;
+    int ui32 = ptr[i] << shift_amt; // NOLINT.
+    const void* p = &ui32;
+    *os << *(reinterpret_cast<const float*>(p)); // NOLINT.
   }
 }
 
@@ -236,7 +254,8 @@ static void PrintValues(std::ostream* os,
   }
 }
 
-void Constant::PrintData(std::ostream* os, size_t num_to_print) const {
+void Constant::PrintData(std::ostream* os, size_t num_to_print,
+                         bool human_friendly) const {
   const Type& type = GetResultType();
   switch (type.GetDataType()) {
     case DataType::BOOL: {
@@ -251,13 +270,26 @@ void Constant::PrintData(std::ostream* os, size_t num_to_print) const {
       PrintValues(os, GetDataPtr<uint8_t>(), num_to_print);
       break;
     }
+    case DataType::INT16: {
+      PrintValues(os, GetDataPtr<int16_t>(), num_to_print);
+      break;
+    }
+    case DataType::UINT16: {
+      PrintValues(os, GetDataPtr<uint16_t>(), num_to_print);
+      break;
+    }
     case DataType::INT32: {
       PrintValues(os, GetDataPtr<int>(), num_to_print);
       break;
     }
     case DataType::FLOAT16: {
       PrintFP16Values(os, static_cast<const uint16_t*>(GetRawDataPtr()),
-                      num_to_print);
+                      num_to_print, human_friendly);
+      break;
+    }
+    case DataType::BFLOAT16: {
+      PrintBF16Values(os, static_cast<const uint16_t*>(GetRawDataPtr()),
+                      num_to_print, human_friendly);
       break;
     }
     case DataType::FLOAT32: {
@@ -291,7 +323,7 @@ void Constant::Print(std::ostream& os) const {
   size_t num_of_elements = type.GetTotalNumOfElements();
   constexpr size_t limit = 32; // maximum number of elements to print.
   if (num_of_elements > 0) {
-    PrintData(&os, std::min(num_of_elements, limit));
+    PrintData(&os, std::min(num_of_elements, limit), true);
   }
   if (num_of_elements > limit) {
     os << ", ...";
