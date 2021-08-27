@@ -83,7 +83,6 @@ public:
 class LockFreeQueue : public Queue
 {
 private:
-  //odla_context* buffer_;
   std::atomic<odla_context>* buffer_;
   std::size_t capacity_;
   std::uint32_t head_;
@@ -145,38 +144,10 @@ struct _odla_pipeline_context : public _odla_context {
     context_cv.notify_one();
   }
   inline popart::IArray* get_data_by_tensor_id(popart::TensorId id) override {
-    // auto visited = tensors_visited.find(id);
-    // if (tensors_visited.end() != visited) {
-    //   std::cerr
-    //       << "get_data_by_tensor_id() -> Multiple callback on the same tensor:"
-    //       << id << std::endl;
-    //   //return NULL;
-    // }
-    // auto iter = inputs.find(id);
-    // if (inputs.end() == iter)
-    //   return NULL;
-    // else {
-    //   tensors_visited.insert(id);
-    //   return &(*iter->second);
-    // }
     visited++;
     return &(*(inputs[id]));
   }
   inline popart::IArray* write_data_by_tensor_id(popart::TensorId id) override {
-    // auto written = tensors_written.find(id);
-    // if (tensors_written.end() != written) {
-    //   std::cerr << "write_data_by_tensor_id -> Multiple output callback on the "
-    //                "same tensor:"
-    //             << id << std::endl;
-    //   return NULL;
-    // }
-    // auto iter = outputs.find(id);
-    // if (outputs.end() == iter)
-    //   return NULL;
-    // else {
-    //   tensors_written.insert(id);
-    //   return &(*iter->second);
-    // }
     if(written == 0){
        end = std::chrono::steady_clock::now();
        std::chrono::duration<float, std::milli> elapsed_ms = end-start;
@@ -186,8 +157,6 @@ struct _odla_pipeline_context : public _odla_context {
     return &(*(outputs[id]));
   }
   inline bool all_tensors_visited() override {
-    //return (tensors_visited.size() == inputs.size());
-    //std::cout << "all_tensor_visited() in _odla_pipeline_context called with visited: " << visited << std::endl;
     if(inputs.size() != comp->input_values.size()){
       popart::logging::err("ctx {} inputs.size() is {}, does not match graph inputs size {}", 
                             this, inputs.size(), comp->input_values.size());
@@ -200,7 +169,6 @@ struct _odla_pipeline_context : public _odla_context {
     return false;
   }
   inline bool all_tensors_written() override {
-    //return (tensors_written.size() == outputs.size());
     if(outputs.size() != comp->output_values.size()){
       popart::logging::err("ctx {} outputs.size() is {}, does not match graph outputs size {}",
                             this, outputs.size(), comp->output_values.size());
@@ -212,9 +180,6 @@ struct _odla_pipeline_context : public _odla_context {
     return false;
   }
   inline void clear_visited_and_written() override {
-    //tensors_visited.clear();
-    //tensors_written.clear();
-    
     visited=0;
     written=0;
   }
