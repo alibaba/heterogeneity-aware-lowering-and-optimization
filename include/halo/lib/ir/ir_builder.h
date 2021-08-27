@@ -199,7 +199,8 @@ class ConstantBuilder final
   /// module using default data layout.
   Constant* CreateConstant(const std::string& name, const Type& type,
                            const void* data_ptr);
-
+  Constant* CreateConstant(const std::string& name, const Type& type,
+                           const std::vector<std::string>& strings);
   /// Create a new constant with specified data layout and append it to the end
   /// of current function or module.
   Constant* CreateConstant(const std::string& name, const Type& type,

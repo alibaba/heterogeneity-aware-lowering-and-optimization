@@ -415,6 +415,14 @@ void GetTensorData(const onnx::TensorProto& tensor, std::vector<int8_t>& v,
   }
 }
 
+template <>
+void GetTensorData(const onnx::TensorProto& tensor, std::vector<std::string>& v,
+                   size_t size) {
+  for (size_t i = 0; i < size; ++i) {
+    v.push_back(std::string(tensor.string_data()[i]));
+  }
+}
+
 template <typename T>
 Tensor<T> ONNXParser::ProcessTensor(const onnx::TensorProto& tensor_proto) {
   const DataType& data_type = ProcessDataType(tensor_proto.data_type());
@@ -482,6 +490,12 @@ IRObject* ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
     }
     case DataType::INT64: {
       const Tensor<int64_t> temp = ProcessTensor<int64_t>(tensor_def);
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
+      break;
+    }
+    case DataType::STRING: {
+      const Tensor<std::string> temp = ProcessTensor<std::string>(tensor_def);
       inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
                                        temp.GetData());
       break;

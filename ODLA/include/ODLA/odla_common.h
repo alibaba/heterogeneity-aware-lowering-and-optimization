@@ -56,6 +56,7 @@ typedef unsigned __int16 odla_float16;  /**< 16-bit floating point type */
 typedef unsigned __int16 odla_bfloat16; /**< 16-bit brain floating point type */
 typedef float odla_float32;             /**< 32-bit floating point type */
 typedef double odla_float64;            /**< 64-bit floating point type */
+typedef const char* odla_string; /**< pointer to NULL-terminated string */
 
 #else
 
@@ -88,6 +89,7 @@ typedef __UINT16_TYPE__ odla_float16;  /**< 16-bit floating point type */
 typedef __UINT16_TYPE__ odla_bfloat16; /**< 16-bit brain floating point type */
 typedef float odla_float32;            /**< 32-bit floating point type */
 typedef double odla_float64;           /**< 64-bit floating point type */
+typedef const char* odla_string;       /**< pointer to NULL-terminated string */
 #endif
 
 #ifndef NULL
@@ -122,6 +124,7 @@ typedef enum {
   ODLA_FLOAT64,
 
   ODLA_BOOL,
+  ODLA_STRING,
 } odla_element_type;
 
 //! \brief char
