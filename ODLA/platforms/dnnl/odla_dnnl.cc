@@ -70,30 +70,6 @@ struct Initializer {
 static Initializer interpreter_initializer;
 #endif
 
-dnnl::memory cast_odla_mem(dnnl::memory src_mem, const odla_value_shape shape,
-                           const dnnl::memory::data_type dt,
-                           const bool is_const) {
-  auto dst_md = dnnl::memory::desc(getDims(shape), dt, getFormatTag(shape));
-  auto dst_mem = dnnl::memory(dst_md, g_comp->eng);
-  auto r = dnnl::reorder(src_mem, dst_mem);
-  if (is_const) {
-    r.execute(dnnl::stream(g_comp->eng),
-              {{DNNL_ARG_FROM, src_mem}, {DNNL_ARG_TO, dst_mem}});
-  } else {
-    add_op(r, {{DNNL_ARG_FROM, src_mem}, {DNNL_ARG_TO, dst_mem}});
-  }
-  return dst_mem;
-}
-
-static dnnl::memory cast_op(odla_value& input, dnnl::memory::data_type dt) {
-  auto src_md = dnnl::memory::desc(getDims(input->shape),
-                                   input->mem.get_desc().data_type(),
-                                   getFormatTag(input->shape));
-  auto src_mem =
-      dnnl::memory(src_md, g_comp->eng, input->mem.get_data_handle());
-  return cast_odla_mem(src_mem, input->shape, dt, input->is_const);
-}
-
 odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
                                     odla_item_value value) {
   switch (type) {
@@ -464,13 +440,6 @@ odla_value odla_Gather(odla_value params, const odla_value indices,
   add_op(op);
   InterpretIfNeeded();
   return CreateValue(ret_mem, output_dims, id);
-}
-
-odla_value odla_Cast(odla_value input, odla_element_type target_type,
-                     const odla_value_id id) {
-  auto dst_mem = cast_op(input, getDataType(target_type));
-  InterpretIfNeeded();
-  return CreateValue(dst_mem, input->shape, id);
 }
 
 static odla_value unary_eltwise_op(

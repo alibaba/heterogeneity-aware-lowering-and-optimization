@@ -18,6 +18,7 @@
 #include <NvInfer.h>
 #include <NvInferPlugin.h>
 #include <NvInferRuntime.h>
+#include <NvInferRuntimeCommon.h>
 #include <ODLA/odla.h>
 #include <bits/stdint-intn.h>
 #include <cuda_runtime.h>
@@ -372,6 +373,7 @@ static nvinfer1::DataType GetNVDataType(odla_element_type type) {
     case ODLA_BOOL:
       return nvinfer1::DataType::kBOOL;
     default:
+      assert(0 && "unsupported");
       return nvinfer1::DataType::kFLOAT;
   }
 }
