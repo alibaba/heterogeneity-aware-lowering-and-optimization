@@ -28,6 +28,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "ODLA/odla_common.h"
 #include "dnnl.hpp"
 
 extern thread_local odla_computation g_comp;
@@ -75,6 +76,8 @@ struct operation {
   std::unordered_map<int, dnnl::memory> args;
 };
 
+dnnl::memory cast_op(odla_value& input, dnnl::memory::data_type dt)
+    __attribute__((visibility("hidden")));
 typedef struct TargetOpts {
   odla_bf16_mode bf16_mode;
 } target_opts;
@@ -140,6 +143,11 @@ static inline dnnl::memory::format_tag getFormatTag(odla_memory_layout layout,
 static inline int64_t GetTotalElements(const odla_value_shape& dims) {
   return std::accumulate(dims.dims, dims.dims + dims.size, 1,
                          std::multiplies<size_t>());
+}
+
+static inline bool hasDNNLMemorySupport(odla_element_type ty) {
+  return ty == ODLA_FLOAT32 || ty == ODLA_INT8 || ty == ODLA_UINT8 ||
+         ty == ODLA_INT32 || ty == ODLA_BFLOAT16;
 }
 
 static inline dnnl::memory::data_type getDataType(const odla_element_type ty) {

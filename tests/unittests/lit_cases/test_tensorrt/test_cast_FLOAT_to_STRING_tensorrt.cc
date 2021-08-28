@@ -25,5 +25,5 @@
 // RUN: %t_tensorrt.exe 0.0001 0 tensorrt %data_path/test_cast_FLOAT_to_STRING | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+// UNSUPPORTED: tensorrt
 #include "test_cast_FLOAT_to_STRING_tensorrt.cc.tmp.main.cc.in"
