@@ -162,6 +162,9 @@ static void PopulateOptPasses(PassManager* pm, const std::string& target,
   if (opts.enable_type_cast) {
     pm->AddTypeCastPass();
   }
+  if (opts.constant_decombine) {
+    pm->AddConstantDecombinePass();
+  }
 }
 } // namespace halo
 
