@@ -30,6 +30,7 @@
 #include "halo/lib/target/triton/triton_config_writer.h"
 #include "halo/lib/transforms/analyzer.h"
 #include "halo/lib/transforms/caffeextension_legalizer.h"
+#include "halo/lib/transforms/constant_decombine.h"
 #include "halo/lib/transforms/dce.h"
 #include "halo/lib/transforms/device_placement.h"
 #include "halo/lib/transforms/fusion.h"
@@ -425,6 +426,10 @@ Pass* PassManager::AddX86LLVMIRCodeGenPass() {
 Pass* PassManager::AddX86LLVMIRCodeGenPass(
     ConstantDataStorage constant_data_storage) {
   return AddPass<X86LLVMIRCodeGen>(constant_data_storage);
+}
+
+Pass* PassManager::AddConstantDecombinePass() {
+  return AddPass<ConstantDecombine>();
 }
 
 } // end namespace halo
