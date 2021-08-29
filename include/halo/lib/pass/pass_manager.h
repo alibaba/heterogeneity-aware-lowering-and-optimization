@@ -123,6 +123,7 @@ class HL_API_EXPORT PassManager final {
   Pass* AddX86ConstantWriterPass(std::ostream& os);
   Pass* AddX86LLVMIRCodeGenPass();
   Pass* AddX86LLVMIRCodeGenPass(ConstantDataStorage constant_data_storage);
+  Pass* AddConstantDecombinePass();
 
  private:
   Pass* Add(std::unique_ptr<ModulePass> pass);
