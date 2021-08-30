@@ -39,6 +39,7 @@
 #include "halo/lib/transforms/onnxextension_legalizer.h"
 #include "halo/lib/transforms/output_rewriter.h"
 #include "halo/lib/transforms/reorder_channel.h"
+#include "halo/lib/transforms/sharding.h"
 #include "halo/lib/transforms/splitting.h"
 #include "halo/lib/transforms/tfextension_legalizer.h"
 #include "halo/lib/transforms/tfliteextension_legalizer.h"
@@ -380,6 +381,10 @@ Pass* PassManager::AddRISCVLLVMIRCodeGenPass(
 Pass* PassManager::AddRISCVLLVMIRCodeGenPass(
     ConstantDataStorage constant_data_storage) {
   return AddPass<RISCVLLVMIRCodeGen>(constant_data_storage);
+}
+
+Pass* PassManager::AddShardingPass(int num_shards) {
+  return AddPass<Sharding>(num_shards);
 }
 
 Pass* PassManager::AddSplittingPass() { return AddPass<Splitting>(); }

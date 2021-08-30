@@ -30,6 +30,7 @@ set(SRCS
   onnxextension_legalizer.cc
   output_rewriter.cc
   reorder_channel.cc
+  sharding.cc
   splitting.cc
   tfextension_legalizer.cc
   tfliteextension_legalizer.cc
