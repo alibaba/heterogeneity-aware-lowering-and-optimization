@@ -165,7 +165,8 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
     inputs.push_back(bias->tensor_id);
   }
   auto result = g_comp->builder->aiOnnxOpset10().conv(
-      inputs, dim_dilations, group, kernel_shape, pads, dim_strides);
+      {input->tensor_id, kernel->tensor_id}, dim_dilations, group, kernel_shape,
+      pads, dim_strides);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -246,10 +247,9 @@ odla_value odla_HardSigmoid(odla_value input, odla_float32 alpha,
 }
 
 odla_value odla_InstanceNormalization(
-    odla_value input, odla_memory_layout input_layout, odla_value mean,
-    odla_value var, odla_float32 epsilon, odla_value scale, odla_value offset,
-    odla_float32 scalar_scale, odla_float32 scalar_offset,
-    const odla_value_id value_id) {
+    odla_value input, odla_memory_layout input_layout, odla_float32 epsilon,
+    odla_value scale, odla_value offset, odla_float32 scalar_scale,
+    odla_float32 scalar_offset, const odla_value_id value_id) {
   const auto& name = value_id
                          ? std::string(reinterpret_cast<const char*>(value_id))
                          : "InstanceNormalization";
@@ -276,8 +276,6 @@ odla_value odla_InstanceNormalization(
 
   auto result = g_comp->builder->aiOnnxOpset10().instancenormalization(
       {input->tensor_id, scale->tensor_id, offset->tensor_id}, epsilon);
-  // {input->tensor_id, scale->tensor_id, offset->tensor_id,mean->tensor_id,
-  // var->tensor_id}, epsilon);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},

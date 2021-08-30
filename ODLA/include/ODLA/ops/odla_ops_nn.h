@@ -293,10 +293,9 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_GroupNormalization(
   \return odla_value
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_InstanceNormalization(
-    odla_value input, odla_memory_layout input_layout, odla_value mean,
-    odla_value var, odla_float32 epsilon, odla_value scale, odla_value offset,
-    odla_float32 scalar_scale, odla_float32 scalar_offset,
-    const odla_value_id value_id);
+    odla_value input, odla_memory_layout input_layout, odla_float32 epsilon,
+    odla_value scale, odla_value offset, odla_float32 scalar_scale,
+    odla_float32 scalar_offset, const odla_value_id value_id);
 
 //! \brief LeakyRelu activation
 /*!
@@ -552,3 +551,4 @@ extern ODLA_API_EXPORT odla_values ODLA_API_CALL odla_PostProcess(
 #endif
 
 #endif // _ODLA_OPERATOR_OPS_NN_H_
+
