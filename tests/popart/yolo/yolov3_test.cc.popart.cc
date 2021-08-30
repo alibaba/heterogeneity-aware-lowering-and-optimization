@@ -1640,4 +1640,3 @@ int yolo_v3(const float input_1[1 * 3 * 416 * 416],
          (end - begin) * 1.0 / CLOCKS_PER_SEC);
   return exec;
 }
-
