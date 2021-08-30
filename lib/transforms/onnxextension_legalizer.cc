@@ -363,6 +363,17 @@ static std::vector<Def> ConvertCast(const ONNXExtensionInst* ext,
   if (src_type == dst_type) {
     return {op0};
   }
+  if (src_type == DataType::STRING) {
+    auto cast = builder->CreateConvertFromString(ext->GetName(), op0);
+    cast->SetDataType(dst_type);
+    return {*cast};
+  }
+  if (dst_type == DataType::STRING) {
+    auto cast = builder->CreateConvertToString(ext->GetName(), op0);
+    cast->SetDataType(dst_type);
+    return {*cast};
+  }
+
   if (Type::IsIntegerType(src_type)) {
     if (Type::IsIntegerType(dst_type)) {
       ZExtInst* new_inst = builder->CreateZExt(ext->GetName(), op0);
@@ -380,8 +391,14 @@ static std::vector<Def> ConvertCast(const ONNXExtensionInst* ext,
       new_inst->SetDataType(dst_type);
       return {*new_inst};
     }
+    if (Type::IsFloatingPointType(dst_type)) {
+      auto new_inst = builder->CreateFPtoFP(ext->GetName(), op0);
+      new_inst->SetDataType(dst_type);
+      return {*new_inst};
+    }
+  } else {
+    HLCHECK(0 && "unhandled cast");
   }
-  HLCHECK(0 && "unhandled cast");
   return {};
 }
 

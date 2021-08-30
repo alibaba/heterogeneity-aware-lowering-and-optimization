@@ -44,6 +44,7 @@ let is_integer_ = 1,
 }
 
 // float point
+def BF16 : ValueType<16> { let alt_name = "BFLOAT16"; }
 def F16 : ValueType<16>;
 def F32 : ValueType<32>;
 def F64:  ValueType<64>;

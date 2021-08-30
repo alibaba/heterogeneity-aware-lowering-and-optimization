@@ -80,7 +80,7 @@ bool Type::HasNativeType<int16_t>(DataType dt) {
 
 template <>
 bool Type::HasNativeType<uint16_t>(DataType dt) {
-  return dt == DataType::UINT32;
+  return dt == DataType::UINT16;
 }
 
 template <>

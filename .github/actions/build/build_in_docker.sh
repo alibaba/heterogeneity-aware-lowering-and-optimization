@@ -22,16 +22,14 @@ CONTAINER_NAME="halo.ci-$VER-$VARIANT"
 
 docker_run_flag=""
 cmake_flags="-DDNNL_COMPILER=gcc-10"
-check_cmds="parallel -k --plus LIT_NUM_SHARDS={##}  LIT_RUN_SHARD={#}  CUDA_VISIBLE_DEVICES={} ninja check-halo ::: {0..1}"
-check_cmds="$check_cmds && ninja FileCheck && parallel -k --plus LIT_NUM_SHARDS={##}  LIT_RUN_SHARD={#}  CUDA_VISIBLE_DEVICES={} ninja check-halo-models ::: {0..1}"
+check_cmds="ninja FileCheck && parallel -k --plus LIT_NUM_SHARDS={##}  LIT_RUN_SHARD={#}  CUDA_VISIBLE_DEVICES={} ninja check-halo ::: {0..1}"
+check_cmds="$check_cmds && parallel -k --plus LIT_NUM_SHARDS={##}  LIT_RUN_SHARD={#}  CUDA_VISIBLE_DEVICES={} ninja check-halo-models ::: {0..1}"
 
 if [[ "$VARIANT" =~ cuda ]]; then
   docker_run_flag="--runtime=nvidia"
 fi
 
 cmake_flags="$cmake_flags -DHALO_USE_STATIC_PROTOBUF=ON -DCPACK_SYSTEM_NAME=ubuntu-i686"
-
-DOCKER_ID=`docker ps -aq -f name=$CONTAINER_NAME -f status=running`
 
 gid=$(id -g ${USER})
 group=$(id -g -n ${USER})
