@@ -281,8 +281,6 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_GroupNormalization(
 
   \param input the input value
   \param input_layout the memory layout of input
-  \param mean the mean value
-  \param var the variance value
   \param epsilon the epsilon
   \param scale optional scale value (can be NULL)
   \param offset optional offset value (Default is NULL)
@@ -551,4 +549,3 @@ extern ODLA_API_EXPORT odla_values ODLA_API_CALL odla_PostProcess(
 #endif
 
 #endif // _ODLA_OPERATOR_OPS_NN_H_
-
