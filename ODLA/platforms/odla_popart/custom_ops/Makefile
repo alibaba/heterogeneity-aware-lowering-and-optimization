@@ -1,5 +1,5 @@
 CXX ?= g++
-CXXFLAGS = -std=c++14 -fPIC -g -DONNX_NAMESPACE=onnx -D_GLIBCXX_USE_CXX11_ABI=1
+CXXFLAGS = -std=c++14 -fPIC -g -DONNX_NAMESPACE=onnx -D_GLIBCXX_USE_CXX11_ABI=0
 LDLIBS = -shared -lpopart -lpoplar -lpopops -lpoputil
 INCLUDES = -Iinclude -I third_party/include -I third_party/onnx
 
