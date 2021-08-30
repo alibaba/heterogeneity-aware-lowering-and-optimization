@@ -165,8 +165,7 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
     inputs.push_back(bias->tensor_id);
   }
   auto result = g_comp->builder->aiOnnxOpset10().conv(
-      {input->tensor_id, kernel->tensor_id}, dim_dilations, group, kernel_shape,
-      pads, dim_strides);
+      inputs, dim_dilations, group, kernel_shape, pads, dim_strides);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -247,9 +246,10 @@ odla_value odla_HardSigmoid(odla_value input, odla_float32 alpha,
 }
 
 odla_value odla_InstanceNormalization(
-    odla_value input, odla_memory_layout input_layout, odla_float32 epsilon,
-    odla_value scale, odla_value offset, odla_float32 scalar_scale,
-    odla_float32 scalar_offset, const odla_value_id value_id) {
+    odla_value input, odla_memory_layout input_layout, odla_value mean,
+    odla_value var, odla_float32 epsilon, odla_value scale, odla_value offset,
+    odla_float32 scalar_scale, odla_float32 scalar_offset,
+    const odla_value_id value_id) {
   const auto& name = value_id
                          ? std::string(reinterpret_cast<const char*>(value_id))
                          : "InstanceNormalization";
@@ -276,6 +276,8 @@ odla_value odla_InstanceNormalization(
 
   auto result = g_comp->builder->aiOnnxOpset10().instancenormalization(
       {input->tensor_id, scale->tensor_id, offset->tensor_id}, epsilon);
+  // {input->tensor_id, scale->tensor_id, offset->tensor_id,mean->tensor_id,
+  // var->tensor_id}, epsilon);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -464,4 +466,28 @@ odla_value odla_TopK(odla_value input, odla_uint32 K, odla_bool largest,
                          {g_comp->builder->getTensorDataType(results[0]),
                           g_comp->builder->getTensorShape(results[0])},
                          name);
+}
+
+odla_values odla_PostProcess(odla_value orig_img_w, odla_value orig_img_h,
+                             odla_value bb13, odla_value bb26, odla_value bb52,
+                             const odla_value_id id) {
+  const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
+  const static popart::OperatorIdentifier postprocess(
+      popart::Domain::ai_graphcore, "PostProcess", 1, 5, 2);
+  auto outs = g_comp->builder->customOp(
+      postprocess, 1,
+      {orig_img_w->tensor_id, orig_img_h->tensor_id, bb13->tensor_id,
+       bb26->tensor_id, bb52->tensor_id},
+      2, {});
+  odla_value value_1 =
+      new _odla_value(outs[0],
+                      {g_comp->builder->getTensorDataType(outs[0]),
+                       g_comp->builder->getTensorShape(outs[0])},
+                      name + "0");
+  odla_value value_2 =
+      new _odla_value(outs[1],
+                      {g_comp->builder->getTensorDataType(outs[1]),
+                       g_comp->builder->getTensorShape(outs[1])},
+                      name + "1");
+  return odla_values{2, {value_1, value_2}};
 }

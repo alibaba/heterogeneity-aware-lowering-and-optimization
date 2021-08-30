@@ -281,6 +281,8 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_GroupNormalization(
 
   \param input the input value
   \param input_layout the memory layout of input
+  \param mean the mean value
+  \param var the variance value
   \param epsilon the epsilon
   \param scale optional scale value (can be NULL)
   \param offset optional offset value (Default is NULL)
@@ -291,9 +293,10 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_GroupNormalization(
   \return odla_value
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_InstanceNormalization(
-    odla_value input, odla_memory_layout input_layout, odla_float32 epsilon,
-    odla_value scale, odla_value offset, odla_float32 scalar_scale,
-    odla_float32 scalar_offset, const odla_value_id value_id);
+    odla_value input, odla_memory_layout input_layout, odla_value mean,
+    odla_value var, odla_float32 epsilon, odla_value scale, odla_value offset,
+    odla_float32 scalar_scale, odla_float32 scalar_offset,
+    const odla_value_id value_id);
 
 //! \brief LeakyRelu activation
 /*!
@@ -526,6 +529,23 @@ extern ODLA_API_EXPORT odla_values ODLA_API_CALL odla_TopK(
     odla_value input, odla_uint32 K, odla_bool largest, odla_bool sorted,
     odla_uint32 axis, odla_value_type output_value_type,
     odla_value_type output_value_index_type, const odla_value_ids value_ids);
+
+//! \brief Yolov3 Post Process
+/*!
+  PostProcess Return Selected Info (cx, cy, w, h, pred_cls) of Each Class
+
+  \param orig_img_w the width of original image
+  \param orig_img_h the height of original image
+  \param bb13 BBoxes 13 x 13
+  \param bb26 BBoxes 26 x 26
+  \param bb52 BBoxes 52 x 52
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_values
+*/
+extern ODLA_API_EXPORT odla_values ODLA_API_CALL odla_PostProcess(
+    odla_value orig_img_w, odla_value orig_img_h, odla_value bb13,
+    odla_value bb26, odla_value bb52, const odla_value_id value_id);
 
 #ifdef __cplusplus
 } // C extern

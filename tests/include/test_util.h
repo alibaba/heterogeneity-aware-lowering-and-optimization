@@ -47,6 +47,15 @@ static const T* to_nhwc(const T* src, T* dst, int N, int H, int W, int C = 3) {
 }
 
 template <typename T>
+static const T* to_nchw(const T* src, T* dst, int N, int H, int W, int C = 3) {
+  for (int n = 0; n < N; ++n)
+    for (int c = 0; c < C; ++c)
+      for (int s = 0, HW = H * W; s < HW; ++s)
+        dst[n * C * HW + c * HW + s] = src[n * HW * C + s * C + c];
+  return dst;
+}
+
+template <typename T>
 bool Verify(const T* out, const T* out_ref, size_t n, float thre = 1e-5) {
   for (size_t i = 0; i < n; ++i) {
     bool nan_mismatch = (is_nan(out[i]) ^ is_nan(out_ref[i]));
