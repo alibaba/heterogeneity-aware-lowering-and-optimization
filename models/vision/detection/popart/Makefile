@@ -1,4 +1,4 @@
-HALO_DIR=../../..
+HALO_DIR=../../../..
 MODELS_ROOT=/models
 INCLUDES=-I ${HALO_DIR}/include -I ${HALO_DIR}/build/include -I ${HALO_DIR}/tests/include -I ${HALO_DIR}/external/llvm-project/llvm/include -I ${HALO_DIR}/build/llvm/include
 
@@ -35,4 +35,5 @@ demo_ipu_custom_ops:yolov3_test.cc.popart_custom_op.exe
 .PHONY: clean
 clean:
 	rm -f *.exe *.bin *.o *.h
+
 
