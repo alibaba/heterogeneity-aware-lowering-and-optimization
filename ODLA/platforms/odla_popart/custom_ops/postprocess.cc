@@ -133,7 +133,8 @@ PostProcessOpx::PostProcessOpx(popart::Op* op, popart::popx::Devicex* devicex)
   numTiles_vtx = 90;
   numTiles_partial = target.getTilesPerIPU() - numTiles_vtx;
   numWorkers_ = target.getNumWorkerContexts();
-  graph().addCodelets("codelets_nms.cpp");
+  graph().addCodelets(
+      "../../../ODLA/platforms/odla_popart/custom_ops/codelets_nms.cpp");
 }
 
 void PostProcessOpx::grow(poplar::program::Sequence& prog) const {
@@ -164,14 +165,14 @@ void PostProcessOpx::grow(poplar::program::Sequence& prog) const {
   graph().setTileMapping(orig_img_h, tile_idx);
   graph().setTileMapping(anchors, tile_idx);
 
-  Tensor constants[53];
-  for (unsigned i = 0; i < 53; i++) {
+  Tensor constants[55];
+  for (unsigned i = 0; i < dim_[2] + 1; i++) {
     constants[i] = graph().addConstant<unsigned>(poplar::UNSIGNED_INT, {}, {i});
     graph().setTileMapping(constants[i], tile_idx);
   }
 
-  for (unsigned y = 0; y < 13; y++) {
-    for (unsigned x = 0; x < 13; x++) {
+  for (unsigned y = 0; y < dim_[0]; y++) {
+    for (unsigned x = 0; x < dim_[0]; x++) {
       Tensor bb13_reshape = bb13[y][x].reshape({num_anchors, cls_num + 5});
       for (unsigned a = 0; a < num_anchors;
            a++, tile_idx = (tile_idx + 1) % numTiles_partial) {
@@ -183,7 +184,7 @@ void PostProcessOpx::grow(poplar::program::Sequence& prog) const {
                                        {"anchors", anchors[2]},
                                        {"orig_img_w", orig_img_w},
                                        {"orig_img_h", orig_img_h},
-                                       {"dim", constants[13]},
+                                       {"dim", constants[dim_[0]]},
                                        {"grid_x", constants[x]},
                                        {"grid_y", constants[y]},
                                    });
@@ -192,8 +193,8 @@ void PostProcessOpx::grow(poplar::program::Sequence& prog) const {
     }
   }
 
-  for (unsigned y = 0; y < 26; y++) {
-    for (unsigned x = 0; x < 26; x++) {
+  for (unsigned y = 0; y < dim_[1]; y++) {
+    for (unsigned x = 0; x < dim_[1]; x++) {
       Tensor bb26_reshape = bb26[y][x].reshape({num_anchors, cls_num + 5});
       for (unsigned a = 0; a < num_anchors;
            a++, tile_idx = (tile_idx + 1) % numTiles_partial) {
@@ -205,7 +206,7 @@ void PostProcessOpx::grow(poplar::program::Sequence& prog) const {
                                        {"anchors", anchors[1]},
                                        {"orig_img_w", orig_img_w},
                                        {"orig_img_h", orig_img_h},
-                                       {"dim", constants[26]},
+                                       {"dim", constants[dim_[1]]},
                                        {"grid_x", constants[x]},
                                        {"grid_y", constants[y]},
                                    });
@@ -214,8 +215,8 @@ void PostProcessOpx::grow(poplar::program::Sequence& prog) const {
     }
   }
 
-  for (unsigned y = 0; y < 52; y++) {
-    for (unsigned x = 0; x < 52; x++) {
+  for (unsigned y = 0; y < dim_[2]; y++) {
+    for (unsigned x = 0; x < dim_[2]; x++) {
       Tensor bb52_reshape = bb52[y][x].reshape({num_anchors, cls_num + 5});
       for (unsigned a = 0; a < num_anchors;
            a++, tile_idx = (tile_idx + 1) % numTiles_partial) {
@@ -227,7 +228,7 @@ void PostProcessOpx::grow(poplar::program::Sequence& prog) const {
                                        {"anchors", anchors[0]},
                                        {"orig_img_w", orig_img_w},
                                        {"orig_img_h", orig_img_h},
-                                       {"dim", constants[52]},
+                                       {"dim", constants[dim_[2]]},
                                        {"grid_x", constants[x]},
                                        {"grid_y", constants[y]},
                                    });
@@ -352,3 +353,4 @@ static bool registerOps() {
 static bool ret = registerOps();
 
 } // namespace ONNX_NAMESPACE
+
