@@ -191,6 +191,9 @@ CXXType GenericCXXCodeGen::SNTypeToCXXType(DataType dt) {
     case DataType::INT64: {
       return (CXXType("odla_int64"));
     }
+    case DataType::UINT64: {
+      return (CXXType("odla_uint64"));
+    }
     case DataType::BOOL: {
       return (CXXType("bool"));
     }
@@ -334,6 +337,12 @@ std::string GenericCXXCodeGen::GetODLAType(DataType type) const noexcept {
     case DataType::UINT8: {
       return "ODLA_UINT8";
     }
+    case DataType::INT16: {
+      return "ODLA_INT16";
+    }
+    case DataType::UINT16: {
+      return "ODLA_UINT16";
+    }
     case DataType::FLOAT16: {
       return "ODLA_FLOAT16";
     }
@@ -354,6 +363,9 @@ std::string GenericCXXCodeGen::GetODLAType(DataType type) const noexcept {
     }
     case DataType::INT64: {
       return "ODLA_INT64";
+    }
+    case DataType::UINT64: {
+      return "ODLA_UINT64";
     }
     case DataType::BOOL: {
       return "ODLA_BOOL";
@@ -403,6 +415,10 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
       case DataType::FLOAT64:
         data_type_str = "double";
         break;
+      case DataType::INT16:
+        data_type_str = "int16_t";
+        break;
+      case DataType::UINT16:
       case DataType::FLOAT16:
       case DataType::BFLOAT16:
         data_type_str = "uint16_t";
@@ -415,6 +431,9 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
         break;
       case DataType::INT64:
         data_type_str = "int64_t";
+        break;
+      case DataType::UINT64:
+        data_type_str = "uint64_t";
         break;
       case DataType::BOOL:
         data_type_str = "bool";
