@@ -24,10 +24,10 @@ add_odla_library(odla_popart SHARED common.cc odla_compute.cc
                                odla_popart.cc popart_config.cc
                                )
 if (NOT POPLAR_ROOT)
-  set(POPLAR_ROOT "/opt/poplar_sdk/poplar" CACHE STRING "Path of poplar root")
+  set(POPLAR_ROOT "/opt/poplar_sdk/poplar" CACHE PATH "Path of poplar root")
 endif()
 if (NOT POPART_ROOT)
-  set(POPART_ROOT "/opt/poplar_sdk/popart" CACHE STRING "Path of popart root")
+  set(POPART_ROOT "/opt/poplar_sdk/popart" CACHE PATH "Path of popart root")
 endif()
 
 list(APPEND CMAKE_PREFIX_PATH ${POPLAR_ROOT})
