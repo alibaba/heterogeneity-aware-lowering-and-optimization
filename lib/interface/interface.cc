@@ -144,21 +144,21 @@ int Compile(ModelFormat format, const std::vector<const char*>& models,
 
 HL_API_EXPORT
 int CompileTFGraph(const void* graphdef,
-                   const std::vector<std::string>& input_shapes,
+                   const std::vector<std::string>& input_shapes, int batch,
                    const CXXCodeGenOpts& cg_opts,
                    const std::string& main_output_file, ModelInfo* model_info) {
-  return Compile(ModelFormat::TENSORFLOW, {graphdef}, "cxx", 0, input_shapes,
-                 {}, {}, cg_opts, main_output_file, model_info);
+  return Compile(ModelFormat::TENSORFLOW, {graphdef}, "cxx", batch,
+                 input_shapes, {}, {}, cg_opts, main_output_file, model_info);
 }
 
 HL_API_EXPORT
 int CompileTFGraph(const char* pb_buf, size_t pb_buf_size,
-                   const std::vector<std::string>& input_shapes,
+                   const std::vector<std::string>& input_shapes, int batch,
                    const CXXCodeGenOpts& cg_opts,
                    const std::string& main_output_file, ModelInfo* model_info) {
   const char* str = main_output_file.c_str();
   const std::string new_str(str);
-  return Compile(ModelFormat::TENSORFLOW, {pb_buf}, {pb_buf_size}, "cxx", 0,
+  return Compile(ModelFormat::TENSORFLOW, {pb_buf}, {pb_buf_size}, "cxx", batch,
                  input_shapes, {}, {}, cg_opts, new_str, model_info);
 }
 
@@ -178,20 +178,20 @@ HL_API_EXPORT
 // NOLINTNEXTLINE
 int halo_CompileTFPbGraph(const char* pb_buf, size_t pb_buf_size,
                           size_t num_input_shapes, const char* input_shapes[],
-                          const HaloCodeGenOpts* cg_opts,
+                          int batch, const HaloCodeGenOpts* cg_opts,
                           const char* main_output_file,
                           HaloModelInfo* model_info) {
   const halo::CXXCodeGenOpts& opts =
       *(halo::CXXCodeGenOpts*)(cg_opts); // NOLINT
   return halo::CompileTFGraph(pb_buf, pb_buf_size,
-                              ToStrings(num_input_shapes, input_shapes), opts,
-                              std::string(main_output_file), model_info);
+                              ToStrings(num_input_shapes, input_shapes), batch,
+                              opts, std::string(main_output_file), model_info);
 }
 
 HL_API_EXPORT
 // NOLINTNEXTLINE
 int halo_CompileTFGraphdef(const void* graphdef, size_t num_input_shapes,
-                           const char* input_shapes[],
+                           const char* input_shapes[], int batch,
                            const HaloCodeGenOpts* cg_opts,
                            const char* main_output_file,
                            HaloModelInfo* model_info) {
@@ -199,6 +199,6 @@ int halo_CompileTFGraphdef(const void* graphdef, size_t num_input_shapes,
       *(halo::CXXCodeGenOpts*)(cg_opts); // NOLINT
 
   return halo::CompileTFGraph(graphdef,
-                              ToStrings(num_input_shapes, input_shapes), opts,
-                              std::string(main_output_file), model_info);
+                              ToStrings(num_input_shapes, input_shapes), batch,
+                              opts, std::string(main_output_file), model_info);
 }
