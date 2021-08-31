@@ -377,7 +377,7 @@ int main(int argc, char** argv) {
   cg_opts.emit_shared_lib = EmitLibrary || !LinkODLALib.empty();
   cg_opts.linked_odla_lib = LinkODLALib.c_str();
   cg_opts.save_temps = SaveTemps;
-  cg_opts.constant_decombine = true;
+  cg_opts.constant_decombine = ConstantDecombine;
 
   if (is_c_or_cxx_output) {
     ctx.SetTargetTriple("x86_64"); // For binary constant writer.
