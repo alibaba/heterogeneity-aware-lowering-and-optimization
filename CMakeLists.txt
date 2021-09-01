@@ -75,6 +75,7 @@ add_subdirectory(utils)
 add_subdirectory(ODLA)
 add_subdirectory(tests)
 add_subdirectory(models)
+add_subdirectory(python)
 
 # ========= Install Components =========
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
