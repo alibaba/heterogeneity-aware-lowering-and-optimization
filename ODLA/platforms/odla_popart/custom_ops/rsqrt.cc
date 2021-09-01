@@ -14,26 +14,29 @@
 // limitations under the License.
 // =============================================================================
 
+#include <onnx/defs/schema.h>
+#include <onnx/defs/shape_inference.h>
+
 #include <memory>
 #include <popart/op.hpp>
 #include <popart/op/elementwise.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
+#include <popart/popx/op/elementwisex.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popops/ElementWise.hpp>
-#include <popart/popx/op/elementwisex.hpp>
 #include <vector>
-#include <onnx/defs/schema.h>
-#include <onnx/defs/shape_inference.h>
 
 namespace CustomOperators {
-const static popart::OperatorIdentifier Rsqrt_1(popart::Domain::ai_graphcore, "Rsqrt", 1, 1, 1);
-}  // namespace CustomOperators
+const static popart::OperatorIdentifier Rsqrt_1(popart::Domain::ai_graphcore,
+                                                "Rsqrt", 1, 1, 1);
+} // namespace CustomOperators
 
 class RsqrtOp : public popart::ElementWiseUnaryOp {
  public:
-  RsqrtOp(const popart::OperatorIdentifier &_opid, const popart::Op::Settings &settings_)
+  RsqrtOp(const popart::OperatorIdentifier& _opid,
+          const popart::Op::Settings& settings_)
       : popart::ElementWiseUnaryOp(_opid, settings_) {}
 
   std::unique_ptr<popart::Op> clone() const final {
@@ -53,13 +56,13 @@ static popart::OpCreator<RsqrtOp> rsqrtOpCreator(popart::OpDefinitions({
     {CustomOperators::Rsqrt_1, rsqrtOpDef},
 }));
 
-class RsqrtOpx: public popart::popx::ElementWiseUnaryOpx {
+class RsqrtOpx : public popart::popx::ElementWiseUnaryOpx {
  public:
-  RsqrtOpx(popart::Op *, popart::popx::Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  RsqrtOpx(popart::Op*, popart::popx::Devicex*);
+  void grow(poplar::program::Sequence&) const final;
 };
 
-RsqrtOpx::RsqrtOpx(popart::Op * op, popart::popx::Devicex * devicex)
+RsqrtOpx::RsqrtOpx(popart::Op* op, popart::popx::Devicex* devicex)
     : popart::popx::ElementWiseUnaryOpx(op, devicex) {
   verifyOp<RsqrtOp>(op, CustomOperators::Rsqrt_1);
 }
@@ -72,35 +75,31 @@ void RsqrtOpx::grow(poplar::program::Sequence & prog) const {
 
 namespace {
 popart::popx::OpxCreator<RsqrtOpx> rsqrtOpxCreator(CustomOperators::Rsqrt_1);
-}  // namespace
+} // namespace
 
 namespace ONNX_NAMESPACE {
-void RsqrtShapeInference(InferenceContext &ctx) {
+void RsqrtShapeInference(InferenceContext& ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
 
-static const char RsqrtDoc[] = "Rsqrt returns reciprocal square root of the tensor.";
+static const char RsqrtDoc[] =
+    "Rsqrt returns reciprocal square root of the tensor.";
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-    Rsqrt,
-    AiGraphcore,
-    popart::Domain::ai_graphcore,
-    1,
-    false,
+    Rsqrt, AiGraphcore, popart::Domain::ai_graphcore, 1, false,
     OpSchema()
         .SetDoc(RsqrtDoc)
         .Input(0, "X", "Input tensor", "T")
         .Output(0, "Y", "Output tensor", "T")
         .TypeConstraint(
-            "T",
-            {"tensor(float)", "tensor(float16)"},
+            "T", {"tensor(float)", "tensor(float16)"},
             "Constrain input and output types to signed numeric tensors.")
         .TypeAndShapeInferenceFunction(RsqrtShapeInference));
 
 static bool registerOps() {
-
   ONNX_NAMESPACE::RegisterSchema(
-      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, Rsqrt)>());
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1,
+                                                      Rsqrt)>());
 
   return true;
 }
