@@ -81,6 +81,11 @@ def ONNX_GroupNormalization : OpMapping<"GroupNormalization", GroupNorm> {
     AttributeMapping<"", "data_format", "NCHW">];
 }
 
+def ONNX_BitShift : OpMapping<"BitShift", Shift,
+    [{ inst->SetIsLeftShift(direction == "LEFT"); }]> {
+  let extension_attr_ = [ExtensionAttr<"direction", String, "\"\"">];
+}
+
 def ONNX_Cast : ONNXExtension<"Cast"> {
   let extension_attr_ = [ ExtensionAttr<"to", Integer, "0"> ];
 }

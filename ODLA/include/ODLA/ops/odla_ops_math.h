@@ -681,6 +681,20 @@ odla_Round(odla_value input, const odla_value_id value_id);
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Rsqrt(odla_value input, const odla_value_id value_id);
 
+//! \brief bit shift
+/*!
+ Shift returns the element-wise bit shift of \p input.
+  \param input the input value
+  \param shift_amount the shift amount
+  \param is_left_shift the shift direction
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Shift(odla_value input, odla_value shift_amount, odla_bool is_left_shift,
+           const odla_value_id value_id);
+
 //! \brief Sign of input
 /*!
   Sign returns the element-wise sign of \p input.

@@ -735,6 +735,73 @@ odla_value odla_Reshape(odla_value input, odla_value_shape output_dims,
   return CreateValue(input->mem, output_dims, id);
 }
 
+template <typename T>
+static void left_shift(void* dst, const void* input, const void* shift_amt,
+                       size_t n) {
+  T* dst_t = static_cast<T*>(dst);
+  const T* input_t = static_cast<const T*>(input);
+  const T* shift_amt_t = static_cast<const T*>(shift_amt);
+  for (size_t i = 0; i < n; ++i) {
+    dst_t[i] = input_t[i] << shift_amt_t[i];
+  }
+}
+
+template <typename T>
+static void right_shift(void* dst, const void* input, const void* shift_amt,
+                        size_t n) {
+  T* dst_t = static_cast<T*>(dst);
+  const T* input_t = static_cast<const T*>(input);
+  const T* shift_amt_t = static_cast<const T*>(shift_amt);
+  for (size_t i = 0; i < n; ++i) {
+    dst_t[i] = input_t[i] >> shift_amt_t[i];
+  }
+}
+
+odla_value odla_Shift(odla_value input, odla_value shift_amount,
+                      odla_bool is_left_shift, const odla_value_id id) {
+  auto elem_type = input->elem_type;
+  bool is_left = is_left_shift != 0;
+  assert(elem_type != ODLA_FLOAT32 && elem_type != ODLA_FLOAT64 &&
+         elem_type != ODLA_BFLOAT16 && elem_type != ODLA_BFLOAT16);
+  assert(elem_type = shift_amount->elem_type);
+  int n = GetTotalElements(input->shape);
+  // Prepare dest memory.
+  dnnl::memory dst_mem;
+  dnnl::memory::desc dst_md = getMemoryDesc({elem_type, input->shape});
+  if (elem_type == ODLA_INT64 || elem_type == ODLA_UINT64) {
+    auto buf = g_comp->CreateBuffer(getElementStorageSize(elem_type) * n);
+    dst_mem = dnnl::memory(dst_md, g_comp->eng, buf);
+  } else {
+    dst_mem = dnnl::memory(dst_md, g_comp->eng);
+  }
+  auto v = CreateValue(dst_mem, input->shape, id);
+  v->elem_type = elem_type;
+  auto op = [input, shift_amount, dst_mem, is_left, n] {
+    void* dst = dst_mem.get_data_handle();
+    const void* data = input->mem.get_data_handle();
+    const void* shifts = shift_amount->mem.get_data_handle();
+    if (input->elem_type == ODLA_UINT8) {
+      is_left ? left_shift<uint8_t>(dst, data, shifts, n)
+              : right_shift<uint8_t>(dst, data, shifts, n);
+    } else if (input->elem_type == ODLA_UINT16) {
+      is_left ? left_shift<uint16_t>(dst, data, shifts, n)
+              : right_shift<uint16_t>(dst, data, shifts, n);
+    } else if (input->elem_type == ODLA_UINT32) {
+      is_left ? left_shift<uint32_t>(dst, data, shifts, n)
+              : right_shift<uint32_t>(dst, data, shifts, n);
+    } else if (input->elem_type == ODLA_UINT64) {
+      is_left ? left_shift<uint64_t>(dst, data, shifts, n)
+              : right_shift<uint64_t>(dst, data, shifts, n);
+    } else {
+      assert(0);
+    }
+  };
+  add_op(op);
+
+  InterpretIfNeeded();
+  return v;
+}
+
 odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
                      odla_uint32 group, odla_value kernel,
                      odla_memory_layout kernel_layout,
