@@ -156,7 +156,7 @@ void _odla_computation::set_executor() {
 
 void _odla_computation::set_session_opts() {
   // This should be passed in by config file or some where
-  if (!PopartConfig::instance()->no_pipeline()) {
+  if (use_pipeline()) {
     session_opts_.enablePipelining = true;
     // session_opts_.autoRecomputation = popart::RecomputationType::Pipeline;
     session_opts_.virtualGraphMode = popart::VirtualGraphMode::Manual;
