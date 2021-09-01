@@ -336,6 +336,8 @@ def ONNX_Sin : OpMapping<"Sin", Sin>;
 
 def ONNX_Sinh : OpMapping<"Sinh", Sinh>;
 
+def ONNX_Size: ONNXExtension<"Size">;
+
 // onnx slice op operands order is different from halo ir
 def ONNX_Slice : ONNXExtension<"Slice">;
 

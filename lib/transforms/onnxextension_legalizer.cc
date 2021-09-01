@@ -281,6 +281,17 @@ static std::vector<Def> ConvertPad(const ONNXExtensionInst* ext,
   return {*pad_inst};
 }
 
+static std::vector<Def> ConvertSize(const ONNXExtensionInst* ext,
+                                    IRBuilder* builder) {
+  const auto& type = ext->GetOperand(0).GetType();
+  if (!type.IsValid()) {
+    return {};
+  }
+  auto n = type.GetTotalNumOfElements();
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  return {*(cb.CreateConstant(ext->GetName(), Type{DataType::INT64, {1}}, &n))};
+}
+
 static std::vector<Def> ConvertSum(const ONNXExtensionInst* ext,
                                    IRBuilder* builder) {
   // Conver to a chain of adds.
@@ -1262,6 +1273,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::ONEHOT: {
       return ConvertOneHot(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::SIZE: {
+      return ConvertSize(onnx_inst, builder);
     }
     case ONNXExtOpCode::SUM: {
       return ConvertSum(onnx_inst, builder);
