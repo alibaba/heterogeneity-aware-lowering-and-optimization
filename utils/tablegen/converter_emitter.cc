@@ -262,6 +262,10 @@ void Converter::EmitHaloInstDef(llvm::Record* record, llvm::raw_ostream& os) {
   ProcessExtensionAttributesImpl(extension_attrs, framework_name_,
                                  param_name.str(), os, need_new_attr);
 
+  if (auto code = record->getValueAsString(CustomCode); !code.empty()) {
+    os << code;
+  }
+
   os << "  InsertIDToInstMap(node_def, inst);\n";
   os << "  return Status::SUCCESS;\n}\n\n";
 }
@@ -291,6 +295,10 @@ void Converter::EmitExtensionInstDef(llvm::Record* record,
 
   ProcessExtensionAttributes(extension_attrs, framework_name_, param_name.str(),
                              os);
+
+  if (auto code = record->getValueAsString(CustomCode); !code.empty()) {
+    os << code;
+  }
 
   os << "  InsertIDToInstMap(node_def, inst);\n";
   os << "  return Status::SUCCESS;\n}\n\n";
