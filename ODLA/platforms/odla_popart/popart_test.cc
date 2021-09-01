@@ -1,6 +1,8 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 
-#include <thread>
+#include <unistd.h>
+
+#include <list>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
@@ -14,8 +16,7 @@
 #include <popart/session.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/testdevice.hpp>
-#include <list>
-#include <unistd.h>
+#include <thread>
 
 using namespace popart;
 
@@ -37,14 +38,13 @@ std::shared_ptr<popart::DeviceInfo> acquireIpu() {
 
 } // unnamed namespace
 
-std::string get_ModelProto()
-{
+std::string get_ModelProto() {
   Shape inShape = {1};
   TensorInfo inInfo{"INT32", inShape};
 
   Shape constShape = {1};
   std::vector<int> rawConstInputData = {1};
-//  std::iota(rawConstInputData.begin(), rawConstInputData.end(), 1);
+  //  std::iota(rawConstInputData.begin(), rawConstInputData.end(), 1);
 
   popart::NDArrayWrapper<int> constData(rawConstInputData.data(), {1});
 
@@ -53,18 +53,18 @@ std::string get_ModelProto()
 
   // Build an onnx model
   auto builder = Builder::create();
-  auto aiOnnx  = builder->aiOnnxOpset9();
+  auto aiOnnx = builder->aiOnnxOpset9();
 
   auto constId = aiOnnx.constant(constShapeData, "out0ShapeData");
-  auto inId    = builder->addInputTensor(inInfo);
-  auto inId2   = builder->addInputTensor(inInfo); //--
+  auto inId = builder->addInputTensor(inInfo);
+  auto inId2 = builder->addInputTensor(inInfo); //--
 
   std::cout << "----> constId: " << constId << std::endl;
   builder->virtualGraph(constId, 0);
   builder->pipelineStage(constId, 0);
 
-  //auto add        = aiOnnx.add({constId, inId});
-  auto add        = aiOnnx.add({inId2, inId});
+  // auto add        = aiOnnx.add({constId, inId});
+  auto add = aiOnnx.add({inId2, inId});
   std::cout << "-----> add: " << add << std::endl;
   builder->virtualGraph(add, 0);
   builder->pipelineStage(add, 0);
@@ -74,32 +74,30 @@ std::string get_ModelProto()
   builder->virtualGraph(outShapeId, 1);
   builder->pipelineStage(outShapeId, 1);
 
-
   auto transpose = aiOnnx.transpose({outShapeId}, {});
   std::cout << "----> transpose: " << transpose << std::endl;
-  //auto softmax = aiOnnx.softmax({add});
+  // auto softmax = aiOnnx.softmax({add});
   builder->virtualGraph(transpose, 2);
   builder->pipelineStage(transpose, 2);
-  
-  
+
   auto out = aiOnnx.sqrt({transpose});
   std::cout << "----> out: " << out << std::endl;
   builder->virtualGraph(out, 3);
   builder->pipelineStage(out, 3);
- 
+
   builder->addOutputTensor(out);
 
-  auto proto      = builder->getModelProto();
+  auto proto = builder->getModelProto();
 
-  //Print the pipline stage and ipu number
+  // Print the pipline stage and ipu number
 
   builder->saveModelProto("test.onnx");
-  //std::cout << "proto is: \n" << proto << std::endl;
+  // std::cout << "proto is: \n" << proto << std::endl;
   auto tensorIds = builder->getValueTensorIds();
-  for(auto& tensorid : tensorIds){
+  for (auto& tensorid : tensorIds) {
     std::cout << "tensorid: " << tensorid << std::endl;
   }
-  //auto modelProto = io::getModelFromString(proto);
+  // auto modelProto = io::getModelFromString(proto);
 
   return proto;
 }
@@ -107,25 +105,20 @@ std::string get_ModelProto()
 int main() {
   std::list<int> inputs;
 
-  //auto proto = get_ModelProto();
+  // auto proto = get_ModelProto();
   std::string proto = "test.onnx";
   // Create the IR, adding outId as an anchor
-  auto art      = AnchorReturnType("ALL");
+  auto art = AnchorReturnType("ALL");
   auto dataFlow = DataFlow(6, {{"Sqrt:0", art}});
-  auto device =
-      DeviceManager::createDeviceManager().acquireAvailableDevice(4);
+  auto device = DeviceManager::createDeviceManager().acquireAvailableDevice(4);
 
-//  auto device = popart::createTestDevice(TEST_TARGET);
-  auto opts                   = SessionOptions();
+  //  auto device = popart::createTestDevice(TEST_TARGET);
+  auto opts = SessionOptions();
   opts.enablePipelining = true;
   opts.virtualGraphMode = VirtualGraphMode::Manual;
 
   auto session = popart::InferenceSession::createFromOnnxModel(
-      proto,
-      dataFlow,
-      device,
-      popart::InputShapeInfo(),
-      opts,
+      proto, dataFlow, device, popart::InputShapeInfo(), opts,
       popart::Patterns({popart::PreAliasPatternType::PostNRepl})
           .enableRuntimeAsserts(false));
 
@@ -140,19 +133,19 @@ int main() {
   session->prepareDevice();
 
   int rawInputData[10] = {
-   99, 
+      99,
   };
 
-  inputs.push_back(48); 
+  inputs.push_back(48);
   inputs.push_back(1);
   inputs.push_back(3);
   inputs.push_back(1);
   inputs.push_back(8);
-  inputs.push_back(1); 
+  inputs.push_back(1);
   inputs.push_back(15);
-  inputs.push_back(1); 
+  inputs.push_back(1);
   inputs.push_back(24);
-  inputs.push_back(1); 
+  inputs.push_back(1);
   int i = 0;
   popart::StepIOCallback::InputCallback input_callback =
       [&](TensorId id, bool prefetch) -> ConstVoidData {
@@ -161,10 +154,9 @@ int main() {
     (void)prefetch;
     int input_data = 0;
     if (inputs.size() > 0) {
-        input_data = *(inputs.begin());
-        std::cout << "The input data value is: " << input_data << std::endl;
-    }
-    else {
+      input_data = *(inputs.begin());
+      std::cout << "The input data value is: " << input_data << std::endl;
+    } else {
       std::cout << "empty queue" << std::endl;
       input_data = -1;
     }
@@ -179,9 +171,10 @@ int main() {
   popart::StepIOCallback::InputCompleteCallback input_complete_callback =
       [&](TensorId id) -> void {
     popart::logging::info("input complete callback called {}", id);
-    std::cout << "InputCompleteCallback called with tensorid: " << id << std::endl;
+    std::cout << "InputCompleteCallback called with tensorid: " << id
+              << std::endl;
     if (inputs.size() > 0) {
-        inputs.pop_front();
+      inputs.pop_front();
     }
   };
 
@@ -199,18 +192,17 @@ int main() {
 
   popart::StepIOCallback::OutputCompleteCallback output_complete_callback =
       [&](TensorId id) -> void {
-    std::cout << "OutputCompleteCallback called with tensorid: " << id << std::endl;
-    for (int i=0; i < 1; ++i) {
+    std::cout << "OutputCompleteCallback called with tensorid: " << id
+              << std::endl;
+    for (int i = 0; i < 1; ++i) {
       std::cout << rawOutputData[i] << " " << std::endl;
     }
 
     popart::logging::info("output complete callback called {}", id);
   };
 
-  popart::StepIOCallback stepio(input_callback,
-                                input_complete_callback,
-                                output_callback,
-                                output_complete_callback);
+  popart::StepIOCallback stepio(input_callback, input_complete_callback,
+                                output_callback, output_complete_callback);
 
   for (int i = 0; i < 5; ++i) {
     session->run(stepio);

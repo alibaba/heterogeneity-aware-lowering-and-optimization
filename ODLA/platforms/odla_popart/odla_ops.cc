@@ -15,13 +15,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // =============================================================================
-#include <string>
-#include <vector>
-#include <regex>
-
 #include <ODLA/odla.h>
+
 #include <popart/builder.hpp>
 #include <popart/tensorinfo.hpp>
+#include <regex>
+#include <string>
+#include <vector>
 
 #include "common.h"
 #include "odla_popart.h"
@@ -36,8 +36,8 @@
 odla_value odla_Add(odla_value lhs, const odla_value rhs,
                     const odla_value_id id) {
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
-  popart::TensorId result =
-      g_comp->builder->aiOnnxOpset10().add({lhs->tensor_id, rhs->tensor_id}, name);
+  popart::TensorId result = g_comp->builder->aiOnnxOpset10().add(
+      {lhs->tensor_id, rhs->tensor_id}, name);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -47,8 +47,8 @@ odla_value odla_Add(odla_value lhs, const odla_value rhs,
 odla_value odla_Sub(odla_value lhs, odla_value rhs, const odla_value_id id) {
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
 
-  popart::TensorId result =
-      g_comp->builder->aiOnnxOpset10().sub({lhs->tensor_id, rhs->tensor_id}, name);
+  popart::TensorId result = g_comp->builder->aiOnnxOpset10().sub(
+      {lhs->tensor_id, rhs->tensor_id}, name);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -58,8 +58,8 @@ odla_value odla_Sub(odla_value lhs, odla_value rhs, const odla_value_id id) {
 odla_value odla_Mul(odla_value lhs, odla_value rhs, const odla_value_id id) {
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
 
-  popart::TensorId result =
-      g_comp->builder->aiOnnxOpset10().mul({lhs->tensor_id, rhs->tensor_id}, name);
+  popart::TensorId result = g_comp->builder->aiOnnxOpset10().mul(
+      {lhs->tensor_id, rhs->tensor_id}, name);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -69,8 +69,8 @@ odla_value odla_Mul(odla_value lhs, odla_value rhs, const odla_value_id id) {
 odla_value odla_Div(odla_value lhs, odla_value rhs, const odla_value_id id) {
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
 
-  popart::TensorId result =
-      g_comp->builder->aiOnnxOpset10().div({lhs->tensor_id, rhs->tensor_id}, name);
+  popart::TensorId result = g_comp->builder->aiOnnxOpset10().div(
+      {lhs->tensor_id, rhs->tensor_id}, name);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -83,9 +83,11 @@ odla_value odla_Div(odla_value lhs, odla_value rhs, const odla_value_id id) {
 odla_value odla_Erf(odla_value input, const odla_value_id id) {
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
 
-  //const popart::OperatorIdentifier erf(popart::Domain::ai_graphcore, "Erf", 1,
+  // const popart::OperatorIdentifier erf(popart::Domain::ai_graphcore, "Erf",
+  // 1,
   //                                     1, 1);
-  //auto result = g_comp->builder->customOp(erf, 1, {input->tensor_id}, 1, {}, name)[0];
+  // auto result = g_comp->builder->customOp(erf, 1, {input->tensor_id}, 1, {},
+  // name)[0];
   auto result = g_comp->builder->aiOnnxOpset10().erf({input->tensor_id}, name);
 
   return new _odla_value(result,
@@ -161,9 +163,9 @@ odla_value odla_BatchMatmul(odla_value lhs, odla_bool lhs_trans, odla_value rhs,
                             const odla_value_id id) {
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
 
-  popart::TensorId result =
-      g_comp->builder->aiOnnxOpset10().matmul({lhs->tensor_id, rhs->tensor_id}, name);
-  //set the AMP
+  popart::TensorId result = g_comp->builder->aiOnnxOpset10().matmul(
+      {lhs->tensor_id, rhs->tensor_id}, name);
+  // set the AMP
   float amp = PopartConfig::instance()->amp();
   g_comp->builder->setAvailableMemoryProportion(result, amp);
   return new _odla_value(result,
@@ -228,7 +230,7 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
           {rhs->tensor_id}, std::vector<int64_t>{0, 2, 1}, transpose_name);
     } else if (rank == 2) {
       rhs_trans = g_comp->builder->aiOnnxOpset10().transpose(
-          {rhs->tensor_id}, std::vector<int64_t>{1,0}, transpose_name);
+          {rhs->tensor_id}, std::vector<int64_t>{1, 0}, transpose_name);
     }
   }
 
@@ -315,7 +317,8 @@ odla_value odla_GroupNormalization(odla_value input,
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
 
   auto outs = g_comp->builder->aiGraphcoreOpset1().groupnormalization(
-      {input->tensor_id, scale->tensor_id, offset->tensor_id}, group, epsilon, name);
+      {input->tensor_id, scale->tensor_id, offset->tensor_id}, group, epsilon,
+      name);
   return new _odla_value(outs[0],
                          {g_comp->builder->getTensorDataType(outs[0]),
                           g_comp->builder->getTensorShape(outs[0])},
@@ -402,7 +405,8 @@ odla_value odla_Slice(odla_value input, const odla_uint32* start,
   auto builder = g_comp->builder.get();
   popart::TensorId sliced = builder->aiOnnxOpset10().slice(
       {input->tensor_id, start_tensor->tensor_id, end_tensor->tensor_id,
-       axes_tensor->tensor_id, strides_tensor->tensor_id}, name);
+       axes_tensor->tensor_id, strides_tensor->tensor_id},
+      name);
 
   odla_value result = new _odla_value(
       sliced,
@@ -423,8 +427,8 @@ odla_value odla_Transpose(odla_value input, odla_value_shape permutations,
     perm.push_back(permutations.dims[i]);
   }
 
-  popart::TensorId transposed =
-      g_comp->builder->aiOnnxOpset10().transpose({input->tensor_id}, perm, name);
+  popart::TensorId transposed = g_comp->builder->aiOnnxOpset10().transpose(
+      {input->tensor_id}, perm, name);
 
   auto builder = g_comp->builder.get();
   odla_value result = new _odla_value(transposed,

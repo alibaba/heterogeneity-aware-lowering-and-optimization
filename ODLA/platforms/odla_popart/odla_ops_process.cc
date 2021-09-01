@@ -17,6 +17,7 @@
 // =============================================================================
 
 #include <ODLA/odla.h>
+
 #include <popart/builder.hpp>
 #include <popart/tensorinfo.hpp>
 #include <string>
@@ -34,8 +35,8 @@ odla_value odla_Cast(odla_value input, odla_element_type target_type,
   const auto& name =
       value_id ? std::string(reinterpret_cast<const char*>(value_id)) : "Cast";
   const std::string& type_name = GetTypeName(target_type);
-  popart::TensorId result =
-      g_comp->builder->aiOnnxOpset10().cast({input->tensor_id}, type_name, name);
+  popart::TensorId result = g_comp->builder->aiOnnxOpset10().cast(
+      {input->tensor_id}, type_name, name);
 
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
@@ -73,7 +74,7 @@ odla_value odla_ExpandDims(odla_value input, odla_value_shape output_dims,
   }
   auto output_shape = odla_CreateConstant(
       {ODLA_INT64, {.size = 1, .dims = {output_dims.size}}}, shape_data.data(),
-      (const odla_value_id) (name + "output_shape").c_str());
+      (const odla_value_id)(name + "output_shape").c_str());
   popart::TensorId result = g_comp->builder->aiOnnxOpset10().expand(
       {input->tensor_id, output_shape->tensor_id}, name);
 
@@ -126,7 +127,7 @@ odla_value odla_Resize(odla_value input, odla_interpolation_mode interpolation,
   }
   auto scales = odla_CreateConstant(
       {ODLA_FLOAT32, {.size = 1, .dims = {output_dims.size}}},
-      shape_data.data(), (const odla_value_id) (name + "Scale_shape").c_str() );
+      shape_data.data(), (const odla_value_id)(name + "Scale_shape").c_str());
   popart::TensorId result = g_comp->builder->aiOnnxOpset10().resize(
       {input->tensor_id, scales->tensor_id}, interpolation_mode_name, name);
 

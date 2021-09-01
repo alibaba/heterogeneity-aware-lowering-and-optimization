@@ -16,11 +16,13 @@
 // limitations under the License.
 // =============================================================================
 
-#include <string>
-#include <vector>
 #include <ODLA/odla.h>
+
 #include <popart/builder.hpp>
 #include <popart/tensorinfo.hpp>
+#include <string>
+#include <vector>
+
 #include "common.h"
 #include "odla_popart.h"
 
@@ -238,15 +240,15 @@ odla_value odla_InstanceNormalization(
 
   if (scale == NULL) {
     std::vector<float> scale_tmp(channel_dim, scalar_scale);
-    scale =
-        odla_CreateConstant({ODLA_FLOAT32, {.size = 1, .dims = {channel_dim}}},
-                            scale_tmp.data(), (const odla_value_id) (name + "_scale").c_str());
+    scale = odla_CreateConstant(
+        {ODLA_FLOAT32, {.size = 1, .dims = {channel_dim}}}, scale_tmp.data(),
+        (const odla_value_id)(name + "_scale").c_str());
   }
   if (offset == NULL) {
     std::vector<float> offset_tmp(channel_dim, scalar_offset);
-    offset =
-        odla_CreateConstant({ODLA_FLOAT32, {.size = 1, .dims = {channel_dim}}},
-                            offset_tmp.data(), (const odla_value_id) (name + "_offset").c_str());
+    offset = odla_CreateConstant(
+        {ODLA_FLOAT32, {.size = 1, .dims = {channel_dim}}}, offset_tmp.data(),
+        (const odla_value_id)(name + "_offset").c_str());
   }
 
   auto result = g_comp->builder->aiOnnxOpset10().instancenormalization(
@@ -263,8 +265,8 @@ odla_value odla_LeakyRelu(odla_value input, odla_float32 alpha,
                          ? std::string(reinterpret_cast<const char*>(value_id))
                          : "LeakyRelu";
 
-  popart::TensorId result =
-      g_comp->builder->aiOnnxOpset10().leakyrelu({input->tensor_id}, alpha, name);
+  popart::TensorId result = g_comp->builder->aiOnnxOpset10().leakyrelu(
+      {input->tensor_id}, alpha, name);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -277,8 +279,8 @@ extern odla_value odla_LogSoftmax(odla_value input, odla_int32 axis,
                          ? std::string(reinterpret_cast<const char*>(value_id))
                          : "LogSoftmax";
 
-  popart::TensorId result =
-      g_comp->builder->aiOnnxOpset10().logsoftmax({input->tensor_id}, axis, name);
+  popart::TensorId result = g_comp->builder->aiOnnxOpset10().logsoftmax(
+      {input->tensor_id}, axis, name);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -373,8 +375,9 @@ odla_value odla_PRelu(odla_value input, odla_float32 slope,
   odla_value_shape dim_shape;
   dim_shape.size = rank;
   memcpy(dim_shape.dims, input_shape.data(), rank);
-  auto sloap = odla_CreateConstant({ODLA_FLOAT32, dim_shape}, sloap_tmp.data(),
-                                   (const odla_value_id) (name + "_sloap").c_str());
+  auto sloap =
+      odla_CreateConstant({ODLA_FLOAT32, dim_shape}, sloap_tmp.data(),
+                          (const odla_value_id)(name + "_sloap").c_str());
 
   popart::TensorId result = g_comp->builder->aiOnnxOpset10().prelu(
       {input->tensor_id, sloap->tensor_id}, name);
@@ -389,8 +392,8 @@ odla_value odla_Selu(odla_value input, odla_float32 alpha, odla_float32 gamma,
   const auto& name =
       value_id ? std::string(reinterpret_cast<const char*>(value_id)) : "Selu";
 
-  popart::TensorId result =
-      g_comp->builder->aiOnnxOpset10().selu({input->tensor_id}, alpha, gamma, name);
+  popart::TensorId result = g_comp->builder->aiOnnxOpset10().selu(
+      {input->tensor_id}, alpha, gamma, name);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -429,8 +432,9 @@ odla_value odla_TopK(odla_value input, odla_uint32 K, odla_bool largest,
   const auto& name =
       value_id ? std::string(reinterpret_cast<const char*>(value_id)) : "Topk";
   int64_t K_value[] = {K};
-  auto K_tensor = odla_CreateConstant({ODLA_INT64, {.size = 1, .dims = {1}}},
-                                      K_value, (const odla_value_id) (name + "_K").c_str());
+  auto K_tensor =
+      odla_CreateConstant({ODLA_INT64, {.size = 1, .dims = {1}}}, K_value,
+                          (const odla_value_id)(name + "_K").c_str());
 
   std::vector<popart::TensorId> results = g_comp->builder->aiOnnxOpset10().topk(
       {input->tensor_id, K_tensor->tensor_id}, axis, name);

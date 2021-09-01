@@ -20,12 +20,13 @@
 #ifndef ODLA_PIPELINE_H_
 #define ODLA_PIPELINE_H_
 #include <ODLA/odla.h>
+
+#include <atomic>
 #include <chrono>
 #include <mutex>
+#include <popart/stepio.hpp>
 #include <queue>
 #include <thread>
-#include <atomic>
-#include <popart/stepio.hpp>
 
 #include "ODLA/odla_common.h"
 #include "common.h"
@@ -33,9 +34,8 @@
 
 void pipeline_loop(odla_computation comp);
 
-class Queue
-{
-public:
+class Queue {
+ public:
   virtual void init(std::size_t capacity) = 0;
   virtual void put(odla_context ctx) = 0;
   virtual odla_context get_input_context() = 0;
@@ -47,7 +47,7 @@ public:
 };
 
 class ContextQueues : public Queue {
-private:
+ private:
   std::queue<odla_context> input_queue_1;
   std::queue<odla_context> input_queue_2;
   std::queue<odla_context> wait_output_queue_1;
@@ -60,38 +60,44 @@ private:
   odla_context input_ctx;  // the context which is under reading
   odla_context output_ctx; // the context which is under writing
 
-public:
+ public:
   ContextQueues()
-    : read_queue(&input_queue_1),
-      write_queue(&input_queue_2),
-      read_wait_queue(&wait_output_queue_1),
-      write_wait_queue(&wait_output_queue_2),
-      input_ctx(nullptr),
-      output_ctx(nullptr) {}
+      : read_queue(&input_queue_1),
+        write_queue(&input_queue_2),
+        read_wait_queue(&wait_output_queue_1),
+        write_wait_queue(&wait_output_queue_2),
+        input_ctx(nullptr),
+        output_ctx(nullptr) {}
 
-  ~ContextQueues(){}
-  void init(std::size_t capacity) final{}
+  ~ContextQueues() {}
+  void init(std::size_t capacity) final {}
   void put(odla_context ctx) final;
   odla_context get_input_context() final;
-  odla_context get_ctx_by_tensor(const popart::TensorId& id) final {return nullptr;}
+  odla_context get_ctx_by_tensor(const popart::TensorId& id) final {
+    return nullptr;
+  }
   odla_context get_output_context() final;
   void pop_input(odla_context ctx) final;
   void pop_output(odla_context ctx) final;
-  std::size_t size() final {return input_queue_1.size() + input_queue_2.size();}
+  std::size_t size() final {
+    return input_queue_1.size() + input_queue_2.size();
+  }
 };
 
-class LockFreeQueue : public Queue
-{
-private:
+class LockFreeQueue : public Queue {
+ private:
   std::atomic<odla_context>* buffer_;
   std::size_t capacity_;
   std::uint32_t head_;
   std::atomic<uint32_t> tail_;
   std::uint32_t wait_;
   std::map<popart::TensorId, std::uint32_t> tensor_to_idx_;
-public:
+
+ public:
   LockFreeQueue();
-  ~LockFreeQueue(){if(buffer_) delete[] buffer_;}
+  ~LockFreeQueue() {
+    if (buffer_) delete[] buffer_;
+  }
   void init(std::size_t capacity);
   void put(odla_context ctx) final;
   odla_context get_input_context() final;
@@ -99,26 +105,28 @@ public:
   odla_context get_output_context() final;
   void pop_input(odla_context ctx) final;
   void pop_output(odla_context ctx) final;
-  std::size_t size() final {return (tail_.load() - wait_ + capacity_)%capacity_;}
+  std::size_t size() final {
+    return (tail_.load() - wait_ + capacity_) % capacity_;
+  }
 };
 
-class QManager
-{
-private:
+class QManager {
+ private:
   Queue* queue_;
-  QManager():queue_(nullptr){}
-  ~QManager(){}
+  QManager() : queue_(nullptr) {}
+  ~QManager() {}
   std::mutex create_mutex_;
   static QManager* instance_;
-public:
+
+ public:
   void createQ(std::string queueType);
-  inline Queue* getQ(){return queue_;}
-  static inline QManager* instance(){return instance_;}
+  inline Queue* getQ() { return queue_; }
+  static inline QManager* instance() { return instance_; }
 };
 
 struct _odla_pipeline_context : public _odla_context {
-  _odla_pipeline_context(odla_computation c) : _odla_context(c), visited(0), 
-    written(0), got_output(false) {}
+  _odla_pipeline_context(odla_computation c)
+      : _odla_context(c), visited(0), written(0), got_output(false) {}
 
   std::mutex context_mutex;
   std::condition_variable context_cv;
@@ -132,7 +140,7 @@ struct _odla_pipeline_context : public _odla_context {
   std::chrono::time_point<std::chrono::steady_clock> start;
   std::chrono::time_point<std::chrono::steady_clock> end;
   inline void wait() override {
-    while(!got_output){ //wait forever for the output
+    while (!got_output) { // wait forever for the output
       std::unique_lock<std::mutex> lock(context_mutex);
       context_cv.wait_for(lock, std::chrono::milliseconds(100));
     }
@@ -140,7 +148,7 @@ struct _odla_pipeline_context : public _odla_context {
   }
   inline void notify() override {
     std::unique_lock<std::mutex> lock(context_mutex);
-    got_output=true;
+    got_output = true;
     context_cv.notify_one();
   }
   inline popart::IArray* get_data_by_tensor_id(popart::TensorId id) override {
@@ -148,58 +156,62 @@ struct _odla_pipeline_context : public _odla_context {
     return &(*(inputs[id]));
   }
   inline popart::IArray* write_data_by_tensor_id(popart::TensorId id) override {
-    if(written == 0){
-       end = std::chrono::steady_clock::now();
-       std::chrono::duration<float, std::milli> elapsed_ms = end-start;
-       popart::logging::info("ONE_REQUEST for ctx: {} took: {} ms", this, elapsed_ms.count());
+    if (written == 0) {
+      end = std::chrono::steady_clock::now();
+      std::chrono::duration<float, std::milli> elapsed_ms = end - start;
+      popart::logging::info("ONE_REQUEST for ctx: {} took: {} ms", this,
+                            elapsed_ms.count());
     }
     written++;
     return &(*(outputs[id]));
   }
   inline bool all_tensors_visited() override {
-    if(inputs.size() != comp->input_values.size()){
-      popart::logging::err("ctx {} inputs.size() is {}, does not match graph inputs size {}", 
-                            this, inputs.size(), comp->input_values.size());
-      throw std::runtime_error("input size of context did not match the graph inputs size.");
+    if (inputs.size() != comp->input_values.size()) {
+      popart::logging::err(
+          "ctx {} inputs.size() is {}, does not match graph inputs size {}",
+          this, inputs.size(), comp->input_values.size());
+      throw std::runtime_error(
+          "input size of context did not match the graph inputs size.");
     }
-    if(visited == inputs.size()){
+    if (visited == inputs.size()) {
       start = std::chrono::steady_clock::now();
       return true;
     }
     return false;
   }
   inline bool all_tensors_written() override {
-    if(outputs.size() != comp->output_values.size()){
-      popart::logging::err("ctx {} outputs.size() is {}, does not match graph outputs size {}",
-                            this, outputs.size(), comp->output_values.size());
-      throw std::runtime_error("output size of context did not match the graph outputs size.");
+    if (outputs.size() != comp->output_values.size()) {
+      popart::logging::err(
+          "ctx {} outputs.size() is {}, does not match graph outputs size {}",
+          this, outputs.size(), comp->output_values.size());
+      throw std::runtime_error(
+          "output size of context did not match the graph outputs size.");
     }
-    if(written == outputs.size()){
+    if (written == outputs.size()) {
       return true;
     }
     return false;
   }
   inline void clear_visited_and_written() override {
-    visited=0;
-    written=0;
+    visited = 0;
+    written = 0;
   }
 };
 
 struct _odla_pipeline_empty_context : public _odla_pipeline_context {
   odla_context shared_data = nullptr;
-  _odla_pipeline_empty_context(odla_computation c) : _odla_pipeline_context(c) {}
+  _odla_pipeline_empty_context(odla_computation c)
+      : _odla_pipeline_context(c) {}
   inline void wait() override {}
   inline void notify() override {}
-  inline bool deletable() override{return true;}
+  inline bool deletable() override { return true; }
   inline popart::IArray* get_data_by_tensor_id(popart::TensorId id) override {
-    if(!shared_data)
-      return nullptr;
+    if (!shared_data) return nullptr;
     visited++;
     return shared_data->get_data_by_tensor_id(id);
   }
   inline popart::IArray* write_data_by_tensor_id(popart::TensorId id) override {
-    if(!shared_data)
-      return nullptr;
+    if (!shared_data) return nullptr;
     written++;
     return shared_data->write_data_by_tensor_id(id);
   }

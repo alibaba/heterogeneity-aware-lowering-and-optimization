@@ -17,9 +17,10 @@
 // =============================================================================
 
 #include <ODLA/odla_device.h>
+
 #include <map>
-#include <string>
 #include <popart/devicemanager.hpp>
+#include <string>
 
 #include "odla_popart.h"
 

@@ -20,15 +20,16 @@
 #define ODLA_POPART_H_
 
 #include <ODLA/odla.h>
-#include <string>
-#include <vector>
+
 #include <atomic>
-#include <thread>
 #include <condition_variable>
 #include <popart/builder.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensorinfo.hpp>
+#include <string>
+#include <thread>
+#include <vector>
 
 #define g_comp _odla_computation::instance()
 // enum ExecutionMode {PIPELINE, PARALLEL, SEQUENCE};
@@ -47,13 +48,15 @@ class Sequence : public Execution {
   ~Sequence() {}
   virtual void compute(odla_computation comp, odla_context context,
                        odla_compute_mode mode, odla_device device);
-private:
-  std::mutex sequence_mutex;  //As global only has one sequence object, so we can use this mutex
+
+ private:
+  std::mutex sequence_mutex; // As global only has one sequence object, so we
+                             // can use this mutex
 };
 
-class Parallel : public Execution{
-public:
-    virtual void compute(odla_computation comp, odla_context context,
+class Parallel : public Execution {
+ public:
+  virtual void compute(odla_computation comp, odla_context context,
                        odla_compute_mode mode, odla_device device);
 };
 
@@ -70,11 +73,12 @@ struct _odla_value {
   popart::TensorInfo tensor_info;
   std::string name;
 
-  _odla_value(popart::TensorId id, popart::TensorInfo info, 
-    const std::string& n):tensor_id(id), tensor_info(info), name(n){}
+  _odla_value(popart::TensorId id, popart::TensorInfo info,
+              const std::string& n)
+      : tensor_id(id), tensor_info(info), name(n) {}
 };
 
-struct _odla_computation {  
+struct _odla_computation {
   std::unique_ptr<popart::Builder> builder;
   std::unique_ptr<popart::InferenceSession> session;
   std::shared_ptr<popart::DeviceInfo> device;
@@ -87,10 +91,9 @@ struct _odla_computation {
 
   // new members for pipeline
   static _odla_computation* instance_;
-  static _odla_computation* instance(bool hold_it = true){
-      if(hold_it)
-          instance_->hold(); 
-      return instance_;
+  static _odla_computation* instance(bool hold_it = true) {
+    if (hold_it) instance_->hold();
+    return instance_;
   }
   bool done_;
   bool thread_complete_;
@@ -98,42 +101,46 @@ struct _odla_computation {
   Execution* executor_;
   std::thread::id thread_id_of_holder;
 
-  _odla_computation():builder(popart::Builder::create()), 
-    session(nullptr), device(nullptr), opts({false, 1, 1}), 
-    done_(false), executor_(nullptr), 
-    thread_complete_(false) {}
+  _odla_computation()
+      : builder(popart::Builder::create()),
+        session(nullptr),
+        device(nullptr),
+        opts({false, 1, 1}),
+        done_(false),
+        executor_(nullptr),
+        thread_complete_(false) {}
   void init();
-  inline bool is_done(){return done_;}
-  inline void mark_done(){done_ = true;}
+  inline bool is_done() { return done_; }
+  inline void mark_done() { done_ = true; }
   std::string set_pipeline_stage();
   void set_session_opts();
   void set_executor();
   void set_opts();
   bool use_pipeline();
   bool hold();
-  inline Execution* executor(){return executor_;}
+  inline Execution* executor() { return executor_; }
 };
 
 struct _odla_context {
   odla_computation comp;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> inputs;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> outputs;
-  _odla_context(odla_computation c): comp(c) {}
+  _odla_context(odla_computation c) : comp(c) {}
   std::thread::id thread_id_of_holder;
   inline virtual void wait() {}
   inline virtual void notify() {}
-  inline virtual popart::IArray* get_data_by_tensor_id(popart::TensorId id){
+  inline virtual popart::IArray* get_data_by_tensor_id(popart::TensorId id) {
     auto iter = inputs.find(id);
     return (inputs.end() == iter) ? NULL : &(*iter->second);
   }
-  inline virtual popart::IArray* write_data_by_tensor_id(popart::TensorId id){
+  inline virtual popart::IArray* write_data_by_tensor_id(popart::TensorId id) {
     auto iter = outputs.find(id);
     return (outputs.end() == iter) ? NULL : &(*iter->second);
   }
-  inline virtual bool all_tensors_visited(){return true;}
-  inline virtual bool all_tensors_written(){return true;}
-  inline virtual void clear_visited_and_written(){}
-  inline virtual bool deletable(){return false;}
+  inline virtual bool all_tensors_visited() { return true; }
+  inline virtual bool all_tensors_written() { return true; }
+  inline virtual void clear_visited_and_written() {}
+  inline virtual bool deletable() { return false; }
   bool hold(const std::string& function_name);
 };
 #endif

@@ -17,21 +17,22 @@
 // =============================================================================
 
 #include <ODLA/odla.h>
+#include <dlfcn.h>
+
+#include <cstdlib>
 #include <popart/builder.hpp>
+#include <popart/devicemanager.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/voiddata.hpp>
-#include <popart/devicemanager.hpp>
-#include <popart/session.hpp>
-#include <popart/popx/devicex.hpp>
 #include <string>
-#include <dlfcn.h>
-#include <cstdlib>
 
 #include "ODLA/odla_common.h"
 #include "common.h"
-#include "odla_popart.h"
 #include "odla_pipeline.h"
+#include "odla_popart.h"
 #include "popart_config.h"
 
 #if !defined(ODLA_VERSION_NUMBER) || (ODLA_VERSION_NUMBER < 50)
@@ -85,31 +86,33 @@ odla_status odla_CreateComputation(odla_computation* comp) {
       return ODLA_DL_ERROR;
     }
   }
-  //Read the config file
+  // Read the config file
   PopartConfig::instance()->load_config(std::getenv("ODLA_POPART_CONFIG"));
   _odla_computation::instance()->set_executor();
-  if(PopartConfig::instance()->execution_mode() == PARALLEL || PopartConfig::instance()->execution_mode() == PIPELINE){
+  if (PopartConfig::instance()->execution_mode() == PARALLEL ||
+      PopartConfig::instance()->execution_mode() == PIPELINE) {
     QManager::instance()->createQ(PopartConfig::instance()->queue_type());
-    QManager::instance()->getQ()->init(PopartConfig::instance()->queue_capacity());
+    QManager::instance()->getQ()->init(
+        PopartConfig::instance()->queue_capacity());
   }
   return ODLA_SUCCESS;
 }
 
 odla_status odla_CreateContext(odla_context* context) {
-  _odla_computation::instance(false)->init(); // Place the init here to avoid long execution problem
+  _odla_computation::instance(false)
+      ->init(); // Place the init here to avoid long execution problem
   *context = new _odla_pipeline_context(_odla_computation::instance());
   return ODLA_SUCCESS;
 }
 
 odla_status odla_DestroyContext(odla_context ctx) {
-  if(nullptr != ctx && ctx->hold("odla_DestroyContext"))
-    delete (ctx);
+  if (nullptr != ctx && ctx->hold("odla_DestroyContext")) delete (ctx);
   return ODLA_SUCCESS;
 }
 
 odla_status odla_DestroyComputation(odla_computation comp) {
   comp->mark_done();
-  if (comp->session != nullptr){
+  if (comp->session != nullptr) {
     comp->session->getDevice().getDeviceInfo()->detach();
     comp->session.reset();
     assert(comp->session == nullptr);
@@ -120,8 +123,7 @@ odla_status odla_DestroyComputation(odla_computation comp) {
 odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
-  if(!context->hold("odla_ExecuteComputation"))
-    return ODLA_FAILURE;
+  if (!context->hold("odla_ExecuteComputation")) return ODLA_FAILURE;
   comp->executor()->compute(comp, context, mode, device);
   return ODLA_SUCCESS;
 }
@@ -131,8 +133,7 @@ odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
   popart::TensorInfo tensor_info(GetPopartType(type),
                                  GetPopartShape(type.shape));
   auto comp = _odla_computation::instance();
-  popart::TensorId tensor_id =
-      comp->builder->addInputTensor(tensor_info, name);
+  popart::TensorId tensor_id = comp->builder->addInputTensor(tensor_info, name);
   auto v = new _odla_value(tensor_id, tensor_info, name);
   comp->inputs_map[name] = v;
   comp->input_values.push_back(v);
@@ -164,16 +165,18 @@ odla_value odla_CreateConstant(odla_value_type type, const void* data_ptr,
   popart::ConstVoidData data = {
       data_ptr, {GetPopartType(type), GetPopartShape(type.shape)}};
   popart::TensorId tensor_id =
-      _odla_computation::instance()->builder->aiOnnxOpset10().constant(data, name);
+      _odla_computation::instance()->builder->aiOnnxOpset10().constant(data,
+                                                                       name);
   return new _odla_value(tensor_id, tensor_info, name);
 }
 
 odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                 odla_context context) {
-  if(!context->hold("odla_BindToArgument"))
-    return ODLA_FAILURE;
-  std::vector<int64_t> shape = context->comp->builder->getTensorShape(value->tensor_id);
-  if(PopartConfig::instance()->execution_mode() == SEQUENCE) //only the SEQUENCE model need to pass the data in once time
+  if (!context->hold("odla_BindToArgument")) return ODLA_FAILURE;
+  std::vector<int64_t> shape =
+      context->comp->builder->getTensorShape(value->tensor_id);
+  if (PopartConfig::instance()->execution_mode() ==
+      SEQUENCE) // only the SEQUENCE model need to pass the data in once time
     shape[0] *= PopartConfig::instance()->batches_per_step();
   std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
       data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
@@ -186,8 +189,7 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
 odla_status odla_BindToArgumentById(const odla_value_id value_id,
                                     const odla_void* data_ptr,
                                     odla_context context) {
-  if(!context->hold("odla_BindToArgumentById"))
-    return ODLA_FAILURE;
+  if (!context->hold("odla_BindToArgumentById")) return ODLA_FAILURE;
   std::string name(reinterpret_cast<const char*>(value_id));
   return odla_BindToArgument(context->comp->inputs_map[name], data_ptr,
                              context);
@@ -227,10 +229,11 @@ odla_status odla_GetOutputFromComputationByIdx(
 
 odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
                               odla_context context) {
-  if(!context->hold("odla_BindToOutput"))
-    return ODLA_FAILURE;
-  std::vector<int64_t> shape = context->comp->builder->getTensorShape(value->tensor_id);
-  if(PopartConfig::instance()->execution_mode() == SEQUENCE) //only the SEQUENCE model need to pass the data in once time
+  if (!context->hold("odla_BindToOutput")) return ODLA_FAILURE;
+  std::vector<int64_t> shape =
+      context->comp->builder->getTensorShape(value->tensor_id);
+  if (PopartConfig::instance()->execution_mode() ==
+      SEQUENCE) // only the SEQUENCE model need to pass the data in once time
     shape[0] *= PopartConfig::instance()->batches_per_step();
   std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
       data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
@@ -241,8 +244,7 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
 
 odla_status odla_BindToOutputById(const odla_value_id value_id,
                                   odla_void* data_ptr, odla_context context) {
-  if(!context->hold("odla_BindToOutputById"))
-    return ODLA_FAILURE;
+  if (!context->hold("odla_BindToOutputById")) return ODLA_FAILURE;
   std::string name(reinterpret_cast<const char*>(value_id));
   return odla_BindToOutput(context->comp->outputs_map[name], data_ptr, context);
 }

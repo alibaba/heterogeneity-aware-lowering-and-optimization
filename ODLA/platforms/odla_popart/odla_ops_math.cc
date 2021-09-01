@@ -17,6 +17,7 @@
 // =============================================================================
 
 #include <ODLA/odla.h>
+
 #include <popart/builder.hpp>
 #include <popart/tensorinfo.hpp>
 #include <string>
@@ -103,8 +104,8 @@ odla_value odla_Equal(odla_value lhs, odla_value rhs,
                       const odla_value_id value_id) {
   const auto& name =
       value_id ? std::string(reinterpret_cast<const char*>(value_id)) : "Equal";
-  popart::TensorId result =
-      g_comp->builder->aiOnnxOpset10().equal({lhs->tensor_id, rhs->tensor_id}, name);
+  popart::TensorId result = g_comp->builder->aiOnnxOpset10().equal(
+      {lhs->tensor_id, rhs->tensor_id}, name);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -116,9 +117,10 @@ odla_value odla_NotEqual(odla_value lhs, odla_value rhs,
   const auto& name = value_id
                          ? std::string(reinterpret_cast<const char*>(value_id))
                          : "NotEqual";
-  odla_value equal = odla_Equal(lhs, rhs, (const odla_value_id) (name+"/equal").c_str());
-  popart::TensorId result =
-      g_comp->builder->aiOnnxOpset10().logical_not({equal->tensor_id}, name+"/not");
+  odla_value equal =
+      odla_Equal(lhs, rhs, (const odla_value_id)(name + "/equal").c_str());
+  popart::TensorId result = g_comp->builder->aiOnnxOpset10().logical_not(
+      {equal->tensor_id}, name + "/not");
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -153,8 +155,8 @@ odla_value odla_Less(odla_value lhs, odla_value rhs,
                      const odla_value_id value_id) {
   const auto& name =
       value_id ? std::string(reinterpret_cast<const char*>(value_id)) : "Less";
-  popart::TensorId result =
-      g_comp->builder->aiOnnxOpset10().less({lhs->tensor_id, rhs->tensor_id}, name);
+  popart::TensorId result = g_comp->builder->aiOnnxOpset10().less(
+      {lhs->tensor_id, rhs->tensor_id}, name);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -176,8 +178,8 @@ odla_value odla_Max(odla_value lhs, odla_value rhs,
                     const odla_value_id value_id) {
   const auto& name =
       value_id ? std::string(reinterpret_cast<const char*>(value_id)) : "Max";
-  popart::TensorId result =
-      g_comp->builder->aiOnnxOpset10().max({lhs->tensor_id, rhs->tensor_id}, name);
+  popart::TensorId result = g_comp->builder->aiOnnxOpset10().max(
+      {lhs->tensor_id, rhs->tensor_id}, name);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
@@ -188,8 +190,8 @@ odla_value odla_Min(odla_value lhs, odla_value rhs,
                     const odla_value_id value_id) {
   const auto& name =
       value_id ? std::string(reinterpret_cast<const char*>(value_id)) : "Min";
-  popart::TensorId result =
-      g_comp->builder->aiOnnxOpset10().min({lhs->tensor_id, rhs->tensor_id}, name);
+  popart::TensorId result = g_comp->builder->aiOnnxOpset10().min(
+      {lhs->tensor_id, rhs->tensor_id}, name);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},
