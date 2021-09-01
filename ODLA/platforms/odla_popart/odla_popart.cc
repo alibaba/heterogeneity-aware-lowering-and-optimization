@@ -165,6 +165,12 @@ void _odla_computation::set_session_opts()
     }else{
         session_opts_.virtualGraphMode = popart::VirtualGraphMode::Auto;
     }
+    const char* envEngineCachePath = getenv("ENGINE_CACHE_PATH");
+    if (opts.enable_engine_cache || envEngineCachePath != nullptr) {
+        session_opts_.enableEngineCaching = true;
+        session_opts_.cachePath = 
+            opts.enable_engine_cache ? opts.cache_dir:envEngineCachePath;
+    }
     //session_opts_.matmulOptions["use128BitConvUnitLoad"] = "true";
     //session_opts_.matmulOptions["enableMultiStageReduce"] = "false";
     //session_opts_.matmulOptions["enableFastReduce"] = "true";

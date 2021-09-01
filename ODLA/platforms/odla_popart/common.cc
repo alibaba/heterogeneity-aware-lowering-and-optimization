@@ -61,8 +61,6 @@ popart::DataType GetPopartType(odla_value_type type) {
       return popart::DataType::UINT64;
     case ODLA_BOOL:
       return popart::DataType::BOOL;
-    case ODLA_UINT32:
-      return popart::DataType::UINT32;
     default:
       assert(false);
       return popart::DataType::UNDEFINED;
