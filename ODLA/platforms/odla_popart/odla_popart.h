@@ -108,7 +108,9 @@ struct _odla_computation {
         opts({false, 1, 1}),
         done_(false),
         executor_(nullptr),
-        thread_complete_(false) {}
+        thread_complete_(false) {
+    builder->setAttribute(popart::sVirtualGraphAttribute, 0);
+  }
   void init();
   inline bool is_done() { return done_; }
   inline void mark_done() { done_ = true; }
