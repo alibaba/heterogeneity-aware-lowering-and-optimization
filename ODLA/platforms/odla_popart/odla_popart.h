@@ -21,28 +21,44 @@
 
 #include <ODLA/odla.h>
 
-#include <algorithm>
-#include <cassert>
-#include <chrono>
-#include <cmath>
-#include <cstddef>
-#include <functional>
-#include <memory>
-#include <numeric>
+#include <atomic>
+#include <condition_variable>
 #include <popart/builder.hpp>
-#include <popart/dataflow.hpp>
-#include <popart/devicemanager.hpp>
-#include <popart/names.hpp>
-#include <popart/ndarraywrapper.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
-#include <popart/stepio.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/voiddata.hpp>
-#include <random>
-#include <stdexcept>
 #include <string>
+#include <thread>
 #include <vector>
+
+#define g_comp _odla_computation::instance()
+// enum ExecutionMode {PIPELINE, PARALLEL, SEQUENCE};
+
+class Execution {
+ public:
+  Execution() {}
+  ~Execution() {}
+  virtual void compute(odla_computation comp, odla_context context,
+                       odla_compute_mode mode, odla_device device) = 0;
+};
+
+class Sequence : public Execution {
+ public:
+  Sequence() {}
+  ~Sequence() {}
+  virtual void compute(odla_computation comp, odla_context context,
+                       odla_compute_mode mode, odla_device device);
+
+ private:
+  std::mutex sequence_mutex; // As global only has one sequence object, so we
+                             // can use this mutex
+};
+
+class Parallel : public Execution {
+ public:
+  virtual void compute(odla_computation comp, odla_context context,
+                       odla_compute_mode mode, odla_device device);
+};
 
 typedef struct TargetOpts {
   bool use_ipu_model;
@@ -65,22 +81,68 @@ struct _odla_value {
 struct _odla_computation {
   std::unique_ptr<popart::Builder> builder;
   std::unique_ptr<popart::InferenceSession> session;
+  std::shared_ptr<popart::DeviceInfo> device;
+  popart::SessionOptions session_opts_;
   std::unordered_map<std::string, odla_value> inputs_map;
   std::unordered_map<std::string, odla_value> outputs_map;
   std::vector<odla_value> input_values;
   std::vector<odla_value> output_values;
   target_opts opts;
 
-  _odla_computation(std::unique_ptr<popart::Builder> b)
-      : builder(std::move(b)), opts({false, 1, 1}) {}
+  // new members for pipeline
+  static _odla_computation* instance_;
+  static _odla_computation* instance(bool hold_it = true) {
+    if (hold_it) instance_->hold();
+    return instance_;
+  }
+  bool done_;
+  bool thread_complete_;
+  std::mutex init_mutex_;
+  Execution* executor_;
+  std::thread::id thread_id_of_holder;
+
+  _odla_computation()
+      : builder(popart::Builder::create()),
+        session(nullptr),
+        device(nullptr),
+        opts({false, 1, 1}),
+        done_(false),
+        executor_(nullptr),
+        thread_complete_(false) {
+    builder->setAttribute(popart::sVirtualGraphAttribute, 0);
+  }
+  void init();
+  inline bool is_done() { return done_; }
+  inline void mark_done() { done_ = true; }
+  std::string set_pipeline_stage();
+  void set_session_opts();
+  void set_executor();
+  void set_opts();
+  bool use_pipeline();
+  bool hold();
+  inline Execution* executor() { return executor_; }
 };
 
 struct _odla_context {
   odla_computation comp;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> inputs;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> outputs;
-
   _odla_context(odla_computation c) : comp(c) {}
+  std::thread::id thread_id_of_holder;
+  inline virtual void wait() {}
+  inline virtual void notify() {}
+  inline virtual popart::IArray* get_data_by_tensor_id(popart::TensorId id) {
+    auto iter = inputs.find(id);
+    return (inputs.end() == iter) ? NULL : &(*iter->second);
+  }
+  inline virtual popart::IArray* write_data_by_tensor_id(popart::TensorId id) {
+    auto iter = outputs.find(id);
+    return (outputs.end() == iter) ? NULL : &(*iter->second);
+  }
+  inline virtual bool all_tensors_visited() { return true; }
+  inline virtual bool all_tensors_written() { return true; }
+  inline virtual void clear_visited_and_written() {}
+  inline virtual bool deletable() { return false; }
+  bool hold(const std::string& function_name);
 };
-
 #endif

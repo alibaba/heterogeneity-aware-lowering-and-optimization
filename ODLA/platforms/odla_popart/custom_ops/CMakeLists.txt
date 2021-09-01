@@ -18,6 +18,7 @@ add_odla_library(custom_ops SHARED
   erf.cc
   rsqrt.cc
   postprocess.cc
+  attention_mask.cc
 )
 
 set_property(TARGET custom_ops PROPERTY CXX_STANDARD 14)
