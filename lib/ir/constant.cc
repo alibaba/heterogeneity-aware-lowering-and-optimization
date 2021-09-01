@@ -282,6 +282,10 @@ void Constant::PrintData(std::ostream* os, size_t num_to_print,
       PrintValues(os, GetDataPtr<int>(), num_to_print);
       break;
     }
+    case DataType::UINT32: {
+      PrintValues(os, GetDataPtr<uint>(), num_to_print);
+      break;
+    }
     case DataType::FLOAT16: {
       PrintFP16Values(os, static_cast<const uint16_t*>(GetRawDataPtr()),
                       num_to_print, human_friendly);
@@ -298,6 +302,10 @@ void Constant::PrintData(std::ostream* os, size_t num_to_print,
     }
     case DataType::INT64: {
       PrintValues(os, GetDataPtr<int64_t>(), num_to_print);
+      break;
+    }
+    case DataType::UINT64: {
+      PrintValues(os, GetDataPtr<uint64_t>(), num_to_print);
       break;
     }
     case DataType::FLOAT64: {

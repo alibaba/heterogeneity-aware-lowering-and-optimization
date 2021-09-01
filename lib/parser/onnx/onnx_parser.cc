@@ -314,6 +314,8 @@ halo::DataType ONNXParser::ProcessDataType(int data_type, bool allow_invalid) {
       return DataType::FLOAT64;
     case onnx::TensorProto::INT64:
       return DataType::INT64;
+    case onnx::TensorProto::UINT64:
+      return DataType::UINT64;
     case onnx::TensorProto::INT32:
       return DataType::INT32;
     case onnx::TensorProto::UINT32:
@@ -504,8 +506,20 @@ IRObject* ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
                                        temp.GetData());
       break;
     }
+    case DataType::UINT32: {
+      const Tensor<uint> temp = ProcessTensor<uint>(tensor_def);
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
+      break;
+    }
     case DataType::INT64: {
       const Tensor<int64_t> temp = ProcessTensor<int64_t>(tensor_def);
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
+      break;
+    }
+    case DataType::UINT64: {
+      const Tensor<uint64_t> temp = ProcessTensor<uint64_t>(tensor_def);
       inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
                                        temp.GetData());
       break;
