@@ -153,6 +153,13 @@ def ONNX_CumSum : OpMapping<"CumSum", CumSum> {
   ];
 }
 
+def ONNX_DepthToSpace : ONNXExtension<"DepthToSpace"> {
+  let extension_attr_ = [
+    ExtensionAttr<"blocksize", Integer, "-1">,
+    ExtensionAttr<"mode", String, "\"DCR\"">
+  ];
+}
+
 def ONNX_Div : OpMapping<"Div", Div>;
 
 def ONNX_Dropout : ONNXExtension<"Dropout">;

@@ -190,6 +190,51 @@ static std::vector<Def> ConvertConstantOfShape(const ONNXExtensionInst* ext,
   return {};
 }
 
+static std::vector<Def> ConvertDepthToSpace(const ONNXExtensionInst* ext,
+                                            IRBuilder* builder) {
+  const auto& input = ext->GetOperand(0);
+  const auto& type = input.GetType();
+  if (!type.IsValid()) {
+    return {};
+  }
+  HLCHECK(type.GetNumOfDims() == 4);
+  auto batch = type.GetNumOfElementsInDim(0);
+  auto ch = type.GetNumOfElementsInDim(1);
+  auto h = type.GetNumOfElementsInDim(2);
+  auto w = type.GetNumOfElementsInDim(3);
+
+  int block_size = FindAttributeValue(*ext, "blocksize", 0);
+  HLCHECK(block_size > 0 && ch % (block_size * block_size) == 0);
+  auto new_ch = ch / block_size / block_size;
+  std::string mode = FindAttributeValue(*ext, "mode", std::string{"DCR"});
+  std::transform(mode.begin(), mode.end(), mode.begin(),
+                 [](unsigned char c) { return std::toupper(c); });
+  HLCHECK(mode == "CRD" || mode == "DCR");
+  constexpr int tmp_rank = 6;
+  std::vector<int64_t> shape_0;
+  std::vector<int32_t> perm;
+  std::vector<int64_t> shape_1{batch, new_ch, h * block_size, w * block_size};
+
+  if (mode == "DCR") {
+    shape_0 = {batch, block_size, block_size, new_ch, h, w};
+    perm = {0, 3, 4, 1, 5, 2}; // NOLINT.
+  } else {
+    // CDR mode.
+    shape_0 = {batch, new_ch, block_size, block_size, h, w};
+    perm = {0, 1, 4, 2, 5, 3}; // NOLINT.
+  }
+  ConstantBuilder c_builder(ext->GetParent()->GetParent());
+  const auto& name = input.GetDef()->GetName();
+  auto c_shape_0 = c_builder.CreateConstant(
+      name + "_shape_0", Type{DataType::INT64, {tmp_rank}}, shape_0);
+  auto v = builder->CreateReshape(name + "_reshape_0", input, *c_shape_0);
+  auto tr = builder->CreateTranspose(name + "_tr", {*v});
+  tr->SetPermutation(perm);
+  auto c_shape_1 = c_builder.CreateConstant(
+      name + "_shape_1", Type{DataType::INT64, {4}}, shape_1);
+  return {*builder->CreateReshape(name + "_reshape_1", *tr, *c_shape_1)};
+}
+
 static std::vector<Def> ConvertEyeLike(const ONNXExtensionInst* ext,
                                        IRBuilder* builder) {
   auto type = ext->GetOperand(0).GetType();
@@ -1393,6 +1438,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::UNSQUEEZE: {
       return ConvertUnsqueeze(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::DEPTHTOSPACE: {
+      return ConvertDepthToSpace(onnx_inst, builder);
     }
     case ONNXExtOpCode::DROPOUT: {
       return {onnx_inst->GetOperand(0)};
