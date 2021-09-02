@@ -566,33 +566,42 @@ static std::vector<Def> ConvertClip(const ONNXExtensionInst* ext,
   auto input = ext->GetOperand(0);
   auto in_min = num_ops >= 2 ? ext->GetOperand(1) : Def::GetUndefined();
   auto in_max = num_ops >= 3 ? ext->GetOperand(2) : Def::GetUndefined();
-  if (num_ops == 1) {
-    constexpr int relu6_max = 6;
-    float min =
-        FindAttributeValue(*ext, "min", std::numeric_limits<float>::lowest());
-    float max =
-        FindAttributeValue(*ext, "max", std::numeric_limits<float>::max());
-    if (min == 0 && max == relu6_max) {
-      // special case.
-      return {*builder->CreateRelu6(ext->GetName(), ext->GetOperand(0))};
-    }
-    ConstantBuilder cb(ext->GetParent()->GetParent());
+  const auto& undef = Def::GetUndefined();
+  ConstantBuilder cb(ext->GetParent()->GetParent());
 
-    if (min != std::numeric_limits<float>::lowest()) {
-      in_min = *cb.CreateConstant(ext->GetName() + "_min",
-                                  Type{DataType::FLOAT32, {1}}, &min);
-    }
-    if (max != std::numeric_limits<float>::max()) {
-      in_max = *cb.CreateConstant(ext->GetName() + "_max",
-                                  Type{DataType::FLOAT32, {1}}, &max);
-    }
+  if (in_min == undef) {
+    float attr_min =
+        FindAttributeValue(*ext, "min", std::numeric_limits<float>::lowest());
+    in_min = *cb.CreateConstant(ext->GetName() + "_min",
+                                Type{DataType::FLOAT32, {1}}, &attr_min);
   }
-  if (in_min != Def::GetUndefined()) {
+  if (in_max == undef) {
+    float attr_max =
+        FindAttributeValue(*ext, "max", std::numeric_limits<float>::max());
+    in_max = *cb.CreateConstant(ext->GetName() + "_max",
+                                Type{DataType::FLOAT32, {1}}, &attr_max);
+  }
+  float min = NAN;
+  float max = NAN;
+  if (const Constant* c = DynCast<Constant>(in_min); c != nullptr) {
+    min = c->GetDataAsFloat32(0);
+  }
+  if (const Constant* c = DynCast<Constant>(in_max); c != nullptr) {
+    max = c->GetDataAsFloat32(0);
+  }
+
+  constexpr int relu6_max = 6;
+  if (min == 0 && max == relu6_max) {
+    // TODO(unknown): move relu 6 pattern matching to inst_simplify.
+    return {*builder->CreateRelu6(ext->GetName(), ext->GetOperand(0))};
+  }
+  // If a value is lowest/highest, no need to clip.
+  if (min != std::numeric_limits<float>::lowest()) {
     input = *builder->CreateMaximum(
         (num_ops == 2) ? ext->GetName() : ext->GetName() + "_min", input,
         in_min);
   }
-  if (in_max != Def::GetUndefined()) {
+  if (max != std::numeric_limits<float>::max()) {
     input = *builder->CreateMinimum(ext->GetName(), input, in_max);
   }
   return {input};
