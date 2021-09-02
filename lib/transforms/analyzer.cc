@@ -81,9 +81,8 @@ Analyzer::NodeInfo& Analyzer::GenerateCommonInfo(const Instruction* inst) {
       if (AliveTensor.find(name) != AliveTensor.end()) {
         AliveTensor[name].liveness--;
       }
-      if (AliveTensor[name].liveness == 0) {
-        node_info.io_mem += size;
-      }
+
+      node_info.io_mem += size;
     }
   }
 
@@ -95,15 +94,15 @@ Analyzer::NodeInfo& Analyzer::GenerateCommonInfo(const Instruction* inst) {
   } else {
     node_info.output_shape = op_type.GetDimSizes();
   }
-  TensorInfo tif = {op_tgts, op_tgts * Dl->Bytes(op_type), node_info.io_mem,
-                    knl_sz, node_info.type};
+  TensorInfo tif = {op_tgts, Dl->Bytes(op_type), node_info.io_mem, knl_sz,
+                    node_info.type};
   AliveTensor[node_info.name] = tif;
 
   for (auto iter = AliveTensor.begin(); iter != AliveTensor.end();) {
     if (iter->second.liveness == 0) {
       iter = AliveTensor.erase(iter);
     } else {
-      node_info.io_mem += iter->second.op_size;
+      node_info.io_mem += iter->second.op_size * iter->second.liveness;
 
       // conv2d kernel fusion
       if (node_info.name != iter->first && node_info.type == OpCode::CONV2D &&
@@ -172,13 +171,18 @@ void Analyzer::RunOnInstruction(Instruction* inst) {
     case OpCode::SITOFP:
     case OpCode::SIGMOID:
     case OpCode::EXP:
-    case OpCode::TOPK: {
+    case OpCode::TOPK:
+    case OpCode::RANGE:
+    case OpCode::RANDOMUNIFORM:
+    case OpCode::RCP:
+    case OpCode::TANH: {
       auto& node_info = GenerateCommonInfo(inst);
       node_info.flops = inst->GetResultType().GetTotalNumOfElements();
       if (op_code == OpCode::SIGMOID) {
         node_info.flops *= 3;
-      }
-      if (op_code == OpCode::TOPK) {
+      } else if (op_code == OpCode::RANGE) {
+        node_info.flops *= 2;
+      } else if (op_code == OpCode::TOPK) {
         node_info.flops *= std::log2f(node_info.flops);
       }
       break;

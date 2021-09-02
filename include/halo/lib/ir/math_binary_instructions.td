@@ -87,3 +87,12 @@ def Cmp : Inst<"Compare operation, element-wise, support broadcast."> {
   ];
   let outs_ = [ Arg<"The result.", ArgType<[ I1 ]> > ];
 }
+
+def Shift : Inst<"Element-wise bit shift."> {
+  let cat_ = cat_math_binary;
+  let attrs_ = [ Attr<"is left shift", Bool, "is_left_shift", "true">];
+  let ins_ = [
+    Arg<"The left hand side operand.", ArgType<[ I8, I16, I32 ]> >,
+    Arg<"The right hand side operand", MatchArgType<0> >
+  ];
+}

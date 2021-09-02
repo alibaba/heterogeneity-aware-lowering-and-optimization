@@ -331,19 +331,23 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_LogSoftmax(
   \param W the weights for gates. Assuming layout of [in, out, forget, cell]
   \param R the recurrence weight
   \param B the optional bias
-  \param seq_len the sequence length
+  \param sequence_lens the lengths of the sequences in a batch
+  \param initial_h the initial value of the hidden(can be NULL)
+  \param initial_c the initial value of the cell(can be NULL)
+  \param P the weight tensor for peepholes(can be NULL).
   \param hidden_size the size of hidden neurons
   \param direction the directon of network
   \param outputs speicify needed option outputs
-  \param value_id a unique value id (can be NULL)
+  \param value_ids an array of value ids (can be NULL)
 
-  \return odla_value
+  \return odla_values
 */
 extern ODLA_API_EXPORT odla_values ODLA_API_CALL
 odla_LSTM(odla_value input, odla_value_shape weight_dims, odla_value W,
-          odla_value R, odla_value B, odla_uint32 seq_len,
+          odla_value R, odla_value B, odla_value sequence_lens,
+          odla_value initial_h, odla_value initial_c, odla_value P,
           odla_int32 hidden_size, odla_rnn_direction direction,
-          odla_rnn_outputs outputs, const odla_value_id value_id);
+          odla_rnn_outputs outputs, const odla_value_ids value_id);
 
 //! \brief Max Pooling
 /*!

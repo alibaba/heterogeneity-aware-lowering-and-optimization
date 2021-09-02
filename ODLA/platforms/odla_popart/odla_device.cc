@@ -18,14 +18,9 @@
 
 #include <ODLA/odla_device.h>
 
-#include <cstdint>
-#include <exception>
-#include <iostream>
 #include <map>
-#include <memory>
 #include <popart/devicemanager.hpp>
 #include <string>
-#include <vector>
 
 #include "odla_popart.h"
 

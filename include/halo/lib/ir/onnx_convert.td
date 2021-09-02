@@ -81,6 +81,11 @@ def ONNX_GroupNormalization : OpMapping<"GroupNormalization", GroupNorm> {
     AttributeMapping<"", "data_format", "NCHW">];
 }
 
+def ONNX_BitShift : OpMapping<"BitShift", Shift,
+    [{ inst->SetIsLeftShift(direction == "LEFT"); }]> {
+  let extension_attr_ = [ExtensionAttr<"direction", String, "\"\"">];
+}
+
 def ONNX_Cast : ONNXExtension<"Cast"> {
   let extension_attr_ = [ ExtensionAttr<"to", Integer, "0"> ];
 }
@@ -327,9 +332,13 @@ def ONNX_Shape : ONNXExtension<"Shape">;
 
 def ONNX_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
 
+def ONNX_HardSigmoid : OpMapping<"HardSigmoid", HardSigmoid>;
+
 def ONNX_Sin : OpMapping<"Sin", Sin>;
 
 def ONNX_Sinh : OpMapping<"Sinh", Sinh>;
+
+def ONNX_Size: ONNXExtension<"Size">;
 
 // onnx slice op operands order is different from halo ir
 def ONNX_Slice : ONNXExtension<"Slice">;
@@ -425,5 +434,13 @@ def ONNX_HgDequant : TFExtension<"HgDequant"> {
     ExtensionAttr<"op_name", String, "\"\"">,
     ExtensionAttr<"in_type", String, "\"INT8\"">,
     ExtensionAttr<"out_type", String, "\"FLOAT32\"">
+  ];
+}
+
+def ONNX_LSTM : ONNXExtension<"LSTM"> {
+  let extension_attr_ = [
+    ExtensionAttr<"hidden_size", Integer, "1">,
+    ExtensionAttr<"layout", Integer, "0">,
+    ExtensionAttr<"direction", String, "\"FORWARD\"">
   ];
 }

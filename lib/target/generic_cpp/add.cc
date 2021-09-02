@@ -212,4 +212,13 @@ void GenericCXXCodeGen::RunOnInstruction(CmpInst* inst) {
   ir_mapping_[*inst] = ret;
 }
 
+void GenericCXXCodeGen::RunOnInstruction(ShiftInst* inst) {
+  CXXValue op0 = ir_mapping_[inst->GetOperand(0)];
+  CXXValue op1 = ir_mapping_[inst->GetOperand(1)];
+
+  CXXValue ret(inst->GetName(), op0.type);
+  EmitODLACall(ret, "odla_Shift", op0, op1, inst->GetIsLeftShift());
+  ir_mapping_[*inst] = ret;
+}
+
 } // namespace halo

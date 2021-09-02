@@ -1101,6 +1101,64 @@ static void RunOnInstruction(LoopInst* inst) {
   }
 }
 
+enum LSTMArgIndex {
+  LSTM_ARG_X_IDX = 0,
+  LSTM_ARG_W_IDX = 1,
+  LSTM_ARG_R_IDX = 2,
+  LSTM_ARG_B_IDX = 3,
+  LSTM_ARG_SEQUENCE_LENGTH_IDX = 4,
+  LSTM_ARG_INITIAL_H_IDX = 5,
+  LSTM_ARG_INITIAL_C_IDX = 6,
+  LSTM_ARG_P_IDX = 7
+};
+
+enum LSTMOutputIndex {
+  LSTM_OUPTUT_Y = 0,
+  LSTM_OUPTUT_Y_H = 1,
+  LSTM_OUPTUT_Y_C = 2
+};
+
+static void RunOnInstruction(LSTMInst* inst) {
+  const Def& op_x = inst->GetOperand(LSTM_ARG_X_IDX);
+  const Type& x_type = op_x.GetType();
+
+  if (!x_type.IsValid()) {
+    return;
+  }
+
+  int layout = inst->GetLayout();
+  HLCHECK(layout == 0 || layout == 1);
+
+  int64_t seq_length = x_type.GetNumOfElementsInDim(0);
+  int64_t batch_size = x_type.GetNumOfElementsInDim(1);
+
+  if (layout == 1) {
+    std::swap(seq_length, batch_size);
+  }
+
+  const Def& op_r = inst->GetOperand(2);
+  const Type& r_type = op_r.GetType();
+
+  int64_t num_directions = r_type.GetNumOfElementsInDim(0);
+  int64_t hidden_size = r_type.GetNumOfElementsInDim(2);
+
+  if (layout == 0) {
+    inst->GetResultsTypes()[0] =
+        Type{x_type.GetDataType(),
+             {seq_length, num_directions, batch_size, hidden_size}};
+  } else {
+    inst->GetResultsTypes()[0] =
+        Type{x_type.GetDataType(),
+             {batch_size, seq_length, num_directions, hidden_size}};
+  }
+
+  Type common_type{x_type.GetDataType(),
+                   {num_directions, batch_size, hidden_size}};
+
+  inst->GetResultsTypes()[1] = common_type;
+  inst->GetResultsTypes()[2] = common_type;
+}
+
 bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
   // Dedup names.

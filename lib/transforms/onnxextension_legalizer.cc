@@ -281,6 +281,17 @@ static std::vector<Def> ConvertPad(const ONNXExtensionInst* ext,
   return {*pad_inst};
 }
 
+static std::vector<Def> ConvertSize(const ONNXExtensionInst* ext,
+                                    IRBuilder* builder) {
+  const auto& type = ext->GetOperand(0).GetType();
+  if (!type.IsValid()) {
+    return {};
+  }
+  auto n = type.GetTotalNumOfElements();
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  return {*(cb.CreateConstant(ext->GetName(), Type{DataType::INT64, {1}}, &n))};
+}
+
 static std::vector<Def> ConvertSum(const ONNXExtensionInst* ext,
                                    IRBuilder* builder) {
   // Conver to a chain of adds.
@@ -1210,6 +1221,153 @@ static bool FixupLoopBody(LoopInst* inst) {
   return true;
 }
 
+enum LSTMArgIndex {
+  LSTM_ARG_X_IDX = 0,
+  LSTM_ARG_W_IDX = 1,
+  LSTM_ARG_R_IDX = 2,
+  LSTM_ARG_B_IDX = 3,
+  LSTM_ARG_SEQUENCE_LENGTH_IDX = 4,
+  LSTM_ARG_INITIAL_H_IDX = 5,
+  LSTM_ARG_INITIAL_C_IDX = 6,
+  LSTM_ARG_P_IDX = 7
+};
+
+enum LSTMLayout {
+  LSTM_LAYOUT_NORMAL = 0,
+  LSTM_LAYOUT_TRANSFORMED = 1,
+};
+
+Direction DecodeLSTMDirection(const std::string& key) {
+  static const std::unordered_map<std::string, Direction> enum_map{
+      {"forward", Direction::FORWARD},
+      {"reverse", Direction::REVERSE},
+      {"bidirectional", Direction::BIDIRECTIONAL},
+  };
+
+  auto it = enum_map.find(key);
+  return it == enum_map.end() ? Direction::INVALID : it->second;
+}
+
+enum OptionalArgumentState {
+  NORMAL_VALUE_PROVIDED,
+  EMPTY_VALUE_PROVIDED,
+  NOT_PROVIDED
+};
+
+OptionalArgumentState GetStateOfOptionalArgument(const IRObject* obejct,
+                                                 size_t idx) {
+  if (obejct->GetNumOfOperands() <= idx) {
+    return NOT_PROVIDED;
+  } else if (Def::GetUndefined() == obejct->GetOperand(idx)) { // NOLINT
+    return EMPTY_VALUE_PROVIDED;
+  } else {
+    return NORMAL_VALUE_PROVIDED;
+  }
+}
+
+static std::vector<Def> ConvertLSTM(const ONNXExtensionInst* ext,
+                                    IRBuilder* builder) {
+  size_t num_operands = ext->GetNumOfOperands();
+  HLCHECK(num_operands > LSTM_ARG_R_IDX && "Missing required arguments");
+
+  const Def& op_x = ext->GetOperand(LSTM_ARG_X_IDX);
+  const Type& type_x = op_x.GetType();
+
+  if (!type_x.IsValid()) {
+    return {};
+  }
+
+  DataType dtype_x = type_x.GetDataType();
+
+  const Def& op_r = ext->GetOperand(2);
+  const Type& type_r = op_r.GetType();
+
+  if (!type_r.IsValid()) {
+    return {};
+  }
+
+  ConstantBuilder c_builder(ext->GetParent()->GetParent());
+
+  int64_t seq_length = type_x.GetNumOfElementsInDim(0);
+  int64_t batch_size = type_x.GetNumOfElementsInDim(1);
+
+  int layout = FindAttributeValue<int>(*ext, "layout", LSTM_LAYOUT_NORMAL);
+  if (LSTM_LAYOUT_NORMAL != layout) {
+    std::swap(seq_length, batch_size);
+  }
+
+  int64_t num_directions = type_r.GetNumOfElementsInDim(0);
+  int64_t hidden_size = type_r.GetNumOfElementsInDim(2);
+
+  std::vector<Def> operands = ext->GetOperands();
+
+  // B not specified
+  if (num_operands <= LSTM_ARG_B_IDX) {
+    Type type(dtype_x, {num_directions, 8 * hidden_size}); // NOLINT
+    std::string name = ext->GetName() + "_B";
+    operands.push_back(*c_builder.SplatConstantZero(name, type));
+  }
+
+  // sequence_lens not specified
+  auto state_sequence_lens =
+      GetStateOfOptionalArgument(ext, LSTM_ARG_SEQUENCE_LENGTH_IDX);
+  if (NORMAL_VALUE_PROVIDED != state_sequence_lens) {
+    std::vector<int32_t> bytes(batch_size, static_cast<int32_t>(seq_length));
+    const Type type(DataType::INT32, {batch_size});
+    std::string name = ext->GetName() + "_sequence_lens";
+    Constant* constant = c_builder.CreateConstant(name, type, bytes.data());
+
+    if (NOT_PROVIDED == state_sequence_lens) {
+      operands.push_back(*constant);
+    } else {
+      operands.at(LSTM_ARG_SEQUENCE_LENGTH_IDX) = *constant;
+    }
+  }
+
+  auto supply_zeros_default = [&](size_t arg_idx, const char* suffix,
+                                  const Type& type) {
+    auto state = GetStateOfOptionalArgument(ext, arg_idx);
+
+    if (NORMAL_VALUE_PROVIDED != state) {
+      DefaultDataLayout data_layout;
+      size_t num_bytes =
+          data_layout.Bytes(type.GetDataType(), type.GetTotalNumOfElements());
+      std::vector<uint8_t> bytes(num_bytes);
+      std::string name = ext->GetName() + suffix;
+      Constant* constant = c_builder.CreateConstant(name, type, bytes.data());
+
+      if (NOT_PROVIDED == state) {
+        operands.push_back(*constant);
+      } else { // EMPTY_VALUE_PROVIDED
+        operands.at(arg_idx) = *constant;
+      }
+    }
+  };
+
+  Type type_initial_h(dtype_x, {num_directions, batch_size, hidden_size});
+  supply_zeros_default(LSTM_ARG_INITIAL_H_IDX, "_initial_h", type_initial_h);
+
+  Type type_initial_c(dtype_x, {num_directions, batch_size, hidden_size});
+  supply_zeros_default(LSTM_ARG_INITIAL_C_IDX, "_initial_c", type_initial_c);
+
+  Type type_p(dtype_x, {num_directions, 3 * hidden_size});
+  supply_zeros_default(LSTM_ARG_P_IDX, "_p", type_p);
+
+  builder->SetInsertAfter(ext);
+
+  LSTMInst* lstm = builder->CreateLSTM(ext->GetName(), operands);
+
+  lstm->SetHiddenSize(FindAttributeValue<int>(*ext, "hidden_size", 1));
+  lstm->SetLayout(FindAttributeValue<int>(*ext, "layout", 0));
+
+  std::string direction_key("FORWARD");
+  direction_key = FindAttributeValue(*ext, "direction", direction_key);
+
+  lstm->SetDirection(DecodeLSTMDirection(direction_key));
+
+  return {*lstm};
+}
+
 static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
                                              IRBuilder* builder) {
   builder->SetInsertAfter(onnx_inst);
@@ -1263,6 +1421,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     case ONNXExtOpCode::ONEHOT: {
       return ConvertOneHot(onnx_inst, builder);
     }
+    case ONNXExtOpCode::SIZE: {
+      return ConvertSize(onnx_inst, builder);
+    }
     case ONNXExtOpCode::SUM: {
       return ConvertSum(onnx_inst, builder);
     }
@@ -1287,6 +1448,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::HGENGINE: {
       return ConvertHgEngine(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::LSTM: {
+      return ConvertLSTM(onnx_inst, builder);
     }
     default: {
       HLCHECK(0 && "Unhandled");
