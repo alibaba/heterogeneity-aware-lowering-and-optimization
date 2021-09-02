@@ -360,7 +360,13 @@ def ONNX_Sinh : OpMapping<"Sinh", Sinh>;
 def ONNX_Size: ONNXExtension<"Size">;
 
 // onnx slice op operands order is different from halo ir
-def ONNX_Slice : ONNXExtension<"Slice">;
+def ONNX_Slice : ONNXExtension<"Slice"> {
+  let extension_attr_ = [
+    ExtensionAttr<"axes", IntegerList, "{}">,
+    ExtensionAttr<"starts", IntegerList, "{}">,
+    ExtensionAttr<"ends", IntegerList, "{}">,
+  ];
+}
 
 let attr_mapping_ = [AttributeMapping<"axis", "axis", "-1">] in {
   def ONNX_Hardmax : OpMapping<"Hardmax", Hardmax>;
