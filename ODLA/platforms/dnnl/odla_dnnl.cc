@@ -589,6 +589,11 @@ odla_value odla_Abs(odla_value input, const odla_value_id value_id) {
                           value_id);
 }
 
+odla_value odla_Tanh(odla_value input, const odla_value_id value_id) {
+  return unary_eltwise_op(dnnl::algorithm::eltwise_tanh, input, 0.f, 0.f,
+                          value_id);
+}
+
 odla_value odla_Add(odla_value lhs, odla_value rhs, const odla_value_id id) {
   return binary_eltwise(dnnl::algorithm::binary_add, lhs, rhs, id);
 }
