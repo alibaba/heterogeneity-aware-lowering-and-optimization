@@ -35,7 +35,7 @@ jobs:
             third_party/
 
   build_ubuntu:
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, gpu]
     steps:
       - name: checkout
         uses: actions/checkout@v2
