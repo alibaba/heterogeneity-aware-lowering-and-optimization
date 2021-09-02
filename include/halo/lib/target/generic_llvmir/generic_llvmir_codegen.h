@@ -36,6 +36,7 @@
 namespace llvm {
 class BasicBlock;
 class CallInst;
+class Constant;
 class ConstantFolder;
 class Function;
 class FunctionCallee;

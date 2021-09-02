@@ -117,7 +117,8 @@ class Type final {
   }
 
   static bool IsFloatingPointType(const DataType& dt) {
-    return (dt == DataType::FLOAT16 || dt == DataType::FLOAT32);
+    return (dt == DataType::FLOAT16 || dt == DataType::FLOAT32 ||
+            dt == DataType::FLOAT64 || dt == DataType::BFLOAT16);
   }
 
   static bool IsFloatingPointType(const Type& type) {

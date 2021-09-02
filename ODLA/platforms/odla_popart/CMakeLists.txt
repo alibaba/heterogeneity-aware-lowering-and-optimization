@@ -20,8 +20,9 @@ option(ODLA_BUILD_POPART_CUSTOM_OPS "Link with Popart custom ops" ON)
 add_odla_library(odla_popart SHARED common.cc odla_compute.cc
                                odla_ops_math.cc odla_ops_nn.cc
                                odla_ops_process.cc odla_ops.cc
-                               odla_ops_custom.cc
-                )
+                               odla_ops_custom.cc odla_pipeline.cc
+                               odla_popart.cc popart_config.cc
+                               )
 
 if (NOT POPLAR_ROOT)
   set(POPLAR_ROOT "/opt/poplar_sdk/poplar" CACHE PATH "Path of poplar root")
@@ -51,3 +52,8 @@ if (NOT ODLA_BUILD_POPART_USE_CXX11ABI)
 endif()
 
 target_link_libraries(odla_popart PUBLIC ODLA custom_ops popart-only)
+
+target_include_directories(odla_popart PRIVATE
+   ${CMAKE_CURRENT_SOURCE_DIR}/custom_ops/third_party/onnx/
+   ${CMAKE_CURRENT_SOURCE_DIR}/custom_ops/third_party/include/
+)

@@ -36,6 +36,9 @@ class Constant : public IRObject {
                     const Type& type, const DataLayout& data_layout,
                     const void* data_ptr, bool do_splat = false);
 
+  explicit Constant(GlobalContext& context, const std::string& name,
+                    const Type& type, const std::vector<std::string>& strings);
+
   /// Returns the parent object that could be a Module or a Function.
   IRObject* GetParent() const noexcept { return parent_; }
 
@@ -46,6 +49,8 @@ class Constant : public IRObject {
   void SetData(const Type& type, const void* data_ptr) {
     SetData(type, data_ptr, false);
   }
+
+  void SetData(const Type& type, const std::vector<std::string>& strings);
 
   /// Get the const pointer to the data.
   template <typename T>
@@ -76,12 +81,22 @@ class Constant : public IRObject {
   /// Get the element of data.
   template <typename T>
   const T& GetData(size_t idx) const {
+    constexpr bool is_str = std::is_same<T, std::string>();
+    if constexpr (is_str) {
+      HLCHECK(GetResultType().GetDataType() == DataType::STRING);
+      return string_data_.at(idx);
+    }
     return GetDataPtr<T>()[idx];
   }
 
   /// Get the element of data.
   template <typename T>
   T& GetData(size_t idx) {
+    constexpr bool is_str = std::is_same<T, std::string>();
+    if constexpr (is_str) {
+      HLCHECK(GetResultType().GetDataType() == DataType::STRING);
+      return string_data_.at(idx);
+    }
     return GetDataPtr<T>()[idx];
   }
 
@@ -111,7 +126,8 @@ class Constant : public IRObject {
 
   /// Print the constant info.
   void Print(std::ostream& os) const override;
-  void PrintData(std::ostream* os, size_t num_to_print) const;
+  void PrintData(std::ostream* os, size_t num_to_print,
+                 bool human_friendly) const;
   /// Check Special constant
   bool IsScalarZero() const;
   bool IsScalarOne() const;
@@ -123,7 +139,7 @@ class Constant : public IRObject {
   IRObject* parent_ = nullptr;
   const DataLayout& data_layout_;
   std::vector<unsigned char> data_;
-
+  std::vector<std::string> string_data_;
   friend class ConstantBuilder;
   friend std::unique_ptr<Constant> std::make_unique<Constant>(const Constant&);
 };

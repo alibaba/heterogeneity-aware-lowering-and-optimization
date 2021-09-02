@@ -65,6 +65,14 @@ Constant* ConstantBuilder::CreateConstant(const std::string& name,
                         data_ptr);
 }
 
+Constant* ConstantBuilder::CreateConstant(
+    const std::string& name, const Type& type,
+    const std::vector<std::string>& strings) {
+  auto c = std::make_unique<Constant>(GetContext(), name, type, strings);
+  c->parent_ = GetParent();
+  return Insert(std::move(c));
+}
+
 Constant* ConstantBuilder::SplatConstant(const std::string& name,
                                          const Type& type,
                                          const void* data_ptr) {

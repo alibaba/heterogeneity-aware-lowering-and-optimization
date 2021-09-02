@@ -25,5 +25,5 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_cast_FLOAT16_to_FLOAT | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_cast_FLOAT16_to_FLOAT_popart.cc.tmp.main.cc.in"

@@ -308,16 +308,22 @@ halo::DataType ONNXParser::ProcessDataType(int data_type, bool allow_invalid) {
       return DataType::FLOAT32;
     case onnx::TensorProto::FLOAT16:
       return DataType::FLOAT16;
+    case onnx::TensorProto::BFLOAT16:
+      return DataType::BFLOAT16;
     case onnx::TensorProto::DOUBLE:
       return DataType::FLOAT64;
     case onnx::TensorProto::INT64:
       return DataType::INT64;
+    case onnx::TensorProto::UINT64:
+      return DataType::UINT64;
     case onnx::TensorProto::INT32:
       return DataType::INT32;
     case onnx::TensorProto::UINT32:
       return DataType::UINT32;
     case onnx::TensorProto::INT16:
       return DataType::INT16;
+    case onnx::TensorProto::UINT16:
+      return DataType::UINT16;
     case onnx::TensorProto::INT8:
       return DataType::INT8;
     case onnx::TensorProto::UINT8:
@@ -347,6 +353,7 @@ static size_t GetTensorDataSize(const onnx::TensorProto& tensor_proto) {
     case onnx::TensorProto::FLOAT:
       return tensor_proto.float_data_size();
     case onnx::TensorProto::FLOAT16:
+    case onnx::TensorProto::BFLOAT16:
       return tensor_proto.int32_data_size() * 2;
     case onnx::TensorProto::DOUBLE:
       return tensor_proto.double_data_size();
@@ -354,6 +361,9 @@ static size_t GetTensorDataSize(const onnx::TensorProto& tensor_proto) {
       return tensor_proto.int64_data_size();
     case onnx::TensorProto::INT32:
       return tensor_proto.int32_data_size();
+    case onnx::TensorProto::INT16:
+    case onnx::TensorProto::UINT16:
+      return tensor_proto.int32_data_size() * 2;
     case onnx::TensorProto::INT8:
     case onnx::TensorProto::UINT8:
     case onnx::TensorProto::STRING:
@@ -415,6 +425,14 @@ void GetTensorData(const onnx::TensorProto& tensor, std::vector<int8_t>& v,
   }
 }
 
+template <>
+void GetTensorData(const onnx::TensorProto& tensor, std::vector<std::string>& v,
+                   size_t size) {
+  for (size_t i = 0; i < size; ++i) {
+    v.push_back(std::string(tensor.string_data()[i]));
+  }
+}
+
 template <typename T>
 Tensor<T> ONNXParser::ProcessTensor(const onnx::TensorProto& tensor_proto) {
   const DataType& data_type = ProcessDataType(tensor_proto.data_type());
@@ -468,8 +486,16 @@ IRObject* ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
                                        temp.GetData());
       break;
     }
-    case DataType::FLOAT16: {
+    case DataType::UINT16:
+    case DataType::FLOAT16:
+    case DataType::BFLOAT16: {
       const Tensor<uint16_t> temp = ProcessTensor<uint16_t>(tensor_def);
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData().data());
+      break;
+    }
+    case DataType::INT16: {
+      const Tensor<int16_t> temp = ProcessTensor<int16_t>(tensor_def);
       inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
                                        temp.GetData().data());
       break;
@@ -480,8 +506,26 @@ IRObject* ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
                                        temp.GetData());
       break;
     }
+    case DataType::UINT32: {
+      const Tensor<uint> temp = ProcessTensor<uint>(tensor_def);
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
+      break;
+    }
     case DataType::INT64: {
       const Tensor<int64_t> temp = ProcessTensor<int64_t>(tensor_def);
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
+      break;
+    }
+    case DataType::UINT64: {
+      const Tensor<uint64_t> temp = ProcessTensor<uint64_t>(tensor_def);
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
+      break;
+    }
+    case DataType::STRING: {
+      const Tensor<std::string> temp = ProcessTensor<std::string>(tensor_def);
       inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
                                        temp.GetData());
       break;

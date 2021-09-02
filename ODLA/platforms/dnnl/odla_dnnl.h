@@ -22,11 +22,13 @@
 
 #include <cassert>
 #include <cstddef>
+#include <functional>
 #include <iostream>
 #include <numeric>
 #include <unordered_map>
 #include <vector>
 
+#include "ODLA/odla_common.h"
 #include "dnnl.hpp"
 
 extern thread_local odla_computation g_comp;
@@ -41,12 +43,16 @@ void InterpretIfNeeded() __attribute__((visibility("hidden")));
 struct _odla_value {
   dnnl::memory mem;
   bool is_const;
-  uint8_t elem_size;
+  odla_element_type elem_type; // TODO: use odla_value_type
   odla_value_shape shape;
   std::string name;
   _odla_value(const dnnl::memory& m, const odla_value_shape& shape_,
               const std::string& id)
-      : mem(m), is_const(false), shape(shape_), name(id), elem_size(4) {
+      : mem(m),
+        is_const(false),
+        shape(shape_),
+        name(id),
+        elem_type(ODLA_FLOAT32) {
     if (shape.size == 0) {
       shape.size = 1;
       shape.dims[0] = 1;
@@ -70,6 +76,8 @@ struct operation {
   std::unordered_map<int, dnnl::memory> args;
 };
 
+dnnl::memory cast_op(odla_value& input, dnnl::memory::data_type dt)
+    __attribute__((visibility("hidden")));
 typedef struct TargetOpts {
   odla_bf16_mode bf16_mode;
 } target_opts;
@@ -132,19 +140,14 @@ static inline dnnl::memory::format_tag getFormatTag(odla_memory_layout layout,
   }
 }
 
-static inline int GetDataSize(dnnl::memory::data_type dt) {
-  switch (dt) {
-    case dnnl::memory::data_type::u8:
-    case dnnl::memory::data_type::s8:
-      return 1;
-    case dnnl::memory::data_type::bf16:
-      return 2;
-    case dnnl::memory::data_type::f32:
-    case dnnl::memory::data_type::s32:
-      return 4;
-  }
-  assert(0 && "invalid data type");
-  return 0;
+static inline int64_t GetTotalElements(const odla_value_shape& dims) {
+  return std::accumulate(dims.dims, dims.dims + dims.size, 1,
+                         std::multiplies<size_t>());
+}
+
+static inline bool hasDNNLMemorySupport(odla_element_type ty) {
+  return ty == ODLA_FLOAT32 || ty == ODLA_INT8 || ty == ODLA_UINT8 ||
+         ty == ODLA_INT32 || ty == ODLA_BFLOAT16;
 }
 
 static inline dnnl::memory::data_type getDataType(const odla_element_type ty) {
@@ -160,19 +163,66 @@ static inline dnnl::memory::data_type getDataType(const odla_element_type ty) {
     case ODLA_UINT8:
       dt = dnnl::memory::data_type::u8;
       break;
+    case ODLA_UINT32:
     case ODLA_INT32:
       dt = dnnl::memory::data_type::s32;
       break;
+    case ODLA_UINT64:
     case ODLA_INT64:
       dt = dnnl::memory::data_type::s32; // FIXME:
       break;
+    case ODLA_UINT16:
+    case ODLA_FLOAT16:
     case ODLA_BFLOAT16:
       dt = dnnl::memory::data_type::bf16;
+      break;
+    case ODLA_STRING:
+      dt = dnnl::memory::data_type::u8; // Actual storage is pointer but DNNL
+      // has no word-sized type.
       break;
     default:
       dt = dnnl::memory::data_type::undef;
   }
   return dt;
+}
+
+static inline size_t getElementStorageSize(odla_element_type elem_type) {
+  switch (elem_type) {
+    case ODLA_FLOAT64:
+    case ODLA_INT64:
+    case ODLA_UINT64:
+    case ODLA_QINT64:
+    case ODLA_QUINT64:
+      return sizeof(int64_t);
+    case ODLA_FLOAT32:
+    case ODLA_QINT32:
+    case ODLA_QUINT32:
+    case ODLA_INT32:
+    case ODLA_UINT32:
+      return sizeof(int32_t);
+    case ODLA_FLOAT16:
+    case ODLA_BFLOAT16:
+    case ODLA_INT16:
+    case ODLA_UINT16:
+    case ODLA_QINT16:
+    case ODLA_QUINT16:
+      return sizeof(uint16_t);
+    case ODLA_INT8:
+    case ODLA_UINT8:
+    case ODLA_QINT8:
+    case ODLA_QUINT8:
+    case ODLA_BOOL:
+      return sizeof(char);
+    case ODLA_STRING:
+      return sizeof(char*);
+  }
+  assert(0 && "Unhandled data type");
+  return 0;
+}
+
+static inline size_t getValueStorageSize(odla_value value) {
+  return GetTotalElements(value->shape) *
+         getElementStorageSize(value->elem_type);
 }
 
 static inline dnnl::memory::desc getMemoryDesc(const odla_value_shape& dims,
@@ -187,11 +237,6 @@ static inline dnnl::memory::desc getMemoryDesc(const odla_value_shape& dims,
 
 static inline dnnl::memory::desc getMemoryDesc(const odla_value_type& ty) {
   return getMemoryDesc(ty.shape, ty.element_type);
-}
-
-static inline int64_t GetTotalElements(const odla_value_shape& dims) {
-  return std::accumulate(dims.dims, dims.dims + dims.size, 1,
-                         std::multiplies<size_t>());
 }
 
 // The strides used by DNNL's memory desc.

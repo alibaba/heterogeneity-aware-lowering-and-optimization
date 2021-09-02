@@ -100,7 +100,6 @@ void ELFConstantWriter::WriteToBuf() {
   llvm::TargetMachine* tm = target_machine_;
   llvm::raw_os_ostream llvm_os(os_);
   llvm::buffer_ostream buf(llvm_os);
-
   const llvm::Target& target = tm->getTarget();
   const llvm::MCSubtargetInfo& sti = *tm->getMCSubtargetInfo();
   const llvm::MCRegisterInfo& mri = *tm->getMCRegisterInfo();
@@ -119,8 +118,9 @@ void ELFConstantWriter::WriteToBuf() {
 
   llvm::LLVMTargetMachine* ltm =
       static_cast<llvm::LLVMTargetMachine*>(tm); // NOLINT
-  llvm::MachineModuleInfo mmi(ltm);
-  mmi.initialize();
+  auto mmi_pass = llvm::MachineModuleInfoWrapperPass(ltm);
+  mmi_pass.doInitialization(*llvm_module_);
+  llvm::MachineModuleInfo& mmi = mmi_pass.getMMI();
   llvm::MCContext& mctx = mmi.getContext();
   const llvm::MCInstrInfo& mii = *tm->getMCInstrInfo();
   std::unique_ptr<llvm::MCCodeEmitter> mce(

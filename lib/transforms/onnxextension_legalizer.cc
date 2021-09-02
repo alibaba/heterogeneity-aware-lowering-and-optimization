@@ -281,6 +281,17 @@ static std::vector<Def> ConvertPad(const ONNXExtensionInst* ext,
   return {*pad_inst};
 }
 
+static std::vector<Def> ConvertSize(const ONNXExtensionInst* ext,
+                                    IRBuilder* builder) {
+  const auto& type = ext->GetOperand(0).GetType();
+  if (!type.IsValid()) {
+    return {};
+  }
+  auto n = type.GetTotalNumOfElements();
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  return {*(cb.CreateConstant(ext->GetName(), Type{DataType::INT64, {1}}, &n))};
+}
+
 static std::vector<Def> ConvertSum(const ONNXExtensionInst* ext,
                                    IRBuilder* builder) {
   // Conver to a chain of adds.
@@ -363,6 +374,17 @@ static std::vector<Def> ConvertCast(const ONNXExtensionInst* ext,
   if (src_type == dst_type) {
     return {op0};
   }
+  if (src_type == DataType::STRING) {
+    auto cast = builder->CreateConvertFromString(ext->GetName(), op0);
+    cast->SetDataType(dst_type);
+    return {*cast};
+  }
+  if (dst_type == DataType::STRING) {
+    auto cast = builder->CreateConvertToString(ext->GetName(), op0);
+    cast->SetDataType(dst_type);
+    return {*cast};
+  }
+
   if (Type::IsIntegerType(src_type)) {
     if (Type::IsIntegerType(dst_type)) {
       ZExtInst* new_inst = builder->CreateZExt(ext->GetName(), op0);
@@ -380,8 +402,14 @@ static std::vector<Def> ConvertCast(const ONNXExtensionInst* ext,
       new_inst->SetDataType(dst_type);
       return {*new_inst};
     }
+    if (Type::IsFloatingPointType(dst_type)) {
+      auto new_inst = builder->CreateFPtoFP(ext->GetName(), op0);
+      new_inst->SetDataType(dst_type);
+      return {*new_inst};
+    }
+  } else {
+    HLCHECK(0 && "unhandled cast");
   }
-  HLCHECK(0 && "unhandled cast");
   return {};
 }
 
@@ -1245,6 +1273,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::ONEHOT: {
       return ConvertOneHot(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::SIZE: {
+      return ConvertSize(onnx_inst, builder);
     }
     case ONNXExtOpCode::SUM: {
       return ConvertSum(onnx_inst, builder);

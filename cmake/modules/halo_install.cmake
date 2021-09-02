@@ -22,6 +22,13 @@ install(TARGETS halo halolib
         INCLUDES DESTINATION include/halo
         PUBLIC_HEADER DESTINATION include/halo
 )
+
+find_program(PYTHON "python3")
+set(SETUP_PY "${CMAKE_BINARY_DIR}/python/setup.py")
+set(OUTPUT_PY "${CMAKE_BINARY_DIR}/python/dist")
+install(CODE "execute_process(COMMAND ${PYTHON} ${SETUP_PY} install --prefix=${OUTPUT_PY})")
+install(DIRECTORY ${OUTPUT_PY}/lib/ DESTINATION lib)
+
 if (HALO_BUILD_RTLIB)
 install(DIRECTORY ${CMAKE_BINARY_DIR}/runtime DESTINATION .)
 endif()
@@ -40,4 +47,6 @@ string(TOLOWER "${CPACK_SYSTEM_NAME}" os)
 if (os MATCHES "centos.*")
   set(CPACK_GENERATOR "TBZ2;RPM")
 endif()
+set(CPACK_POST_BUILD_SCRIPTS "execute_process(COMMAND ${PYTHON} ${SETUP_PY} bdist_wheel)")
+
 include(CPack)
