@@ -21,6 +21,7 @@ set(NAME TRANSFORMS)
 set(SRCS
   analyzer.cc
   caffeextension_legalizer.cc
+  constant_decombine.cc
   dce.cc
   device_placement.cc
   fusion.cc
