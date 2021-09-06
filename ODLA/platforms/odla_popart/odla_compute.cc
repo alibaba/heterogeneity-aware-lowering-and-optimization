@@ -112,11 +112,6 @@ odla_status odla_DestroyContext(odla_context ctx) {
 
 odla_status odla_DestroyComputation(odla_computation comp) {
   comp->mark_done();
-  if (comp->session != nullptr) {
-    comp->session->getDevice().getDeviceInfo()->detach();
-    comp->session.reset();
-    assert(comp->session == nullptr);
-  }
   return ODLA_SUCCESS;
 }
 
