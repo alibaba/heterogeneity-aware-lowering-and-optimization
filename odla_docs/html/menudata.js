@@ -37,5 +37,6 @@ var menudata={children:[
 {text:"Typedefs",url:"globals_type.html",children:[
 {text:"o",url:"globals_type.html#index_o"}]},
 {text:"Enumerations",url:"globals_enum.html"},
-{text:"Enumerator",url:"globals_eval.html"},
+{text:"Enumerator",url:"globals_eval.html",children:[
+{text:"o",url:"globals_eval.html#index_o"}]},
 {text:"Macros",url:"globals_defs.html"}]}]}]}
