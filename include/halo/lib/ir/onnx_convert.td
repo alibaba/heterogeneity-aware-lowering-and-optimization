@@ -153,6 +153,13 @@ def ONNX_CumSum : OpMapping<"CumSum", CumSum> {
   ];
 }
 
+def ONNX_DepthToSpace : ONNXExtension<"DepthToSpace"> {
+  let extension_attr_ = [
+    ExtensionAttr<"blocksize", Integer, "-1">,
+    ExtensionAttr<"mode", String, "\"DCR\"">
+  ];
+}
+
 def ONNX_Div : OpMapping<"Div", Div>;
 
 def ONNX_Dropout : ONNXExtension<"Dropout">;
@@ -328,6 +335,13 @@ def ONNX_Resize : OpMapping<"Resize", Resize> {
     ];
 }
 
+def ONNX_Selu : OpMapping<"Selu", Selu> {
+  let attr_mapping_ = [ 
+    AttributeMapping<"gamma", "lambda", "1.0507">,
+    AttributeMapping<"alpha", "alpha", "1.67326"> 
+    ];
+}
+
 def ONNX_Shape : ONNXExtension<"Shape">;
 
 def ONNX_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
@@ -376,6 +390,10 @@ def ONNX_TopK : OpMapping<"TopK", TopK> {
 }
 
 def ONNX_Tanh : OpMapping<"Tanh", Tanh>;
+
+def ONNX_ThresholdedRelu : OpMapping<"ThresholdedRelu", ThresholdedRelu> {
+  let attr_mapping_ = [ AttributeMapping<"alpha", "alpha", "1"> ];
+}
 
 def ONNX_Tile : OpMapping<"Tile", Tile>;
 

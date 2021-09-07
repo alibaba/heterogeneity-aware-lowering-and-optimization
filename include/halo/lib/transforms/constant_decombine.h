@@ -1,6 +1,6 @@
-//===-test_depthtospace_dnnl.cc-----------------------------------------------------------===//
+//===- constant_decombine.h -----------------------------------------------===//
 //
-// Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+// Copyright (C) 2019-2021 Alibaba Group Holding Limited.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,8 +15,20 @@
 // limitations under the License.
 // =============================================================================
 
-// clang-format off
-// TODO: Remove this test. There is no corresponding test case.
-// RUN: echo Result Pass | FileCheck %s
-// CHECK: Result Pass
+#include "halo/lib/pass/pass.h"
 
+#ifndef HALO_LIB_TRANSFORMS_CONSTANT_DECOMBINE_H_
+#define HALO_LIB_TRANSFORMS_CONSTANT_DECOMBINE_H_
+
+namespace halo {
+
+/// This pass decombine constant node for sharding mode
+class ConstantDecombine final : public FunctionPass {
+ public:
+  ConstantDecombine() : FunctionPass("Cosntant Decombine") {}
+
+  bool RunOnFunction(Function* func) override;
+};
+
+} // end namespace halo
+#endif // HALO_LIB_TRANSFORMS_CONSTANT_DECOMBINE_H_
