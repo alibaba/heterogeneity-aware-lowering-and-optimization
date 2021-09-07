@@ -377,6 +377,8 @@ def ONNX_TopK : OpMapping<"TopK", TopK> {
 
 def ONNX_Tanh : OpMapping<"Tanh", Tanh>;
 
+def ONNX_Tan : OpMapping<"Tan", Tan>;
+
 def ONNX_Tile : OpMapping<"Tile", Tile>;
 
 def ONNX_Transpose : OpMapping<"Transpose", Transpose> {
