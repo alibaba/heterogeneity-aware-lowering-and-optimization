@@ -687,6 +687,20 @@ odla_value odla_PRelu(odla_value input, odla_value slope,
   return v;
 }
 
+odla_value odla_Elu(odla_value input, odla_float32 alpha,
+                    const odla_value_id id) {
+  return unary_eltwise_op(dnnl::algorithm::eltwise_elu, input, alpha, 0.f, id);
+}
+
+odla_value odla_Selu(odla_value input, odla_float32 alpha, odla_float32 lambda,
+                     const odla_value_id id) {
+  auto elu_v = odla_Elu(input, alpha, id);
+  auto rank = input->shape.size;
+  auto lambda_v = CreateConstantFromScalar(lambda, rank);
+  auto v = odla_Mul(elu_v, lambda_v, id);
+  return v;
+}
+
 odla_value odla_Clamp(odla_value input, odla_float32 lo, odla_float32 hi,
                       const odla_value_id id) {
   return unary_eltwise_op(dnnl::algorithm::eltwise_clip, input, lo, hi, id);

@@ -45,8 +45,8 @@ class HL_API_EXPORT PassManager final {
 
   /// Add a pass to the pass manager.
   template <typename T, typename... TS>
-  T* AddPass(TS&... args) {
-    auto pass = std::make_unique<T>(args...);
+  T* AddPass(TS&&... args) {
+    auto pass = std::make_unique<T>(std::forward<TS>(args)...);
     T* ret = static_cast<T*>(pass.get());
     Add(std::move(pass));
     return ret;
@@ -123,6 +123,7 @@ class HL_API_EXPORT PassManager final {
   Pass* AddX86ConstantWriterPass(std::ostream& os);
   Pass* AddX86LLVMIRCodeGenPass();
   Pass* AddX86LLVMIRCodeGenPass(ConstantDataStorage constant_data_storage);
+  Pass* AddConstantDecombinePass();
 
  private:
   Pass* Add(std::unique_ptr<ModulePass> pass);
