@@ -170,9 +170,9 @@ void _odla_computation::set_session_opts() {
     session_opts_.cachePath =
         opts.enable_engine_cache ? opts.cache_dir : envEngineCachePath;
   }
-  session_opts_.matmulOptions["use128BitConvUnitLoad"] = "true";
-  session_opts_.matmulOptions["enableMultiStageReduce"] = "false";
-  session_opts_.matmulOptions["enableFastReduce"] = "true";
+  //session_opts_.matmulOptions["use128BitConvUnitLoad"] = "true";
+  //session_opts_.matmulOptions["enableMultiStageReduce"] = "false";
+  //session_opts_.matmulOptions["enableFastReduce"] = "true";
   session_opts_.enableFloatingPointChecks = false;
   session_opts_.enableStochasticRounding = false;
   session_opts_.enablePrefetchDatastreams = false; // true;
