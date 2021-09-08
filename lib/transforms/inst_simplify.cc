@@ -1074,7 +1074,8 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Conv2DInst* inst) {
 
   // Convert Conv(add(x, c), k) => Conv(x, k') or  Conv(mul(x, c), k) ==>
   // Conv(x, k') where k is a constant of scalar or channel-wise vector.
-  if ((IsA<AddInst>(op_input) || IsA<MulInst>(op_input)) &&
+  if ((IsA<AddInst>(op_input) ||
+       (IsA<MulInst>(op_input) && opts_.fuse_mul_to_conv)) &&
       IsA<Constant>(op_kernel) && inst->GetGroup() == 1 &&
       inst->GetResultType().IsValid()) {
     Instruction* binary_inst = DynCast<Instruction>(op_input);

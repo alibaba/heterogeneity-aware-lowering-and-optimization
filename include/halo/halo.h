@@ -95,6 +95,7 @@ struct CXXCodeGenOpts {
   bool fuse_hardswish = false;
   bool fuse_conv_relu = false;
   bool fuse_fully_connected = true;
+  bool fuse_mul_to_conv = true;
   bool enable_anole_device = false;
   int64_t ipu_num = 1;
   int64_t batches_per_step = 1;
