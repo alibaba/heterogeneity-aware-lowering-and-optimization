@@ -19,11 +19,11 @@
 
 #include <stdio.h>
 
+#include <Eigen/Core>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstring>
-#include <eigen-3.3.7/Eigen/Core>
 #include <iostream>
 #include <numeric>
 #include <unordered_map>
