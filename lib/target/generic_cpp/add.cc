@@ -36,7 +36,8 @@ void GenericCXXCodeGen::RunOnUnaryInstruction(Instruction* inst) {
       {OpCode::ROUND, "odla_Round"},    {OpCode::NEG, "odla_Neg"},
       {OpCode::RCP, "odla_Reciprocal"}, {OpCode::NOT, "odla_Not"},
       {OpCode::CEIL, "odla_Ceil"},      {OpCode::LOG, "odla_Log"},
-      {OpCode::TANH, "odla_Tanh"}};
+      {OpCode::TANH, "odla_Tanh"},      {OpCode::TAN, "odla_Tan"},
+  };
 
   auto it = names.find(inst->GetOpCode());
   HLCHECK(it != names.end());
@@ -190,6 +191,9 @@ void GenericCXXCodeGen::RunOnInstruction(PowInst* inst) {
 }
 
 void GenericCXXCodeGen::RunOnInstruction(TanhInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+void GenericCXXCodeGen::RunOnInstruction(TanInst* inst) {
   RunOnUnaryInstruction(inst);
 }
 
