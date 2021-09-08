@@ -126,7 +126,7 @@ void _odla_computation::set_opts() {
   if (PopartConfig::instance()->debug()) {
     opts.ipu_num = PopartConfig::instance()->ipu_num();
     opts.batches_per_step = PopartConfig::instance()->batches_per_step();
-  } else if(use_pipeline()){ //Only check when use pipeline
+  } else if (use_pipeline()) { // Only check when use pipeline
     if (opts.ipu_num != PopartConfig::instance()->ipu_num())
       throw std::invalid_argument(
           "number of ipus in pipeline configuration:" +

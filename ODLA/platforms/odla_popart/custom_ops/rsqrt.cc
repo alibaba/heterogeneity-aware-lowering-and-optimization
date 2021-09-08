@@ -69,9 +69,8 @@ RsqrtOpx::RsqrtOpx(popart::Op* op, popart::popx::Devicex* devicex)
 
 void RsqrtOpx::grow(poplar::program::Sequence& prog) const {
   setOutTensor(
-      0, snap::Tensor{
-	       popops::map(graph().getPoplarGraph(), popops::expr::UnaryOpType::RSQRT,
-           getInTensor(0).getPoplarTensor(), prog, debugContext()), graph()});
+      0, popops::map(graph().getPoplarGraph(), popops::expr::UnaryOpType::RSQRT,
+                     getInTensor(0).getPoplarTensor(), prog, debugContext()));
 }
 
 namespace {
