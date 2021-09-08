@@ -107,7 +107,8 @@ Status ONNXParser::Parse(Function* function,
       data.c_str(), static_cast<int>(data.size()));
   google::protobuf::io::CodedInputStream coded_stream(&input_stream);
   coded_stream.SetTotalBytesLimit((2048LL << 20) - 1, 512LL << 20);
-  if (!model_def.ParseFromCodedStream(&coded_stream)) {
+  if (!model_def.ParseFromCodedStream(&coded_stream) ||
+      !model_def.has_graph()) {
     // Try to parse it as data file.
     ifs.clear();
     ifs.seekg(0);
