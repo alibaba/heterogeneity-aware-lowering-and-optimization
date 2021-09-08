@@ -58,14 +58,14 @@ void compute_loop(odla_computation comp) {
     popart::logging::warn("Found new tasks in {} ms.", elapsed_ms.count());
   }
   popart::logging::warn("The pipeline loop finished");
-  comp->thread_complete_ = true;
+  comp->thread_done();
 }
 
 void _odla_computation::init() {
   if (!session) {
     std::lock_guard<std::mutex> guard(init_mutex_);
     if (!session) {
-      set_opts(); // Test code
+      set_opts();
       // Cretate the dataflow
       std::vector<popart::TensorId> ids;
       for (const auto& output : outputs_map)
@@ -111,6 +111,7 @@ void _odla_computation::init() {
       ExecutionMode mode = PopartConfig::instance()->execution_mode();
       if (PIPELINE == mode || PARALLEL == mode) {
         std::thread parallel_thread(compute_loop, this);
+        thread_state_ = RUNNING;
         popart::logging::warn("Parallel loop has been started");
         parallel_thread.detach();
       }
@@ -125,7 +126,7 @@ void _odla_computation::set_opts() {
   if (PopartConfig::instance()->debug()) {
     opts.ipu_num = PopartConfig::instance()->ipu_num();
     opts.batches_per_step = PopartConfig::instance()->batches_per_step();
-  } else {
+  } else if(use_pipeline()){ //Only check when use pipeline
     if (opts.ipu_num != PopartConfig::instance()->ipu_num())
       throw std::invalid_argument(
           "number of ipus in pipeline configuration:" +
@@ -169,9 +170,9 @@ void _odla_computation::set_session_opts() {
     session_opts_.cachePath =
         opts.enable_engine_cache ? opts.cache_dir : envEngineCachePath;
   }
-  // session_opts_.matmulOptions["use128BitConvUnitLoad"] = "true";
-  // session_opts_.matmulOptions["enableMultiStageReduce"] = "false";
-  // session_opts_.matmulOptions["enableFastReduce"] = "true";
+  session_opts_.matmulOptions["use128BitConvUnitLoad"] = "true";
+  session_opts_.matmulOptions["enableMultiStageReduce"] = "false";
+  session_opts_.matmulOptions["enableFastReduce"] = "true";
   session_opts_.enableFloatingPointChecks = false;
   session_opts_.enableStochasticRounding = false;
   session_opts_.enablePrefetchDatastreams = false; // true;

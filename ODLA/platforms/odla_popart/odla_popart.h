@@ -27,6 +27,7 @@
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensorinfo.hpp>
+#include <popart/popx/devicex.hpp>
 #include <string>
 #include <thread>
 #include <vector>
@@ -90,6 +91,15 @@ struct _odla_computation {
   target_opts opts;
 
   // new members for pipeline
+  enum THREAD_STATE {
+    RUNNING = 0,
+    MARK_DONE,
+    DONE
+  };
+  THREAD_STATE thread_state_;
+  std::mutex thread_done_mutex_;
+  std::condition_variable thread_done_cv_;
+
   static _odla_computation* instance_;
   static _odla_computation* instance(bool hold_it = true) {
     if (hold_it) instance_->hold();
@@ -108,12 +118,10 @@ struct _odla_computation {
         opts({false, 1, 1}),
         done_(false),
         executor_(nullptr),
-        thread_complete_(false) {
+        thread_state_(DONE) {
     builder->setAttribute(popart::sVirtualGraphAttribute, 0);
   }
   void init();
-  inline bool is_done() { return done_; }
-  inline void mark_done() { done_ = true; }
   std::string set_pipeline_stage();
   void set_session_opts();
   void set_executor();
@@ -121,6 +129,26 @@ struct _odla_computation {
   bool use_pipeline();
   bool hold();
   inline Execution* executor() { return executor_; }
+  inline bool is_done() { return thread_state_ != RUNNING; }
+  inline void mark_done() {
+    while(thread_state_ != DONE) {
+      std::unique_lock<std::mutex> lock(thread_done_mutex_);
+      thread_state_ = MARK_DONE;
+      thread_done_cv_.wait_for(lock, std::chrono::milliseconds(1000));
+    }
+    //Once get notified, only detach the device once
+    std::lock_guard<std::mutex> guard(init_mutex_);
+    if (session != nullptr){
+      session->getDevice().getDeviceInfo()->detach();
+      session.reset();
+      assert(session == nullptr);
+    }
+  }
+  inline void thread_done(){
+    std::unique_lock<std::mutex> lock(thread_done_mutex_);
+    thread_state_ = DONE;
+    thread_done_cv_.notify_all();
+  }
 };
 
 struct _odla_context {
