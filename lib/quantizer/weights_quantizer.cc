@@ -93,6 +93,12 @@ void WeightsQuantizer::RunOnConstant(Constant* val) {
     QuantToFp16(val);
     return;
   }
+
+  auto user = val->GetIthResultUses(0).begin();
+  auto used_by = user->GetOwner();
+  if (IsA<BatchNormInst>(used_by) && opts_.enable_anole_device) {
+    return;
+  }
   const float* data = val->GetDataPtr<float>();
   size_t len = type.GetTotalNumOfElements();
   constexpr int range = 255;
@@ -136,10 +142,10 @@ void WeightsQuantizer::RunOnConstant(Constant* val) {
 
   // Check if a constant is a bias of conv/matmul.
   if (val->GetNumberOfUses() == 1) {
-    auto user = val->GetIthResultUses(0).begin();
-    auto used_by = user->GetOwner();
-    if (user->GetIdx() == 2 &&
-        (IsA<Conv2DInst>(used_by) || IsA<MatMulInst>(used_by))) {
+    if ((user->GetIdx() == 2 &&
+         (IsA<Conv2DInst>(used_by) || IsA<MatMulInst>(used_by) ||
+          IsA<GemmInst>(used_by) || IsA<Conv2DTransposeInst>(used_by))) ||
+        (user->GetIdx() == 3 && IsA<LSTMInst>(used_by))) {
       // Quant to Int32.
       std::string input_name =
           get_odla_name(*used_by->GetOperand(0).GetOwner());
