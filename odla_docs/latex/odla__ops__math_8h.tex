@@ -93,8 +93,6 @@
 \begin{DoxyCompactList}\small\item\em Round to nearest. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__math_8h_ae5af3cc339fa4692958eb489d10330ec}{odla\+\_\+\+Rsqrt}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em reciprocal square root \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__math_8h_a8d397a833c7759662740f6673a9bb2f7}{odla\+\_\+\+Shift}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} shift\+\_\+amount, \mbox{\hyperlink{odla__common_8h_a86f265601c0773152f4e193a8614c0ac}{odla\+\_\+bool}} is\+\_\+left\+\_\+shift, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
-\begin{DoxyCompactList}\small\item\em bit shift \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__math_8h_a6892e89ba1483ad95d2a18a4f380d913}{odla\+\_\+\+Sign}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Sign of input. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__math_8h_a29e525904b25bb925f7644f4fa43bb9a}{odla\+\_\+\+Sqrt}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
@@ -1403,30 +1401,6 @@ Rsqrt returns the element-\/wise reciprocal square root of {\ttfamily input}.
 
 \begin{DoxyParams}{Parameters}
 {\em input} & the input value \\
-\hline
-{\em value\+\_\+id} & a unique value id (can be NULL)\\
-\hline
-\end{DoxyParams}
-\begin{DoxyReturn}{Returns}
-odla\+\_\+value 
-\end{DoxyReturn}
-\mbox{\Hypertarget{odla__ops__math_8h_a8d397a833c7759662740f6673a9bb2f7}\label{odla__ops__math_8h_a8d397a833c7759662740f6673a9bb2f7}} 
-\index{odla\_ops\_math.h@{odla\_ops\_math.h}!odla\_Shift@{odla\_Shift}}
-\index{odla\_Shift@{odla\_Shift}!odla\_ops\_math.h@{odla\_ops\_math.h}}
-\doxysubsubsection{\texorpdfstring{odla\_Shift()}{odla\_Shift()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Shift (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{shift\+\_\+amount,  }\item[{\mbox{\hyperlink{odla__common_8h_a86f265601c0773152f4e193a8614c0ac}{odla\+\_\+bool}}}]{is\+\_\+left\+\_\+shift,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
-
-
-
-bit shift 
-
-Shift returns the element-\/wise bit shift of {\ttfamily input}. 
-\begin{DoxyParams}{Parameters}
-{\em input} & the input value \\
-\hline
-{\em shift\+\_\+amount} & the shift amount \\
-\hline
-{\em is\+\_\+left\+\_\+shift} & the shift direction \\
 \hline
 {\em value\+\_\+id} & a unique value id (can be NULL)\\
 \hline
