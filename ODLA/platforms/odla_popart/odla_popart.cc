@@ -65,7 +65,7 @@ void _odla_computation::init() {
   if (!session) {
     std::lock_guard<std::mutex> guard(init_mutex_);
     if (!session) {
-      set_opts(); // Test code
+      set_opts();
       // Cretate the dataflow
       std::vector<popart::TensorId> ids;
       for (const auto& output : outputs_map)
@@ -126,7 +126,7 @@ void _odla_computation::set_opts() {
   if (PopartConfig::instance()->debug()) {
     opts.ipu_num = PopartConfig::instance()->ipu_num();
     opts.batches_per_step = PopartConfig::instance()->batches_per_step();
-  } else {
+  } else if(use_pipeline()){ //Only check when use pipeline
     if (opts.ipu_num != PopartConfig::instance()->ipu_num())
       throw std::invalid_argument(
           "number of ipus in pipeline configuration:" +

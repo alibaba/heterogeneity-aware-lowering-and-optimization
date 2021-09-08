@@ -173,7 +173,7 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
   // only the SEQUENCE model need to pass the data in once time
   if (PopartConfig::instance()->execution_mode() == SEQUENCE &&
       shape.size() > 0)
-    shape[0] *= PopartConfig::instance()->batches_per_step();
+    shape[0] *= g_comp->opts.batches_per_step;
   std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
       data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
       shape);
@@ -231,7 +231,7 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
   // only the SEQUENCE model need to pass the data in once time
   if (PopartConfig::instance()->execution_mode() == SEQUENCE &&
       shape.size() > 0)
-    shape[0] *= PopartConfig::instance()->batches_per_step();
+    shape[0] *= g_comp->opts.batches_per_step;
   std::unique_ptr<popart::IArray> p_array = MakeNDArrayWrapper(
       data_ptr, context->comp->builder->getTensorDataType(value->tensor_id),
       shape);
