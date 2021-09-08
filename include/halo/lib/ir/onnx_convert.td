@@ -391,6 +391,8 @@ def ONNX_TopK : OpMapping<"TopK", TopK> {
 
 def ONNX_Tanh : OpMapping<"Tanh", Tanh>;
 
+def ONNX_Tan : OpMapping<"Tan", Tan>;
+
 def ONNX_ThresholdedRelu : OpMapping<"ThresholdedRelu", ThresholdedRelu> {
   let attr_mapping_ = [ AttributeMapping<"alpha", "alpha", "1"> ];
 }

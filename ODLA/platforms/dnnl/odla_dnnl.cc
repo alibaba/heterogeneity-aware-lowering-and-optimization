@@ -17,6 +17,9 @@
 
 #include "odla_dnnl.h"
 
+#include <stdio.h>
+
+#include <Eigen/Core>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -822,6 +825,43 @@ odla_value odla_Shift(odla_value input, odla_value shift_amount,
   };
   add_op(op);
 
+  InterpretIfNeeded();
+  return v;
+}
+
+template <typename T>
+static void tan(void* dst, const void* input, int n) {
+  const T* input_t = static_cast<const T*>(input);
+  T* dst_t = static_cast<T*>(dst);
+  Eigen::Map<const Eigen::Array<T, Eigen::Dynamic, 1>> in(input_t, n);
+  Eigen::Map<Eigen::Array<T, Eigen::Dynamic, 1>> out(dst_t, n);
+  out = in.tan();
+}
+
+odla_value odla_Tan(odla_value input, const odla_value_id value_id) {
+  // Extract type and size
+  auto elem_type = input->elem_type;
+  int n = GetTotalElements(input->shape);
+  // Prepare destination memory
+  dnnl::memory dst_mem;
+  dnnl::memory::desc dst_md = getMemoryDesc({elem_type, input->shape});
+  dst_mem = dnnl::memory(dst_md, g_comp->eng);
+  auto v = CreateValue(dst_mem, input->shape, value_id);
+  v->elem_type = elem_type;
+  // Create lambda operation
+  auto op = [input, dst_mem, n] {
+    void* dst = dst_mem.get_data_handle();
+    const void* data = input->mem.get_data_handle();
+    if (input->elem_type == ODLA_FLOAT32) {
+      tan<float>(dst, data, n);
+    } else if (input->elem_type == ODLA_FLOAT64) {
+      tan<double>(dst, data, n);
+    } else {
+      assert(0);
+    }
+  };
+  // Postprocess
+  add_op(op);
   InterpretIfNeeded();
   return v;
 }

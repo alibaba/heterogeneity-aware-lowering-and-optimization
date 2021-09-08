@@ -21,21 +21,6 @@ endmacro(add_odla_library)
 
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
 
-option(ODLA_BUILD_DNNL "Build ODLA Runtime Library for DNNL" ON)
-if (ODLA_BUILD_DNNL)
-  add_subdirectory(dnnl)
-endif()
-
-option(ODLA_BUILD_POPART "Build ODLA Runtime Library for POPART" ON)
-if (ODLA_BUILD_POPART)
-  add_subdirectory(odla_popart)
-endif()
-
-option(ODLA_BUILD_TRT "Build ODLA Runtime Library for TensorRT" ON)
-if (ODLA_BUILD_TRT)
-  add_subdirectory(tensorrt)
-endif()
-
 option(ODLA_BUILD_EIGEN "Build ODLA Runtime Library for Eigen" ON)
 if (ODLA_BUILD_EIGEN)
   set(EIGEN_VERSION 3.3.7)
@@ -49,6 +34,21 @@ if (ODLA_BUILD_EIGEN)
   add_odla_library(odla_eigen SHARED odla_eigen.cc)
   target_include_directories(odla_eigen PRIVATE ${EIGEN_ROOT})
   target_link_libraries(odla_eigen ODLA)
+endif()
+
+option(ODLA_BUILD_DNNL "Build ODLA Runtime Library for DNNL" ON)
+if (ODLA_BUILD_DNNL)
+  add_subdirectory(dnnl)
+endif()
+
+option(ODLA_BUILD_POPART "Build ODLA Runtime Library for POPART" ON)
+if (ODLA_BUILD_POPART)
+  add_subdirectory(odla_popart)
+endif()
+
+option(ODLA_BUILD_TRT "Build ODLA Runtime Library for TensorRT" ON)
+if (ODLA_BUILD_TRT)
+  add_subdirectory(tensorrt)
 endif()
 
 option(ODLA_BUILD_XNNPACK "Build ODLA Runtime Library for XNNPACK" ON)

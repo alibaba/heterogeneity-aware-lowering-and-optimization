@@ -169,6 +169,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(SinhInst*) override;
   virtual void RunOnInstruction(CosInst*) override;
   virtual void RunOnInstruction(CoshInst*) override;
+  virtual void RunOnInstruction(TanInst*) override;
   virtual void RunOnInstruction(TanhInst*) override;
   virtual void RunOnInstruction(TopKInst*) override;
   virtual void RunOnInstruction(TransposeInst*) override;
