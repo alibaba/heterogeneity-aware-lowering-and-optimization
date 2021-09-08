@@ -124,7 +124,8 @@ class HL_API_EXPORT PassManager final {
   Pass* AddTypeCastPass();
   Pass* AddTypeLegalizerPass();
   Pass* AddTypeLegalizerPass(bool relaxed);
-  Pass* AddWeightsQuantizerPass(Quantization quant, const std::string& file);
+  Pass* AddWeightsQuantizerPass(Quantization quant, const std::string& file,
+                                const CXXCodeGenOpts& opts);
   Pass* AddX86BinaryWriterPass(std::ostream& os);
   Pass* AddX86ConstantWriterPass(std::ostream& os);
   Pass* AddX86LLVMIRCodeGenPass();

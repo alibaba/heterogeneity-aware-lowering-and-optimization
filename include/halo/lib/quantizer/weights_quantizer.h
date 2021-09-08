@@ -26,8 +26,12 @@ namespace halo {
 /// This pass quantizes weights.
 class WeightsQuantizer final : public ModulePass {
  public:
-  WeightsQuantizer(Quantization quant, const std::string& file)
-      : ModulePass("Quantize Weights"), quant_(quant), pgq_file_(file) {}
+  WeightsQuantizer(Quantization quant, const std::string& file,
+                   const CXXCodeGenOpts& opts)
+      : ModulePass("Quantize Weights"),
+        quant_(quant),
+        pgq_file_(file),
+        opts_(opts) {}
 
   bool RunOnModule(Module* m) override;
 
@@ -42,6 +46,7 @@ class WeightsQuantizer final : public ModulePass {
   } QuantInfo;
   Quantization quant_;
   const std::string pgq_file_;
+  CXXCodeGenOpts opts_;
   std::unordered_map<std::string, QuantInfo> quant_info_;
 };
 

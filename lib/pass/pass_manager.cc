@@ -436,8 +436,9 @@ Pass* PassManager::AddTypeLegalizerPass(bool relaxed) {
 }
 
 Pass* PassManager::AddWeightsQuantizerPass(Quantization quant,
-                                           const std::string& file) {
-  return AddPass<WeightsQuantizer>(quant, file);
+                                           const std::string& file,
+                                           const CXXCodeGenOpts& opts) {
+  return AddPass<WeightsQuantizer>(quant, file, opts);
 }
 
 Pass* PassManager::AddX86BinaryWriterPass(std::ostream& os) {

@@ -45,7 +45,7 @@ HL_UNUSED static void PopulateCodeGenPasses(
         (idx == std::string::npos) ? "x86_64" : target.substr(idx + 1);
     pm->GetGlobalContext().SetTargetTriple(
         weight_target); // For binary constant writer.
-    pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
+    pm->AddWeightsQuantizerPass(quant_weights, pgq_file, opts);
     pm->AddConstantWriterPass(*out_constants,
                               emit_data_as_c ? "" : weight_target);
     if (opts.template_file == nullptr) {
@@ -72,7 +72,7 @@ HL_UNUSED static void PopulateCodeGenPasses(
   }
 
   if (emit_llvm_ir) {
-    pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
+    pm->AddWeightsQuantizerPass(quant_weights, pgq_file, opts);
     pm->AddGenericLLVMIRCodeGenPass(constant_storage);
     pm->AddGenericLLVMIRWriterPass(std::ref(*out_code), is_binary_output);
   } else {
@@ -107,7 +107,7 @@ HL_UNUSED static void PopulateCodeGenPasses(
         HLCHECK(0 && "Unsupported");
       }
     }
-    pm->AddWeightsQuantizerPass(quant_weights, pgq_file);
+    pm->AddWeightsQuantizerPass(quant_weights, pgq_file, opts);
     if (opts.separate_constants && !emit_code_only) {
       pm->AddConstantWriterPass(*out_constants, arch_name);
     }
