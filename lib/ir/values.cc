@@ -240,6 +240,9 @@ void IRObject::ReplaceOperandWith(size_t idx, const Def& new_def) {
 void IRObject::ReplaceAllUsesWith(size_t result_idx, const Def& new_def) {
   // Copy the use list because the list will be updated by ReplaceOperandWith()
   // function.
+  if (result_idx >= results_uses_.size()) {
+    return;
+  }
   auto uses = GetIthResultUses(result_idx).GetUses();
   for (Use& use : uses) {
     if (use != new_def) {

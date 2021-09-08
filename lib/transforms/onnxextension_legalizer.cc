@@ -1414,7 +1414,7 @@ static std::vector<Def> ConvertLSTM(const ONNXExtensionInst* ext,
 
   lstm->SetDirection(DecodeLSTMDirection(direction_key));
 
-  return {*lstm};
+  return {Def{lstm, 0}, Def{lstm, 1}, Def{lstm, 2}};
 }
 
 static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
