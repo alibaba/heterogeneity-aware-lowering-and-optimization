@@ -102,6 +102,11 @@ def ONNX_Clip : ONNXExtension<"Clip"> {
 }
 
 def ONNX_Ceil : OpMapping<"Ceil", Ceil>;
+
+def ONNX_Celu : OpMapping<"Celu", Celu> {
+  let attr_mapping_ = [ AttributeMapping<"alpha", "alpha", "1.0"> ];
+}
+
 // def ONNX_Compress
 def ONNX_Concat : OpMapping<"Concat", Concat> {
   let attr_mapping_ = [AttributeMapping<"axis", "axis", "1">,
