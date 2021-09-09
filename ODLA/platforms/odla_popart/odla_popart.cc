@@ -31,6 +31,9 @@
 #include "onnx/onnx.pb.h"
 #include "popart_config.h"
 
+_odla_computation* _odla_computation::instance_ = nullptr;
+std::mutex _odla_computation::comp_mutex_;
+
 void compute_loop(odla_computation comp) {
   // setup the stepio with allbacks
   popart::StepIOCallback stepio(input_callback, input_complete_callback,
