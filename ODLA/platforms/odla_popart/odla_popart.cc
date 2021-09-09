@@ -31,8 +31,6 @@
 #include "onnx/onnx.pb.h"
 #include "popart_config.h"
 
-_odla_computation* _odla_computation::instance_ = new _odla_computation();
-
 void compute_loop(odla_computation comp) {
   // setup the stepio with allbacks
   popart::StepIOCallback stepio(input_callback, input_complete_callback,
@@ -58,14 +56,14 @@ void compute_loop(odla_computation comp) {
     popart::logging::warn("Found new tasks in {} ms.", elapsed_ms.count());
   }
   popart::logging::warn("The pipeline loop finished");
-  comp->thread_complete_ = true;
+  comp->thread_done();
 }
 
 void _odla_computation::init() {
   if (!session) {
     std::lock_guard<std::mutex> guard(init_mutex_);
     if (!session) {
-      set_opts(); // Test code
+      set_opts();
       // Cretate the dataflow
       std::vector<popart::TensorId> ids;
       for (const auto& output : outputs_map)
@@ -111,6 +109,7 @@ void _odla_computation::init() {
       ExecutionMode mode = PopartConfig::instance()->execution_mode();
       if (PIPELINE == mode || PARALLEL == mode) {
         std::thread parallel_thread(compute_loop, this);
+        thread_state_ = RUNNING;
         popart::logging::warn("Parallel loop has been started");
         parallel_thread.detach();
       }
@@ -125,7 +124,7 @@ void _odla_computation::set_opts() {
   if (PopartConfig::instance()->debug()) {
     opts.ipu_num = PopartConfig::instance()->ipu_num();
     opts.batches_per_step = PopartConfig::instance()->batches_per_step();
-  } else {
+  } else if (use_pipeline()) { // Only check when use pipeline
     if (opts.ipu_num != PopartConfig::instance()->ipu_num())
       throw std::invalid_argument(
           "number of ipus in pipeline configuration:" +
