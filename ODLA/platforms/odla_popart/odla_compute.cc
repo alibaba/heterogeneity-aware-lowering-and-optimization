@@ -112,6 +112,7 @@ odla_status odla_DestroyContext(odla_context ctx) {
 
 odla_status odla_DestroyComputation(odla_computation comp) {
   comp->mark_done();
+  _odla_computation::destruct();
   return ODLA_SUCCESS;
 }
 

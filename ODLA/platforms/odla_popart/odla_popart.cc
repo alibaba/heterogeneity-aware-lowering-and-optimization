@@ -31,7 +31,7 @@
 #include "onnx/onnx.pb.h"
 #include "popart_config.h"
 
-_odla_computation* _odla_computation::instance_ = new _odla_computation();
+//_odla_computation* _odla_computation::instance_ = new _odla_computation();
 
 void compute_loop(odla_computation comp) {
   // setup the stepio with allbacks

@@ -97,9 +97,23 @@ struct _odla_computation {
   std::condition_variable thread_done_cv_;
 
   static _odla_computation* instance_;
+  static std::mutex comp_mutex_;
   static _odla_computation* instance(bool hold_it = true) {
+    if (instance_ == nullptr) {
+      std::lock_guard<std::mutex> guard(comp_mutex_);
+      if (instance_ == nullptr) instance_ = new _odla_computation();
+    }
     if (hold_it) instance_->hold();
     return instance_;
+  }
+  static void destruct() {
+    if (instance_ != nullptr) {
+      std::lock_guard<std::mutex> guard(comp_mutex_);
+      if (instance_ != nullptr) {
+        delete instance_;
+        instance_ = nullptr;
+      }
+    }
   }
   bool done_;
   bool thread_complete_;
