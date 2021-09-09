@@ -102,6 +102,11 @@ def ONNX_Clip : ONNXExtension<"Clip"> {
 }
 
 def ONNX_Ceil : OpMapping<"Ceil", Ceil>;
+
+def ONNX_Celu : OpMapping<"Celu", Celu> {
+  let attr_mapping_ = [ AttributeMapping<"alpha", "alpha", "1.0"> ];
+}
+
 // def ONNX_Compress
 def ONNX_Concat : OpMapping<"Concat", Concat> {
   let attr_mapping_ = [AttributeMapping<"axis", "axis", "1">,
@@ -355,7 +360,13 @@ def ONNX_Sinh : OpMapping<"Sinh", Sinh>;
 def ONNX_Size: ONNXExtension<"Size">;
 
 // onnx slice op operands order is different from halo ir
-def ONNX_Slice : ONNXExtension<"Slice">;
+def ONNX_Slice : ONNXExtension<"Slice"> {
+  let extension_attr_ = [
+    ExtensionAttr<"axes", IntegerList, "{}">,
+    ExtensionAttr<"starts", IntegerList, "{}">,
+    ExtensionAttr<"ends", IntegerList, "{}">,
+  ];
+}
 
 let attr_mapping_ = [AttributeMapping<"axis", "axis", "-1">] in {
   def ONNX_Hardmax : OpMapping<"Hardmax", Hardmax>;

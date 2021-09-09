@@ -103,4 +103,16 @@ void GenericCXXCodeGen::RunOnInstruction(EluInst* inst) {
   ir_mapping_[*inst] = ret;
 }
 
+void GenericCXXCodeGen::RunOnInstruction(CeluInst* inst) {
+  const Def& input = inst->GetOperand(0);
+
+  CXXValue op0 = ir_mapping_[input];
+
+  CXXValue ret(inst->GetName(), op0.type);
+
+  EmitODLACall(ret, "odla_Celu", op0, inst->GetAlpha());
+
+  ir_mapping_[*inst] = ret;
+}
+
 } // namespace halo

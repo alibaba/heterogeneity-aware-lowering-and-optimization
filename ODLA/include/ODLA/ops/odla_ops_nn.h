@@ -142,6 +142,20 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_BatchNormalization(
     odla_float32 scalar_scale, odla_float32 scalar_offset,
     const odla_value_id value_id);
 
+//! \brief Celu activation
+/*!
+  Celu computes the celu activaion as y = x < 0 ? alpha * (exp(x / alpha) - 1) :
+  x
+
+  \param input the input value
+  \param alpha the coefficient
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Celu(odla_value input, odla_float32 alpha, const odla_value_id value_id);
+
 //! \brief N-dimensional Convolution
 /*!
   Conv computes convolution of \p input and \p kernel based on the strides,
