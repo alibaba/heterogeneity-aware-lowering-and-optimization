@@ -24,6 +24,11 @@ let cat_ = cat_nn_activation,
     ins_ = [Arg<"The unary input", ArgType<[F16,F32]> >],
     outs_ = [Arg<"The result.", MatchArgType<0> >] in {
 
+  def Celu : Inst<"Compute celu activation, element-wise. Return "
+                 "alpha * (exp(X1 / alpha) - 1) if X1 < 0, return X1 else."> {
+    let attrs_ = [Attr<"Coefficient of celu", Float, "alpha", "1.0">];
+  }
+
   def Elu : Inst<"Compute elu activation, element-wise. Return "
                  "alpha * (exp(X1) - 1) if X1 < 0, return X1 else."> {
     let attrs_ = [Attr<"Coefficient of elu", Float, "alpha", "1.0">];
