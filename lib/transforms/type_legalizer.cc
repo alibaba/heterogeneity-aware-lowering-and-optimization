@@ -85,6 +85,18 @@ static bool IsSameType(const Type& lhs, const Type& rhs) {
   return true;
 }
 
+static void RunOnMathUnaryInstruction(Instruction* inst) {
+  auto op = inst->GetOperand(0);
+  const Type& type = op.GetType();
+  if (!type.IsValid()) {
+    return;
+  }
+  bool ret_bool = (inst->GetOpCode() == OpCode::ISINF) ||
+                  (inst->GetOpCode() == OpCode::ISNAN);
+  inst->GetResultsTypes()[0] =
+      ret_bool ? Type{DataType::BOOL, type.GetDimSizes()} : type;
+}
+
 static void RunOnMathBinaryInstruction(Instruction* inst) {
   auto op0 = inst->GetOperand(0);
   auto op1 = inst->GetOperand(1);
@@ -167,6 +179,14 @@ static void RunOnInstruction(Instruction* inst) {
     case OpCode::OR:
     case OpCode::CMP: {
       RunOnMathBinaryInstruction(inst);
+      break;
+    }
+    case OpCode::ISNAN: {
+      RunOnMathUnaryInstruction(inst);
+      break;
+    }
+    case OpCode::ISINF: {
+      RunOnMathUnaryInstruction(inst);
       break;
     }
     default: {

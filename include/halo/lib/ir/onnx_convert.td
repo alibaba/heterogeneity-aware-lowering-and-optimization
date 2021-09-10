@@ -23,6 +23,12 @@ def ONNX_Acosh : OpMapping<"Acosh", ACosh>;
 def ONNX_Add : OpMapping<"Add", Add>;
 def ONNX_And : OpMapping<"And", And>;
 
+def ONNX_Sign: OpMapping<"Sign",Sign>;
+
+def ONNX_IsInf: OpMapping<"IsInf", IsInf>;
+
+def ONNX_IsNaN: OpMapping<"IsNaN", IsNaN>;
+
 def ONNX_ArgMax : OpMapping<"ArgMax", Argmax> {
  let attr_mapping_ = [
    AttributeMapping<"axis", "axis", "0">,
@@ -102,6 +108,9 @@ def ONNX_Clip : ONNXExtension<"Clip"> {
 }
 
 def ONNX_Ceil : OpMapping<"Ceil", Ceil>;
+
+def ONNX_Round : OpMapping<"Round", Round>;
+
 // def ONNX_Compress
 def ONNX_Concat : OpMapping<"Concat", Concat> {
   let attr_mapping_ = [AttributeMapping<"axis", "axis", "1">,

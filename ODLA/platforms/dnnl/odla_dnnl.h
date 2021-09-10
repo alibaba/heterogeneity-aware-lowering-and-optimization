@@ -160,6 +160,7 @@ static inline dnnl::memory::data_type getDataType(const odla_element_type ty) {
     case ODLA_INT8:
       dt = dnnl::memory::data_type::s8;
       break;
+    case ODLA_BOOL:
     case ODLA_UINT8:
       dt = dnnl::memory::data_type::u8;
       break;

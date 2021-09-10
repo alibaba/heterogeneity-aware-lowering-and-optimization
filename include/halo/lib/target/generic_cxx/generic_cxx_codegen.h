@@ -176,6 +176,9 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(TileInst*) override;
   virtual void RunOnInstruction(ZExtInst*) override;
   virtual void RunOnInstruction(HgEngineInst*) override;
+  virtual void RunOnInstruction(IsNaNInst*) override;
+  virtual void RunOnInstruction(IsInfInst*) override;
+  virtual void RunOnInstruction(SignInst*) override;
 
   virtual void RunOnBinaryInstruction(Instruction*);
   virtual void RunOnCastInstruction(Instruction*);

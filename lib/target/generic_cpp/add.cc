@@ -37,6 +37,8 @@ void GenericCXXCodeGen::RunOnUnaryInstruction(Instruction* inst) {
       {OpCode::RCP, "odla_Reciprocal"}, {OpCode::NOT, "odla_Not"},
       {OpCode::CEIL, "odla_Ceil"},      {OpCode::LOG, "odla_Log"},
       {OpCode::TANH, "odla_Tanh"},      {OpCode::TAN, "odla_Tan"},
+      {OpCode::ISINF, "odla_IsInf"},    {OpCode::SIGN, "odla_Sign"},
+      {OpCode::ISNAN, "odla_IsNaN"},
   };
 
   auto it = names.find(inst->GetOpCode());
@@ -194,6 +196,18 @@ void GenericCXXCodeGen::RunOnInstruction(TanhInst* inst) {
   RunOnUnaryInstruction(inst);
 }
 void GenericCXXCodeGen::RunOnInstruction(TanInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(IsNaNInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(IsInfInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(SignInst* inst) {
   RunOnUnaryInstruction(inst);
 }
 

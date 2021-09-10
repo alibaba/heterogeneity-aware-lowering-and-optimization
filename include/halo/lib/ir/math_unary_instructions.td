@@ -24,6 +24,10 @@ let cat_ = cat_math_unary,
     ins_ = [Arg<"The unary input.", ArgType<[I8,I16,I32,F16,F32]> >],
     outs_ = [Arg<"The result.", MatchArgType<0> >] in {
 
+  def IsNaN : Inst<"The unary operation returns coefficient of the element-wise not-a-number of X1">;
+
+  def IsInf : Inst<"The unary operation returns an expression of the coefficient-wise infinite value of X1">;
+
   def Abs : Inst<"The unary opertion returns abs(X1), element-wise.">;
 
   def Erf : Inst<"The unary operation returns the error function of X1,"

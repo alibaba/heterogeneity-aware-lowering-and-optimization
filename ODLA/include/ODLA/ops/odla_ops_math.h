@@ -41,6 +41,30 @@ extern "C" {
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Abs(odla_value input, const odla_value_id value_id);
 
+//! \brief Check whether element of input is a number
+/*!
+  IsNaN returns the bool array \p input.
+
+  \param input the input value
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_bool
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_IsNaN(odla_value input, const odla_value_id value_id);
+
+//! \brief Check infinity
+/*!
+  IsNaN returns the bool array \p input.
+
+  \param input the input value
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_bool
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_IsInf(odla_value input, const odla_value_id value_id);
+
 //! \brief Addition
 /*!
   Add returns the element-wise binary addition of \p lhs and \p rhs.
@@ -734,6 +758,19 @@ odla_Sqrt(odla_value input, const odla_value_id value_id);
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Sub(odla_value lhs, odla_value rhs, const odla_value_id value_id);
+
+//! \brief Cos
+/*!
+  Computes sine of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Cos(odla_value x, const odla_value_id value_id);
 
 //! \brief Sin
 /*!
