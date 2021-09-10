@@ -90,6 +90,7 @@ struct CXXCodeGenOpts {
   bool emit_obj = false;
   bool emit_shared_lib = false;
   const char* linked_odla_lib = nullptr;
+  const char* template_file = nullptr;
   bool save_temps = false;
   bool constant_decombine = false;
 };

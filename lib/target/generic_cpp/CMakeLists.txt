@@ -51,6 +51,7 @@ set(SRCS
   hardsigmoid.cc
   slice.cc
   softmax.cc
+  templated_cxx_codegen.cc
   tile.cc
   topk.cc
   transpose.cc
@@ -59,6 +60,7 @@ set(SRCS
 
 set(LLVM_LINK_COMPONENTS Support)
 set(CLANG_LIBS
+  clangAST
   clangBasic
   clangFormat
   clangRewrite

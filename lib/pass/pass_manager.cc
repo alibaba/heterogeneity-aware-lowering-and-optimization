@@ -24,6 +24,7 @@
 #include "halo/lib/target/cpu/riscv/binary/riscv_llvmir_codegen.h"
 #include "halo/lib/target/cpu/x86/binary/x86_llvmir_codegen.h"
 #include "halo/lib/target/generic_cxx/generic_cxx_codegen.h"
+#include "halo/lib/target/generic_cxx/templated_cxx_codegen.h"
 #include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
 #include "halo/lib/target/jit_compiler/cxx_jit_compiler.h"
 #include "halo/lib/target/jit_compiler/generic_jit_linker.h"
@@ -384,6 +385,12 @@ Pass* PassManager::AddRISCVLLVMIRCodeGenPass(
 }
 
 Pass* PassManager::AddSplittingPass() { return AddPass<Splitting>(); }
+
+Pass* PassManager::AddTemplatedCXXCodeGenPass(std::ostringstream& os,
+                                              std::ostringstream& header_os,
+                                              const CXXCodeGenOpts& opts) {
+  return AddPass<TemplatedCXXCodeGen>(os, header_os, opts);
+}
 
 Pass* PassManager::AddTFExtensionLegalizerPass() {
   return AddPass<TFExtensionLegalizer>();

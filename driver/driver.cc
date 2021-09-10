@@ -263,6 +263,10 @@ static llvm::cl::list<std::string> LibPaths(
 static llvm::cl::opt<bool> SaveTemps(
     "save-temps", llvm::cl::desc("Save intermediate compilation results"),
     llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
+static llvm::cl::opt<std::string> TemplateFile(
+    "use-template-file", llvm::cl::init(""),
+    llvm::cl::desc("Template file for ODLA code generation"),
+    llvm::cl::cat(HaloOptCat));
 
 static llvm::cl::opt<bool> ConstantDecombine(
     "constant-decombine", llvm::cl::desc("Constant Decombine"),
@@ -405,6 +409,17 @@ int main(int argc, char** argv) {
     cg_opts.emit_shared_lib = true;
   }
   cg_opts.channel_order = ReorderChannelLayout;
+  if (!TemplateFile.empty()) {
+    auto path = FindTemplateFile(ctx.GetBasePath(), TemplateFile);
+    if (!path.empty()) {
+      TemplateFile = path;
+      cg_opts.template_file = TemplateFile.c_str();
+    } else {
+      cg_opts.template_file = nullptr;
+      std::cerr << "Cannot find template file " << TemplateFile << std::endl;
+      return 1;
+    }
+  }
   PopulateOptPasses(&pm, Target, input_shapes, inputs, outputs, Batch,
                     PreprocessScale, SplitFunction, format, cg_opts,
                     fusion_opts);
@@ -412,7 +427,8 @@ int main(int argc, char** argv) {
                         out_dynamic_check, Target, is_c_or_cxx_output,
                         is_binary_output, EmitDataAsC, EmitCodeOnly, EmitLLVMIR,
                         EmitTritonConfig, TritonConfigFile, QuantWeights,
-                        PGQFile, RISCVOpt, cg_opts, OutputFile);
+                        PGQFile, RISCVOpt, cg_opts, TemplateFile);
+
   ModelFiles.removeArgument();
   auto status = pm.Run(&m);
 
