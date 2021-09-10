@@ -46,34 +46,20 @@ const std::string& CodeGen::GetRTLibFuncName(const Instruction& inst) {
 
 std::string CodeGen::NormalizeVariableName(const std::string& name) {
   std::string ret(name);
-  static std::set<std::string> keywords{"asm",          "auto",
-                                        "bool",         "break",
-                                        "case",         "catch",
-                                        "char",         "const",
-                                        "continue",     "do",
-                                        "default",      "delete",
-                                        "do",           "double",
-                                        "dynamic_cast", "else",
-                                        "enum",         "explicit",
-                                        "false",        "float",
-                                        "for",          "friend",
-                                        "goto",         "if",
-                                        "inline",       "int",
-                                        "long",         "namespace",
-                                        "new",          "private",
-                                        "protected",    "public",
-                                        "register",     "reinterpret_cast",
-                                        "return",       "short",
-                                        "signed",       "sizeof",
-                                        "static",       "std",
-                                        "switch",       "template",
-                                        "this",         "throw",
-                                        "true",         "try",
-                                        "typedef",      "typeid",
-                                        "typename",     "union",
-                                        "unsigned",     "using",
-                                        "virtual",      "void",
-                                        "volatile",     "while"};
+  static std::set<std::string> keywords{
+      "and",      "and_eq",       "asm",      "auto",     "bool",
+      "break",    "case",         "catch",    "char",     "const",
+      "continue", "do",           "default",  "delete",   "do",
+      "double",   "dynamic_cast", "else",     "enum",     "explicit",
+      "false",    "float",        "for",      "friend",   "goto",
+      "if",       "inline",       "int",      "long",     "namespace",
+      "new",      "not",          "not_eq",   "or",       "or_eq",
+      "private",  "protected",    "public",   "register", "reinterpret_cast",
+      "return",   "short",        "signed",   "sizeof",   "static",
+      "std",      "switch",       "template", "this",     "throw",
+      "true",     "try",          "typedef",  "typeid",   "typename",
+      "union",    "unsigned",     "using",    "virtual",  "void",
+      "volatile", "while",        "xor",      "xor_eq"};
   std::transform(name.begin(), name.end(), ret.begin(), [](char c) {
     switch (c) {
       case '\'':

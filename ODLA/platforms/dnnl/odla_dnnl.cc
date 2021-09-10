@@ -721,6 +721,22 @@ odla_value odla_Selu(odla_value input, odla_float32 alpha, odla_float32 lambda,
   return v;
 }
 
+odla_value odla_Celu(odla_value input, odla_float32 alpha,
+                     const odla_value_id id) {
+  auto relu_v = odla_Relu(input, nullptr);
+  auto rank = input->shape.size;
+  auto alpha_v = CreateConstantFromScalar(alpha, rank);
+  auto input_divalpha = odla_Div(input, alpha_v, nullptr);
+  auto v_divalpha = odla_Elu(input_divalpha, alpha, nullptr);
+  auto neg_input = unary_eltwise_op(dnnl::algorithm::eltwise_linear, v_divalpha,
+                                    -1.f, 0.f, nullptr);
+  auto neg_relu_v = odla_Relu(neg_input, nullptr);
+  auto input_negpart = unary_eltwise_op(dnnl::algorithm::eltwise_linear,
+                                        neg_relu_v, -1.f, 0.f, nullptr);
+  auto v = odla_Add(input_negpart, relu_v, id);
+  return v;
+}
+
 odla_value odla_Clamp(odla_value input, odla_float32 lo, odla_float32 hi,
                       const odla_value_id id) {
   return unary_eltwise_op(dnnl::algorithm::eltwise_clip, input, lo, hi, id);
