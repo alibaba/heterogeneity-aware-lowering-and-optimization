@@ -40,6 +40,26 @@
 #error This library requires minimum ODLA version 0.5
 #endif
 
+// TODO: neg, acosh, asinh, atanh, reciprocal, sign,
+
+enum class alg_unary_eltwise {
+  isnan,
+  isinf,
+  abs,
+  acos,
+  asin,
+  atan,
+  ceil,
+  cos,
+  cosh,
+  sin,
+  sinh,
+  log,
+  tan,
+  tanh,
+  sqrt
+};
+
 struct _odla_context {
   odla_computation comp;
   std::unique_ptr<dnnl::stream> stream;
@@ -846,17 +866,85 @@ odla_value odla_Shift(odla_value input, odla_value shift_amount,
 }
 
 template <typename T>
-static void tan(void* dst, const void* input, int n) {
+static void unary_eltwise_T(alg_unary_eltwise alg, void* dst, const void* input,
+                            int n) {
   const T* input_t = static_cast<const T*>(input);
-  T* dst_t = static_cast<T*>(dst);
   Eigen::Map<const Eigen::Array<T, Eigen::Dynamic, 1>> in(input_t, n);
+  T* dst_t = static_cast<T*>(dst);
   Eigen::Map<Eigen::Array<T, Eigen::Dynamic, 1>> out(dst_t, n);
-  out = in.tan();
+  switch (alg) {
+    case alg_unary_eltwise::abs:
+      out = in.abs();
+      break;
+    case alg_unary_eltwise::ceil:
+      out = in.ceil();
+      break;
+    case alg_unary_eltwise::log:
+      out = in.log();
+      break;
+    case alg_unary_eltwise::sqrt:
+      out = in.sqrt();
+      break;
+    case alg_unary_eltwise::sin:
+      out = in.sin();
+      break;
+    case alg_unary_eltwise::cos:
+      out = in.cos();
+      break;
+    case alg_unary_eltwise::tan:
+      out = in.tan();
+      break;
+    case alg_unary_eltwise::acos:
+      out = in.acos();
+      break;
+    case alg_unary_eltwise::asin:
+      out = in.asin();
+      break;
+    case alg_unary_eltwise::atan:
+      out = in.atan();
+      break;
+    case alg_unary_eltwise::sinh:
+      out = in.sinh();
+      break;
+    case alg_unary_eltwise::tanh:
+      out = in.tanh();
+      break;
+    case alg_unary_eltwise::cosh:
+      out = in.cosh();
+      break;
+    default:
+      assert(0);
+  }
 }
 
-odla_value odla_Tan(odla_value input, const odla_value_id value_id) {
+template <typename T>
+static void unary_eltwise_bool(alg_unary_eltwise alg, void* dst,
+                               const void* input, int n) {
+  const T* input_t = static_cast<const T*>(input);
+  Eigen::Map<const Eigen::Array<T, Eigen::Dynamic, 1>> in(input_t, n);
+  bool* dst_t = static_cast<bool*>(dst);
+  Eigen::Map<Eigen::Array<bool, Eigen::Dynamic, 1>> out(dst_t, n);
+  switch (alg) {
+    case alg_unary_eltwise::isnan:
+      out = in.isNaN();
+      break;
+    case alg_unary_eltwise::isinf:
+      out = in.isInf();
+      break;
+    default:
+      assert(0);
+  }
+}
+
+static odla_value odla_unary_eltwise(alg_unary_eltwise alg, odla_value input,
+                                     const odla_value_id value_id) {
   // Extract type and size
   auto elem_type = input->elem_type;
+  bool ret_bool =
+      (alg == alg_unary_eltwise::isnan || alg == alg_unary_eltwise::isinf);
+  if (ret_bool) {
+    elem_type = ODLA_BOOL;
+  }
   int n = GetTotalElements(input->shape);
   // Prepare destination memory
   dnnl::memory dst_mem;
@@ -865,13 +953,27 @@ odla_value odla_Tan(odla_value input, const odla_value_id value_id) {
   auto v = CreateValue(dst_mem, input->shape, value_id);
   v->elem_type = elem_type;
   // Create lambda operation
-  auto op = [input, dst_mem, n] {
+  auto op = [alg, ret_bool, input, dst_mem, n] {
     void* dst = dst_mem.get_data_handle();
     const void* data = input->mem.get_data_handle();
     if (input->elem_type == ODLA_FLOAT32) {
-      tan<float>(dst, data, n);
+      ret_bool ? unary_eltwise_bool<float>(alg, dst, data, n)
+               : unary_eltwise_T<float>(alg, dst, data, n);
     } else if (input->elem_type == ODLA_FLOAT64) {
-      tan<double>(dst, data, n);
+      ret_bool ? unary_eltwise_bool<double>(alg, dst, data, n)
+               : unary_eltwise_T<double>(alg, dst, data, n);
+    } else if (input->elem_type == ODLA_UINT8) {
+      ret_bool ? unary_eltwise_bool<uint8_t>(alg, dst, data, n)
+               : unary_eltwise_T<uint8_t>(alg, dst, data, n);
+    } else if (input->elem_type == ODLA_UINT16) {
+      ret_bool ? unary_eltwise_bool<uint16_t>(alg, dst, data, n)
+               : unary_eltwise_T<uint16_t>(alg, dst, data, n);
+    } else if (input->elem_type == ODLA_UINT32) {
+      ret_bool ? unary_eltwise_bool<uint32_t>(alg, dst, data, n)
+               : unary_eltwise_T<uint32_t>(alg, dst, data, n);
+    } else if (input->elem_type == ODLA_UINT64) {
+      ret_bool ? unary_eltwise_bool<uint64_t>(alg, dst, data, n)
+               : unary_eltwise_T<uint64_t>(alg, dst, data, n);
     } else {
       assert(0);
     }
@@ -880,6 +982,51 @@ odla_value odla_Tan(odla_value input, const odla_value_id value_id) {
   add_op(op);
   InterpretIfNeeded();
   return v;
+}
+
+odla_value odla_IsNaN(odla_value input, const odla_value_id value_id) {
+  return odla_unary_eltwise(alg_unary_eltwise::isnan, input, value_id);
+}
+
+odla_value odla_IsInf(odla_value input, odla_bool detect_negative,
+                      odla_bool detect_positive, const odla_value_id value_id) {
+  return odla_unary_eltwise(alg_unary_eltwise::isinf, input, value_id);
+}
+
+odla_value odla_Cos(odla_value input, const odla_value_id value_id) {
+  return odla_unary_eltwise(alg_unary_eltwise::cos, input, value_id);
+}
+
+odla_value odla_Sin(odla_value input, const odla_value_id value_id) {
+  return odla_unary_eltwise(alg_unary_eltwise::sin, input, value_id);
+}
+
+odla_value odla_Tan(odla_value input, const odla_value_id value_id) {
+  return odla_unary_eltwise(alg_unary_eltwise::tan, input, value_id);
+}
+
+odla_value odla_ACos(odla_value input, const odla_value_id value_id) {
+  return odla_unary_eltwise(alg_unary_eltwise::acos, input, value_id);
+}
+
+odla_value odla_ASin(odla_value input, const odla_value_id value_id) {
+  return odla_unary_eltwise(alg_unary_eltwise::asin, input, value_id);
+}
+
+odla_value odla_ATan(odla_value input, const odla_value_id value_id) {
+  return odla_unary_eltwise(alg_unary_eltwise::atan, input, value_id);
+}
+
+odla_value odla_Sinh(odla_value input, const odla_value_id value_id) {
+  return odla_unary_eltwise(alg_unary_eltwise::sinh, input, value_id);
+}
+
+odla_value odla_Cosh(odla_value input, const odla_value_id value_id) {
+  return odla_unary_eltwise(alg_unary_eltwise::cosh, input, value_id);
+}
+
+odla_value odla_Ceil(odla_value input, const odla_value_id value_id) {
+  return odla_unary_eltwise(alg_unary_eltwise::ceil, input, value_id);
 }
 
 odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
