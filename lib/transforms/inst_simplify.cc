@@ -1476,13 +1476,13 @@ static Constant* FoldConcatConstant(ConcatInst* inst) {
 
   int base_size = element_byte_size;
 
-  auto data = std::make_unique<uint8_t[]>(total_bytes); // NOLINT
-  uint8_t* dst = data.get();
+  auto data = std::vector<uint8_t>(total_bytes);
+  uint8_t* dst = data.data();
 
   // Scalars and 1D-tensors need special treatement
   if (op0_type.IsScalar() || dim_num == 1) {
     for (Constant* c : input_cs) {
-      uint8_t num_bytes =
+      size_t num_bytes =
           c->GetResultType().GetTotalNumOfElements() * element_byte_size;
       const uint8_t* src =
           static_cast<const uint8_t*>(c->GetRawDataPtr()); // NOLINT
@@ -1494,7 +1494,7 @@ static Constant* FoldConcatConstant(ConcatInst* inst) {
 
     ConstantBuilder cb(inst->GetParent()->GetParent());
     std::string name = inst->GetName() + "_folding";
-    return cb.CreateConstant(name, inst->GetResultType(), data.get());
+    return cb.CreateConstant(name, inst->GetResultType(), data.data());
   }
 
   // Normal tensors
@@ -1538,7 +1538,7 @@ static Constant* FoldConcatConstant(ConcatInst* inst) {
   std::string name = inst->GetName() + "_folding";
   Type new_type(op0_type.GetDataType(), dims);
 
-  return cb.CreateConstant(name, new_type, data.get());
+  return cb.CreateConstant(name, new_type, data.data());
 }
 
 std::pair<Def, Def> InstSimplify::RunOnInstruction(ConcatInst* inst) {
