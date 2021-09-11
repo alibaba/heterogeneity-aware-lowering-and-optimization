@@ -181,10 +181,7 @@ static void RunOnInstruction(Instruction* inst) {
       RunOnMathBinaryInstruction(inst);
       break;
     }
-    case OpCode::ISNAN: {
-      RunOnMathUnaryInstruction(inst);
-      break;
-    }
+    case OpCode::ISNAN:
     case OpCode::ISINF: {
       RunOnMathUnaryInstruction(inst);
       break;

@@ -936,8 +936,8 @@ static void unary_eltwise_bool(alg_unary_eltwise alg, void* dst,
   }
 }
 
-odla_value odla_unary_eltwise(alg_unary_eltwise alg, odla_value input,
-                              const odla_value_id value_id) {
+static odla_value odla_unary_eltwise(alg_unary_eltwise alg, odla_value input,
+                                     const odla_value_id value_id) {
   // Extract type and size
   auto elem_type = input->elem_type;
   bool ret_bool =
@@ -988,7 +988,8 @@ odla_value odla_IsNaN(odla_value input, const odla_value_id value_id) {
   return odla_unary_eltwise(alg_unary_eltwise::isnan, input, value_id);
 }
 
-odla_value odla_IsInf(odla_value input, const odla_value_id value_id) {
+odla_value odla_IsInf(odla_value input, odla_bool detect_negative,
+                      odla_bool detect_positive, const odla_value_id value_id) {
   return odla_unary_eltwise(alg_unary_eltwise::isinf, input, value_id);
 }
 
