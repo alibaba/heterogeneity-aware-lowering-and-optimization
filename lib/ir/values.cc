@@ -34,10 +34,11 @@ bool Value::operator!=(const Value& other) const noexcept {
 void Value::Print(std::ostream& os) const {
   os << "<";
   if (IsNull()) {
-    HLCHECK(0 && "Null Operand");
-  } else {
-    os << GetOwner()->GetName();
+    os << "UNDEF>";
+    return;
   }
+  os << GetOwner()->GetName();
+
   os << ", " << GetIdx() << ">:";
   GetOwner()->GetResultsTypes()[GetIdx()].Print(os);
 }
