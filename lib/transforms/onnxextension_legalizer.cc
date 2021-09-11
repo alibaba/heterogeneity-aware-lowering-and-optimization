@@ -138,56 +138,30 @@ static std::vector<Def> ConvertNonZero(const ONNXExtensionInst* ext,
 
 static std::vector<Def> ConvertConstantOfShape(const ONNXExtensionInst* ext,
                                                IRBuilder* builder) {
-  auto input = ext->GetOperand(0);
-  const Type& input_type = input.GetType();
-  if (!input_type.IsValid()) {
+  auto shape = DynCast<Constant>(ext->GetOperand(0));
+  if (shape == nullptr) {
     return {};
   }
-  if (!IsA<Constant>(input)) {
-    return {};
-  }
-
-  HLCHECK(input_type.GetDataType() == DataType::INT64);
   auto dt = ext->GetAttributes()[0]->GetValueAsEnumDataType();
-
-  const Constant* shape = DynCast<Constant>(input);
   HLCHECK(shape->GetResultType().GetNumOfDims() == 1);
-  auto ranks = shape->GetResultType().GetTotalNumOfElements();
-  std::vector<int64_t> dims(ranks);
-  for (int i = 0; i < ranks; ++i) {
-    dims[i] = shape->GetData<int64_t>(i);
+  auto rank = shape->GetResultType().GetTotalNumOfElements();
+  std::vector<int64_t> dims(rank);
+  for (int i = 0; i < rank; ++i) {
+    dims[i] = shape->GetDataAsInt64(i);
   }
   Type dst_ty{dt, dims};
   ConstantBuilder cb(ext->GetParent()->GetParent());
-  Constant* c = nullptr;
   const auto& val = ext->GetAttributes()[1];
   HLCHECK(val->GetName() == "value");
-  switch (dt) {
-    case DataType::INT32: {
-      std::vector<int32_t> data(dst_ty.GetTotalNumOfElements(),
-                                val->GetValueAsInteger());
-      c = cb.CreateConstant(ext->GetName(), dst_ty, data.data());
-      break;
-    }
-    case DataType::INT64: {
-      std::vector<int64_t> data(dst_ty.GetTotalNumOfElements(),
-                                val->GetValueAsInteger());
-      c = cb.CreateConstant(ext->GetName(), dst_ty, data.data());
-      break;
-    }
-    case DataType::FLOAT32: {
-      std::vector<float> data(dst_ty.GetTotalNumOfElements(),
-                              val->GetValueAsFloat());
-      c = cb.CreateConstant(ext->GetName(), dst_ty, data.data());
-      break;
-    }
-    default: {
-    }
+  DefaultDataLayout data_layout;
+  size_t elem_size = data_layout.Bytes(dt);
+  size_t elems_count = dst_ty.GetTotalNumOfElements();
+  std::vector<uint8_t> buf(elem_size * elems_count);
+  for (size_t i = 0; i < elems_count; ++i) {
+    memcpy(&buf[i * elem_size], val->GetDataImpl(), elem_size);
   }
-  if (c != nullptr) {
-    return {*c};
-  }
-  return {};
+  auto c = cb.CreateConstant(ext->GetName(), dst_ty, buf.data());
+  return {*c};
 }
 
 static std::vector<Def> ConvertDepthToSpace(const ONNXExtensionInst* ext,
