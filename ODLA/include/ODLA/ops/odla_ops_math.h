@@ -41,7 +41,6 @@ extern "C" {
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Abs(odla_value input, const odla_value_id value_id);
 
-
 //! \brief Addition
 /*!
   Add returns the element-wise binary addition of \p lhs and \p rhs.
