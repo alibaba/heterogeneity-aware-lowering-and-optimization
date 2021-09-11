@@ -1345,16 +1345,38 @@ static std::vector<Def> ConvertLSTM(const ONNXExtensionInst* ext,
     std::swap(seq_length, batch_size);
   }
 
-  int64_t num_directions = type_r.GetNumOfElementsInDim(0);
+  int32_t num_directions = type_r.GetNumOfElementsInDim(0);
   int64_t hidden_size = type_r.GetNumOfElementsInDim(2);
 
   std::vector<Def> operands = ext->GetOperands();
 
+  builder->SetInsertBefore(ext);
   // B not specified
   if (num_operands <= LSTM_ARG_B_IDX) {
-    Type type(dtype_x, {num_directions, 8 * hidden_size}); // NOLINT
+    Type type(dtype_x, {num_directions, 4 * hidden_size}); // NOLINT
     std::string name = ext->GetName() + "_B";
     operands.push_back(*c_builder.SplatConstantZero(name, type));
+  } else {
+    auto& b = operands[LSTM_ARG_B_IDX];
+    int32_t len = 4 * hidden_size;
+    halo::Type ty{DataType::INT32, {2}};
+    const auto& base_name = b.GetDef()->GetName();
+    auto s0 = c_builder.CreateConstant(base_name + "_s0", ty,
+                                       std::vector<int32_t>{0, 0});
+    auto s1 = c_builder.CreateConstant(base_name + "_s1", ty,
+                                       std::vector<int32_t>{0, len});
+    auto l = c_builder.CreateConstant(
+        base_name + "_len", ty, std::vector<int32_t>{num_directions, len});
+    auto steps = c_builder.CreateConstant(base_name + "_step", ty,
+                                          std::vector<int32_t>{1, 1});
+
+    auto axis = c_builder.CreateConstant(base_name + "_ax", ty,
+                                         std::vector<int32_t>{0, 1});
+    auto b0 =
+        builder->CreateSlice(base_name + "_w", {b, *s0, *l, *steps, *axis});
+    auto b1 =
+        builder->CreateSlice(base_name + "_r", {b, *s1, *l, *steps, *axis});
+    b = *builder->CreateAdd(base_name + "_wr", {*b0, *b1});
   }
 
   // sequence_lens not specified
