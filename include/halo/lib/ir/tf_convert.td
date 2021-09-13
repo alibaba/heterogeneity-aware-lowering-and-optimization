@@ -27,6 +27,8 @@ def TF_Cast : TFExtension<"Cast"> {
                          ExtensionAttr<"Truncate", Bool, "false">];
 }
 
+def TF_Cos : OpMapping<"Cos", Cos>;
+
 def TF_ExpandDims : TFExtension<"ExpandDims">;
 
 def TF_Fill : TFExtension<"Fill">;
@@ -258,6 +260,8 @@ def TF_Relu : OpMapping<"Relu", Relu>;
 def TF_Relu6 : OpMapping<"Relu6", Relu6>;
 
 def TF_Rsqrt : OpMapping<"Rsqrt", Rsqrt>;
+
+def TF_Sin : OpMapping<"Sin", Sin>;
 
 def TF_Slice : OpMapping<"Slice", Slice>;
 
