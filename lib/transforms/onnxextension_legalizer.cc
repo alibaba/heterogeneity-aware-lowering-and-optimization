@@ -1409,7 +1409,8 @@ static std::vector<Def> ConvertLSTM(const ONNXExtensionInst* ext,
   direction_key = FindAttributeValue(*ext, "direction", direction_key);
 
   lstm->SetDirection(DecodeLSTMDirection(direction_key));
-
+  lstm->SetWeightFormat(RNNWeightFormat::LDGOI);
+  lstm->SetGateOrder(RNNGateOrder::IOFC);
   return {Def{lstm, 0}, Def{lstm, 1}, Def{lstm, 2}};
 }
 
