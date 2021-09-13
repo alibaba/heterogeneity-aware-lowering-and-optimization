@@ -22,8 +22,12 @@ include "instruction_base.td"
 
 let cat_ = cat_nn_rnn in {
   // TODO: state LSTM's functionality.
-  def LSTM : Inst<"xxx"> {
+  def LSTM : Inst<"Long Short-Term Memory"> {
     let attrs_ = [
+      Attr<"Weight data format.",
+        EnumRNNWeightFormat, "weight_format", "INVALID">,
+      Attr<"Gate order.",
+        EnumRNNGateOrder, "gate_order", "INVALID">,
       Attr<"Optional scaling values used by some activation functions.",
            FloatList, "activation_alpha">,
       Attr<"Optional scaling values used by some activation functions.",

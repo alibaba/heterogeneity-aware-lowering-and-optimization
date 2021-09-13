@@ -53,6 +53,21 @@ enum LSTMArgIndex {
 };
 
 void GenericCXXCodeGen::RunOnInstruction(LSTMInst* inst) {
+  static const std::unordered_map<RNNWeightFormat, std::string>
+      weight_format_names{
+          {RNNWeightFormat::LDGIO, "ODLA_RNN_LDGIO"},
+          {RNNWeightFormat::LDGOI, "ODLA_RNN_LDGOI"},
+          {RNNWeightFormat::INVALID, "INVALID"},
+      };
+
+  static const std::unordered_map<RNNGateOrder, std::string> gate_order_names{
+      {RNNGateOrder::ICOF, "ODLA_RNN_ICOF"},
+      {RNNGateOrder::IFCO, "ODLA_RNN_IFCO"},
+      {RNNGateOrder::IFOC, "ODLA_RNN_IFOC"},
+      {RNNGateOrder::IOFC, "ODLA_RNN_IOFC"},
+      {RNNGateOrder::INVALID, "INVALID"},
+  };
+
   const Def& x = inst->GetOperand(LSTM_ARG_X_IDX);
   const Def& w = inst->GetOperand(LSTM_ARG_W_IDX);
   const Def& r = inst->GetOperand(LSTM_ARG_R_IDX);
@@ -97,9 +112,14 @@ void GenericCXXCodeGen::RunOnInstruction(LSTMInst* inst) {
 
   const char* outputs = "ODLA_RNN_HIDDEN_CELL_STATE";
 
-  EmitODLACall(rets, "odla_LSTM", op_x, EmitShape(w.GetType()), op_w, op_r,
-               op_b, op_sequence_lens, op_initial_c, op_initial_c, op_p,
-               hidden_size, str, outputs);
+  auto it_format = weight_format_names.find(inst->GetWeightFormat());
+  auto it_gate = gate_order_names.find(inst->GetGateOrder());
+  HLCHECK(it_format != weight_format_names.end() &&
+          it_gate != gate_order_names.end());
+
+  EmitODLACall(rets, "odla_LSTM", op_x, it_format->second, it_gate->second,
+               EmitShape(w.GetType()), op_w, op_r, op_b, op_sequence_lens,
+               op_initial_c, op_initial_c, op_p, hidden_size, str, outputs);
 
   ir_mapping_[Def(inst, 0)] = rets[0];
   ir_mapping_[Def(inst, 1)] = rets[1];

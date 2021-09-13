@@ -87,6 +87,11 @@ def EnumResizeMode : EnumValueType<"ResizeMode",
                                    "ALIGN_CORNERS",
                                    "ASYMMETRIC"
                                   ]>;
+
+def EnumRNNWeightFormat : EnumValueType<"RNNWeightFormat", ["LDGOI", "LDGIO"]>;
+
+def EnumRNNGateOrder : EnumValueType<"RNNGateOrder", ["IOFC", "IFCO", "IFOC", "ICOF"]>;
+
 def EnumInterpolation: EnumValueType<"Interpolation",
                                     ["NEAREST", "LINEAR", "CUBIC"]>;
 
