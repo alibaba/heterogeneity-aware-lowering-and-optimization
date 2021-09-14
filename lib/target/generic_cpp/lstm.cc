@@ -52,22 +52,22 @@ enum LSTMArgIndex {
   LSTM_ARG_P_IDX = 7
 };
 
+static const std::unordered_map<RNNWeightFormat, std::string> WeightFormatNames{
+    {RNNWeightFormat::LDGIO, "ODLA_RNN_LDGIO"},
+    {RNNWeightFormat::LDGOI, "ODLA_RNN_LDGOI"},
+    {RNNWeightFormat::INVALID, "INVALID"},
+};
+
+static const std::unordered_map<RNNGateOrder, std::string> GateOrderNames{
+    {RNNGateOrder::ICOF, "ODLA_RNN_ICOF"},
+    {RNNGateOrder::IFCO, "ODLA_RNN_IFCO"},
+    {RNNGateOrder::IFOC, "ODLA_RNN_IFOC"},
+    {RNNGateOrder::IOFC, "ODLA_RNN_IOFC"},
+    {RNNGateOrder::URO, "ODLA_RNN_URO"},
+    {RNNGateOrder::INVALID, "INVALID"},
+};
+
 void GenericCXXCodeGen::RunOnInstruction(LSTMInst* inst) {
-  static const std::unordered_map<RNNWeightFormat, std::string>
-      weight_format_names{
-          {RNNWeightFormat::LDGIO, "ODLA_RNN_LDGIO"},
-          {RNNWeightFormat::LDGOI, "ODLA_RNN_LDGOI"},
-          {RNNWeightFormat::INVALID, "INVALID"},
-      };
-
-  static const std::unordered_map<RNNGateOrder, std::string> gate_order_names{
-      {RNNGateOrder::ICOF, "ODLA_RNN_ICOF"},
-      {RNNGateOrder::IFCO, "ODLA_RNN_IFCO"},
-      {RNNGateOrder::IFOC, "ODLA_RNN_IFOC"},
-      {RNNGateOrder::IOFC, "ODLA_RNN_IOFC"},
-      {RNNGateOrder::INVALID, "INVALID"},
-  };
-
   const Def& x = inst->GetOperand(LSTM_ARG_X_IDX);
   const Def& w = inst->GetOperand(LSTM_ARG_W_IDX);
   const Def& r = inst->GetOperand(LSTM_ARG_R_IDX);
@@ -112,10 +112,10 @@ void GenericCXXCodeGen::RunOnInstruction(LSTMInst* inst) {
 
   const char* outputs = "ODLA_RNN_HIDDEN_CELL_STATE";
 
-  auto it_format = weight_format_names.find(inst->GetWeightFormat());
-  auto it_gate = gate_order_names.find(inst->GetGateOrder());
-  HLCHECK(it_format != weight_format_names.end() &&
-          it_gate != gate_order_names.end());
+  auto it_format = WeightFormatNames.find(inst->GetWeightFormat());
+  auto it_gate = GateOrderNames.find(inst->GetGateOrder());
+  HLCHECK(it_format != WeightFormatNames.end() &&
+          it_gate != GateOrderNames.end());
 
   EmitODLACall(rets, "odla_LSTM", op_x, it_format->second, it_gate->second,
                EmitShape(w.GetType()), op_w, op_r, op_b, op_sequence_lens,
@@ -124,6 +124,54 @@ void GenericCXXCodeGen::RunOnInstruction(LSTMInst* inst) {
   ir_mapping_[Def(inst, 0)] = rets[0];
   ir_mapping_[Def(inst, 1)] = rets[1];
   ir_mapping_[Def(inst, 2)] = rets[2];
+}
+
+void GenericCXXCodeGen::RunOnInstruction(GRUInst* inst) {
+  const Def& x = inst->GetOperand(LSTM_ARG_X_IDX);
+  const Def& w = inst->GetOperand(LSTM_ARG_W_IDX);
+  const Def& r = inst->GetOperand(LSTM_ARG_R_IDX);
+  const Def& b = inst->GetOperand(LSTM_ARG_B_IDX);
+  const Def& sequence_lens = inst->GetOperand(LSTM_ARG_SEQUENCE_LENGTH_IDX);
+
+  size_t num_ops = inst->GetNumOfOperands();
+
+  ir_mapping_[Def::GetUndefined()] = CXXValue("nullptr", CXXType("void"));
+
+  const Def& initial_h = num_ops > LSTM_ARG_INITIAL_H_IDX
+                             ? inst->GetOperand(LSTM_ARG_INITIAL_H_IDX)
+                             : Def::GetUndefined();
+
+  CXXValue op_x = ir_mapping_[x];
+  CXXValue op_w = ir_mapping_[w];
+  CXXValue op_r = ir_mapping_[r];
+  CXXValue op_b = ir_mapping_[b];
+  CXXValue op_sequence_lens = ir_mapping_[sequence_lens];
+  CXXValue op_initial_h = ir_mapping_[initial_h];
+
+  uint32_t hidden_size = inst->GetHiddenSize();
+
+  std::vector<CXXValue> rets;
+  rets.emplace_back(inst->GetName(),
+                    TensorTypeToCXXType(inst->GetResultsTypes()[0], false));
+  rets.emplace_back(inst->GetName() + "_h",
+                    TensorTypeToCXXType(inst->GetResultsTypes()[1], false));
+
+  const char* dir = StringifyDirection(inst->GetDirection());
+
+  const char* outputs = "ODLA_RNN_HIDDEN_STATE";
+
+  auto it_format = WeightFormatNames.find(inst->GetWeightFormat());
+  auto it_gate = GateOrderNames.find(inst->GetGateOrder());
+  HLCHECK(it_format != WeightFormatNames.end() &&
+          it_gate != GateOrderNames.end());
+
+  EmitODLACall(rets, "odla_GRU", op_x, it_format->second, it_gate->second,
+               EmitShape(w.GetType()), op_w, op_r, op_b, op_sequence_lens,
+               op_initial_h, hidden_size, dir, inst->GetLinearBeforeReset(),
+               outputs);
+
+  ir_mapping_[Def(inst, 0)] = rets[0];
+  ir_mapping_[Def(inst, 1)] = rets[1];
 }
 
 } // namespace halo
