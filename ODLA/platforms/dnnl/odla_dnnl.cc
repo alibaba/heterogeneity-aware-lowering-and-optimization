@@ -675,6 +675,34 @@ odla_value odla_Sigmoid(odla_value input, const odla_value_id id) {
                           id);
 }
 
+odla_value odla_HardSigmoid(odla_value input, odla_float32 alpha,
+                            odla_float32 beta, const odla_value_id value_id) {
+  auto linear_input = unary_eltwise_op(dnnl::algorithm::eltwise_linear, input,
+                                       alpha, beta, nullptr);
+  int n = GetTotalElements(input->shape);
+  auto elem_type = input->elem_type;
+  // Prepare dest memory.
+  dnnl::memory::desc dst_md = getMemoryDesc({elem_type, input->shape});
+  dnnl::memory dst_mem = dnnl::memory(dst_md, g_comp->eng);
+  auto v = CreateValue(dst_mem, input->shape, value_id);
+  v->elem_type = elem_type;
+
+  auto op = [linear_input, v, n] {
+    void* dst = v->mem.get_data_handle();
+    const void* data = linear_input->mem.get_data_handle();
+    const float* input_t = static_cast<const float*>(data);
+    Eigen::Map<const Eigen::Array<float, Eigen::Dynamic, 1>> in(input_t, n);
+    float* dst_t = static_cast<float*>(dst);
+    Eigen::Map<Eigen::Array<float, Eigen::Dynamic, 1>> out(dst_t, n);
+    out = (0 < in).select(in, 0.0f);
+    out = (1 > out).select(out, 1.0f);
+  };
+
+  add_op(op);
+  InterpretIfNeeded();
+  return v;
+}
+
 odla_value odla_LeakyRelu(odla_value input, odla_float32 alpha,
                           const odla_value_id id) {
   return unary_eltwise_op(dnnl::algorithm::eltwise_relu, input, alpha, 0.f, id);
