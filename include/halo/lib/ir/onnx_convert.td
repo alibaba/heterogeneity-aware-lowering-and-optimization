@@ -364,7 +364,12 @@ def ONNX_Shape : ONNXExtension<"Shape">;
 
 def ONNX_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
 
-def ONNX_HardSigmoid : OpMapping<"HardSigmoid", HardSigmoid>;
+def ONNX_HardSigmoid : OpMapping<"HardSigmoid", HardSigmoid>{
+  let attr_mapping_ = [
+    AttributeMapping<"alpha", "alpha", "0.2">,
+    AttributeMapping<"beta", "beta", "0.5">
+    ];
+}
 
 def ONNX_Sin : OpMapping<"Sin", Sin>;
 
