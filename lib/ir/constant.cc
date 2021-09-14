@@ -206,8 +206,7 @@ void Constant::SetData(const Type& ty, const void* data_ptr, bool do_splat) {
     std::copy_n(src, bytes, data_.data());
   } else {
     size_t byte_per_element = data_layout_.Bytes(ty.GetDataType());
-    for (size_t i = 0, e = bytes / byte_per_element; i != e;
-         i += byte_per_element) {
+    for (size_t i = 0; i != bytes; i += byte_per_element) {
       std::copy_n(src, byte_per_element, data_.begin() + i);
     }
   }
