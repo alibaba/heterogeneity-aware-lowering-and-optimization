@@ -530,6 +530,23 @@ extern ODLA_API_EXPORT odla_values ODLA_API_CALL odla_TopK(
     odla_uint32 axis, odla_value_type output_value_type,
     odla_value_type output_value_index_type, const odla_value_ids value_ids);
 
+//! \brief Yolov3 Post Process
+/*!
+  PostProcess Return Selected Info (cx, cy, w, h, pred_cls) of Each Class
+
+  \param orig_img_w the width of original image
+  \param orig_img_h the height of original image
+  \param bb13 BBoxes 13 x 13
+  \param bb26 BBoxes 26 x 26
+  \param bb52 BBoxes 52 x 52
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_values
+*/
+extern ODLA_API_EXPORT odla_values ODLA_API_CALL odla_PostProcess(
+    odla_value orig_img_w, odla_value orig_img_h, odla_value bb13,
+    odla_value bb26, odla_value bb52, const odla_value_id value_id);
+
 #ifdef __cplusplus
 } // C extern
 #endif
