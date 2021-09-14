@@ -102,6 +102,18 @@ Enumerations</h2></td></tr>
  }</td></tr>
 <tr class="memdesc:a848aed5682538d47c5b4a04c3bdc5e1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">RNN outputs.  <a href="odla__ops__nn_8h.html#a848aed5682538d47c5b4a04c3bdc5e1b">More...</a><br /></td></tr>
 <tr class="separator:a848aed5682538d47c5b4a04c3bdc5e1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4b6795b2666bb0feff24897881c2ac5"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__nn_8h.html#af4b6795b2666bb0feff24897881c2ac5">odla_rnn_weight_format</a> { <a class="el" href="odla__ops__nn_8h.html#af4b6795b2666bb0feff24897881c2ac5a8246331f2d0f9d66b3a27adbd7f09fb8">ODLA_RNN_LDGOI</a>
+, <a class="el" href="odla__ops__nn_8h.html#af4b6795b2666bb0feff24897881c2ac5a1a4e3267750a063ca62d2a3cf344f4da">ODLA_RNN_LDIGO</a>
+ }</td></tr>
+<tr class="memdesc:af4b6795b2666bb0feff24897881c2ac5"><td class="mdescLeft">&#160;</td><td class="mdescRight">RNN weight layout.  <a href="odla__ops__nn_8h.html#af4b6795b2666bb0feff24897881c2ac5">More...</a><br /></td></tr>
+<tr class="separator:af4b6795b2666bb0feff24897881c2ac5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a71dec80a52d199c1951f804e5a32338d"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338d">odla_rnn_gate_order</a> { <a class="el" href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338daac366a6acaf2752a4180b9239d676c5c">ODLA_RNN_IOFC</a>
+, <a class="el" href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338da8b4d65f75d1d125ba10b6df5f3d112e9">ODLA_RNN_IFCO</a>
+, <a class="el" href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338da7a64e45ad06eca3d135e97e6177edfa0">ODLA_RNN_IFOC</a>
+, <a class="el" href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338da43f56215175a807e8af084540836110c">ODLA_RNN_ICOF</a>
+ }</td></tr>
+<tr class="memdesc:a71dec80a52d199c1951f804e5a32338d"><td class="mdescLeft">&#160;</td><td class="mdescRight">RNN data layout.  <a href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338d">More...</a><br /></td></tr>
+<tr class="separator:a71dec80a52d199c1951f804e5a32338d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
@@ -146,9 +158,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a99191f8d0f64a8b430603ea6410622b3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__nn_8h.html#a99191f8d0f64a8b430603ea6410622b3">odla_LogSoftmax</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, <a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a> axis, const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
 <tr class="memdesc:a99191f8d0f64a8b430603ea6410622b3"><td class="mdescLeft">&#160;</td><td class="mdescRight">LogSoftmax activation.  <a href="odla__ops__nn_8h.html#a99191f8d0f64a8b430603ea6410622b3">More...</a><br /></td></tr>
 <tr class="separator:a99191f8d0f64a8b430603ea6410622b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abec6f3979e2f18a389bda7dee27644cf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="structodla__values.html">odla_values</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__nn_8h.html#abec6f3979e2f18a389bda7dee27644cf">odla_LSTM</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, <a class="el" href="structodla__value__shape.html">odla_value_shape</a> weight_dims, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> W, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> R, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> B, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> sequence_lens, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> initial_h, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> initial_c, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> P, <a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a> hidden_size, <a class="el" href="odla__ops__nn_8h.html#a9270ccb090ddf6229c74cd04026120a0">odla_rnn_direction</a> direction, <a class="el" href="odla__ops__nn_8h.html#a848aed5682538d47c5b4a04c3bdc5e1b">odla_rnn_outputs</a> outputs, const <a class="el" href="structodla__value__ids.html">odla_value_ids</a> value_id)</td></tr>
-<tr class="memdesc:abec6f3979e2f18a389bda7dee27644cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">LSTM.  <a href="odla__ops__nn_8h.html#abec6f3979e2f18a389bda7dee27644cf">More...</a><br /></td></tr>
-<tr class="separator:abec6f3979e2f18a389bda7dee27644cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a439bebbd851f5849e7f97d10e40e2ac8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="structodla__values.html">odla_values</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__nn_8h.html#a439bebbd851f5849e7f97d10e40e2ac8">odla_LSTM</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, <a class="el" href="odla__ops__nn_8h.html#af4b6795b2666bb0feff24897881c2ac5">odla_rnn_weight_format</a> weight_format, <a class="el" href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338d">odla_rnn_gate_order</a> gate_order, <a class="el" href="structodla__value__shape.html">odla_value_shape</a> weight_dims, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> W, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> R, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> B, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> sequence_lens, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> initial_h, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> initial_c, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> P, <a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a> hidden_size, <a class="el" href="odla__ops__nn_8h.html#a9270ccb090ddf6229c74cd04026120a0">odla_rnn_direction</a> direction, <a class="el" href="odla__ops__nn_8h.html#a848aed5682538d47c5b4a04c3bdc5e1b">odla_rnn_outputs</a> outputs, const <a class="el" href="structodla__value__ids.html">odla_value_ids</a> value_id)</td></tr>
+<tr class="memdesc:a439bebbd851f5849e7f97d10e40e2ac8"><td class="mdescLeft">&#160;</td><td class="mdescRight">LSTM.  <a href="odla__ops__nn_8h.html#a439bebbd851f5849e7f97d10e40e2ac8">More...</a><br /></td></tr>
+<tr class="separator:a439bebbd851f5849e7f97d10e40e2ac8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a81b06c3f7fbdd2ebc225a86d8e054748"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__nn_8h.html#a81b06c3f7fbdd2ebc225a86d8e054748">odla_MaxPool</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, <a class="el" href="odla__ops__nn_8h.html#a54eaa7020ac01fc2a354d4fef9313a62">odla_memory_layout</a> input_layout, const <a class="el" href="odla__common_8h.html#a6b80c6921b4b4e20c95df868e20c8afd">odla_uint32</a> *window_dims, const <a class="el" href="odla__common_8h.html#a6b80c6921b4b4e20c95df868e20c8afd">odla_uint32</a> *strides, const <a class="el" href="odla__common_8h.html#a6b80c6921b4b4e20c95df868e20c8afd">odla_uint32</a> *paddings_front, const <a class="el" href="odla__common_8h.html#a6b80c6921b4b4e20c95df868e20c8afd">odla_uint32</a> *paddings_back, <a class="el" href="structodla__value__shape.html">odla_value_shape</a> output_dims, const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
 <tr class="memdesc:a81b06c3f7fbdd2ebc225a86d8e054748"><td class="mdescLeft">&#160;</td><td class="mdescRight">Max Pooling.  <a href="odla__ops__nn_8h.html#a81b06c3f7fbdd2ebc225a86d8e054748">More...</a><br /></td></tr>
 <tr class="separator:a81b06c3f7fbdd2ebc225a86d8e054748"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -273,6 +285,45 @@ Functions</h2></td></tr>
 </div><!-- fragment -->
 </div>
 </div>
+<a id="a71dec80a52d199c1951f804e5a32338d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a71dec80a52d199c1951f804e5a32338d">&#9670;&nbsp;</a></span>odla_rnn_gate_order</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338d">odla_rnn_gate_order</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>RNN data layout. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a71dec80a52d199c1951f804e5a32338daac366a6acaf2752a4180b9239d676c5c"></a>ODLA_RNN_IOFC&#160;</td><td class="fielddoc"><p>input gate, output gate, forget gate, cell gate </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a71dec80a52d199c1951f804e5a32338da8b4d65f75d1d125ba10b6df5f3d112e9"></a>ODLA_RNN_IFCO&#160;</td><td class="fielddoc"><p>input gate, forget gate, cell gate, output gate </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a71dec80a52d199c1951f804e5a32338da7a64e45ad06eca3d135e97e6177edfa0"></a>ODLA_RNN_IFOC&#160;</td><td class="fielddoc"><p>input gate, forget gate, output gate, cell gate </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a71dec80a52d199c1951f804e5a32338da43f56215175a807e8af084540836110c"></a>ODLA_RNN_ICOF&#160;</td><td class="fielddoc"><p>input gate, cell gate, output gate, forget gate </p>
+</td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="odla__ops__nn_8h_source.html#l00069">69</a> of file <a class="el" href="odla__ops__nn_8h_source.html">odla_ops_nn.h</a>.</p>
+<div class="fragment"><div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;             {</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;  <a class="code" href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338daac366a6acaf2752a4180b9239d676c5c">ODLA_RNN_IOFC</a>, </div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;  <a class="code" href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338da8b4d65f75d1d125ba10b6df5f3d112e9">ODLA_RNN_IFCO</a>, </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;  <a class="code" href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338da7a64e45ad06eca3d135e97e6177edfa0">ODLA_RNN_IFOC</a>, </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;  <a class="code" href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338da43f56215175a807e8af084540836110c">ODLA_RNN_ICOF</a>, </div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;} <a class="code" href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338d">odla_rnn_gate_order</a>;</div>
+<div class="ttc" id="aodla__ops__nn_8h_html_a71dec80a52d199c1951f804e5a32338d"><div class="ttname"><a href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338d">odla_rnn_gate_order</a></div><div class="ttdeci">odla_rnn_gate_order</div><div class="ttdoc">RNN data layout.</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__nn_8h_source.html#l00069">odla_ops_nn.h:69</a></div></div>
+<div class="ttc" id="aodla__ops__nn_8h_html_a71dec80a52d199c1951f804e5a32338da43f56215175a807e8af084540836110c"><div class="ttname"><a href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338da43f56215175a807e8af084540836110c">ODLA_RNN_ICOF</a></div><div class="ttdeci">@ ODLA_RNN_ICOF</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__nn_8h_source.html#l00073">odla_ops_nn.h:73</a></div></div>
+<div class="ttc" id="aodla__ops__nn_8h_html_a71dec80a52d199c1951f804e5a32338da7a64e45ad06eca3d135e97e6177edfa0"><div class="ttname"><a href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338da7a64e45ad06eca3d135e97e6177edfa0">ODLA_RNN_IFOC</a></div><div class="ttdeci">@ ODLA_RNN_IFOC</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__nn_8h_source.html#l00072">odla_ops_nn.h:72</a></div></div>
+<div class="ttc" id="aodla__ops__nn_8h_html_a71dec80a52d199c1951f804e5a32338da8b4d65f75d1d125ba10b6df5f3d112e9"><div class="ttname"><a href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338da8b4d65f75d1d125ba10b6df5f3d112e9">ODLA_RNN_IFCO</a></div><div class="ttdeci">@ ODLA_RNN_IFCO</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__nn_8h_source.html#l00071">odla_ops_nn.h:71</a></div></div>
+<div class="ttc" id="aodla__ops__nn_8h_html_a71dec80a52d199c1951f804e5a32338daac366a6acaf2752a4180b9239d676c5c"><div class="ttname"><a href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338daac366a6acaf2752a4180b9239d676c5c">ODLA_RNN_IOFC</a></div><div class="ttdeci">@ ODLA_RNN_IOFC</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__nn_8h_source.html#l00070">odla_ops_nn.h:70</a></div></div>
+</div><!-- fragment -->
+</div>
+</div>
 <a id="a848aed5682538d47c5b4a04c3bdc5e1b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a848aed5682538d47c5b4a04c3bdc5e1b">&#9670;&nbsp;</a></span>odla_rnn_outputs</h2>
 
@@ -309,6 +360,37 @@ Functions</h2></td></tr>
 <div class="ttc" id="aodla__ops__nn_8h_html_a848aed5682538d47c5b4a04c3bdc5e1ba30ed9507ff76aacc1dc080ff82814616"><div class="ttname"><a href="odla__ops__nn_8h.html#a848aed5682538d47c5b4a04c3bdc5e1ba30ed9507ff76aacc1dc080ff82814616">ODLA_RNN_HIDDEN_CELL_STATE</a></div><div class="ttdeci">@ ODLA_RNN_HIDDEN_CELL_STATE</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__nn_8h_source.html#l00056">odla_ops_nn.h:56</a></div></div>
 <div class="ttc" id="aodla__ops__nn_8h_html_a848aed5682538d47c5b4a04c3bdc5e1ba58b4e43c606784ca311b373334037a24"><div class="ttname"><a href="odla__ops__nn_8h.html#a848aed5682538d47c5b4a04c3bdc5e1ba58b4e43c606784ca311b373334037a24">ODLA_RNN_CELL_STATE</a></div><div class="ttdeci">@ ODLA_RNN_CELL_STATE</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__nn_8h_source.html#l00055">odla_ops_nn.h:55</a></div></div>
 <div class="ttc" id="aodla__ops__nn_8h_html_a848aed5682538d47c5b4a04c3bdc5e1ba5ca407c17695cc8d086a5b02d7411b8b"><div class="ttname"><a href="odla__ops__nn_8h.html#a848aed5682538d47c5b4a04c3bdc5e1ba5ca407c17695cc8d086a5b02d7411b8b">ODLA_RNN_NO_STATE</a></div><div class="ttdeci">@ ODLA_RNN_NO_STATE</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__nn_8h_source.html#l00053">odla_ops_nn.h:53</a></div></div>
+</div><!-- fragment -->
+</div>
+</div>
+<a id="af4b6795b2666bb0feff24897881c2ac5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4b6795b2666bb0feff24897881c2ac5">&#9670;&nbsp;</a></span>odla_rnn_weight_format</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="odla__ops__nn_8h.html#af4b6795b2666bb0feff24897881c2ac5">odla_rnn_weight_format</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>RNN weight layout. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="af4b6795b2666bb0feff24897881c2ac5a8246331f2d0f9d66b3a27adbd7f09fb8"></a>ODLA_RNN_LDGOI&#160;</td><td class="fielddoc"><p>layers, directions, num gates, output channels, input channels </p>
+</td></tr>
+<tr><td class="fieldname"><a id="af4b6795b2666bb0feff24897881c2ac5a1a4e3267750a063ca62d2a3cf344f4da"></a>ODLA_RNN_LDIGO&#160;</td><td class="fielddoc"><p>layers, directions, input_channels, num gates, output channels, </p>
+</td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="odla__ops__nn_8h_source.html#l00060">60</a> of file <a class="el" href="odla__ops__nn_8h_source.html">odla_ops_nn.h</a>.</p>
+<div class="fragment"><div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;             {</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;  <a class="code" href="odla__ops__nn_8h.html#af4b6795b2666bb0feff24897881c2ac5a8246331f2d0f9d66b3a27adbd7f09fb8">ODLA_RNN_LDGOI</a>, </div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;  <a class="code" href="odla__ops__nn_8h.html#af4b6795b2666bb0feff24897881c2ac5a1a4e3267750a063ca62d2a3cf344f4da">ODLA_RNN_LDIGO</a>, </div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;} <a class="code" href="odla__ops__nn_8h.html#af4b6795b2666bb0feff24897881c2ac5">odla_rnn_weight_format</a>;</div>
+<div class="ttc" id="aodla__ops__nn_8h_html_af4b6795b2666bb0feff24897881c2ac5"><div class="ttname"><a href="odla__ops__nn_8h.html#af4b6795b2666bb0feff24897881c2ac5">odla_rnn_weight_format</a></div><div class="ttdeci">odla_rnn_weight_format</div><div class="ttdoc">RNN weight layout.</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__nn_8h_source.html#l00060">odla_ops_nn.h:60</a></div></div>
+<div class="ttc" id="aodla__ops__nn_8h_html_af4b6795b2666bb0feff24897881c2ac5a1a4e3267750a063ca62d2a3cf344f4da"><div class="ttname"><a href="odla__ops__nn_8h.html#af4b6795b2666bb0feff24897881c2ac5a1a4e3267750a063ca62d2a3cf344f4da">ODLA_RNN_LDIGO</a></div><div class="ttdeci">@ ODLA_RNN_LDIGO</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__nn_8h_source.html#l00065">odla_ops_nn.h:63</a></div></div>
+<div class="ttc" id="aodla__ops__nn_8h_html_af4b6795b2666bb0feff24897881c2ac5a8246331f2d0f9d66b3a27adbd7f09fb8"><div class="ttname"><a href="odla__ops__nn_8h.html#af4b6795b2666bb0feff24897881c2ac5a8246331f2d0f9d66b3a27adbd7f09fb8">ODLA_RNN_LDGOI</a></div><div class="ttdeci">@ ODLA_RNN_LDGOI</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__nn_8h_source.html#l00062">odla_ops_nn.h:61</a></div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -1329,8 +1411,8 @@ y = scale * (x - mean) / sqrt(variance + epsilon) + bias <br  />
 
 </div>
 </div>
-<a id="abec6f3979e2f18a389bda7dee27644cf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abec6f3979e2f18a389bda7dee27644cf">&#9670;&nbsp;</a></span>odla_LSTM()</h2>
+<a id="a439bebbd851f5849e7f97d10e40e2ac8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a439bebbd851f5849e7f97d10e40e2ac8">&#9670;&nbsp;</a></span>odla_LSTM()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1340,6 +1422,18 @@ y = scale * (x - mean) / sqrt(variance + epsilon) + bias <br  />
           <td>(</td>
           <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
           <td class="paramname"><em>input</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__ops__nn_8h.html#af4b6795b2666bb0feff24897881c2ac5">odla_rnn_weight_format</a>&#160;</td>
+          <td class="paramname"><em>weight_format</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338d">odla_rnn_gate_order</a>&#160;</td>
+          <td class="paramname"><em>gate_order</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1426,6 +1520,8 @@ y = scale * (x - mean) / sqrt(variance + epsilon) + bias <br  />
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">input</td><td>the input value </td></tr>
+    <tr><td class="paramname">weight_format</td><td>the data layout of weights </td></tr>
+    <tr><td class="paramname">gate_order</td><td>the order of gates in weights </td></tr>
     <tr><td class="paramname">weight_dims</td><td>the dims of weights </td></tr>
     <tr><td class="paramname">W</td><td>the weights for gates. Assuming layout of [in, out, forget, cell] </td></tr>
     <tr><td class="paramname">R</td><td>the recurrence weight </td></tr>
