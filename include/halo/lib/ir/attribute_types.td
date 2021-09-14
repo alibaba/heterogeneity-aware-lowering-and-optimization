@@ -91,7 +91,7 @@ def EnumResizeMode : EnumValueType<"ResizeMode",
 
 def EnumRNNWeightFormat : EnumValueType<"RNNWeightFormat", ["LDGOI", "LDGIO"]>;
 
-def EnumRNNGateOrder : EnumValueType<"RNNGateOrder", ["IOFC", "IFCO", "IFOC", "ICOF"]>;
+def EnumRNNGateOrder : EnumValueType<"RNNGateOrder", ["IOFC", "IFCO", "IFOC", "ICOF", "URO"]>;
 
 def EnumInterpolation: EnumValueType<"Interpolation",
                                     ["NEAREST", "LINEAR", "CUBIC"]>;

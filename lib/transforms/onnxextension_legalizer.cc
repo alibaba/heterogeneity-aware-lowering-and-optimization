@@ -699,8 +699,15 @@ static std::vector<Def> ConvertOneHot(const ONNXExtensionInst* ext,
     return {*new_inst};
   }
 
-  HLCHECK(0 && "unhandled OneHot");
-  return {};
+  // Get on value.
+  const int32_t one_v = 1;
+  auto one = cb.CreateConstant(name + "_one", halo::Type{DataType::INT32, {1}},
+                               &one_v);
+  auto on_value = builder->CreateSlice("split_on", {op2, *one, *one});
+  OneHotInst* new_inst = builder->CreateOneHot(ext->GetName(), op0, op1,
+                                               op2 /* off_on */, *on_value);
+  new_inst->SetAxis(axis);
+  return {*new_inst};
 }
 
 static std::vector<Def> ConvertGatherElements(const ONNXExtensionInst* ext,
@@ -1281,11 +1288,44 @@ OptionalArgumentState GetStateOfOptionalArgument(const IRObject* obejct,
                                                  size_t idx) {
   if (obejct->GetNumOfOperands() <= idx) {
     return NOT_PROVIDED;
-  } else if (Def::GetUndefined() == obejct->GetOperand(idx)) { // NOLINT
-    return EMPTY_VALUE_PROVIDED;
-  } else {
-    return NORMAL_VALUE_PROVIDED;
   }
+  if (Def::GetUndefined() == obejct->GetOperand(idx)) {
+    return EMPTY_VALUE_PROVIDED;
+  }
+  return NORMAL_VALUE_PROVIDED;
+}
+
+static Def ConvertRNNBias(const ONNXExtensionInst& ext, DataType elem_type,
+                          int num_directions, int num_gates, int hidden_size,
+                          IRBuilder* builder) {
+  // B not specified
+  auto num_operands = ext.GetNumOfOperands();
+  ConstantBuilder c_builder(ext.GetParent()->GetParent());
+
+  int32_t len = num_gates * hidden_size;
+  if (num_operands <= LSTM_ARG_B_IDX) {
+    Type type(elem_type, {num_directions, len});
+    std::string name = ext.GetName() + "_B";
+    return *c_builder.SplatConstantZero(name, type);
+  }
+  builder->SetInsertBefore(&ext);
+  auto b = ext.GetOperand(LSTM_ARG_B_IDX);
+  halo::Type ty{DataType::INT32, {2}};
+  const auto& base_name = b.GetDef()->GetName();
+  auto s0 = c_builder.CreateConstant(base_name + "_s0", ty,
+                                     std::vector<int32_t>{0, 0});
+  auto s1 = c_builder.CreateConstant(base_name + "_s1", ty,
+                                     std::vector<int32_t>{0, len});
+  auto l = c_builder.CreateConstant(base_name + "_len", ty,
+                                    std::vector<int32_t>{num_directions, len});
+  auto steps = c_builder.CreateConstant(base_name + "_step", ty,
+                                        std::vector<int32_t>{1, 1});
+
+  auto axis = c_builder.CreateConstant(base_name + "_ax", ty,
+                                       std::vector<int32_t>{0, 1});
+  auto b0 = builder->CreateSlice(base_name + "_w", {b, *s0, *l, *steps, *axis});
+  auto b1 = builder->CreateSlice(base_name + "_r", {b, *s1, *l, *steps, *axis});
+  return *builder->CreateAdd(base_name + "_wr", {*b0, *b1});
 }
 
 static std::vector<Def> ConvertLSTM(const ONNXExtensionInst* ext,
@@ -1324,33 +1364,14 @@ static std::vector<Def> ConvertLSTM(const ONNXExtensionInst* ext,
 
   std::vector<Def> operands = ext->GetOperands();
 
-  builder->SetInsertBefore(ext);
-  // B not specified
-  if (num_operands <= LSTM_ARG_B_IDX) {
-    Type type(dtype_x, {num_directions, 4 * hidden_size}); // NOLINT
-    std::string name = ext->GetName() + "_B";
-    operands.push_back(*c_builder.SplatConstantZero(name, type));
-  } else {
-    auto& b = operands[LSTM_ARG_B_IDX];
-    int32_t len = 4 * hidden_size;
-    halo::Type ty{DataType::INT32, {2}};
-    const auto& base_name = b.GetDef()->GetName();
-    auto s0 = c_builder.CreateConstant(base_name + "_s0", ty,
-                                       std::vector<int32_t>{0, 0});
-    auto s1 = c_builder.CreateConstant(base_name + "_s1", ty,
-                                       std::vector<int32_t>{0, len});
-    auto l = c_builder.CreateConstant(
-        base_name + "_len", ty, std::vector<int32_t>{num_directions, len});
-    auto steps = c_builder.CreateConstant(base_name + "_step", ty,
-                                          std::vector<int32_t>{1, 1});
+  auto b =
+      ConvertRNNBias(*ext, dtype_x, num_directions, 4, hidden_size, builder);
 
-    auto axis = c_builder.CreateConstant(base_name + "_ax", ty,
-                                         std::vector<int32_t>{0, 1});
-    auto b0 =
-        builder->CreateSlice(base_name + "_w", {b, *s0, *l, *steps, *axis});
-    auto b1 =
-        builder->CreateSlice(base_name + "_r", {b, *s1, *l, *steps, *axis});
-    b = *builder->CreateAdd(base_name + "_wr", {*b0, *b1});
+  if (num_operands <= LSTM_ARG_B_IDX) {
+    // B not specified
+    operands.push_back(b);
+  } else {
+    operands[LSTM_ARG_B_IDX] = b;
   }
 
   // sequence_lens not specified
@@ -1412,6 +1433,55 @@ static std::vector<Def> ConvertLSTM(const ONNXExtensionInst* ext,
   lstm->SetWeightFormat(RNNWeightFormat::LDGOI);
   lstm->SetGateOrder(RNNGateOrder::IOFC);
   return {Def{lstm, 0}, Def{lstm, 1}, Def{lstm, 2}};
+}
+
+static std::vector<Def> ConvertGRU(const ONNXExtensionInst* ext,
+                                   IRBuilder* builder) {
+  size_t num_operands = ext->GetNumOfOperands();
+  HLCHECK(num_operands > LSTM_ARG_R_IDX && "Missing required arguments");
+
+  const Def& op_x = ext->GetOperand(LSTM_ARG_X_IDX);
+  const Type& type_x = op_x.GetType();
+
+  if (!type_x.IsValid()) {
+    return {};
+  }
+
+  std::string direction_key("FORWARD");
+  direction_key = FindAttributeValue(*ext, "direction", direction_key);
+  auto direction = DecodeLSTMDirection(direction_key);
+  int num_directions = direction == halo::Direction::BIDIRECTIONAL ? 2 : 1;
+  int32_t hidden_size = FindAttributeValue<int>(*ext, "hidden_size", -1);
+
+  DataType dtype_x = type_x.GetDataType();
+
+  ConstantBuilder c_builder(ext->GetParent()->GetParent());
+
+  int64_t seq_length = type_x.GetNumOfElementsInDim(0);
+  int64_t batch_size = type_x.GetNumOfElementsInDim(1);
+
+  int layout = FindAttributeValue<int>(*ext, "layout", LSTM_LAYOUT_NORMAL);
+  if (LSTM_LAYOUT_NORMAL != layout) {
+    std::swap(seq_length, batch_size);
+  }
+
+  std::vector<Def> operands(1 + LSTM_ARG_INITIAL_H_IDX + 1,
+                            Def::GetUndefined());
+  for (unsigned i = 0; i < num_operands; ++i) {
+    operands[i] = ext->GetOperand(i);
+  }
+  builder->SetInsertBefore(ext);
+  operands[LSTM_ARG_B_IDX] =
+      ConvertRNNBias(*ext, dtype_x, num_directions, 3, hidden_size, builder);
+
+  GRUInst* gru = builder->CreateGRU(ext->GetName(), operands);
+
+  gru->SetHiddenSize(hidden_size);
+  gru->SetLayout(FindAttributeValue<int>(*ext, "layout", 0));
+  gru->SetDirection(direction);
+  gru->SetWeightFormat(RNNWeightFormat::LDGOI);
+  gru->SetGateOrder(RNNGateOrder::URO);
+  return {Def{gru, 0}, Def{gru, 1}, Def{gru, 2}};
 }
 
 static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
@@ -1497,6 +1567,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::HGENGINE: {
       return ConvertHgEngine(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::GRU: {
+      return ConvertGRU(onnx_inst, builder);
     }
     case ONNXExtOpCode::LSTM: {
       return ConvertLSTM(onnx_inst, builder);

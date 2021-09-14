@@ -1135,7 +1135,8 @@ enum LSTMOutputIndex {
   LSTM_OUPTUT_Y_C = 2
 };
 
-static void RunOnInstruction(LSTMInst* inst) {
+static void RunOnRNNBase(Instruction* inst, int layout) {
+  bool is_lstm = inst->GetOpCode() == OpCode::LSTM;
   const Def& op_x = inst->GetOperand(LSTM_ARG_X_IDX);
   const Type& x_type = op_x.GetType();
 
@@ -1143,7 +1144,6 @@ static void RunOnInstruction(LSTMInst* inst) {
     return;
   }
 
-  int layout = inst->GetLayout();
   HLCHECK(layout == 0 || layout == 1);
 
   int64_t seq_length = x_type.GetNumOfElementsInDim(0);
@@ -1173,7 +1173,17 @@ static void RunOnInstruction(LSTMInst* inst) {
                    {num_directions, batch_size, hidden_size}};
 
   inst->GetResultsTypes()[1] = common_type;
-  inst->GetResultsTypes()[2] = common_type;
+  if (is_lstm) {
+    inst->GetResultsTypes()[2] = common_type;
+  }
+}
+
+static void RunOnInstruction(LSTMInst* inst) {
+  RunOnRNNBase(inst, inst->GetLayout());
+}
+
+static void RunOnInstruction(GRUInst* inst) {
+  RunOnRNNBase(inst, inst->GetLayout());
 }
 
 bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
