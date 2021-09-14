@@ -23,7 +23,7 @@ set(CMAKE_SKIP_BUILD_RPATH FALSE)
 
 option(ODLA_BUILD_EIGEN "Build ODLA Runtime Library for Eigen" ON)
 if (ODLA_BUILD_EIGEN)
-  set(EIGEN_VERSION 3.3.7)
+  set(EIGEN_VERSION 3.4.0)
   set(EIGEN_ROOT "/opt/eigen-${EIGEN_VERSION}" CACHE STRING "Path of Eigen package")
   find_file(eigen NAMES Eigen PATHS ${EIGEN_ROOT} PATH_SUFFIXES Eigen NO_DEFAULT_PATH)
   if(NOT eigen)
