@@ -124,6 +124,12 @@ extern "C" {
 typedef struct CXXCodeGenOps HaloCodeGenOpts;
 typedef struct halo::ModelInfo HaloModelInfo;
 
+int halo_AnalyzeTFPbGraph(const char* pb_buf, size_t pb_buf_size,
+                          size_t num_input_shapes, const char* input_shapes[],
+                          int batch, const HaloCodeGenOpts* cg_opts,
+                          const char* main_output_file,
+                          HaloModelInfo* model_info);
+
 int halo_CompileTFPbGraph(const char* pb_buf, size_t pb_buf_size,
                           size_t num_input_shapes, const char* input_shapes[],
                           int batch, const HaloCodeGenOpts* cg_opts,
