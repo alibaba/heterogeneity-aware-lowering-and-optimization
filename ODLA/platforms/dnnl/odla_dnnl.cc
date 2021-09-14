@@ -737,6 +737,31 @@ odla_value odla_Celu(odla_value input, odla_float32 alpha,
   return v;
 }
 
+odla_value odla_ThresholdedRelu(odla_value input, odla_float32 alpha,
+                                const odla_value_id id) {
+  int n = GetTotalElements(input->shape);
+  auto elem_type = input->elem_type;
+  // Prepare dest memory.
+  dnnl::memory::desc dst_md = getMemoryDesc({elem_type, input->shape});
+  dnnl::memory dst_mem = dnnl::memory(dst_md, g_comp->eng);
+  auto v = CreateValue(dst_mem, input->shape, id);
+  v->elem_type = elem_type;
+
+  auto op = [input, alpha, dst_mem, n] {
+    void* dst = dst_mem.get_data_handle();
+    const void* data = input->mem.get_data_handle();
+    const float* input_t = static_cast<const float*>(data);
+    Eigen::Map<const Eigen::Array<float, Eigen::Dynamic, 1>> in(input_t, n);
+    float* dst_t = static_cast<float*>(dst);
+    Eigen::Map<Eigen::Array<float, Eigen::Dynamic, 1>> out(dst_t, n);
+    out = (alpha < in).select(in, 0.0f);
+  };
+
+  add_op(op);
+  InterpretIfNeeded();
+  return v;
+}
+
 odla_value odla_Clamp(odla_value input, odla_float32 lo, odla_float32 hi,
                       const odla_value_id id) {
   return unary_eltwise_op(dnnl::algorithm::eltwise_clip, input, lo, hi, id);
