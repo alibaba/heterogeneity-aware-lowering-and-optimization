@@ -40,8 +40,6 @@
 #error This library requires minimum ODLA version 0.5
 #endif
 
-// TODO: neg, acosh, asinh, atanh, reciprocal, sign,
-
 enum class alg_unary_eltwise {
   isnan,
   isinf,
@@ -57,7 +55,13 @@ enum class alg_unary_eltwise {
   log,
   tan,
   tanh,
-  sqrt
+  sqrt,
+  neg,
+  acosh,
+  asinh, 
+  atanh, 
+  reciprocal, 
+  sign,
 };
 
 struct _odla_context {
@@ -912,6 +916,9 @@ static void unary_eltwise_T(alg_unary_eltwise alg, void* dst, const void* input,
     case alg_unary_eltwise::cosh:
       out = in.cosh();
       break;
+    case alg_unary_eltwise::acosh:
+      out = in.acosh();
+      break;
     default:
       assert(0);
   }
@@ -1007,6 +1014,10 @@ odla_value odla_Tan(odla_value input, const odla_value_id value_id) {
 
 odla_value odla_ACos(odla_value input, const odla_value_id value_id) {
   return odla_unary_eltwise(alg_unary_eltwise::acos, input, value_id);
+}
+
+odla_value odla_ACosh(odla_value input, const odla_value_id value_id) {
+  return odla_unary_eltwise(alg_unary_eltwise::acosh, input, value_id);
 }
 
 odla_value odla_ASin(odla_value input, const odla_value_id value_id) {

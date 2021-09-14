@@ -54,8 +54,8 @@ RUN cd /tmp && git clone --depth=1 https://github.com/intel/mkl-dnn.git --branch
     ninja install
 
 # Install Eigen
-RUN cd /tmp && wget https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.tar.bz2 && \
-    tar jxvf eigen-3.3.7.tar.bz2 && mv eigen-3.3.7 /opt
+RUN cd /tmp && wget https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.bz2 && \
+    tar jxvf eigen-3.4.0.tar.bz2 && mv eigen-3.4.0 /opt
 
 # Install XNNPack
 RUN cd /tmp && git clone https://github.com/google/XNNPACK.git && \
