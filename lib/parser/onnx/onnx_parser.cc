@@ -224,7 +224,7 @@ Status ONNXParser::ConvertToHaloIR(const onnx::GraphProto& graph_def) {
           case DataType::INT64: {
             const Tensor<int64_t> temp = ProcessTensor<int64_t>(tensor_def);
             HLCHECK(temp.GetShape().size() == 1 && temp.GetShape()[0] == 1);
-            attr_val = Attribute::CreateInteger("value", temp.GetData()[0]);
+            attr_val = Attribute::CreateInteger64("value", temp.GetData()[0]);
             break;
           }
           default:
