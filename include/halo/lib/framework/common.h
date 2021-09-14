@@ -74,7 +74,7 @@ const T_NEW* Downcast(const T_OLD* ptr) {
 
 template <typename T_TO, typename T_FROM>
 bool IsA(const T_FROM* obj) {
-  return T_TO::Classof(obj);
+  return obj == nullptr ? false : T_TO::Classof(obj);
 }
 
 template <typename T_TO, typename T_FROM>
