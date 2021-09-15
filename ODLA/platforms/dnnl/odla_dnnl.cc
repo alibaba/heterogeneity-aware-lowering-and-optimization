@@ -694,8 +694,8 @@ odla_value odla_HardSigmoid(odla_value input, odla_float32 alpha,
     Eigen::Map<const Eigen::Array<float, Eigen::Dynamic, 1>> in(input_t, n);
     float* dst_t = static_cast<float*>(dst);
     Eigen::Map<Eigen::Array<float, Eigen::Dynamic, 1>> out(dst_t, n);
-    out = (0 < in).select(in, 0.0f);
-    out = (1 > out).select(out, 1.0f);
+    auto t = (0 < in).select(in, 0.0f);
+    out = (1 > t).select(t, 1.0f);
   };
 
   add_op(op);
