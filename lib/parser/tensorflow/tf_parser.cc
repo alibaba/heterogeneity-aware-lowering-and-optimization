@@ -870,6 +870,10 @@ Status TFParser::ConvertConstNode(IRBuilder* ir_builder,
   DataType data_type = DataType::INVALID;
   if (attrs.Process<DataType>("dtype", &data_type)) {
     switch (data_type) {
+      case DataType::BOOL: {
+        CreateConstant<int8_t>(&attrs, data_type, node_def);
+        break;
+      }
       case DataType::UINT8: {
         CreateConstant<uint8_t>(&attrs, data_type, node_def);
         break;

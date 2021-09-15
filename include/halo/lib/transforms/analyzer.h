@@ -48,9 +48,9 @@ class Analyzer final : public ModulePass {
     std::vector<std::vector<int64_t>> input_shape;
     std::vector<int64_t> output_shape;
 
-    size_t io_mem = 0;
+    size_t io_mem_sv = 0;
     // op fusion estimate
-    size_t op_fs_mem = 0;
+    size_t io_mem_ld = 0;
     float weight_mem = 0;
 
     // Note that FLOPS and FLOPs are different:
@@ -64,10 +64,8 @@ class Analyzer final : public ModulePass {
 
   struct TensorInfo {
     size_t liveness = 0;
-    size_t op_size = 0;
-    size_t ip_size = 0;
-    size_t knl_sz = 0;
-    halo::OpCode op;
+    size_t sv_size = 0;
+    size_t ld_size = 0;
   };
 
   Analyzer(std::ostream* os, const AnalyzerOpts& opts)

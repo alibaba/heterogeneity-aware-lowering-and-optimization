@@ -41,7 +41,7 @@ void GenericCXXCodeGen::RunOnInstruction(MatMulInst* inst) {
   CXXValue ret(inst->GetName(), op0.type);
 
   EmitODLACall(ret, "odla_Gemm", op0, inst->GetTransposeA(), op1,
-               inst->GetTransposeB(), 1, 0, bias_name, EmitShape(ret_type));
+               inst->GetTransposeB(), 1, 1, bias_name, EmitShape(ret_type));
   ir_mapping_[*inst] = ret;
 }
 
@@ -64,7 +64,7 @@ void GenericCXXCodeGen::RunOnInstruction(BatchMatMulInst* inst) {
   }
 
   EmitODLACall(ret, "odla_Gemm", op0, inst->GetTransposeA(), op1,
-               inst->GetTransposeB(), 1, 0, bias_name, EmitShape(ret_type));
+               inst->GetTransposeB(), 1, 1, bias_name, EmitShape(ret_type));
 
   ir_mapping_[*inst] = ret;
 }

@@ -51,7 +51,7 @@ static int InvokeCompiler(Module* m, const std::string& target, int batch,
                           const std::vector<std::string>& outputs,
                           const CXXCodeGenOpts& cg_opts,
                           const std::string& main_output_file_name,
-                          ModelInfo* model_info) {
+                          ModelInfo* model_info, bool is_compile_model = true) {
   auto& ctx = m->GetGlobalContext();
   ctx.SetVerbosity(1);
   ctx.SetBasePath(GetBaseDir());
@@ -63,39 +63,48 @@ static int InvokeCompiler(Module* m, const std::string& target, int batch,
   FusionOptions fusion_opts;
   PopulateOptPasses(&pm, target, input_shapes, inputs, outputs, batch, "",
                     false, ModelFormat::TENSORFLOW, cg_opts, fusion_opts);
-  std::string ext = (cg_opts.dialect == halo::Dialect::C99) ? ".c" : ".cc";
-  bool is_c_or_cxx_output =
-      target.substr(0, 3) == "cxx" || target.substr(0, 2) == "cc";
-  std::ostringstream buf_code;
-  std::ostringstream buf_constants;
-  std::ostringstream buf_header;
+  if (is_compile_model) {
+    std::string ext = (cg_opts.dialect == halo::Dialect::C99) ? ".c" : ".cc";
+    bool is_c_or_cxx_output =
+        target.substr(0, 3) == "cxx" || target.substr(0, 2) == "cc";
+    std::ostringstream buf_code;
+    std::ostringstream buf_constants;
+    std::ostringstream buf_header;
 
-  PopulateCodeGenPasses(&pm, &buf_code, &buf_constants, &buf_header, &std::cerr,
-                        target, is_c_or_cxx_output, false /*is_binary_output*/,
-                        false /* EmitDataAsC */, false /*EmitCodeOnly*/,
-                        false /* EmitLLVMIR */, false /* EmitTritonConfig */,
-                        "" /*TritonConfigFile */, Quantization::None,
-                        "" /* PGQFile */, false /* RISCVOpt */, cg_opts,
-                        main_output_file_name);
-  pm.Run(m);
+    PopulateCodeGenPasses(
+        &pm, &buf_code, &buf_constants, &buf_header, &std::cerr, target,
+        is_c_or_cxx_output, false /*is_binary_output*/, false /* EmitDataAsC */,
+        false /*EmitCodeOnly*/, false /* EmitLLVMIR */,
+        false /* EmitTritonConfig */, "" /*TritonConfigFile */,
+        Quantization::None, "" /* PGQFile */, false /* RISCVOpt */, cg_opts,
+        main_output_file_name);
+    pm.Run(m);
 
-  if (!cg_opts.emit_shared_lib) {
-    std::ofstream out_code(main_output_file_name, std::ofstream::binary);
-    out_code << buf_code.str();
+    if (!cg_opts.emit_shared_lib) {
+      std::ofstream out_code(main_output_file_name, std::ofstream::binary);
+      out_code << buf_code.str();
+    }
+    if (!cg_opts.emit_shared_lib) {
+      auto weights_fn = GetDerivedFileName(main_output_file_name, ".bin");
+      std::ofstream out_constants(weights_fn, std::ofstream::binary);
+      out_constants << buf_constants.str();
+    }
+    if (cg_opts.emit_header) {
+      auto header_fn = GetDerivedFileName(main_output_file_name, ".h");
+      std::ofstream out_header(header_fn, std::ofstream::binary);
+      out_header << buf_header.str();
+    }
+    if (model_info != nullptr) {
+      *model_info = ctx.GetModelInfo();
+    }
+  } else { // model analysis
+    AnalyzerOpts alz_opts;
+    alz_opts.batch_size = batch;
+    alz_opts.print_details = false;
+    pm.AddAnalyzerPass(&std::cout, alz_opts);
+    pm.Run(m);
   }
-  if (!cg_opts.emit_shared_lib) {
-    auto weights_fn = GetDerivedFileName(main_output_file_name, ".bin");
-    std::ofstream out_constants(weights_fn, std::ofstream::binary);
-    out_constants << buf_constants.str();
-  }
-  if (cg_opts.emit_header) {
-    auto header_fn = GetDerivedFileName(main_output_file_name, ".h");
-    std::ofstream out_header(header_fn, std::ofstream::binary);
-    out_header << buf_header.str();
-  }
-  if (model_info != nullptr) {
-    *model_info = ctx.GetModelInfo();
-  }
+
   return 0;
 }
 
@@ -128,7 +137,8 @@ int Compile(ModelFormat format, const std::vector<const char*>& models,
             const std::vector<std::string>& inputs,
             const std::vector<std::string>& outputs,
             const CXXCodeGenOpts& cg_opts,
-            const std::string& main_output_file_name, ModelInfo* model_info) {
+            const std::string& main_output_file_name, ModelInfo* model_info,
+            bool is_compile_model = true) {
   GlobalContext ctx;
   Function* func;
   std::unique_ptr<Module> m;
@@ -139,7 +149,8 @@ int Compile(ModelFormat format, const std::vector<const char*>& models,
   }
 
   return InvokeCompiler(m.get(), target, batch, input_shapes, inputs, outputs,
-                        cg_opts, main_output_file_name, model_info);
+                        cg_opts, main_output_file_name, model_info,
+                        is_compile_model);
 }
 
 HL_API_EXPORT
@@ -155,11 +166,13 @@ HL_API_EXPORT
 int CompileTFGraph(const char* pb_buf, size_t pb_buf_size,
                    const std::vector<std::string>& input_shapes, int batch,
                    const CXXCodeGenOpts& cg_opts,
-                   const std::string& main_output_file, ModelInfo* model_info) {
+                   const std::string& main_output_file, ModelInfo* model_info,
+                   bool is_compile_model = true) {
   const char* str = main_output_file.c_str();
   const std::string new_str(str);
   return Compile(ModelFormat::TENSORFLOW, {pb_buf}, {pb_buf_size}, "cxx", batch,
-                 input_shapes, {}, {}, cg_opts, new_str, model_info);
+                 input_shapes, {}, {}, cg_opts, new_str, model_info,
+                 is_compile_model);
 }
 
 } // namespace halo
@@ -201,4 +214,18 @@ int halo_CompileTFGraphdef(const void* graphdef, size_t num_input_shapes,
   return halo::CompileTFGraph(graphdef,
                               ToStrings(num_input_shapes, input_shapes), batch,
                               opts, std::string(main_output_file), model_info);
+}
+
+HL_API_EXPORT
+// NOLINTNEXTLINE
+int halo_AnalyzeTFPbGraph(const char* pb_buf, size_t pb_buf_size,
+                          size_t num_input_shapes, const char* input_shapes[],
+                          int batch, const HaloCodeGenOpts* cg_opts,
+                          const char* main_output_file,
+                          HaloModelInfo* model_info) {
+  const halo::CXXCodeGenOpts& opts =
+      *(halo::CXXCodeGenOpts*)(cg_opts); // NOLINT
+  return halo::CompileTFGraph(
+      pb_buf, pb_buf_size, ToStrings(num_input_shapes, input_shapes), batch,
+      opts, std::string(main_output_file), model_info, false);
 }

@@ -20,6 +20,7 @@ import subprocess
 LIB_HALO = "libhalo.so"
 lib_halo = CDLL(LIB_HALO)
 CompileTFPbGraph = lib_halo.halo_CompileTFPbGraph
+AnalyzeTFPbGraph = lib_halo.halo_AnalyzeTFPbGraph
 
 
 class CXXCodeGenOpts(Structure):
@@ -109,6 +110,29 @@ def CompileModel(model_file, batch):
         0,
     )
     return [output_file, output_bin]
+
+def AnalyzeModel(model_file, batch):
+    output_file = ""
+    odla_lib = cast(create_string_buffer(b""), c_char_p)
+    opts = CXXCodeGenOpts()
+    opts.linked_odla_lib = odla_lib
+    opts.channel_order = 1
+    opts.api = 1
+    opts.emit_inference_func_sig = True
+    with open(model_file, "rb") as f:
+        bytes = f.read()
+    num_input_shapes = 0
+    input_shapes = c_void_p(0)
+    AnalyzeTFPbGraph(
+        bytes,
+        len(bytes),
+        num_input_shapes,
+        input_shapes,
+        batch,
+        pointer(opts),
+        output_file.encode("utf-8"),
+        0,
+    )
 
 
 def CompileODLAModel(files, device):
