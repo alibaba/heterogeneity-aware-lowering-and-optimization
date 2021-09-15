@@ -551,6 +551,20 @@ odla_Softmax(odla_value input, odla_int32 axis, const odla_value_id value_id);
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Tanh(odla_value input, const odla_value_id value_id);
 
+//! \brief ThresholdedRelu activation
+/*!
+  ThresholdedRelu computes the ThresholdedRelu activation as y = x > alpha ? x :
+  0
+
+  \param input the input value
+  \param alpha the alpha value
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_ThresholdedRelu(
+    odla_value input, odla_float32 alpha, const odla_value_id value_id);
+
 //! \brief Find Top-K elements
 /*!
   TopK returns the top-K largest or smallest elements and index
