@@ -15,7 +15,7 @@
 # ==============================================================================
 
 set(DNNL_ROOT /opt/dnnl)
-set(DNNL_CXX_FLAGS -flax-vector-conversions -mavx512f -mavx512bw -mavx512dq -mavx512vl -Wno-error)
+set(DNNL_CXX_FLAGS -flax-vector-conversions -mfma -mavx512f -mavx512bw -mavx512dq -mavx512vl -Wno-error)
 if(NOT DNNL_COMPILER)
   message(STATUS "GCC10 path ${DNNL_COMPILER} not found, skip enable bf16 on odla_dnnl")
   set(DEFAULT_COMPILER ${CMAKE_CXX_COMPILER})

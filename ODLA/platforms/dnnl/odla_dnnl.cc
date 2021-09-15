@@ -40,8 +40,6 @@
 #error This library requires minimum ODLA version 0.5
 #endif
 
-// TODO: neg, acosh, asinh, atanh, reciprocal, sign,
-
 enum class alg_unary_eltwise {
   isnan,
   isinf,
@@ -57,7 +55,13 @@ enum class alg_unary_eltwise {
   log,
   tan,
   tanh,
-  sqrt
+  sqrt,
+  neg,
+  acosh,
+  asinh,
+  atanh,
+  reciprocal,
+  sign,
 };
 
 struct _odla_context {
@@ -929,6 +933,13 @@ static void unary_eltwise_T(alg_unary_eltwise alg, void* dst, const void* input,
     case alg_unary_eltwise::abs:
       out = in.abs();
       break;
+    case alg_unary_eltwise::neg:
+      out = -in;
+      break;
+    case alg_unary_eltwise::sign:
+      out = (0 < in).select(1, in);
+      out = (0 > out).select(-1, out);
+      break;
     case alg_unary_eltwise::ceil:
       out = in.ceil();
       break;
@@ -937,6 +948,9 @@ static void unary_eltwise_T(alg_unary_eltwise alg, void* dst, const void* input,
       break;
     case alg_unary_eltwise::sqrt:
       out = in.sqrt();
+      break;
+    case alg_unary_eltwise::reciprocal:
+      out = in.pow(-1);
       break;
     case alg_unary_eltwise::sin:
       out = in.sin();
@@ -953,8 +967,14 @@ static void unary_eltwise_T(alg_unary_eltwise alg, void* dst, const void* input,
     case alg_unary_eltwise::asin:
       out = in.asin();
       break;
+    case alg_unary_eltwise::asinh:
+      out = in.asinh();
+      break;
     case alg_unary_eltwise::atan:
       out = in.atan();
+      break;
+    case alg_unary_eltwise::atanh:
+      out = in.atanh();
       break;
     case alg_unary_eltwise::sinh:
       out = in.sinh();
@@ -964,6 +984,9 @@ static void unary_eltwise_T(alg_unary_eltwise alg, void* dst, const void* input,
       break;
     case alg_unary_eltwise::cosh:
       out = in.cosh();
+      break;
+    case alg_unary_eltwise::acosh:
+      out = in.acosh();
       break;
     default:
       assert(0);
@@ -1062,12 +1085,24 @@ odla_value odla_ACos(odla_value input, const odla_value_id value_id) {
   return odla_unary_eltwise(alg_unary_eltwise::acos, input, value_id);
 }
 
+odla_value odla_ACosh(odla_value input, const odla_value_id value_id) {
+  return odla_unary_eltwise(alg_unary_eltwise::acosh, input, value_id);
+}
+
 odla_value odla_ASin(odla_value input, const odla_value_id value_id) {
   return odla_unary_eltwise(alg_unary_eltwise::asin, input, value_id);
 }
 
+odla_value odla_ASinh(odla_value input, const odla_value_id value_id) {
+  return odla_unary_eltwise(alg_unary_eltwise::asinh, input, value_id);
+}
+
 odla_value odla_ATan(odla_value input, const odla_value_id value_id) {
   return odla_unary_eltwise(alg_unary_eltwise::atan, input, value_id);
+}
+
+odla_value odla_ATanh(odla_value input, const odla_value_id value_id) {
+  return odla_unary_eltwise(alg_unary_eltwise::atanh, input, value_id);
 }
 
 odla_value odla_Sinh(odla_value input, const odla_value_id value_id) {
@@ -1080,6 +1115,18 @@ odla_value odla_Cosh(odla_value input, const odla_value_id value_id) {
 
 odla_value odla_Ceil(odla_value input, const odla_value_id value_id) {
   return odla_unary_eltwise(alg_unary_eltwise::ceil, input, value_id);
+}
+
+odla_value odla_Neg(odla_value input, const odla_value_id value_id) {
+  return odla_unary_eltwise(alg_unary_eltwise::neg, input, value_id);
+}
+
+odla_value odla_Reciprocal(odla_value input, const odla_value_id value_id) {
+  return odla_unary_eltwise(alg_unary_eltwise::reciprocal, input, value_id);
+}
+
+odla_value odla_Sign(odla_value input, const odla_value_id value_id) {
+  return odla_unary_eltwise(alg_unary_eltwise::sign, input, value_id);
 }
 
 odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
