@@ -354,9 +354,9 @@ def ONNX_Resize : OpMapping<"Resize", Resize> {
 }
 
 def ONNX_Selu : OpMapping<"Selu", Selu> {
-  let attr_mapping_ = [ 
+  let attr_mapping_ = [
     AttributeMapping<"gamma", "lambda", "1.0507">,
-    AttributeMapping<"alpha", "alpha", "1.67326"> 
+    AttributeMapping<"alpha", "alpha", "1.67326">
     ];
 }
 
@@ -364,7 +364,12 @@ def ONNX_Shape : ONNXExtension<"Shape">;
 
 def ONNX_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
 
-def ONNX_HardSigmoid : OpMapping<"HardSigmoid", HardSigmoid>;
+def ONNX_HardSigmoid : OpMapping<"HardSigmoid", HardSigmoid>{
+  let attr_mapping_ = [
+    AttributeMapping<"alpha", "alpha", "0.2">,
+    AttributeMapping<"beta", "beta", "0.5">
+    ];
+}
 
 def ONNX_Sin : OpMapping<"Sin", Sin>;
 
@@ -486,5 +491,14 @@ def ONNX_LSTM : ONNXExtension<"LSTM"> {
     ExtensionAttr<"hidden_size", Integer, "1">,
     ExtensionAttr<"layout", Integer, "0">,
     ExtensionAttr<"direction", String, "\"FORWARD\"">
+  ];
+}
+
+def ONNX_GRU : ONNXExtension<"GRU"> {
+  let extension_attr_ = [
+    ExtensionAttr<"hidden_size", Integer, "1">,
+    ExtensionAttr<"layout", Integer, "0">,
+    ExtensionAttr<"direction", String, "\"FORWARD\"">,
+    ExtensionAttr<"linear_before_reset", Integer, "0">,
   ];
 }
