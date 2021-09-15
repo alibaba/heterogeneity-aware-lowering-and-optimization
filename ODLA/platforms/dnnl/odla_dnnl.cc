@@ -549,8 +549,10 @@ static void expand_dims(odla_value_shape& src, odla_value_shape& dst) {
 
 static dnnl::memory broadcast_mem(const dnnl::memory orig_mem,
                                   const odla_value_shape& orig_shape,
-                                  const odla_value_shape& target_shape) {
+                                  const odla_value_shape& target_shape,
+                                  bool needs_reorder) {
   assert(orig_shape.size == target_shape.size); // dims are already expanded.
+  auto dt = orig_mem.get_desc().data_type();
   std::vector<int64_t> strides_v(target_shape.size, 0);
   for (int i = target_shape.size - 1, s = 1; i >= 0; --i) {
     if (orig_shape.dims[i] != target_shape.dims[i]) {
@@ -560,14 +562,24 @@ static dnnl::memory broadcast_mem(const dnnl::memory orig_mem,
       s *= orig_shape.dims[i];
     }
   }
-  auto src_md =
-      dnnl::memory::desc(getDims(target_shape), orig_mem.get_desc().data_type(),
-                         dnnl::memory::dims(strides_v));
-  return dnnl::memory(src_md, g_comp->eng, orig_mem.get_data_handle());
+  auto src_md = dnnl::memory::desc(getDims(target_shape), dt,
+                                   dnnl::memory::dims(strides_v));
+  if (!needs_reorder) {
+    return dnnl::memory(src_md, g_comp->eng, orig_mem.get_data_handle());
+  }
+  auto ret_md = getMemoryDesc(target_shape, dt);
+  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
+  auto reorder_pd =
+      dnnl::reorder::primitive_desc(g_comp->eng, src_md, g_comp->eng, ret_md);
+  auto reorder_prim = dnnl::reorder(reorder_pd);
+  add_op(reorder_prim, {{DNNL_ARG_SRC, orig_mem}, {DNNL_ARG_DST, ret_mem}});
+  InterpretIfNeeded();
+  return ret_mem;
 }
 
 static std::pair<dnnl::memory, dnnl::memory> broadcast_operands(
-    const odla_value& lhs, const odla_value& rhs) {
+    const odla_value& lhs, const odla_value& rhs,
+    odla_value_shape* tiled_shape) {
   auto dims_lhs = lhs->shape;
   auto dims_rhs = rhs->shape;
   auto rank = std::max(dims_lhs.size, dims_rhs.size);
@@ -576,18 +588,20 @@ static std::pair<dnnl::memory, dnnl::memory> broadcast_operands(
     auto& to = dims_lhs.size > dims_rhs.size ? dims_lhs : dims_rhs;
     expand_dims(from, to);
   }
-  odla_value_shape tiled_shape;
   for (int i = 0; i < rank; i++) {
-    tiled_shape.dims[i] = std::max(dims_lhs.dims[i], dims_rhs.dims[i]);
+    tiled_shape->dims[i] = std::max(dims_lhs.dims[i], dims_rhs.dims[i]);
   }
-  tiled_shape.size = lhs->shape.size;
-  return {broadcast_mem(lhs->mem, dims_lhs, tiled_shape),
-          broadcast_mem(rhs->mem, dims_rhs, tiled_shape)};
+  tiled_shape->size = rank;
+  return {
+      broadcast_mem(lhs->mem, dims_lhs, *tiled_shape, true),
+      broadcast_mem(rhs->mem, dims_rhs, *tiled_shape, true),
+  };
 }
 
 static odla_value binary_eltwise(dnnl::algorithm algo, odla_value lhs,
                                  odla_value rhs, const odla_value_id id) {
-  auto new_mems = broadcast_operands(lhs, rhs);
+  odla_value_shape ret_shape;
+  auto new_mems = broadcast_operands(lhs, rhs, &ret_shape);
   auto lhs_m = new_mems.first;
   auto rhs_m = new_mems.second;
 
@@ -595,17 +609,17 @@ static odla_value binary_eltwise(dnnl::algorithm algo, odla_value lhs,
   if (type == dnnl::memory::data_type::s32) {
     return binary_eltwise_s32(algo, lhs_m, rhs_m, lhs->shape, id);
   }
-  auto ret_md = getMemoryDesc(lhs->shape, type);
+  auto ret_md = getMemoryDesc(ret_shape, type);
   auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
   dnnl::binary::desc bd(algo, lhs_m.get_desc(), rhs_m.get_desc(), ret_md);
   dnnl::binary::primitive_desc pd(bd, g_comp->eng);
   dnnl::primitive prim = dnnl::binary(pd);
 
-  add_op(prim, {{DNNL_ARG_SRC_0, lhs->mem},
-                {DNNL_ARG_SRC_1, rhs->mem},
+  add_op(prim, {{DNNL_ARG_SRC_0, lhs_m},
+                {DNNL_ARG_SRC_1, rhs_m},
                 {DNNL_ARG_DST, ret_mem}});
 
-  odla_value v = CreateValue(ret_mem, lhs->shape, id);
+  odla_value v = CreateValue(ret_mem, ret_shape, id);
   v->elem_type = lhs->elem_type;
   InterpretIfNeeded();
   return v;
@@ -2265,7 +2279,6 @@ odla_values odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
                    hidden_size);
     }
   } else {
-    assert(0);
   }
 
   // Primitive arguments
