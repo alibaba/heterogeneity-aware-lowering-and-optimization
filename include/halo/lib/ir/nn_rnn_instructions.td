@@ -21,7 +21,6 @@ include "instruction_base.td"
 #endif
 
 let cat_ = cat_nn_rnn in {
-  // TODO: state LSTM's functionality.
   def LSTM : Inst<"Long Short-Term Memory"> {
     let attrs_ = [
       Attr<"Weight data format.",
@@ -65,4 +64,49 @@ let cat_ = cat_nn_rnn in {
       OptionalArg<"The last output value of the cell.", MatchArgType<0>, 3D>
     ];
   }
+
+  def GRU : Inst<"Gated Recurrent Unit"> {
+    let attrs_ = [
+      Attr<"Weight data format.",
+        EnumRNNWeightFormat, "weight_format", "INVALID">,
+      Attr<"Gate order.",
+        EnumRNNGateOrder, "gate_order", "INVALID">,
+      Attr<"Optional scaling values used by some activation functions.",
+           FloatList, "activation_alpha">,
+      Attr<"Optional scaling values used by some activation functions.",
+           FloatList, "activation_beta">,
+      Attr<"A list of 2 (or 4 if bidirectional) activation functions for "
+           "update, reset, and hidden.",
+           StringList, "activations">,
+      Attr<"Cell clip threshold.", Float, "clip">,
+      Attr<"Specify if the RNN is forward, reverse, or bidirectional.",
+           EnumDirection, "direction">,
+      Attr<"Number of neurons in the hidden layer", Integer, "hidden_size">,
+      Attr<"Couple the input and forget gates if 1.", Integer, "input_forget">,
+      Attr<"The shape format of inputs X, initial_h, initial_c and outputs Y, "
+           "Y_h, Y_c.",
+           Integer, "layout">,
+      Attr<"Whether to apply linear transformation before multiplying by the"
+           " output of reset gate",
+           Bool, "linear_before_reset">,
+    ];
+    let ins_ = [
+      Arg<"The input sequences.", ArgType<[F16, F32]>, 3D>,
+      Arg<"The weight tensor for the gates.", MatchArgType<0>, 3D>,
+      Arg<"The recurrence weight tensor.", MatchArgType<0>, 3D>,
+      OptionalArg<"The bias tensor for input gate.", MatchArgType<0>, 2D>,
+      OptionalArg<
+          "Optional tensor specifying lengths of the sequences in a batch",
+          ArgType<[Integer]>, 1D>,
+      OptionalArg<"Optional initial value of the hidden.", MatchArgType<0>, 3D>,
+    ];
+    let outs_ = [
+      OptionalArg<
+          "A tensor that concats all the intermediate output values of the "
+          "hidden.",
+          MatchArgType<0>, 4D>,
+      OptionalArg<"The last output value of the hidden.", MatchArgType<0>, 3D>,
+    ];
+  }
+
 }

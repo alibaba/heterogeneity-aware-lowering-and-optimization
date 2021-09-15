@@ -128,6 +128,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(Conv2DTransposeInst*) override;
   virtual void RunOnInstruction(GatherInst*) override;
   virtual void RunOnInstruction(GemmInst*) override;
+  virtual void RunOnInstruction(GRUInst*) override;
   virtual void RunOnInstruction(LogInst*) override;
   virtual void RunOnInstruction(LogSoftmaxInst*) override;
   virtual void RunOnInstruction(LRNInst*) override;
