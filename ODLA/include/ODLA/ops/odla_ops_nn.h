@@ -56,6 +56,23 @@ typedef enum {
   ODLA_RNN_HIDDEN_CELL_STATE, /*!< output both hidden and cell states */
 } odla_rnn_outputs;
 
+//! \brief RNN weight layout
+typedef enum {
+  ODLA_RNN_LDGOI, /*!< layers, directions, num gates, output channels,
+                     input channels */
+  ODLA_RNN_LDIGO, /*!< layers, directions, input_channels, num gates, output
+                   * channels,
+                   */
+} odla_rnn_weight_format;
+
+//! \brief RNN data layout
+typedef enum {
+  ODLA_RNN_IOFC, /*!< input gate, output gate, forget gate, cell gate */
+  ODLA_RNN_IFCO, /*!< input gate, forget gate, cell gate, output gate */
+  ODLA_RNN_IFOC, /*!< input gate, forget gate, output gate, cell gate */
+  ODLA_RNN_ICOF, /*!< input gate, cell gate, output gate, forget gate */
+} odla_rnn_gate_order;
+
 //! \brief Avgerage pooling
 /*!
   AveragePool computes the average pooling across the \p input according to
@@ -341,6 +358,8 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_LogSoftmax(
   LSTM computes one-layer LSTM.
 
   \param input the input value
+  \param weight_format the data layout of weights
+  \param gate_order the order of gates in weights
   \param weight_dims the dims of weights
   \param W the weights for gates. Assuming layout of [in, out, forget, cell]
   \param R the recurrence weight
@@ -357,8 +376,9 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_LogSoftmax(
   \return odla_values
 */
 extern ODLA_API_EXPORT odla_values ODLA_API_CALL
-odla_LSTM(odla_value input, odla_value_shape weight_dims, odla_value W,
-          odla_value R, odla_value B, odla_value sequence_lens,
+odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
+          odla_rnn_gate_order gate_order, odla_value_shape weight_dims,
+          odla_value W, odla_value R, odla_value B, odla_value sequence_lens,
           odla_value initial_h, odla_value initial_c, odla_value P,
           odla_int32 hidden_size, odla_rnn_direction direction,
           odla_rnn_outputs outputs, const odla_value_ids value_id);

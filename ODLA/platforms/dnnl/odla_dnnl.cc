@@ -2056,14 +2056,16 @@ odla_value odla_Tile(odla_value input, const odla_uint32* repeat,
   return v;
 }
 
-odla_values odla_LSTM(odla_value input, odla_value_shape weight_dims,
-                      odla_value W, odla_value R, odla_value B,
-                      odla_value sequence_lens, odla_value initial_h,
-                      odla_value initial_c, odla_value P,
+odla_values odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
+                      odla_rnn_gate_order gate_order,
+                      odla_value_shape weight_dims, odla_value W, odla_value R,
+                      odla_value B, odla_value sequence_lens,
+                      odla_value initial_h, odla_value initial_c, odla_value P,
                       odla_int32 hidden_size, odla_rnn_direction direction,
                       odla_rnn_outputs outputs,
                       const odla_value_ids value_ids) {
   dnnl::rnn_direction dir;
+  int d = 1;
   switch (direction) {
     case ODLA_RNN_FORWARD:
       dir = dnnl::rnn_direction::unidirectional_left2right;
@@ -2072,26 +2074,39 @@ odla_values odla_LSTM(odla_value input, odla_value_shape weight_dims,
       dir = dnnl::rnn_direction::unidirectional_right2left;
       break;
     default:
+      d = 2;
       dir = dnnl::rnn_direction::bidirectional_concat;
   }
+
+  assert(weight_format == ODLA_RNN_LDGOI);
+  assert(gate_order == ODLA_RNN_IOFC);
+
   // DNNL assumes the following layout:
   // src : { T (Seq), N (Batch), SLC(Input)}  tag::tnc
   // src_iter: {L, D, N, SIC} tag::ldnc
   // src_iter_c: {L, D, N, DIC} tag:ldnc
   // W: {L, D, SLC, 4, DIC}  tag:ldigo
-  // W_it: {L, D, SIC, 4, DIC}  tag:ldigo
+  // R(W_it): {L, D, SIC, 4, DIC}  tag:ldigo
   // dst : {T, N, DIC} tag:tnc
   // dst_it: {L, D, N, DIC} tag:ldnc
   // dst_it_c: {L, D, N, DIC} tag:ldnc
   //
   constexpr int64_t l = 1;
-  auto t = input->shape.dims[0];
+  auto t = input->shape.dims[0]; // sequence.
   const auto n = input->shape.dims[1];
   const auto slc = input->shape.dims[2];
-  const auto d = W->shape.dims[0];
-  const auto dic = W->shape.dims[1] / 4;
-  assert(hidden_size == R->shape.dims[2]);
-  const auto sic = R->shape.dims[1] / 4;
+  constexpr int num_gates = 4;
+  assert(d == W->shape.dims[0]);
+  assert(W->shape.dims[1] == num_gates * hidden_size);
+  assert(W->shape.dims[2] == slc);
+  assert(R->shape.dims[1] == num_gates * hidden_size);
+  assert(R->shape.dims[2] == hidden_size);
+
+  if (B != nullptr) {
+    assert(B->shape.dims[0] == d);
+    assert(B->shape.dims[1] == num_gates * hidden_size ||
+           B->shape.dims[1] == 2 * num_gates * hidden_size);
+  }
 
   auto dt = getDataType(input->elem_type);
   dnnl::memory::desc nil;
@@ -2102,32 +2117,34 @@ odla_values odla_LSTM(odla_value input, odla_value_shape weight_dims,
   assert((initial_h == nullptr && initial_c == nullptr) ||
          (initial_c != nullptr && initial_h != nullptr));
   auto src_iter_desc = initial_h != nullptr
-                           ? dnnl::memory::desc({l, d, n, dic}, dt,
+                           ? dnnl::memory::desc({l, d, n, hidden_size}, dt,
                                                 dnnl::memory::format_tag::ldnc)
                            : nil;
   auto src_iter_c_desc =
-      initial_c != nullptr ? dnnl::memory::desc({l, d, n, dic}, dt,
+      initial_c != nullptr ? dnnl::memory::desc({l, d, n, hidden_size}, dt,
                                                 dnnl::memory::format_tag::ldnc)
                            : nil;
 
-  dnnl::memory::desc w_desc({l, d, slc, 4, dic}, dt,
+  dnnl::memory::desc w_desc({l, d, slc, num_gates, hidden_size}, dt,
                             dnnl::memory::format_tag::ldigo);
-  dnnl::memory::desc w_it_desc({l, d, sic, 4, dic}, dt,
+  dnnl::memory::desc w_it_desc({l, d, hidden_size, num_gates, hidden_size}, dt,
                                dnnl::memory::format_tag::ldigo);
 
-  dnnl::memory::desc ret_md({t, n, dic}, dt, dnnl::memory::format_tag::tnc);
-  dnnl::memory::desc ret_it_md({l, d, n, dic}, dt,
+  dnnl::memory::desc ret_md({t, n, d * hidden_size}, dt,
+                            dnnl::memory::format_tag::tnc);
+  dnnl::memory::desc ret_it_md({l, d, n, hidden_size}, dt,
                                dnnl::memory::format_tag::ldnc);
 
-  odla_value_shape ret_shape{3, {t, n, dic}};
-  odla_value_shape ret_iter_shape{4, {l, d, n, dic}};
+  odla_value_shape ret_shape{4, {t, d, n, hidden_size}};
+  odla_value_shape ret_iter_shape{3, {d, n, hidden_size}};
 
+  // P = nullptr;
   const auto& w_peephole_desc =
-      P != nullptr ? dnnl::memory::desc({l, d, 3, dic}, dt,
+      P != nullptr ? dnnl::memory::desc({l, d, 3, hidden_size}, dt,
                                         dnnl::memory::format_tag::ldnc)
                    : nil;
   auto bias_desc = B != nullptr
-                       ? dnnl::memory::desc({l, d, 4, dic}, dt,
+                       ? dnnl::memory::desc({l, d, num_gates, hidden_size}, dt,
                                             dnnl::memory::format_tag::ldgo)
                        : nil;
 
@@ -2142,16 +2159,72 @@ odla_values odla_LSTM(odla_value input, odla_value_shape weight_dims,
   auto ret_h_mem = dnnl::memory(ret_it_md, g_comp->eng);
   auto ret_c_mem = dnnl::memory(ret_it_md, g_comp->eng);
 
-  // Primitive arguments
   dnnl::memory zero;
+
+  auto w_mem = W->mem;
+  auto r_mem = R->mem;
+  auto b_mem = (B == nullptr) ? zero : B->mem;
+  if (W->is_const && R->is_const && (B == nullptr || B->is_const)) {
+    // W/R/B are in [iofc] but DNNL assumes [ifco] for weights and [ifo] for
+    // Peephole. See https://oneapi-src.github.io/oneDNN/dev_guide_rnn.html
+    // For W/R, we also need to transpose from ldgoi to ldigo.
+    w_mem = dnnl::memory(w_desc, g_comp->eng);
+    r_mem = dnnl::memory(w_it_desc, g_comp->eng);
+    b_mem = dnnl::memory(bias_desc, g_comp->eng);
+    auto shuffle = [num_gates](float* dst, const float* src, int dir,
+                               int output_chs, int input_chs) {
+      const int gate_mapping[4] = {0, 3, 1, 2}; // iofc -> ifco
+      for (int d = 0; d < dir; ++d) {
+        size_t offset_base = d * num_gates * output_chs * input_chs;
+        for (int src_gate = 0; src_gate < num_gates; ++src_gate) {
+          auto dst_gate = gate_mapping[src_gate];
+          for (int o_ch = 0; o_ch < output_chs; ++o_ch) {
+            for (int i_ch = 0; i_ch < input_chs; ++i_ch) {
+              size_t dst_offset = offset_base + i_ch * num_gates * output_chs +
+                                  dst_gate * output_chs + o_ch;
+              dst[dst_offset] = *src;
+              ++src;
+            }
+          }
+        }
+      }
+    };
+    shuffle(static_cast<float*>(w_mem.get_data_handle()),
+            static_cast<const float*>(W->mem.get_data_handle()), d, hidden_size,
+            slc);
+    shuffle(static_cast<float*>(r_mem.get_data_handle()),
+            static_cast<const float*>(R->mem.get_data_handle()), d, hidden_size,
+            hidden_size);
+    if (B != nullptr) {
+      auto shuffle_bias = [num_gates](float* dst, const float* src, int dir,
+                                      int chs) {
+        const int gate_mapping[4] = {0, 3, 1, 2}; // iofc -> ifco
+        for (int d = 0, s = num_gates * chs; d < dir; ++d) {
+          for (int src_gate = 0; src_gate < num_gates; ++src_gate) {
+            auto dst_gate = gate_mapping[src_gate];
+            memcpy(&dst[d * s + dst_gate * chs], &src[d * s + src_gate * chs],
+                   sizeof(dst[0]) * chs);
+          }
+        }
+      };
+
+      shuffle_bias(static_cast<float*>(b_mem.get_data_handle()),
+                   static_cast<const float*>(B->mem.get_data_handle()), d,
+                   hidden_size);
+    }
+  } else {
+    assert(0);
+  }
+
+  // Primitive arguments
   std::unordered_map<int, dnnl::memory> args;
   args[DNNL_ARG_SRC_LAYER] = input->mem;
   args[DNNL_ARG_SRC_ITER] = (initial_h != nullptr) ? initial_h->mem : zero;
   args[DNNL_ARG_SRC_ITER_C] = (initial_h != nullptr) ? initial_c->mem : zero;
-  args[DNNL_ARG_WEIGHTS_LAYER] = W->mem;
-  args[DNNL_ARG_WEIGHTS_ITER] = R->mem;
+  args[DNNL_ARG_WEIGHTS_LAYER] = w_mem;
+  args[DNNL_ARG_WEIGHTS_ITER] = r_mem;
   args[DNNL_ARG_WEIGHTS_PEEPHOLE] = (P != nullptr) ? P->mem : zero;
-  args[DNNL_ARG_BIAS] = (B != nullptr) ? B->mem : zero;
+  args[DNNL_ARG_BIAS] = b_mem;
   args[DNNL_ARG_DST_LAYER] = ret_mem;
   args[DNNL_ARG_DST_ITER] = ret_h_mem;
   args[DNNL_ARG_DST_ITER_C] = ret_c_mem;

@@ -24,6 +24,7 @@ include "value_type.td"
 let is_integer_ = 1 in {
   def Bool : ValueType<1, "bool">;
   def Integer : ValueType<32, "int">;
+  def Integer64 : ValueType<64, "int64_t">;
   def BoolList : ValueType<1, "std::vector<bool>"> { let is_array_ = 1; }
   def IntegerList : ValueType<32, "std::vector<int>"> { let is_array_ = 1; }
   def IntegerListList : ValueType<64, "std::vector<std::vector<int64_t>>"> { let is_2d_array_ = 1;}
@@ -87,6 +88,11 @@ def EnumResizeMode : EnumValueType<"ResizeMode",
                                    "ALIGN_CORNERS",
                                    "ASYMMETRIC"
                                   ]>;
+
+def EnumRNNWeightFormat : EnumValueType<"RNNWeightFormat", ["LDGOI", "LDGIO"]>;
+
+def EnumRNNGateOrder : EnumValueType<"RNNGateOrder", ["IOFC", "IFCO", "IFOC", "ICOF"]>;
+
 def EnumInterpolation: EnumValueType<"Interpolation",
                                     ["NEAREST", "LINEAR", "CUBIC"]>;
 
