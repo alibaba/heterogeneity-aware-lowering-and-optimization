@@ -319,8 +319,31 @@ odla_Inverse(odla_value input, const odla_value_id value_id);
   \return odla_bool
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_IsInf(odla_value input, odla_bool detect_negative,
-           odla_bool detect_positive, const odla_value_id value_id);
+odla_IsInf(odla_value input, const odla_value_id value_id);
+
+//! \brief Check negative infinity
+/*!
+  IsNaN returns the bool array \p input.
+
+  \param input the input value
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_bool
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_IsInf_Neg(odla_value input, const odla_value_id value_id);
+
+//! \brief Check positive infinity
+/*!
+  IsNaN returns the bool array \p input.
+
+  \param input the input value
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_bool
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_IsInf_Pos(odla_value input, const odla_value_id value_id);
 
 //! \brief Check whether element of input is a number
 /*!
