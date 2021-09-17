@@ -1435,7 +1435,7 @@ static std::vector<Def> ConvertLSTM(const ONNXExtensionInst* ext,
   return {Def{lstm, 0}, Def{lstm, 1}, Def{lstm, 2}};
 }
 
-static std::vector<Def> ConvertGRU(const ONNXExtensionInst* ext,
+static std::vector<Def> ConvertRNN(const ONNXExtensionInst* ext,
                                    IRBuilder* builder) {
   size_t num_operands = ext->GetNumOfOperands();
   HLCHECK(num_operands > LSTM_ARG_R_IDX && "Missing required arguments");
@@ -1471,17 +1471,27 @@ static std::vector<Def> ConvertGRU(const ONNXExtensionInst* ext,
     operands[i] = ext->GetOperand(i);
   }
   builder->SetInsertBefore(ext);
-  operands[LSTM_ARG_B_IDX] =
-      ConvertRNNBias(*ext, dtype_x, num_directions, 3, hidden_size, builder);
-
-  GRUInst* gru = builder->CreateGRU(ext->GetName(), operands);
-
-  gru->SetHiddenSize(hidden_size);
-  gru->SetLayout(FindAttributeValue<int>(*ext, "layout", 0));
-  gru->SetDirection(direction);
-  gru->SetWeightFormat(RNNWeightFormat::LDGOI);
-  gru->SetGateOrder(RNNGateOrder::URO);
-  return {Def{gru, 0}, Def{gru, 1}, Def{gru, 2}};
+  bool is_gru = ext->GetExtOpCode() == ONNXExtOpCode::GRU;
+  int num_gates = is_gru ? 3 : 1;
+  operands[LSTM_ARG_B_IDX] = ConvertRNNBias(*ext, dtype_x, num_directions,
+                                            num_gates, hidden_size, builder);
+  Instruction* rnn = is_gru ? static_cast<Instruction*>(
+                                  builder->CreateGRU(ext->GetName(), operands))
+                            : builder->CreateRNN(ext->GetName(), operands);
+  auto set_attr = [hidden_size, ext, direction](auto inst) {
+    inst->SetHiddenSize(hidden_size);
+    inst->SetLayout(FindAttributeValue<int>(*ext, "layout", 0));
+    inst->SetDirection(direction);
+    inst->SetWeightFormat(RNNWeightFormat::LDGOI);
+  };
+  if (is_gru) {
+    auto gru = DynCast<GRUInst>(rnn);
+    set_attr(gru);
+    gru->SetGateOrder(RNNGateOrder::URO);
+  } else {
+    set_attr(DynCast<RNNInst>(rnn));
+  }
+  return {Def{rnn, 0}, Def{rnn, 1}};
 }
 
 static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
@@ -1568,8 +1578,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     case ONNXExtOpCode::HGENGINE: {
       return ConvertHgEngine(onnx_inst, builder);
     }
+    case ONNXExtOpCode::RNN:
     case ONNXExtOpCode::GRU: {
-      return ConvertGRU(onnx_inst, builder);
+      return ConvertRNN(onnx_inst, builder);
     }
     case ONNXExtOpCode::LSTM: {
       return ConvertLSTM(onnx_inst, builder);

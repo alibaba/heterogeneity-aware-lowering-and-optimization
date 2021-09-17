@@ -486,19 +486,22 @@ def ONNX_HgDequant : TFExtension<"HgDequant"> {
   ];
 }
 
-def ONNX_LSTM : ONNXExtension<"LSTM"> {
-  let extension_attr_ = [
+defvar RNN_attrs = [
     ExtensionAttr<"hidden_size", Integer, "1">,
     ExtensionAttr<"layout", Integer, "0">,
     ExtensionAttr<"direction", String, "\"FORWARD\"">
-  ];
+];
+
+def ONNX_LSTM : ONNXExtension<"LSTM"> {
+  let extension_attr_ = RNN_attrs;
 }
 
 def ONNX_GRU : ONNXExtension<"GRU"> {
-  let extension_attr_ = [
-    ExtensionAttr<"hidden_size", Integer, "1">,
-    ExtensionAttr<"layout", Integer, "0">,
-    ExtensionAttr<"direction", String, "\"FORWARD\"">,
+  let extension_attr_ = !listconcat(RNN_attrs, [
     ExtensionAttr<"linear_before_reset", Integer, "0">,
-  ];
+  ]);
+}
+
+def ONNX_RNN : ONNXExtension<"RNN"> {
+  let extension_attr_ = RNN_attrs;
 }

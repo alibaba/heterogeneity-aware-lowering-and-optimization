@@ -174,4 +174,49 @@ void GenericCXXCodeGen::RunOnInstruction(GRUInst* inst) {
   ir_mapping_[Def(inst, 1)] = rets[1];
 }
 
+void GenericCXXCodeGen::RunOnInstruction(RNNInst* inst) {
+  const Def& x = inst->GetOperand(LSTM_ARG_X_IDX);
+  const Def& w = inst->GetOperand(LSTM_ARG_W_IDX);
+  const Def& r = inst->GetOperand(LSTM_ARG_R_IDX);
+  const Def& b = inst->GetOperand(LSTM_ARG_B_IDX);
+  const Def& sequence_lens = inst->GetOperand(LSTM_ARG_SEQUENCE_LENGTH_IDX);
+
+  size_t num_ops = inst->GetNumOfOperands();
+
+  ir_mapping_[Def::GetUndefined()] = CXXValue("nullptr", CXXType("void"));
+
+  const Def& initial_h = num_ops > LSTM_ARG_INITIAL_H_IDX
+                             ? inst->GetOperand(LSTM_ARG_INITIAL_H_IDX)
+                             : Def::GetUndefined();
+
+  CXXValue op_x = ir_mapping_[x];
+  CXXValue op_w = ir_mapping_[w];
+  CXXValue op_r = ir_mapping_[r];
+  CXXValue op_b = ir_mapping_[b];
+  CXXValue op_sequence_lens = ir_mapping_[sequence_lens];
+  CXXValue op_initial_h = ir_mapping_[initial_h];
+
+  uint32_t hidden_size = inst->GetHiddenSize();
+
+  std::vector<CXXValue> rets;
+  rets.emplace_back(inst->GetName(),
+                    TensorTypeToCXXType(inst->GetResultsTypes()[0], false));
+  rets.emplace_back(inst->GetName() + "_h",
+                    TensorTypeToCXXType(inst->GetResultsTypes()[1], false));
+
+  const char* dir = StringifyDirection(inst->GetDirection());
+
+  const char* outputs = "ODLA_RNN_HIDDEN_STATE";
+
+  auto it_format = WeightFormatNames.find(inst->GetWeightFormat());
+  HLCHECK(it_format != WeightFormatNames.end());
+
+  EmitODLACall(rets, "odla_RNN", op_x, it_format->second,
+               EmitShape(w.GetType()), op_w, op_r, op_b, op_sequence_lens,
+               op_initial_h, hidden_size, dir, outputs);
+
+  ir_mapping_[Def(inst, 0)] = rets[0];
+  ir_mapping_[Def(inst, 1)] = rets[1];
+}
+
 } // namespace halo

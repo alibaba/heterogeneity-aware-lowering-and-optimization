@@ -260,6 +260,8 @@ odla_Elu(odla_value input, odla_float32 alpha, const odla_value_id value_id);
   \param initial_h the initial value of the hidden(can be NULL)
   \param hidden_size the size of hidden neurons
   \param direction the directon of network
+  \param linear_before_reset Whether to apply linear transformation before
+  multiplying by the output of reset gate
   \param outputs speicify needed option outputs
   \param value_ids an array of values ids (can be NULL)
 
@@ -455,6 +457,33 @@ odla_PRelu(odla_value input, odla_value slope, const odla_value_id value_id);
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Relu(odla_value input, const odla_value_id value_id);
+
+//! \brief Compute a one-layer RNN
+/*!
+  RNN computes one-layer Recurrent Neuron Network. The output values are
+  determined by \p outputs.
+
+  \param input the input value
+  \param weight_format the data layout of weights
+  \param weight_dims the dims of weights
+  \param W the weights for gates. Assuming layout of [in, out, forget, cell]
+  \param R the recurrence weight
+  \param B the optional bias
+  \param sequence_lens the sequence length
+  \param initial_h the initial value of the hidden(can be NULL)
+  \param hidden_size the size of hidden neurons
+  \param direction the directon of network
+  \param outputs speicify needed option outputs
+  \param value_ids an array of values ids (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_values ODLA_API_CALL
+odla_RNN(odla_value input, odla_rnn_weight_format weight_format,
+         odla_value_shape weight_dims, odla_value W, odla_value R, odla_value B,
+         odla_value sequence_lens, odla_value initial_h, odla_int32 hidden_size,
+         odla_rnn_direction direction, odla_rnn_outputs outputs,
+         const odla_value_ids value_id);
 
 //! \brief Region of Interest align
 /*!
