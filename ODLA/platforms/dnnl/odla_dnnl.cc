@@ -1691,6 +1691,13 @@ odla_value odla_Softmax(odla_value input, odla_int32 axis,
   return v;
 }
 
+odla_value odla_LogSoftmax(odla_value input, odla_int32 axis,
+                           const odla_value_id id) {
+  auto softmax_v = odla_Softmax(input, axis, nullptr);
+  auto v = odla_Log(softmax_v, id);
+  return v;
+}
+
 template <typename T>
 static void DoHardmax(const int* max_val_indices, T* output_ptr, int axis,
                       const odla_value_shape& shape) {
