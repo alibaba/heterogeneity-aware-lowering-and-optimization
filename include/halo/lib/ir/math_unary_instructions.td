@@ -27,8 +27,8 @@ let cat_ = cat_math_unary,
   def IsNaN : Inst<"The unary operation returns coefficient of the element-wise not-a-number of X1">;
 
   def IsInf : Inst<"The unary operation returns coefficient of the element-wise not-a-number of X1">{
-    let attrs_ = [Attr<"whether detect negative infinity", Integer, "detect_negative", "1">,
-                  Attr<"whether detect positive infinity", Integer, "detect_positive", "1">];
+    let attrs_ = [Attr<"whether detect negative infinity", Bool, "detect_negative", "true">,
+                  Attr<"whether detect positive infinity", Bool, "detect_positive", "true">];
   }
 
   def Abs : Inst<"The unary opertion returns abs(X1), element-wise.">;

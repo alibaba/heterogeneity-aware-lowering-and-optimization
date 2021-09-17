@@ -1088,16 +1088,15 @@ odla_value odla_IsNaN(odla_value input, const odla_value_id value_id) {
   return odla_unary_eltwise(alg_unary_eltwise::isnan, input, value_id);
 }
 
-odla_value odla_IsInf(odla_value input, const odla_value_id value_id) {
-  return odla_unary_eltwise(alg_unary_eltwise::isinf, input, value_id);
-}
-
-odla_value odla_IsInf_Pos(odla_value input, const odla_value_id value_id) {
-  return odla_unary_eltwise(alg_unary_eltwise::isinf_pos, input, value_id);
-}
-
-odla_value odla_IsInf_Neg(odla_value input, const odla_value_id value_id) {
-  return odla_unary_eltwise(alg_unary_eltwise::isinf_neg, input, value_id);
+odla_value odla_IsInf(odla_value input, odla_bool detect_pos,
+                      odla_bool detect_neg, const odla_value_id value_id) {
+  if (detect_pos && detect_neg) {
+    return odla_unary_eltwise(alg_unary_eltwise::isinf, input, value_id);
+  } else if (detect_pos) {
+    return odla_unary_eltwise(alg_unary_eltwise::isinf_pos, input, value_id);
+  } else if (detect_neg) {
+    return odla_unary_eltwise(alg_unary_eltwise::isinf_neg, input, value_id);
+  }
 }
 
 odla_value odla_Cos(odla_value input, const odla_value_id value_id) {

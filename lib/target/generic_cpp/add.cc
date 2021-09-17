@@ -207,16 +207,9 @@ void GenericCXXCodeGen::RunOnInstruction(IsInfInst* inst) {
   const Def& lhs = inst->GetOperand(0);
   CXXValue op0 = ir_mapping_[lhs];
   CXXValue ret(inst->GetName(), op0.type);
-  int check_neg = inst->GetDetectNegative();
-  int check_pos = inst->GetDetectPositive();
-  if (check_neg == 1 && check_pos == 1) {
-    EmitODLACall(ret, "odla_IsInf", op0);
-  } else if (check_neg == 1) {
-    EmitODLACall(ret, "odla_IsInf_Neg", op0);
-  } else if (check_pos == 1) {
-    EmitODLACall(ret, "odla_IsInf_Pos", op0);
-  }
-
+  auto check_pos = inst->GetDetectPositive();
+  auto check_neg = inst->GetDetectNegative();
+  EmitODLACall(ret, "odla_IsInf", op0, check_pos, check_neg);
   ir_mapping_[*inst] = ret;
 }
 
