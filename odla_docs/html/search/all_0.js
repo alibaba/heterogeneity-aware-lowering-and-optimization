@@ -140,7 +140,7 @@ var searchData=
   ['odla_5finvalid_5fparam_137',['ODLA_INVALID_PARAM',['../odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a5b894b19f9456cae708edc778f63218f',1,'odla_common.h']]],
   ['odla_5finverse_138',['odla_Inverse',['../odla__ops__math_8h.html#a6d311a18906a9fad09bc95639d0d857f',1,'odla_ops_math.h']]],
   ['odla_5fios_139',['ODLA_IOS',['../odla__ops__nn_8h.html#a54eaa7020ac01fc2a354d4fef9313a62a2497359cd68c7f81f24bd947fbd3746b',1,'odla_ops_nn.h']]],
-  ['odla_5fisinf_140',['odla_IsInf',['../odla__ops__math_8h.html#ac77e6dce5db1e3c2475d491b2c8c710d',1,'odla_ops_math.h']]],
+  ['odla_5fisinf_140',['odla_IsInf',['../odla__ops__math_8h.html#a414d62f9274e108c20d4b9dac00ec318',1,'odla_ops_math.h']]],
   ['odla_5fisnan_141',['odla_IsNaN',['../odla__ops__math_8h.html#ac2e3227d8a5f30a091a581491d93fc08',1,'odla_ops_math.h']]],
   ['odla_5fitem_5ftype_142',['odla_item_type',['../odla__compute_8h.html#a6be789aa7177278446e347afcfb9aa0b',1,'odla_compute.h']]],
   ['odla_5fitem_5fvalue_143',['odla_item_value',['../odla__compute_8h.html#ad4d602ac28a58bbb9e4bd8bb8ea704b2',1,'odla_compute.h']]],
