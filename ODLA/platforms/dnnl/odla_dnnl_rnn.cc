@@ -210,14 +210,13 @@ odla_values odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
   return {.size = 3, .values = {ret, ret_h, ret_c}};
 }
 
-odla_values odla_GRU(odla_value input, odla_rnn_weight_format weight_format,
-                     odla_rnn_gate_order gate_order,
-                     odla_value_shape weight_dims, odla_value W, odla_value R,
-                     odla_value B, odla_value sequence_lens,
-                     odla_value initial_h, odla_int32 hidden_size,
-                     odla_rnn_direction direction,
-                     odla_bool linear_before_reset, odla_rnn_outputs outputs,
-                     const odla_value_ids value_ids) {
+static odla_values RNNBase(
+    bool is_gru, odla_value input, odla_rnn_weight_format weight_format,
+    odla_rnn_gate_order gate_order, const odla_value_shape& weight_dims,
+    odla_value W, odla_value R, odla_value B, odla_value sequence_lens,
+    odla_value initial_h, odla_int32 hidden_size, odla_rnn_direction direction,
+    odla_bool linear_before_reset, odla_rnn_outputs outputs,
+    const odla_value_ids& value_ids) {
   dnnl::rnn_direction dir;
   int d = 1;
   std::tie(dir, d) = GetDirection(direction);
@@ -228,7 +227,7 @@ odla_values odla_GRU(odla_value input, odla_rnn_weight_format weight_format,
   auto t = input->shape.dims[0]; // sequence.
   const auto n = input->shape.dims[1];
   const auto slc = input->shape.dims[2];
-  constexpr int num_gates = 3;
+  int num_gates = is_gru ? 3 : 1;
   assert(d == W->shape.dims[0]);
   assert(W->shape.dims[1] == num_gates * hidden_size);
   assert(W->shape.dims[2] == slc);
@@ -268,18 +267,26 @@ odla_values odla_GRU(odla_value input, odla_rnn_weight_format weight_format,
                                             dnnl::memory::format_tag::ldgo)
                        : nil;
   dnnl::primitive prim;
-  if (linear_before_reset != 0) {
-    dnnl::lbr_gru_forward::desc desc(dnnl::prop_kind::forward_inference, dir,
-                                     src_md, src_iter_desc, w_desc, w_it_desc,
-                                     bias_desc, ret_md, ret_it_md);
-    auto pd = dnnl::lbr_gru_forward::primitive_desc(desc, g_comp->eng);
-    prim = dnnl::lbr_gru_forward(pd);
+  if (is_gru) {
+    if (linear_before_reset != 0) {
+      dnnl::lbr_gru_forward::desc desc(dnnl::prop_kind::forward_inference, dir,
+                                       src_md, src_iter_desc, w_desc, w_it_desc,
+                                       bias_desc, ret_md, ret_it_md);
+      auto pd = dnnl::lbr_gru_forward::primitive_desc(desc, g_comp->eng);
+      prim = dnnl::lbr_gru_forward(pd);
+    } else {
+      dnnl::gru_forward::desc desc(dnnl::prop_kind::forward_inference, dir,
+                                   src_md, src_iter_desc, w_desc, w_it_desc,
+                                   bias_desc, ret_md, ret_it_md);
+      auto pd = dnnl::gru_forward::primitive_desc(desc, g_comp->eng);
+      prim = dnnl::gru_forward(pd);
+    }
   } else {
-    dnnl::gru_forward::desc desc(dnnl::prop_kind::forward_inference, dir,
-                                 src_md, src_iter_desc, w_desc, w_it_desc,
-                                 bias_desc, ret_md, ret_it_md);
-    auto pd = dnnl::gru_forward::primitive_desc(desc, g_comp->eng);
-    prim = dnnl::gru_forward(pd);
+    dnnl::vanilla_rnn_forward::desc desc(
+        dnnl::prop_kind::forward_inference, dnnl::algorithm::eltwise_tanh, dir,
+        src_md, src_iter_desc, w_desc, w_it_desc, bias_desc, ret_md, ret_it_md);
+    auto pd = dnnl::vanilla_rnn_forward::primitive_desc(desc, g_comp->eng);
+    prim = dnnl::vanilla_rnn_forward(pd);
   }
 
   auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
@@ -359,4 +366,28 @@ odla_values odla_GRU(odla_value input, odla_rnn_weight_format weight_format,
   auto ret_h = CreateValue(ret_h_mem, ret_iter_shape, value_ids.value_ids[1]);
 
   return {.size = 2, .values = {ret, ret_h}};
+}
+
+odla_values odla_GRU(odla_value input, odla_rnn_weight_format weight_format,
+                     odla_rnn_gate_order gate_order,
+                     odla_value_shape weight_dims, odla_value W, odla_value R,
+                     odla_value B, odla_value sequence_lens,
+                     odla_value initial_h, odla_int32 hidden_size,
+                     odla_rnn_direction direction,
+                     odla_bool linear_before_reset, odla_rnn_outputs outputs,
+                     const odla_value_ids value_ids) {
+  return RNNBase(true, input, weight_format, gate_order, weight_dims, W, R, B,
+                 sequence_lens, initial_h, hidden_size, direction,
+                 linear_before_reset, outputs, value_ids);
+}
+
+odla_values odla_RNN(odla_value input, odla_rnn_weight_format weight_format,
+                     odla_value_shape weight_dims, odla_value W, odla_value R,
+                     odla_value B, odla_value sequence_lens,
+                     odla_value initial_h, odla_int32 hidden_size,
+                     odla_rnn_direction direction, odla_rnn_outputs outputs,
+                     const odla_value_ids value_ids) {
+  return RNNBase(false, input, weight_format, ODLA_RNN_URO, weight_dims, W, R,
+                 B, sequence_lens, initial_h, hidden_size, direction, false,
+                 outputs, value_ids);
 }

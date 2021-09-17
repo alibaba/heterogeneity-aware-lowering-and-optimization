@@ -27,5 +27,5 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_simple_rnn_defaults | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_simple_rnn_defaults_dnnl.cc.tmp.main.cc.in"

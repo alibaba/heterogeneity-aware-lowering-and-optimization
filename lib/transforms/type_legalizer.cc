@@ -1186,6 +1186,10 @@ static void RunOnInstruction(GRUInst* inst) {
   RunOnRNNBase(inst, inst->GetLayout());
 }
 
+static void RunOnInstruction(RNNInst* inst) {
+  RunOnRNNBase(inst, inst->GetLayout());
+}
+
 bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
   // Dedup names.
