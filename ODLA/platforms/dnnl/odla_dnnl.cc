@@ -1691,6 +1691,27 @@ odla_value odla_Softmax(odla_value input, odla_int32 axis,
   return v;
 }
 
+odla_value odla_LogSoftmax(odla_value input, odla_int32 axis,
+                           const odla_value_id id) {
+  const auto& dims = input->shape;
+  auto type = input->mem.get_desc().data_type();
+  axis = axis < 0 ? dims.size - 1 : axis;
+  dnnl::memory::desc input_md = getMemoryDesc(dims, type);
+  auto ret_md = input->mem.get_desc();
+  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
+
+  auto sm_desc = dnnl::logsoftmax_forward::desc(
+      dnnl::prop_kind::forward_inference, input_md, axis);
+  auto pd = dnnl::logsoftmax_forward::primitive_desc(sm_desc, g_comp->eng);
+  auto prim = dnnl::logsoftmax_forward(pd);
+
+  odla_value v = CreateValue(ret_mem, input->shape, id);
+  add_op(prim, {{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, ret_mem}});
+  InterpretIfNeeded();
+
+  return v;
+}
+
 template <typename T>
 static void DoHardmax(const int* max_val_indices, T* output_ptr, int axis,
                       const odla_value_shape& shape) {

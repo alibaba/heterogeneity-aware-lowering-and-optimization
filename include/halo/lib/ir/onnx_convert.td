@@ -389,6 +389,7 @@ def ONNX_Slice : ONNXExtension<"Slice"> {
 let attr_mapping_ = [AttributeMapping<"axis", "axis", "-1">] in {
   def ONNX_Hardmax : OpMapping<"Hardmax", Hardmax>;
   def ONNX_Softmax : OpMapping<"Softmax", Softmax>;
+  def ONNX_LogSoftmax : OpMapping<"LogSoftmax", LogSoftmax>;
 }
 
 def ONNX_Split : ONNXExtension<"Split"> {
