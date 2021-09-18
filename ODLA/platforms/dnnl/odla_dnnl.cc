@@ -43,6 +43,8 @@
 enum class alg_unary_eltwise {
   isnan,
   isinf,
+  isinf_pos,
+  isinf_neg,
   abs,
   acos,
   asin,
@@ -1021,6 +1023,12 @@ static void unary_eltwise_bool(alg_unary_eltwise alg, void* dst,
     case alg_unary_eltwise::isinf:
       out = in.isInf();
       break;
+    case alg_unary_eltwise::isinf_neg:
+      out = in.isInf() && (in < 0);
+      break;
+    case alg_unary_eltwise::isinf_pos:
+      out = in.isInf() && (in > 0);
+      break;
     default:
       assert(0);
   }
@@ -1031,7 +1039,9 @@ static odla_value odla_unary_eltwise(alg_unary_eltwise alg, odla_value input,
   // Extract type and size
   auto elem_type = input->elem_type;
   bool ret_bool =
-      (alg == alg_unary_eltwise::isnan || alg == alg_unary_eltwise::isinf);
+      (alg == alg_unary_eltwise::isnan || alg == alg_unary_eltwise::isinf ||
+       alg == alg_unary_eltwise::isinf_neg ||
+       alg == alg_unary_eltwise::isinf_pos);
   if (ret_bool) {
     elem_type = ODLA_BOOL;
   }
@@ -1078,9 +1088,15 @@ odla_value odla_IsNaN(odla_value input, const odla_value_id value_id) {
   return odla_unary_eltwise(alg_unary_eltwise::isnan, input, value_id);
 }
 
-odla_value odla_IsInf(odla_value input, odla_bool detect_negative,
-                      odla_bool detect_positive, const odla_value_id value_id) {
-  return odla_unary_eltwise(alg_unary_eltwise::isinf, input, value_id);
+odla_value odla_IsInf(odla_value input, odla_bool detect_pos,
+                      odla_bool detect_neg, const odla_value_id value_id) {
+  if (detect_pos && detect_neg) {
+    return odla_unary_eltwise(alg_unary_eltwise::isinf, input, value_id);
+  } else if (detect_pos) {
+    return odla_unary_eltwise(alg_unary_eltwise::isinf_pos, input, value_id);
+  } else if (detect_neg) {
+    return odla_unary_eltwise(alg_unary_eltwise::isinf_neg, input, value_id);
+  }
 }
 
 odla_value odla_Cos(odla_value input, const odla_value_id value_id) {

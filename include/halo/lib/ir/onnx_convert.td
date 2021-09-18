@@ -27,8 +27,8 @@ def ONNX_Sign: OpMapping<"Sign",Sign>;
 
 def ONNX_IsInf: OpMapping<"IsInf", IsInf>{
   let attr_mapping_ = [
-    AttributeMapping<"detect_negative", "detect_negative", "1">,
-    AttributeMapping<"detect_positive", "detect_positive", "1">
+    AttributeMapping<"detect_negative", "detect_negative", "true">,
+    AttributeMapping<"detect_positive", "detect_positive", "true">
   ];
 }
 

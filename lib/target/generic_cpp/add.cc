@@ -204,7 +204,13 @@ void GenericCXXCodeGen::RunOnInstruction(IsNaNInst* inst) {
 }
 
 void GenericCXXCodeGen::RunOnInstruction(IsInfInst* inst) {
-  RunOnUnaryInstruction(inst);
+  const Def& lhs = inst->GetOperand(0);
+  CXXValue op0 = ir_mapping_[lhs];
+  CXXValue ret(inst->GetName(), op0.type);
+  auto check_pos = inst->GetDetectPositive();
+  auto check_neg = inst->GetDetectNegative();
+  EmitODLACall(ret, "odla_IsInf", op0, check_pos, check_neg);
+  ir_mapping_[*inst] = ret;
 }
 
 void GenericCXXCodeGen::RunOnInstruction(SignInst* inst) {
