@@ -392,6 +392,8 @@ let attr_mapping_ = [AttributeMapping<"axis", "axis", "-1">] in {
   def ONNX_LogSoftmax : OpMapping<"LogSoftmax", LogSoftmax>;
 }
 
+def ONNX_Softplus : OpMapping<"Softplus", Softplus>;
+
 def ONNX_Split : ONNXExtension<"Split"> {
   let extension_attr_ = [
     ExtensionAttr<"split", IntegerList, "{}">,

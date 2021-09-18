@@ -568,6 +568,18 @@ odla_Sigmoid(odla_value input, const odla_value_id value_id);
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Softmax(odla_value input, odla_int32 axis, const odla_value_id value_id);
 
+//! \brief Softplus activation
+/*!
+  Softplus computes the Softplus activation as y = ln(exp(x) + 1)
+
+  \param input the input value
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Softplus(odla_value input, const odla_value_id value_id);
+
 //! \brief Tanh activation
 /*!
   Tanh computes the tanh activation as (1 - e^{-2x})/(1 + e^{-2x})
