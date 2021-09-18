@@ -51,6 +51,7 @@ set(SRCS
   hardsigmoid.cc
   slice.cc
   softmax.cc
+  softplus.cc
   tile.cc
   topk.cc
   transpose.cc
