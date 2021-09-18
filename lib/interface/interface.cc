@@ -131,14 +131,14 @@ int Compile(ModelFormat format, const std::vector<const void*>& model_defs,
 }
 
 HL_API_EXPORT
-int Compile(ModelFormat format, const std::vector<const char*>& models,
+int Compile(halo::ModelFormat format, const std::vector<const char*>& models,
             const std::vector<size_t>& model_sizes, const std::string& target,
             int batch, const std::vector<std::string>& input_shapes,
             const std::vector<std::string>& inputs,
             const std::vector<std::string>& outputs,
             const CXXCodeGenOpts& cg_opts,
             const std::string& main_output_file_name, ModelInfo* model_info,
-            bool is_compile_model = true) {
+            bool is_compile_model) {
   GlobalContext ctx;
   Function* func;
   std::unique_ptr<Module> m;
@@ -178,13 +178,36 @@ int CompileTFGraph(const char* pb_buf, size_t pb_buf_size,
 } // namespace halo
 
 // NOLINTNEXTLINE
-static std::vector<std::string> ToStrings(size_t n, const char* strs[]) {
+static std::vector<std::string> ToStrings(size_t n, const char* const strs[]) {
   std::vector<std::string> strs_v;
   strs_v.reserve(n);
   for (unsigned i = 0; i < n; ++i) {
     strs_v.push_back(std::string(strs[i])); // NOLINT
   }
   return strs_v;
+}
+
+HL_API_EXPORT
+int halo_Compile(halo::ModelFormat model_format, unsigned num_models,
+                 const char* const models[], size_t const model_sizes[],
+                 const char* target, int batch, unsigned num_input_shapes,
+                 const char* const input_shapes[], unsigned num_inputs,
+                 const char* const inputs[], unsigned num_outputs,
+                 const char* const outputs[], const HaloCodeGenOpts* cg_opts,
+                 const char* main_output_file, HaloModelInfo* model_info) {
+  const halo::CXXCodeGenOpts& opts =
+      *reinterpret_cast<const halo::CXXCodeGenOpts*>(cg_opts);
+  std::vector<const char*> models_data(num_models);
+  std::vector<size_t> models_sizes(num_models);
+  for (unsigned i = 0; i < num_models; ++i) {
+    models_data[i] = models[i];
+    models_sizes[i] = model_sizes[i];
+  }
+  return halo::Compile(
+      model_format, models_data, models_sizes, std::string(target), batch,
+      ToStrings(num_inputs, input_shapes), ToStrings(num_inputs, inputs),
+      ToStrings(num_outputs, outputs), opts, std::string(main_output_file),
+      model_info, true);
 }
 
 HL_API_EXPORT
@@ -195,23 +218,8 @@ int halo_CompileTFPbGraph(const char* pb_buf, size_t pb_buf_size,
                           const char* main_output_file,
                           HaloModelInfo* model_info) {
   const halo::CXXCodeGenOpts& opts =
-      *(halo::CXXCodeGenOpts*)(cg_opts); // NOLINT
+      *reinterpret_cast<const halo::CXXCodeGenOpts*>(cg_opts);
   return halo::CompileTFGraph(pb_buf, pb_buf_size,
-                              ToStrings(num_input_shapes, input_shapes), batch,
-                              opts, std::string(main_output_file), model_info);
-}
-
-HL_API_EXPORT
-// NOLINTNEXTLINE
-int halo_CompileTFGraphdef(const void* graphdef, size_t num_input_shapes,
-                           const char* input_shapes[], int batch,
-                           const HaloCodeGenOpts* cg_opts,
-                           const char* main_output_file,
-                           HaloModelInfo* model_info) {
-  const halo::CXXCodeGenOpts& opts =
-      *(halo::CXXCodeGenOpts*)(cg_opts); // NOLINT
-
-  return halo::CompileTFGraph(graphdef,
                               ToStrings(num_input_shapes, input_shapes), batch,
                               opts, std::string(main_output_file), model_info);
 }

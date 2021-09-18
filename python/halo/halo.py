@@ -19,7 +19,7 @@ import subprocess
 
 LIB_HALO = "libhalo.so"
 lib_halo = CDLL(LIB_HALO)
-CompileTFPbGraph = lib_halo.halo_CompileTFPbGraph
+Compile = lib_halo.halo_Compile
 AnalyzeTFPbGraph = lib_halo.halo_AnalyzeTFPbGraph
 
 
@@ -61,23 +61,33 @@ class CXXCodeGenOpts(Structure):
     ]
 
 
-# int halo_CompileTFPbGraph(const char* pb_buf, size_t pb_buf_size,
-#                          size_t num_input_shapes, const char* input_shapes[],
-#                          int batch, const HaloCodeGenOpts* cg_opts,
-#                          const char* main_output_file,
-#                          HaloModelInfo* model_info) {
+"""
+int halo_Compile(halo::ModelFormat model_format, unsigned num_models,
+                 const char* const models[], size_t const model_sizes[],
+                 const char* target, int batch, unsigned num_input_shapes,
+                 const char* const input_shapes[], unsigned num_inputs,
+                 const char* const inputs[], unsigned num_outputs,
+                 const char* const outputs[], const HaloCodeGenOpts* cg_opts,
+                 const char* main_output_file, HaloModelInfo* model_info);
+"""
 
-CompileTFPbGraph.argtypes = [
-    c_char_p,
-    c_size_t,
-    c_size_t,
-    c_void_p,
-    c_int32,
-    c_void_p,
-    c_char_p,
-    c_void_p,
+Compile.argtypes = [
+    c_int, # model_format
+    c_uint, # num_models
+    c_void_p, # models
+    c_void_p, #model_sizes
+    c_char_p, # target
+    c_int, #batch
+    c_uint, # num_input_shapes
+    c_void_p, # input_shapes
+    c_uint, # num_inputs
+    c_void_p, # inputs
+    c_uint, # num_outputs
+    c_void_p, #outputs
+    c_void_p, # cg_opts
+    c_char_p, # filename
+    c_void_p, # model_info
 ]
-
 
 def exec(args):
     proc = subprocess.run(args)
@@ -86,7 +96,7 @@ def exec(args):
         exit(proc.returncode)
 
 
-def CompileModel(model_file, batch):
+def CompileModel(model_file, batch, format):
     output_file = tempfile.mktemp(".cc")
     output_bin = Path(output_file).with_suffix(".bin")
     odla_lib = cast(create_string_buffer(b""), c_char_p)
@@ -95,18 +105,45 @@ def CompileModel(model_file, batch):
     opts.channel_order = 1
     opts.api = 1
     opts.emit_inference_func_sig = True
+    format_vals = {
+        "TENSORFLOW": 0,
+        "CAFFE": 1,
+        "ONNX": 2,
+        "TFLITE": 3,
+        "MXNET": 4,
+        "INVALID": 5,
+    }
+    format_val = format_vals[format]
+    model_data = []
+    model_sizes = []
     with open(model_file, "rb") as f:
         bytes = f.read()
+        model_data.append(bytes)
+        model_sizes.append(len(bytes))
+    model_num = len(model_data)
     num_input_shapes = 0
+    num_inputs = 0
+    inputs = c_void_p(0)
+    outputs = c_void_p(0)
+    num_outputs = 0
     input_shapes = c_void_p(0)
-    CompileTFPbGraph(
-        bytes,
-        len(bytes),
+    target = "cxx".encode("utf-8")
+    output_filename = output_file.encode("utf-8")
+    Compile(
+        format_val,
+        model_num,
+        (c_char_p * model_num)(*model_data),
+        (c_size_t * model_num)(*model_sizes),
+        target,
+        batch,
         num_input_shapes,
         input_shapes,
-        batch,
+        num_inputs,
+        inputs,
+        num_outputs,
+        outputs,
         pointer(opts),
-        output_file.encode("utf-8"),
+        output_filename,
         0,
     )
     return [output_file, output_bin]
@@ -138,7 +175,8 @@ def AnalyzeModel(model_file, batch):
 def CompileODLAModel(files, device):
     cc_file = files[0]
     bin_file = files[1]
-    device = "odla_popart"
+    if not device or device == 'auto':
+        device = "odla_dnnl"
     so_file = Path(files[0]).with_suffix(".so")
     exec(
         [
