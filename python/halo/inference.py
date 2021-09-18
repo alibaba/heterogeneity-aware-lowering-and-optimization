@@ -17,11 +17,25 @@
 from halo import halo
 from halo import odla
 from pathlib import Path
+import os
 
+debug = os.environ.get('CANEL_DEBUG')
+debug = debug is not None and debug != '0'
 
 class Inference:
-    def __init__(self, model_file, device, batch, format="tensorflow"):
+    def __init__(self, model_file, device, batch, format):
         self.model_file = model_file
+        if not format:
+            suffixes = {
+                ".onnx": "ONNX",
+                ".pb": "TENSORFLOW",
+                ".tflite": "TFLITE",
+                ".caffemodel": "CAFFE",
+            }
+            suffixes.setdefault("INVALID")
+            suffix = Path(model_file).suffix
+            format = suffixes[suffix]
+        self.format = format
         self.device = device
         self.batch = batch
         self.model = None
@@ -29,13 +43,15 @@ class Inference:
         self.intermediate_files = []
 
     def __del__(self):
-        print(self.intermediate_files)
+        if debug:
+            print(self.intermediate_files)
         for file in self.intermediate_files:
-            Path(file).unlink()
+            if not debug:
+                Path(file).unlink()
         del self.model
 
     def Initialize(self):
-        files = halo.CompileModel(self.model_file, self.batch)
+        files = halo.CompileModel(self.model_file, self.batch, self.format)
         self.so_file = halo.CompileODLAModel(files, self.device)
         self.intermediate_files = [*files, self.so_file]
         self.model = odla.ODLAModel(self.so_file)

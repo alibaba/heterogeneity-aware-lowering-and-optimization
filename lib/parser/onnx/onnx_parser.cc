@@ -70,7 +70,21 @@ void ONNXParser::Scope::Insert(const std::string& name, const Value& def) {
 Status ONNXParser::Parse(Function* function,
                          const std::vector<const char*>& buffers,
                          const std::vector<size_t>& buffer_sizes) {
-  return Status::ASSERTION;
+  onnx::ModelProto model_def;
+  google::protobuf::io::ArrayInputStream input_stream(buffers[0],
+                                                      buffer_sizes[0]);
+  google::protobuf::io::CodedInputStream coded_stream(&input_stream);
+  coded_stream.SetTotalBytesLimit((2048LL << 20) - 1, 512LL << 20);
+  if (!model_def.ParseFromCodedStream(&coded_stream) ||
+      !model_def.has_graph()) {
+    LOG(ERROR) << "No graph is defined in onnx buffer.";
+    return Status::ASSERTION;
+  }
+  const onnx::GraphProto& graph_def = model_def.graph();
+  bb_builder_ = std::make_unique<BasicBlockBuilder>(function);
+  BasicBlock* bb = bb_builder_->CreateBasicBlock("bb0");
+  armory::Opts opts;
+  return Parse(bb, graph_def, opts);
 }
 
 Status ONNXParser::Parse(Function* function,

@@ -21,22 +21,49 @@ limitations under the License.
 from halo.inference import Inference
 import argparse
 
-def test(model_file, device, batch_size):
+def test(model_file, device, batch_size, format, input_data_files, ref_data_files):
     import numpy as np
-    service = Inference(model_file, device, batch_size)
+    inputs = []
+    ref_outs = []
+    for in_file in input_data_files:
+        inputs.append(np.loadtxt(in_file, dtype=np.float32))
+    for in_file in ref_data_files:
+        ref_outs.append(np.loadtxt(in_file, dtype=np.float32))
+
+    service = Inference(model_file, device, batch_size, format)
     service.Initialize()
-    import numpy
-    for i in range(1, 5):
+
+    for i in range(1, 2):
         print("iteration ", i)
 
-        results = service.Run([np.random.rand(batch_size, 224, 224, 3) * 255.0])
-        print(results)
+        results = service.Run(inputs)
+        for idx, data in enumerate(results):
+            of = "/tmp/out." + str(idx) + ".txt"
+            np.savetxt(of, data, delimiter="\n")
+        ok = np.allclose(ref_outs[idx], results[idx], rtol=1e-3, atol=1e-3)
+        if ok:
+            print("Results Verified")
+        else:
+            print("Incorrect Results")
+            return 1
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", "-m", type=open)
+    parser.add_argument("--model", "-m", type=open, required=True)
     parser.add_argument("--device", "-d", type=str, default="auto")
     parser.add_argument("--batch", "-b", type=int, default="0")
+    parser.add_argument("--format", "-f", type=str, default="")
+    parser.add_argument("--input-data", "-i", nargs="+", type=open)
+    parser.add_argument("--ref-output", "-r", nargs="+", type=open)
+
     args = parser.parse_args()
 
-    test(args.model.name, args.device, args.batch)
+    test(
+        args.model.name,
+        args.device,
+        args.batch,
+        args.format,
+        args.input_data,
+        args.ref_output,
+    )
