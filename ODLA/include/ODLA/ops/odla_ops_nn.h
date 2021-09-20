@@ -74,6 +74,13 @@ typedef enum {
   ODLA_RNN_URO,  /*!< update gate, reset gate, hidden gate */
 } odla_rnn_gate_order;
 
+//! \brief  TF-IDF computation mode
+typedef enum {
+  ODLA_TFIDF_TF,    /*!< term frequency */
+  ODLA_TFIDF_IDF,   /*!< inverse document frequency */
+  ODLA_TFIDF_TFIDF, /*!< the combination of TF and IDF */
+} odla_tf_idf_mode;
+
 //! \brief Avgerage pooling
 /*!
   AveragePool computes the average pooling across the \p input according to
@@ -591,6 +598,32 @@ odla_Softplus(odla_value input, const odla_value_id value_id);
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Tanh(odla_value input, const odla_value_id value_id);
+
+//! \brief TF-IDF vectorization
+/*!
+  TFIDF vectorizes input sequence into a vector.
+
+  \param input the input value
+  \param min_gram_length the minimum gram length to extract
+  \param max_gram_length the maximum gram length to extract
+  \param max_skip_count the maximum items to be skipped
+  \param mode the weighting metric to be used
+  \param pool the grams pool
+  \param gram_counts zero-based starting indices of n-grams in the pool
+  \param output_indices the mapping of gram indices to output tensor
+  \param weights optional weights used when mode is ODLA_TFIDF_IDF or
+  ODLA_TFIDF_TFIDF
+   \param output_shape shape of output
+   \param value_id a unique
+  value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_TFIDFVectorize(
+    odla_value input, odla_int32 min_gram_length, odla_int32 max_gram_length,
+    odla_int32 max_skip_count, odla_tf_idf_mode mode, odla_value pool,
+    odla_value gram_counts, odla_value output_indices, odla_value weights,
+    odla_value_shape output_shape, odla_value_id value_id);
 
 //! \brief ThresholdedRelu activation
 /*!

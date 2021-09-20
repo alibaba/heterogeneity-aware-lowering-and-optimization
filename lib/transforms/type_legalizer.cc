@@ -1190,6 +1190,21 @@ static void RunOnInstruction(RNNInst* inst) {
   RunOnRNNBase(inst, inst->GetLayout());
 }
 
+static void RunOnInstruction(TFIDFVectorizeInst* inst) {
+  const auto& type = inst->GetOperand(0).GetType();
+  if (!type.IsValid()) {
+    return;
+  }
+  auto rank = type.GetNumOfDims();
+  if (rank == 1) {
+    inst->GetResultsTypes()[0] =
+        Type{DataType::FLOAT32, {inst->GetMaxIdx() + 1}};
+  } else {
+    inst->GetResultsTypes()[0] = Type{
+        DataType::FLOAT32, {static_cast<int64_t>(rank), inst->GetMaxIdx() + 1}};
+  }
+}
+
 bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
   // Dedup names.

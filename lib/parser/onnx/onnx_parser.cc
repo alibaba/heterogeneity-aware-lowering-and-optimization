@@ -854,6 +854,25 @@ bool ONNXAttrs::Process<Padding>(const std::string& key, Padding* padding) {
 }
 
 template <>
+bool ONNXAttrs::Process<TFIDFMode>(const std::string& key, TFIDFMode* mode) {
+  if (attr_map_.count(key) == 0) {
+    return false;
+  }
+
+  HLCHECK(attr_map_.at(key).type() == onnx::AttributeProto::STRING);
+  static const std::unordered_map<std::string, TFIDFMode> enum_map{
+      {"TF", TFIDFMode::TF},
+      {"IDF", TFIDFMode::IDF},
+      {"TFIDF", TFIDFMode::TFIDF},
+  };
+
+  *mode = enum_map.count(attr_map_.at(key).s()) != 0
+              ? enum_map.at(attr_map_.at(key).s())
+              : TFIDFMode::INVALID;
+  return true;
+}
+
+template <>
 bool ONNXAttrs::Process<DataType>(const std::string& key, DataType* data_type) {
   if (attr_map_.count(key) == 0) {
     return false;

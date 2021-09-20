@@ -52,6 +52,7 @@ set(SRCS
   slice.cc
   softmax.cc
   softplus.cc
+  tfidf.cc
   tile.cc
   topk.cc
   transpose.cc

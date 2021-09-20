@@ -79,6 +79,7 @@ GenericCXXCodeGen::GenericCXXCodeGen(std::ostringstream& os,
       opts_(opts) {
   SetAPI(opts_.api);
   CXXValue::Reset();
+  ir_mapping_[Def::GetUndefined()] = CXXValue("nullptr", CXXType("void"));
 }
 
 GenericCXXCodeGen::~GenericCXXCodeGen() = default;
