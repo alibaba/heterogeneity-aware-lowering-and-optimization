@@ -76,8 +76,6 @@ void GenericCXXCodeGen::RunOnInstruction(LSTMInst* inst) {
 
   size_t num_ops = inst->GetNumOfOperands();
 
-  ir_mapping_[Def::GetUndefined()] = CXXValue("nullptr", CXXType("void"));
-
   const Def& initial_h = num_ops > LSTM_ARG_INITIAL_H_IDX
                              ? inst->GetOperand(LSTM_ARG_INITIAL_H_IDX)
                              : Def::GetUndefined();

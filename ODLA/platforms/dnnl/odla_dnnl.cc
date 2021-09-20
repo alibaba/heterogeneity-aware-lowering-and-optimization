@@ -2168,3 +2168,119 @@ odla_value odla_Tile(odla_value input, const odla_uint32* repeat,
   v->is_const = true;
   return v;
 }
+
+template <typename Tinput, typename Tpool>
+static void do_tf_idf(int batch, int64_t n, int min_gram, int max_gram,
+                      int max_skip, odla_tf_idf_mode mode, const Tinput* input,
+                      int64_t pool_size, const Tpool* pool, int grams,
+                      const int64_t* gram_indices, int64_t output_mapping_size,
+                      const int64_t* output_mapping, const float* weight,
+                      int64_t output_size, float* output) {
+  typedef struct Node {
+    std::unordered_map<Tpool, std::unique_ptr<Node>> nodes;
+    int64_t idx = -1;
+  } Node;
+  // Build trie for pool.
+  Node root;
+  int64_t idx = 0;
+  for (int gs = 1; gs <= grams; ++gs) {
+    int64_t count_begin = gram_indices[gs - 1];
+    int64_t count_end = (gs == grams) ? pool_size : gram_indices[gs];
+    for (auto pos = count_begin; pos < count_end; pos += gs) {
+      auto curr = &root;
+      for (int seq_len = 0; seq_len < gs; ++seq_len) {
+        auto word = pool[pos + seq_len];
+        if (curr->nodes.count(word) == 0) {
+          curr->nodes[word] = std::make_unique<Node>();
+        }
+        curr = curr->nodes[word].get();
+      }
+      curr->idx = idx++;
+    }
+  }
+
+  // Now to match the grams.
+  for (int b = 0; b < batch; ++b) {
+    for (int64_t start = b * n, end = start + n; start < end; ++start) {
+      for (int skip = 1; skip <= max_skip + 1; ++skip) {
+        for (int len = min_gram; len <= max_gram; ++len) {
+          if (len == 1 && skip > 1) {
+            continue;
+          }
+          auto curr = &root;
+          for (int i = 0; i < len && curr != nullptr; ++i) {
+            if (start + skip * i >= end) {
+              curr = nullptr;
+              break;
+            }
+            const auto& word = input[start + skip * i];
+            if (!curr->nodes.count(word)) {
+              curr = nullptr;
+            } else {
+              curr = curr->nodes[word].get();
+            }
+          }
+          if (curr != nullptr && curr->idx >= 0 &&
+              curr->idx < output_mapping_size) {
+            auto output_idx = output_mapping[curr->idx];
+            if (mode == ODLA_TFIDF_IDF) {
+              output[output_idx] = 1;
+            } else {
+              ++output[output_idx];
+            }
+          }
+        }
+      }
+    }
+    if (mode != ODLA_TFIDF_TF && weight != nullptr) {
+      for (int64_t idx = 0; idx < output_mapping_size; ++idx) {
+        auto output_idx = output_mapping[idx];
+        output[output_idx] *= weight[idx];
+      }
+    }
+    output += output_size;
+  }
+}
+
+odla_value odla_TFIDFVectorize(odla_value input, odla_int32 min_gram_length,
+                               odla_int32 max_gram_length,
+                               odla_int32 max_skip_count, odla_tf_idf_mode mode,
+                               odla_value pool, odla_value gram_counts,
+                               odla_value output_indices, odla_value weight,
+                               odla_value_shape output_shape,
+                               odla_value_id value_id) {
+  auto ret_md = getMemoryDesc(output_shape, ODLA_FLOAT32);
+  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
+  int batch = input->shape.size > 1 ? input->shape.dims[0] : 1;
+  auto n = GetTotalElements(input->shape) / batch;
+  auto out_n = output_shape.dims[output_shape.size - 1];
+  auto output_mapping_size = output_indices->shape.dims[0];
+  float* output = static_cast<float*>(ret_mem.get_data_handle());
+
+  std::function<void()> op = [input, min_gram_length, max_gram_length,
+                              max_skip_count, mode, pool, gram_counts,
+                              output_indices, weight, batch, n, ret_mem, output,
+                              out_n, output_mapping_size]() {
+    const int32_t* input_data =
+        static_cast<const int32_t*>(input->mem.get_data_handle());
+    const float* weight_data = nullptr;
+    if (weight != nullptr) {
+      weight_data = static_cast<const float*>(weight->mem.get_data_handle());
+    }
+    const int64_t* output_mapping =
+        static_cast<const int64_t*>(output_indices->mem.get_data_handle());
+    const int64_t* pool_data =
+        static_cast<const int64_t*>(pool->mem.get_data_handle());
+    int64_t pool_size = pool->shape.dims[0];
+    auto gram_sizes = gram_counts->shape.dims[0];
+    do_tf_idf(batch, n, min_gram_length, max_gram_length, max_skip_count, mode,
+              input_data, pool_size, pool_data, gram_counts->shape.dims[0],
+              static_cast<const int64_t*>(gram_counts->mem.get_data_handle()),
+              output_mapping_size, output_mapping, weight_data, out_n, output);
+  };
+  add_op(op);
+
+  InterpretIfNeeded();
+  odla_value v = CreateValue(ret_mem, output_shape, value_id);
+  return v;
+}

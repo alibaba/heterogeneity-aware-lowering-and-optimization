@@ -74,6 +74,11 @@ inline const DataType& GetAttributeValue(const Attribute& attr) {
   return attr.GetValueAsEnumDataType();
 }
 
+template <>
+inline const TFIDFMode& GetAttributeValue(const Attribute& attr) {
+  return attr.GetValueAsEnumTFIDF();
+}
+
 template <typename T>
 const T& FindAttributeValue(const Instruction& inst, const std::string& name,
                             const T& default_val) {

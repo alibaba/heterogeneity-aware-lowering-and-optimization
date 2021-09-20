@@ -148,3 +148,5 @@ def EnumMergeOrder: EnumValueType<"MergeOrder",
 
 def EnumDirection
     : EnumValueType<"Direction", ["FORWARD", "REVERSE", "BIDIRECTIONAL"]>;
+
+def EnumTFIDF : EnumValueType<"TFIDFMode", ["TF", "IDF", "TFIDF"]>;

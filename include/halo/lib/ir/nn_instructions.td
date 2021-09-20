@@ -84,4 +84,23 @@ let cat_ = cat_nn in {
     ];
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
   }
+
+  def TFIDFVectorize : Inst<"TF-IDF Text Vectorization."> {
+    let attrs_ = [
+      Attr<"Mininum n-gram length.", Integer, "min_gram_length", "1">,
+      Attr<"Maximum n-gram length.", Integer, "max_gram_length", "1">,
+      Attr<"Maximum number of words to be skipped.", Integer, "max_skip", "0">,
+      Attr<"Maximum index", Integer64, "max_idx", "0">,
+      Attr<"Weighting mode", EnumTFIDF, "mode", "INVALID">,
+    ];
+    let ins_ = [
+      Arg<"The input for n-gram extraction",
+          ArgType<[ Integer, Integer64, String ]>>,
+      Arg<"The n-gram pool", MatchArgType<0>>,
+      Arg<"Starting indices of n-grams", ArgType<[I64]>, 1D>,
+      Arg<"Index mapping for output", ArgType<[I64]>, 1D>,
+      OptionalArg<"Weights", ArgType<[F32]>, 1D>,
+    ];
+    let outs_ = [Arg<"The result.", ArgType<[Float]>>];
+  }
 }

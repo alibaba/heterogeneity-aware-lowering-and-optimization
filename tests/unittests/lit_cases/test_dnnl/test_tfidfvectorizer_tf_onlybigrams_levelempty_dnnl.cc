@@ -25,5 +25,5 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_tfidfvectorizer_tf_onlybigrams_levelempty | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_tfidfvectorizer_tf_onlybigrams_levelempty_dnnl.cc.tmp.main.cc.in"

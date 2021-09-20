@@ -508,3 +508,17 @@ def ONNX_GRU : ONNXExtension<"GRU"> {
 def ONNX_RNN : ONNXExtension<"RNN"> {
   let extension_attr_ = RNN_attrs;
 }
+
+def ONNX_TFIDFVec : ONNXExtension<"TfIdfVectorizer"> {
+  let extension_attr_ = [
+    ExtensionAttr<"min_gram_length", Integer, "1">,
+    ExtensionAttr<"max_gram_length", Integer, "1">,
+    ExtensionAttr<"max_skip_count", Integer, "1">,
+    ExtensionAttr<"mode", EnumTFIDF, "INVALID">,
+    ExtensionAttr<"ngram_counts", Integer64List, "{}">,
+    ExtensionAttr<"ngram_indexes", Integer64List, "{}">,
+    ExtensionAttr<"pool_int64s", Integer64List, "{}">,
+    ExtensionAttr<"pool_strings", StringList, "{}">,
+    ExtensionAttr<"weights", FloatList, "{}">,
+  ];
+}

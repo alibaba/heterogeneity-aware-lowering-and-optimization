@@ -1181,6 +1181,61 @@ static std::vector<Def> ConvertHgDeQuant(const ONNXExtensionInst* ext,
   return {input};
 }
 
+static std::vector<Def> ConvertTFIDFVec(const ONNXExtensionInst* ext,
+                                        IRBuilder* builder) {
+  int min_gram = FindAttributeValue(*ext, "min_gram_length", 1);
+  int max_gram = FindAttributeValue(*ext, "max_gram_length", 1);
+  int max_skip = FindAttributeValue(*ext, "max_skip_count", 0);
+  const auto& mode = FindAttributeValue(*ext, "mode", TFIDFMode::INVALID);
+  const auto& ngram_counts =
+      FindAttributeValue<std::vector<int64_t>>(*ext, "ngram_counts", {});
+  const auto& ngram_indexes =
+      FindAttributeValue<std::vector<int64_t>>(*ext, "ngram_indexes", {});
+  const auto& pool_int =
+      FindAttributeValue<std::vector<int64_t>>(*ext, "pool_int64s", {});
+  const auto& pool_str =
+      FindAttributeValue<std::vector<std::string>>(*ext, "pool_strings", {});
+
+  const auto& weights =
+      FindAttributeValue<std::vector<float>>(*ext, "weights", {});
+  HLCHECK(pool_int.empty() ^ pool_str.empty());
+  auto n = pool_int.empty() ? pool_str.size() : pool_int.size();
+  HLCHECK(weights.empty() || weights.size() == n);
+  ConstantBuilder c_builder(ext->GetParent()->GetParent());
+
+  const auto& name = ext->GetName();
+  auto op_pool = c_builder.CreateConstant(
+      name + "_pool", Type{DataType::INT64, {static_cast<int64_t>(n)}},
+      pool_int.data());
+  auto op_cnts = c_builder.CreateConstant(
+      name + "_cnts",
+      Type{DataType::INT64, {static_cast<int64_t>(ngram_counts.size())}},
+      ngram_counts.data());
+  auto op_indices = c_builder.CreateConstant(
+      name + "_indices",
+      Type{DataType::INT64, {static_cast<int64_t>(ngram_indexes.size())}},
+      ngram_indexes.data());
+  auto op_weight =
+      weights.empty()
+          ? Def::GetUndefined()
+          : Def{c_builder.CreateConstant(
+                    name + "_weight",
+                    Type{DataType::FLOAT32, {static_cast<int64_t>(n)}},
+                    weights.data()),
+                0};
+
+  auto new_inst = builder->CreateTFIDFVectorize(
+      ext->GetName(),
+      {ext->GetOperand(0), *op_pool, *op_cnts, *op_indices, op_weight});
+  new_inst->SetMaxGramLength(max_gram);
+  new_inst->SetMinGramLength(min_gram);
+  new_inst->SetMaxSkip(max_skip);
+  new_inst->SetMode(mode);
+  new_inst->SetMaxIdx(
+      *std::max_element(ngram_indexes.begin(), ngram_indexes.end()));
+  return {*new_inst};
+}
+
 static bool FixupTranspose(TransposeInst* inst) {
   if (inst->GetPermutation().empty() &&
       inst->GetOperand(0).GetType().IsValid()) {
@@ -1577,6 +1632,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::HGENGINE: {
       return ConvertHgEngine(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::TFIDFVEC: {
+      return ConvertTFIDFVec(onnx_inst, builder);
     }
     case ONNXExtOpCode::RNN:
     case ONNXExtOpCode::GRU: {
