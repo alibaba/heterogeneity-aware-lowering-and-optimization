@@ -27,6 +27,7 @@ let is_integer_ = 1 in {
   def Integer64 : ValueType<64, "int64_t">;
   def BoolList : ValueType<1, "std::vector<bool>"> { let is_array_ = 1; }
   def IntegerList : ValueType<32, "std::vector<int>"> { let is_array_ = 1; }
+  def Integer64List : ValueType<64, "std::vector<int64_t>"> { let is_array_ = 1; }
   def IntegerListList : ValueType<64, "std::vector<std::vector<int64_t>>"> { let is_2d_array_ = 1;}
 }
 
