@@ -39,8 +39,19 @@ inline const std::vector<int>& GetAttributeValue(const Attribute& attr) {
 }
 
 template <>
+inline const std::vector<int64_t>& GetAttributeValue(const Attribute& attr) {
+  return attr.GetValueAsInteger64List();
+}
+
+template <>
 inline const std::vector<float>& GetAttributeValue(const Attribute& attr) {
   return attr.GetValueAsFloatList();
+}
+
+template <>
+inline const std::vector<std::string>& GetAttributeValue(
+    const Attribute& attr) {
+  return attr.GetValueAsStringList();
 }
 
 template <>

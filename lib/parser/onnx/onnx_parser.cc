@@ -776,7 +776,7 @@ bool ONNXAttrs::Process<std::vector<int64_t>>(const std::string& key,
   const auto& attr_value = attr_map_.at(key);
   HLCHECK(attr_value.type() == onnx::AttributeProto::INTS);
   int size = attr_value.ints_size();
-  (*value).reserve(size);
+  (*value).resize(size);
   std::copy(attr_value.ints().begin(), attr_value.ints().end(),
             (*value).begin());
   return true;
