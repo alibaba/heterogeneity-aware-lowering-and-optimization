@@ -304,14 +304,14 @@ static int64_t GetTotalElements(const odla_value_shape& dims) {
 
 const int nvinfer1::Dims::MAX_DIMS;
 static std::string gen_str(const nvinfer1::Dims& d) {
-    std::string s{ "(" };
-    if (d.nbDims != 0) {
-        for (int64_t i = 0; i < d.nbDims; i++)
-            (s += std::to_string(d.d[i])) += ", ";
-        s.pop_back();
-        s.pop_back();
-    }
-    return s + ')';
+  std::string s{"("};
+  if (d.nbDims != 0) {
+    for (int64_t i = 0; i < d.nbDims; i++)
+      (s += std::to_string(d.d[i])) += ", ";
+    s.pop_back();
+    s.pop_back();
+  }
+  return s + ')';
 }
 
 static nvinfer1::Dims GetNVDims(int n, const odla_uint32* dims) {
@@ -453,30 +453,35 @@ static odla_value CreateValue(T* t, const odla_value_type& type,
   return ret;
 }
 
-static std::vector<nvinfer1::RNNGateType> GetRNNGateOrder(const odla_rnn_gate_order gate_order) {
-  const nvinfer1::RNNGateType trt_gate_iofc[] = {nvinfer1::RNNGateType::kINPUT,
-  nvinfer1::RNNGateType::kOUTPUT, nvinfer1::RNNGateType::kFORGET,
-  nvinfer1::RNNGateType::kCELL};
-  const nvinfer1::RNNGateType trt_gate_ifco[] = {nvinfer1::RNNGateType::kINPUT,
-  nvinfer1::RNNGateType::kFORGET, nvinfer1::RNNGateType::kCELL,
-  nvinfer1::RNNGateType::kOUTPUT};
-  const nvinfer1::RNNGateType trt_gate_ifoc[] = {nvinfer1::RNNGateType::kINPUT,
-  nvinfer1::RNNGateType::kFORGET, nvinfer1::RNNGateType::kOUTPUT,
-  nvinfer1::RNNGateType::kCELL};
-  const nvinfer1::RNNGateType trt_gate_icof[] = {nvinfer1::RNNGateType::kINPUT,
-  nvinfer1::RNNGateType::kCELL, nvinfer1::RNNGateType::kOUTPUT,
-  nvinfer1::RNNGateType::kFORGET};
+static std::vector<nvinfer1::RNNGateType> GetRNNGateOrder(
+    const odla_rnn_gate_order gate_order) {
+  const nvinfer1::RNNGateType trt_gate_iofc[] = {
+      nvinfer1::RNNGateType::kINPUT, nvinfer1::RNNGateType::kOUTPUT,
+      nvinfer1::RNNGateType::kFORGET, nvinfer1::RNNGateType::kCELL};
+  const nvinfer1::RNNGateType trt_gate_ifco[] = {
+      nvinfer1::RNNGateType::kINPUT, nvinfer1::RNNGateType::kFORGET,
+      nvinfer1::RNNGateType::kCELL, nvinfer1::RNNGateType::kOUTPUT};
+  const nvinfer1::RNNGateType trt_gate_ifoc[] = {
+      nvinfer1::RNNGateType::kINPUT, nvinfer1::RNNGateType::kFORGET,
+      nvinfer1::RNNGateType::kOUTPUT, nvinfer1::RNNGateType::kCELL};
+  const nvinfer1::RNNGateType trt_gate_icof[] = {
+      nvinfer1::RNNGateType::kINPUT, nvinfer1::RNNGateType::kCELL,
+      nvinfer1::RNNGateType::kOUTPUT, nvinfer1::RNNGateType::kFORGET};
 
-  switch(gate_order) {     
+  switch (gate_order) {
     case ODLA_RNN_IFCO:
-      return std::vector<nvinfer1::RNNGateType>(trt_gate_ifco, trt_gate_ifco + 4);
+      return std::vector<nvinfer1::RNNGateType>(trt_gate_ifco,
+                                                trt_gate_ifco + 4);
     case ODLA_RNN_IFOC:
-      return std::vector<nvinfer1::RNNGateType>(trt_gate_ifoc, trt_gate_ifoc + 4);
+      return std::vector<nvinfer1::RNNGateType>(trt_gate_ifoc,
+                                                trt_gate_ifoc + 4);
     case ODLA_RNN_ICOF:
-      return std::vector<nvinfer1::RNNGateType>(trt_gate_icof, trt_gate_icof + 4);
+      return std::vector<nvinfer1::RNNGateType>(trt_gate_icof,
+                                                trt_gate_icof + 4);
     default:
       // default order as iofc
-      return std::vector<nvinfer1::RNNGateType>(trt_gate_iofc, trt_gate_iofc + 4);
+      return std::vector<nvinfer1::RNNGateType>(trt_gate_iofc,
+                                                trt_gate_iofc + 4);
   }
 }
 
@@ -1897,49 +1902,52 @@ odla_value odla_Reciprocal(odla_value input, const odla_value_id value_id) {
 
 #ifndef REPLACE_RNN_WITH_LOOP
 odla_values odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
-          odla_rnn_gate_order gate_order, odla_value_shape weight_dims,
-          odla_value W, odla_value R, odla_value B, odla_value sequence_lens,
-          odla_value initial_h, odla_value initial_c, odla_value P,
-          odla_int32 hidden_size, odla_rnn_direction direction,
-          odla_rnn_outputs outputs, const odla_value_ids value_id) {
+                      odla_rnn_gate_order gate_order,
+                      odla_value_shape weight_dims, odla_value W, odla_value R,
+                      odla_value B, odla_value sequence_lens,
+                      odla_value initial_h, odla_value initial_c, odla_value P,
+                      odla_int32 hidden_size, odla_rnn_direction direction,
+                      odla_rnn_outputs outputs, const odla_value_ids value_id) {
   const int num_layers = 1;
   const int num_gates = 4;
   const int seq_size = input->type.shape.dims[0];
   const int batch_size = input->type.shape.dims[1];
   const int input_size = input->type.shape.dims[2];
   const int num_directions = (direction == ODLA_RNN_BIDIRECTIONAL) ? 2 : 1;
-  const auto rnn_dir = (direction == ODLA_RNN_BIDIRECTIONAL) ?
-  nvinfer1::RNNDirection::kBIDIRECTION : nvinfer1::RNNDirection::kUNIDIRECTION;
+  const auto rnn_dir = (direction == ODLA_RNN_BIDIRECTIONAL)
+                           ? nvinfer1::RNNDirection::kBIDIRECTION
+                           : nvinfer1::RNNDirection::kUNIDIRECTION;
 
   auto input_t = input->tensor;
   // input layout [seq, batch, input]
   // trt assume [batch, seq, input]
   auto transpose_layer = g_comp->network->addShuffle(*input_t);
-  nvinfer1::Permutation perm{1,0,2};
+  nvinfer1::Permutation perm{1, 0, 2};
   transpose_layer->setFirstTranspose(perm);
-  transpose_layer->setReshapeDimensions(nvinfer1::Dims{3, {batch_size, seq_size, input_size}});
+  transpose_layer->setReshapeDimensions(
+      nvinfer1::Dims{3, {batch_size, seq_size, input_size}});
   input_t = transpose_layer->getOutput(0);
-  nvinfer1::IRNNv2Layer* rnn_layer = g_comp->network->addRNNv2(*input_t, num_layers, 
-  hidden_size, seq_size, nvinfer1::RNNOperation::kLSTM);
+  nvinfer1::IRNNv2Layer* rnn_layer =
+      g_comp->network->addRNNv2(*input_t, num_layers, hidden_size, seq_size,
+                                nvinfer1::RNNOperation::kLSTM);
   rnn_layer->setDirection(rnn_dir);
 
- // prepare initial hidden and initial cell
+  // prepare initial hidden and initial cell
   auto getInitTensor = [&num_directions, &hidden_size,
-    &batch_size] (odla_value init_v) -> nvinfer1::ITensor* {
+                        &batch_size](odla_value init_v) -> nvinfer1::ITensor* {
     if (init_v) {
       return init_v->tensor;
     }
-    odla_value_shape dim{.size = 3, 
-                        .dims = {batch_size, num_directions, hidden_size}};
+    odla_value_shape dim{.size = 3,
+                         .dims = {batch_size, num_directions, hidden_size}};
     g_comp->buffers.push_back(std::vector<float>(GetTotalElements(dim), 0.0f));
-    nvinfer1::Weights weight{
-      .type = nvinfer1::DataType::kFLOAT,
-      .values = g_comp->buffers.back().data(),
-      .count = GetTotalElements(dim)};
+    nvinfer1::Weights weight{.type = nvinfer1::DataType::kFLOAT,
+                             .values = g_comp->buffers.back().data(),
+                             .count = GetTotalElements(dim)};
     return g_comp->network->addConstant(GetNVDims(dim), weight)->getOutput(0);
-  }; 
+  };
   nvinfer1::ITensor* init_hidden_t = getInitTensor(initial_h);
-  //LOG_VERBOSE("init_hidden dim:" + gen_str(init_hidden_t->getDimensions()));
+  // LOG_VERBOSE("init_hidden dim:" + gen_str(init_hidden_t->getDimensions()));
   nvinfer1::ITensor* init_cell_t = getInitTensor(initial_c);
   rnn_layer->setHiddenState(*init_hidden_t);
   rnn_layer->setCellState(*init_cell_t);
@@ -1953,14 +1961,19 @@ odla_values odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
   for (int gate_index = 0; gate_index < 2 * num_gates; ++gate_index) {
     bool isW = (gate_index < num_gates);
     int64_t weight_count = (isW ? input_size : hidden_size) * hidden_size;
-    const float* weight_ptr = isW ? static_cast<const float*>(input_w.values) :
-    static_cast<const float*>(recurrence_w.values);
-    nvinfer1::Weights gate_weight{nvinfer1::DataType::kFLOAT, weight_ptr + offset_w, weight_count};
-    rnn_layer->setWeightsForGate(0, trt_gate_orders[gate_index % num_gates], isW, gate_weight);
+    const float* weight_ptr =
+        isW ? static_cast<const float*>(input_w.values)
+            : static_cast<const float*>(recurrence_w.values);
+    nvinfer1::Weights gate_weight{nvinfer1::DataType::kFLOAT,
+                                  weight_ptr + offset_w, weight_count};
+    rnn_layer->setWeightsForGate(0, trt_gate_orders[gate_index % num_gates],
+                                 isW, gate_weight);
     if (num_directions == 2) {
       const float* weight_back_ptr = weight_ptr + weight_count * num_gates;
-      nvinfer1::Weights gate_weight_back{nvinfer1::DataType::kFLOAT, weight_back_ptr + offset_w, weight_count};
-      rnn_layer->setWeightsForGate(1, trt_gate_orders[gate_index % num_gates], isW, gate_weight_back);
+      nvinfer1::Weights gate_weight_back{
+          nvinfer1::DataType::kFLOAT, weight_back_ptr + offset_w, weight_count};
+      rnn_layer->setWeightsForGate(1, trt_gate_orders[gate_index % num_gates],
+                                   isW, gate_weight_back);
     }
     offset_w += weight_count;
     if (gate_index % num_gates == num_gates - 1) {
@@ -1974,24 +1987,31 @@ odla_values odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
   nvinfer1::Weights bias_w = B->const_layer->getWeights();
   g_comp->buffers.push_back(std::vector<float>(hidden_size, 0.0f));
   nvinfer1::Weights zero_bias_w{nvinfer1::DataType::kFLOAT,
-  g_comp->buffers.back().data(), hidden_size};
+                                g_comp->buffers.back().data(), hidden_size};
   const float* bias_ptr = static_cast<const float*>(bias_w.values);
 
   for (int gate_index = 0; gate_index < 2 * num_gates; ++gate_index) {
     bool isW = (gate_index < num_gates);
     if (!combined_bias || isW) {
-      nvinfer1::Weights gate_bias{nvinfer1::DataType::kFLOAT, bias_ptr + offset_bias, hidden_size};
-      rnn_layer->setBiasForGate(0, trt_gate_orders[gate_index % num_gates], isW, gate_bias);
+      nvinfer1::Weights gate_bias{nvinfer1::DataType::kFLOAT,
+                                  bias_ptr + offset_bias, hidden_size};
+      rnn_layer->setBiasForGate(0, trt_gate_orders[gate_index % num_gates], isW,
+                                gate_bias);
       if (num_directions == 2) {
         const float* bias_back_ptr = bias_ptr + num_gates * hidden_size;
-        nvinfer1::Weights gate_bias_back{nvinfer1::DataType::kFLOAT, bias_back_ptr + offset_bias, hidden_size};
-        rnn_layer->setBiasForGate(1, trt_gate_orders[gate_index % num_gates], isW, gate_bias_back);
+        nvinfer1::Weights gate_bias_back{nvinfer1::DataType::kFLOAT,
+                                         bias_back_ptr + offset_bias,
+                                         hidden_size};
+        rnn_layer->setBiasForGate(1, trt_gate_orders[gate_index % num_gates],
+                                  isW, gate_bias_back);
       }
       offset_bias += hidden_size;
     } else {
-      rnn_layer->setBiasForGate(0, trt_gate_orders[gate_index % num_gates], isW, zero_bias_w);
+      rnn_layer->setBiasForGate(0, trt_gate_orders[gate_index % num_gates], isW,
+                                zero_bias_w);
       if (num_directions == 2) {
-        rnn_layer->setBiasForGate(1, trt_gate_orders[gate_index % num_gates], isW, zero_bias_w);
+        rnn_layer->setBiasForGate(1, trt_gate_orders[gate_index % num_gates],
+                                  isW, zero_bias_w);
       }
     }
   }
@@ -1999,46 +2019,56 @@ odla_values odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
   // TRT result layout transformation
   // [0]: [seq, batch, dir, hidden]  --> [seq, dir, batch, hidden]
   // [1] [2] : [batch, dir, hidden]  --> [dir, batch, hidden]
-  nvinfer1::ITensor* transformed_rnn[3]{rnn_layer->getOutput(0), rnn_layer->getOutput(1),
-  rnn_layer->getOutput(2)};
-  if (false && num_directions==2) {
+  nvinfer1::ITensor* transformed_rnn[3]{rnn_layer->getOutput(0),
+                                        rnn_layer->getOutput(1),
+                                        rnn_layer->getOutput(2)};
+  if (false && num_directions == 2) {
     for (int i = 0; i < 3; ++i) {
-      auto transform_layer = g_comp->network->addShuffle(*rnn_layer->getOutput(i));
+      auto transform_layer =
+          g_comp->network->addShuffle(*rnn_layer->getOutput(i));
       if (i = 0) {
-        transform_layer->setReshapeDimensions(nvinfer1::Dims{4, {seq_size, batch_size, num_directions, hidden_size}});
-        transform_layer->setSecondTranspose(nvinfer1::Permutation{0,2,1,3});
+        transform_layer->setReshapeDimensions(nvinfer1::Dims{
+            4, {seq_size, batch_size, num_directions, hidden_size}});
+        transform_layer->setSecondTranspose(nvinfer1::Permutation{0, 2, 1, 3});
       } else {
-        transform_layer->setReshapeDimensions(nvinfer1::Dims{3,{batch_size, num_directions, hidden_size}});
-        transform_layer->setSecondTranspose(nvinfer1::Permutation{1,0,2});
+        transform_layer->setReshapeDimensions(
+            nvinfer1::Dims{3, {batch_size, num_directions, hidden_size}});
+        transform_layer->setSecondTranspose(nvinfer1::Permutation{1, 0, 2});
       }
       transformed_rnn[i] = transform_layer->getOutput(0);
     }
   }
-  odla_value_shape ret_shape{4, {seq_size, num_directions, batch_size, hidden_size}};
+  odla_value_shape ret_shape{
+      4, {seq_size, num_directions, batch_size, hidden_size}};
   odla_value_shape ret_iter_shape{3, {num_directions, batch_size, hidden_size}};
   const auto& dt = input->type.element_type;
-  auto ret = CreateValue(transformed_rnn[0], {dt, ret_shape}, value_id.value_ids[0]);
-  auto ret_h = CreateValue(transformed_rnn[1], {dt, ret_iter_shape}, value_id.value_ids[1]);
-  auto ret_c = CreateValue(transformed_rnn[2], {dt, ret_iter_shape}, value_id.value_ids[2]);
+  auto ret =
+      CreateValue(transformed_rnn[0], {dt, ret_shape}, value_id.value_ids[0]);
+  auto ret_h = CreateValue(transformed_rnn[1], {dt, ret_iter_shape},
+                           value_id.value_ids[1]);
+  auto ret_c = CreateValue(transformed_rnn[2], {dt, ret_iter_shape},
+                           value_id.value_ids[2]);
 
   return {.size = 3, .values = {ret, ret_h, ret_c}};
 }
 
 #else
 odla_values odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
-          odla_rnn_gate_order gate_order, odla_value_shape weight_dims,
-          odla_value W, odla_value R, odla_value B, odla_value sequence_lens,
-          odla_value initial_h, odla_value initial_c, odla_value P,
-          odla_int32 hidden_size, odla_rnn_direction direction,
-          odla_rnn_outputs outputs, const odla_value_ids value_id) {
+                      odla_rnn_gate_order gate_order,
+                      odla_value_shape weight_dims, odla_value W, odla_value R,
+                      odla_value B, odla_value sequence_lens,
+                      odla_value initial_h, odla_value initial_c, odla_value P,
+                      odla_int32 hidden_size, odla_rnn_direction direction,
+                      odla_rnn_outputs outputs, const odla_value_ids value_id) {
   //[iofc]
   const int num_gates = 4;
   const int num_directions = (direction == ODLA_RNN_BIDIRECTIONAL) ? 2 : 1;
-  assert(num_direction==weight_dims.dims[0]);
+  assert(num_direction == weight_dims.dims[0]);
   const int batch_size = input->type.shape.dims[1];
   const int len_seq = input->type.shape.dims[0];
-  std::vector<nvinfer1::ActivationType> activations{nvinfer1::ActivationType::kSIGMOID,
-  nvinfer1::ActivationType::kTANH, nvinfer1::ActivationType::kTANH};
+  std::vector<nvinfer1::ActivationType> activations{
+      nvinfer1::ActivationType::kSIGMOID, nvinfer1::ActivationType::kTANH,
+      nvinfer1::ActivationType::kTANH};
 
   auto input_t = input->tensor;
   auto weight_t = W->tensor;
@@ -2046,23 +2076,22 @@ odla_values odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
 
   // prepare initial hidden and initial cell
   auto getInitTensor = [&num_directions, &hidden_size,
-    &batch_size] (odla_value init_v) -> nvinfer1::ITensor* {
+                        &batch_size](odla_value init_v) -> nvinfer1::ITensor* {
     if (init_v) {
       return init_v->tensor;
     }
-    odla_value_shape dim{.size = 3, 
-                        .dims = {num_directions, batch_size, hidden_size}};
+    odla_value_shape dim{.size = 3,
+                         .dims = {num_directions, batch_size, hidden_size}};
     g_comp->buffers.push_back(std::vector<float>(GetTotalElements(dim), 0.0f));
-    nvinfer1::Weights weight{
-      .type = nvinfer1::DataType::kFLOAT,
-      .values = g_comp->buffers.back().data(),
-      .count = GetTotalElements(dim)};
+    nvinfer1::Weights weight{.type = nvinfer1::DataType::kFLOAT,
+                             .values = g_comp->buffers.back().data(),
+                             .count = GetTotalElements(dim)};
     return g_comp->network->addConstant(GetNVDims(dim), weight)->getOutput(0);
-  }; 
+  };
   nvinfer1::ITensor* init_hidden_t = getInitTensor(initial_h);
-  //LOG_VERBOSE("init_hidden dim:" + gen_str(init_hidden_t->getDimensions()));
+  // LOG_VERBOSE("init_hidden dim:" + gen_str(init_hidden_t->getDimensions()));
   nvinfer1::ITensor* init_cell_t = getInitTensor(initial_c);
-  //LOG("init_cell dim:" << init_cell_t->getDimensions());
+  // LOG("init_cell dim:" << init_cell_t->getDimensions());
 
   assert(B && sequence_lens);
   auto bias_t = B->tensor;
@@ -2073,16 +2102,18 @@ odla_values odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
     // in order to perform reduction to add Wb and Rb and to add WBb and RBb.
     auto reshape_bias = g_comp->network->addShuffle(*B->tensor);
     odla_value_shape dim{.size = 3,
-                        .dims = {num_directions, 2, num_gates * hidden_size}};
+                         .dims = {num_directions, 2, num_gates * hidden_size}};
     reshape_bias->setReshapeDimensions(GetNVDims(dim));
-    bias_t = g_comp->network->addReduce(*reshape_bias->getOutput(0), 
-    nvinfer1::ReduceOperation::kSUM, 2, false)->getOutput(0);
+    bias_t = g_comp->network
+                 ->addReduce(*reshape_bias->getOutput(0),
+                             nvinfer1::ReduceOperation::kSUM, 2, false)
+                 ->getOutput(0);
   }
 
   if (num_directions == 1) {
     auto squeezeDir = [](nvinfer1::ITensor* t) -> nvinfer1::ITensor* {
       auto squeeze_layer = g_comp->network->addShuffle(*t);
-      squeeze_layer->setReshapeDimensions(SqueezeNVDims(t->getDimensions(),0));
+      squeeze_layer->setReshapeDimensions(SqueezeNVDims(t->getDimensions(), 0));
       return squeeze_layer->getOutput(0);
     };
     weight_t = squeezeDir(weight_t);
@@ -2093,117 +2124,150 @@ odla_values odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
 
   // Use loops to represent recurrent layers
   nvinfer1::ILoop* rnn_loop = g_comp->network->addLoop();
-  nvinfer1::ITensor* seq_lens = g_comp->network->addConstant(nvinfer1::Dims{}, 
-  nvinfer1::Weights{nvinfer1::DataType::kINT32, &len_seq, 1})->getOutput(0);
+  nvinfer1::ITensor* seq_lens =
+      g_comp->network
+          ->addConstant(
+              nvinfer1::Dims{},
+              nvinfer1::Weights{nvinfer1::DataType::kINT32, &len_seq, 1})
+          ->getOutput(0);
   rnn_loop->addTripLimit(*seq_lens, nvinfer1::TripLimit::kCOUNT);
-  //TODO: handle reverse and bidirectional
+  // TODO: handle reverse and bidirectional
   // unsqeeze to match weight dimension
-  nvinfer1::ITensor* input_iterator = rnn_loop->addIterator(*input_t)->getOutput(0);
-  //auto unsqeeze_layer = g_comp->network->addShuffle(*input_iterator);
-  //unsqeeze_layer->setName("input_iterator_unsqueeze");
+  nvinfer1::ITensor* input_iterator =
+      rnn_loop->addIterator(*input_t)->getOutput(0);
+  // auto unsqeeze_layer = g_comp->network->addShuffle(*input_iterator);
+  // unsqeeze_layer->setName("input_iterator_unsqueeze");
   // FIXME
-  //unsqeeze_layer->setReshapeDimensions(
+  // unsqeeze_layer->setReshapeDimensions(
   //  nvinfer1::Dims3{1, batch_size, input->type.shape.dims[2]});
-  //input_iterator = unsqeeze_layer->getOutput(0);
+  // input_iterator = unsqeeze_layer->getOutput(0);
   nvinfer1::IRecurrenceLayer* hidden = rnn_loop->addRecurrence(*init_hidden_t);
   nvinfer1::IRecurrenceLayer* cell = rnn_loop->addRecurrence(*init_cell_t);
-  
-  // Xt*(W^T) + Ht-1*(R^T) + (Wb + Rb)
-  auto mm1 = g_comp->network->addMatrixMultiply(*input_iterator, 
-  nvinfer1::MatrixOperation::kNONE, *weight_t, 
-  nvinfer1::MatrixOperation::kTRANSPOSE)->getOutput(0);
-  auto mm2 = g_comp->network->addMatrixMultiply(*hidden->getOutput(0), 
-  nvinfer1::MatrixOperation::kNONE, *recurrence_t, 
-  nvinfer1::MatrixOperation::kTRANSPOSE)->getOutput(0);
-  auto add1 = g_comp->network->addElementWise(*mm1, *mm2,
-  nvinfer1::ElementWiseOperation::kSUM)->getOutput(0);
-  auto add2 = g_comp->network->addElementWise(*add1, *bias_t,
-  nvinfer1::ElementWiseOperation::kSUM)->getOutput(0);
 
-  auto sliceGate = [&hidden_size, &num_directions, &batch_size](nvinfer1::ITensor* gates, int index)
-  -> nvinfer1::ITensor* {
-    auto slice = g_comp->network->addSlice(*gates,
-    nvinfer1::Dims2{0, index * hidden_size}, nvinfer1::Dims2{batch_size, hidden_size},
-    nvinfer1::Dims2{1, 1});
+  // Xt*(W^T) + Ht-1*(R^T) + (Wb + Rb)
+  auto mm1 =
+      g_comp->network
+          ->addMatrixMultiply(*input_iterator, nvinfer1::MatrixOperation::kNONE,
+                              *weight_t, nvinfer1::MatrixOperation::kTRANSPOSE)
+          ->getOutput(0);
+  auto mm2 = g_comp->network
+                 ->addMatrixMultiply(
+                     *hidden->getOutput(0), nvinfer1::MatrixOperation::kNONE,
+                     *recurrence_t, nvinfer1::MatrixOperation::kTRANSPOSE)
+                 ->getOutput(0);
+  auto add1 =
+      g_comp->network
+          ->addElementWise(*mm1, *mm2, nvinfer1::ElementWiseOperation::kSUM)
+          ->getOutput(0);
+  auto add2 =
+      g_comp->network
+          ->addElementWise(*add1, *bias_t, nvinfer1::ElementWiseOperation::kSUM)
+          ->getOutput(0);
+
+  auto sliceGate = [&hidden_size, &num_directions, &batch_size](
+                       nvinfer1::ITensor* gates,
+                       int index) -> nvinfer1::ITensor* {
+    auto slice = g_comp->network->addSlice(
+        *gates, nvinfer1::Dims2{0, index * hidden_size},
+        nvinfer1::Dims2{batch_size, hidden_size}, nvinfer1::Dims2{1, 1});
     return slice->getOutput(0);
   };
 
-  auto addPeephole = [&P, &hidden_size, &num_directions] (nvinfer1::ITensor* gate, 
-  nvinfer1::ITensor* cell, int index) -> nvinfer1::ITensor* {
+  auto addPeephole = [&P, &hidden_size, &num_directions](
+                         nvinfer1::ITensor* gate, nvinfer1::ITensor* cell,
+                         int index) -> nvinfer1::ITensor* {
     if (!P) {
       return gate;
     }
     // TODO
-    auto slice = g_comp->network->addSlice(*P->tensor,
-    nvinfer1::Dims2{0, index * hidden_size},
-    nvinfer1::Dims2{num_directions, hidden_size}, nvinfer1::Dims2{1, 1});
+    auto slice = g_comp->network->addSlice(
+        *P->tensor, nvinfer1::Dims2{0, index * hidden_size},
+        nvinfer1::Dims2{num_directions, hidden_size}, nvinfer1::Dims2{1, 1});
     auto reshape = g_comp->network->addShuffle(*slice->getOutput(0));
     reshape->setReshapeDimensions(nvinfer1::Dims{1, {hidden_size}});
 
-    auto mm_peep = g_comp->network->addElementWise(*reshape->getOutput(0),
-    *cell, nvinfer1::ElementWiseOperation::kPROD)->getOutput(0);
-    return g_comp->network->addElementWise(*gate, *mm_peep,
-    nvinfer1::ElementWiseOperation::kSUM)->getOutput(0);
+    auto mm_peep = g_comp->network
+                       ->addElementWise(*reshape->getOutput(0), *cell,
+                                        nvinfer1::ElementWiseOperation::kPROD)
+                       ->getOutput(0);
+    return g_comp->network
+        ->addElementWise(*gate, *mm_peep, nvinfer1::ElementWiseOperation::kSUM)
+        ->getOutput(0);
   };
 
   auto i_gate = sliceGate(add2, 0);
-  //LOG("input gate dim:" << i_gate->getDimensions());
-  //LOG_VERBOSE("input gate dim:" + gen_str(i_gate->getDimensions()));
+  // LOG("input gate dim:" << i_gate->getDimensions());
+  // LOG_VERBOSE("input gate dim:" + gen_str(i_gate->getDimensions()));
   // it = it + P . Ct-1
   i_gate = addPeephole(i_gate, cell->getOutput(0), 0);
-  // it = sigmoid(it) 
-  i_gate = g_comp->network->addActivation(*i_gate, activations.at(0))->getOutput(0);
+  // it = sigmoid(it)
+  i_gate =
+      g_comp->network->addActivation(*i_gate, activations.at(0))->getOutput(0);
 
   auto f_gate = sliceGate(add2, 2);
   // ft = ft + P . Ct-1
   f_gate = addPeephole(f_gate, cell->getOutput(0), 2);
   // ft = sigmoid(ft)
-  f_gate = g_comp->network->addActivation(*f_gate, activations.at(0))->getOutput(0);
+  f_gate =
+      g_comp->network->addActivation(*f_gate, activations.at(0))->getOutput(0);
 
   auto c_gate = sliceGate(add2, 3);
   // ct = tanh(ct)
-  c_gate = g_comp->network->addActivation(*c_gate, activations.at(1))->getOutput(0);
+  c_gate =
+      g_comp->network->addActivation(*c_gate, activations.at(1))->getOutput(0);
 
   // Ct = ft . Ct-1 + it . ct
-  auto C_1= g_comp->network->addElementWise(*f_gate,
-    *cell->getOutput(0), nvinfer1::ElementWiseOperation::kPROD)->getOutput(0);
-  auto C_2 = g_comp->network->addElementWise(*i_gate,
-    *c_gate, nvinfer1::ElementWiseOperation::kPROD)->getOutput(0);
-  auto C = g_comp->network->addElementWise(*C_1,
-    *C_2, nvinfer1::ElementWiseOperation::kSUM)->getOutput(0);
-  
+  auto C_1 = g_comp->network
+                 ->addElementWise(*f_gate, *cell->getOutput(0),
+                                  nvinfer1::ElementWiseOperation::kPROD)
+                 ->getOutput(0);
+  auto C_2 = g_comp->network
+                 ->addElementWise(*i_gate, *c_gate,
+                                  nvinfer1::ElementWiseOperation::kPROD)
+                 ->getOutput(0);
+  auto C =
+      g_comp->network
+          ->addElementWise(*C_1, *C_2, nvinfer1::ElementWiseOperation::kSUM)
+          ->getOutput(0);
+
   // ot
   auto o_gate = sliceGate(add2, 1);
   // ot = ot + P . Ct
   o_gate = addPeephole(o_gate, C, 1);
   // ot = sigmoid(ot)
-  o_gate = g_comp->network->addActivation(*o_gate, activations.at(0))->getOutput(0);
+  o_gate =
+      g_comp->network->addActivation(*o_gate, activations.at(0))->getOutput(0);
 
   // Ht = ot . tanh(Ct)
   auto H = g_comp->network->addActivation(*C, activations.at(2))->getOutput(0);
-  H = g_comp->network->addElementWise(*o_gate,
-    *H, nvinfer1::ElementWiseOperation::kPROD)->getOutput(0);
-  
+  H = g_comp->network
+          ->addElementWise(*o_gate, *H, nvinfer1::ElementWiseOperation::kPROD)
+          ->getOutput(0);
+
   // backedge
   cell->setInput(1, *C);
   hidden->setInput(1, *H);
 
   // TODO: handle reverse and bidirectional
-  auto output_layer = rnn_loop->addLoopOutput(*H, 
-  nvinfer1::LoopOutput::kCONCATENATE);
+  auto output_layer =
+      rnn_loop->addLoopOutput(*H, nvinfer1::LoopOutput::kCONCATENATE);
   output_layer->setInput(1, *seq_lens);
   auto hidden_out = rnn_loop->addLoopOutput(*hidden->getOutput(0),
-  nvinfer1::LoopOutput::kLAST_VALUE);
+                                            nvinfer1::LoopOutput::kLAST_VALUE);
   auto cell_out = rnn_loop->addLoopOutput(*cell->getOutput(0),
-  nvinfer1::LoopOutput::kLAST_VALUE);
+                                          nvinfer1::LoopOutput::kLAST_VALUE);
 
-  odla_value_shape ret_shape{4, {len_seq, num_directions, batch_size, hidden_size}};
+  odla_value_shape ret_shape{
+      4, {len_seq, num_directions, batch_size, hidden_size}};
   odla_value_shape ret_iter_shape{3, {num_directions, batch_size, hidden_size}};
 
   const auto& dt = input->type.element_type;
-  auto ret = CreateValue(output_layer->getOutput(0), {dt, ret_shape}, value_id.value_ids[0]);
-  auto ret_h = CreateValue(hidden_out->getOutput(0), {dt, ret_iter_shape}, value_id.value_ids[1]);
-  auto ret_c = CreateValue(cell_out->getOutput(0), {dt, ret_iter_shape}, value_id.value_ids[2]);
+  auto ret = CreateValue(output_layer->getOutput(0), {dt, ret_shape},
+                         value_id.value_ids[0]);
+  auto ret_h = CreateValue(hidden_out->getOutput(0), {dt, ret_iter_shape},
+                           value_id.value_ids[1]);
+  auto ret_c = CreateValue(cell_out->getOutput(0), {dt, ret_iter_shape},
+                           value_id.value_ids[2]);
   return {.size = 3, .values = {ret, ret_h, ret_c}};
 }
 #endif
