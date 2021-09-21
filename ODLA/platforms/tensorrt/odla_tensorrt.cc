@@ -453,6 +453,33 @@ static odla_value CreateValue(T* t, const odla_value_type& type,
   return ret;
 }
 
+static std::vector<nvinfer1::RNNGateType> GetRNNGateOrder(const odla_rnn_gate_order gate_order) {
+  const nvinfer1::RNNGateType trt_gate_iofc[] = {nvinfer1::RNNGateType::kINPUT,
+  nvinfer1::RNNGateType::kOUTPUT, nvinfer1::RNNGateType::kFORGET,
+  nvinfer1::RNNGateType::kCELL};
+  const nvinfer1::RNNGateType trt_gate_ifco[] = {nvinfer1::RNNGateType::kINPUT,
+  nvinfer1::RNNGateType::kFORGET, nvinfer1::RNNGateType::kCELL,
+  nvinfer1::RNNGateType::kOUTPUT};
+  const nvinfer1::RNNGateType trt_gate_ifoc[] = {nvinfer1::RNNGateType::kINPUT,
+  nvinfer1::RNNGateType::kFORGET, nvinfer1::RNNGateType::kOUTPUT,
+  nvinfer1::RNNGateType::kCELL};
+  const nvinfer1::RNNGateType trt_gate_icof[] = {nvinfer1::RNNGateType::kINPUT,
+  nvinfer1::RNNGateType::kCELL, nvinfer1::RNNGateType::kOUTPUT,
+  nvinfer1::RNNGateType::kFORGET};
+
+  switch(gate_order) {     
+    case ODLA_RNN_IFCO:
+      return std::vector<nvinfer1::RNNGateType>(trt_gate_ifco, trt_gate_ifco + 4);
+    case ODLA_RNN_IFOC:
+      return std::vector<nvinfer1::RNNGateType>(trt_gate_ifoc, trt_gate_ifoc + 4);
+    case ODLA_RNN_ICOF:
+      return std::vector<nvinfer1::RNNGateType>(trt_gate_icof, trt_gate_icof + 4);
+    default:
+      // default order as iofc
+      return std::vector<nvinfer1::RNNGateType>(trt_gate_iofc, trt_gate_iofc + 4);
+  }
+}
+
 extern "C" {
 odla_status odla_CreateComputation(odla_computation* computation) {
   g_comps.push_back(std::make_unique<_odla_computation>());
@@ -1869,13 +1896,12 @@ odla_value odla_Reciprocal(odla_value input, const odla_value_id value_id) {
 }
 
 #ifndef REPLACE_RNN_WITH_LOOP
-odla_values odla_LSTM(odla_value input, odla_value_shape weight_dims,
-                      odla_value W, odla_value R, odla_value B,
-                      odla_value sequence_lens, odla_value initial_h,
-                      odla_value initial_c, odla_value P,
-                      odla_int32 hidden_size, odla_rnn_direction direction,
-                      odla_rnn_outputs outputs,
-                      const odla_value_ids value_ids) {
+odla_values odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
+          odla_rnn_gate_order gate_order, odla_value_shape weight_dims,
+          odla_value W, odla_value R, odla_value B, odla_value sequence_lens,
+          odla_value initial_h, odla_value initial_c, odla_value P,
+          odla_int32 hidden_size, odla_rnn_direction direction,
+          odla_rnn_outputs outputs, const odla_value_ids value_id) {
   const int num_layers = 1;
   const int num_gates = 4;
   const int seq_size = input->type.shape.dims[0];
@@ -1922,10 +1948,7 @@ odla_values odla_LSTM(odla_value input, odla_value_shape weight_dims,
   assert(W->const_layer != nullptr && R->const_layer != nullptr);
   nvinfer1::Weights input_w = W->const_layer->getWeights();
   nvinfer1::Weights recurrence_w = R->const_layer->getWeights();
-
-  std::vector<nvinfer1::RNNGateType> gate_order({nvinfer1::RNNGateType::kINPUT,
-  nvinfer1::RNNGateType::kOUTPUT, nvinfer1::RNNGateType::kFORGET,
-  nvinfer1::RNNGateType::kCELL});
+  const auto& trt_gate_orders = GetRNNGateOrder(gate_order);
   size_t offset_w = 0, offset_bias = 0;
   for (int gate_index = 0; gate_index < 2 * num_gates; ++gate_index) {
     bool isW = (gate_index < num_gates);
@@ -1933,11 +1956,11 @@ odla_values odla_LSTM(odla_value input, odla_value_shape weight_dims,
     const float* weight_ptr = isW ? static_cast<const float*>(input_w.values) :
     static_cast<const float*>(recurrence_w.values);
     nvinfer1::Weights gate_weight{nvinfer1::DataType::kFLOAT, weight_ptr + offset_w, weight_count};
-    rnn_layer->setWeightsForGate(0, gate_order[gate_index % num_gates], isW, gate_weight);
+    rnn_layer->setWeightsForGate(0, trt_gate_orders[gate_index % num_gates], isW, gate_weight);
     if (num_directions == 2) {
       const float* weight_back_ptr = weight_ptr + weight_count * num_gates;
       nvinfer1::Weights gate_weight_back{nvinfer1::DataType::kFLOAT, weight_back_ptr + offset_w, weight_count};
-      rnn_layer->setWeightsForGate(1, gate_order[gate_index % num_gates], isW, gate_weight_back);
+      rnn_layer->setWeightsForGate(1, trt_gate_orders[gate_index % num_gates], isW, gate_weight_back);
     }
     offset_w += weight_count;
     if (gate_index % num_gates == num_gates - 1) {
@@ -1958,17 +1981,17 @@ odla_values odla_LSTM(odla_value input, odla_value_shape weight_dims,
     bool isW = (gate_index < num_gates);
     if (!combined_bias || isW) {
       nvinfer1::Weights gate_bias{nvinfer1::DataType::kFLOAT, bias_ptr + offset_bias, hidden_size};
-      rnn_layer->setBiasForGate(0, gate_order[gate_index % num_gates], isW, gate_bias);
+      rnn_layer->setBiasForGate(0, trt_gate_orders[gate_index % num_gates], isW, gate_bias);
       if (num_directions == 2) {
         const float* bias_back_ptr = bias_ptr + num_gates * hidden_size;
         nvinfer1::Weights gate_bias_back{nvinfer1::DataType::kFLOAT, bias_back_ptr + offset_bias, hidden_size};
-        rnn_layer->setBiasForGate(1, gate_order[gate_index % num_gates], isW, gate_bias_back);
+        rnn_layer->setBiasForGate(1, trt_gate_orders[gate_index % num_gates], isW, gate_bias_back);
       }
       offset_bias += hidden_size;
     } else {
-      rnn_layer->setBiasForGate(0, gate_order[gate_index % num_gates], isW, zero_bias_w);
+      rnn_layer->setBiasForGate(0, trt_gate_orders[gate_index % num_gates], isW, zero_bias_w);
       if (num_directions == 2) {
-        rnn_layer->setBiasForGate(1, gate_order[gate_index % num_gates], isW, zero_bias_w);
+        rnn_layer->setBiasForGate(1, trt_gate_orders[gate_index % num_gates], isW, zero_bias_w);
       }
     }
   }
@@ -1994,21 +2017,20 @@ odla_values odla_LSTM(odla_value input, odla_value_shape weight_dims,
   odla_value_shape ret_shape{4, {seq_size, num_directions, batch_size, hidden_size}};
   odla_value_shape ret_iter_shape{3, {num_directions, batch_size, hidden_size}};
   const auto& dt = input->type.element_type;
-  auto ret = CreateValue(transformed_rnn[0], {dt, ret_shape}, value_ids.value_ids[0]);
-  auto ret_h = CreateValue(transformed_rnn[1], {dt, ret_iter_shape}, value_ids.value_ids[1]);
-  auto ret_c = CreateValue(transformed_rnn[2], {dt, ret_iter_shape}, value_ids.value_ids[2]);
+  auto ret = CreateValue(transformed_rnn[0], {dt, ret_shape}, value_id.value_ids[0]);
+  auto ret_h = CreateValue(transformed_rnn[1], {dt, ret_iter_shape}, value_id.value_ids[1]);
+  auto ret_c = CreateValue(transformed_rnn[2], {dt, ret_iter_shape}, value_id.value_ids[2]);
 
   return {.size = 3, .values = {ret, ret_h, ret_c}};
 }
 
 #else
-odla_values odla_LSTM(odla_value input, odla_value_shape weight_dims,
-                      odla_value W, odla_value R, odla_value B,
-                      odla_value sequence_lens, odla_value initial_h,
-                      odla_value initial_c, odla_value P,
-                      odla_int32 hidden_size, odla_rnn_direction direction,
-                      odla_rnn_outputs outputs,
-                      const odla_value_ids value_ids) {
+odla_values odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
+          odla_rnn_gate_order gate_order, odla_value_shape weight_dims,
+          odla_value W, odla_value R, odla_value B, odla_value sequence_lens,
+          odla_value initial_h, odla_value initial_c, odla_value P,
+          odla_int32 hidden_size, odla_rnn_direction direction,
+          odla_rnn_outputs outputs, const odla_value_ids value_id) {
   //[iofc]
   const int num_gates = 4;
   const int num_directions = (direction == ODLA_RNN_BIDIRECTIONAL) ? 2 : 1;
@@ -2128,13 +2150,13 @@ odla_values odla_LSTM(odla_value input, odla_value_shape weight_dims,
   //LOG("input gate dim:" << i_gate->getDimensions());
   //LOG_VERBOSE("input gate dim:" + gen_str(i_gate->getDimensions()));
   // it = it + P . Ct-1
-  //i_gate = addPeephole(i_gate, cell->getOutput(0), 0);
+  i_gate = addPeephole(i_gate, cell->getOutput(0), 0);
   // it = sigmoid(it) 
   i_gate = g_comp->network->addActivation(*i_gate, activations.at(0))->getOutput(0);
 
   auto f_gate = sliceGate(add2, 2);
   // ft = ft + P . Ct-1
-  //f_gate = addPeephole(f_gate, cell->getOutput(0), 2);
+  f_gate = addPeephole(f_gate, cell->getOutput(0), 2);
   // ft = sigmoid(ft)
   f_gate = g_comp->network->addActivation(*f_gate, activations.at(0))->getOutput(0);
 
@@ -2153,7 +2175,7 @@ odla_values odla_LSTM(odla_value input, odla_value_shape weight_dims,
   // ot
   auto o_gate = sliceGate(add2, 1);
   // ot = ot + P . Ct
-  //o_gate = addPeephole(o_gate, C, 1);
+  o_gate = addPeephole(o_gate, C, 1);
   // ot = sigmoid(ot)
   o_gate = g_comp->network->addActivation(*o_gate, activations.at(0))->getOutput(0);
 
@@ -2179,17 +2201,10 @@ odla_values odla_LSTM(odla_value input, odla_value_shape weight_dims,
   odla_value_shape ret_iter_shape{3, {num_directions, batch_size, hidden_size}};
 
   const auto& dt = input->type.element_type;
-  auto ret = CreateValue(output_layer->getOutput(0), {dt, ret_shape}, value_ids.value_ids[0]);
-  auto ret_h = CreateValue(hidden_out->getOutput(0), {dt, ret_iter_shape}, value_ids.value_ids[1]);
-  auto ret_c = CreateValue(cell_out->getOutput(0), {dt, ret_iter_shape}, value_ids.value_ids[2]);
+  auto ret = CreateValue(output_layer->getOutput(0), {dt, ret_shape}, value_id.value_ids[0]);
+  auto ret_h = CreateValue(hidden_out->getOutput(0), {dt, ret_iter_shape}, value_id.value_ids[1]);
+  auto ret_c = CreateValue(cell_out->getOutput(0), {dt, ret_iter_shape}, value_id.value_ids[2]);
   return {.size = 3, .values = {ret, ret_h, ret_c}};
-/*
-  auto add2_out = rnn_loop->addLoopOutput(*add2, nvinfer1::LoopOutput::kCONCATENATE);
-  add2_out->setInput(1, *seq_lens);
-  odla_value_shape ret_interm_shape{2, {batch_size, 4 * hidden_size}};
-  const char* name="lstm_interm";
-  return {.size = 4, .values = {ret, ret_h, ret_c,
-  CreateValue(add2_out->getOutput(0), {dt, ret_interm_shape}, (const odla_value_id)name)}};*/
 }
 #endif
 
