@@ -91,6 +91,7 @@ class Logger : public nvinfer1::ILogger {
       default:
         log_level = 5;
     }
+
     if (log_level <= 1) {
       std::cerr << "[" << log_level << "]: " << msg << "\n";
     }
@@ -99,9 +100,23 @@ class Logger : public nvinfer1::ILogger {
 } // namespace open_dla_tensorrt
 
 static open_dla_tensorrt::Logger Logger;
+
+#ifndef NDEBUG
 static void LOG_VERBOSE(const std::string& msg) {
   Logger.log(ILogger::Severity::kVERBOSE, msg.c_str());
 }
+
+static std::string gen_str(const nvinfer1::Dims& d) {
+  std::string s{"("};
+  if (d.nbDims != 0) {
+    for (int64_t i = 0; i < d.nbDims; i++)
+      (s += std::to_string(d.d[i])) += ", ";
+    s.pop_back();
+    s.pop_back();
+  }
+  return s + ')';
+}
+#endif
 
 struct _odla_value {
   _odla_value(nvinfer1::ITensor* tensor, const odla_value_type& type,
@@ -303,16 +318,6 @@ static int64_t GetTotalElements(const odla_value_shape& dims) {
 }
 
 const int nvinfer1::Dims::MAX_DIMS;
-static std::string gen_str(const nvinfer1::Dims& d) {
-  std::string s{"("};
-  if (d.nbDims != 0) {
-    for (int64_t i = 0; i < d.nbDims; i++)
-      (s += std::to_string(d.d[i])) += ", ";
-    s.pop_back();
-    s.pop_back();
-  }
-  return s + ')';
-}
 
 static nvinfer1::Dims GetNVDims(int n, const odla_uint32* dims) {
   nvinfer1::Dims ret;
