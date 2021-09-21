@@ -1883,10 +1883,12 @@ odla_values odla_LSTM(odla_value input, odla_value_shape weight_dims,
   const int batch_size = input->type.shape.dims[1];
   const int input_size = input->type.shape.dims[2];
   const int num_directions = (direction == ODLA_RNN_BIDIRECTIONAL) ? 2 : 1;
+  const auto rnn_dir = (direction == ODLA_RNN_BIDIRECTIONAL) ?
+  nvinfer1::RNNDirection::kBIDIRECTION : nvinfer1::RNNDirection::kUNIDIRECTION;
 
   auto input_t = input->tensor;
-  // input layout [seq, batch, input_size]
-  // trt assume [batch, seq, input_size]
+  // input layout [seq, batch, input]
+  // trt assume [batch, seq, input]
   auto transpose_layer = g_comp->network->addShuffle(*input_t);
   nvinfer1::Permutation perm{1,0,2};
   transpose_layer->setFirstTranspose(perm);
@@ -1894,6 +1896,7 @@ odla_values odla_LSTM(odla_value input, odla_value_shape weight_dims,
   input_t = transpose_layer->getOutput(0);
   nvinfer1::IRNNv2Layer* rnn_layer = g_comp->network->addRNNv2(*input_t, num_layers, 
   hidden_size, seq_size, nvinfer1::RNNOperation::kLSTM);
+  rnn_layer->setDirection(rnn_dir);
 
  // prepare initial hidden and initial cell
   auto getInitTensor = [&num_directions, &hidden_size,
@@ -1901,8 +1904,8 @@ odla_values odla_LSTM(odla_value input, odla_value_shape weight_dims,
     if (init_v) {
       return init_v->tensor;
     }
-    odla_value_shape dim{.size = 2, 
-                        .dims = {batch_size, hidden_size}};
+    odla_value_shape dim{.size = 3, 
+                        .dims = {batch_size, num_directions, hidden_size}};
     g_comp->buffers.push_back(std::vector<float>(GetTotalElements(dim), 0.0f));
     nvinfer1::Weights weight{
       .type = nvinfer1::DataType::kFLOAT,
@@ -1916,55 +1919,85 @@ odla_values odla_LSTM(odla_value input, odla_value_shape weight_dims,
   rnn_layer->setHiddenState(*init_hidden_t);
   rnn_layer->setCellState(*init_cell_t);
 
-  // Bias shape [dir, 4 * hidden_size] or [dir, 8 * hidden_size]
-  assert(B && B->const_layer);
-  bool combined_bias = (B->type.shape.dims[1] == 4 * hidden_size);
-  nvinfer1::Weights bias_w = B->const_layer->getWeights();
-  g_comp->buffers.push_back(std::vector<float>(hidden_size, 0.0f));
-  nvinfer1::Weights zero_bias_w{nvinfer1::DataType::kFLOAT, g_comp->buffers.back().data(), hidden_size};
   // weight order [iofc]
   assert(W->const_layer != nullptr && R->const_layer != nullptr);
   nvinfer1::Weights input_w = W->const_layer->getWeights();
   nvinfer1::Weights recurrence_w = R->const_layer->getWeights();
-  std::vector<nvinfer1::RNNGateType> gate_order({nvinfer1::RNNGateType::kINPUT, nvinfer1::RNNGateType::kOUTPUT,
-  nvinfer1::RNNGateType::kFORGET, nvinfer1::RNNGateType::kCELL});
+
+  std::vector<nvinfer1::RNNGateType> gate_order({nvinfer1::RNNGateType::kINPUT,
+  nvinfer1::RNNGateType::kOUTPUT, nvinfer1::RNNGateType::kFORGET,
+  nvinfer1::RNNGateType::kCELL});
   size_t offset_w = 0, offset_bias = 0;
   for (int gate_index = 0; gate_index < 2 * num_gates; ++gate_index) {
     bool isW = (gate_index < num_gates);
     int64_t weight_count = (isW ? input_size : hidden_size) * hidden_size;
-    const float* weight_ptr = isW ? static_cast<const float*>(input_w.values) : static_cast<const float*>(recurrence_w.values);
+    const float* weight_ptr = isW ? static_cast<const float*>(input_w.values) :
+    static_cast<const float*>(recurrence_w.values);
     nvinfer1::Weights gate_weight{nvinfer1::DataType::kFLOAT, weight_ptr + offset_w, weight_count};
     rnn_layer->setWeightsForGate(0, gate_order[gate_index % num_gates], isW, gate_weight);
+    if (num_directions == 2) {
+      const float* weight_back_ptr = weight_ptr + weight_count * num_gates;
+      nvinfer1::Weights gate_weight_back{nvinfer1::DataType::kFLOAT, weight_back_ptr + offset_w, weight_count};
+      rnn_layer->setWeightsForGate(1, gate_order[gate_index % num_gates], isW, gate_weight_back);
+    }
     offset_w += weight_count;
     if (gate_index % num_gates == num_gates - 1) {
       offset_w = 0;
     }
   }
 
+  // Bias shape [dir, 4 * hidden_size] or [dir, 8 * hidden_size]
+  assert(B && B->const_layer);
+  bool combined_bias = (B->type.shape.dims[1] == num_gates * hidden_size);
+  nvinfer1::Weights bias_w = B->const_layer->getWeights();
+  g_comp->buffers.push_back(std::vector<float>(hidden_size, 0.0f));
+  nvinfer1::Weights zero_bias_w{nvinfer1::DataType::kFLOAT,
+  g_comp->buffers.back().data(), hidden_size};
   const float* bias_ptr = static_cast<const float*>(bias_w.values);
+
   for (int gate_index = 0; gate_index < 2 * num_gates; ++gate_index) {
     bool isW = (gate_index < num_gates);
-    if (combined_bias) {
-      if (isW) {
-        nvinfer1::Weights gate_bias{nvinfer1::DataType::kFLOAT, bias_ptr + offset_bias, hidden_size};
-        rnn_layer->setBiasForGate(0, gate_order[gate_index % num_gates], isW, gate_bias);
-        offset_bias += hidden_size;
-      } else {
-        rnn_layer->setBiasForGate(0, gate_order[gate_index % num_gates], isW, zero_bias_w);
-      }
-    } else {
+    if (!combined_bias || isW) {
       nvinfer1::Weights gate_bias{nvinfer1::DataType::kFLOAT, bias_ptr + offset_bias, hidden_size};
       rnn_layer->setBiasForGate(0, gate_order[gate_index % num_gates], isW, gate_bias);
+      if (num_directions == 2) {
+        const float* bias_back_ptr = bias_ptr + num_gates * hidden_size;
+        nvinfer1::Weights gate_bias_back{nvinfer1::DataType::kFLOAT, bias_back_ptr + offset_bias, hidden_size};
+        rnn_layer->setBiasForGate(1, gate_order[gate_index % num_gates], isW, gate_bias_back);
+      }
       offset_bias += hidden_size;
+    } else {
+      rnn_layer->setBiasForGate(0, gate_order[gate_index % num_gates], isW, zero_bias_w);
+      if (num_directions == 2) {
+        rnn_layer->setBiasForGate(1, gate_order[gate_index % num_gates], isW, zero_bias_w);
+      }
     }
   }
 
+  // TRT result layout transformation
+  // [0]: [seq, batch, dir, hidden]  --> [seq, dir, batch, hidden]
+  // [1] [2] : [batch, dir, hidden]  --> [dir, batch, hidden]
+  nvinfer1::ITensor* transformed_rnn[3]{rnn_layer->getOutput(0), rnn_layer->getOutput(1),
+  rnn_layer->getOutput(2)};
+  if (false && num_directions==2) {
+    for (int i = 0; i < 3; ++i) {
+      auto transform_layer = g_comp->network->addShuffle(*rnn_layer->getOutput(i));
+      if (i = 0) {
+        transform_layer->setReshapeDimensions(nvinfer1::Dims{4, {seq_size, batch_size, num_directions, hidden_size}});
+        transform_layer->setSecondTranspose(nvinfer1::Permutation{0,2,1,3});
+      } else {
+        transform_layer->setReshapeDimensions(nvinfer1::Dims{3,{batch_size, num_directions, hidden_size}});
+        transform_layer->setSecondTranspose(nvinfer1::Permutation{1,0,2});
+      }
+      transformed_rnn[i] = transform_layer->getOutput(0);
+    }
+  }
   odla_value_shape ret_shape{4, {seq_size, num_directions, batch_size, hidden_size}};
   odla_value_shape ret_iter_shape{3, {num_directions, batch_size, hidden_size}};
   const auto& dt = input->type.element_type;
-  auto ret = CreateValue(rnn_layer->getOutput(0), {dt, ret_shape}, value_ids.value_ids[0]);
-  auto ret_h = CreateValue(rnn_layer->getOutput(1), {dt, ret_iter_shape}, value_ids.value_ids[1]);
-  auto ret_c = CreateValue(rnn_layer->getOutput(2), {dt, ret_iter_shape}, value_ids.value_ids[2]);
+  auto ret = CreateValue(transformed_rnn[0], {dt, ret_shape}, value_ids.value_ids[0]);
+  auto ret_h = CreateValue(transformed_rnn[1], {dt, ret_iter_shape}, value_ids.value_ids[1]);
+  auto ret_c = CreateValue(transformed_rnn[2], {dt, ret_iter_shape}, value_ids.value_ids[2]);
 
   return {.size = 3, .values = {ret, ret_h, ret_c}};
 }
