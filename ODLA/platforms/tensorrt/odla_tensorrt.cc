@@ -32,7 +32,6 @@
 #include <numeric>
 #include <unordered_map>
 #include <vector>
-#include <sstream>
 
 #include "plugins/initPlugin.h"
 
@@ -92,7 +91,7 @@ class Logger : public nvinfer1::ILogger {
       default:
         log_level = 5;
     }
-    if (log_level <= 4) {
+    if (log_level <= 1) {
       std::cerr << "[" << log_level << "]: " << msg << "\n";
     }
   }
