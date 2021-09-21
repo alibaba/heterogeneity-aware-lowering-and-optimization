@@ -873,6 +873,27 @@ bool ONNXAttrs::Process<TFIDFMode>(const std::string& key, TFIDFMode* mode) {
 }
 
 template <>
+bool ONNXAttrs::Process<ReductionMode>(const std::string& key,
+                                       ReductionMode* mode) {
+  static const std::unordered_map<std::string, ReductionMode> enum_map{
+      {"NONE", ReductionMode::None},
+      {"SUM", ReductionMode::SUM},
+      {"MEAN", ReductionMode::MEAN},
+  };
+  if (attr_map_.count(key) == 0) {
+    return false;
+  }
+  const auto& attr = attr_map_.at(key);
+  HLCHECK(attr.type() == onnx::AttributeProto::STRING);
+  std::string val = attr.s();
+  std::transform(val.begin(), val.end(), val.begin(),
+                 [](char c) { return std::toupper(c); });
+
+  *mode = enum_map.count(val) != 0 ? enum_map.at(val) : ReductionMode::INVALID;
+  return true;
+}
+
+template <>
 bool ONNXAttrs::Process<DataType>(const std::string& key, DataType* data_type) {
   if (attr_map_.count(key) == 0) {
     return false;

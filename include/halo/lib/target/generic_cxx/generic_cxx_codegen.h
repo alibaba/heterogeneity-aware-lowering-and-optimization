@@ -29,6 +29,7 @@
 #include "halo/lib/ir/common_instructions.h"
 #include "halo/lib/ir/common_reduction_instructions.h"
 #include "halo/lib/ir/instruction.h"
+#include "halo/lib/ir/loss_instructions.h"
 #include "halo/lib/ir/nn_activation_instructions.h"
 #include "halo/lib/ir/nn_cnn_instructions.h"
 #include "halo/lib/ir/nn_instructions.h"
@@ -137,6 +138,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(MatMulInst*) override;
   virtual void RunOnInstruction(MaximumInst*) override;
   virtual void RunOnInstruction(MinimumInst*) override;
+  virtual void RunOnInstruction(NegativeLogLikelihoodLossInst*) override;
   virtual void RunOnInstruction(NonMaxSuppressionInst*) override;
   virtual void RunOnInstruction(NegInst*) override;
   virtual void RunOnInstruction(NotInst*) override;

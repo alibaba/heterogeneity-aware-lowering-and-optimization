@@ -28,5 +28,5 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_sce_mean_weight_ii_4d_log_prob_expanded | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_sce_mean_weight_ii_4d_log_prob_expanded_dnnl.cc.tmp.main.cc.in"

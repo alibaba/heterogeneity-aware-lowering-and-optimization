@@ -30,6 +30,7 @@ list(APPEND INST_TDS
   common_reduction_instructions.td
   controlflow_instructions.td
   creator_instructions.td
+  loss_instructions.td
   math_instructions.td
   math_binary_instructions.td
   math_unary_instructions.td
