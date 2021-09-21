@@ -29,6 +29,7 @@ endif()
 set(ODLA_DNNL_SRC
   odla_dnnl.cc
   odla_dnnl_cast.cc
+  odla_dnnl_loss.cc
   odla_dnnl_rnn.cc
   odla_dnnl_statistics.cc
 )

@@ -56,6 +56,12 @@ typedef enum {
   ODLA_RNN_HIDDEN_CELL_STATE, /*!< output both hidden and cell states */
 } odla_rnn_outputs;
 
+typedef enum {
+  ODLA_REDUCE_NONE,
+  ODLA_REDUCE_MEAN,
+  ODLA_REDUCE_SUM,
+} odla_reduction_mode;
+
 //! \brief RNN weight layout
 typedef enum {
   ODLA_RNN_LDGOI, /*!< layers, directions, num gates, output channels,
@@ -419,6 +425,26 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_MaxPool(
     const odla_uint32* window_dims, const odla_uint32* strides,
     const odla_uint32* paddings_front, const odla_uint32* paddings_back,
     odla_value_shape output_dims, const odla_value_id value_id);
+
+//! \brief Negative Log Likelihood Loss
+/*!
+  NegativeLogLikeliHoodLoss computes negative log likelihood loss.
+
+  \param input the input value
+  \param gt the ground truth (label) value
+  \param ignored the ignored label value
+  \param reduction optional reduction
+  \param weight optional weight
+  \param output_shape output shape
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_NegativeLogLikeliHoodLoss(
+    odla_value input, odla_value gt, odla_int32 ignored,
+    odla_reduction_mode reduction, odla_value weight,
+    odla_value_shape output_shape, odla_value_id value_id);
 
 //! \brief Non-Max Suppression
 /*!

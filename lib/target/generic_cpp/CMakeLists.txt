@@ -34,6 +34,7 @@ set(SRCS
   gemm.cc
   generic_cxx_codegen.cc
   generic_cxx_constant_writer.cc
+  loss.cc
   lrn.cc
   lstm.cc
   matmul.cc

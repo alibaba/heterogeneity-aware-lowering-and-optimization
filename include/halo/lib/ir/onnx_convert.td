@@ -293,6 +293,13 @@ def ONNX_Mul : OpMapping<"Mul", Mul>;
 
 def ONNX_Neg : OpMapping<"Neg", Neg>;
 
+def ONNX_NLLL : OpMapping<"NegativeLogLikelihoodLoss", NegativeLogLikelihoodLoss> {
+  let attr_mapping_ = [
+    AttributeMapping<"ignore_index", "ignored", "-1">,
+    AttributeMapping<"reduction", "reduction", "MEAN">,
+  ];
+}
+
 def ONNX_NonMaxSupression : OpMapping<"NonMaxSuppression", NonMaxSuppression> {
   let attr_mapping_ = [
     AttributeMapping<"", "eta", "1.0">,

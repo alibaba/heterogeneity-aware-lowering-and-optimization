@@ -26,6 +26,7 @@
 #include "halo/api/halo_data.h"
 #include "halo/lib/framework/common.h"
 #include "halo/lib/ir/constant.h"
+#include "halo/lib/ir/loss_instructions.h"
 #include "halo/lib/ir/math_instructions.h"
 
 namespace halo {
@@ -306,6 +307,22 @@ static void RunOnInstruction(ReshapeInst* inst) {
 
   halo::Type new_type{op0_type.GetDataType(), new_shape};
   inst->GetResultsTypes()[0] = new_type;
+}
+
+static void RunOnInstruction(NegativeLogLikelihoodLossInst* inst) {
+  auto& input_type = inst->GetOperand(0).GetType();
+  if (!input_type.IsValid()) {
+    return;
+  }
+  HLCHECK(input_type.GetNumOfDims() >= 2);
+  if (const auto& mode = inst->GetReduction();
+      mode != ReductionMode::None && mode != ReductionMode::INVALID) {
+    inst->GetResultsTypes()[0] = Type{input_type.GetDataType(), {1}};
+    return;
+  }
+  auto dims = input_type.GetDimSizes();
+  dims.erase(dims.begin() + 1);
+  inst->GetResultsTypes()[0] = Type{input_type.GetDataType(), dims};
 }
 
 static void RunOnInstruction(PadInst* inst) {

@@ -150,3 +150,5 @@ def EnumDirection
     : EnumValueType<"Direction", ["FORWARD", "REVERSE", "BIDIRECTIONAL"]>;
 
 def EnumTFIDF : EnumValueType<"TFIDFMode", ["TF", "IDF", "TFIDF"]>;
+
+def EnumReduction: EnumValueType<"ReductionMode", ["None", "SUM", "MEAN"]>;
