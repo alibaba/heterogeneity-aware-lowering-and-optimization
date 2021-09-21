@@ -182,6 +182,7 @@ def CompileODLAModel(files, device):
         [
             "g++",
             "-shared",
+            "-fPIC",
             "-o",
             so_file,
             cc_file,
