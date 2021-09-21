@@ -41,7 +41,7 @@ endforeach()
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -Wno-deprecated-declarations")
 
 set(TRT_BIN_DIR ${CMAKE_BINARY_DIR}/lib)
-set(TRT_SRC_DIR ${CMAKE_SOURCE_DIR}/ODLA/external/tensorrt-7.0.0)
+set(TRT_SRC_DIR ${CMAKE_SOURCE_DIR}/ODLA/external/tensorrt)
 set(TARGET_NAME ${PLUGIN_NAME})
 set(SHARED_TARGET ${TARGET_NAME})
 set(STATIC_TARGET ${TARGET_NAME}_obj)
