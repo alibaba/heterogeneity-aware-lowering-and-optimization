@@ -84,6 +84,9 @@ let cat_ = cat_nn_activation,
   def Softplus : Inst<"Compute the softplus activation, element-wise."
                       " Return ln(exp(x) + 1).">;
 
+  def Softsign : Inst<"Compute the softsign activation, element-wise."
+                      " Return x / (1 + |x|).">;
+
   def Hardmax : Inst<"Compute the hardmax."
                     " Return one-hot tensor for the location of the highest value alone with specified axis."> {
     let attrs_ = [Attr<"The dimension the hardmax would be performed on.",

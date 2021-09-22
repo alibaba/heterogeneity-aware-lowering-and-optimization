@@ -1721,6 +1721,15 @@ odla_value odla_Softplus(odla_value input, const odla_value_id id) {
   return v;
 }
 
+odla_value odla_Softsign(odla_value input, const odla_value_id id) {
+  auto abs_input = odla_Abs(input, nullptr);
+  auto rank = input->shape.size;
+  auto one = CreateConstantFromScalar(1.0f, rank);
+  auto add_input = odla_Add(abs_input, one, nullptr);
+  auto v = odla_Div(input, add_input, id);
+  return v;
+}
+
 template <typename T>
 static void DoHardmax(const int* max_val_indices, T* output_ptr, int axis,
                       const odla_value_shape& shape) {
