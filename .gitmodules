@@ -4,7 +4,7 @@
 	branch = llvmorg-12.0.0
 
 [submodule "tensorrt"]
-	path = ODLA/external/tensorrt-7.0.0
+	path = ODLA/external/tensorrt
 	url = https://github.com/NVIDIA/TensorRT.git
 	branch = release/7.0
 
