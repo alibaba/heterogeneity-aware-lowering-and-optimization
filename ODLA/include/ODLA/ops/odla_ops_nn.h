@@ -587,6 +587,18 @@ odla_Softmax(odla_value input, odla_int32 axis, const odla_value_id value_id);
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Softplus(odla_value input, const odla_value_id value_id);
 
+//! \brief Softsign activation
+/*!
+  Softsign computes the Softsign activation as y = x / (1 + |x|)
+
+  \param input the input value
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Softsign(odla_value input, const odla_value_id value_id);
+
 //! \brief Tanh activation
 /*!
   Tanh computes the tanh activation as (1 - e^{-2x})/(1 + e^{-2x})
