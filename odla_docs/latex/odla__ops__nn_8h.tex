@@ -36,7 +36,12 @@ enum \mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338d}{odla\+
 , \newline
 \mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338da0d5fc5c823a2824bd7679a7c6560e71b}{ODLA\+\_\+\+RNN\+\_\+\+URO}}
  \}
-\begin{DoxyCompactList}\small\item\em RNN data layout. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\begin{DoxyCompactList}\small\item\em RNN data layout. \end{DoxyCompactList}\item 
+enum \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980eb}{odla\+\_\+tf\+\_\+idf\+\_\+mode}} \{ \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebae6c8ccfbfef45464c06a36eba6593c20}{ODLA\+\_\+\+TFIDF\+\_\+\+TF}}
+, \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebab29238c0aa741b35e10aba5f8ba75ff9}{ODLA\+\_\+\+TFIDF\+\_\+\+IDF}}
+, \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebaafcee4dc0418167c2b030e97e597b2cb}{ODLA\+\_\+\+TFIDF\+\_\+\+TFIDF}}
+ \}
+\begin{DoxyCompactList}\small\item\em TF-\/\+IDF computation mode. \end{DoxyCompactList}\end{DoxyCompactItemize}
 \doxysubsection*{Functions}
 \begin{DoxyCompactItemize}
 \item 
@@ -94,6 +99,8 @@ enum \mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338d}{odla\+
 \begin{DoxyCompactList}\small\item\em Softplus activation. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a88c73b46ef6ff6838bc6d945cf1ac217}{odla\+\_\+\+Tanh}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Tanh activation. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a79465412384e1f136beaad67f0b8f086}{odla\+\_\+\+TFIDFVectorize}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} min\+\_\+gram\+\_\+length, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} max\+\_\+gram\+\_\+length, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} max\+\_\+skip\+\_\+count, \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980eb}{odla\+\_\+tf\+\_\+idf\+\_\+mode}} mode, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} pool, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} gram\+\_\+counts, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} output\+\_\+indices, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} weights, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+shape, \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
+\begin{DoxyCompactList}\small\item\em TF-\/\+IDF vectorization. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_aeb2f3d624857d69143d99c805d94da1f}{odla\+\_\+\+Thresholded\+Relu}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} alpha, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Thresholded\+Relu activation. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{structodla__values}{odla\+\_\+values}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a7598587ec9f622f5b3cb77e381660ad4}{odla\+\_\+\+TopK}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} K, \mbox{\hyperlink{odla__common_8h_a86f265601c0773152f4e193a8614c0ac}{odla\+\_\+bool}} largest, \mbox{\hyperlink{odla__common_8h_a86f265601c0773152f4e193a8614c0ac}{odla\+\_\+bool}} sorted, \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} axis, \mbox{\hyperlink{structodla__value__type}{odla\+\_\+value\+\_\+type}} output\+\_\+value\+\_\+type, \mbox{\hyperlink{structodla__value__type}{odla\+\_\+value\+\_\+type}} output\+\_\+value\+\_\+index\+\_\+type, const \mbox{\hyperlink{structodla__value__ids}{odla\+\_\+value\+\_\+ids}} value\+\_\+ids)
@@ -314,6 +321,43 @@ Definition at line 60 of file odla\+\_\+ops\+\_\+nn.\+h.
 \DoxyCodeLine{61   \mbox{\hyperlink{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5a8246331f2d0f9d66b3a27adbd7f09fb8}{ODLA\_RNN\_LDGOI}}, }
 \DoxyCodeLine{63   \mbox{\hyperlink{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5a1a4e3267750a063ca62d2a3cf344f4da}{ODLA\_RNN\_LDIGO}}, }
 \DoxyCodeLine{66 \} \mbox{\hyperlink{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5}{odla\_rnn\_weight\_format}};}
+
+\end{DoxyCode}
+\mbox{\Hypertarget{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980eb}\label{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980eb}} 
+\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_tf\_idf\_mode@{odla\_tf\_idf\_mode}}
+\index{odla\_tf\_idf\_mode@{odla\_tf\_idf\_mode}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
+\doxysubsubsection{\texorpdfstring{odla\_tf\_idf\_mode}{odla\_tf\_idf\_mode}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980eb}{odla\+\_\+tf\+\_\+idf\+\_\+mode}}}
+
+
+
+TF-\/\+IDF computation mode. 
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_TFIDF\_TF@{ODLA\_TFIDF\_TF}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!ODLA\_TFIDF\_TF@{ODLA\_TFIDF\_TF}}}\mbox{\Hypertarget{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebae6c8ccfbfef45464c06a36eba6593c20}\label{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebae6c8ccfbfef45464c06a36eba6593c20}} 
+ODLA\+\_\+\+TFIDF\+\_\+\+TF&term frequency \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_TFIDF\_IDF@{ODLA\_TFIDF\_IDF}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!ODLA\_TFIDF\_IDF@{ODLA\_TFIDF\_IDF}}}\mbox{\Hypertarget{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebab29238c0aa741b35e10aba5f8ba75ff9}\label{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebab29238c0aa741b35e10aba5f8ba75ff9}} 
+ODLA\+\_\+\+TFIDF\+\_\+\+IDF&inverse document frequency \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_TFIDF\_TFIDF@{ODLA\_TFIDF\_TFIDF}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!ODLA\_TFIDF\_TFIDF@{ODLA\_TFIDF\_TFIDF}}}\mbox{\Hypertarget{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebaafcee4dc0418167c2b030e97e597b2cb}\label{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebaafcee4dc0418167c2b030e97e597b2cb}} 
+ODLA\+\_\+\+TFIDF\+\_\+\+TFIDF&the combination of TF and IDF \\
+\hline
+
+\end{DoxyEnumFields}
+
+
+Definition at line 78 of file odla\+\_\+ops\+\_\+nn.\+h.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{78              \{}
+\DoxyCodeLine{79   \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebae6c8ccfbfef45464c06a36eba6593c20}{ODLA\_TFIDF\_TF}},    }
+\DoxyCodeLine{80   \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebab29238c0aa741b35e10aba5f8ba75ff9}{ODLA\_TFIDF\_IDF}},   }
+\DoxyCodeLine{81   \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebaafcee4dc0418167c2b030e97e597b2cb}{ODLA\_TFIDF\_TFIDF}}, }
+\DoxyCodeLine{82 \} \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980eb}{odla\_tf\_idf\_mode}};}
 
 \end{DoxyCode}
 
@@ -1175,6 +1219,46 @@ Tanh computes the tanh activation as (1 -\/ e$^\wedge$\{-\/2x\})/(1 + e$^\wedge$
 
 \begin{DoxyParams}{Parameters}
 {\em input} & the input value \\
+\hline
+{\em value\+\_\+id} & a unique value id (can be NULL)\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+value 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__ops__nn_8h_a79465412384e1f136beaad67f0b8f086}\label{odla__ops__nn_8h_a79465412384e1f136beaad67f0b8f086}} 
+\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_TFIDFVectorize@{odla\_TFIDFVectorize}}
+\index{odla\_TFIDFVectorize@{odla\_TFIDFVectorize}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
+\doxysubsubsection{\texorpdfstring{odla\_TFIDFVectorize()}{odla\_TFIDFVectorize()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+TFIDFVectorize (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}}}]{min\+\_\+gram\+\_\+length,  }\item[{\mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}}}]{max\+\_\+gram\+\_\+length,  }\item[{\mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}}}]{max\+\_\+skip\+\_\+count,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980eb}{odla\+\_\+tf\+\_\+idf\+\_\+mode}}}]{mode,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{pool,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{gram\+\_\+counts,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{output\+\_\+indices,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{weights,  }\item[{\mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}}}]{output\+\_\+shape,  }\item[{\mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
+
+
+
+TF-\/\+IDF vectorization. 
+
+TFIDF vectorizes input sequence into a vector.
+
+
+\begin{DoxyParams}{Parameters}
+{\em input} & the input value \\
+\hline
+{\em min\+\_\+gram\+\_\+length} & the minimum gram length to extract \\
+\hline
+{\em max\+\_\+gram\+\_\+length} & the maximum gram length to extract \\
+\hline
+{\em max\+\_\+skip\+\_\+count} & the maximum items to be skipped \\
+\hline
+{\em mode} & the weighting metric to be used \\
+\hline
+{\em pool} & the grams pool \\
+\hline
+{\em gram\+\_\+counts} & zero-\/based starting indices of n-\/grams in the pool \\
+\hline
+{\em output\+\_\+indices} & the mapping of gram indices to output tensor \\
+\hline
+{\em weights} & optional weights used when mode is ODLA\+\_\+\+TFIDF\+\_\+\+IDF or ODLA\+\_\+\+TFIDF\+\_\+\+TFIDF \\
+\hline
+{\em output\+\_\+shape} & shape of output \\
 \hline
 {\em value\+\_\+id} & a unique value id (can be NULL)\\
 \hline

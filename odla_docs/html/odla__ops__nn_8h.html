@@ -118,6 +118,12 @@ Enumerations</h2></td></tr>
  }</td></tr>
 <tr class="memdesc:a71dec80a52d199c1951f804e5a32338d"><td class="mdescLeft">&#160;</td><td class="mdescRight">RNN data layout.  <a href="odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338d">More...</a><br /></td></tr>
 <tr class="separator:a71dec80a52d199c1951f804e5a32338d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4b7910500dd621f0d6fab963c8b980eb"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980eb">odla_tf_idf_mode</a> { <a class="el" href="odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980ebae6c8ccfbfef45464c06a36eba6593c20">ODLA_TFIDF_TF</a>
+, <a class="el" href="odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980ebab29238c0aa741b35e10aba5f8ba75ff9">ODLA_TFIDF_IDF</a>
+, <a class="el" href="odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980ebaafcee4dc0418167c2b030e97e597b2cb">ODLA_TFIDF_TFIDF</a>
+ }</td></tr>
+<tr class="memdesc:a4b7910500dd621f0d6fab963c8b980eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">TF-IDF computation mode.  <a href="odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980eb">More...</a><br /></td></tr>
+<tr class="separator:a4b7910500dd621f0d6fab963c8b980eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
@@ -201,6 +207,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a88c73b46ef6ff6838bc6d945cf1ac217"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__nn_8h.html#a88c73b46ef6ff6838bc6d945cf1ac217">odla_Tanh</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
 <tr class="memdesc:a88c73b46ef6ff6838bc6d945cf1ac217"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tanh activation.  <a href="odla__ops__nn_8h.html#a88c73b46ef6ff6838bc6d945cf1ac217">More...</a><br /></td></tr>
 <tr class="separator:a88c73b46ef6ff6838bc6d945cf1ac217"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a79465412384e1f136beaad67f0b8f086"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__nn_8h.html#a79465412384e1f136beaad67f0b8f086">odla_TFIDFVectorize</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, <a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a> min_gram_length, <a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a> max_gram_length, <a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a> max_skip_count, <a class="el" href="odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980eb">odla_tf_idf_mode</a> mode, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> pool, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> gram_counts, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> output_indices, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> weights, <a class="el" href="structodla__value__shape.html">odla_value_shape</a> output_shape, <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
+<tr class="memdesc:a79465412384e1f136beaad67f0b8f086"><td class="mdescLeft">&#160;</td><td class="mdescRight">TF-IDF vectorization.  <a href="odla__ops__nn_8h.html#a79465412384e1f136beaad67f0b8f086">More...</a><br /></td></tr>
+<tr class="separator:a79465412384e1f136beaad67f0b8f086"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb2f3d624857d69143d99c805d94da1f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__nn_8h.html#aeb2f3d624857d69143d99c805d94da1f">odla_ThresholdedRelu</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, <a class="el" href="odla__common_8h.html#aeaf2b4ed87e14f5bbf792ab782aa73f5">odla_float32</a> alpha, const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
 <tr class="memdesc:aeb2f3d624857d69143d99c805d94da1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">ThresholdedRelu activation.  <a href="odla__ops__nn_8h.html#aeb2f3d624857d69143d99c805d94da1f">More...</a><br /></td></tr>
 <tr class="separator:aeb2f3d624857d69143d99c805d94da1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -408,6 +417,41 @@ Functions</h2></td></tr>
 <div class="ttc" id="aodla__ops__nn_8h_html_af4b6795b2666bb0feff24897881c2ac5"><div class="ttname"><a href="odla__ops__nn_8h.html#af4b6795b2666bb0feff24897881c2ac5">odla_rnn_weight_format</a></div><div class="ttdeci">odla_rnn_weight_format</div><div class="ttdoc">RNN weight layout.</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__nn_8h_source.html#l00060">odla_ops_nn.h:60</a></div></div>
 <div class="ttc" id="aodla__ops__nn_8h_html_af4b6795b2666bb0feff24897881c2ac5a1a4e3267750a063ca62d2a3cf344f4da"><div class="ttname"><a href="odla__ops__nn_8h.html#af4b6795b2666bb0feff24897881c2ac5a1a4e3267750a063ca62d2a3cf344f4da">ODLA_RNN_LDIGO</a></div><div class="ttdeci">@ ODLA_RNN_LDIGO</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__nn_8h_source.html#l00065">odla_ops_nn.h:63</a></div></div>
 <div class="ttc" id="aodla__ops__nn_8h_html_af4b6795b2666bb0feff24897881c2ac5a8246331f2d0f9d66b3a27adbd7f09fb8"><div class="ttname"><a href="odla__ops__nn_8h.html#af4b6795b2666bb0feff24897881c2ac5a8246331f2d0f9d66b3a27adbd7f09fb8">ODLA_RNN_LDGOI</a></div><div class="ttdeci">@ ODLA_RNN_LDGOI</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__nn_8h_source.html#l00062">odla_ops_nn.h:61</a></div></div>
+</div><!-- fragment -->
+</div>
+</div>
+<a id="a4b7910500dd621f0d6fab963c8b980eb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4b7910500dd621f0d6fab963c8b980eb">&#9670;&nbsp;</a></span>odla_tf_idf_mode</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980eb">odla_tf_idf_mode</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>TF-IDF computation mode. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a4b7910500dd621f0d6fab963c8b980ebae6c8ccfbfef45464c06a36eba6593c20"></a>ODLA_TFIDF_TF&#160;</td><td class="fielddoc"><p>term frequency </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a4b7910500dd621f0d6fab963c8b980ebab29238c0aa741b35e10aba5f8ba75ff9"></a>ODLA_TFIDF_IDF&#160;</td><td class="fielddoc"><p>inverse document frequency </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a4b7910500dd621f0d6fab963c8b980ebaafcee4dc0418167c2b030e97e597b2cb"></a>ODLA_TFIDF_TFIDF&#160;</td><td class="fielddoc"><p>the combination of TF and IDF </p>
+</td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="odla__ops__nn_8h_source.html#l00078">78</a> of file <a class="el" href="odla__ops__nn_8h_source.html">odla_ops_nn.h</a>.</p>
+<div class="fragment"><div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;             {</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;  <a class="code" href="odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980ebae6c8ccfbfef45464c06a36eba6593c20">ODLA_TFIDF_TF</a>,    </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;  <a class="code" href="odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980ebab29238c0aa741b35e10aba5f8ba75ff9">ODLA_TFIDF_IDF</a>,   </div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;  <a class="code" href="odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980ebaafcee4dc0418167c2b030e97e597b2cb">ODLA_TFIDF_TFIDF</a>, </div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;} <a class="code" href="odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980eb">odla_tf_idf_mode</a>;</div>
+<div class="ttc" id="aodla__ops__nn_8h_html_a4b7910500dd621f0d6fab963c8b980eb"><div class="ttname"><a href="odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980eb">odla_tf_idf_mode</a></div><div class="ttdeci">odla_tf_idf_mode</div><div class="ttdoc">TF-IDF computation mode.</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__nn_8h_source.html#l00078">odla_ops_nn.h:78</a></div></div>
+<div class="ttc" id="aodla__ops__nn_8h_html_a4b7910500dd621f0d6fab963c8b980ebaafcee4dc0418167c2b030e97e597b2cb"><div class="ttname"><a href="odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980ebaafcee4dc0418167c2b030e97e597b2cb">ODLA_TFIDF_TFIDF</a></div><div class="ttdeci">@ ODLA_TFIDF_TFIDF</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__nn_8h_source.html#l00081">odla_ops_nn.h:81</a></div></div>
+<div class="ttc" id="aodla__ops__nn_8h_html_a4b7910500dd621f0d6fab963c8b980ebab29238c0aa741b35e10aba5f8ba75ff9"><div class="ttname"><a href="odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980ebab29238c0aa741b35e10aba5f8ba75ff9">ODLA_TFIDF_IDF</a></div><div class="ttdeci">@ ODLA_TFIDF_IDF</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__nn_8h_source.html#l00080">odla_ops_nn.h:80</a></div></div>
+<div class="ttc" id="aodla__ops__nn_8h_html_a4b7910500dd621f0d6fab963c8b980ebae6c8ccfbfef45464c06a36eba6593c20"><div class="ttname"><a href="odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980ebae6c8ccfbfef45464c06a36eba6593c20">ODLA_TFIDF_TF</a></div><div class="ttdeci">@ ODLA_TFIDF_TF</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__nn_8h_source.html#l00079">odla_ops_nn.h:79</a></div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -2365,6 +2409,108 @@ y = scale * (x - mean) / sqrt(variance + epsilon) + bias <br  />
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">input</td><td>the input value </td></tr>
+    <tr><td class="paramname">value_id</td><td>a unique value id (can be NULL)</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>odla_value </dd></dl>
+
+</div>
+</div>
+<a id="a79465412384e1f136beaad67f0b8f086"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a79465412384e1f136beaad67f0b8f086">&#9670;&nbsp;</a></span>odla_TFIDFVectorize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL odla_TFIDFVectorize </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
+          <td class="paramname"><em>input</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a>&#160;</td>
+          <td class="paramname"><em>min_gram_length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a>&#160;</td>
+          <td class="paramname"><em>max_gram_length</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a>&#160;</td>
+          <td class="paramname"><em>max_skip_count</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980eb">odla_tf_idf_mode</a>&#160;</td>
+          <td class="paramname"><em>mode</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
+          <td class="paramname"><em>pool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
+          <td class="paramname"><em>gram_counts</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
+          <td class="paramname"><em>output_indices</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
+          <td class="paramname"><em>weights</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structodla__value__shape.html">odla_value_shape</a>&#160;</td>
+          <td class="paramname"><em>output_shape</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a>&#160;</td>
+          <td class="paramname"><em>value_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>TF-IDF vectorization. </p>
+<p>TFIDF vectorizes input sequence into a vector.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">input</td><td>the input value </td></tr>
+    <tr><td class="paramname">min_gram_length</td><td>the minimum gram length to extract </td></tr>
+    <tr><td class="paramname">max_gram_length</td><td>the maximum gram length to extract </td></tr>
+    <tr><td class="paramname">max_skip_count</td><td>the maximum items to be skipped </td></tr>
+    <tr><td class="paramname">mode</td><td>the weighting metric to be used </td></tr>
+    <tr><td class="paramname">pool</td><td>the grams pool </td></tr>
+    <tr><td class="paramname">gram_counts</td><td>zero-based starting indices of n-grams in the pool </td></tr>
+    <tr><td class="paramname">output_indices</td><td>the mapping of gram indices to output tensor </td></tr>
+    <tr><td class="paramname">weights</td><td>optional weights used when mode is ODLA_TFIDF_IDF or ODLA_TFIDF_TFIDF </td></tr>
+    <tr><td class="paramname">output_shape</td><td>shape of output </td></tr>
     <tr><td class="paramname">value_id</td><td>a unique value id (can be NULL)</td></tr>
   </table>
   </dd>
