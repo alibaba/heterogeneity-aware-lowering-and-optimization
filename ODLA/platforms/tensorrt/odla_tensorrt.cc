@@ -2277,4 +2277,13 @@ odla_values odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
 }
 #endif
 
+odla_value odla_HardSigmoid(odla_value input, odla_float32 alpha,
+                            odla_float32 beta, const odla_value_id value_id) {
+  auto layer = g_comp->network->addActivation(
+      *input, nvinfer1::ActivationType::kHARD_SIGMOID);
+  layer->setAlpha(alpha);
+  layer->setBeta(beta);
+  return CreateValue(layer->getOutput(0), input->type, value_id);
+}
+
 } // C extern
