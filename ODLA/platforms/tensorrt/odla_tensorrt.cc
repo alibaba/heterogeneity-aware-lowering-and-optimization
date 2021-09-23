@@ -33,6 +33,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "common.h"
 #include "plugins/initPlugin.h"
 
 using namespace nvinfer1;
@@ -71,7 +72,7 @@ inline bool check(bool result, int line, const char* file_name) {
 namespace open_dla_tensorrt {
 class Logger : public nvinfer1::ILogger {
  public:
-  void log(ILogger::Severity severity, const char* msg) override {
+  void log(ILogger::Severity severity, const char* msg) NOEXCEPT override {
     int log_level;
     switch (severity) {
       case ILogger::Severity::kINTERNAL_ERROR:
@@ -637,6 +638,7 @@ odla_status odla_SetValueAsOutput(const odla_value val) {
   g_comp->outputs[name] = val;
   g_comp->output_vals.push_back(val);
   val->tensor->setName(name);
+  val->tensor->setType(GetNVDataType(val->type.element_type));
   g_comp->network->markOutput(*val->tensor);
   return ODLA_SUCCESS;
 }
@@ -997,15 +999,9 @@ static odla_value binary_op(nvinfer1::ElementWiseOperation op, odla_value lhs,
   auto out_dim =
       broadcastTensor(g_comp, lhs_tensor, rhs_tensor, dims_lhs, dims_rhs);
   auto sub = g_comp->network->addElementWise(*lhs_tensor, *rhs_tensor, op);
-
-  nvinfer1::Dims sub_dim = sub->getOutput(0)->getDimensions();
-  if (!SameNVDims(rhs_tensor->getDimensions(), lhs_tensor->getDimensions())) {
-    // fix the case when dims_lhs and dims_rhs both need to broadcast
-    // e.g., dims_lhs = (256,1), dims_rhs = (1,768), out_dims = (256,768)
-    out_dim.size = (odla_int32)sub_dim.nbDims;
-    for (int i = 0; i < sub_dim.nbDims; ++i) {
-      out_dim.dims[i] = (odla_int64)sub_dim.d[i];
-    }
+  for (int i = 0; i < out_dim.size; ++i) {
+    out_dim.dims[i] = std::max(lhs_tensor->getDimensions().d[i],
+                               rhs_tensor->getDimensions().d[i]);
   }
   return CreateValue(sub, {lhs->type.element_type, out_dim}, id);
 }
@@ -1078,7 +1074,8 @@ odla_value odla_Log(odla_value input, const odla_value_id id) {
 }
 
 odla_value odla_Not(odla_value input, const odla_value_id id) {
-  return unary_op(nvinfer1::UnaryOperation::kNOT, input, id);
+  auto t = unary_op(nvinfer1::UnaryOperation::kNOT, input, id);
+  return t;
 }
 
 odla_value odla_Abs(odla_value input, const odla_value_id id) {
