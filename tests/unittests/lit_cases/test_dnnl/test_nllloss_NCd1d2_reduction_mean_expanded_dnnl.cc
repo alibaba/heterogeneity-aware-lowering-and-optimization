@@ -26,5 +26,5 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_nllloss_NCd1d2_reduction_mean_expanded | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_nllloss_NCd1d2_reduction_mean_expanded_dnnl.cc.tmp.main.cc.in"

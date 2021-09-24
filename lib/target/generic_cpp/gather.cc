@@ -38,4 +38,20 @@ void GenericCXXCodeGen::RunOnInstruction(GatherInst* inst) {
   ir_mapping_[*inst] = ret;
 }
 
+void GenericCXXCodeGen::RunOnInstruction(GatherElementsInst* inst) {
+  const Def& lhs = inst->GetOperand(0);
+  const Def& rhs = inst->GetOperand(1);
+
+  CXXValue op0 = ir_mapping_[lhs];
+  CXXValue op1 = ir_mapping_[rhs];
+
+  const auto& ret_type = inst->GetResultType();
+
+  CXXValue ret(inst->GetName(), op0.type);
+
+  EmitODLACall(ret, "odla_GatherElements", op0, op1, inst->GetAxis(),
+               EmitShape(ret_type));
+  ir_mapping_[*inst] = ret;
+}
+
 } // namespace halo
