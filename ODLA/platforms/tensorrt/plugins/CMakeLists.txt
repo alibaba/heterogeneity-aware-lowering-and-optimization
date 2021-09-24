@@ -16,8 +16,8 @@
 
 add_custom_target(ODLA_TRTPLUGIN)
 
-set(TRT_VERSION 7.0.0.11)
-set(TRT_SOVERSION 7.0.0)
+#set(TRT_VERSION 7.0.0.11)
+#set(TRT_SOVERSION 7.0.0)
 
 if (DEFINED GPU_ARCHS)
   message(STATUS "GPU_ARCHS defined as ${GPU_ARCHS}. Generating CUDA code for SM ${GPU_ARCHS}")
