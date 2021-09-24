@@ -37,18 +37,31 @@ namespace halo {
 
 static std::vector<Def> ConvertUnsqueeze(const ONNXExtensionInst* ext,
                                          IRBuilder* builder) {
-  HLCHECK(ext->GetNumOfOperands() == 1);
+  auto num_ops = ext->GetNumOfOperands();
+  HLCHECK(num_ops == 1 || num_ops == 2);
   auto input = ext->GetOperand(0);
   const Type& input_type = input.GetType();
 
   if (!input_type.IsValid()) {
     return {};
   }
-
-  HLCHECK(ext->GetNumOfAttributes() == 1);
-  const Attribute* attr = ext->GetAttributes()[0].get();
-  HLCHECK(attr->GetName() == "axes");
-  std::vector<int> axis = attr->GetValueAsIntegerList();
+  std::vector<int> axis;
+  if (num_ops == 2) {
+    const Constant* axes_c = DynCast<Constant>(ext->GetOperand(1));
+    if (axes_c == nullptr) {
+      return {};
+    }
+    auto n = axes_c->GetResultType().GetTotalNumOfElements();
+    axis.resize(n);
+    for (int i = 0; i < n; ++i) {
+      axis[i] = axes_c->GetDataAsInt64(i);
+    }
+  } else {
+    HLCHECK(ext->GetNumOfAttributes() == 1);
+    const Attribute* attr = ext->GetAttributes()[0].get();
+    HLCHECK(attr->GetName() == "axes");
+    axis = attr->GetValueAsIntegerList();
+  }
   std::vector<int64_t> new_dims(input_type.GetDimSizes());
   if (new_dims.empty()) {
     // for scalar type, make its shape as [1].
