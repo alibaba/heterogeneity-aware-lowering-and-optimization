@@ -471,6 +471,63 @@ odla_value odla_Gather(odla_value params, const odla_value indices,
   return CreateValue(ret_mem, output_dims, id);
 }
 
+template <typename Tdata, typename Tidx>
+static void do_gather_elements(const Tdata* data, int64_t data_i,
+                               int64_t data_j, int64_t data_k, const Tidx* idx,
+                               int64_t idx_i, int64_t idx_j, int64_t idx_k,
+                               int axis, Tdata* dst) {
+  const int64_t stride_i = data_j * data_k;
+  for (int64_t i = 0; i < idx_i; ++i)
+    for (int64_t j = 0; j < idx_j; ++j)
+      for (int64_t k = 0; k < idx_k; ++k) {
+        auto v = *idx++;
+        v = v < 0 ? v + data_k : v;
+        *dst++ = data[i * stride_i + v * data_k + k];
+      }
+}
+
+odla_value odla_GatherElements(odla_value data, const odla_value indices,
+                               odla_int32 axis, odla_value_shape output_dims,
+                               const odla_value_id id) {
+  auto ret_md = getMemoryDesc({data->elem_type, output_dims});
+  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
+  // treat the data & indices as [i, j, k]-shape.
+  int rank = data->shape.size;
+  axis = axis < 0 ? axis + rank : axis;
+  auto reshape = [](const odla_value_shape& shape, int axis) {
+    int64_t i = std::accumulate(shape.dims, shape.dims + axis, 1,
+                                std::multiplies<int64_t>());
+    int64_t j = shape.dims[axis];
+    int64_t k = std::accumulate(shape.dims + axis + 1, shape.dims + shape.size,
+                                1, std::multiplies<int64_t>());
+    return std::tuple<int64_t, int64_t, int64_t>{i, j, k};
+  };
+
+  const auto& shape_data = reshape(data->shape, axis);
+  const auto& shape_idx = reshape(indices->shape, axis);
+  void* dst = static_cast<void*>(ret_mem.get_data_handle());
+  auto op = [axis, shape_data, shape_idx, dst, data, indices] {
+    int64_t data_i;
+    int64_t data_j;
+    int64_t data_k;
+    std::tie(data_i, data_j, data_k) = shape_data;
+    int64_t idx_i;
+    int64_t idx_j;
+    int64_t idx_k;
+    std::tie(idx_i, idx_j, idx_k) = shape_idx;
+
+    const float* input = static_cast<const float*>(data->mem.get_data_handle());
+    const int64_t* idx =
+        static_cast<const int64_t*>(indices->mem.get_data_handle());
+    do_gather_elements(input, data_i, data_j, data_k, idx, idx_i, idx_j, idx_k,
+                       axis, static_cast<float*>(dst));
+  };
+
+  add_op(op);
+  InterpretIfNeeded();
+  return CreateValue(ret_mem, output_dims, id);
+}
+
 static odla_value unary_eltwise_op(
     dnnl::algorithm algo, odla_value input, odla_float32 alpha,
     odla_float32 beta, const odla_value_id id,

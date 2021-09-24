@@ -1424,6 +1424,62 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(GatherInst* inst) {
   return {orig_def, *c_ret};
 }
 
+std::pair<Def, Def> InstSimplify::RunOnInstruction(GatherElementsInst* inst) {
+  HLCHECK(inst->GetNumOfOperands() == 2);
+  auto input_op = inst->GetOperand(0);
+  auto idx_op = inst->GetOperand(1);
+  auto const& input_type = input_op.GetType();
+  auto const& idx_type = idx_op.GetType();
+  Def orig_def{inst, 0};
+
+  if (!input_type.IsValid() || !idx_type.IsValid()) {
+    return {orig_def, orig_def};
+  }
+
+  const auto& input_shape = input_type.GetDimSizes();
+  auto idx_shape = idx_type.GetDimSizes();
+
+  int axis = inst->GetAxis();
+  int rank = input_type.GetNumOfDims();
+  axis = axis < 0 ? rank + axis : axis;
+  inst->SetAxis(axis);
+
+  // if idx_shape[i] and input_shape[i] are 1 for all dims except for
+  // "axis", it can be converted to Gather. Otherwise, if idx_shape is a
+  // result of broadcasting, the input of broadcasting might be converted.
+  bool can_be_gather = input_shape.size() == idx_shape.size();
+  for (unsigned i = 0, e = input_shape.size(); can_be_gather && i < e; ++i) {
+    can_be_gather &= (input_shape[i] == idx_shape[i] && input_shape[i] == 1) ||
+                     (i == static_cast<unsigned>(axis));
+  }
+  if (!can_be_gather) {
+    // try to check if input_shape is a result of broadcasting.
+    if (IsA<Instruction>(idx_op) &&
+        DynCast<Instruction>(idx_op)->GetOpCode() == OpCode::EXPANDDIMS) {
+      ExpandDimsInst* exp_dim = DynCast<ExpandDimsInst>(idx_op);
+      idx_op = exp_dim->GetOperand(0);
+      idx_shape = idx_op.GetType().GetDimSizes(); // FIXME: more checks
+      can_be_gather = true;
+    }
+  }
+  if (can_be_gather) {
+    ConstantBuilder cb(inst->GetParent()->GetParent());
+    std::vector<int64_t> new_dims{idx_shape[axis]};
+    Constant* c = cb.CreateConstant(
+        inst->GetName() + "_shape",
+        halo::Type{DataType::INT64, {static_cast<int64_t>(new_dims.size())}},
+        new_dims.data());
+    IRBuilder builder(inst->GetParent());
+    builder.SetInsertAfter(inst);
+    auto reshape =
+        builder.CreateReshape(inst->GetName() + "_reshape", idx_op, *c);
+    auto new_inst = builder.CreateGather(inst->GetName(), {input_op, *reshape});
+    new_inst->SetAxis(axis);
+    return {orig_def, *new_inst};
+  }
+  return {orig_def, orig_def};
+}
+
 std::pair<Def, Def> InstSimplify::RunOnInstruction(CeilInst* inst) {
   Def orig_def{inst, 0};
   const auto& op0 = inst->GetOperand(0);

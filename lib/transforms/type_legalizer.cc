@@ -820,6 +820,16 @@ static void RunOnInstruction(GatherInst* inst) {
   inst->GetResultsTypes()[0] = halo::Type{param_type.GetDataType(), ret_shape};
 }
 
+static void RunOnInstruction(GatherElementsInst* inst) {
+  const auto& data_type = inst->GetOperand(0).GetType().GetDataType();
+  const auto& index_type = inst->GetOperand(1).GetType();
+  if (data_type == DataType::INVALID || !index_type.IsValid()) {
+    return;
+  }
+
+  inst->GetResultsTypes()[0] = halo::Type{data_type, index_type.GetDimSizes()};
+}
+
 static void RunOnInstruction(SliceInst* inst) {
   auto op0 = inst->GetOperand(0);
   auto op_start = inst->GetOperand(1);

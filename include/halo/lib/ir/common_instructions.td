@@ -49,6 +49,13 @@ let cat_ = cat_common in {
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
   }
 
+  def GatherElements : Inst <"Gather data from input X1 based on indices specified by X2."> {
+    let attrs_ = [Attr<"The axis to gather on", Integer, "axis", "0">];
+    let ins_ = [Arg<"The input data.", ArgType<[I8,I16,I32,F16,F32]> >,
+                Arg<"The indices.", ArgType<[I32, I64]> >];
+    let outs_ = [Arg<"The result.", MatchArgType<0> >];
+  }
+
   def Pad : Inst<"Pad the input data based on various algorithms specified by"
                  " modes along each spatial axis."> {
     let attrs_ = [Attr<"The padding algorithm such as CONSTANT, SYMMETRIC,"
