@@ -110,12 +110,23 @@ static inline dnnl::memory::dims getDims(const odla_value_shape& od) {
 static inline dnnl::memory::format_tag getFormatTag(
     const odla_value_shape& od) {
   static const dnnl::memory::format_tag tags[] = {
-      dnnl::memory::format_tag::undef,  dnnl::memory::format_tag::a,
-      dnnl::memory::format_tag::ab,     dnnl::memory::format_tag::abc,
-      dnnl::memory::format_tag::abcd,   dnnl::memory::format_tag::abcde,
+      dnnl::memory::format_tag::undef,
+      dnnl::memory::format_tag::a,
+      dnnl::memory::format_tag::ab,
+      dnnl::memory::format_tag::abc,
+      dnnl::memory::format_tag::abcd,
+      dnnl::memory::format_tag::abcde,
       dnnl::memory::format_tag::abcdef,
-  };
-  return (od.size <= 0 || od.size > 6) ? tags[0] : tags[od.size];
+      dnnl::memory::format_tag::abcdefg,
+      dnnl::memory::format_tag::abcdefgh,
+      dnnl::memory::format_tag::abcdefghi,
+      dnnl::memory::format_tag::abcdefghij,
+      dnnl::memory::format_tag::abcdefghijk,
+      dnnl::memory::format_tag::abcdefghijkl};
+  return (od.size <= 0 || od.size > ODLA_MAX_DIMENSION ||
+          od.size >= (sizeof(tags) / sizeof(tags[0])))
+             ? tags[0]
+             : tags[od.size];
 }
 
 static inline dnnl::memory::format_tag getFormatTag(odla_memory_layout layout,
