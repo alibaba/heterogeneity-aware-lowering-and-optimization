@@ -18,6 +18,8 @@
 #ifndef ODLA_TRT_COMMON_H
 #define ODLA_TRT_COMMON_H
 
+#include <NvInferVersion.h>
+
 #if NV_TENSORRT_MAJOR >= 8
 #define NOEXCEPT noexcept
 #else
