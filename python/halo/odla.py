@@ -69,7 +69,7 @@ class ODLAModel:
             n = 1
             for r in range(0, vt.shape.size):
                 n *= vt.shape.dims[r]
-            self.out_vals.append((out.value, vt, n))
+            self.out_vals.append((out, vt, n))
         self.ctx = c_void_p(0)
         self.h.odla_CreateContext(pointer(self.ctx))
 

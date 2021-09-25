@@ -16,6 +16,10 @@ from ctypes import *
 import tempfile
 from pathlib import Path
 import subprocess
+import os
+
+debug = os.environ.get("CANAL_DEBUG")
+debug = debug is not None and debug != "0"
 
 LIB_HALO = "libhalo.so"
 lib_halo = CDLL(LIB_HALO)
@@ -72,22 +76,23 @@ int halo_Compile(halo::ModelFormat model_format, unsigned num_models,
 """
 
 Compile.argtypes = [
-    c_int, # model_format
-    c_uint, # num_models
-    c_void_p, # models
-    c_void_p, #model_sizes
-    c_char_p, # target
-    c_int, #batch
-    c_uint, # num_input_shapes
-    c_void_p, # input_shapes
-    c_uint, # num_inputs
-    c_void_p, # inputs
-    c_uint, # num_outputs
-    c_void_p, #outputs
-    c_void_p, # cg_opts
-    c_char_p, # filename
-    c_void_p, # model_info
+    c_int,  # model_format
+    c_uint,  # num_models
+    c_void_p,  # models
+    c_void_p,  # model_sizes
+    c_char_p,  # target
+    c_int,  # batch
+    c_uint,  # num_input_shapes
+    c_void_p,  # input_shapes
+    c_uint,  # num_inputs
+    c_void_p,  # inputs
+    c_uint,  # num_outputs
+    c_void_p,  # outputs
+    c_void_p,  # cg_opts
+    c_char_p,  # filename
+    c_void_p,  # model_info
 ]
+
 
 def exec(args):
     proc = subprocess.run(args)
@@ -96,7 +101,7 @@ def exec(args):
         exit(proc.returncode)
 
 
-def CompileModel(model_file, batch, format):
+def CompileModel(model_file, input_shapes, batch, format):
     output_file = tempfile.mktemp(".cc")
     output_bin = Path(output_file).with_suffix(".bin")
     odla_lib = cast(create_string_buffer(b""), c_char_p)
@@ -121,12 +126,16 @@ def CompileModel(model_file, batch, format):
         model_data.append(bytes)
         model_sizes.append(len(bytes))
     model_num = len(model_data)
-    num_input_shapes = 0
+    if input_shapes is None:
+        input_shapes = []
+    num_input_shapes = len(input_shapes)
+    input_shapes_ptrs = [s.encode("utf-8") for s in input_shapes]
     num_inputs = 0
     inputs = c_void_p(0)
     outputs = c_void_p(0)
     num_outputs = 0
-    input_shapes = c_void_p(0)
+    input_shapes = (c_char_p * num_input_shapes)(*input_shapes_ptrs)
+
     target = "cxx".encode("utf-8")
     output_filename = output_file.encode("utf-8")
     Compile(
@@ -147,6 +156,7 @@ def CompileModel(model_file, batch, format):
         0,
     )
     return [output_file, output_bin]
+
 
 def AnalyzeModel(model_file, batch):
     output_file = ""
@@ -175,14 +185,16 @@ def AnalyzeModel(model_file, batch):
 def CompileODLAModel(files, device):
     cc_file = files[0]
     bin_file = files[1]
-    if not device or device == 'auto':
+    if not device or device == "auto":
         device = "odla_dnnl"
     so_file = Path(files[0]).with_suffix(".so")
+    opt_flag = "-g" if debug else "-O2"
     exec(
         [
             "g++",
             "-shared",
             "-fPIC",
+            opt_flag,
             "-o",
             so_file,
             cc_file,
