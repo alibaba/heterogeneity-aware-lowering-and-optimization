@@ -49,6 +49,7 @@ static int InvokeCompiler(Module* m, const std::string& target, int batch,
                           const std::vector<std::string>& input_shapes,
                           const std::vector<std::string>& inputs,
                           const std::vector<std::string>& outputs,
+                          ModelFormat model_format,
                           const CXXCodeGenOpts& cg_opts,
                           const std::string& main_output_file_name,
                           ModelInfo* model_info, bool is_compile_model = true) {
@@ -62,7 +63,7 @@ static int InvokeCompiler(Module* m, const std::string& target, int batch,
   PassManager pm(ctx);
   FusionOptions fusion_opts;
   PopulateOptPasses(&pm, target, input_shapes, inputs, outputs, batch, "",
-                    false, ModelFormat::TENSORFLOW, cg_opts, fusion_opts);
+                    false, model_format, cg_opts, fusion_opts);
   if (is_compile_model) {
     std::string ext = (cg_opts.dialect == halo::Dialect::C99) ? ".c" : ".cc";
     bool is_c_or_cxx_output =
@@ -127,7 +128,7 @@ int Compile(ModelFormat format, const std::vector<const void*>& model_defs,
   }
 
   return InvokeCompiler(m.get(), target, batch, input_shapes, inputs, outputs,
-                        cg_opts, main_output_file_name, model_info);
+                        format, cg_opts, main_output_file_name, model_info);
 }
 
 HL_API_EXPORT
@@ -149,7 +150,7 @@ int Compile(halo::ModelFormat format, const std::vector<const char*>& models,
   }
 
   return InvokeCompiler(m.get(), target, batch, input_shapes, inputs, outputs,
-                        cg_opts, main_output_file_name, model_info,
+                        format, cg_opts, main_output_file_name, model_info,
                         is_compile_model);
 }
 
@@ -205,7 +206,7 @@ int halo_Compile(halo::ModelFormat model_format, unsigned num_models,
   }
   return halo::Compile(
       model_format, models_data, models_sizes, std::string(target), batch,
-      ToStrings(num_inputs, input_shapes), ToStrings(num_inputs, inputs),
+      ToStrings(num_input_shapes, input_shapes), ToStrings(num_inputs, inputs),
       ToStrings(num_outputs, outputs), opts, std::string(main_output_file),
       model_info, true);
 }
