@@ -1505,6 +1505,23 @@ static std::vector<Def> ConvertRNN(const ONNXExtensionInst* ext,
   return {Def{rnn, 0}, Def{rnn, 1}};
 }
 
+static std::vector<Def> ConvertSCE(const ONNXExtensionInst* ext,
+                                   IRBuilder* builder) {
+  auto score =
+      builder->CreateLogSoftmax(ext->GetName() + "_1", {ext->GetOperand(0)});
+  score->SetAxis(1);
+  auto ops = ext->GetOperands();
+  ops[0] = *score;
+  auto nlll =
+      builder->CreateNegativeLogLikelihoodLoss(ext->GetName() + "_0", ops);
+  int ignored_idx = FindAttributeValue<int>(*ext, "ignore_index", -1);
+  ReductionMode mode =
+      FindAttributeValue(*ext, "reduction", ReductionMode::MEAN);
+  nlll->SetIgnored(ignored_idx);
+  nlll->SetReduction(mode);
+  return {*nlll, *score};
+}
+
 static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
                                              IRBuilder* builder) {
   builder->SetInsertAfter(onnx_inst);
@@ -1595,6 +1612,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::LSTM: {
       return ConvertLSTM(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::SOFTMAXCROSSENTROPY: {
+      return ConvertSCE(onnx_inst, builder);
     }
     default: {
       HLCHECK(0 && "Unhandled");

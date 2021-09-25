@@ -399,6 +399,13 @@ let attr_mapping_ = [AttributeMapping<"axis", "axis", "-1">] in {
   def ONNX_LogSoftmax : OpMapping<"LogSoftmax", LogSoftmax>;
 }
 
+def ONNX_SoftmaxCrossEntropy : ONNXExtension<"SoftmaxCrossEntropyLoss"> {
+  let extension_attr_ = [
+    ExtensionAttr<"ignore_index", Integer, "-1">,
+    ExtensionAttr<"reduction", EnumReduction, "MEAN">,
+  ];
+}
+
 def ONNX_Softplus : OpMapping<"Softplus", Softplus>;
 
 def ONNX_Softsign : OpMapping<"Softsign", Softsign>;
