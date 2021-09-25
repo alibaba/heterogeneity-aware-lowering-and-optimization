@@ -21,8 +21,18 @@ limitations under the License.
 from halo.inference import Inference
 import argparse
 
-def test(model_file, device, batch_size, format, input_data_files, ref_data_files):
+
+def test(
+    model_file,
+    device,
+    batch_size,
+    format,
+    input_data_files,
+    input_shape,
+    ref_data_files,
+):
     import numpy as np
+
     inputs = []
     ref_outs = []
     for in_file in input_data_files:
@@ -30,7 +40,7 @@ def test(model_file, device, batch_size, format, input_data_files, ref_data_file
     for in_file in ref_data_files:
         ref_outs.append(np.loadtxt(in_file, dtype=np.float32))
 
-    service = Inference(model_file, device, batch_size, format)
+    service = Inference(model_file, input_shape, device, batch_size, format)
     service.Initialize()
 
     for i in range(1, 2):
@@ -55,6 +65,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch", "-b", type=int, default="0")
     parser.add_argument("--format", "-f", type=str, default="")
     parser.add_argument("--input-data", "-i", nargs="+", type=open)
+    parser.add_argument("--input-shape", nargs="+", type=str)
     parser.add_argument("--ref-output", "-r", nargs="+", type=open)
 
     args = parser.parse_args()
@@ -65,5 +76,6 @@ if __name__ == "__main__":
         args.batch,
         args.format,
         args.input_data,
+        args.input_shape,
         args.ref_output,
     )
