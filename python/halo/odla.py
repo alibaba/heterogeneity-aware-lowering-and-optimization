@@ -14,7 +14,8 @@
 
 from ctypes import *
 from enum import Enum
-
+import os
+from pdb import set_trace
 
 class Device(Enum):
     CUDA = 1
@@ -31,57 +32,69 @@ class ValueType(Structure):
 
 
 class ODLAModel:
-    def __init__(self, so_file):
+    def __init__(self, so_file, files):
         self.so_file = so_file
         self.h = None
+        self.files = files
 
     def Load(self):
         if self.h is None:
             self.h = CDLL(self.so_file)
         self.comp = c_void_p(0)
+        self.device = c_void_p(0)
+        self.h.odla_AllocateDevice(c_void_p(0), 0, pointer(self.device))
         self.h.odla_CreateComputation(pointer(self.comp))
         # TODO:
-        use_sim = c_bool(True)
-        self.h.odla_SetComputationItem(self.comp, 7, pointer(use_sim))
-
-        self.h.model_helper(self.comp)
+        #use_sim = c_bool(True)
+        #self.h.odla_SetComputationItem(self.comp, 7, pointer(use_sim))
+        cc_file = str(self.files[0]).encode("utf-8")
+        bin_file = str(self.files[1]).encode("utf-8")
+        self.comp = self.h.model_helper(cc_file, bin_file)
+        self.ctx = c_void_p(0)
+        self.h.odla_CreateContext(pointer(self.ctx))
         n = c_int32(-1)
         self.h.odla_GetNumOfArgsFromComputation(self.comp, pointer(n))
-        self.nr_args = n.value
-
-        nr_args = c_int32(-1)
+        #self.nr_args = n.value
+        self.nr_args = 1
+        #nr_args = c_int32(-1)
         self.h.odla_GetNumOfOutputsFromComputation(self.comp, pointer(n))
-        self.nr_outputs = n.value
+        #self.nr_outputs = n.value
+        self.nr_outputs = 1
         self.in_vals = []
         for idx in range(0, self.nr_args):
             arg_v = c_void_p(0)
             self.h.odla_GetArgFromComputationByIdx(self.comp, idx, pointer(arg_v))
-            vt = ValueType()
-            self.h.odla_GetValueType(arg_v, pointer(vt))
-            self.in_vals.append((arg_v.value, vt))
+            #vt = ValueType()
+            #vt = ValueType() # TODO!!! Type check odla_common.h
+            #self.h.odla_GetValueType(arg_v, pointer(vt))
+            #self.in_vals.append((arg_v.value, vt))
 
         self.out_vals = []
         for idx in range(0, self.nr_outputs):
             out = c_void_p(0)
             self.h.odla_GetOutputFromComputationByIdx(self.comp, idx, pointer(out))
-            vt = ValueType()
-            self.h.odla_GetValueType(out, pointer(vt))
+            #vt = ValueType()
+            #self.h.odla_GetValueType(out, pointer(vt))
             n = 1
-            for r in range(0, vt.shape.size):
-                n *= vt.shape.dims[r]
-            self.out_vals.append((out, vt, n))
-        self.ctx = c_void_p(0)
-        self.h.odla_CreateContext(pointer(self.ctx))
+            #for r in range(0, vt.shape.size):
+                #n *= vt.shape.dims[r]
+            #self.out_vals.append((out, vt, n))
 
+    # (c_int_t * 1)(*[1000*4])
     def Execute(self, data):
-        for idx, v in enumerate(self.in_vals):
-            self.h.odla_BindToArgument(
-                v[0], data[idx].ctypes.data_as(c_void_p), self.ctx
-            )
+#       ''' for idx, v in enumerate(self.in_vals):
+#            self.h.odla_BindToArgument(
+#                v[0], data[idx].ctypes.data_as(c_void_p), self.ctx
+#        )'''
+        self.h.odla_BindToArgument(c_void_p(0), data[0].ctypes.data_as(c_void_p), self.ctx)
         buffers = []
-        for idx, v in enumerate(self.out_vals):
+        buf = (c_float * 1000)()
+        '''for idx, v in enumerate(self.out_vals):
             buf = (c_float * v[2])()  # FIXME: handle types
             self.h.odla_BindToOutput(v[0], buf, self.ctx)
-            buffers.append(buf)
-        self.h.odla_ExecuteComputation(self.comp, self.ctx, 0, c_void_p(0))
+            buffers.append(buf)'''
+        buffers.append(buf)
+        self.h.odla_BindToOutput(c_void_p(0), buf, self.ctx)
+        self.h.model_data(self.ctx,  (c_int32 * 1)(*[224*224*3*4]), (c_int32 * 1)(*[1000*4])) #TODO CHECK pointer type
+        self.h.odla_ExecuteComputation(self.comp, self.ctx, 0, self.device)
         return [buf[:] for buf in buffers]

@@ -48,6 +48,7 @@ class Inference:
         if debug:
             print(self.intermediate_files)
         for file in self.intermediate_files:
+            print(file)
             if not debug:
                 Path(file).unlink()
         del self.model
@@ -56,9 +57,11 @@ class Inference:
         files = halo.CompileModel(
             self.model_file, self.input_shapes, self.batch, self.format
         )
-        self.so_file = halo.CompileODLAModel(files, self.device)
-        self.intermediate_files = [*files, self.so_file]
-        self.model = odla.ODLAModel(self.so_file)
+
+       # self.so_file = halo.CompileODLAModel(files, self.device)
+        self.so_file = "/usr/local/lib/libvodla.so"
+        self.intermediate_files = [*files]
+        self.model = odla.ODLAModel(self.so_file, files)
         self.model.Load()
 
     def Run(self, data):

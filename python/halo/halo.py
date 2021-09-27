@@ -199,7 +199,7 @@ def CompileODLAModel(files, device):
             so_file,
             cc_file,
             bin_file,
-            "-l" + device,
+            "-l" + "vodla",
             "-Wl,-rpath=/usr/local/lib",
         ]
     )
