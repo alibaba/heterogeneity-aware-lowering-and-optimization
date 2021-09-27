@@ -106,10 +106,10 @@ class ODLAModel:
         # self.h.model_data(self.ctx,  (c_float * 1)(*[224*224*3*4]), (c_int32 * 1)(*[1000*4]))
         if("resnet50" in model):
             # resnet50: 
-            self.h.model_data(self.ctx,  (c_float * 1)(*[224*224*3*4]), (c_int32 * 1)(*[1000*4]))
+            self.h.model_data(self.ctx,  (c_int32 * 1)(*[224*224*3*4]), (c_int32 * 1)(*[1000*4]))
         elif("dbnet" in model):
             # dbnet: 
-            self.h.model_data(self.ctx,  (c_float * 1)(*[3*960*720*4]), (c_int32 * 1)(*[320*320*4]))
+            self.h.model_data(self.ctx,  (c_int32 * 1)(*[3*960*720*4]), (c_int32 * 1)(*[320*320*4]))
         elif("crnn" in model):
             # crnn: 
             self.h.model_data(self.ctx,  (c_float * 1)(*[3*32*665*4]), (c_int32 * 1)(*[64*1*5331*4]))
