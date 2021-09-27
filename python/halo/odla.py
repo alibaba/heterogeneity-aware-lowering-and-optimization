@@ -81,20 +81,39 @@ class ODLAModel:
             #self.out_vals.append((out, vt, n))
 
     # (c_int_t * 1)(*[1000*4])
-    def Execute(self, data):
+    def Execute(self, data, model):
 #       ''' for idx, v in enumerate(self.in_vals):
 #            self.h.odla_BindToArgument(
 #                v[0], data[idx].ctypes.data_as(c_void_p), self.ctx
 #        )'''
         self.h.odla_BindToArgument(c_void_p(0), data[0].ctypes.data_as(c_void_p), self.ctx)
         buffers = []
-        buf = (c_float * 1000)()
-        '''for idx, v in enumerate(self.out_vals):
-            buf = (c_float * v[2])()  # FIXME: handle types
-            self.h.odla_BindToOutput(v[0], buf, self.ctx)
-            buffers.append(buf)'''
+        # buf = (c_float * 1000)()
+        if("resnet50" in model):
+            # resnet50: 
+            buf = (c_float * 1*1000)()
+        elif("dbnet" in model):
+            # dbnet: 
+            buf = (c_float * 1*320*320)()
+        elif("crnn" in model):
+            # crnn: 
+            buf = (c_float * 64*1*5331)()
+        else:
+            assert(False and f"unknown model.{model}")
+        
         buffers.append(buf)
         self.h.odla_BindToOutput(c_void_p(0), buf, self.ctx)
-        self.h.model_data(self.ctx,  (c_int32 * 1)(*[224*224*3*4]), (c_int32 * 1)(*[1000*4])) #TODO CHECK pointer type
+        # self.h.model_data(self.ctx,  (c_float * 1)(*[224*224*3*4]), (c_int32 * 1)(*[1000*4]))
+        if("resnet50" in model):
+            # resnet50: 
+            self.h.model_data(self.ctx,  (c_float * 1)(*[224*224*3*4]), (c_int32 * 1)(*[1000*4]))
+        elif("dbnet" in model):
+            # dbnet: 
+            self.h.model_data(self.ctx,  (c_float * 1)(*[3*960*720*4]), (c_int32 * 1)(*[320*320*4]))
+        elif("crnn" in model):
+            # crnn: 
+            self.h.model_data(self.ctx,  (c_float * 1)(*[3*32*665*4]), (c_int32 * 1)(*[64*1*5331*4]))
+        else:
+            assert(False and f"unknown model.{model}")
         self.h.odla_ExecuteComputation(self.comp, self.ctx, 0, self.device)
         return [buf[:] for buf in buffers]

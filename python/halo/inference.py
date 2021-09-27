@@ -67,4 +67,4 @@ class Inference:
     def Run(self, data):
         if self.model is None:
             self.Initialize()
-        return self.model.Execute(data)
+        return self.model.Execute(data, self.model_file)
