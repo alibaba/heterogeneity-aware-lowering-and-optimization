@@ -479,8 +479,33 @@ odla_Not(odla_value input, const odla_value_id value_id);
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_NotEqual(odla_value lhs, odla_value rhs, const odla_value_id value_id);
 
+//! \brief Logic or test
+/*!
+  logic tests operator \p lhs or \p rhs .
+  The returning element type is implementation determined.
+
+  \param lhs the first value
+  \param rhs the second value
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value.
+*/
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Or(odla_value lhs, odla_value rhs, const odla_value_id value_id);
+
+//! \brief Logic xor test
+/*!
+  logic tests operator \p lhs xor \p rhs .
+  The returning element type is implementation determined.
+
+  \param lhs the first value
+  \param rhs the second value
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value.
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Xor(odla_value lhs, odla_value rhs, const odla_value_id value_id);
 
 //! \brief Raise to power
 /*!

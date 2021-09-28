@@ -138,6 +138,7 @@ def CompileModel(model_file, input_shapes, batch, format):
 
     target = "cxx".encode("utf-8")
     output_filename = output_file.encode("utf-8")
+    
     Compile(
         format_val,
         model_num,
@@ -146,14 +147,14 @@ def CompileModel(model_file, input_shapes, batch, format):
         target,
         batch,
         num_input_shapes,
-        input_shapes,
+        (c_char_p * num_input_shapes)(*input_shapes),
         num_inputs,
         inputs,
         num_outputs,
         outputs,
         pointer(opts),
         output_filename,
-        0,
+        0
     )
     return [output_file, output_bin]
 

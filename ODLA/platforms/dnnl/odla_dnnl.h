@@ -280,4 +280,98 @@ static inline odla_value CreateValue(const dnnl::memory& mem,
   return ret;
 }
 
+static inline void expand_dims(odla_value_shape& src, odla_value_shape& dst) {
+  // src shape is [1,5], dst shape is [1,4,1], we expand src shape to [1,1,5]
+  // src shape is [64], dst shape is [1,64,128], we expand src shape to [1,64,1]
+  // src shape is [64], dst shape is [1,64,64], we expand src shape to [1,1,64]
+  // src shape is [7,31,64], dst shape is [2,31,64,64], failed
+
+  const int src_n = src.size;
+  const int dst_n = dst.size;
+  odla_value_shape new_shape;
+
+  auto CompareDims = [src, dst, src_n](int loc,
+                                       odla_value_shape& new_shape) -> bool {
+    int src_idx = src_n - 1;
+    int dst_idx = loc;
+    for (int k = 0; k < src_n; k++) {
+      if (dst.dims[dst_idx - k] != src.dims[src_idx - k] &&
+          dst.dims[dst_idx - k] != 1 && src.dims[src_idx - k] != 1) {
+        return false;
+      }
+      new_shape.dims[dst_idx - k] = src.dims[src_idx - k];
+    }
+    return true;
+  };
+
+  // slide from the last item in dst
+  for (int j = dst_n - 1; j >= 0; j--) {
+    if (CompareDims(j, new_shape)) {
+      // the src shape cannot be expanded
+      assert(j + 1 >= src_n);
+      const int sub_array_start = j + 1 - src_n;
+      for (int i = 0; i < sub_array_start; i++) {
+        new_shape.dims[i] = 1;
+      }
+      break;
+    } else {
+      new_shape.dims[j] = 1;
+    }
+  }
+
+  new_shape.size = dst_n;
+  src = new_shape;
+}
+
+static inline dnnl::memory broadcast_mem(const dnnl::memory orig_mem,
+                                         const odla_value_shape& orig_shape,
+                                         const odla_value_shape& target_shape,
+                                         bool needs_reorder) {
+  assert(orig_shape.size == target_shape.size); // dims are already expanded.
+  auto dt = orig_mem.get_desc().data_type();
+  std::vector<int64_t> strides_v(target_shape.size, 0);
+  for (int i = target_shape.size - 1, s = 1; i >= 0; --i) {
+    if (orig_shape.dims[i] != target_shape.dims[i]) {
+      assert(orig_shape.dims[i] == 1);
+    } else {
+      strides_v[i] = s;
+      s *= orig_shape.dims[i];
+    }
+  }
+  auto src_md = dnnl::memory::desc(getDims(target_shape), dt,
+                                   dnnl::memory::dims(strides_v));
+  if (!needs_reorder) {
+    return dnnl::memory(src_md, g_comp->eng, orig_mem.get_data_handle());
+  }
+  auto ret_md = getMemoryDesc(target_shape, dt);
+  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
+  auto reorder_pd =
+      dnnl::reorder::primitive_desc(g_comp->eng, src_md, g_comp->eng, ret_md);
+  auto reorder_prim = dnnl::reorder(reorder_pd);
+  add_op(reorder_prim, {{DNNL_ARG_SRC, orig_mem}, {DNNL_ARG_DST, ret_mem}});
+  InterpretIfNeeded();
+  return ret_mem;
+}
+
+static inline std::pair<dnnl::memory, dnnl::memory> broadcast_operands(
+    const odla_value& lhs, const odla_value& rhs,
+    odla_value_shape* tiled_shape) {
+  auto dims_lhs = lhs->shape;
+  auto dims_rhs = rhs->shape;
+  auto rank = std::max(dims_lhs.size, dims_rhs.size);
+  if (dims_lhs.size != dims_rhs.size) {
+    auto& from = dims_lhs.size > dims_rhs.size ? dims_rhs : dims_lhs;
+    auto& to = dims_lhs.size > dims_rhs.size ? dims_lhs : dims_rhs;
+    expand_dims(from, to);
+  }
+  for (int i = 0; i < rank; i++) {
+    tiled_shape->dims[i] = std::max(dims_lhs.dims[i], dims_rhs.dims[i]);
+  }
+  tiled_shape->size = rank;
+  return {
+      broadcast_mem(lhs->mem, dims_lhs, *tiled_shape, true),
+      broadcast_mem(rhs->mem, dims_rhs, *tiled_shape, true),
+  };
+}
+
 #endif // ODLA_DNNL_H_
