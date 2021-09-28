@@ -58,7 +58,8 @@ void GenericCXXCodeGen::RunOnBinaryInstruction(Instruction* inst) {
       {OpCode::ADD, "odla_Add"},     {OpCode::AND, "odla_And"},
       {OpCode::DIV, "odla_Div"},     {OpCode::MAXIMUM, "odla_Max"},
       {OpCode::MINIMUM, "odla_Min"}, {OpCode::MUL, "odla_Mul"},
-      {OpCode::SUB, "odla_Sub"},     {OpCode::POW, "odla_Pow"}};
+      {OpCode::SUB, "odla_Sub"},     {OpCode::POW, "odla_Pow"},
+      {OpCode::OR, "odla_Or"},       {OpCode::XOR, "odla_Xor"}};
   auto it = names.find(inst->GetOpCode());
   HLCHECK(it != names.end());
   const Def& lhs = inst->GetOperand(0);
@@ -97,6 +98,14 @@ void GenericCXXCodeGen::RunOnInstruction(DivInst* inst) {
 }
 
 void GenericCXXCodeGen::RunOnInstruction(AndInst* inst) {
+  RunOnBinaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(OrInst* inst) {
+  RunOnBinaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(XorInst* inst) {
   RunOnBinaryInstruction(inst);
 }
 

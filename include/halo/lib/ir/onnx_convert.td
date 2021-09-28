@@ -315,6 +315,10 @@ def ONNX_OneHot : ONNXExtension<"OneHot"> {
   let extension_attr_ = [ ExtensionAttr<"axis", Integer, "-1"> ];
 }
 
+def ONNX_Or : OpMapping<"Or", Or>;
+
+def ONNX_Xor : OpMapping<"Xor", Xor>;
+
 def ONNX_Pad : ONNXExtension<"Pad"> {
   let extension_attr_ = [
     ExtensionAttr<"mode", EnumPadMode, "CONSTANT">,

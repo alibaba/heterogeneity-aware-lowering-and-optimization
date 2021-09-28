@@ -144,6 +144,8 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(NegInst*) override;
   virtual void RunOnInstruction(NotInst*) override;
   virtual void RunOnInstruction(OneHotInst*) override;
+  virtual void RunOnInstruction(OrInst*) override;
+  virtual void RunOnInstruction(XorInst*) override;
   virtual void RunOnInstruction(PadInst*) override;
   virtual void RunOnInstruction(PoolingMaxInst*) override;
   virtual void RunOnInstruction(PoolingAvgInst*) override;

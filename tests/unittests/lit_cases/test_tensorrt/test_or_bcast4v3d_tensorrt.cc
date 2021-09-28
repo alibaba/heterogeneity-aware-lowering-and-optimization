@@ -26,5 +26,4 @@
 // RUN: %t_tensorrt.exe 0.0001 0 tensorrt %data_path/test_or_bcast4v3d | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_or_bcast4v3d_tensorrt.cc.tmp.main.cc.in"
