@@ -46,7 +46,7 @@ jobs:
       - name: Build
         uses: ./halo/.github/actions/build
         with:
-          docker_image_variant: cuda10.0-cudnn7
+          docker_image_variant: cuda10.2-cudnn8
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
@@ -64,6 +64,7 @@ jobs:
         with:
           path: halo
           submodules: recursive
+          clean: true
 
       - name: Build
         run: |
