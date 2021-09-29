@@ -16,7 +16,6 @@
 // =============================================================================
 
 // clang-format off
-// UNSUPPORTED: dnnl
 // Testing CXX Code Gen using ODLA API on dnnl
 // RUN: %halo_compiler -target cxx -o %data_path/test_gemm_default_zero_bias/test_data_set_0/input_0.cc -x onnx -emit-data-as-c %data_path/test_gemm_default_zero_bias/test_data_set_0/input_0.pb
 // RUN: %halo_compiler -target cxx -o %data_path/test_gemm_default_zero_bias/test_data_set_0/output_0.cc -x onnx -emit-data-as-c %data_path/test_gemm_default_zero_bias/test_data_set_0/output_0.pb
