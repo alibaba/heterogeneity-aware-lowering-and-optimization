@@ -41,7 +41,7 @@ endforeach()
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -Wno-deprecated-declarations")
 
 set(TRT_BIN_DIR ${CMAKE_BINARY_DIR}/lib)
-set(TRT_SRC_DIR ${CMAKE_SOURCE_DIR}/ODLA/external/tensorrt)
+set(TRT_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../external/tensorrt)
 set(TARGET_NAME ${PLUGIN_NAME})
 set(SHARED_TARGET ${TARGET_NAME})
 set(STATIC_TARGET ${TARGET_NAME}_obj)
@@ -96,7 +96,7 @@ target_include_directories(${SHARED_TARGET}
 )
 
 set_target_properties(${SHARED_TARGET} PROPERTIES
-    CXX_STANDARD "11"
+    CXX_STANDARD "14"
     CXX_STANDARD_REQUIRED "YES"
     CXX_EXTENSIONS "NO"
     ARCHIVE_OUTPUT_DIRECTORY "${TRT_BIN_DIR}"
@@ -140,7 +140,7 @@ set_target_properties(${STATIC_TARGET} PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${TRT_BIN_DIR}"
     RUNTIME_OUTPUT_DIRECTORY "${TRT_BIN_DIR}"
 )
-
+set_target_properties(${STATIC_TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(${STATIC_TARGET} PROPERTIES COMPILE_FLAGS "-Wno-deprecated-declarations")
 
 set_target_properties(${STATIC_TARGET} PROPERTIES LINK_FLAGS "-Wl,--exclude-libs,ALL")
