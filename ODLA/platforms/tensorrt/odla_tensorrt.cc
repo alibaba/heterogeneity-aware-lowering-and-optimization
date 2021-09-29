@@ -1074,8 +1074,7 @@ odla_value odla_Log(odla_value input, const odla_value_id id) {
 }
 
 odla_value odla_Not(odla_value input, const odla_value_id id) {
-  auto t = unary_op(nvinfer1::UnaryOperation::kNOT, input, id);
-  return t;
+  return unary_op(nvinfer1::UnaryOperation::kNOT, input, id);
 }
 
 odla_value odla_Abs(odla_value input, const odla_value_id id) {
