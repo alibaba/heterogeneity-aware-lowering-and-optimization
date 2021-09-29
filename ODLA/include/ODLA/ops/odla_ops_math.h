@@ -41,6 +41,32 @@ extern "C" {
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Abs(odla_value input, const odla_value_id value_id);
 
+//! \brief ACos
+/*!
+  Computes acos of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_ACos(odla_value x, const odla_value_id value_id);
+
+//! \brief ACosh
+/*!
+  Computes acosh of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_ACosh(odla_value x, const odla_value_id value_id);
+
 //! \brief Addition
 /*!
   Add returns the element-wise binary addition of \p lhs and \p rhs.
@@ -112,6 +138,58 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_ArgMin(odla_value input, odla_int32 axis, odla_bool keep_dims,
             odla_bool return_last_index, odla_value_type output_value_type,
             const odla_value_id value_id);
+
+//! \brief ASin
+/*!
+  Computes asin of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_ASin(odla_value x, const odla_value_id value_id);
+
+//! \brief ASinh
+/*!
+  Computes asinh of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_ASinh(odla_value x, const odla_value_id value_id);
+
+//! \brief ATan
+/*!
+  Computes atan of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_ATan(odla_value x, const odla_value_id value_id);
+
+//! \brief ATanh
+/*!
+  Computes atanh of \p x element-wise.
+
+  \param x input value
+  \param id the value id assigned to the result
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_ATanh(odla_value x, const odla_value_id value_id);
 
 //! \brief Round up a value
 /*!
@@ -733,6 +811,24 @@ odla_Round(odla_value input, const odla_value_id value_id);
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Rsqrt(odla_value input, const odla_value_id value_id);
 
+//! \brief conditional (ternary) operator
+/*!
+  Returns elements, either from A or B, based on the boolean elements of
+  Condition.
+
+  \param condition the condition value
+  \param a the values to select from when condition is True
+  \param b the values to select from when condition is False
+  \param output_dims the optional output shape (can be undefined)
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Select(odla_value condition, odla_value a, odla_value b,
+            odla_value_shape output_dims, const odla_value_id value_id);
+
 //! \brief bit shift
 /*!
  Shift returns the element-wise bit shift of \p input.
@@ -877,84 +973,6 @@ odla_Tan(odla_value x, const odla_value_id value_id);
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Tanh(odla_value x, const odla_value_id value_id);
-
-//! \brief ACos
-/*!
-  Computes acos of \p x element-wise.
-
-  \param x input value
-  \param id the value id assigned to the result
-  \param value_id a unique value id (can be NULL)
-
-  \return odla_value
-*/
-extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_ACos(odla_value x, const odla_value_id value_id);
-
-//! \brief ACosh
-/*!
-  Computes acosh of \p x element-wise.
-
-  \param x input value
-  \param id the value id assigned to the result
-  \param value_id a unique value id (can be NULL)
-
-  \return odla_value
-*/
-extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_ACosh(odla_value x, const odla_value_id value_id);
-
-//! \brief ASin
-/*!
-  Computes asin of \p x element-wise.
-
-  \param x input value
-  \param id the value id assigned to the result
-  \param value_id a unique value id (can be NULL)
-
-  \return odla_value
-*/
-extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_ASin(odla_value x, const odla_value_id value_id);
-
-//! \brief ASinh
-/*!
-  Computes asinh of \p x element-wise.
-
-  \param x input value
-  \param id the value id assigned to the result
-  \param value_id a unique value id (can be NULL)
-
-  \return odla_value
-*/
-extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_ASinh(odla_value x, const odla_value_id value_id);
-
-//! \brief ATan
-/*!
-  Computes atan of \p x element-wise.
-
-  \param x input value
-  \param id the value id assigned to the result
-  \param value_id a unique value id (can be NULL)
-
-  \return odla_value
-*/
-extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_ATan(odla_value x, const odla_value_id value_id);
-
-//! \brief ATanh
-/*!
-  Computes atanh of \p x element-wise.
-
-  \param x input value
-  \param id the value id assigned to the result
-  \param value_id a unique value id (can be NULL)
-
-  \return odla_value
-*/
-extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_ATanh(odla_value x, const odla_value_id value_id);
 
 #ifdef __cplusplus
 } // C extern

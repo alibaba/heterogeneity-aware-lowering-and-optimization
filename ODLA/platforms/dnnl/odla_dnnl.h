@@ -280,7 +280,8 @@ static inline odla_value CreateValue(const dnnl::memory& mem,
   return ret;
 }
 
-static inline void expand_dims(odla_value_shape& src, odla_value_shape& dst) {
+static inline void expand_dims(odla_value_shape& src,
+                               const odla_value_shape& dst) {
   // src shape is [1,5], dst shape is [1,4,1], we expand src shape to [1,1,5]
   // src shape is [64], dst shape is [1,64,128], we expand src shape to [1,64,1]
   // src shape is [64], dst shape is [1,64,64], we expand src shape to [1,1,64]

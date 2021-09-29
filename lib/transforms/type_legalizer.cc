@@ -1232,6 +1232,26 @@ static void RunOnInstruction(TFIDFVectorizeInst* inst) {
   }
 }
 
+static void RunOnInstruction(SelectInst* inst) {
+  const auto& ty_cond = inst->GetOperand(0).GetType();
+  const auto& ty_x = inst->GetOperand(1).GetType();
+  if (!ty_cond.IsValid() || !ty_x.IsValid()) {
+    return;
+  }
+  // Result shape is broadcasted with ty_x and ty_cond.
+  auto rank_x = ty_x.GetNumOfDims();
+  auto rank_c = ty_cond.GetNumOfDims();
+  auto rank_r = std::max(rank_x, rank_c);
+  std::vector<int64_t> ret_shape(rank_r);
+  for (int64_t i = rank_r - 1, idx_c = rank_c - 1, idx_x = rank_x - 1; i >= 0;
+       --i) {
+    auto dim_x = idx_x < 0 ? 1 : ty_x.GetNumOfElementsInDim(idx_x--);
+    auto dim_c = idx_c < 0 ? 1 : ty_cond.GetNumOfElementsInDim(idx_c--);
+    ret_shape[i] = std::max(dim_x, dim_c);
+  }
+  inst->GetResultsTypes()[0] = Type{ty_x.GetDataType(), ret_shape};
+}
+
 bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
   // Dedup names.

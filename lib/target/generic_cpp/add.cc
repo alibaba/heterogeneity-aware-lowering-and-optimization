@@ -254,4 +254,15 @@ void GenericCXXCodeGen::RunOnInstruction(ShiftInst* inst) {
   ir_mapping_[*inst] = ret;
 }
 
+void GenericCXXCodeGen::RunOnInstruction(SelectInst* inst) {
+  CXXValue op0 = ir_mapping_[inst->GetOperand(0)];
+  CXXValue op1 = ir_mapping_[inst->GetOperand(1)];
+  CXXValue op2 = ir_mapping_[inst->GetOperand(2)];
+
+  CXXValue ret(inst->GetName(), op0.type);
+  EmitODLACall(ret, "odla_Select", op0, op1, op2,
+               EmitShape(inst->GetResultType()));
+  ir_mapping_[*inst] = ret;
+}
+
 } // namespace halo
