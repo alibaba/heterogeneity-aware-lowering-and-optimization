@@ -282,6 +282,17 @@ static std::vector<Def> ConvertShape(const TFExtensionInst* ext,
   return {*c};
 }
 
+static std::vector<Def> ConvertSize(const TFExtensionInst* ext,
+                                     IRBuilder* builder) {
+  const auto& type = ext->GetOperand(0).GetType();
+  if (!type.IsValid()) {
+    return {};
+  }
+  auto n = type.GetTotalNumOfElements();
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  return {*(cb.CreateConstant(ext->GetName(), Type{DataType::INT64, {1}}, &n))};
+}
+
 static std::vector<Def> ConvertSplit(const TFExtensionInst* ext,
                                      IRBuilder* builder) {
   auto input = ext->GetOperand(1);
@@ -1012,6 +1023,9 @@ static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
     case TFExtOpCode::QUEUEDEQUEUEV2:
     case TFExtOpCode::IDENTITY: {
       return {tf_inst->GetOperand(0)};
+    }
+    case TFExtOpCode::SIZE: {
+      return ConvertSize(tf_inst, builder);
     }
     case TFExtOpCode::SHAPE: {
       return ConvertShape(tf_inst, builder);
