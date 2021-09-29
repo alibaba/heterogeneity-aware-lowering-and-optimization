@@ -40,6 +40,6 @@ target_compile_options(odla_tensorrt PRIVATE -Wno-deprecated-declarations)
 target_link_libraries(odla_tensorrt ODLA ${nvinfer} ${CUDART_LIB} ${nvinfer_plugin})
 set_target_properties(odla_tensorrt PROPERTIES LINK_FLAGS
                       "-Wl,-rpath=\\\${ORIGIN}/tensorrt:\\\${ORIGIN} -L${CMAKE_BINARY_DIR}/tensorrt")
-target_link_libraries(odla_tensorrt ${PLUGIN_NAME}_obj)
+target_link_libraries(odla_tensorrt ${PLUGIN_NAME})
 set_target_properties(odla_tensorrt PROPERTIES LINK_FLAGS
                       "-Wl,-rpath=${CMAKE_BINARY_DIR}/lib -L${CMAKE_BINARY_DIR}/lib")

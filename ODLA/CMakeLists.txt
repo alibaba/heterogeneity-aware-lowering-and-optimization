@@ -15,7 +15,7 @@
 # ==============================================================================
 
 add_library(ODLA INTERFACE)
-target_sources(ODLA INTERFACE include/ODLA/odla.h)
+target_sources(ODLA INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include/ODLA/odla.h)
 target_include_directories(ODLA INTERFACE include)
 
 add_subdirectory(platforms)
