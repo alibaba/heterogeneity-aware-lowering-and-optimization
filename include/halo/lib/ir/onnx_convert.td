@@ -542,3 +542,5 @@ def ONNX_TFIDFVec : ONNXExtension<"TfIdfVectorizer"> {
     ExtensionAttr<"weights", FloatList, "{}">,
   ];
 }
+
+def ONNX_WHERE: OpMapping<"Where", Select>;

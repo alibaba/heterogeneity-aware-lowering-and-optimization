@@ -831,7 +831,9 @@ odla_value odla_Transpose(odla_value input, odla_value_shape permutations,
 
 odla_value odla_Reshape(odla_value input, odla_value_shape output_dims,
                         const odla_value_id id) {
-  return CreateValue(input->mem, output_dims, id);
+  auto t = CreateValue(input->mem, output_dims, id);
+  t->elem_type = input->elem_type;
+  return t;
 }
 
 template <typename T>
@@ -2272,5 +2274,64 @@ odla_value odla_TFIDFVectorize(odla_value input, odla_int32 min_gram_length,
 
   InterpretIfNeeded();
   odla_value v = CreateValue(ret_mem, output_shape, value_id);
+  return v;
+}
+
+template <typename T>
+static void ternary(void* dst, const bool* cond, const void* t_val,
+                    const void* f_val, size_t n) {
+  Eigen::Map<const Eigen::Array<T, Eigen::Dynamic, 1>> t(
+      static_cast<const T*>(t_val), n);
+  Eigen::Map<const Eigen::Array<T, Eigen::Dynamic, 1>> f(
+      static_cast<const T*>(f_val), n);
+  Eigen::Map<const Eigen::Array<bool, Eigen::Dynamic, 1>> c(cond, n);
+  Eigen::Map<Eigen::Array<T, Eigen::Dynamic, 1>> out(static_cast<T*>(dst), n);
+  out = c.select(t, f);
+}
+
+odla_value odla_Select(odla_value condition, odla_value a, odla_value b,
+                       odla_value_shape output_dims,
+                       const odla_value_id value_id) {
+  auto ty = a->elem_type;
+  auto n = GetTotalElements(output_dims);
+  auto ret_md = getMemoryDesc(output_dims, ty);
+  dnnl::memory ret_mem;
+  if (hasDNNLMemorySupport(ty)) {
+    ret_mem = dnnl::memory(ret_md, g_comp->eng);
+  } else {
+    auto buf = g_comp->CreateBuffer(getElementStorageSize(ty) * n);
+    ret_mem = dnnl::memory(ret_md, g_comp->eng, buf);
+  }
+  auto broadcast = [n, output_dims](odla_value v) {
+    if (n == GetTotalElements(v->shape)) {
+      return v->mem;
+    }
+    auto orig_shape = v->shape;
+    expand_dims(orig_shape, output_dims);
+    return broadcast_mem(v->mem, orig_shape, output_dims, true);
+  };
+  dnnl::memory c_mem = broadcast(condition);
+  dnnl::memory a_mem = broadcast(a);
+  dnnl::memory b_mem = broadcast(b);
+  auto op = [c_mem, a_mem, b_mem, ret_mem, n, ty]() {
+    const bool* cond_val = static_cast<const bool*>(c_mem.get_data_handle());
+    const void* t_val = static_cast<const void*>(a_mem.get_data_handle());
+    const void* f_val = static_cast<const void*>(b_mem.get_data_handle());
+    void* dst = static_cast<void*>(ret_mem.get_data_handle());
+
+    switch (ty) {
+      case ODLA_FLOAT32:
+        return ternary<float>(dst, cond_val, t_val, f_val, n);
+      case ODLA_INT64:
+        return ternary<int64_t>(dst, cond_val, t_val, f_val, n);
+      default:
+        assert(0);
+    }
+  };
+  add_op(op);
+
+  InterpretIfNeeded();
+  odla_value v = CreateValue(ret_mem, condition->shape, value_id);
+  v->elem_type = a->elem_type;
   return v;
 }
