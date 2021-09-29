@@ -6,15 +6,6 @@ FROM ${BASE_IMAGE}
 # Redeclare the argument
 ARG BASE_IMAGE
 
-ENV \
-  CUDNN_VERSION=7.6.0.64-1+cuda10.0 \
-  TENSORRT_VERSION=7.0.0-1+cuda10.0 \
-  CMAKE_VERSION=3.14.5 \
-  VALGRIND_VERSION=3.13.0 \
-  GCC_VERSION=7 \
-  LLVM_VERSION=9 \
-  BINUTILS_VERSION=2.35
-
 ARG python=3.7.0
 ENV PYTHON_VERSION=${python}
 
@@ -23,6 +14,7 @@ RUN mkdir /host
 
 RUN apt-get update && apt-get -y --no-install-recommends install software-properties-common apt-utils wget && rm -fr /var/lib/apt/lists/*
 
+ARG GCC_VERSION=7
 RUN apt-get update -y && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
@@ -101,32 +93,24 @@ RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 6
 
 SHELL ["/bin/bash", "-c"]
 
-#update/install the CUDNN
-RUN if [[ "${BASE_IMAGE}" =~ "nvidia" ]]; then echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list ; fi
-RUN if [[ "${BASE_IMAGE}" =~ "nvidia" ]]; then echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64 /" > /etc/apt/sources.list.d/cuda.list ; fi
-RUN if [[ "${BASE_IMAGE}" =~ "nvidia" ]]; then wget -qO - https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub | apt-key add - ;fi
-RUN if [[ "${BASE_IMAGE}" =~ "nvidia" ]]; then wget -qO - https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/7fa2af80.pub | apt-key add -; fi
-RUN if [[ "${BASE_IMAGE}" =~ "nvidia" ]]; then add-apt-repository -y ppa:ubuntu-toolchain-r/test ; fi
-RUN if [[ "${BASE_IMAGE}" =~ "nvidia" ]]; then apt-get update -y && apt-get install -y --no-install-recommends --allow-change-held-packages --allow-downgrades \
-        libcudnn7=${CUDNN_VERSION} \
-        libcudnn7-dev=${CUDNN_VERSION} ; fi
-
 # Install TensorRT
+ARG TENSORRT_VERSION=8.0.3-1+cuda10.2
 RUN if [[ "${BASE_IMAGE}" =~ "nvidia" ]]; then apt-get update -y && \
     apt-get install -y --no-install-recommends --allow-change-held-packages \
-        libnvinfer7=${TENSORRT_VERSION} \
+        libnvinfer8=${TENSORRT_VERSION} \
         libnvinfer-dev=${TENSORRT_VERSION} \
-        libnvinfer-plugin7=${TENSORRT_VERSION} \
-        libnvonnxparsers7=${TENSORRT_VERSION} \
+        libnvinfer-plugin8=${TENSORRT_VERSION} \
+        libnvonnxparsers8=${TENSORRT_VERSION} \
         python3-libnvinfer-dev=${TENSORRT_VERSION} \
         python3-libnvinfer=${TENSORRT_VERSION} \
         libnvinfer-plugin-dev=${TENSORRT_VERSION} \
         libnvparsers-dev=${TENSORRT_VERSION} \
         libnvonnxparsers-dev=${TENSORRT_VERSION} \
-        libnvparsers7=${TENSORRT_VERSION} && \
+        libnvparsers8=${TENSORRT_VERSION} && \
     apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* ; fi
 
 # INSTALL LLVM
+ARG LLVM_VERSION=9
 RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
     add-apt-repository "deb http://apt.llvm.org/bionic/   llvm-toolchain-bionic-${LLVM_VERSION}  main"  && \
     apt-get update && apt-get install -y --no-install-recommends \
@@ -141,6 +125,7 @@ RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
 RUN pip3 install wheel numpy six jupyter enum34 mock h5py pillow
 
 # Update binutils
+ARG BINUTILS_VERSION=2.35
 RUN mkdir /tmp/binutils && \
     cd /tmp/binutils && \
     wget http://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_VERSION}.tar.gz && \
@@ -152,6 +137,7 @@ RUN mkdir /tmp/binutils && \
     rm -rf /tmp/binutils
 
 # Install cmake
+ARG CMAKE_VERSION=3.14.5
 RUN mkdir /tmp/cmake && \
     cd /tmp/cmake && \
     wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.tar.gz && \
@@ -163,6 +149,7 @@ RUN mkdir /tmp/cmake && \
     rm -rf /tmp/cmake
 
 # Install valgrind
+ARG VALGRIND_VERSION=3.13.0
 RUN mkdir /tmp/valgrind && \
     cd /tmp/valgrind && \
     wget ftp://sourceware.org/pub/valgrind/valgrind-${VALGRIND_VERSION}.tar.bz2 && \
