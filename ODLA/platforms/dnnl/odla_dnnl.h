@@ -375,4 +375,21 @@ static inline std::pair<dnnl::memory, dnnl::memory> broadcast_operands(
   };
 }
 
+static inline odla_value unary_eltwise_op(
+    dnnl::algorithm algo, odla_value input, odla_float32 alpha,
+    odla_float32 beta, const odla_value_id id,
+    dnnl::primitive_attr attr = dnnl::primitive_attr()) {
+  auto eltwise_d =
+      dnnl::eltwise_forward::desc(dnnl::prop_kind::forward_inference, algo,
+                                  input->mem.get_desc(), alpha, beta);
+  auto pd = dnnl::eltwise_forward::primitive_desc(eltwise_d, attr, g_comp->eng);
+
+  dnnl::primitive prim = dnnl::eltwise_forward(pd);
+  auto ret_mem = dnnl::memory(input->mem.get_desc(), g_comp->eng);
+  odla_value v = CreateValue(ret_mem, input->shape, id);
+  add_op(prim, {{DNNL_ARG_SRC, input->mem}, {DNNL_ARG_DST, ret_mem}});
+  InterpretIfNeeded();
+  return v;
+}
+
 #endif // ODLA_DNNL_H_

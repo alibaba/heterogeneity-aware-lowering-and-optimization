@@ -22,7 +22,6 @@
 enum class alg_binary_eltwise {
   logic_or,
   logic_and,
-  logic_not,
   logic_xor,
   cmp_equal,
   cmp_less,
@@ -114,7 +113,6 @@ static void binary_eltwise_T(alg_binary_eltwise alg, void* dst,
 bool binary_ret_bool(alg_binary_eltwise alg) {
   return (alg == alg_binary_eltwise::logic_or) ||
          (alg == alg_binary_eltwise::logic_and) ||
-         (alg == alg_binary_eltwise::logic_not) ||
          (alg == alg_binary_eltwise::logic_xor) ||
          (alg == alg_binary_eltwise::cmp_equal) ||
          (alg == alg_binary_eltwise::cmp_less) ||

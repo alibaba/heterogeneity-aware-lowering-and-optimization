@@ -38,8 +38,7 @@ void GenericCXXCodeGen::RunOnUnaryInstruction(Instruction* inst) {
       {OpCode::CEIL, "odla_Ceil"},      {OpCode::LOG, "odla_Log"},
       {OpCode::TANH, "odla_Tanh"},      {OpCode::TAN, "odla_Tan"},
       {OpCode::ISINF, "odla_IsInf"},    {OpCode::SIGN, "odla_Sign"},
-      {OpCode::ISNAN, "odla_IsNaN"},
-  };
+      {OpCode::ISNAN, "odla_IsNaN"},    {OpCode::NOT, "odla_Not"}};
 
   auto it = names.find(inst->GetOpCode());
   HLCHECK(it != names.end());
