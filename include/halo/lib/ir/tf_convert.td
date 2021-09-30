@@ -122,9 +122,9 @@ def TF_BatchMatMulV2 : OpMapping<"BatchMatMulV2", BatchMatMul> {
                        AttributeMapping<"adj_y", "transpose_b", "false">];
 }
 
-def TF_Bitcast : TFExtension<"Bitcast"> {
-  let extension_attr_ = [
-    ExtensionAttr<"type", EnumDataType, "INVALID">
+def TF_Bitcast : OpMapping<"Bitcast", Bitcast> {
+  let attr_mapping_ = [
+    AttributeMapping<"type", "data_type", "INVALID">
   ];
 }
 

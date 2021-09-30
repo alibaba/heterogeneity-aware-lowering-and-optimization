@@ -2522,6 +2522,22 @@ static bool FixUpLSTM(LSTMInst* inst) {
   return changed;
 }
 
+std::pair<Def, Def> InstSimplify::RunOnInstruction(UniqueInst* inst) {
+  Def orig_def{inst, 1};
+  if (simplify_for_preprocess_) {
+    return {orig_def, orig_def};
+  }
+  const auto& result_type0 = inst->GetResultsTypes()[0];
+  const auto& result_type1 = inst->GetResultsTypes()[1];
+  auto num_uses = inst->GetResultsUses()[0].size();
+  if (!result_type0.IsValid() || !result_type1.IsValid() ||
+      num_uses != 0) {
+    return {orig_def, orig_def};
+  }
+  //const auto& op0 = inst->GetOperand(0);
+  return {orig_def, orig_def};
+}
+
 bool InstSimplify::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
   for (auto& inst_t : *bb) {

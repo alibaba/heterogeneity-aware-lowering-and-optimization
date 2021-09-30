@@ -1,6 +1,6 @@
 //===- tfextension_legalizer.cc -------------------------------------------===//
 //
-// Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+// Copyright (C) 2019-2021 Alibaba Group Holding Limited.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,6 +42,36 @@ static std::vector<Def> ConvertAddN(const TFExtensionInst* ext,
   }
   return {*acc};
 }
+
+/*
+static std::vector<Def> ConvertBitcast(const TFExtensionInst* ext,
+                                           IRBuilder* builder) {
+  auto op0 = ext->GetOperand(0);
+  auto dtype = FindAttributeValue<DataType>(*ext, "type", DataType::INVALID);
+  HLCHECK(dtype != DataType::INVALID);
+  const auto& type = op0.GetType();
+  Constant* op_c = DynCast<Constant>(op0);
+  if (!type.IsValid() || op_c == nullptr) {
+    return {};
+  }
+  auto from_dtype = type.GetDataType();
+  DefaultDataLayout layout;
+  auto from_bits = layout.Bits(from_dtype);
+  auto to_bits = layout.Bits(dtype);
+  auto new_shape(type.GetDimSizes());
+  if (from_bits < to_bits) {
+    auto last_dim = type.GetNumOfElementsInDim(type.GetNumOfDims() - 1);
+    HLCHECK(to_bits == from_bits * last_dim);
+    new_shape.pop_back();
+  } else if (from_bits > to_bits) {
+    HLCHECK(from_bits % to_bits == 0);
+    new_shape.push_back(from_bits / to_bits);
+  }
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  Constant* c = cb.CreateConstant(ext->GetName() + "_bitcast", 
+    Type(dtype, new_shape), op_c->GetRawDataPtr());
+  return {*c};
+}*/
 
 static std::vector<Def> ConvertBroadcastTo(const TFExtensionInst* ext,
                                            IRBuilder* builder) {

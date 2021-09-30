@@ -72,6 +72,7 @@ class InstSimplify final : public BasicBlockPass {
   static std::pair<Def, Def> RunOnInstruction(ZExtInst* inst);
 
   std::pair<Def, Def> RunOnInstruction(OneHotInst* inst);
+  std::pair<Def, Def> RunOnInstruction(UniqueInst* inst);
 
   bool simplify_for_preprocess_;
   bool disable_broadcasting_;

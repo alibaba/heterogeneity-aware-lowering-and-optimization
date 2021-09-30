@@ -1252,6 +1252,43 @@ static void RunOnInstruction(SelectInst* inst) {
   inst->GetResultsTypes()[0] = Type{ty_x.GetDataType(), ret_shape};
 }
 
+static void RunOnInstruction(BitcastInst* inst) {
+  const auto& type = inst->GetOperand(0).GetType();
+  if (!type.IsValid()) {
+    return;
+  }
+  auto dtype = inst->GetDataType();
+  HLCHECK(dtype != DataType::INVALID);
+  auto from_dtype = type.GetDataType();
+  DefaultDataLayout layout;
+  auto from_bits = layout.Bits(from_dtype);
+  auto to_bits = layout.Bits(dtype);
+  auto new_shape(type.GetDimSizes());
+  if (from_bits < to_bits) {
+    auto last_dim = type.GetNumOfElementsInDim(type.GetNumOfDims() - 1);
+    HLCHECK(to_bits == from_bits * last_dim);
+    new_shape.pop_back();
+  } else if (from_bits > to_bits) {
+    HLCHECK(from_bits % to_bits == 0);
+    new_shape.push_back(from_bits / to_bits);
+  }
+  Type result_type{dtype, new_shape};
+  inst->GetResultsTypes()[0] = result_type;
+}
+
+static void RunOnInstruction(UniqueInst* inst) {
+  const auto& type0 = inst->GetOperand(0).GetType();
+  if (!type0.IsValid()) {
+    return;
+  }
+  auto rank = type0.GetNumOfDims();
+  HLCHECK(rank == 1);
+  // FIXME: result 0 has at most the same number of
+  // elements of the input
+  inst->GetResultsTypes()[0] = type0;
+  inst->GetResultsTypes()[1] = Type{DataType::INT64, type0.GetDimSizes()};
+}
+
 bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
   // Dedup names.
