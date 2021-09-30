@@ -18,6 +18,7 @@
 #include "halo/lib/transforms/inst_simplify.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <numeric>
 #include <random>
@@ -223,6 +224,33 @@ static bool IsSameType(const Type& lhs, const Type& rhs) {
     }
   }
   return true;
+}
+
+static std::pair<Def, Def> RunOnMathUnaryInstruction(Instruction* inst) {
+  auto op0 = DynCast<Constant>(inst->GetOperand(0));
+  Def orig_def{inst, 0};
+
+  if (op0 == nullptr ||
+      op0->GetResultType().GetDataType() != DataType::FLOAT32) {
+    return {orig_def, orig_def};
+  }
+  auto n = op0->GetResultType().GetTotalNumOfElements();
+  std::vector<float> result(n);
+  std::function<float(float)> op;
+  switch (inst->GetOpCode()) {
+    case OpCode::SQRT:
+      op = sqrtf;
+      break;
+    default:
+      return {orig_def, orig_def};
+  }
+
+  for (int64_t i = 0; i < n; ++i) {
+    result[i] = op(op0->GetDataAsFloat32(i));
+  }
+  ConstantBuilder cb(inst->GetParent()->GetParent());
+  auto c = cb.CreateConstant(inst->GetName(), inst->GetResultType(), result);
+  return {orig_def, *c};
 }
 
 static std::pair<Def, Def> RunOnMathBinaryInstruction(
@@ -778,6 +806,9 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Instruction* inst) {
     case OpCode::ARGMAX:
     case OpCode::ARGMIN: {
       return RunOnCommonReductionInstruction(inst);
+    }
+    case OpCode::SQRT: {
+      return RunOnMathUnaryInstruction(inst);
     }
     default: {
       return std::make_pair(Def{inst, 0}, Def{inst, 0});
