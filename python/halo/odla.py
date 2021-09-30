@@ -34,6 +34,7 @@ class ODLAModel:
     def __init__(self, so_file):
         self.so_file = so_file
         self.h = None
+        self.buffers = []
 
     def Load(self):
         if self.h is None:
@@ -70,6 +71,9 @@ class ODLAModel:
             for r in range(0, vt.shape.size):
                 n *= vt.shape.dims[r]
             self.out_vals.append((out, vt, n))
+            buf = (c_float * n)()  # FIXME: handle types
+            self.h.odla_BindToOutput(out, buf, self.ctx)
+            self.buffers.append(buf)
         self.ctx = c_void_p(0)
         self.h.odla_CreateContext(pointer(self.ctx))
 
@@ -78,10 +82,5 @@ class ODLAModel:
             self.h.odla_BindToArgument(
                 v[0], data[idx].ctypes.data_as(c_void_p), self.ctx
             )
-        buffers = []
-        for idx, v in enumerate(self.out_vals):
-            buf = (c_float * v[2])()  # FIXME: handle types
-            self.h.odla_BindToOutput(v[0], buf, self.ctx)
-            buffers.append(buf)
         self.h.odla_ExecuteComputation(self.comp, self.ctx, 0, c_void_p(0))
-        return [buf[:] for buf in buffers]
+        return [buf[:] for buf in self.buffers] if len(self.out_vals) > 1 else self.buffers
