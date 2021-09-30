@@ -133,4 +133,14 @@ let cat_ = cat_common in {
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
   }
 
+  def Select: Inst<"Tenary selection"> {
+    let ins_ = [
+      Arg<"The condition.", ArgType<[I1]>>,
+      Arg<"The true value.", ArgType<[I1,I8,I16,I32,I64,F16,F32,F64]>>,
+      Arg<"The false value.", MatchArgType<1>>,
+    ];
+    let outs_ = [Arg<"The result.", MatchArgType<1>>];
+  }
+
+
 }
