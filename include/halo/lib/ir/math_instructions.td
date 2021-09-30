@@ -91,13 +91,6 @@ let cat_ = cat_math in {
                      MatchArgType<0>, 2D>];
   }
 
-  def Select : Inst<"Element-wise ternary operation." > {
-     let ins_ = [Arg<"The condition.", ArgType<[I1]> >,
-                 Arg<"The T input.", ArgType<[I8,I16,I32,F16,F32]> >,
-                 Arg<"The E input.", MatchArgType<1> >];
-     let outs_ = [Arg<"The result.", MatchArgType<1> >];
-  }
-
   def Transpose : Inst<"Transpose the input such that the dimension is"
                        "  permutated based on permutation."> {
     let attrs_ = [Attr<"permutation of the dimension indices.",
