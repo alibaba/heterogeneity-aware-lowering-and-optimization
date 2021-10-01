@@ -79,6 +79,8 @@ class InstSimplify final : public BasicBlockPass {
   bool remove_output_transpose_;
   bool disable_conv_bn_;
   bool fuse_conv_bias_;
+  bool fuse_mul_matmul_ = true;
+  bool fuse_fc_add_ = true;
 };
 
 } // end namespace halo.
