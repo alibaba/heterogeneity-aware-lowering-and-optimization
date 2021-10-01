@@ -14,6 +14,8 @@
 
 from ctypes import *
 from enum import Enum
+from time import time
+import logging
 
 
 class Device(Enum):
@@ -32,6 +34,7 @@ class ValueType(Structure):
 
 class ODLAModel:
     def __init__(self, so_file):
+        self.logger = logging.getLogger(__name__)
         self.so_file = so_file
         self.h = None
 
@@ -83,5 +86,8 @@ class ODLAModel:
             buf = (c_float * v[2])()  # FIXME: handle types
             self.h.odla_BindToOutput(v[0], buf, self.ctx)
             buffers.append(buf)
+        s = time()
         self.h.odla_ExecuteComputation(self.comp, self.ctx, 0, c_void_p(0))
+        t = time()
+        self.logger.info("Execution time:" + str(t - s) + " sec(s)")
         return [buf[:] for buf in buffers]

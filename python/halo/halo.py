@@ -16,15 +16,14 @@ from ctypes import *
 import tempfile
 from pathlib import Path
 import subprocess
-import os
-
-debug = os.environ.get("CANAL_DEBUG")
-debug = debug is not None and debug != "0"
+import logging
 
 LIB_HALO = "libhalo.so"
 lib_halo = CDLL(LIB_HALO)
 Compile = lib_halo.halo_Compile
 AnalyzeTFPbGraph = lib_halo.halo_AnalyzeTFPbGraph
+
+logger = logging.getLogger(__name__)
 
 
 class CXXCodeGenOpts(Structure):
@@ -97,11 +96,11 @@ Compile.argtypes = [
 def exec(args):
     proc = subprocess.run(args)
     if proc.returncode != 0:
-        print(proc.stderr)
+        logger.error(proc.stderr)
         exit(proc.returncode)
 
 
-def CompileModel(model_file, input_shapes, batch, format):
+def CompileModel(model_file, input_shapes, output_names, batch, format):
     output_file = tempfile.mktemp(".cc")
     output_bin = Path(output_file).with_suffix(".bin")
     odla_lib = cast(create_string_buffer(b""), c_char_p)
@@ -128,17 +127,21 @@ def CompileModel(model_file, input_shapes, batch, format):
     model_num = len(model_data)
     if input_shapes is None:
         input_shapes = []
+    if output_names is None:
+        output_names = []
     num_input_shapes = len(input_shapes)
     input_shapes_ptrs = [s.encode("utf-8") for s in input_shapes]
     num_inputs = 0
     inputs = c_void_p(0)
-    outputs = c_void_p(0)
-    num_outputs = 0
+    outputs = [s.encode("utf-8") for s in output_names]
+    num_outputs = len(output_names)
     input_shapes = (c_char_p * num_input_shapes)(*input_shapes_ptrs)
 
     target = "cxx".encode("utf-8")
     output_filename = output_file.encode("utf-8")
-    
+    logger.info("Begin Halo compilation")
+    logger.info("Halo lib:" + str(lib_halo._name))
+    logger.debug("Intermediate file:" + str(output_filename))
     Compile(
         format_val,
         model_num,
@@ -151,11 +154,12 @@ def CompileModel(model_file, input_shapes, batch, format):
         num_inputs,
         inputs,
         num_outputs,
-        outputs,
+        (c_char_p * num_outputs)(*outputs),
         pointer(opts),
         output_filename,
-        0
+        0,
     )
+    logger.info("Done Halo Compilation")
     return [output_file, output_bin]
 
 
@@ -183,27 +187,28 @@ def AnalyzeModel(model_file, batch):
     )
 
 
-def CompileODLAModel(files, device):
+def CompileODLAModel(files, device, debug=False):
     cc_file = files[0]
     bin_file = files[1]
     if not device or device == "auto":
         device = "odla_dnnl"
     so_file = Path(files[0]).with_suffix(".so")
     opt_flag = "-g" if debug else "-O2"
-    exec(
-        [
-            "g++",
-            "-shared",
-            "-fPIC",
-            opt_flag,
-            "-o",
-            so_file,
-            cc_file,
-            bin_file,
-            "-l" + device,
-            "-Wl,-rpath=/usr/local/lib",
-        ]
-    )
+    args = [
+        "g++",
+        "-shared",
+        "-fPIC",
+        opt_flag,
+        "-o",
+        str(so_file),
+        str(cc_file),
+        str(bin_file),
+        "-l" + device,
+        "-Wl,-rpath=/usr/local/lib",
+    ]
+    logger.debug("Building ODLA model: " + " ".join(args))
+    exec(args)
+    logger.debug("Generated ODLA model: " + str(so_file))
     return so_file
 
 

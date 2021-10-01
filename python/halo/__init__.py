@@ -11,3 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import logging
+import sys
+from logging import StreamHandler, Formatter
+
+logger = logging.getLogger(__name__)
+handler = StreamHandler(stream=sys.stdout)
+handler.setFormatter(Formatter(fmt="[%(asctime)s: %(levelname)s] %(message)s"))
+logger.addHandler(handler)
