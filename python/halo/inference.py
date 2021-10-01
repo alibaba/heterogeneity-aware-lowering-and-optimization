@@ -17,16 +17,29 @@
 from halo import halo
 from halo import odla
 from pathlib import Path
-import os
-
-debug = os.environ.get("CANAL_DEBUG")
-debug = debug is not None and debug != "0"
+import sys
+import logging
+from logging import StreamHandler, Formatter
 
 
 class Inference:
-    def __init__(self, model_file, input_shapes, device, batch, format):
+    def __init__(
+        self,
+        model_file,
+        input_shapes,
+        output_names,
+        device,
+        batch,
+        format,
+        debug,
+        log_level,
+    ):
+        self.debug = debug
+        logging.getLogger("halo").setLevel(log_level)
+        self.logger = logging.getLogger(__name__)
         self.model_file = model_file
         self.input_shapes = input_shapes
+        self.output_names = output_names
         if not format:
             suffixes = {
                 ".onnx": "ONNX",
@@ -43,23 +56,29 @@ class Inference:
         self.model = None
         self.so_file = None
         self.intermediate_files = []
+        self.save_temps = False
 
     def __del__(self):
-        if debug:
-            print(self.intermediate_files)
+        self.logger.info(str(self.intermediate_files))
         for file in self.intermediate_files:
-            if not debug:
+            if not self.save_temps:
                 Path(file).unlink()
         del self.model
 
     def Initialize(self):
+        self.logger.info("Begin initialization")
         files = halo.CompileModel(
-            self.model_file, self.input_shapes, self.batch, self.format
+            self.model_file,
+            self.input_shapes,
+            self.output_names,
+            self.batch,
+            self.format,
         )
-        self.so_file = halo.CompileODLAModel(files, self.device)
+        self.so_file = halo.CompileODLAModel(files, self.device, self.debug)
         self.intermediate_files = [*files, self.so_file]
         self.model = odla.ODLAModel(self.so_file)
         self.model.Load()
+        self.logger.info("Done initialization")
 
     def Run(self, data):
         if self.model is None:
