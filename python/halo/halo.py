@@ -24,8 +24,7 @@ debug = debug is not None and debug != "0"
 LIB_HALO = "libhalo.so"
 lib_halo = CDLL(LIB_HALO)
 Compile = lib_halo.halo_Compile
-AnalyzeTFPbGraph = lib_halo.halo_AnalyzeTFPbGraph
-
+Analyze = lib_halo.halo_Analyze
 
 class CXXCodeGenOpts(Structure):
     _fields_ = [
@@ -159,7 +158,7 @@ def CompileModel(model_file, input_shapes, batch, format):
     return [output_file, output_bin]
 
 
-def AnalyzeModel(model_file, batch):
+def AnalyzeModel(model_file, input_shapes, batch, format):
     output_file = ""
     odla_lib = cast(create_string_buffer(b""), c_char_p)
     opts = CXXCodeGenOpts()
@@ -167,19 +166,51 @@ def AnalyzeModel(model_file, batch):
     opts.channel_order = 1
     opts.api = 1
     opts.emit_inference_func_sig = True
+    format_vals = {
+        "TENSORFLOW": 0,
+        "CAFFE": 1,
+        "ONNX": 2,
+        "TFLITE": 3,
+        "MXNET": 4,
+        "INVALID": 5,
+    }
+    format_val = format_vals[format]
+    model_data = []
+    model_sizes = []
     with open(model_file, "rb") as f:
         bytes = f.read()
-    num_input_shapes = 0
-    input_shapes = c_void_p(0)
-    AnalyzeTFPbGraph(
-        bytes,
-        len(bytes),
-        num_input_shapes,
-        input_shapes,
+        model_data.append(bytes)
+        model_sizes.append(len(bytes))
+    model_num = len(model_data)
+    if input_shapes is None:
+        input_shapes = []
+    num_input_shapes = len(input_shapes)
+    input_shapes_ptrs = [s.encode("utf-8") for s in input_shapes]
+    num_inputs = 0
+    inputs = c_void_p(0)
+    outputs = c_void_p(0)
+    num_outputs = 0
+    input_shapes = (c_char_p * num_input_shapes)(*input_shapes_ptrs)
+
+    target = "cxx".encode("utf-8")
+    output_filename = output_file.encode("utf-8")
+    
+    Analyze(
+        format_val,
+        model_num,
+        (c_char_p * model_num)(*model_data),
+        (c_size_t * model_num)(*model_sizes),
+        target,
         batch,
+        num_input_shapes,
+        (c_char_p * num_input_shapes)(*input_shapes),
+        num_inputs,
+        inputs,
+        num_outputs,
+        outputs,
         pointer(opts),
-        output_file.encode("utf-8"),
-        0,
+        output_filename,
+        0
     )
 
 

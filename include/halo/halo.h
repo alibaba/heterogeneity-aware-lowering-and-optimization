@@ -124,12 +124,6 @@ extern "C" {
 typedef struct CXXCodeGenOps HaloCodeGenOpts;
 typedef struct halo::ModelInfo HaloModelInfo;
 
-int halo_AnalyzeTFPbGraph(const char* pb_buf, size_t pb_buf_size,
-                          size_t num_input_shapes, const char* input_shapes[],
-                          int batch, const HaloCodeGenOpts* cg_opts,
-                          const char* main_output_file,
-                          HaloModelInfo* model_info);
-
 [[deprecated]] int halo_CompileTFPbGraph(const char* pb_buf, size_t pb_buf_size,
                                          size_t num_input_shapes,
                                          const char* input_shapes[], int batch,
@@ -138,6 +132,14 @@ int halo_AnalyzeTFPbGraph(const char* pb_buf, size_t pb_buf_size,
                                          HaloModelInfo* model_info);
 
 int halo_Compile(halo::ModelFormat model_format, unsigned num_models,
+                 const char* const models[], size_t const model_sizes[],
+                 const char* target, int batch, unsigned num_input_shapes,
+                 const char* const input_shapes[], unsigned num_inputs,
+                 const char* const inputs[], unsigned num_outputs,
+                 const char* const outputs[], const HaloCodeGenOpts* cg_opts,
+                 const char* main_output_file, HaloModelInfo* model_info);
+
+int halo_Analyze(halo::ModelFormat model_format, unsigned num_models,
                  const char* const models[], size_t const model_sizes[],
                  const char* target, int batch, unsigned num_input_shapes,
                  const char* const input_shapes[], unsigned num_inputs,
