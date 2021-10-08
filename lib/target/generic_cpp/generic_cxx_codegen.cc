@@ -489,12 +489,11 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
       const auto elem_nums = type.GetTotalNumOfElements();
       data_type.clear();
       data_type = convert_data_type(type.GetDataType());
-      oss << "  extern " << data_type << " const";
-      oss << "  output_" << i << "[" << elem_nums << "];\n";
       oss << "  output_refs.push_back(output_" << i << ");\n";
       oss << "  " << data_type << " out_" << i << "[" << elem_nums
           << "] = {};\n";
-      oss << "  output_elems.push_back(" << elem_nums << ");\n";
+      oss << "  output_elems.push_back(sizeof(output_" << i
+          << ") / sizeof(output_" << i << "[0]));\n";
       oss << "  outputs.push_back(out_" << i++ << ");\n";
     }
 

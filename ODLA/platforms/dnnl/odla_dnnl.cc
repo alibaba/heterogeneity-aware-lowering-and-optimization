@@ -1068,6 +1068,57 @@ odla_value odla_DeConv(odla_value input, odla_memory_layout input_layout,
   return bias ? odla_Add(v, bias, id) : v; // TODO: add bias into primitive
 }
 
+odla_value odla_Compress(odla_value input, odla_value condition,
+                         odla_int32 axis, odla_value_shape max_output_dims,
+                         const odla_value_id value_id) {
+  auto ty = input->elem_type;
+  const auto& shape = input->shape.dims;
+  auto n = GetTotalElements(max_output_dims);
+  auto ret_md = getMemoryDesc(max_output_dims, ty);
+  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
+  auto cond_size = condition->shape.dims[0];
+  int rank = input->shape.size;
+  if (axis == INT_MAX) {
+    axis = 0;
+    rank = 1;
+    cond_size = std::min(cond_size, n);
+  } else {
+    axis = axis < 0 ? axis + rank : axis;
+    cond_size = std::min(cond_size, shape[axis]);
+  }
+  std::vector<int64_t> strides(rank, 1);
+  int elem_size = getElementStorageSize(ty);
+  int64_t copy_size = std::accumulate(&shape[axis + 1], &shape[rank], 1,
+                                      std::multiplies<int64_t>()) *
+                      elem_size;
+  int64_t k = copy_size * shape[axis];
+  int64_t k_n =
+      std::accumulate(&shape[0], &shape[axis], 1, std::multiplies<int64_t>());
+  auto op = [input, condition, cond_size, ret_mem, axis, k_n, k, copy_size,
+             &strides]() {
+    const bool* cond_vals =
+        static_cast<const bool*>(condition->mem.get_data_handle());
+    char* dst = static_cast<char*>(ret_mem.get_data_handle());
+    for (int64_t i = 0; i < k_n; ++i) {
+      const char* src =
+          static_cast<char*>(input->mem.get_data_handle()) + i * k;
+      for (int64_t j = 0; j < cond_size; ++j) {
+        if (cond_vals[j]) {
+          memcpy(dst, src, copy_size);
+          dst += copy_size;
+        }
+        src += copy_size;
+      }
+    }
+  };
+  add_op(op);
+
+  InterpretIfNeeded();
+  odla_value v = CreateValue(ret_mem, max_output_dims, value_id);
+  v->elem_type = ty;
+  return v;
+}
+
 odla_value odla_Concat(odla_values inputs, odla_int32 axis,
                        odla_value_shape output_dims, const odla_value_id id) {
   auto num = inputs.size;

@@ -126,6 +126,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(BatchNormInst*) override;
   virtual void RunOnInstruction(InstanceNormInst*) override;
   virtual void RunOnInstruction(BatchMatMulInst*) override;
+  virtual void RunOnInstruction(CompressInst*) override;
   virtual void RunOnInstruction(Conv2DInst*) override;
   virtual void RunOnInstruction(Conv2DTransposeInst*) override;
   virtual void RunOnInstruction(GatherInst*) override;
