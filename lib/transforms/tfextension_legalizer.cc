@@ -43,36 +43,6 @@ static std::vector<Def> ConvertAddN(const TFExtensionInst* ext,
   return {*acc};
 }
 
-/*
-static std::vector<Def> ConvertBitcast(const TFExtensionInst* ext,
-                                           IRBuilder* builder) {
-  auto op0 = ext->GetOperand(0);
-  auto dtype = FindAttributeValue<DataType>(*ext, "type", DataType::INVALID);
-  HLCHECK(dtype != DataType::INVALID);
-  const auto& type = op0.GetType();
-  Constant* op_c = DynCast<Constant>(op0);
-  if (!type.IsValid() || op_c == nullptr) {
-    return {};
-  }
-  auto from_dtype = type.GetDataType();
-  DefaultDataLayout layout;
-  auto from_bits = layout.Bits(from_dtype);
-  auto to_bits = layout.Bits(dtype);
-  auto new_shape(type.GetDimSizes());
-  if (from_bits < to_bits) {
-    auto last_dim = type.GetNumOfElementsInDim(type.GetNumOfDims() - 1);
-    HLCHECK(to_bits == from_bits * last_dim);
-    new_shape.pop_back();
-  } else if (from_bits > to_bits) {
-    HLCHECK(from_bits % to_bits == 0);
-    new_shape.push_back(from_bits / to_bits);
-  }
-  ConstantBuilder cb(ext->GetParent()->GetParent());
-  Constant* c = cb.CreateConstant(ext->GetName() + "_bitcast", 
-    Type(dtype, new_shape), op_c->GetRawDataPtr());
-  return {*c};
-}*/
-
 static std::vector<Def> ConvertBroadcastTo(const TFExtensionInst* ext,
                                            IRBuilder* builder) {
   // Assume the consumer supports implicit broadcasting.
@@ -179,22 +149,19 @@ static std::vector<Def> ConvertCast(const TFExtensionInst* ext,
   HLCHECK(attr->GetName() == "Truncate");
   // bool truncate = attr->GetValueAsBool();
   builder->SetInsertAfter(ext);
-  DefaultDataLayout data_layout;
   auto op0 = ext->GetOperand(0);
   if (Type::IsIntegerType(src_type)) {
     if (Type::IsIntegerType(dst_type)) {
-      if (data_layout.Bits(src_type) < data_layout.Bits(dst_type)) {
-        ZExtInst* new_inst = builder->CreateZExt(ext->GetName(), op0);
-        new_inst->SetDataType(dst_type);
-        return {*new_inst};
-      }
-    } else {
-      HLCHECK(Type::IsFloatingPointType(dst_type));
-      SItoFPInst* new_inst = builder->CreateSItoFP(ext->GetName(), op0);
+      ZExtInst* new_inst = builder->CreateZExt(ext->GetName(), op0);
       new_inst->SetDataType(dst_type);
       return {*new_inst};
     }
-  } else if (Type::IsFloatingPointType(src_type)) {
+    HLCHECK(Type::IsFloatingPointType(dst_type));
+    SItoFPInst* new_inst = builder->CreateSItoFP(ext->GetName(), op0);
+    new_inst->SetDataType(dst_type);
+    return {*new_inst};
+  }
+  if (Type::IsFloatingPointType(src_type)) {
     if (Type::IsIntegerType(dst_type)) {
       FPtoSIInst* new_inst = builder->CreateFPtoSI(ext->GetName(), op0);
       new_inst->SetDataType(dst_type);
@@ -220,7 +187,9 @@ static std::vector<Def> ConvertExpandDims(const TFExtensionInst* ext,
   if (!input_type.IsValid() || axis_c == nullptr) {
     return {};
   }
-  int64_t axis = axis_c->GetDataAsInt64(0);
+  
+  int64_t axis = (axis_c->GetResultType().GetDataType() == DataType::INT64) ? 
+  axis_c->GetDataAsInt64(0) : static_cast<int64_t>(axis_c->GetData<int32_t>(0));
   int input_rank = input_type.GetNumOfDims();
   HLCHECK(-1 - input_rank <= axis && axis <= input_rank);
 

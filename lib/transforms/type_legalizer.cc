@@ -1235,20 +1235,39 @@ static void RunOnInstruction(TFIDFVectorizeInst* inst) {
 static void RunOnInstruction(SelectInst* inst) {
   const auto& ty_cond = inst->GetOperand(0).GetType();
   const auto& ty_x = inst->GetOperand(1).GetType();
-  if (!ty_cond.IsValid() || !ty_x.IsValid()) {
+  const auto& ty_y = inst->GetOperand(2).GetType();
+  if (!ty_cond.IsValid() || !ty_x.IsValid() || !ty_y.IsValid()) {
     return;
   }
   // Result shape is broadcasted with ty_x and ty_cond.
   auto rank_x = ty_x.GetNumOfDims();
   auto rank_c = ty_cond.GetNumOfDims();
+
   auto rank_r = std::max(rank_x, rank_c);
   std::vector<int64_t> ret_shape(rank_r);
+#if 0
   for (int64_t i = rank_r - 1, idx_c = rank_c - 1, idx_x = rank_x - 1; i >= 0;
        --i) {
     auto dim_x = idx_x < 0 ? 1 : ty_x.GetNumOfElementsInDim(idx_x--);
     auto dim_c = idx_c < 0 ? 1 : ty_cond.GetNumOfElementsInDim(idx_c--);
     ret_shape[i] = std::max(dim_x, dim_c);
   }
+#else
+  auto rank_y = ty_y.GetNumOfDims();
+  rank_r = std::max(rank_x, rank_y);
+  ret_shape.resize(rank_r);
+  HLCHECK(rank_r >= rank_c);
+  for (int64_t i = rank_r - 1, idx_y = rank_y - 1, idx_x = rank_x - 1; i >= 0;
+       --i) {
+    auto dim_x = idx_x < 0 ? 1 : ty_x.GetNumOfElementsInDim(idx_x--);
+    auto dim_y = idx_y < 0 ? 1 : ty_y.GetNumOfElementsInDim(idx_y--);
+    ret_shape[i] = std::max(dim_x, dim_y);
+  }
+
+  if (rank_c != 0) {
+    HLCHECK(ret_shape[0] == ty_cond.GetNumOfElementsInDim(0));
+  }
+#endif
   inst->GetResultsTypes()[0] = Type{ty_x.GetDataType(), ret_shape};
 }
 
