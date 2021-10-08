@@ -212,9 +212,9 @@ static bool IsSameType(const Type& lhs, const Type& rhs) {
   return true;
 }
 
-static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
-                                                      bool disable_broadcasting,
-                                                      bool fuse_conv_bias) {
+static std::pair<Def, Def> RunOnMathBinaryInstruction(
+    Instruction* binary_inst, bool disable_broadcasting, bool fuse_conv_bias,
+    bool fuse_matmul_mul, bool fuse_fully_connected) {
   Def orig_def{binary_inst, 0};
   auto op0 = binary_inst->GetOperand(0);
   auto op1 = binary_inst->GetOperand(1);
@@ -248,6 +248,96 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
   IRBuilder builder(binary_inst->GetParent());
   builder.SetInsertAfter(binary_inst);
   ConstantBuilder cb(binary_inst->GetParent()->GetParent());
+
+  // fuse to fully_connected
+  if (opc == OpCode::ADD && fuse_fully_connected) {
+    if (IsA<MatMulInst>(op1)) {
+      std::swap(op0, op1);
+    }
+    if (IsA<MatMulInst>(op0) && IsA<Constant>(op1)) {
+      int16_t kernel_dim =
+          DynCast<MatMulInst>(op0)->GetOperand(1).GetType().GetNumOfDims();
+      if ((!DynCast<MatMulInst>(op0)->GetTransposeA()) &&
+          (!DynCast<MatMulInst>(op0)->GetTransposeB()) && (kernel_dim == 2)) {
+        auto op_matmul0 = DynCast<MatMulInst>(op0)->GetOperand(0);
+        auto op_matmul1 = DynCast<MatMulInst>(op0)->GetOperand(1);
+        if (IsA<Constant>(op_matmul0)) {
+          std::swap(op_matmul0, op_matmul1);
+        }
+
+        Instruction* new_inst = nullptr;
+
+        if (IsA<Constant>(op_matmul1)) {
+          TransposeInst* op_matmul1_t = builder.CreateTranspose(
+              DynCast<Constant>(op_matmul1)->GetName() + "_t", {op_matmul1});
+
+          op_matmul1_t->SetPermutation({1, 0});
+          new_inst = builder.CreateGemm(binary_inst->GetName() + "_fused",
+                                        op_matmul0, *op_matmul1_t, op1);
+          if (new_inst != nullptr) {
+            GemmInst* new_gemm = DynCast<GemmInst>(new_inst);
+            new_gemm->SetTransposeB(true);
+            return {orig_def, *new_gemm};
+          }
+        }
+      }
+    }
+  }
+
+  if (fuse_matmul_mul && opc == OpCode::MUL) {
+    if (IsA<Constant>(op0)) {
+      std::swap(op0, op1);
+    }
+    if (IsA<MatMulInst>(op0) && IsA<Constant>(op1)) {
+      auto op_matmul0 = DynCast<MatMulInst>(op0)->GetOperand(0); // input
+      auto op_matmul1 = DynCast<MatMulInst>(op0)->GetOperand(1); // weight
+      if (IsA<Constant>(op_matmul1) &&
+          DynCast<Constant>(op_matmul1)->GetResultType().GetNumOfDims() == 2 &&
+          DynCast<Constant>(op_matmul1)->GetResultType().GetDataType() ==
+              halo::DataType::FLOAT32) {
+        MatMulInst* matmul = DynCast<MatMulInst>(op0);
+
+        ConstantBuilder cb(matmul->GetParent()->GetParent());
+        IRBuilder builder(matmul->GetParent());
+        builder.SetInsertAfter(matmul);
+
+        const auto kernel = DynCast<Constant>(op_matmul1);
+        const auto& kernel_type = kernel->GetResultType();
+        int32_t h = kernel_type.GetNumOfElementsInDim(0);
+        int32_t w = kernel_type.GetNumOfElementsInDim(1);
+        auto weight_2 = DynCast<Constant>(op1);
+        std::vector<float> mul_buf(h * w);
+
+        for (int32_t i = 0; i < w; i++) {
+          for (int32_t j = 0; j < h; j++) {
+            auto a = kernel->GetData<float>(j + i * w);
+            auto b = weight_2->GetData<float>(i);
+            auto c = a * b;
+            mul_buf[i * w + j] = c;
+          }
+        }
+
+        MatMulInst* new_mm = nullptr;
+        auto new_kernel =
+            cb.CreateConstant(kernel->GetName(), kernel_type, mul_buf.data());
+
+        if (!DynCast<MatMulInst>(op0)->GetTransposeB()) {
+          TransposeInst* new_kernel_t = builder.CreateTranspose(
+              DynCast<Constant>(new_kernel)->GetName() + "_t", {*new_kernel});
+          new_kernel_t->SetPermutation({1, 0});
+
+          auto new_inst = builder.Clone(*matmul, {op_matmul0, *new_kernel_t});
+          new_mm = DynCast<MatMulInst>(new_inst);
+          new_mm->SetTransposeB(true);
+        } else {
+          auto new_inst = builder.Clone(*matmul, {op_matmul0, *new_kernel});
+          new_mm = DynCast<MatMulInst>(new_inst);
+        }
+
+        return {orig_def, *new_mm};
+      }
+    }
+  }
 
   // Fuse mul/add into conv.
   if ((opc == OpCode::MUL || (fuse_conv_bias && opc == OpCode::ADD)) &&
@@ -606,7 +696,8 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Instruction* inst) {
     case OpCode::SUB:
     case OpCode::CMP: {
       return RunOnMathBinaryInstruction(inst, disable_broadcasting_,
-                                        fuse_conv_bias_);
+                                        fuse_conv_bias_, fuse_mul_matmul_,
+                                        fuse_fc_add_);
     }
     case OpCode::REDUCEMAX:
     case OpCode::REDUCEMIN:

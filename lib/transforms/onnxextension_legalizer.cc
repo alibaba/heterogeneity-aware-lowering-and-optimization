@@ -21,6 +21,7 @@
 #include <cmath>
 #include <limits>
 #include <numeric>
+#include <set>
 #include <unordered_set>
 
 #include "halo/api/halo_data.h"
@@ -551,14 +552,14 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
 
   HLCHECK(ends_type.GetNumOfDims() == starts_type.GetNumOfDims());
 
-  std::unordered_set<int32_t> axes;
+  std::set<int32_t> axes; // order matters.
 
   // If no axes operand, assumes all axes are sliced and steps are 1.
   Def op_axes = Def::GetUndefined();
   Def op_steps = Def::GetUndefined();
 
   int start_size = starts_type.GetTotalNumOfElements();
-  std::vector<int> steps(start_size, 1);
+  std::vector<int> steps(input_dims, 1);
   if ((op_num == 3) || (op_num == 4)) {
     Constant* c_steps =
         cb.CreateConstant(ext->GetName() + "_steps",
