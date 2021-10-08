@@ -93,7 +93,7 @@ class Logger : public nvinfer1::ILogger {
         log_level = 5;
     }
 
-    if (log_level <= 4) {
+    if (log_level <= 1) {
       std::cerr << "[" << log_level << "]: " << msg << "\n";
     }
   }
@@ -183,7 +183,7 @@ struct _odla_computation {
       network = builder->createNetwork();
 #else
       initODLAPlugin(&Logger, "");
-      nvinfer1::NetworkDefinitionCreationFlags flags = 1;
+      nvinfer1::NetworkDefinitionCreationFlags flags = 0;
       if (const char* env_p = std::getenv("ODLA_TRT_USE_EXPLICIT_BATCH")) {
         if (*env_p != '0') {
           flags = 1U << static_cast<uint32_t>(
