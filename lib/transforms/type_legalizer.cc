@@ -1249,7 +1249,7 @@ static void RunOnInstruction(SelectInst* inst) {
 
   // Broadcast between x and y according to the general broadcasting rule
   for (int64_t i = rank_r - 1, idx_y = rank_y - 1, idx_x = rank_x - 1; i >= 0;
-         --i) {
+       --i) {
     auto dim_x = idx_x < 0 ? 1 : ty_x.GetNumOfElementsInDim(idx_x--);
     auto dim_y = idx_y < 0 ? 1 : ty_y.GetNumOfElementsInDim(idx_y--);
     ret_shape[i] = std::max(dim_x, dim_y);
@@ -1258,9 +1258,8 @@ static void RunOnInstruction(SelectInst* inst) {
   // A special case where TF1.x Select requires cond
   // to be broadcasted in a different way:
   // cond: [512]    x/y: [512, 3, 4] -->
-  // cond: [512, 1, 1] 
-  if (rank_r >= rank_c && 
-      rank_c == 1 && 
+  // cond: [512, 1, 1]
+  if (rank_r >= rank_c && rank_c == 1 &&
       ret_shape[0] == ty_cond.GetNumOfElementsInDim(0)) {
     inst->GetResultsTypes()[0] = Type{ty_x.GetDataType(), ret_shape};
     return;

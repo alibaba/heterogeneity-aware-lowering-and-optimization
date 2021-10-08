@@ -27,7 +27,7 @@ extern "C" {
 void initODLAPlugin(nvinfer1::ILogger* logger, const char* libNamespace) {
 #if NV_TENSORRT_MAJOR < 8
   const int NUM_PLUGINS = 22;
-#else 
+#else
   const int NUM_PLUGINS = 32;
 #endif
   initLibNvInferPlugins(static_cast<void*>(logger), "");

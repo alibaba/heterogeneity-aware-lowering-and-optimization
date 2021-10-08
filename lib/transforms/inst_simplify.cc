@@ -2530,12 +2530,11 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(UniqueInst* inst) {
   const auto& result_type0 = inst->GetResultsTypes()[0];
   const auto& result_type1 = inst->GetResultsTypes()[1];
   auto num_uses = inst->GetResultsUses()[0].size();
-  if (!result_type0.IsValid() || !result_type1.IsValid() ||
-      num_uses != 0) {
+  if (!result_type0.IsValid() || !result_type1.IsValid() || num_uses != 0) {
     return {orig_def, orig_def};
   }
   const auto& op0 = inst->GetOperand(0);
-  if (IsA<BitcastInst>(op0)) { 
+  if (IsA<BitcastInst>(op0)) {
     auto bitcast_inst = DynCast<BitcastInst>(op0);
     if (bitcast_inst->GetNumberOfUses() == 1) {
       const auto& op1 = bitcast_inst->GetOperand(0);
@@ -2552,7 +2551,8 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(UniqueInst* inst) {
           }
           if (check_all) {
             ArgumentBuilder arg_builder(inst->GetParent()->GetParent());
-            auto arg = arg_builder.CreateArgument(inst->GetName() + "_preprocess", result_type1);
+            auto arg = arg_builder.CreateArgument(
+                inst->GetName() + "_preprocess", result_type1);
             return {orig_def, *arg};
           }
         }

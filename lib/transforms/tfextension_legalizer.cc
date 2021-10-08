@@ -187,9 +187,10 @@ static std::vector<Def> ConvertExpandDims(const TFExtensionInst* ext,
   if (!input_type.IsValid() || axis_c == nullptr) {
     return {};
   }
-  
-  int64_t axis = (axis_c->GetResultType().GetDataType() == DataType::INT64) ? 
-  axis_c->GetDataAsInt64(0) : static_cast<int64_t>(axis_c->GetData<int32_t>(0));
+
+  int64_t axis = (axis_c->GetResultType().GetDataType() == DataType::INT64)
+                     ? axis_c->GetDataAsInt64(0)
+                     : static_cast<int64_t>(axis_c->GetData<int32_t>(0));
   int input_rank = input_type.GetNumOfDims();
   HLCHECK(-1 - input_rank <= axis && axis <= input_rank);
 
@@ -282,7 +283,7 @@ static std::vector<Def> ConvertShape(const TFExtensionInst* ext,
 }
 
 static std::vector<Def> ConvertSize(const TFExtensionInst* ext,
-                                     IRBuilder* builder) {
+                                    IRBuilder* builder) {
   const auto& type = ext->GetOperand(0).GetType();
   if (!type.IsValid()) {
     return {};
