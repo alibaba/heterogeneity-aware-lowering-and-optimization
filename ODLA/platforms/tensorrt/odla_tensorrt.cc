@@ -2300,4 +2300,43 @@ odla_value odla_HardSigmoid(odla_value input, odla_float32 alpha,
   return CreateValue(layer->getOutput(0), input->type, value_id);
 }
 
+odla_value odla_Select(odla_value condition, odla_value a, odla_value b,
+                       odla_value_shape output_dims,
+                       const odla_value_id value_id) {
+  nvinfer1::ITensor* lhs = a->tensor;
+  nvinfer1::ITensor* rhs = b->tensor;
+  nvinfer1::ITensor* cond = condition->tensor;
+  const auto& dims_lhs = a->type.shape;
+  const auto& dims_rhs = b->type.shape;
+  const auto& dims_cond = condition->type.shape;
+  if (dims_lhs.size < output_dims.size) {
+    auto reshape = g_comp->network->addShuffle(*lhs);
+    reshape->setReshapeDimensions(BroadcastDims(dims_lhs, output_dims.size));
+    lhs = reshape->getOutput(0);
+  }
+  if (dims_rhs.size < output_dims.size) {
+    auto reshape = g_comp->network->addShuffle(*rhs);
+    reshape->setReshapeDimensions(BroadcastDims(dims_rhs, output_dims.size));
+    rhs = reshape->getOutput(0);
+  }
+  if (dims_cond.size < output_dims.size) {
+    auto reshape = g_comp->network->addShuffle(*rhs);
+    if (dims_cond.size == 1 && dims_cond.dims[0] == output_dims.dims[0]) {
+      nvinfer1::Dims broadcast_cond_dims;
+      broadcast_cond_dims.nbDims = output_dims.size;
+      for (int i = 0; i < output_dims.size; ++i) {
+        broadcast_cond_dims.d[i] = (i == 0) ? dims_cond.dims[0] : 1;
+      }
+      reshape->setReshapeDimensions(broadcast_cond_dims);
+    } else {
+      reshape->setReshapeDimensions(BroadcastDims(dims_cond, output_dims.size));
+    }
+    cond = reshape->getOutput(0);
+  }
+  auto select_layer = g_comp->network->addSelect(*cond, *lhs, *rhs);
+  return CreateValue(select_layer->getOutput(0),
+                     odla_value_type{a->type.element_type, output_dims},
+                     value_id);
+}
+
 } // C extern
