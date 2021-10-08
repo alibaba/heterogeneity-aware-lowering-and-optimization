@@ -25,6 +25,7 @@ set(SRCS
   call.cc
   cast.cc
   code_formatter.cc
+  compress.cc
   concat.cc
   conv.cc
   custom.cc
