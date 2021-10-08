@@ -72,8 +72,7 @@ Analyzer::NodeInfo& Analyzer::GenerateCommonInfo(const Instruction* inst) {
         AliveTensor[name].liveness--;
       }
 
-      node_info.io_mem_sv += size;
-      node_info.io_mem_ld += size;
+      node_info.io_mem += size;
     }
   }
 
@@ -85,16 +84,14 @@ Analyzer::NodeInfo& Analyzer::GenerateCommonInfo(const Instruction* inst) {
   } else {
     node_info.output_shape = op_type.GetDimSizes();
   }
-  TensorInfo tif = {op_tgts, 1, Dl->Bytes(op_type)};
-  tif.sv_size = tif.liveness * tif.ld_size;
+  TensorInfo tif = {op_tgts, Dl->Bytes(op_type)};
   AliveTensor[node_info.name] = tif;
 
   for (auto iter = AliveTensor.begin(); iter != AliveTensor.end();) {
     if (iter->second.liveness == 0) {
       iter = AliveTensor.erase(iter);
     } else {
-      node_info.io_mem_sv += iter->second.sv_size;
-      node_info.io_mem_ld += iter->second.ld_size * iter->second.liveness;
+      node_info.io_mem += iter->second.size * iter->second.liveness;
       iter++;
     }
   }
@@ -132,6 +129,46 @@ void Analyzer::CalPoolingInst(const T* inst) {
       HLCHECK(0 && "Invalid format");
     }
   }
+}
+
+template <class T>
+void Analyzer::CalConvInst(const T* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
+
+  const auto& weight_op = inst->GetOperand(1);
+  const auto& weight_type = weight_op.GetType();
+  size_t weight_size = weight_type.GetTotalNumOfElements();
+
+  // Conv computational estimator:
+  // 1 kernel per pixel: (2 * Kh * Kw - 1)
+  // all chanels (2 * Kh * Kw - 1) * Cin + 1 (bias)
+  // all output pixels:
+  // ((2 * Kh * Kw - 1) * Cin + 1) * Cout * Hout * Wout * Batch (Cout == Nk)
+  const auto& out_type = inst->GetResultType();
+  size_t out_size = out_type.GetTotalNumOfElements();
+  const size_t dims = out_type.GetNumOfDims();
+  HLCHECK(dims == 4);
+  int chn = 0;
+  switch (inst->GetDataFormat()) {
+    case DataFormat::NCHW: {
+      chn = 1;
+      break;
+    }
+    case DataFormat::NHWC: {
+      chn = 3;
+      break;
+    }
+    default: {
+      HLCHECK(0 && "Invalid format");
+    }
+  }
+  node_info.flops = 2;
+  node_info.flops *= static_cast<float>(weight_size * out_size);
+  node_info.flops /= out_type.GetNumOfElementsInDim(chn);
+  node_info.flops =
+      node_info.flops -
+      static_cast<float>(weight_type.GetNumOfElementsInDim(chn) * out_size -
+                         out_size);
 }
 
 void Analyzer::RunOnInstruction(Instruction* inst) {
@@ -182,6 +219,50 @@ void Analyzer::RunOnInstruction(Instruction* inst) {
   }
 }
 
+void Analyzer::RunOnInstruction(ResizeInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
+
+  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
+  size_t dims = inst->GetOperand(0).GetType().GetNumOfDims();
+  node_info.flops *= static_cast<float>((1 << dims) - 1);
+  auto interp_md = inst->GetInterpolationMode();
+  if (interp_md == Interpolation::LINEAR) {
+    const float op_per_interp = 4.0;
+    node_info.flops *= op_per_interp;
+  } else if (interp_md == Interpolation::CUBIC) {
+    const float op_per_interp = 7.0;
+    node_info.flops *= op_per_interp;
+  }
+}
+
+void Analyzer::RunOnInstruction(LSTMInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
+  node_info.flops = 0;
+
+  auto dir = inst->GetDirection();
+  size_t rpt = 1;
+  if (dir == Direction::BIDIRECTIONAL) {
+    rpt = 2;
+  }
+  size_t hidden_sz = inst->GetHiddenSize();
+
+  const auto& input_type = inst->GetOperand(0).GetType();
+  HLCHECK(input_type.GetNumOfDims() >= 3);
+  size_t ip_sz = input_type.GetNumOfElementsInDim(2);
+  size_t b_sz = input_type.GetNumOfElementsInDim(1);
+  size_t seq_sz = input_type.GetNumOfElementsInDim(0);
+
+  // forget gate: F = sigmoid(input*W + H*W + b)
+  // input gate: I = sigmoid(input*W + H*W + b), C_ = tanh(input*W + H*W + b)
+  // cell state gate: C = F x C + I x C_
+  // output gate: O = sigmoid(input*W + H*W + b), H = O x tanh(C)
+  const int mad = 8;
+  const int mul = 5;
+  node_info.flops += static_cast<float>(mad * (ip_sz + hidden_sz) * hidden_sz);
+  node_info.flops += static_cast<float>(mul * hidden_sz);
+  node_info.flops *= static_cast<float>(rpt * b_sz * seq_sz);
+}
+
 void Analyzer::RunOnInstruction(BatchMatMulInst* inst) {
   auto& node_info = GenerateCommonInfo(inst);
 
@@ -219,42 +300,11 @@ void Analyzer::RunOnInstruction(BatchMatMulInst* inst) {
 }
 
 void Analyzer::RunOnInstruction(Conv2DInst* inst) {
-  auto& node_info = GenerateCommonInfo(inst);
+  CalConvInst<Conv2DInst>(inst);
+}
 
-  const auto& weight_op = inst->GetOperand(1);
-  const auto& weight_type = weight_op.GetType();
-  size_t weight_size = weight_type.GetTotalNumOfElements();
-
-  // Conv computational estimator:
-  // 1 kernel per pixel: (2 * Kh * Kw - 1)
-  // all chanels (2 * Kh * Kw - 1) * Cin + 1 (bias)
-  // all output pixels:
-  // ((2 * Kh * Kw - 1) * Cin + 1) * Cout * Hout * Wout * Batch (Cout == Nk)
-  const auto& out_type = inst->GetResultType();
-  size_t out_size = out_type.GetTotalNumOfElements();
-  const size_t dims = out_type.GetNumOfDims();
-  HLCHECK(dims == 4);
-  int chn = 0;
-  switch (inst->GetDataFormat()) {
-    case DataFormat::NCHW: {
-      chn = 1;
-      break;
-    }
-    case DataFormat::NHWC: {
-      chn = 3;
-      break;
-    }
-    default: {
-      HLCHECK(0 && "Invalid format");
-    }
-  }
-  node_info.flops = 2;
-  node_info.flops *= static_cast<float>(weight_size * out_size);
-  node_info.flops /= out_type.GetNumOfElementsInDim(chn);
-  node_info.flops =
-      node_info.flops -
-      static_cast<float>(weight_type.GetNumOfElementsInDim(chn) * out_size -
-                         out_size);
+void Analyzer::RunOnInstruction(Conv2DTransposeInst* inst) {
+  CalConvInst<Conv2DTransposeInst>(inst);
 }
 
 void Analyzer::RunOnInstruction(GemmInst* inst) {
@@ -436,14 +486,12 @@ void Analyzer::WriteCSVReport(std::ostream& os) {
 
   float total_flops = 0;
   float total_weights = 0;
-  size_t max_io_sv = 0;
-  size_t max_io_ld = 0;
+  size_t max_io = 0;
   for (const auto& it : node_infos_) {
     total_flops += it.flops;
     total_weights += it.weight_mem;
 
-    max_io_sv = std::max(max_io_sv, it.io_mem_sv);
-    max_io_ld = std::max(max_io_ld, it.io_mem_ld);
+    max_io = std::max(max_io, it.io_mem);
   }
 
   if (opts_.print_details) {
@@ -475,7 +523,7 @@ void Analyzer::WriteCSVReport(std::ostream& os) {
         os << ii << " ";
       }
       os << "), " << it.flops / mflops << ", " << it.weight_mem / mb << ", "
-         << (it.weight_mem + it.io_mem_ld) / mb << ", "
+         << (it.weight_mem + it.io_mem) / mb << ", "
          << ratio * it.flops / total_flops << ", "
          << "\n";
     }
@@ -484,13 +532,11 @@ void Analyzer::WriteCSVReport(std::ostream& os) {
   }
 
   size_t total_layers = node_infos_.size();
-  float total_mem_sv = (total_weights + max_io_sv) / mb;
-  float total_mem_ld = (total_weights + max_io_ld) / mb;
+  float total_mem = (total_weights + max_io) / mb;
   os << "Total layers: " << total_layers
      << "\nTotal GFLOPs: " << total_flops / gflops
      << "\nTotal Weights(MB): " << total_weights / mb
-     << "\nTotal Memory (MB): " << total_mem_sv
-     << "\nTotal Memory Inference (MB): " << total_mem_ld << "\n";
+     << "\nTotal Memory (MB): " << total_mem << "\n";
 }
 
 } // namespace halo
