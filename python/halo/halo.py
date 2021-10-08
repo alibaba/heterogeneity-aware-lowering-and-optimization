@@ -108,6 +108,7 @@ def CompileModel(model_file, input_shapes, output_names, batch, format):
     opts.linked_odla_lib = odla_lib
     opts.channel_order = 1
     opts.api = 1
+    opts.disable_broadcasting = True
     opts.emit_inference_func_sig = True
     format_vals = {
         "TENSORFLOW": 0,
