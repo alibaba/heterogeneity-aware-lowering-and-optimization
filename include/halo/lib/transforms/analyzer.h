@@ -48,9 +48,7 @@ class Analyzer final : public ModulePass {
     std::vector<std::vector<int64_t>> input_shape;
     std::vector<int64_t> output_shape;
 
-    size_t io_mem_sv = 0;
-    // op fusion estimate
-    size_t io_mem_ld = 0;
+    size_t io_mem = 0;
     float weight_mem = 0;
 
     // Note that FLOPS and FLOPs are different:
@@ -64,8 +62,7 @@ class Analyzer final : public ModulePass {
 
   struct TensorInfo {
     size_t liveness = 0;
-    size_t sv_size = 0;
-    size_t ld_size = 0;
+    size_t size = 0;
   };
 
   Analyzer(std::ostream* os, const AnalyzerOpts& opts)
@@ -80,9 +77,12 @@ class Analyzer final : public ModulePass {
   NodeInfo& GenerateCommonInfo(const Instruction* inst);
   template <class T>
   void CalPoolingInst(const T* inst);
+  template <class T>
+  void CalConvInst(const T* inst);
+  void RunOnInstruction(Conv2DInst* inst);
+  void RunOnInstruction(Conv2DTransposeInst* inst);
   void RunOnInstruction(Instruction* inst);
   void RunOnInstruction(BatchMatMulInst* inst);
-  void RunOnInstruction(Conv2DInst* inst);
   void RunOnInstruction(GemmInst* inst);
   void RunOnInstruction(MatMulInst* inst);
   void RunOnInstruction(NonMaxSuppressionInst* inst);
@@ -109,6 +109,8 @@ class Analyzer final : public ModulePass {
   void RunOnInstruction(TransposeInst* inst);
   void RunOnInstruction(ZExtInst* inst);
   void RunOnInstruction(ReturnInst* inst);
+  void RunOnInstruction(ResizeInst* inst);
+  void RunOnInstruction(LSTMInst* inst);
 
  private:
   std::ostream* os_;
