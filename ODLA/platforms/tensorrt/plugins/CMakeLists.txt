@@ -16,9 +16,6 @@
 
 add_custom_target(ODLA_TRTPLUGIN)
 
-set(TRT_VERSION 7.0.0.11)
-set(TRT_SOVERSION 7.0.0)
-
 if (DEFINED GPU_ARCHS)
   message(STATUS "GPU_ARCHS defined as ${GPU_ARCHS}. Generating CUDA code for SM ${GPU_ARCHS}")
   separate_arguments(GPU_ARCHS)
@@ -107,8 +104,6 @@ set_target_properties(${SHARED_TARGET} PROPERTIES COMPILE_FLAGS "-Wno-deprecated
 #set_target_properties(${SHARED_TARGET} PROPERTIES LINK_FLAGS "-Wl,--exclude-libs,ALL -Wl,--version-script=${PLUGIN_EXPORT_MAP} -Wl,--no-undefined")
 set_target_properties(${SHARED_TARGET} PROPERTIES LINK_FLAGS "-Wl,--exclude-libs,ALL -Wl,--no-undefined")
 #set_target_properties(${SHARED_TARGET} PROPERTIES DEBUG_POSTFIX ${TRT_DEBUG_POSTFIX})
-
-#set_target_properties(${SHARED_TARGET} PROPERTIES VERSION ${TRT_VERSION} SOVERSION ${TRT_SOVERSION} )
 
 set_property(TARGET ${SHARED_TARGET} PROPERTY CUDA_STANDARD 11)
 
