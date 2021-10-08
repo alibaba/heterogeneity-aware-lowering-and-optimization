@@ -37,6 +37,7 @@ class ODLAModel:
         self.logger = logging.getLogger(__name__)
         self.so_file = so_file
         self.h = None
+        self.buffers = []
 
     def Load(self):
         if self.h is None:
@@ -63,6 +64,9 @@ class ODLAModel:
             self.h.odla_GetValueType(arg_v, pointer(vt))
             self.in_vals.append((arg_v.value, vt))
 
+        self.ctx = c_void_p(0)
+        self.h.odla_CreateContext(pointer(self.ctx))
+
         self.out_vals = []
         for idx in range(0, self.nr_outputs):
             out = c_void_p(0)
@@ -73,21 +77,17 @@ class ODLAModel:
             for r in range(0, vt.shape.size):
                 n *= vt.shape.dims[r]
             self.out_vals.append((out, vt, n))
-        self.ctx = c_void_p(0)
-        self.h.odla_CreateContext(pointer(self.ctx))
+            buf = (c_float * n)() # FIXME: handle types
+            self.h.odla_BindToOutput(out, buf, self.ctx)
+            self.buffers.append(buf)
 
     def Execute(self, data):
         for idx, v in enumerate(self.in_vals):
             self.h.odla_BindToArgument(
                 v[0], data[idx].ctypes.data_as(c_void_p), self.ctx
             )
-        buffers = []
-        for idx, v in enumerate(self.out_vals):
-            buf = (c_float * v[2])()  # FIXME: handle types
-            self.h.odla_BindToOutput(v[0], buf, self.ctx)
-            buffers.append(buf)
         s = time()
         self.h.odla_ExecuteComputation(self.comp, self.ctx, 0, c_void_p(0))
         t = time()
         self.logger.info("Execution time:" + str(t - s) + " sec(s)")
-        return [buf[:] for buf in buffers]
+        return self.buffers
