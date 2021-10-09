@@ -26,6 +26,8 @@ enum \mbox{\hyperlink{odla__ops__process_8h_ae5784f32274737503651496765cc159c}{o
 \begin{DoxyCompactList}\small\item\em Broadcast the value. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__process_8h_aa74baf03a73fdd21b074e24149d35a73}{odla\+\_\+\+Cast}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, odla\+\_\+element\+\_\+type target\+\_\+type, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em cast the element data type of an input \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__process_8h_a131e096fabf28e071834c0583429f0f5}{odla\+\_\+\+Compress}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} condition, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} axis, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} max\+\_\+output\+\_\+shape, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
+\begin{DoxyCompactList}\small\item\em Select slices based on condition. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__process_8h_a36d13343b55143887be5ac1e9e959d1c}{odla\+\_\+\+Concat}} (\mbox{\hyperlink{structodla__values}{odla\+\_\+values}} inputs, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} axis, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+shape, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Concatenate multiple values into a single value. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__process_8h_ad8f03fa238e900ae7fc3934c7a77273f}{odla\+\_\+\+Expand\+Dims}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+dims, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
@@ -220,6 +222,34 @@ Cast casts the input element type to {\ttfamily target\+\_\+type}.
 {\em input} & the input value \\
 \hline
 {\em target\+\_\+type} & the data type of casted value \\
+\hline
+{\em value\+\_\+id} & a unique value id (can be NULL)\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+value 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__ops__process_8h_a131e096fabf28e071834c0583429f0f5}\label{odla__ops__process_8h_a131e096fabf28e071834c0583429f0f5}} 
+\index{odla\_ops\_process.h@{odla\_ops\_process.h}!odla\_Compress@{odla\_Compress}}
+\index{odla\_Compress@{odla\_Compress}!odla\_ops\_process.h@{odla\_ops\_process.h}}
+\doxysubsubsection{\texorpdfstring{odla\_Compress()}{odla\_Compress()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Compress (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{condition,  }\item[{\mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}}}]{axis,  }\item[{\mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}}}]{max\+\_\+output\+\_\+shape,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
+
+
+
+Select slices based on condition. 
+
+Select slices from input along specified axis based on condition vector.
+
+
+\begin{DoxyParams}{Parameters}
+{\em input} & the input value \\
+\hline
+{\em condition} & the condition value (1-\/D) \\
+\hline
+{\em axis} & the axis on which the slices to be selected \\
+\hline
+{\em max\+\_\+output\+\_\+shape} & the maximum result shape (assume all conditions are true) \\
 \hline
 {\em value\+\_\+id} & a unique value id (can be NULL)\\
 \hline
