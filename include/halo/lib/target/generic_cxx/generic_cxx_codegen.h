@@ -171,6 +171,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(RNNInst*) override;
   virtual void RunOnInstruction(SelectInst*) override;
   virtual void RunOnInstruction(ShiftInst*) override;
+  virtual void RunOnInstruction(ShrinkInst*) override;
   virtual void RunOnInstruction(SItoFPInst*) override;
   virtual void RunOnInstruction(SliceInst*) override;
   virtual void RunOnInstruction(SoftmaxInst*) override;
