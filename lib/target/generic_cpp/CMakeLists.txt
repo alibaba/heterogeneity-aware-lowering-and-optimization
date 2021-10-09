@@ -49,6 +49,7 @@ set(SRCS
   reshape.cc
   resize.cc
   return.cc
+  shrink.cc
   sigmoid.cc
   hardsigmoid.cc
   slice.cc

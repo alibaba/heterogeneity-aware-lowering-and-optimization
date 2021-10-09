@@ -575,6 +575,22 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Selu(odla_value input, odla_float32 alpha, odla_float32 gamma,
           const odla_value_id value_id);
 
+//! \brief Shrink activation
+/*!
+  Shrink computes the function if x < -lambd, y = x + bias;
+  if x > lambd, y = x - bias; Otherwise, y = 0.
+
+  \param input the input value
+  \param bias value of bias
+  \param lambd value of lambd
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Shrink(odla_value input, odla_float32 bias, odla_float32 lambd,
+            const odla_value_id value_id);
+
 //! \brief Sigmoid activation
 /*!
   Sigmoid computes the sigmoid activation as y = 1 / (1 + exp(-x))

@@ -25,5 +25,4 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_shrink_hard | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_shrink_hard_dnnl.cc.tmp.main.cc.in"

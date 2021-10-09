@@ -377,6 +377,13 @@ def ONNX_Selu : OpMapping<"Selu", Selu> {
 
 def ONNX_Shape : ONNXExtension<"Shape">;
 
+def ONNX_Shrink : OpMapping<"Shrink", Shrink>{
+  let attr_mapping_ = [
+    AttributeMapping<"bias", "bias", "0.0">,
+    AttributeMapping<"lambd", "lambd", "0.5">
+    ];
+}
+
 def ONNX_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
 
 def ONNX_HardSigmoid : OpMapping<"HardSigmoid", HardSigmoid>{

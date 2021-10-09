@@ -102,3 +102,16 @@ let cat_ = cat_nn_activation,
   def PRelu : Inst<"Compute prelu activation, element-wise. Return"
                    "f(x) = slope * x for x < 0, f(x) = x for x >= 0.">;
 }
+
+let cat_ = cat_nn_activation,
+    ins_ = [Arg<"The input data.", ArgType<[I8,I16,I32,I64,UI8,UI16,UI32,UI64,F16,F32,F64]> >],
+    outs_ = [Arg<"The result.", MatchArgType<0> >] in {
+  def Shrink : Inst<"Compute Shrink activation, element-wise. Return"
+                   "y = x + bias for x < -lambd, y = x - bias for x > lambd, "
+                   "y = 0 , otherwise.">{
+    let attrs_ = [
+      Attr<"The bias value added to output", Float, "bias", "0.0">,
+      Attr<"The lambd value for the Shrink formulation", Float, "lambd", "0.5">
+    ];
+  }
+}
