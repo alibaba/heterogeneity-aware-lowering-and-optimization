@@ -203,6 +203,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a3e87e7f3a93ea291bcb10552a723f530"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__nn_8h.html#a3e87e7f3a93ea291bcb10552a723f530">odla_Selu</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, <a class="el" href="odla__common_8h.html#aeaf2b4ed87e14f5bbf792ab782aa73f5">odla_float32</a> alpha, <a class="el" href="odla__common_8h.html#aeaf2b4ed87e14f5bbf792ab782aa73f5">odla_float32</a> gamma, const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
 <tr class="memdesc:a3e87e7f3a93ea291bcb10552a723f530"><td class="mdescLeft">&#160;</td><td class="mdescRight">Selu activation.  <a href="odla__ops__nn_8h.html#a3e87e7f3a93ea291bcb10552a723f530">More...</a><br /></td></tr>
 <tr class="separator:a3e87e7f3a93ea291bcb10552a723f530"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a530e7b4251390f2979b8e3dece16c501"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__nn_8h.html#a530e7b4251390f2979b8e3dece16c501">odla_Shrink</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, <a class="el" href="odla__common_8h.html#aeaf2b4ed87e14f5bbf792ab782aa73f5">odla_float32</a> bias, <a class="el" href="odla__common_8h.html#aeaf2b4ed87e14f5bbf792ab782aa73f5">odla_float32</a> lambd, const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
+<tr class="memdesc:a530e7b4251390f2979b8e3dece16c501"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shrink activation.  <a href="odla__ops__nn_8h.html#a530e7b4251390f2979b8e3dece16c501">More...</a><br /></td></tr>
+<tr class="separator:a530e7b4251390f2979b8e3dece16c501"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1e42919601fefc9dc6948abaa3d7f2f9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__nn_8h.html#a1e42919601fefc9dc6948abaa3d7f2f9">odla_Sigmoid</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
 <tr class="memdesc:a1e42919601fefc9dc6948abaa3d7f2f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sigmoid activation.  <a href="odla__ops__nn_8h.html#a1e42919601fefc9dc6948abaa3d7f2f9">More...</a><br /></td></tr>
 <tr class="separator:a1e42919601fefc9dc6948abaa3d7f2f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2331,6 +2334,59 @@ y = scale * (x - mean) / sqrt(variance + epsilon) + bias <br  />
     <tr><td class="paramname">input</td><td>the input value </td></tr>
     <tr><td class="paramname">alpha</td><td>the alpha value </td></tr>
     <tr><td class="paramname">gamma</td><td>the gamma value </td></tr>
+    <tr><td class="paramname">value_id</td><td>a unique value id (can be NULL)</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>odla_value </dd></dl>
+
+</div>
+</div>
+<a id="a530e7b4251390f2979b8e3dece16c501"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a530e7b4251390f2979b8e3dece16c501">&#9670;&nbsp;</a></span>odla_Shrink()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL odla_Shrink </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
+          <td class="paramname"><em>input</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__common_8h.html#aeaf2b4ed87e14f5bbf792ab782aa73f5">odla_float32</a>&#160;</td>
+          <td class="paramname"><em>bias</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__common_8h.html#aeaf2b4ed87e14f5bbf792ab782aa73f5">odla_float32</a>&#160;</td>
+          <td class="paramname"><em>lambd</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a>&#160;</td>
+          <td class="paramname"><em>value_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Shrink activation. </p>
+<p>Shrink computes the function if x &lt; -lambd, y = x + bias; if x &gt; lambd, y = x - bias; Otherwise, y = 0.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">input</td><td>the input value </td></tr>
+    <tr><td class="paramname">bias</td><td>value of bias </td></tr>
+    <tr><td class="paramname">lambd</td><td>value of lambd </td></tr>
     <tr><td class="paramname">value_id</td><td>a unique value id (can be NULL)</td></tr>
   </table>
   </dd>

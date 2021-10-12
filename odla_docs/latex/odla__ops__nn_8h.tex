@@ -99,6 +99,8 @@ enum \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980eb}{odla\+
 \begin{DoxyCompactList}\small\item\em ROI max pooling. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a3e87e7f3a93ea291bcb10552a723f530}{odla\+\_\+\+Selu}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} alpha, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} gamma, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Selu activation. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a530e7b4251390f2979b8e3dece16c501}{odla\+\_\+\+Shrink}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} bias, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} lambd, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
+\begin{DoxyCompactList}\small\item\em Shrink activation. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a1e42919601fefc9dc6948abaa3d7f2f9}{odla\+\_\+\+Sigmoid}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Sigmoid activation. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a7961e5f668b999fad696653d0ecde56c}{odla\+\_\+\+Softmax}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} axis, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
@@ -1171,6 +1173,32 @@ Selu computes the selu activation as y = x $<$= 0 ? gamma $\ast$ (alpha $\ast$ e
 {\em alpha} & the alpha value \\
 \hline
 {\em gamma} & the gamma value \\
+\hline
+{\em value\+\_\+id} & a unique value id (can be NULL)\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+value 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__ops__nn_8h_a530e7b4251390f2979b8e3dece16c501}\label{odla__ops__nn_8h_a530e7b4251390f2979b8e3dece16c501}} 
+\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_Shrink@{odla\_Shrink}}
+\index{odla\_Shrink@{odla\_Shrink}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
+\doxysubsubsection{\texorpdfstring{odla\_Shrink()}{odla\_Shrink()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Shrink (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}}}]{bias,  }\item[{\mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}}}]{lambd,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
+
+
+
+Shrink activation. 
+
+Shrink computes the function if x $<$ -\/lambd, y = x + bias; if x $>$ lambd, y = x -\/ bias; Otherwise, y = 0.
+
+
+\begin{DoxyParams}{Parameters}
+{\em input} & the input value \\
+\hline
+{\em bias} & value of bias \\
+\hline
+{\em lambd} & value of lambd \\
 \hline
 {\em value\+\_\+id} & a unique value id (can be NULL)\\
 \hline
