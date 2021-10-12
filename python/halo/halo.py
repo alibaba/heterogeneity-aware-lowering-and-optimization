@@ -139,8 +139,8 @@ def CompileModel(model_file, input_shapes, output_names, batch, format):
 
     target = "cxx".encode("utf-8")
     output_filename = output_file.encode("utf-8")
-    logger.info("Begin Halo compilation")
-    logger.info("Halo lib:" + str(lib_halo._name))
+    logger.debug("Begin Halo compilation")
+    logger.debug("Halo lib:" + str(lib_halo._name))
     logger.debug("Intermediate file:" + str(output_filename))
     Compile(
         format_val,
@@ -150,7 +150,7 @@ def CompileModel(model_file, input_shapes, output_names, batch, format):
         target,
         batch,
         num_input_shapes,
-        (c_char_p * num_input_shapes)(*input_shapes),
+        (c_char_p * num_input_shapes)(*input_shapes), # input_shapes,
         num_inputs,
         inputs,
         num_outputs,
@@ -159,7 +159,7 @@ def CompileModel(model_file, input_shapes, output_names, batch, format):
         output_filename,
         0,
     )
-    logger.info("Done Halo Compilation")
+    logger.debug("Done Halo Compilation")
     return [output_file, output_bin]
 
 
@@ -235,7 +235,7 @@ def CompileODLAModel(files, device, debug=False):
         str(so_file),
         str(cc_file),
         str(bin_file),
-        "-l" + device,
+        "-l" + "vodla",
         "-Wl,-rpath=/usr/local/lib",
     ]
     logger.debug("Building ODLA model: " + " ".join(args))
