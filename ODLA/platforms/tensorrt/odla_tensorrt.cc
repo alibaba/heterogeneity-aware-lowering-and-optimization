@@ -1019,7 +1019,13 @@ static odla_value binary_op(nvinfer1::ElementWiseOperation op, odla_value lhs,
     out_dim.dims[i] = std::max(lhs_tensor->getDimensions().d[i],
                                rhs_tensor->getDimensions().d[i]);
   }
-  return CreateValue(sub, {lhs->type.element_type, out_dim}, id);
+  auto ret_type = lhs->type.element_type;
+  if (op == nvinfer1::ElementWiseOperation::kEQUAL   ||
+      op == nvinfer1::ElementWiseOperation::kGREATER ||
+      op == nvinfer1::ElementWiseOperation::kLESS) {
+    ret_type = ODLA_BOOL;
+  }
+  return CreateValue(sub, {ret_type, out_dim}, id);
 }
 
 odla_value odla_Add(odla_value lhs, odla_value rhs, const odla_value_id id) {
@@ -1447,10 +1453,13 @@ odla_value odla_BatchNormalization(odla_value input,
                                    const odla_value_id value_id) {
   auto const& type = input->type.element_type;
   const auto& input_dims = input->type.shape;
-  assert(input_layout == odla_memory_layout::ODLA_CHANNELS_FIRST);
+  assert(input_layout == odla_memory_layout::ODLA_CHANNELS_FIRST ||
+         input_layout == odla_memory_layout::ODLA_CHANNELS_LAST);
   assert(type == ODLA_FLOAT32);
 
-  int64_t C = input_dims.dims[1];
+  int channel_index = odla_memory_layout::ODLA_CHANNELS_FIRST ? 
+                      1 : input_dims.size - 1;
+  int64_t C = input_dims.dims[channel_index];
 
   g_comp->buffers.push_back(std::vector<float>(C));
   g_comp->buffers.push_back(std::vector<float>(C));
@@ -1488,6 +1497,7 @@ odla_value odla_BatchNormalization(odla_value input,
 
   auto bn = g_comp->network->addScale(*input, nvinfer1::ScaleMode::kCHANNEL,
                                       shift, multiply, power);
+  bn->setChannelAxis(channel_index);
   return CreateValue(bn, input->type, value_id);
 }
 
@@ -1777,7 +1787,24 @@ odla_value odla_Gather(odla_value input, const odla_value indices,
                        odla_int32 axis, odla_value_shape output_dims,
                        const odla_value_id id) {
   axis = axis < 0 ? input->type.shape.size - 1 : axis;
-  auto gather = g_comp->network->addGather(*input, *indices, axis);
+  assert(indices->type.element_type == ODLA_INT32);
+  auto input_t = input->tensor;
+  if (input->type.element_type == ODLA_BOOL) {
+    const auto& name = std::string(input->name) + "_cast";
+    input_t = odla_Cast(input, ODLA_INT32, (const odla_value_id)name.c_str())->tensor;
+  }
+  auto gather = g_comp->network->addGather(*input_t, *indices, axis);
+  if (input->type.element_type == ODLA_BOOL) {
+    g_comp->buffers.push_back(std::vector<float>(GetTotalElements(output_dims), 0.0));
+    const auto& gather_name = std::string(reinterpret_cast<const char*>(id)) + "_extra";
+    auto gather_v = CreateValue(gather, odla_value_type{input->type.element_type, output_dims},
+    (const odla_value_id)gather_name.c_str());
+    const auto& zero_name = std::string(gather_name) + "_comp_zero";
+    auto zero_v = odla_CreateConstant(odla_value_type{ODLA_INT32, output_dims},
+                                      g_comp->buffers.back().data(),
+                                      (const odla_value_id)zero_name.c_str());
+    return odla_Greater(gather_v, zero_v, id);
+  } 
   return CreateValue(gather, {input->type.element_type, output_dims}, id);
 }
 
@@ -2320,7 +2347,7 @@ odla_value odla_Select(odla_value condition, odla_value a, odla_value b,
     rhs = reshape->getOutput(0);
   }
   if (dims_cond.size < output_dims.size) {
-    auto reshape = g_comp->network->addShuffle(*rhs);
+    auto reshape = g_comp->network->addShuffle(*cond);
     if (dims_cond.size == 1 && dims_cond.dims[0] == output_dims.dims[0]) {
       nvinfer1::Dims broadcast_cond_dims;
       broadcast_cond_dims.nbDims = output_dims.size;
