@@ -1787,7 +1787,8 @@ odla_value odla_Gather(odla_value input, const odla_value indices,
                        odla_int32 axis, odla_value_shape output_dims,
                        const odla_value_id id) {
   axis = axis < 0 ? input->type.shape.size - 1 : axis;
-  assert(indices->type.element_type == ODLA_INT32);
+  assert(indices->type.element_type == ODLA_INT32 ||
+         indices->type.element_type == ODLA_INT64);
   auto input_t = input->tensor;
   if (input->type.element_type == ODLA_BOOL) {
     const auto& name = std::string(input->name) + "_cast";
@@ -1797,7 +1798,7 @@ odla_value odla_Gather(odla_value input, const odla_value indices,
   if (input->type.element_type == ODLA_BOOL) {
     g_comp->buffers.push_back(std::vector<float>(GetTotalElements(output_dims), 0.0));
     const auto& gather_name = std::string(reinterpret_cast<const char*>(id)) + "_extra";
-    auto gather_v = CreateValue(gather, odla_value_type{input->type.element_type, output_dims},
+    auto gather_v = CreateValue(gather, odla_value_type{ODLA_INT32, output_dims},
     (const odla_value_id)gather_name.c_str());
     const auto& zero_name = std::string(gather_name) + "_comp_zero";
     auto zero_v = odla_CreateConstant(odla_value_type{ODLA_INT32, output_dims},
