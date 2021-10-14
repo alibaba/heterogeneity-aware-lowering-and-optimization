@@ -336,6 +336,15 @@ static void RunOnInstruction(ReshapeInst* inst) {
   inst->GetResultsTypes()[0] = new_type;
 }
 
+static void RunOnInstruction(DequantizeInst* inst) {
+  auto op0 = inst->GetOperand(0);
+  if (!op0.GetType().IsValid()) {
+    return;
+  }
+  Type new_type{DataType::FLOAT32, op0.GetType().GetDimSizes()};
+  inst->GetResultsTypes()[0] = new_type;
+}
+
 static void RunOnInstruction(NegativeLogLikelihoodLossInst* inst) {
   auto& input_type = inst->GetOperand(0).GetType();
   if (!input_type.IsValid()) {
@@ -933,6 +942,30 @@ static void RunOnInstruction(RandomUniformInst* inst) {
     }
   }
   inst->GetResultsTypes()[0] = halo::Type{DataType::FLOAT32, ret_shape};
+}
+
+static void RunOnInstruction(QuantizeInst* inst) {
+  auto op0 = inst->GetOperand(0);
+  if (!op0.GetType().IsValid()) {
+    return;
+  }
+  DataType dt = DataType::INVALID;
+  constexpr int char_bits = 8;
+  if (inst->GetBits() == char_bits) {
+    dt = inst->GetSignBit() ? DataType::INT8 : DataType::UINT8;
+  } else if (inst->GetBits() == 2 * char_bits) {
+    dt = inst->GetSignBit() ? DataType::INT16 : DataType::UINT16;
+  } else if (inst->GetBits() == 4 * char_bits) {
+    dt = inst->GetSignBit() ? DataType::INT32 : DataType::UINT32;
+  }
+  HLCHECK(dt != DataType::INVALID);
+  Type new_type{dt, op0.GetType().GetDimSizes()};
+  inst->GetResultsTypes()[0] = new_type;
+  if (inst->GetNumOfOperands() == 1) {
+    // Output scale & zero point
+    inst->GetResultsTypes()[1] = Type{DataType::FLOAT32, {0}};
+    inst->GetResultsTypes()[2] = Type{dt, {0}};
+  }
 }
 
 static void RunOnInstruction(RangeInst* inst) {

@@ -27,5 +27,5 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_dynamicquantizelinear_expanded | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_dynamicquantizelinear_expanded_dnnl.cc.tmp.main.cc.in"
