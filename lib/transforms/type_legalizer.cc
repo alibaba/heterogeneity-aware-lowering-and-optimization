@@ -218,6 +218,33 @@ static void RunOnInstruction(ConvertToStringInst* inst) {
   RunOnCastInstruction(inst, inst->GetDataType());
 }
 
+static void RunOnInstruction(CompressInst* inst) {
+  auto num_ops = inst->GetNumOfOperands();
+  HLCHECK(num_ops == 2);
+  auto input = inst->GetOperand(0);
+  const auto& input_type = input.GetType();
+  auto mask = inst->GetOperand(1);
+  const auto& mask_type = mask.GetType();
+  if (!input_type.IsValid() || !mask_type.IsValid()) {
+    return;
+  }
+  HLCHECK(mask_type.GetNumOfDims() == 1);
+  int n = mask_type.GetNumOfElementsInDim(0);
+
+  const int inv = std::numeric_limits<int32_t>::max();
+  int64_t axis = inst->GetAxis();
+  const auto& dt = input_type.GetDataType();
+  // FIXME: here we assume all values in mask are true.
+  if (axis == inv) {
+    inst->GetResultsTypes()[0] = Type{dt, {n}};
+    return;
+  }
+  axis = axis < 0 ? axis + input_type.GetNumOfDims() : axis;
+  auto ret_dims = input_type.GetDimSizes();
+  ret_dims[axis] = n;
+  inst->GetResultsTypes()[0] = Type{dt, ret_dims};
+}
+
 static void RunOnInstruction(ReshapeInst* inst) {
   auto& op0_type = inst->GetOperand(0).GetType();
   Def op1 = inst->GetOperand(1);
@@ -306,6 +333,15 @@ static void RunOnInstruction(ReshapeInst* inst) {
   }
 
   halo::Type new_type{op0_type.GetDataType(), new_shape};
+  inst->GetResultsTypes()[0] = new_type;
+}
+
+static void RunOnInstruction(DequantizeInst* inst) {
+  auto op0 = inst->GetOperand(0);
+  if (!op0.GetType().IsValid()) {
+    return;
+  }
+  Type new_type{DataType::FLOAT32, op0.GetType().GetDimSizes()};
   inst->GetResultsTypes()[0] = new_type;
 }
 
@@ -906,6 +942,30 @@ static void RunOnInstruction(RandomUniformInst* inst) {
     }
   }
   inst->GetResultsTypes()[0] = halo::Type{DataType::FLOAT32, ret_shape};
+}
+
+static void RunOnInstruction(QuantizeInst* inst) {
+  auto op0 = inst->GetOperand(0);
+  if (!op0.GetType().IsValid()) {
+    return;
+  }
+  DataType dt = DataType::INVALID;
+  constexpr int char_bits = 8;
+  if (inst->GetBits() == char_bits) {
+    dt = inst->GetSignBit() ? DataType::INT8 : DataType::UINT8;
+  } else if (inst->GetBits() == 2 * char_bits) {
+    dt = inst->GetSignBit() ? DataType::INT16 : DataType::UINT16;
+  } else if (inst->GetBits() == 4 * char_bits) {
+    dt = inst->GetSignBit() ? DataType::INT32 : DataType::UINT32;
+  }
+  HLCHECK(dt != DataType::INVALID);
+  Type new_type{dt, op0.GetType().GetDimSizes()};
+  inst->GetResultsTypes()[0] = new_type;
+  if (inst->GetNumOfOperands() == 1) {
+    // Output scale & zero point
+    inst->GetResultsTypes()[1] = Type{DataType::FLOAT32, {0}};
+    inst->GetResultsTypes()[2] = Type{dt, {0}};
+  }
 }
 
 static void RunOnInstruction(RangeInst* inst) {

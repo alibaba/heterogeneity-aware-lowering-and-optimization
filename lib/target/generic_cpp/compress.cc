@@ -1,4 +1,4 @@
-//===- instructions.td ---------------------------------------*- tblgen -*-===//
+//===- compress.cc --------------------------------------------------------===//
 //
 // Copyright (C) 2019-2020 Alibaba Group Holding Limited.
 //
@@ -15,19 +15,20 @@
 // limitations under the License.
 // =============================================================================
 
-include "common_cast_instructions.td"
-include "common_instructions.td"
-include "common_reduction_instructions.td"
-include "controlflow_instructions.td"
-include "creator_instructions.td"
-include "loss_instructions.td"
-include "math_binary_instructions.td"
-include "math_instructions.td"
-include "math_unary_instructions.td"
-include "nn_activation_instructions.td"
-include "nn_instructions.td"
-include "nn_cnn_instructions.td"
-include "nn_rnn_instructions.td"
-include "object_detection_instructions.td"
-include "quantization_instructions.td"
-include "customize_instructions.td"
+#include "halo/lib/ir/common_instructions.h"
+#include "halo/lib/target/generic_cxx/generic_cxx_codegen.h"
+
+namespace halo {
+
+void GenericCXXCodeGen::RunOnInstruction(CompressInst* inst) {
+  CXXValue op0 = ir_mapping_[inst->GetOperand(0)];
+  CXXValue op1 = ir_mapping_[inst->GetOperand(1)];
+  int axis = inst->GetAxis();
+  CXXValue ret(inst->GetName(), op0.type);
+
+  ir_mapping_[*inst] = ret;
+  const halo::Type& ret_shape = inst->GetResultType();
+  EmitODLACall(ret, "odla_Compress", op0, op1, axis, EmitShape(ret_shape));
+}
+
+} // namespace halo

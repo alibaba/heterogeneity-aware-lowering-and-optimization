@@ -223,6 +223,39 @@ static std::vector<Def> ConvertDepthToSpace(const ONNXExtensionInst* ext,
   return {*builder->CreateReshape(name + "_reshape_1", *tr, *c_shape_1)};
 }
 
+static std::vector<Def> ConvertDynamicQuantize(const ONNXExtensionInst* ext,
+                                               IRBuilder* builder) {
+  const auto& input = ext->GetOperand(0);
+  const auto& name = ext->GetName();
+  ConstantBuilder c_builder(ext->GetParent()->GetParent());
+  ReduceMinInst* min = builder->CreateReduceMin(name + "_min", {input});
+  min->SetKeepDims(false);
+  Def min_op = *min;
+  Def zero = *c_builder.CreateConstant(
+      name + "_zero", halo::Type{DataType::FLOAT32, std::vector<int64_t>{}},
+      std::vector<float>{0});
+  min_op = *builder->CreateMinimum(name + "_range_min", min_op, zero);
+  ReduceMaxInst* max = builder->CreateReduceMax(name + "_max", {input});
+  max->SetKeepDims(false);
+  Def max_op = *max;
+  max_op = *builder->CreateMaximum(name + "_range_max", max_op, zero);
+  SubInst* range = builder->CreateSub(name + "_range", max_op, min_op);
+  constexpr float q_range = 255;
+  auto q_range_c = c_builder.CreateConstant(
+      name + "_qrange", halo::Type{DataType::FLOAT32, std::vector<int64_t>{}},
+      std::vector<float>{q_range});
+  DivInst* scale = builder->CreateDiv(name + "_scale", *range, *q_range_c);
+  auto n_zp = builder->CreateDiv(name + "_zp_neg", min_op, *scale);
+  auto zp_float = builder->CreateNeg(name + "_zp_float", *n_zp);
+  auto zp_round = builder->CreateRound(name + "_zp_round", *zp_float);
+  auto zp = builder->CreateFPtoSI(name + "_zp", *zp_round);
+  zp->SetDataType(DataType::UINT8);
+  auto q = builder->CreateQuantize(name, input, *scale, *zp);
+  q->SetSignBit(false);
+  q->SetAxis(std::numeric_limits<int32_t>::max());
+  return {*q, *scale, *zp};
+}
+
 static std::vector<Def> ConvertEyeLike(const ONNXExtensionInst* ext,
                                        IRBuilder* builder) {
   auto type = ext->GetOperand(0).GetType();
@@ -1551,6 +1584,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::DROPOUT: {
       return {onnx_inst->GetOperand(0)};
+    }
+    case ONNXExtOpCode::DYNAMICQUANTIZELINEAR: {
+      return ConvertDynamicQuantize(onnx_inst, builder);
     }
     case ONNXExtOpCode::CONSTANTOFSHAPE: {
       return ConvertConstantOfShape(onnx_inst, builder);

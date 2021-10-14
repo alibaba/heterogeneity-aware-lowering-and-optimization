@@ -101,6 +101,10 @@ def ONNX_Cast : ONNXExtension<"Cast"> {
   let extension_attr_ = [ ExtensionAttr<"to", Integer, "0"> ];
 }
 
+def ONNX_Compress : OpMapping<"Compress", Compress> {
+  let attr_mapping_ = [ AttributeMapping<"axis", "axis", "std::numeric_limits<int>::max()"> ];
+}
+
 def ONNX_IpuAttentionMask : ONNXExtension<"AttentionMask">;
 
 def ONNX_IpuGelu : ONNXExtension<"Gelu">;
@@ -177,6 +181,12 @@ def ONNX_DepthToSpace : ONNXExtension<"DepthToSpace"> {
     ExtensionAttr<"mode", String, "\"DCR\"">
   ];
 }
+
+def ONNX_DequantizeLinear: OpMapping<"DequantizeLinear", Dequantize> {
+   let attr_mapping_ = [ AttributeMapping<"axis", "axis", "1"> ];
+}
+
+def ONNX_DynamicQuantizeLinear: ONNXExtension<"DynamicQuantizeLinear">;
 
 def ONNX_Div : OpMapping<"Div", Div>;
 
@@ -331,6 +341,14 @@ def ONNX_Pow : OpMapping<"Pow", Pow>;
 
 def ONNX_PRelu: OpMapping<"PRelu", PRelu>;
 
+def ONNX_QuantizeLinear: OpMapping<"QuantizeLinear", Quantize> {
+   let attr_mapping_ = [
+     AttributeMapping<"axis", "axis", "1">,
+     AttributeMapping<"", "bits", "8">,
+     AttributeMapping<"", "sign_bit", "false">
+   ];
+}
+
 def ONNX_Reciprocal : OpMapping<"Reciprocal", Rcp>;
 
 let attr_mapping_ = [
@@ -372,6 +390,13 @@ def ONNX_Selu : OpMapping<"Selu", Selu> {
 }
 
 def ONNX_Shape : ONNXExtension<"Shape">;
+
+def ONNX_Shrink : OpMapping<"Shrink", Shrink>{
+  let attr_mapping_ = [
+    AttributeMapping<"bias", "bias", "0.0">,
+    AttributeMapping<"lambd", "lambd", "0.5">
+    ];
+}
 
 def ONNX_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
 

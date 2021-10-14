@@ -237,15 +237,20 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
     }
   }
 
-  // ADD/SUB(x, 0) ==> x.
-  if ((opc == OpCode::ADD || opc == OpCode::SUB) && IsA<Constant>(op1)) {
+  IRBuilder builder(binary_inst->GetParent());
+  // ADD/SUB(x, 0) ==> x, SUB(0, x) ==> -x
+  if ((opc == OpCode::ADD || (opc == OpCode::SUB && !has_swapped)) &&
+      IsA<Constant>(op1)) {
     const Constant* c = DynCast<Constant>(op1);
     if (c->HasSameValueOf(0)) {
-      return {orig_def, op0};
+      if (opc == OpCode::ADD || !has_swapped) {
+        return {orig_def, op0};
+      }
+      auto neg = builder.CreateNeg(binary_inst->GetName(), op0);
+      return {orig_def, *neg};
     }
   }
 
-  IRBuilder builder(binary_inst->GetParent());
   builder.SetInsertAfter(binary_inst);
   ConstantBuilder cb(binary_inst->GetParent()->GetParent());
 

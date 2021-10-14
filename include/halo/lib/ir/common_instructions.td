@@ -30,6 +30,13 @@ let cat_ = cat_common in {
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
   }
 
+  def Compress : Inst<"Select slices of input alone axis."> {
+    let attrs_ = [Attr<"The axis to select from", Integer, "axis", "std::numeric_limits<int>::max()">];
+    let ins_ = [Arg<"The inpput data.", ArgType<[I8,I16,I32,F16,F32]> >,
+                Arg<"The conditions.", ArgType<[I1]> >];
+    let outs_ = [Arg<"The result.", MatchArgType<0> >];
+  }
+
   def OneHot : Inst <"Generate a one-hot NDim array."> {
     let attrs_ = [Attr<"The axis to fill data in the result.",
                        Integer, "axis", "-1">];

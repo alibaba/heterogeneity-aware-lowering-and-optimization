@@ -25,6 +25,7 @@ set(SRCS
   call.cc
   cast.cc
   code_formatter.cc
+  compress.cc
   concat.cc
   conv.cc
   custom.cc
@@ -42,12 +43,14 @@ set(SRCS
   onehot.cc
   pad.cc
   pooling.cc
+  quantization.cc
   random.cc
   reduction.cc
   relu.cc
   reshape.cc
   resize.cc
   return.cc
+  shrink.cc
   sigmoid.cc
   hardsigmoid.cc
   slice.cc

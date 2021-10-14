@@ -609,7 +609,7 @@ odla_value odla_HardSigmoid(odla_value input, odla_float32 alpha,
                             odla_float32 beta, const odla_value_id value_id) {
   auto linear_input = unary_eltwise_op(dnnl::algorithm::eltwise_linear, input,
                                        alpha, beta, nullptr);
-  int n = GetTotalElements(input->shape);
+  int64_t n = GetTotalElements(input->shape);
   auto elem_type = input->elem_type;
   // Prepare dest memory.
   dnnl::memory::desc dst_md = getMemoryDesc({elem_type, input->shape});
@@ -697,7 +697,7 @@ odla_value odla_Celu(odla_value input, odla_float32 alpha,
 
 odla_value odla_ThresholdedRelu(odla_value input, odla_float32 alpha,
                                 const odla_value_id id) {
-  int n = GetTotalElements(input->shape);
+  int64_t n = GetTotalElements(input->shape);
   auto elem_type = input->elem_type;
   // Prepare dest memory.
   dnnl::memory::desc dst_md = getMemoryDesc({elem_type, input->shape});
@@ -713,6 +713,65 @@ odla_value odla_ThresholdedRelu(odla_value input, odla_float32 alpha,
     float* dst_t = static_cast<float*>(dst);
     Eigen::Map<Eigen::Array<float, Eigen::Dynamic, 1>> out(dst_t, n);
     out = (alpha < in).select(in, 0.0f);
+  };
+
+  add_op(op);
+  InterpretIfNeeded();
+  return v;
+}
+
+// Shrink helper with type T
+template <typename T>
+static void shrink_T(const void* data, void* dst, const float bias,
+                     const float lambd, int64_t n) {
+  const T* input_t = static_cast<const T*>(data);
+  Eigen::Map<const Eigen::Array<T, Eigen::Dynamic, 1>> in(input_t, n);
+  T* dst_t = static_cast<T*>(dst);
+  Eigen::Map<Eigen::Array<T, Eigen::Dynamic, 1>> out(dst_t, n);
+
+  auto neg_shrink = in + static_cast<T>(bias);
+  auto pos_shrink = in - static_cast<T>(bias);
+  auto neg = (in < -lambd).select(neg_shrink, static_cast<T>(0));
+  auto pos = (in > lambd).select(pos_shrink, static_cast<T>(0));
+  out = (in > lambd).select(pos, neg);
+}
+
+odla_value odla_Shrink(odla_value input, odla_float32 bias, odla_float32 lambd,
+                       const odla_value_id id) {
+  int64_t n = GetTotalElements(input->shape);
+  auto elem_type = input->elem_type;
+  // Prepare dest memory.
+  dnnl::memory::desc dst_md = getMemoryDesc({elem_type, input->shape});
+  dnnl::memory dst_mem = dnnl::memory(dst_md, g_comp->eng);
+  auto v = CreateValue(dst_mem, input->shape, id);
+  v->elem_type = elem_type;
+
+  auto op = [input, elem_type, bias, lambd, dst_mem, n] {
+    void* dst = dst_mem.get_data_handle();
+    const void* data = input->mem.get_data_handle();
+    if (elem_type == ODLA_INT8) {
+      shrink_T<int8_t>(data, dst, bias, lambd, n);
+    } else if (elem_type == ODLA_INT16) {
+      shrink_T<int16_t>(data, dst, bias, lambd, n);
+    } else if (elem_type == ODLA_INT32) {
+      shrink_T<int32_t>(data, dst, bias, lambd, n);
+    } else if (elem_type == ODLA_INT64) {
+      shrink_T<int64_t>(data, dst, bias, lambd, n);
+    } else if (elem_type == ODLA_UINT8) {
+      shrink_T<uint8_t>(data, dst, bias, lambd, n);
+    } else if (elem_type == ODLA_UINT16) {
+      shrink_T<uint16_t>(data, dst, bias, lambd, n);
+    } else if (elem_type == ODLA_UINT32) {
+      shrink_T<uint32_t>(data, dst, bias, lambd, n);
+    } else if (elem_type == ODLA_UINT64) {
+      shrink_T<uint64_t>(data, dst, bias, lambd, n);
+    } else if (elem_type == ODLA_FLOAT32) {
+      shrink_T<float>(data, dst, bias, lambd, n);
+    } else if (elem_type == ODLA_FLOAT64) {
+      shrink_T<double>(data, dst, bias, lambd, n);
+    } else {
+      assert(0);
+    }
   };
 
   add_op(op);
@@ -1066,6 +1125,57 @@ odla_value odla_DeConv(odla_value input, odla_memory_layout input_layout,
   }
   InterpretIfNeeded();
   return bias ? odla_Add(v, bias, id) : v; // TODO: add bias into primitive
+}
+
+odla_value odla_Compress(odla_value input, odla_value condition,
+                         odla_int32 axis, odla_value_shape max_output_dims,
+                         const odla_value_id value_id) {
+  auto ty = input->elem_type;
+  const auto& shape = input->shape.dims;
+  auto n = GetTotalElements(max_output_dims);
+  auto ret_md = getMemoryDesc(max_output_dims, ty);
+  auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
+  auto cond_size = condition->shape.dims[0];
+  int rank = input->shape.size;
+  if (axis == INT_MAX) {
+    axis = 0;
+    rank = 1;
+    cond_size = std::min(cond_size, n);
+  } else {
+    axis = axis < 0 ? axis + rank : axis;
+    cond_size = std::min(cond_size, shape[axis]);
+  }
+  std::vector<int64_t> strides(rank, 1);
+  int elem_size = getElementStorageSize(ty);
+  int64_t copy_size = std::accumulate(&shape[axis + 1], &shape[rank], 1,
+                                      std::multiplies<int64_t>()) *
+                      elem_size;
+  int64_t k = copy_size * shape[axis];
+  int64_t k_n =
+      std::accumulate(&shape[0], &shape[axis], 1, std::multiplies<int64_t>());
+  auto op = [input, condition, cond_size, ret_mem, axis, k_n, k, copy_size,
+             &strides]() {
+    const bool* cond_vals =
+        static_cast<const bool*>(condition->mem.get_data_handle());
+    char* dst = static_cast<char*>(ret_mem.get_data_handle());
+    for (int64_t i = 0; i < k_n; ++i) {
+      const char* src =
+          static_cast<char*>(input->mem.get_data_handle()) + i * k;
+      for (int64_t j = 0; j < cond_size; ++j) {
+        if (cond_vals[j]) {
+          memcpy(dst, src, copy_size);
+          dst += copy_size;
+        }
+        src += copy_size;
+      }
+    }
+  };
+  add_op(op);
+
+  InterpretIfNeeded();
+  odla_value v = CreateValue(ret_mem, max_output_dims, value_id);
+  v->elem_type = ty;
+  return v;
 }
 
 odla_value odla_Concat(odla_values inputs, odla_int32 axis,

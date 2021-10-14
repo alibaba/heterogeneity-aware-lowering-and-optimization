@@ -27,5 +27,5 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_dequantizelinear_axis | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_dequantizelinear_axis_dnnl.cc.tmp.main.cc.in"
