@@ -149,5 +149,12 @@ let cat_ = cat_common in {
     let outs_ = [Arg<"The result.", MatchArgType<1>>];
   }
 
+  def Unique: Inst<"Find the unique elements of the input."> {
+    let ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >];
+    let outs_ = [Arg<"The unique elements of the input.",
+                     MatchArgType<0> >,
+                 Arg<"The indices of the unique elements",
+                 ArgType<[I32,I64]>, 1D>];
+  }
 
 }

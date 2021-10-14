@@ -122,6 +122,11 @@ def TF_BatchMatMulV2 : OpMapping<"BatchMatMulV2", BatchMatMul> {
                        AttributeMapping<"adj_y", "transpose_b", "false">];
 }
 
+def TF_Bitcast : OpMapping<"Bitcast", Bitcast> {
+  let attr_mapping_ = [
+    AttributeMapping<"type", "data_type", "INVALID">
+  ];
+}
 
 def TF_ConcatV2 : OpMapping<"ConcatV2", Concat> {
   let attr_mapping_ = [AttributeMapping<"N", "N", "0">];
@@ -188,6 +193,10 @@ def TF_GreaterEqual : OpMapping<"GreaterEqual", Cmp> {
 
 def TF_IpuGelu : TFExtension<"IpuGelu">;
 
+def TF_LeakyRelu : OpMapping<"LeakyRelu", LeakyRelu> {
+  let attr_mapping_ = [AttributeMapping<"alpha", "alpha", "1.0">];
+}
+
 def TF_Less : OpMapping<"Less", Cmp> {
   let attr_mapping_ = [AttributeMapping<"", "predicator", "LT">];
 }
@@ -237,6 +246,8 @@ def TF_OneHot : OpMapping<"OneHot", OneHot> {
     AttributeMapping<"axis", "axis", "-1">];
 }
 
+def TF_Or : OpMapping<"LogicalOr", Or>;
+
 def TF_Pad : OpMapping<"Pad", Pad> {
   let attr_mapping_ =
       [AttributeMapping<"mode", "mode", "CONSTANT"> ];
@@ -246,6 +257,8 @@ def TF_Pack : OpMapping<"Pack", Stack> {
   let attr_mapping_ = [
     AttributeMapping<"axis", "axis", "0">];
 }
+
+def TF_Pow : OpMapping<"Pow", Pow>;
 
 def TF_Prod : OpMapping<"Prod", ReduceProduct> {
   let attr_mapping_ = [
@@ -261,7 +274,11 @@ def TF_Relu6 : OpMapping<"Relu6", Relu6>;
 
 def TF_Rsqrt : OpMapping<"Rsqrt", Rsqrt>;
 
+def TF_Select : OpMapping<"Select", Select>;
+
 def TF_Sin : OpMapping<"Sin", Sin>;
+
+def TF_Size : TFExtension<"Size">;
 
 def TF_Slice : OpMapping<"Slice", Slice>;
 
@@ -337,6 +354,8 @@ def TF_Range : OpMapping<"Range", Range>;
 def TF_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
 
 def TF_Tile : OpMapping<"Tile", Tile>;
+
+def TF_Unique : OpMapping<"Unique", Unique>;
 
 def TF_ZerosLike : TFExtension<"ZerosLike"> {
   let extension_attr_ = [

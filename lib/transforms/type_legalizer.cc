@@ -1295,21 +1295,82 @@ static void RunOnInstruction(TFIDFVectorizeInst* inst) {
 static void RunOnInstruction(SelectInst* inst) {
   const auto& ty_cond = inst->GetOperand(0).GetType();
   const auto& ty_x = inst->GetOperand(1).GetType();
-  if (!ty_cond.IsValid() || !ty_x.IsValid()) {
+  const auto& ty_y = inst->GetOperand(2).GetType();
+  if (!ty_cond.IsValid() || !ty_x.IsValid() || !ty_y.IsValid()) {
     return;
   }
   // Result shape is broadcasted with ty_x and ty_cond.
   auto rank_x = ty_x.GetNumOfDims();
   auto rank_c = ty_cond.GetNumOfDims();
-  auto rank_r = std::max(rank_x, rank_c);
+  auto rank_y = ty_y.GetNumOfDims();
+
+  auto rank_r = std::max(rank_x, rank_y);
   std::vector<int64_t> ret_shape(rank_r);
-  for (int64_t i = rank_r - 1, idx_c = rank_c - 1, idx_x = rank_x - 1; i >= 0;
+
+  // Broadcast between x and y according to the general broadcasting rule
+  for (int64_t i = rank_r - 1, idx_y = rank_y - 1, idx_x = rank_x - 1; i >= 0;
        --i) {
     auto dim_x = idx_x < 0 ? 1 : ty_x.GetNumOfElementsInDim(idx_x--);
+    auto dim_y = idx_y < 0 ? 1 : ty_y.GetNumOfElementsInDim(idx_y--);
+    ret_shape[i] = std::max(dim_x, dim_y);
+  }
+
+  // A special case where TF1.x Select requires cond
+  // to be broadcasted in a different way:
+  // cond: [512]    x/y: [512, 3, 4] -->
+  // cond: [512, 1, 1]
+  if (rank_r >= rank_c && rank_c == 1 &&
+      ret_shape[0] == ty_cond.GetNumOfElementsInDim(0)) {
+    inst->GetResultsTypes()[0] = Type{ty_x.GetDataType(), ret_shape};
+    return;
+  }
+  auto rank_xy = rank_r;
+  rank_r = std::max(rank_r, rank_c);
+  ret_shape.resize(rank_r);
+  for (int64_t i = rank_r - 1, idx_c = rank_c - 1, idx_xy = rank_xy - 1; i >= 0;
+       --i) {
+    auto dim_xy = idx_xy < 0 ? 1 : ret_shape[idx_xy--];
     auto dim_c = idx_c < 0 ? 1 : ty_cond.GetNumOfElementsInDim(idx_c--);
-    ret_shape[i] = std::max(dim_x, dim_c);
+    ret_shape[i] = std::max(dim_xy, dim_c);
   }
   inst->GetResultsTypes()[0] = Type{ty_x.GetDataType(), ret_shape};
+}
+
+static void RunOnInstruction(BitcastInst* inst) {
+  const auto& type = inst->GetOperand(0).GetType();
+  if (!type.IsValid()) {
+    return;
+  }
+  auto dtype = inst->GetDataType();
+  HLCHECK(dtype != DataType::INVALID);
+  auto from_dtype = type.GetDataType();
+  DefaultDataLayout layout;
+  auto from_bits = layout.Bits(from_dtype);
+  auto to_bits = layout.Bits(dtype);
+  auto new_shape(type.GetDimSizes());
+  if (from_bits < to_bits) {
+    auto last_dim = type.GetNumOfElementsInDim(type.GetNumOfDims() - 1);
+    HLCHECK(to_bits == from_bits * last_dim);
+    new_shape.pop_back();
+  } else if (from_bits > to_bits) {
+    HLCHECK(from_bits % to_bits == 0);
+    new_shape.push_back(from_bits / to_bits);
+  }
+  Type result_type{dtype, new_shape};
+  inst->GetResultsTypes()[0] = result_type;
+}
+
+static void RunOnInstruction(UniqueInst* inst) {
+  const auto& type0 = inst->GetOperand(0).GetType();
+  if (!type0.IsValid()) {
+    return;
+  }
+  auto rank = type0.GetNumOfDims();
+  HLCHECK(rank == 1);
+  // FIXME: result 0 has at most the same number of
+  // elements of the input
+  inst->GetResultsTypes()[0] = type0;
+  inst->GetResultsTypes()[1] = Type{DataType::INT64, type0.GetDimSizes()};
 }
 
 bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {

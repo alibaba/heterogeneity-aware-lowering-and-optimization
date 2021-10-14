@@ -555,9 +555,14 @@ bool TFAttrs::Process<std::vector<int64_t>>(const std::string& key,
   value->clear();
   const auto& attr_value = attr_map_.at(key);
   if (attr_value.value_case() == tensorflow::AttrValue::kList) {
-    (*value).reserve(attr_value.list().i_size());
-    for (const auto& it : attr_value.list().i()) {
-      (*value).push_back(it);
+    if (auto num_of_shape = attr_value.list().shape_size()) {
+      HLCHECK(num_of_shape == 1);
+      *value = TFParser::ProcessShape(attr_value.list().shape(0));
+    } else {
+      (*value).reserve(attr_value.list().i_size());
+      for (const auto& it : attr_value.list().i()) {
+        (*value).push_back(it);
+      }
     }
   } else if (attr_value.value_case() == tensorflow::AttrValue::kShape) {
     *value = TFParser::ProcessShape(attr_map_.at(key).shape());
@@ -835,6 +840,9 @@ Status TFParser::ConvertPlaceholderNode(IRBuilder* ir_builder,
     // Add default shape if no shape info in placehold
     std::vector<int64_t> shape = {};
     attrs.Process<std::vector<int64_t>>("shape", &shape);
+    if (shape.empty()) {
+      attrs.Process<std::vector<int64_t>>("_output_shapes", &shape);
+    }
     Argument* arg = nullptr;
     arg = arg_builder_->CreateArgument(node_def.name(), Type(data_type, shape));
     inst_name_to_ptr_.emplace(node_def.name(), arg);

@@ -2527,6 +2527,46 @@ static bool FixUpLSTM(LSTMInst* inst) {
   return changed;
 }
 
+std::pair<Def, Def> InstSimplify::RunOnInstruction(UniqueInst* inst) {
+  Def orig_def{inst, 1};
+  if (!simplify_for_preprocess_) {
+    return {orig_def, orig_def};
+  }
+  const auto& result_type0 = inst->GetResultsTypes()[0];
+  const auto& result_type1 = inst->GetResultsTypes()[1];
+  auto num_uses = inst->GetResultsUses()[0].size();
+  if (!result_type0.IsValid() || !result_type1.IsValid() || num_uses != 0) {
+    return {orig_def, orig_def};
+  }
+  const auto& op0 = inst->GetOperand(0);
+  if (IsA<BitcastInst>(op0)) {
+    auto bitcast_inst = DynCast<BitcastInst>(op0);
+    if (bitcast_inst->GetNumberOfUses() == 1) {
+      const auto& op1 = bitcast_inst->GetOperand(0);
+      if (IsA<StackInst>(op1)) {
+        auto stack_inst = DynCast<StackInst>(op1);
+        if (stack_inst->GetNumberOfUses() == 1) {
+          bool check_all = true;
+          for (size_t i = 0; i < stack_inst->GetNumOfOperands(); ++i) {
+            const auto& op_i = stack_inst->GetOperand(i);
+            if (!IsA<Argument>(op_i) || !op_i.GetUses().HasOneUse()) {
+              check_all = false;
+              break;
+            }
+          }
+          if (check_all) {
+            ArgumentBuilder arg_builder(inst->GetParent()->GetParent());
+            auto arg = arg_builder.CreateArgument(
+                inst->GetName() + "_preprocess", result_type1);
+            return {orig_def, *arg};
+          }
+        }
+      }
+    }
+  }
+  return {orig_def, orig_def};
+}
+
 bool InstSimplify::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
   for (auto& inst_t : *bb) {
