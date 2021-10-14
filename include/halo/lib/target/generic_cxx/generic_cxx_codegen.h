@@ -33,6 +33,7 @@
 #include "halo/lib/ir/nn_activation_instructions.h"
 #include "halo/lib/ir/nn_cnn_instructions.h"
 #include "halo/lib/ir/nn_instructions.h"
+#include "halo/lib/ir/quantization_instructions.h"
 #include "halo/lib/mm/memory_analyzer.h"
 #include "halo/lib/target/codegen.h"
 
@@ -129,6 +130,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(CompressInst*) override;
   virtual void RunOnInstruction(Conv2DInst*) override;
   virtual void RunOnInstruction(Conv2DTransposeInst*) override;
+  virtual void RunOnInstruction(DequantizeInst*) override;
   virtual void RunOnInstruction(GatherInst*) override;
   virtual void RunOnInstruction(GatherElementsInst*) override;
   virtual void RunOnInstruction(GemmInst*) override;
@@ -152,6 +154,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(PoolingAvgInst*) override;
   virtual void RunOnInstruction(PowInst*) override;
   virtual void RunOnInstruction(PReluInst*) override;
+  virtual void RunOnInstruction(QuantizeInst*) override;
   virtual void RunOnInstruction(RandomUniformInst*) override;
   virtual void RunOnInstruction(ReduceL1Inst*) override;
   virtual void RunOnInstruction(ReduceL2Inst*) override;

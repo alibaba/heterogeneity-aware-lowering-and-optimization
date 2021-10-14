@@ -43,6 +43,7 @@ set(SRCS
   onehot.cc
   pad.cc
   pooling.cc
+  quantization.cc
   random.cc
   reduction.cc
   relu.cc

@@ -182,6 +182,12 @@ def ONNX_DepthToSpace : ONNXExtension<"DepthToSpace"> {
   ];
 }
 
+def ONNX_DequantizeLinear: OpMapping<"DequantizeLinear", Dequantize> {
+   let attr_mapping_ = [ AttributeMapping<"axis", "axis", "1"> ];
+}
+
+def ONNX_DynamicQuantizeLinear: ONNXExtension<"DynamicQuantizeLinear">;
+
 def ONNX_Div : OpMapping<"Div", Div>;
 
 def ONNX_Dropout : ONNXExtension<"Dropout">;
@@ -334,6 +340,14 @@ def ONNX_Pad : ONNXExtension<"Pad"> {
 def ONNX_Pow : OpMapping<"Pow", Pow>;
 
 def ONNX_PRelu: OpMapping<"PRelu", PRelu>;
+
+def ONNX_QuantizeLinear: OpMapping<"QuantizeLinear", Quantize> {
+   let attr_mapping_ = [
+     AttributeMapping<"axis", "axis", "1">,
+     AttributeMapping<"", "bits", "8">,
+     AttributeMapping<"", "sign_bit", "false">
+   ];
+}
 
 def ONNX_Reciprocal : OpMapping<"Reciprocal", Rcp>;
 
