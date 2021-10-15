@@ -1020,7 +1020,7 @@ static odla_value binary_op(nvinfer1::ElementWiseOperation op, odla_value lhs,
                                rhs_tensor->getDimensions().d[i]);
   }
   auto ret_type = lhs->type.element_type;
-  if (op == nvinfer1::ElementWiseOperation::kEQUAL   ||
+  if (op == nvinfer1::ElementWiseOperation::kEQUAL ||
       op == nvinfer1::ElementWiseOperation::kGREATER ||
       op == nvinfer1::ElementWiseOperation::kLESS) {
     ret_type = ODLA_BOOL;
@@ -1457,8 +1457,8 @@ odla_value odla_BatchNormalization(odla_value input,
          input_layout == odla_memory_layout::ODLA_CHANNELS_LAST);
   assert(type == ODLA_FLOAT32);
 
-  int channel_index = odla_memory_layout::ODLA_CHANNELS_FIRST ? 
-                      1 : input_dims.size - 1;
+  int channel_index =
+      odla_memory_layout::ODLA_CHANNELS_FIRST ? 1 : input_dims.size - 1;
   int64_t C = input_dims.dims[channel_index];
 
   g_comp->buffers.push_back(std::vector<float>(C));
@@ -1792,20 +1792,23 @@ odla_value odla_Gather(odla_value input, const odla_value indices,
   auto input_t = input->tensor;
   if (input->type.element_type == ODLA_BOOL) {
     const auto& name = std::string(input->name) + "_cast";
-    input_t = odla_Cast(input, ODLA_INT32, (const odla_value_id)name.c_str())->tensor;
+    input_t =
+        odla_Cast(input, ODLA_INT32, (const odla_value_id)name.c_str())->tensor;
   }
   auto gather = g_comp->network->addGather(*input_t, *indices, axis);
   if (input->type.element_type == ODLA_BOOL) {
-    g_comp->buffers.push_back(std::vector<float>(GetTotalElements(output_dims), 0.0));
-    const auto& gather_name = std::string(reinterpret_cast<const char*>(id)) + "_extra";
-    auto gather_v = CreateValue(gather, odla_value_type{ODLA_INT32, output_dims},
-    (const odla_value_id)gather_name.c_str());
+    const auto& gather_name =
+        std::string(reinterpret_cast<const char*>(id)) + "_extra";
+    auto gather_v =
+        CreateValue(gather, odla_value_type{ODLA_INT32, output_dims},
+                    (const odla_value_id)gather_name.c_str());
+    g_comp->buffers.push_back(std::vector<float>(1, 0.0));
     const auto& zero_name = std::string(gather_name) + "_comp_zero";
-    auto zero_v = odla_CreateConstant(odla_value_type{ODLA_INT32, output_dims},
-                                      g_comp->buffers.back().data(),
-                                      (const odla_value_id)zero_name.c_str());
+    auto zero_v = odla_CreateConstant(
+        odla_value_type{ODLA_INT32, odla_value_shape{0, {}}},
+        g_comp->buffers.back().data(), (const odla_value_id)zero_name.c_str());
     return odla_Greater(gather_v, zero_v, id);
-  } 
+  }
   return CreateValue(gather, {input->type.element_type, output_dims}, id);
 }
 

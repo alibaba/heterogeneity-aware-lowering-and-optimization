@@ -355,7 +355,10 @@ def TF_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
 
 def TF_Tile : OpMapping<"Tile", Tile>;
 
-def TF_Unique : OpMapping<"Unique", Unique>;
+def TF_Unique : OpMapping<"Unique", Unique> {
+  let attr_mapping_ = [
+    AttributeMapping<"out_idx", "out_idx_type", "INT32">];
+}
 
 def TF_ZerosLike : TFExtension<"ZerosLike"> {
   let extension_attr_ = [
