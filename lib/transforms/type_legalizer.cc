@@ -1367,10 +1367,12 @@ static void RunOnInstruction(UniqueInst* inst) {
   }
   auto rank = type0.GetNumOfDims();
   HLCHECK(rank == 1);
+  auto idx_dt = inst->GetOutIdxType();
+  HLCHECK(idx_dt == DataType::INT64 || idx_dt == DataType::INT32);
   // FIXME: result 0 has at most the same number of
   // elements of the input
   inst->GetResultsTypes()[0] = type0;
-  inst->GetResultsTypes()[1] = Type{DataType::INT32, type0.GetDimSizes()};
+  inst->GetResultsTypes()[1] = Type{idx_dt, type0.GetDimSizes()};
 }
 
 bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
