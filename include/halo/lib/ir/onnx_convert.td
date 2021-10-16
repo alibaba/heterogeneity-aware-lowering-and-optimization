@@ -299,6 +299,12 @@ def ONNX_MaxPool : OpMapping<"MaxPool", PoolingMax> {
 
 def ONNX_Min : OpMapping<"Min", Minimum>;
 
+def ONNX_Mod : OpMapping<"Mod", Mod> {
+   let attr_mapping_ = [
+     AttributeMapping<"fmod", "fmod", "0">,
+   ];
+ }
+
 def ONNX_Mul : OpMapping<"Mul", Mul>;
 
 def ONNX_Neg : OpMapping<"Neg", Neg>;
