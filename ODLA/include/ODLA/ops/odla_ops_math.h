@@ -493,6 +493,20 @@ odla_Mean(odla_values inputs, const odla_value_id value_id);
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Min(odla_value lhs, odla_value rhs, const odla_value_id value_id);
 
+//! \brief Returns the element-wise modulus value
+/*!
+  Mod returns the modulus of \p lhs and \p rhs for each element.
+
+  \param lhs the first value
+  \param rhs the second value
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Mod(odla_value lhs, odla_value rhs, odla_int64 fmod,
+         const odla_value_id value_id);
+
 //! \brief Multiplication
 /*!
   Mul returns the element-wise binary mulitplication of \p lhs and \p rhs.
