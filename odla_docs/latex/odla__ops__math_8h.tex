@@ -70,6 +70,8 @@
 \begin{DoxyCompactList}\small\item\em Compute the element-\/wise mean value of inputs. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__math_8h_aae49860e2e5328c3447a71c9408bd1b3}{odla\+\_\+\+Min}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} lhs, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} rhs, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Returns the element-\/wise smallest value. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__math_8h_a2dd9dcfa2a0d7985af60e26423df39d3}{odla\+\_\+\+Mod}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} lhs, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} rhs, \mbox{\hyperlink{odla__common_8h_a4c8498c0bc04a3dc2e8683c1c9bd3aa9}{odla\+\_\+int64}} fmod, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
+\begin{DoxyCompactList}\small\item\em Returns the element-\/wise modulus value. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__math_8h_a0d50c150845513ae7bc6c58d7a88d068}{odla\+\_\+\+Mul}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} lhs, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} rhs, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Multiplication. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__math_8h_a06062b24dde3aa0cc52ebf1dcf2199a5}{odla\+\_\+\+Neg}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
@@ -972,6 +974,30 @@ odla\+\_\+value
 Returns the element-\/wise smallest value. 
 
 Min returns the smallest of {\ttfamily lhs} and {\ttfamily rhs} for each element.
+
+
+\begin{DoxyParams}{Parameters}
+{\em lhs} & the first value \\
+\hline
+{\em rhs} & the second value \\
+\hline
+{\em value\+\_\+id} & a unique value id (can be NULL)\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+value 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__ops__math_8h_a2dd9dcfa2a0d7985af60e26423df39d3}\label{odla__ops__math_8h_a2dd9dcfa2a0d7985af60e26423df39d3}} 
+\index{odla\_ops\_math.h@{odla\_ops\_math.h}!odla\_Mod@{odla\_Mod}}
+\index{odla\_Mod@{odla\_Mod}!odla\_ops\_math.h@{odla\_ops\_math.h}}
+\doxysubsubsection{\texorpdfstring{odla\_Mod()}{odla\_Mod()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Mod (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{lhs,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{rhs,  }\item[{\mbox{\hyperlink{odla__common_8h_a4c8498c0bc04a3dc2e8683c1c9bd3aa9}{odla\+\_\+int64}}}]{fmod,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
+
+
+
+Returns the element-\/wise modulus value. 
+
+Mod returns the modulus of {\ttfamily lhs} and {\ttfamily rhs} for each element.
 
 
 \begin{DoxyParams}{Parameters}
