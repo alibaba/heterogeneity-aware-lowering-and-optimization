@@ -244,6 +244,10 @@ def ONNX_Greater : OpMapping<"Greater", Cmp> {
   let attr_mapping_ = [AttributeMapping<"", "predicator", "GT">];
 }
 
+def ONNX_GreaterOrEqual : OpMapping<"GreaterOrEqual", Cmp> {
+  let attr_mapping_ = [AttributeMapping<"", "predicator", "GE">];
+}
+
 def ONNX_Identity : ONNXExtension<"Identity">;
 
 def ONNX_LeakyRelu : OpMapping<"LeakyRelu", LeakyRelu> {
@@ -252,6 +256,10 @@ def ONNX_LeakyRelu : OpMapping<"LeakyRelu", LeakyRelu> {
 
 def ONNX_Less : OpMapping<"Less", Cmp> {
   let attr_mapping_ = [AttributeMapping<"", "predicator", "LT">];
+}
+
+def ONNX_LessOrEqual : OpMapping<"LessOrEqual", Cmp> {
+  let attr_mapping_ = [AttributeMapping<"", "predicator", "LE">];
 }
 
 def ONNX_Log : OpMapping<"Log", Log>;
@@ -298,6 +306,12 @@ def ONNX_MaxPool : OpMapping<"MaxPool", PoolingMax> {
 }
 
 def ONNX_Min : OpMapping<"Min", Minimum>;
+
+def ONNX_Mod : OpMapping<"Mod", Mod> {
+   let attr_mapping_ = [
+     AttributeMapping<"fmod", "fmod", "0">,
+   ];
+ }
 
 def ONNX_Mul : OpMapping<"Mul", Mul>;
 

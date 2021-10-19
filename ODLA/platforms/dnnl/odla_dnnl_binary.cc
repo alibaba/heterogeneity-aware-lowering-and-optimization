@@ -31,6 +31,7 @@ enum class alg_binary_eltwise {
   max,
   min,
   mod,
+  fmod,
   pow,
   sum,
 };
@@ -102,11 +103,38 @@ static void binary_eltwise_T(alg_binary_eltwise alg, void* dst,
   T* dst_t = static_cast<T*>(dst);
   Eigen::Map<Eigen::Array<T, Eigen::Dynamic, 1>> out(dst_t, n);
   switch (alg) {
-    case alg_binary_eltwise::mod:
-      out = in_l - (in_r * (in_l / in_r));
+    case alg_binary_eltwise::mod: {
+      Eigen::Array<double, Eigen::Dynamic, 1> t_l =
+          in_l.template cast<double>();
+      Eigen::Array<double, Eigen::Dynamic, 1> t_r =
+          in_r.template cast<double>();
+      Eigen::Array<T, Eigen::Dynamic, 1> quo =
+          Eigen::floor(t_l / t_r).cast<T>();
+      out = in_l - in_r * quo;
       break;
-    default:
+    }
+    case alg_binary_eltwise::fmod: {
+      Eigen::Array<double, Eigen::Dynamic, 1> t_l =
+          in_l.template cast<double>();
+      Eigen::Array<double, Eigen::Dynamic, 1> t_r =
+          in_r.template cast<double>();
+      Eigen::Array<double, Eigen::Dynamic, 1> t = t_l / t_r;
+      Eigen::Array<int, Eigen::Dynamic, 1> quo_floor =
+          Eigen::floor(t).cast<int>();
+      Eigen::Array<int, Eigen::Dynamic, 1> quo_ceil =
+          Eigen::ceil(t).cast<int>();
+      Eigen::Array<T, Eigen::Dynamic, 1> quo =
+          (t > 0.0f).select(quo_floor, quo_ceil).cast<T>();
+      out = in_l - in_r * quo;
+      break;
+    }
+    case alg_binary_eltwise::pow: {
+      out = in_l.pow(in_r);
+      break;
+    }
+    default: {
       assert(0);
+    }
   }
 }
 
@@ -127,9 +155,9 @@ bool is_binary_logic(alg_binary_eltwise alg) {
          (alg == alg_binary_eltwise::logic_xor);
 }
 
-static odla_value odla_binary_eltwise_bool(alg_binary_eltwise alg,
-                                           odla_value lhs, odla_value rhs,
-                                           const odla_value_id value_id) {
+static odla_value odla_binary_eltwise(alg_binary_eltwise alg, odla_value lhs,
+                                      odla_value rhs,
+                                      const odla_value_id value_id) {
   assert(lhs->elem_type == rhs->elem_type);
   // Broadcast lhs and rhs
   auto input_type = lhs->elem_type;
@@ -205,48 +233,58 @@ static odla_value odla_binary_eltwise_bool(alg_binary_eltwise alg,
 
 odla_value odla_And(odla_value lhs, odla_value rhs,
                     const odla_value_id value_id) {
-  return odla_binary_eltwise_bool(alg_binary_eltwise::logic_and, lhs, rhs,
-                                  value_id);
+  return odla_binary_eltwise(alg_binary_eltwise::logic_and, lhs, rhs, value_id);
 }
 
 odla_value odla_Or(odla_value lhs, odla_value rhs,
                    const odla_value_id value_id) {
-  return odla_binary_eltwise_bool(alg_binary_eltwise::logic_or, lhs, rhs,
-                                  value_id);
+  return odla_binary_eltwise(alg_binary_eltwise::logic_or, lhs, rhs, value_id);
 }
 
 odla_value odla_Xor(odla_value lhs, odla_value rhs,
                     const odla_value_id value_id) {
-  return odla_binary_eltwise_bool(alg_binary_eltwise::logic_xor, lhs, rhs,
-                                  value_id);
+  return odla_binary_eltwise(alg_binary_eltwise::logic_xor, lhs, rhs, value_id);
 }
 
 odla_value odla_Equal(odla_value lhs, odla_value rhs,
                       const odla_value_id value_id) {
-  return odla_binary_eltwise_bool(alg_binary_eltwise::cmp_equal, lhs, rhs,
-                                  value_id);
+  return odla_binary_eltwise(alg_binary_eltwise::cmp_equal, lhs, rhs, value_id);
 }
 
 odla_value odla_Less(odla_value lhs, odla_value rhs,
                      const odla_value_id value_id) {
-  return odla_binary_eltwise_bool(alg_binary_eltwise::cmp_less, lhs, rhs,
-                                  value_id);
+  return odla_binary_eltwise(alg_binary_eltwise::cmp_less, lhs, rhs, value_id);
 }
 
 odla_value odla_LessOrEqual(odla_value lhs, odla_value rhs,
                             const odla_value_id value_id) {
-  return odla_binary_eltwise_bool(alg_binary_eltwise::cmp_less_equal, lhs, rhs,
-                                  value_id);
+  return odla_binary_eltwise(alg_binary_eltwise::cmp_less_equal, lhs, rhs,
+                             value_id);
 }
 
 odla_value odla_Greater(odla_value lhs, odla_value rhs,
                         const odla_value_id value_id) {
-  return odla_binary_eltwise_bool(alg_binary_eltwise::cmp_greater, lhs, rhs,
-                                  value_id);
+  return odla_binary_eltwise(alg_binary_eltwise::cmp_greater, lhs, rhs,
+                             value_id);
 }
 
 odla_value odla_GreaterOrEqual(odla_value lhs, odla_value rhs,
                                const odla_value_id value_id) {
-  return odla_binary_eltwise_bool(alg_binary_eltwise::cmp_greater_equal, lhs,
-                                  rhs, value_id);
+  return odla_binary_eltwise(alg_binary_eltwise::cmp_greater_equal, lhs, rhs,
+                             value_id);
+}
+
+odla_value odla_Pow(odla_value base, odla_value exponent,
+                    const odla_value_id value_id) {
+  return odla_binary_eltwise(alg_binary_eltwise::pow, base, exponent, value_id);
+}
+
+odla_value odla_Mod(odla_value lhs, odla_value rhs, odla_int64 fmod,
+                    const odla_value_id value_id) {
+  if (fmod == 1) {
+    return odla_binary_eltwise(alg_binary_eltwise::fmod, lhs, rhs, value_id);
+  } else {
+    auto t = odla_binary_eltwise(alg_binary_eltwise::mod, lhs, rhs, value_id);
+    return t;
+  }
 }
