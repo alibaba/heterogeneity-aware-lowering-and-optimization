@@ -1453,12 +1453,11 @@ odla_value odla_BatchNormalization(odla_value input,
                                    const odla_value_id value_id) {
   auto const& type = input->type.element_type;
   const auto& input_dims = input->type.shape;
-  assert(input_layout == odla_memory_layout::ODLA_CHANNELS_FIRST ||
-         input_layout == odla_memory_layout::ODLA_CHANNELS_LAST);
   assert(type == ODLA_FLOAT32);
 
-  int channel_index =
-      odla_memory_layout::ODLA_CHANNELS_FIRST ? 1 : input_dims.size - 1;
+  int channel_index = (input_layout == odla_memory_layout::ODLA_CHANNELS_FIRST)
+                          ? 1
+                          : input_dims.size - 1;
   int64_t C = input_dims.dims[channel_index];
 
   g_comp->buffers.push_back(std::vector<float>(C));
