@@ -42,13 +42,19 @@ using namespace nvinfer1;
 #error This library requires minimum ODLA version 0.5
 #endif
 
-template <typename T>
 struct TrtDestroyer {
-  void operator()(T* t) { t->destroy(); }
+  template <typename T>
+  void operator()(T* t) {
+    if (t) {
+      t->destroy();
+    }
+  }
 };
 
 template <typename T>
-using TrtUniquePtr = std::unique_ptr<T, TrtDestroyer<T>>;
+std::shared_ptr<T> trt_shared_obj(T* obj) {
+  return std::shared_ptr<T>(obj, TrtDestroyer());
+}
 
 inline bool check(cudaError_t e, int line, const char* file_name) {
   if (e != cudaSuccess) {
@@ -151,8 +157,8 @@ static const int MAX_INT64_CONVERTION_NUM = 65536ul;
 static bool g_load_engine_mode = false;
 
 struct _odla_computation {
-  nvinfer1::IBuilder* builder = nullptr;
-  nvinfer1::INetworkDefinition* network = nullptr;
+  std::shared_ptr<nvinfer1::IBuilder> builder = nullptr;
+  std::shared_ptr<nvinfer1::INetworkDefinition> network = nullptr;
   std::unordered_map<std::string, odla_value> inputs;
   std::unordered_map<std::string, odla_value> outputs;
   std::vector<std::vector<float>> buffers;
@@ -177,11 +183,7 @@ struct _odla_computation {
     }
 
     if (!load_engine_mode) {
-      builder = nvinfer1::createInferBuilder(Logger);
-#if NV_TENSORRT_MAJOR < 7
-      builder->setMaxWorkspaceSize(max_workspace_size);
-      network = builder->createNetwork();
-#else
+      builder = trt_shared_obj(nvinfer1::createInferBuilder(Logger));
       initODLAPlugin(&Logger, "");
       nvinfer1::NetworkDefinitionCreationFlags flags = 0;
       if (const char* env_p = std::getenv("ODLA_TRT_USE_EXPLICIT_BATCH")) {
@@ -190,16 +192,11 @@ struct _odla_computation {
                       nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
         }
       }
-      network = builder->createNetworkV2(flags);
-#endif
+      network = trt_shared_obj(builder->createNetworkV2(flags));
     }
   }
 
   ~_odla_computation() {
-    if (!load_engine_mode) {
-      builder->destroy();
-      network->destroy();
-    }
     builder = nullptr;
     network = nullptr;
   }
@@ -207,13 +204,10 @@ struct _odla_computation {
 
 struct _odla_context {
   odla_computation comp = nullptr;
-  nvinfer1::ICudaEngine* engine = nullptr;
-  nvinfer1::IExecutionContext* ctx = nullptr;
-#if NV_TENSORRT_MAJOR >= 7
-  nvinfer1::IBuilderConfig* builder_cfg = nullptr;
+  std::shared_ptr<nvinfer1::ICudaEngine> engine = nullptr;
+  std::shared_ptr<nvinfer1::IExecutionContext> ctx = nullptr;
+  std::shared_ptr<nvinfer1::IBuilderConfig> builder_cfg = nullptr;
   nvinfer1::IOptimizationProfile* builder_profile = nullptr;
-
-#endif
 
   typedef struct {
     void* host_ptr = nullptr;
@@ -232,10 +226,7 @@ struct _odla_context {
   int run_batch_size = 0;
   _odla_context(odla_computation comp) : comp(comp) {
     if (!comp->load_engine_mode) {
-#if NV_TENSORRT_MAJOR < 7
-      engine = comp->builder->buildCudaEngine(*comp->network);
-#else
-      builder_cfg = comp->builder->createBuilderConfig();
+      builder_cfg = trt_shared_obj(comp->builder->createBuilderConfig());
 
       if (comp->is_dynamic_batch) {
         builder_profile = comp->builder->createOptimizationProfile();
@@ -263,20 +254,13 @@ struct _odla_context {
         builder_cfg->setFlag(BuilderFlag::kFP16);
         builder_cfg->setFlag(BuilderFlag::kSTRICT_TYPES);
       }
-      engine =
-          comp->builder->buildEngineWithConfig(*comp->network, *builder_cfg);
-#endif
-      ctx = engine->createExecutionContext();
+      engine = trt_shared_obj(comp->builder->buildEngineWithConfig(
+          *comp->network.get(), *builder_cfg.get()));
+
+      ctx = trt_shared_obj(engine->createExecutionContext());
     }
   }
   ~_odla_context() {
-    ctx->destroy();
-    if (!comp->load_engine_mode) {
-      engine->destroy();
-#if NV_TENSORRT_MAJOR >= 7
-      builder_cfg->destroy();
-#endif
-    }
     comp = nullptr;
     engine = nullptr;
     ctx = nullptr;
@@ -528,11 +512,12 @@ odla_status odla_SetComputationItem(odla_computation computation,
           (computation->is_dynamic_batch != is_dynamic_batch)) {
         computation->is_dynamic_batch = is_dynamic_batch;
         if (!computation->load_engine_mode) {
-          computation->network->destroy();
+          computation->network.reset();
           nvinfer1::NetworkDefinitionCreationFlags flags =
               1U << static_cast<uint32_t>(
                   nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
-          computation->network = computation->builder->createNetworkV2(flags);
+          computation->network =
+              trt_shared_obj(computation->builder->createNetworkV2(flags));
         }
       }
       break;
@@ -740,8 +725,7 @@ static odla_status odla_StoreEngine(odla_context context,
     return ODLA_FAILURE;
   }
 
-  TrtUniquePtr<IHostMemory> serializedEngine{context->engine->serialize()};
-
+  std::shared_ptr<IHostMemory> serializedEngine{context->engine->serialize()};
   if (serializedEngine == nullptr) {
     std::cerr << "Engine serialization failed" << std::endl;
     return ODLA_FAILURE;
@@ -782,14 +766,14 @@ static odla_status odla_LoadEngine(odla_context context,
     return ODLA_FAILURE;
   }
 
-  TrtUniquePtr<IRuntime> runtime{createInferRuntime(Logger)};
+  std::shared_ptr<IRuntime> runtime{createInferRuntime(Logger)};
   if (DLACore != -1) {
     runtime->setDLACore(DLACore);
   }
 
-  context->engine =
-      runtime->deserializeCudaEngine(engineData.data(), fsize, nullptr);
-  context->ctx = context->engine->createExecutionContext();
+  context->engine = trt_shared_obj(
+      runtime->deserializeCudaEngine(engineData.data(), fsize, nullptr));
+  context->ctx = trt_shared_obj(context->engine->createExecutionContext());
 
   return ODLA_SUCCESS;
 }
