@@ -178,10 +178,28 @@ static void RunOnInstruction(Instruction* inst) {
     case OpCode::SHIFTR:
     case OpCode::AND:
     case OpCode::OR:
+    case OpCode::XOR:
+    case OpCode::MOD:
     case OpCode::CMP: {
       RunOnMathBinaryInstruction(inst);
       break;
     }
+    case OpCode::ACOS:
+    case OpCode::ACOSH:
+    case OpCode::ASIN:
+    case OpCode::ASINH:
+    case OpCode::ATAN:
+    case OpCode::ATANH:
+    case OpCode::SIN:
+    case OpCode::COS:
+    case OpCode::TAN:
+    case OpCode::CEIL:
+    case OpCode::FLOOR:
+    case OpCode::ABS:
+    case OpCode::EXP:
+    case OpCode::LOG:
+    case OpCode::NOT:
+    case OpCode::SIGN:
     case OpCode::ISNAN:
     case OpCode::ISINF: {
       RunOnMathUnaryInstruction(inst);
