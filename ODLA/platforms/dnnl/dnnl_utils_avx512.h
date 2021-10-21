@@ -913,7 +913,11 @@ static void erf_func(float* src, float* dst, size_t len) {
   return;
 }
 #else
-static void erf_func(float* src, float* dst, size_t len) { assert(0); }
+static void erf_func(float* src, float* dst, size_t len) {
+  for (size_t i = 0; i < len; ++i) {
+    dst[i] = erff(src[i]);
+  }
+}
 #endif
 
 #if defined(__GNUC__) && (__GNUC__ > 9)
