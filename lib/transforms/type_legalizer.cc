@@ -363,6 +363,15 @@ static void RunOnInstruction(DequantizeInst* inst) {
   inst->GetResultsTypes()[0] = new_type;
 }
 
+static void RunOnInstruction(DetInst* inst) {
+  const auto& input_type = inst->GetOperand(0).GetType();
+  auto dt = input_type.GetDataType();
+  auto ret_shape = input_type.GetDimSizes();
+  ret_shape.pop_back();
+  ret_shape.pop_back();
+  inst->GetResultsTypes()[0] = Type{dt, ret_shape};
+}
+
 static void RunOnInstruction(NegativeLogLikelihoodLossInst* inst) {
   auto& input_type = inst->GetOperand(0).GetType();
   if (!input_type.IsValid()) {

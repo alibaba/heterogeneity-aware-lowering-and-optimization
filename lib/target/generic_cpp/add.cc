@@ -257,6 +257,15 @@ void GenericCXXCodeGen::RunOnInstruction(CmpInst* inst) {
   ir_mapping_[*inst] = ret;
 }
 
+void GenericCXXCodeGen::RunOnInstruction(DetInst* inst) {
+  CXXValue op0 = ir_mapping_[inst->GetOperand(0)];
+
+  CXXValue ret(inst->GetName(), op0.type);
+  const auto& ret_type = inst->GetResultType();
+  EmitODLACall(ret, "odla_Det", op0, EmitShape(ret_type));
+  ir_mapping_[*inst] = ret;
+}
+
 void GenericCXXCodeGen::RunOnInstruction(ShiftInst* inst) {
   CXXValue op0 = ir_mapping_[inst->GetOperand(0)];
   CXXValue op1 = ir_mapping_[inst->GetOperand(1)];

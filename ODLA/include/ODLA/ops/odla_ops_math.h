@@ -227,12 +227,14 @@ odla_Clamp(odla_value input, odla_float32 lo, odla_float32 hi,
   The rank of resulting value is 1.
 
   \param input the input value
+  \param output_shape the optional output shape (can be undefined)
   \param value_id a unique value id (can be NULL)
 
   \return odla_value
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_Det(odla_value input, const odla_value_id value_id);
+odla_Det(odla_value input, odla_value_shape output_shape,
+         const odla_value_id value_id);
 
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_CumSum(odla_value input, odla_value axis, odla_bool exclusion,
