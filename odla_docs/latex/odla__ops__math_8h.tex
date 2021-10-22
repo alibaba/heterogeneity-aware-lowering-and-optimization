@@ -29,7 +29,7 @@
 \begin{DoxyCompactList}\small\item\em Round up a value. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__math_8h_a758e6278f120513e0d1900ed315503df}{odla\+\_\+\+Clamp}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} lo, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} hi, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Clamp a value to a given range. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__math_8h_ac7050aac298a7929730c23607d6116be}{odla\+\_\+\+Det}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__math_8h_aa4a54b8cf43e218e971a454c6012d36e}{odla\+\_\+\+Det}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+shape, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Compute the determinant of a square matrix. \end{DoxyCompactList}\item 
 \mbox{\Hypertarget{odla__ops__math_8h_ae37b4f43e02345793daa2482875538f9}\label{odla__ops__math_8h_ae37b4f43e02345793daa2482875538f9}} 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL {\bfseries odla\+\_\+\+Cum\+Sum} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} axis, \mbox{\hyperlink{odla__common_8h_a86f265601c0773152f4e193a8614c0ac}{odla\+\_\+bool}} exclusion, \mbox{\hyperlink{odla__common_8h_a86f265601c0773152f4e193a8614c0ac}{odla\+\_\+bool}} reverse, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
@@ -554,11 +554,11 @@ Computes cosinh of {\ttfamily x} element-\/wise.
 \begin{DoxyReturn}{Returns}
 odla\+\_\+value 
 \end{DoxyReturn}
-\mbox{\Hypertarget{odla__ops__math_8h_ac7050aac298a7929730c23607d6116be}\label{odla__ops__math_8h_ac7050aac298a7929730c23607d6116be}} 
+\mbox{\Hypertarget{odla__ops__math_8h_aa4a54b8cf43e218e971a454c6012d36e}\label{odla__ops__math_8h_aa4a54b8cf43e218e971a454c6012d36e}} 
 \index{odla\_ops\_math.h@{odla\_ops\_math.h}!odla\_Det@{odla\_Det}}
 \index{odla\_Det@{odla\_Det}!odla\_ops\_math.h@{odla\_ops\_math.h}}
 \doxysubsubsection{\texorpdfstring{odla\_Det()}{odla\_Det()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Det (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Det (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}}}]{output\+\_\+shape,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
 
 
 
@@ -569,6 +569,8 @@ Det returns determinant of a squre matrix or batches of square matrices. The ran
 
 \begin{DoxyParams}{Parameters}
 {\em input} & the input value \\
+\hline
+{\em output\+\_\+shape} & the optional output shape (can be undefined) \\
 \hline
 {\em value\+\_\+id} & a unique value id (can be NULL)\\
 \hline

@@ -57,7 +57,7 @@ var searchData=
   ['odla_5fdestroydevice_400',['odla_DestroyDevice',['../odla__device_8h.html#aae5090077f6c6173687c9c32b82a7e57',1,'odla_device.h']]],
   ['odla_5fdestroydeviceconfig_401',['odla_DestroyDeviceConfig',['../odla__device_8h.html#aa75c96d077e56bd22c05bcef89f0b7b5',1,'odla_device.h']]],
   ['odla_5fdestroyexecutable_402',['odla_DestroyExecutable',['../odla__compute_8h.html#a810e442760978d8b91bb3812550810a5',1,'odla_compute.h']]],
-  ['odla_5fdet_403',['odla_Det',['../odla__ops__math_8h.html#ac7050aac298a7929730c23607d6116be',1,'odla_ops_math.h']]],
+  ['odla_5fdet_403',['odla_Det',['../odla__ops__math_8h.html#aa4a54b8cf43e218e971a454c6012d36e',1,'odla_ops_math.h']]],
   ['odla_5fdifferentiatecomputation_404',['odla_DifferentiateComputation',['../odla__compute_8h.html#a2d42e143efcda54765a4ed1b3b0c9986',1,'odla_compute.h']]],
   ['odla_5fdiv_405',['odla_Div',['../odla__ops__math_8h.html#a2f66ac605cfff97cc84fd55a143829e7',1,'odla_ops_math.h']]],
   ['odla_5fdump_406',['odla_Dump',['../odla__value_8h.html#abae96d1de8d2cc55f438e1414eae83e9',1,'odla_value.h']]],

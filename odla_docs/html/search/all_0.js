@@ -76,7 +76,7 @@ var searchData=
   ['odla_5fdestroydevice_73',['odla_DestroyDevice',['../odla__device_8h.html#aae5090077f6c6173687c9c32b82a7e57',1,'odla_device.h']]],
   ['odla_5fdestroydeviceconfig_74',['odla_DestroyDeviceConfig',['../odla__device_8h.html#aa75c96d077e56bd22c05bcef89f0b7b5',1,'odla_device.h']]],
   ['odla_5fdestroyexecutable_75',['odla_DestroyExecutable',['../odla__compute_8h.html#a810e442760978d8b91bb3812550810a5',1,'odla_compute.h']]],
-  ['odla_5fdet_76',['odla_Det',['../odla__ops__math_8h.html#ac7050aac298a7929730c23607d6116be',1,'odla_ops_math.h']]],
+  ['odla_5fdet_76',['odla_Det',['../odla__ops__math_8h.html#aa4a54b8cf43e218e971a454c6012d36e',1,'odla_ops_math.h']]],
   ['odla_5fdevice_77',['odla_device',['../odla__device_8h.html#aaeace6ca8143dfbca7fbc71736b0c2ae',1,'odla_device.h']]],
   ['odla_5fdevice_2eh_78',['odla_device.h',['../odla__device_8h.html',1,'']]],
   ['odla_5fdevice_5fconfig_79',['odla_device_config',['../odla__device_8h.html#a603f36b808701ffafdddf16a8eb4a6c0',1,'odla_device.h']]],
