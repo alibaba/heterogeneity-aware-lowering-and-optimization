@@ -186,6 +186,8 @@ def ONNX_DequantizeLinear: OpMapping<"DequantizeLinear", Dequantize> {
    let attr_mapping_ = [ AttributeMapping<"axis", "axis", "1"> ];
 }
 
+def ONNX_Det: OpMapping<"Det", Det>;
+
 def ONNX_DynamicQuantizeLinear: ONNXExtension<"DynamicQuantizeLinear">;
 
 def ONNX_Div : OpMapping<"Div", Div>;
