@@ -253,6 +253,14 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
 
   builder.SetInsertAfter(binary_inst);
   ConstantBuilder cb(binary_inst->GetParent()->GetParent());
+  // SUB(x, x) ==> 0
+  if (opc == OpCode::SUB && op0 == op1) {
+    const auto& ty = binary_inst->GetResultType();
+    DefaultDataLayout dl;
+    std::vector<char> data(dl.DataLayout::Bytes(ty), 0);
+    auto zero = cb.CreateConstant(binary_inst->GetName(), ty, data.data());
+    return {orig_def, *zero};
+  }
 
   // fuse to fully_connected
   if (opc == OpCode::ADD && fuse_fully_connected) {
