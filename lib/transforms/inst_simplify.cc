@@ -2504,7 +2504,6 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
       return {orig_def, *c};
     }
   }
-
   return {orig_def, orig_def};
 }
 
@@ -2644,7 +2643,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(OneHotInst* inst) {
   }
   /* else if (IsA<Argument>(op0) && op0.GetType().IsValid() &&
              DynCast<Argument>(op0)->GetNumberOfUses() == 1) {
-    Argument* arg = DynCast<Argument>(op0.GetOwner());
+    Argument* arg = DynCast<Argument>(op0);
     arg->SetType(
         halo::Type{on_value.GetType().GetDataType(), dst_type.GetDimSizes()});
     return {orig_def, *arg};

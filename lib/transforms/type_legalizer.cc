@@ -1561,11 +1561,10 @@ static void RunOnInstruction(SelectInst* inst) {
   if (!ty_cond.IsValid() || !ty_x.IsValid() || !ty_y.IsValid()) {
     return;
   }
-  // Result shape is broadcasted with ty_x and ty_cond.
+  // Result shape is 3-way broadcasted with ty_x, ty_y and ty_cond.
   auto rank_x = ty_x.GetNumOfDims();
-  auto rank_c = ty_cond.GetNumOfDims();
   auto rank_y = ty_y.GetNumOfDims();
-
+  auto rank_c = ty_cond.GetNumOfDims();
   auto rank_r = std::max(rank_x, rank_y);
   std::vector<int64_t> ret_shape(rank_r);
 
