@@ -178,10 +178,28 @@ static void RunOnInstruction(Instruction* inst) {
     case OpCode::SHIFTR:
     case OpCode::AND:
     case OpCode::OR:
+    case OpCode::XOR:
+    case OpCode::MOD:
     case OpCode::CMP: {
       RunOnMathBinaryInstruction(inst);
       break;
     }
+    case OpCode::ACOS:
+    case OpCode::ACOSH:
+    case OpCode::ASIN:
+    case OpCode::ASINH:
+    case OpCode::ATAN:
+    case OpCode::ATANH:
+    case OpCode::SIN:
+    case OpCode::COS:
+    case OpCode::TAN:
+    case OpCode::CEIL:
+    case OpCode::FLOOR:
+    case OpCode::ABS:
+    case OpCode::EXP:
+    case OpCode::LOG:
+    case OpCode::NOT:
+    case OpCode::SIGN:
     case OpCode::ISNAN:
     case OpCode::ISINF: {
       RunOnMathUnaryInstruction(inst);
@@ -343,6 +361,15 @@ static void RunOnInstruction(DequantizeInst* inst) {
   }
   Type new_type{DataType::FLOAT32, op0.GetType().GetDimSizes()};
   inst->GetResultsTypes()[0] = new_type;
+}
+
+static void RunOnInstruction(DetInst* inst) {
+  const auto& input_type = inst->GetOperand(0).GetType();
+  auto dt = input_type.GetDataType();
+  auto ret_shape = input_type.GetDimSizes();
+  ret_shape.pop_back();
+  ret_shape.pop_back();
+  inst->GetResultsTypes()[0] = Type{dt, ret_shape};
 }
 
 static void RunOnInstruction(NegativeLogLikelihoodLossInst* inst) {
@@ -1367,10 +1394,12 @@ static void RunOnInstruction(UniqueInst* inst) {
   }
   auto rank = type0.GetNumOfDims();
   HLCHECK(rank == 1);
+  auto idx_dt = inst->GetOutIdxType();
+  HLCHECK(idx_dt == DataType::INT64 || idx_dt == DataType::INT32);
   // FIXME: result 0 has at most the same number of
   // elements of the input
   inst->GetResultsTypes()[0] = type0;
-  inst->GetResultsTypes()[1] = Type{DataType::INT64, type0.GetDimSizes()};
+  inst->GetResultsTypes()[1] = Type{idx_dt, type0.GetDimSizes()};
 }
 
 bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {

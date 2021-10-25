@@ -150,6 +150,8 @@ let cat_ = cat_common in {
   }
 
   def Unique: Inst<"Find the unique elements of the input."> {
+    let attrs_ = [Attr<"Result indices' type.",
+                  EnumDataType, "out_idx_type", "INVALID">];
     let ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >];
     let outs_ = [Arg<"The unique elements of the input.",
                      MatchArgType<0> >,

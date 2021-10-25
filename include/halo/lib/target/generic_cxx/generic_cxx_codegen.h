@@ -106,6 +106,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(ConcatInst*) override;
   virtual void RunOnInstruction(ConvertFromStringInst*) override;
   virtual void RunOnInstruction(ConvertToStringInst*) override;
+  virtual void RunOnInstruction(DetInst*) override;
   virtual void RunOnInstruction(DivInst*) override;
   virtual void RunOnInstruction(ErfInst*) override;
   virtual void RunOnInstruction(ExpInst*) override;
@@ -142,6 +143,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(MatMulInst*) override;
   virtual void RunOnInstruction(MaximumInst*) override;
   virtual void RunOnInstruction(MinimumInst*) override;
+  virtual void RunOnInstruction(ModInst*) override;
   virtual void RunOnInstruction(NegativeLogLikelihoodLossInst*) override;
   virtual void RunOnInstruction(NonMaxSuppressionInst*) override;
   virtual void RunOnInstruction(NegInst*) override;

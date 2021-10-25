@@ -108,6 +108,19 @@ void GenericCXXCodeGen::RunOnInstruction(XorInst* inst) {
   RunOnBinaryInstruction(inst);
 }
 
+void GenericCXXCodeGen::RunOnInstruction(ModInst* inst) {
+  const Def& lhs = inst->GetOperand(0);
+  const Def& rhs = inst->GetOperand(1);
+
+  CXXValue op0 = ir_mapping_[lhs];
+  CXXValue op1 = ir_mapping_[rhs];
+
+  CXXValue ret(inst->GetName(), op0.type);
+  auto mod = inst->GetFmod();
+  EmitODLACall(ret, "odla_Mod", op0, op1, mod);
+  ir_mapping_[*inst] = ret;
+}
+
 void GenericCXXCodeGen::RunOnInstruction(CeilInst* inst) {
   RunOnUnaryInstruction(inst);
 }
@@ -241,6 +254,15 @@ void GenericCXXCodeGen::RunOnInstruction(CmpInst* inst) {
   HLCHECK(it != odla_funcs.end());
 
   EmitODLACall(ret, it->second, op0, op1);
+  ir_mapping_[*inst] = ret;
+}
+
+void GenericCXXCodeGen::RunOnInstruction(DetInst* inst) {
+  CXXValue op0 = ir_mapping_[inst->GetOperand(0)];
+
+  CXXValue ret(inst->GetName(), op0.type);
+  const auto& ret_type = inst->GetResultType();
+  EmitODLACall(ret, "odla_Det", op0, EmitShape(ret_type));
   ir_mapping_[*inst] = ret;
 }
 

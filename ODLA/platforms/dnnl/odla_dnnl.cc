@@ -20,6 +20,7 @@
 #include <stdio.h>
 
 #include <Eigen/Core>
+#include <Eigen/LU>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -158,11 +159,15 @@ void InterpretIfNeeded() {
 #endif
 }
 
-void rewrite_scalar_type(odla_value_type& type) {
-  if (type.shape.size == 0) {
-    type.shape.size = 1;
-    type.shape.dims[0] = 1;
+void rewrite_scalar_shape(odla_value_shape& shape) {
+  if (shape.size == 0) {
+    shape.size = 1;
+    shape.dims[0] = 1;
   }
+}
+
+void rewrite_scalar_type(odla_value_type& type) {
+  rewrite_scalar_shape(type.shape);
 }
 
 odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
@@ -1125,6 +1130,52 @@ odla_value odla_DeConv(odla_value input, odla_memory_layout input_layout,
   }
   InterpretIfNeeded();
   return bias ? odla_Add(v, bias, id) : v; // TODO: add bias into primitive
+}
+
+// Det helper with type T
+template <typename T>
+static void Det_T(void* dst, const void* data, int matrix_n, int64_t iter) {
+  const T* input_t = static_cast<const T*>(data);
+  T* dst_t = static_cast<T*>(dst);
+  int matrix_elements = matrix_n * matrix_n;
+  for (size_t i = 0; i < iter; ++i) {
+    int idx = matrix_elements * i;
+    Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> in(
+        input_t + idx, matrix_n, matrix_n);
+    dst_t[i] = in.determinant();
+  }
+}
+
+odla_value odla_Det(odla_value input, odla_value_shape output_shape,
+                    const odla_value_id id) {
+  rewrite_scalar_shape(output_shape);
+  auto elem_type = input->elem_type;
+  auto input_shape = input->shape;
+  int32_t rank = input_shape.size;
+  int64_t matrix_n = input_shape.dims[rank - 1];
+  int64_t iter = GetTotalElements(output_shape);
+
+  // Prepare dest memory.
+  dnnl::memory::desc dst_md = getMemoryDesc({elem_type, output_shape});
+  dnnl::memory dst_mem = dnnl::memory(dst_md, g_comp->eng);
+  auto v = CreateValue(dst_mem, output_shape, id);
+  v->elem_type = input->elem_type;
+
+  auto op = [dst_mem, input, matrix_n, iter] {
+    void* dst = dst_mem.get_data_handle();
+    void* data = input->mem.get_data_handle();
+    if (input->elem_type == ODLA_FLOAT32) {
+      Det_T<float>(dst, data, matrix_n, iter);
+    } else if (input->elem_type == ODLA_FLOAT64) {
+      Det_T<double>(dst, data, matrix_n, iter);
+    } else {
+      assert(0); // Float16
+    }
+  };
+
+  add_op(op);
+  InterpretIfNeeded();
+  return v;
 }
 
 odla_value odla_Compress(odla_value input, odla_value condition,

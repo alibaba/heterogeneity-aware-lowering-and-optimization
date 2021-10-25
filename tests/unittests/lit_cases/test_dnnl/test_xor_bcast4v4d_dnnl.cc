@@ -26,5 +26,4 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_xor_bcast4v4d | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_xor_bcast4v4d_dnnl.cc.tmp.main.cc.in"
