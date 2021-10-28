@@ -26,6 +26,7 @@ else()
       61
       70
       75
+      80
     )
   message(STATUS "GPU_ARCHS is not defined. Generating CUDA code for default SMs: ${GPU_ARCHS}")
 endif()
