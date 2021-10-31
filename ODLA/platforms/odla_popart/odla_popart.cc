@@ -22,6 +22,7 @@
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
 #include <chrono>
+#include <fstream>
 #include <iostream>
 #include <mutex>
 #include <popart/builder.hpp>
@@ -33,6 +34,38 @@
 
 _odla_computation* _odla_computation::instance_ = nullptr;
 std::mutex _odla_computation::comp_mutex_;
+
+void compile_and_export_cache(std::string catch_file_name,
+		                      std::string config_file_name) {
+  std::fstream catch_fs(catch_file_name, 
+       		            std::ios_base::out | std::ifstream::binary);
+  std::fstream config_fs;
+  std::string config_string;
+  if (config_file_name.size() > 0) {
+    config_fs.open(config_file_name,
+   		           std::ios_base::in | std::ifstream::binary);
+    if (!config_fs.is_open()) {
+      popart::logging::warn(
+              "invalid config file name:[ {} ] will use default config",
+              config_file_name);
+      config_string = PopartConfig::instance()->get_default_config_string();
+	}
+	std::ostringstream config_ss; 
+	config_ss << config_fs.rdbuf(); 
+	config_string = config_ss.str();
+  }
+  else {
+    config_string = PopartConfig::instance()->get_default_config_string();
+  }
+  
+  int config_size = config_string.size();
+  catch_fs.write((char*)&config_size, sizeof(config_string.size()));
+  catch_fs.write(config_string.c_str(), config_string.size());
+  
+  _odla_computation::instance()->session->compileAndExport(catch_fs.flush());
+  catch_fs.flush();
+  catch_fs.close();  
+}
 
 void compute_loop(odla_computation comp) {
   // setup the stepio with allbacks
@@ -71,6 +104,7 @@ void _odla_computation::init() {
       std::vector<popart::TensorId> ids;
       for (const auto& output : outputs_map)
         ids.push_back(output.second->tensor_id);
+
       popart::DataFlow data_flow(opts.batches_per_step, ids,
                                  popart::AnchorReturnType("All"));
       // Acquire IPU
@@ -85,17 +119,20 @@ void _odla_computation::init() {
         device =
             popart::DeviceManager::createDeviceManager().acquireAvailableDevice(
                 opts.ipu_num);
+
       // Create and config SessionOptions
       set_session_opts();
       if (use_pipeline())
         builder = popart::Builder::createFromOnnxModel(set_pipeline_stage());
       auto proto = builder->getModelProto(); // So, the init must be called at
                                              // odla_ExecuteCompute
+
       if (PopartConfig::instance()->load_onnx()) {
         popart::logging::info("Load onnx file as pipeline mode to run: {}",
                               PopartConfig::instance()->load_onnx_path());
         proto = PopartConfig::instance()->load_onnx_path();
       }
+
       if (PopartConfig::instance()->save_model()) {
         builder->saveModelProto(PopartConfig::instance()->save_model_path());
         popart::logging::info("The model saved to {}",
@@ -105,6 +142,12 @@ void _odla_computation::init() {
       // Create InferenceSession
       auto new_session = popart::InferenceSession::createFromOnnxModel(
           proto, data_flow, device, popart::InputShapeInfo(), session_opts_);
+
+	  if (PopartConfig::instance()->load_cache()) {
+          popart::logging::info("Load cachefile from existing stream");
+		  auto cache_fs = PopartConfig::instance()->get_cache_fs();
+          new_session->loadExecutableFromStream(*(cache_fs.get()));
+	  }
       new_session->prepareDevice();
       new_session->setRandomSeed(0);  // Init seed
       new_session->weightsFromHost(); // Copy weights from host to IPU

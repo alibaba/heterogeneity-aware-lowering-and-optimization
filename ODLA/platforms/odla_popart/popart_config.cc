@@ -41,21 +41,32 @@ void PopartConfig::use_default() {
   queue_type_ = "LockFreeQueue";
   queue_capacity_ = 1024 * 1024;
   debug_ = false;
+  default_config_string_ = "{ \
+    \"version\":\"1.0.0\", \
+    \"amp\":0.6, \
+    \"batches_per_step\":1, \
+    \"execution_mode\":\"sequence\", \
+    \"ipu_num\":1, \
+    \"load_onnx\":false, \
+    \"load_onnx_path\":\"test-load-time.onnx\", \
+    \"queue_type\":\"LockFreeQueue\", \
+    \"queue_capacity\":1048576, \
+    \"debug\": false \
+  }";
 }
 
 void PopartConfig::load_config(const char* file_path) {
+  if (inited_) {
+    popart::logging::info("config already inited");
+    return;
+  }
+  popart::logging::info("use default config");
   use_default();
   if (file_path != nullptr) load_from_file(file_path);
   print();
 }
 
-void PopartConfig::load_from_file(const std::string& file_path) {
-  using json = nlohmann::json;
-  std::ifstream ifs(file_path);
-  if (!ifs.good())
-    throw std::invalid_argument(std::string("Configuraton file [") + file_path +
-                                "] was not found.");
-  json jf = json::parse(ifs);
+void PopartConfig::parse_from_json(const json& jf) {
 
   if (jf.contains("amp")) {
     amp_ = jf["amp"].get<float>();
@@ -108,6 +119,29 @@ void PopartConfig::load_from_file(const std::string& file_path) {
   else
     queue_capacity_ = 1024 * 1024;
   if (jf.contains("debug")) debug_ = jf["debug"].get<bool>();
+
+  inited_ = true;
+}
+
+void PopartConfig::load_from_string(const std::string& config_string) {
+  if (inited_) {
+      return;
+  }
+  json jf = json::parse(config_string);
+  parse_from_json(jf);
+}
+
+void PopartConfig::load_from_file(const std::string& file_path) {
+  if (inited_) {
+      return;
+  }
+  using json = nlohmann::json;
+  std::ifstream ifs(file_path);
+  if (!ifs.good())
+    throw std::invalid_argument(std::string("Configuraton file [") + file_path +
+                                "] was not found.");
+  json jf = json::parse(ifs);
+  parse_from_json(jf);
 }
 
 void PopartConfig::print() {
@@ -172,3 +206,14 @@ bool PopartConfig::get_pipeline_setting(const std::string& node_name,
       " was not configured to any ipu or stage for pipeline");
   return false;
 }
+
+void PopartConfig::extract_config_from_cache() {
+    cache_fs = std::make_shared<std::ifstream>(cache_path_, std::ifstream::binary);
+    int config_len = 0;
+    cache_fs->read((char*)&config_len, sizeof(config_len));
+    std::vector<char> config_data_buffer(config_len);
+    cache_fs->read(config_data_buffer.data(), config_len);
+    std::string config_string(config_data_buffer.begin(), config_data_buffer.end());
+    load_from_string(config_string);
+}
+

@@ -18,6 +18,7 @@
 
 #include <ODLA/odla.h>
 #include <dlfcn.h>
+#include <fstream>
 
 #include <cstdlib>
 #include <popart/builder.hpp>
@@ -39,6 +40,7 @@
 #error This library requires minimum ODLA version 0.5
 #endif
 
+
 odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
                                     odla_item_value value) {
   switch (type) {
@@ -57,6 +59,18 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
     case ODLA_CACHE_DIR:
       comp->opts.cache_dir = (reinterpret_cast<char*>(value));
       break;
+	case 1001: // load cache directly, need set path of cache file
+	  PopartConfig::instance()->set_load_cache(true);
+	  PopartConfig::instance()->set_cache_path(reinterpret_cast<char*>(value));
+	  PopartConfig::instance()->extract_config_from_cache();
+      _odla_computation::instance()->set_executor();
+      if (PopartConfig::instance()->execution_mode() == PARALLEL ||
+          PopartConfig::instance()->execution_mode() == PIPELINE) {
+        QManager::instance()->createQ(PopartConfig::instance()->queue_type());
+        QManager::instance()->getQ()->init(
+            PopartConfig::instance()->queue_capacity());
+      }
+	  break;
     default:
       std::cerr << "Unsupported property type: " << type << std::endl;
       return ODLA_UNSUPPORTED_DATATYPE;
@@ -87,13 +101,15 @@ odla_status odla_CreateComputation(odla_computation* comp) {
     }
   }
   // Read the config file
-  PopartConfig::instance()->load_config(std::getenv("ODLA_POPART_CONFIG"));
-  _odla_computation::instance()->set_executor();
-  if (PopartConfig::instance()->execution_mode() == PARALLEL ||
-      PopartConfig::instance()->execution_mode() == PIPELINE) {
-    QManager::instance()->createQ(PopartConfig::instance()->queue_type());
-    QManager::instance()->getQ()->init(
-        PopartConfig::instance()->queue_capacity());
+  if (!PopartConfig::instance()->inited()) {
+    PopartConfig::instance()->load_config(std::getenv("ODLA_POPART_CONFIG"));
+    _odla_computation::instance()->set_executor();
+    if (PopartConfig::instance()->execution_mode() == PARALLEL ||
+        PopartConfig::instance()->execution_mode() == PIPELINE) {
+      QManager::instance()->createQ(PopartConfig::instance()->queue_type());
+      QManager::instance()->getQ()->init(
+          PopartConfig::instance()->queue_capacity());
+    }
   }
   return ODLA_SUCCESS;
 }
