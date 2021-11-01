@@ -9,6 +9,24 @@ on:
       - "web"
   release:
 jobs:
+  doc-url-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: halo
+          submodules: false
+          clean: false
+      - name: Check markdown for broken links
+        uses: ruzickap/action-my-markdown-link-checker@v1
+        with:
+          config_file: ./halo/.github/workflows/mlc_config.json
+          exclude: |
+            external/
+            .github/
+            third_party/
+
   lint-check:
     runs-on: ubuntu-latest
     steps:
@@ -25,14 +43,6 @@ jobs:
           exclude: "./halo/third_party ./halo/external ./halo/ODLA/external ./halo/ODLA/platforms/odla_popart/custom_ops"
           clangFormatVersion: 9
           style: file
-      - name: Check markdown for broken links
-        uses: ruzickap/action-my-markdown-link-checker@v1
-        with:
-          config_file: ./halo/.github/workflows/mlc_config.json
-          exclude: |
-            external/
-            .github/
-            third_party/
 
   build_ubuntu:
     runs-on: [self-hosted, gpu]
