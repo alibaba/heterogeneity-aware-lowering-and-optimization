@@ -122,7 +122,6 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_device device) {
   if (!context->hold("odla_ExecuteComputation")) return ODLA_FAILURE;
   return comp->executor()->compute(comp, context, mode, device);
-  //return ODLA_SUCCESS;
 }
 
 odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
