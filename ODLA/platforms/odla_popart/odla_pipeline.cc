@@ -93,10 +93,10 @@ void QManager::createQ(std::string queueType) {
 void QManager::deleteQ() {
   if (nullptr != queue_) {
     std::lock_guard<std::mutex> guard(create_mutex_);
-	if (nullptr != queue_) {
+    if (nullptr != queue_) {
       delete queue_;
-	  queue_ = nullptr;
-	}
+      queue_ = nullptr;
+    }
   }
 }
 

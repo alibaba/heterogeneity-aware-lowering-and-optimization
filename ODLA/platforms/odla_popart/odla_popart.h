@@ -40,7 +40,7 @@ class Execution {
   Execution() {}
   ~Execution() {}
   virtual odla_status compute(odla_computation comp, odla_context context,
-                       odla_compute_mode mode, odla_device device) = 0;
+                              odla_compute_mode mode, odla_device device) = 0;
 };
 
 class Sequence : public Execution {
@@ -48,7 +48,7 @@ class Sequence : public Execution {
   Sequence() {}
   ~Sequence() {}
   virtual odla_status compute(odla_computation comp, odla_context context,
-                       odla_compute_mode mode, odla_device device);
+                              odla_compute_mode mode, odla_device device);
 
  private:
   std::mutex sequence_mutex; // As global only has one sequence object, so we
@@ -58,7 +58,7 @@ class Sequence : public Execution {
 class Parallel : public Execution {
  public:
   virtual odla_status compute(odla_computation comp, odla_context context,
-                       odla_compute_mode mode, odla_device device);
+                              odla_compute_mode mode, odla_device device);
 };
 
 typedef struct TargetOpts {

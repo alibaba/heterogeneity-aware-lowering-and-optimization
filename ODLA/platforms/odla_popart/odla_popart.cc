@@ -70,26 +70,26 @@ void compute_loop(odla_computation comp) {
   popart::StepIOCallback stepio(input_callback, input_complete_callback,
                                 output_callback, output_complete_callback);
   int i = 0;
-  try{
-  while (!comp->is_done()) {
-    auto start = std::chrono::steady_clock::now();
-    popart::logging::info("This is the {} time for the inference", i++);
-    if (i == INT_MAX) i = 0;
-    comp->session->run(stepio);
-    auto end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end - start;
-    popart::logging::warn(
-        "[ {} ] ONE_STEP takes {} s. Check whether more inference tasks "
-        "wating.",
-        i, elapsed_seconds.count());
-    // Make wait on CPU if there's not inference task
-    start = std::chrono::steady_clock::now();
-    while (!comp->is_done() && QManager::instance()->getQ()->size() == 0)
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    end = std::chrono::steady_clock::now();
-    std::chrono::duration<double, std::milli> elapsed_ms = end - start;
-    popart::logging::warn("Found new tasks in {} ms.", elapsed_ms.count());
-  }
+  try {
+    while (!comp->is_done()) {
+      auto start = std::chrono::steady_clock::now();
+      popart::logging::info("This is the {} time for the inference", i++);
+      if (i == INT_MAX) i = 0;
+      comp->session->run(stepio);
+      auto end = std::chrono::steady_clock::now();
+      std::chrono::duration<double> elapsed_seconds = end - start;
+      popart::logging::warn(
+          "[ {} ] ONE_STEP takes {} s. Check whether more inference tasks "
+          "wating.",
+          i, elapsed_seconds.count());
+      // Make wait on CPU if there's not inference task
+      start = std::chrono::steady_clock::now();
+      while (!comp->is_done() && QManager::instance()->getQ()->size() == 0)
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      end = std::chrono::steady_clock::now();
+      std::chrono::duration<double, std::milli> elapsed_ms = end - start;
+      popart::logging::warn("Found new tasks in {} ms.", elapsed_ms.count());
+    }
   } catch (poplar::application_runtime_error& e) {
     popart::logging::err("Poplar exception application_runtime_error caught:");
     QManager::instance()->set_status(ODLA_INTERNAL_LOGIC_ERR);
@@ -98,15 +98,14 @@ void compute_loop(odla_computation comp) {
     auto action = e.getRecoveryAction();
     popart::logging::err("need to take action:{}", action);
     if (action == poplar::RecoveryAction::IPU_RESET) {
-       QManager::instance()->set_status(ODLA_RECOVERABLE_ERR);
+      QManager::instance()->set_status(ODLA_RECOVERABLE_ERR);
     } else if (action == poplar::RecoveryAction::PARTITION_RESET) {
-       QManager::instance()->set_status(ODLA_PARTITION_RESET);
+      QManager::instance()->set_status(ODLA_PARTITION_RESET);
     } else if (action == poplar::RecoveryAction::FULL_RESET) {
-       QManager::instance()->set_status(ODLA_FULL_RESET);
+      QManager::instance()->set_status(ODLA_FULL_RESET);
     }
   } catch (poplar::unrecoverable_runtime_error& e) {
-    popart::logging::err(
-        "Poplar unrecoverable_runtime_error exception caught");
+    popart::logging::err("Poplar unrecoverable_runtime_error exception caught");
     QManager::instance()->set_status(ODLA_UNRECOVERABLE_ERR);
   } catch (poplar::unknown_runtime_error& e) {
     popart::logging::info("Poplar unknown runtime exception caught}");
@@ -369,7 +368,7 @@ bool _odla_context::hold(const std::string& function_name) {
 }
 
 odla_status Sequence::compute(odla_computation comp, odla_context context,
-                       odla_compute_mode mode, odla_device device) {
+                              odla_compute_mode mode, odla_device device) {
   std::lock_guard<std::mutex> comp_guard(sequence_mutex);
   popart::logging::info(">>> Sequence::compute() with ctx: {}", context);
   // Config StepIO
@@ -391,7 +390,7 @@ odla_status Sequence::compute(odla_computation comp, odla_context context,
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed_seconds = end - start;
     popart::logging::info("[ {} ] [Sequence::compute] takes {} s.", i++,
-                        elapsed_seconds.count());
+                          elapsed_seconds.count());
     popart::logging::info("<<< Sequence::compute() with ctx: {}", context);
   } catch (poplar::application_runtime_error& e) {
     popart::logging::err("Poplar exception application_runtime_error caught:");
@@ -401,15 +400,14 @@ odla_status Sequence::compute(odla_computation comp, odla_context context,
     auto action = e.getRecoveryAction();
     popart::logging::err("need to take action:{}", action);
     if (action == poplar::RecoveryAction::IPU_RESET) {
-       return ODLA_RECOVERABLE_ERR;
+      return ODLA_RECOVERABLE_ERR;
     } else if (action == poplar::RecoveryAction::PARTITION_RESET) {
-       return ODLA_PARTITION_RESET;
+      return ODLA_PARTITION_RESET;
     } else if (action == poplar::RecoveryAction::FULL_RESET) {
-       return ODLA_FULL_RESET;
+      return ODLA_FULL_RESET;
     }
   } catch (poplar::unrecoverable_runtime_error& e) {
-    popart::logging::err(
-        "Poplar unrecoverable_runtime_error exception caught");
+    popart::logging::err("Poplar unrecoverable_runtime_error exception caught");
     return ODLA_UNRECOVERABLE_ERR;
   } catch (poplar::unknown_runtime_error& e) {
     popart::logging::info("Poplar unknown runtime exception caught}");
@@ -422,15 +420,16 @@ odla_status Sequence::compute(odla_computation comp, odla_context context,
 }
 
 odla_status Parallel::compute(odla_computation comp, odla_context context,
-                       odla_compute_mode mode, odla_device device) {
+                              odla_compute_mode mode, odla_device device) {
   popart::logging::info(">>> Parallel::compute() with context: {}", context);
-  //Check whether the QueueManager status
-  if ( ODLA_SUCCESS == QManager::instance()->get_status() ) {
+  // Check whether the QueueManager status
+  if (ODLA_SUCCESS == QManager::instance()->get_status()) {
     QManager::instance()->getQ()->put(
         context); // put the queues to wait list firstly
     context->wait();
   } else {
-     popart::logging::err("Will return with status: {}", QManager::instance()->get_status());
+    popart::logging::err("Will return with status: {}",
+                         QManager::instance()->get_status());
   }
   popart::logging::info("<<< Parallel::compute() with context {}", context);
   return QManager::instance()->get_status();

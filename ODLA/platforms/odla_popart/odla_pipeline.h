@@ -145,8 +145,8 @@ struct _odla_pipeline_context : public _odla_context {
   std::chrono::time_point<std::chrono::steady_clock> end;
   inline void wait() override {
     while (!got_output) { // wait forever for the output
-      if ( ODLA_SUCCESS != QManager::instance()->get_status() )
-		  break; // stop wait if we got exception status
+      if (ODLA_SUCCESS != QManager::instance()->get_status())
+        break; // stop wait if we got exception status
       std::unique_lock<std::mutex> lock(context_mutex);
       context_cv.wait_for(lock, std::chrono::milliseconds(100));
     }
