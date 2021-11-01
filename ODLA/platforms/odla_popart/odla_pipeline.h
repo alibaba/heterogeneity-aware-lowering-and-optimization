@@ -113,14 +113,18 @@ class LockFreeQueue : public Queue {
 class QManager {
  private:
   Queue* queue_;
-  QManager() : queue_(nullptr) {}
+  odla_status status_;
+  QManager() : queue_(nullptr), status_(ODLA_SUCCESS) {}
   ~QManager() {}
   std::mutex create_mutex_;
   static QManager* instance_;
 
  public:
   void createQ(std::string queueType);
+  void deleteQ();
   inline Queue* getQ() { return queue_; }
+  inline void set_status(odla_status status) { status_ = status; }
+  inline odla_status get_status() { return status_; }
   static inline QManager* instance() { return instance_; }
 };
 
@@ -141,6 +145,8 @@ struct _odla_pipeline_context : public _odla_context {
   std::chrono::time_point<std::chrono::steady_clock> end;
   inline void wait() override {
     while (!got_output) { // wait forever for the output
+      if ( ODLA_SUCCESS != QManager::instance()->get_status() )
+		  break; // stop wait if we got exception status
       std::unique_lock<std::mutex> lock(context_mutex);
       context_cv.wait_for(lock, std::chrono::milliseconds(100));
     }

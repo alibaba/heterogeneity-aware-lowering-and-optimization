@@ -39,7 +39,7 @@ class Execution {
  public:
   Execution() {}
   ~Execution() {}
-  virtual void compute(odla_computation comp, odla_context context,
+  virtual odla_status compute(odla_computation comp, odla_context context,
                        odla_compute_mode mode, odla_device device) = 0;
 };
 
@@ -47,7 +47,7 @@ class Sequence : public Execution {
  public:
   Sequence() {}
   ~Sequence() {}
-  virtual void compute(odla_computation comp, odla_context context,
+  virtual odla_status compute(odla_computation comp, odla_context context,
                        odla_compute_mode mode, odla_device device);
 
  private:
@@ -57,7 +57,7 @@ class Sequence : public Execution {
 
 class Parallel : public Execution {
  public:
-  virtual void compute(odla_computation comp, odla_context context,
+  virtual odla_status compute(odla_computation comp, odla_context context,
                        odla_compute_mode mode, odla_device device);
 };
 
