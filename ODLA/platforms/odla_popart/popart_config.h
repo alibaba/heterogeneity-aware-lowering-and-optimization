@@ -61,10 +61,10 @@ class PopartConfig {
       execution_mode_; // The execution mode {PIPELINE, PARALLEL, SEQUENCE}
   bool load_onnx_;     // Whether load onnx model to run instead of the model
                        // constructed. Use for test
-  bool load_cache_;	   // If the session will load graph from cache				   
-  std::string cache_path_;     // the path of cache file, for load cache
-                               // directly
-					   
+  bool load_cache_;    // If the session will load graph from cache
+  std::string cache_path_; // the path of cache file, for load cache
+                           // directly
+
   std::string load_onnx_path_; // The path of onnx model file to load if
                                // load_onnx set to be true
   std::map<std::string, std::vector<int>>
@@ -82,7 +82,7 @@ class PopartConfig {
 
   bool inited_;
 
-  std::shared_ptr<std::ifstream> cache_fs; 
+  std::shared_ptr<std::ifstream> cache_fs;
 
   static PopartConfig* instance_;
   void use_default();
@@ -94,6 +94,7 @@ class PopartConfig {
         batches_per_step_(1),
         execution_mode_(UNKNOWN),
         load_onnx_(false),
+        load_cache_(false),
         save_model_(false),
         inited_(false),
         ipu_num_(1) {}
@@ -114,18 +115,18 @@ class PopartConfig {
   inline bool debug() { return debug_; }
   inline bool inited() { return inited_; }
   inline std::shared_ptr<std::ifstream> get_cache_fs() { return cache_fs; }
-  inline void set_cache_fs(std::shared_ptr<std::ifstream> fs) { 
-	  cache_fs = fs;
+  inline void set_cache_fs(std::shared_ptr<std::ifstream> fs) { cache_fs = fs; }
+  inline std::string get_default_config_string() {
+    return default_config_string_;
   }
-  inline std::string get_default_config_string() { return default_config_string_; }
 
   inline bool load_cache() { return load_cache_; }
   inline const std::string load_cache_path() { return cache_path_; }
   inline void set_load_cache(bool is_load_cache) {
-	  load_cache_= is_load_cache;
+    load_cache_ = is_load_cache;
   }
   inline void set_cache_path(std::string catch_path) {
-      cache_path_ = catch_path;
+    cache_path_ = catch_path;
   }
 
   void parse_from_json(const json&);
