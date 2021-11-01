@@ -46,7 +46,10 @@ struct TrtDestroyer {
   template <typename T>
   void operator()(T* t) {
     if (t) {
-      t->destroy();
+      // FIXME: NetworkDefinition::destroy() occasionally
+      // causes segmentation fault
+      // t->destroy();
+      ;
     }
   }
 };
