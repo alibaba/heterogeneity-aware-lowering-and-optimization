@@ -113,6 +113,7 @@ odla_status odla_DestroyContext(odla_context ctx) {
 odla_status odla_DestroyComputation(odla_computation comp) {
   comp->mark_done();
   _odla_computation::destruct();
+  QManager::instance()->deleteQ(); //delete current queue
   return ODLA_SUCCESS;
 }
 
@@ -120,8 +121,8 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
   if (!context->hold("odla_ExecuteComputation")) return ODLA_FAILURE;
-  comp->executor()->compute(comp, context, mode, device);
-  return ODLA_SUCCESS;
+  return comp->executor()->compute(comp, context, mode, device);
+  //return ODLA_SUCCESS;
 }
 
 odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
