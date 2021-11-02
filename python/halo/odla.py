@@ -42,9 +42,9 @@ class ODLAModel:
     def __del__(self):
         if self.h:
             if self.ctx:
-                self.h.odla_DestroyContext(pointer(self.ctx))
+                self.h.odla_DestroyContext(self.ctx)
             if self.comp:
-                self.h.odla_DestroyComputation(pointer(self.comp))
+                self.h.odla_DestroyComputation(self.comp)
 
     def Load(self):
         if self.h is None:
