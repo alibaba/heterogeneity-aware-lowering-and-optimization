@@ -72,10 +72,28 @@ export LD_LIBRARY_PATH=$DNNLROOT/lib:$HALO_ROOT/heterogeneity-aware-lowering-and
 
 Add `-lodla_dnnl_gpu` in link cmd.
 
-## Execute the Binary
+## Execute the Binary in Host
 
 Since the Intel GPU driver only supports Ubuntu 20, please run the binary in Ubuntu 20.
-The building environment could be other Ubuntu version, like HALO build docker container is Ubuntu 18.
+If the building environment is not Ubuntu 20, please switch to Ubuntu 20 to execute it.
+
+Check Hardware
+
+Run the cmd to check the Intel GPU is ready:
+```
+clinfo -l
+or
+sudo clinfo -l
+```
+
+Set oneAPI Packages
+
+```
+source /opt/intel/oneapi/compiler/latest/env/vars.sh
+source /opt/intel/oneapi/dnnl/latest/env/vars.sh
+source /opt/intel/oneapi/dpl/latest/env/vars.sh
+source /opt/intel/oneapi/tbb/latest/env/vars.sh
+```
 
 Set path for binary and library:
 ```
