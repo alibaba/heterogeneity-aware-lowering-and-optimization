@@ -20,6 +20,7 @@
 #include <dlfcn.h>
 
 #include <cstdlib>
+#include <fstream>
 #include <popart/builder.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/ndarraywrapper.hpp>
@@ -57,6 +58,18 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
     case ODLA_CACHE_DIR:
       comp->opts.cache_dir = (reinterpret_cast<char*>(value));
       break;
+    case 1001: // load cache directly, need set path of cache file
+      PopartConfig::instance()->set_load_cache(true);
+      PopartConfig::instance()->set_cache_path(reinterpret_cast<char*>(value));
+      PopartConfig::instance()->extract_config_from_cache();
+      _odla_computation::instance()->set_executor();
+      if (PopartConfig::instance()->execution_mode() == PARALLEL ||
+          PopartConfig::instance()->execution_mode() == PIPELINE) {
+        QManager::instance()->createQ(PopartConfig::instance()->queue_type());
+        QManager::instance()->getQ()->init(
+            PopartConfig::instance()->queue_capacity());
+      }
+      break;
     default:
       std::cerr << "Unsupported property type: " << type << std::endl;
       return ODLA_UNSUPPORTED_DATATYPE;
@@ -87,13 +100,15 @@ odla_status odla_CreateComputation(odla_computation* comp) {
     }
   }
   // Read the config file
-  PopartConfig::instance()->load_config(std::getenv("ODLA_POPART_CONFIG"));
-  _odla_computation::instance()->set_executor();
-  if (PopartConfig::instance()->execution_mode() == PARALLEL ||
-      PopartConfig::instance()->execution_mode() == PIPELINE) {
-    QManager::instance()->createQ(PopartConfig::instance()->queue_type());
-    QManager::instance()->getQ()->init(
-        PopartConfig::instance()->queue_capacity());
+  if (!PopartConfig::instance()->inited()) {
+    PopartConfig::instance()->load_config(std::getenv("ODLA_POPART_CONFIG"));
+    _odla_computation::instance()->set_executor();
+    if (PopartConfig::instance()->execution_mode() == PARALLEL ||
+        PopartConfig::instance()->execution_mode() == PIPELINE) {
+      QManager::instance()->createQ(PopartConfig::instance()->queue_type());
+      QManager::instance()->getQ()->init(
+          PopartConfig::instance()->queue_capacity());
+    }
   }
   return ODLA_SUCCESS;
 }
@@ -113,6 +128,7 @@ odla_status odla_DestroyContext(odla_context ctx) {
 odla_status odla_DestroyComputation(odla_computation comp) {
   comp->mark_done();
   _odla_computation::destruct();
+  QManager::instance()->deleteQ(); // delete current queue
   return ODLA_SUCCESS;
 }
 
@@ -120,8 +136,7 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
   if (!context->hold("odla_ExecuteComputation")) return ODLA_FAILURE;
-  comp->executor()->compute(comp, context, mode, device);
-  return ODLA_SUCCESS;
+  return comp->executor()->compute(comp, context, mode, device);
 }
 
 odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
