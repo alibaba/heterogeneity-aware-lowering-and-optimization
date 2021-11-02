@@ -90,6 +90,16 @@ void QManager::createQ(std::string queueType) {
   }
 }
 
+void QManager::deleteQ() {
+  if (nullptr != queue_) {
+    std::lock_guard<std::mutex> guard(create_mutex_);
+    if (nullptr != queue_) {
+      delete queue_;
+      queue_ = nullptr;
+    }
+  }
+}
+
 void ContextQueues::put(odla_context ctx) {
   popart::logging::info("ContextQueues::put -> ctx: {}.", ctx);
   {
