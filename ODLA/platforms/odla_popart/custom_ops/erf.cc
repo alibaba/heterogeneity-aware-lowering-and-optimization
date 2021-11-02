@@ -73,7 +73,6 @@ class ErfOpx : public popart::popx::ElementWiseUnaryOpx {
   }
 
   void grow(poplar::program::Sequence& prog) const final {
-
     Tensor x = getInTensor(0).getPoplarTensor();
 
     Tensor sign = popops::signum(graph().getPoplarGraph(), x, prog);
