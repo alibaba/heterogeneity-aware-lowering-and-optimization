@@ -200,8 +200,8 @@ struct _odla_computation {
   }
 
   ~_odla_computation() {
-    builder = nullptr;
-    network = nullptr;
+    network.reset();
+    builder.reset();
   }
 };
 
@@ -265,8 +265,9 @@ struct _odla_context {
   }
   ~_odla_context() {
     comp = nullptr;
-    engine = nullptr;
-    ctx = nullptr;
+    ctx.reset();
+    engine.reset();
+    builder_cfg.reset();
   }
 };
 
