@@ -1,9 +1,9 @@
-# Support Intel(R) GPU
+# Support Intel® GPU
 
 ## Hardware
 
-### Intel GPU List
-HALO supports Intel(R) GPU by Intel(R) [oneDNN](https://github.com/oneapi-src/oneDNN). Please check the supported GPU list in oneDNN website.
+### Intel® GPU List
+HALO supports Intel® GPU by Intel® [oneDNN](https://github.com/oneapi-src/oneDNN). Please check the supported GPU list in oneDNN website.
 
 Here is the list copied from oneDNN:
 
@@ -35,7 +35,7 @@ Platform #0: Intel(R) OpenCL HD Graphics
 
 ```
 
-## Build HALO to support Intel(R) GPU
+## Build HALO to support Intel® GPU
 
 ### Set oneAPI Packages
 
@@ -46,7 +46,7 @@ source /opt/intel/oneapi/dpl/latest/env/vars.sh
 source /opt/intel/oneapi/tbb/latest/env/vars.sh
 ```
 
-### Build HALO with Intel GPU
+### Build HALO with Intel® GPU
 
 Add `-DODLA_BUILD_DNNL_GPU=ON` in cmake cmd:
 
@@ -61,7 +61,7 @@ ninja
 
 There will be file `./lib/libodla_dnnl_gpu.so` to be created.
 
-## Build Binary to Support Intel(R) GPU
+## Build Binary to Support Intel® GPU
 
 Set path for binary and library:
 ```
