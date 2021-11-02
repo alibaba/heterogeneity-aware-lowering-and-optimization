@@ -27,8 +27,8 @@ NVIDIA® GPU environment:
 * CUDA® Deep Neural Network library™ (cuDNN) (>= 7.6.0)
 * TensorRT™ (7.0.0)
 
-Intel?GPU environment:
-* [Intel?oneAPI Base Toolkit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit-download.html)
+Intel® GPU environment:
+* [Intel® oneAPI Base Toolkit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit-download.html)
 
 ## Docker Environment <a name="docker-environment"/>
 
@@ -68,7 +68,7 @@ Some CMAKE options:
 * -DHALO_USE_GLOG=[ON]: use glob library for logging by default.
 * -DHALO_CCACHE_BUILD=[ON] : enable or disable ccache for build.
 
-Build & use Intel?GPU, please refer to [Support Intel?GPU](./intel_dnnl_gpu.md)
+Build & use Intel® GPU, please refer to [Support Intel® GPU](./intel_dnnl_gpu.md)
 
 ### Unit Tests <a name="unit-tests"/>
 
