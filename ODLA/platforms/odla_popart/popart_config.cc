@@ -64,7 +64,6 @@ void PopartConfig::load_config(const char* file_path) {
   popart::logging::info("use default config");
   use_default();
   if (file_path != nullptr) load_from_file(file_path);
-  print();
 }
 
 void PopartConfig::parse_from_json(const json& jf) {
@@ -108,7 +107,6 @@ void PopartConfig::parse_from_json(const json& jf) {
                            element.value()[1]);
     }
   }
-
   if (jf.contains("queue_type"))
     queue_type_ = jf["queue_type"].get<std::string>();
   else
@@ -119,6 +117,7 @@ void PopartConfig::parse_from_json(const json& jf) {
   else
     queue_capacity_ = 1024 * 1024;
   if (jf.contains("debug")) debug_ = jf["debug"].get<bool>();
+  print();
 
   inited_ = true;
 }
