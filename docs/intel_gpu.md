@@ -74,6 +74,16 @@ Add `-lodla_dnnl_gpu` in link cmd.
 
 ## Execute the Binary
 
+Since the Intel GPU driver only supports Ubuntu 20, please run the binary in Ubuntu 20.
+The building environment could be other Ubuntu version, like HALO build docker container is Ubuntu 18.
+
+Set path for binary and library:
+```
+export HALO_ROOT=/xxx/halo
+export PATH=$HALO_ROOT/heterogeneity-aware-lowering-and-optimization/build/bin/:$PATH
+export LD_LIBRARY_PATH=$DNNLROOT/lib:$HALO_ROOT/heterogeneity-aware-lowering-and-optimization/build/lib:$LD_LIBRARY_PATH
+```
+
 If the build & running time environment are different, you would meet error to miss: libprotobuf.so.3.9.1.0
 Please search and copy it from build environment to running time.
 
