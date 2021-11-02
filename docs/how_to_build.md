@@ -68,7 +68,7 @@ Some CMAKE options:
 * -DHALO_USE_GLOG=[ON]: use glob library for logging by default.
 * -DHALO_CCACHE_BUILD=[ON] : enable or disable ccache for build.
 
-Build & use Intel® GPU, please refer to [Support Intel® GPU](./intel_dnnl_gpu.md)
+Build & use Intel® GPU, please refer to [Support Intel® GPU](./intel_gpu.md)
 
 ### Unit Tests <a name="unit-tests"/>
 
