@@ -65,13 +65,6 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
       PopartConfig::instance()->set_load_cache(true);
       PopartConfig::instance()->set_cache_path(reinterpret_cast<char*>(value));
       PopartConfig::instance()->extract_config_from_cache();
-      _odla_computation::instance()->set_executor();
-      if (PopartConfig::instance()->execution_mode() == PARALLEL ||
-          PopartConfig::instance()->execution_mode() == PIPELINE) {
-        QManager::instance()->createQ(PopartConfig::instance()->queue_type());
-        QManager::instance()->getQ()->init(
-            PopartConfig::instance()->queue_capacity());
-      }
       break;
     default:
       std::cerr << "Unsupported property type: " << type << std::endl;
@@ -105,13 +98,13 @@ odla_status odla_CreateComputation(odla_computation* comp) {
   // Read the config file
   if (!PopartConfig::instance()->inited()) {
     PopartConfig::instance()->load_config(std::getenv("ODLA_POPART_CONFIG"));
-    _odla_computation::instance()->set_executor();
-    if (PopartConfig::instance()->execution_mode() == PARALLEL ||
-        PopartConfig::instance()->execution_mode() == PIPELINE) {
-      QManager::instance()->createQ(PopartConfig::instance()->queue_type());
-      QManager::instance()->getQ()->init(
-          PopartConfig::instance()->queue_capacity());
-    }
+  }
+  _odla_computation::instance()->set_executor();
+  if (PopartConfig::instance()->execution_mode() == PARALLEL ||
+      PopartConfig::instance()->execution_mode() == PIPELINE) {
+    QManager::instance()->createQ(PopartConfig::instance()->queue_type());
+    QManager::instance()->getQ()->init(
+        PopartConfig::instance()->queue_capacity());
   }
   return ODLA_SUCCESS;
 }

@@ -108,6 +108,10 @@ class PopartConfig {
   inline bool save_model() { return save_model_; }
   inline const std::string& load_onnx_path() { return load_onnx_path_; }
   inline const std::string& save_model_path() { return save_model_path_; }
+  inline const std::string& get_default_config_string() {
+    return default_config_string_;
+    ;
+  }
   inline const int ipu_num() { return ipu_num_; }
   inline bool no_pipeline() { return pipeline_setting_.empty(); }
   inline std::string queue_type() { return queue_type_; }
@@ -116,9 +120,6 @@ class PopartConfig {
   inline bool inited() { return inited_; }
   inline std::shared_ptr<std::ifstream> get_cache_fs() { return cache_fs; }
   inline void set_cache_fs(std::shared_ptr<std::ifstream> fs) { cache_fs = fs; }
-  inline std::string get_default_config_string() {
-    return default_config_string_;
-  }
 
   inline bool load_cache() { return load_cache_; }
   inline const std::string load_cache_path() { return cache_path_; }
