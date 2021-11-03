@@ -55,6 +55,8 @@ typedef float \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5
 \item 
 typedef double \mbox{\hyperlink{odla__common_8h_a956bdf1765e13ccacb04cbf02de7d0b3}{odla\+\_\+float64}}
 \item 
+typedef const char $\ast$ \mbox{\hyperlink{odla__common_8h_abd5c0aa787a6e04de64aef40f80c8cc2}{odla\+\_\+string}}
+\item 
 typedef \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} \mbox{\hyperlink{odla__common_8h_a86f265601c0773152f4e193a8614c0ac}{odla\+\_\+bool}}
 \item 
 \mbox{\Hypertarget{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}\label{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}} 
@@ -97,6 +99,7 @@ enum {\bfseries odla\+\_\+element\+\_\+type} \{ \newline
 , {\bfseries ODLA\+\_\+\+FLOAT64}
 , \newline
 {\bfseries ODLA\+\_\+\+BOOL}
+, {\bfseries ODLA\+\_\+\+STRING}
  \}
 \item 
 enum \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} \{ \newline
@@ -134,7 +137,7 @@ This file defines the ODLA basic common types.
 
 16-\/bit brain floating point type 
 
-Definition at line 88 of file odla\+\_\+common.\+h.
+Definition at line 89 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_a86f265601c0773152f4e193a8614c0ac}\label{odla__common_8h_a86f265601c0773152f4e193a8614c0ac}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_bool@{odla\_bool}}
@@ -144,7 +147,7 @@ Definition at line 88 of file odla\+\_\+common.\+h.
 
 boolean type 
 
-Definition at line 97 of file odla\+\_\+common.\+h.
+Definition at line 99 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_a64ee51987605659050cbe1ef64941f1d}\label{odla__common_8h_a64ee51987605659050cbe1ef64941f1d}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_float16@{odla\_float16}}
@@ -154,7 +157,7 @@ Definition at line 97 of file odla\+\_\+common.\+h.
 
 16-\/bit floating point type 
 
-Definition at line 87 of file odla\+\_\+common.\+h.
+Definition at line 88 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}\label{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_float32@{odla\_float32}}
@@ -164,7 +167,7 @@ Definition at line 87 of file odla\+\_\+common.\+h.
 
 32-\/bit floating point type 
 
-Definition at line 89 of file odla\+\_\+common.\+h.
+Definition at line 90 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_a956bdf1765e13ccacb04cbf02de7d0b3}\label{odla__common_8h_a956bdf1765e13ccacb04cbf02de7d0b3}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_float64@{odla\_float64}}
@@ -174,7 +177,7 @@ Definition at line 89 of file odla\+\_\+common.\+h.
 
 64-\/bit floating point type 
 
-Definition at line 90 of file odla\+\_\+common.\+h.
+Definition at line 91 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_a6fecbc127ee239fc550a1568bd0f44c2}\label{odla__common_8h_a6fecbc127ee239fc550a1568bd0f44c2}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_int16@{odla\_int16}}
@@ -184,7 +187,7 @@ Definition at line 90 of file odla\+\_\+common.\+h.
 
 16-\/bit signed integer type 
 
-Definition at line 64 of file odla\+\_\+common.\+h.
+Definition at line 65 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}\label{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_int32@{odla\_int32}}
@@ -194,7 +197,7 @@ Definition at line 64 of file odla\+\_\+common.\+h.
 
 32-\/bit signed integer type 
 
-Definition at line 65 of file odla\+\_\+common.\+h.
+Definition at line 66 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_a4c8498c0bc04a3dc2e8683c1c9bd3aa9}\label{odla__common_8h_a4c8498c0bc04a3dc2e8683c1c9bd3aa9}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_int64@{odla\_int64}}
@@ -204,7 +207,7 @@ Definition at line 65 of file odla\+\_\+common.\+h.
 
 64-\/bit signed integer type 
 
-Definition at line 66 of file odla\+\_\+common.\+h.
+Definition at line 67 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_ab759367dbc391f2a4c1ef47fc12640d1}\label{odla__common_8h_ab759367dbc391f2a4c1ef47fc12640d1}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_int8@{odla\_int8}}
@@ -214,7 +217,7 @@ Definition at line 66 of file odla\+\_\+common.\+h.
 
 8-\/bit signed integer type 
 
-Definition at line 63 of file odla\+\_\+common.\+h.
+Definition at line 64 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_aaaa5d01bda022f8b6f4ff38680741426}\label{odla__common_8h_aaaa5d01bda022f8b6f4ff38680741426}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_qint16@{odla\_qint16}}
@@ -224,7 +227,7 @@ Definition at line 63 of file odla\+\_\+common.\+h.
 
 16-\/bit signed quantized integer type 
 
-Definition at line 74 of file odla\+\_\+common.\+h.
+Definition at line 75 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_a1766e33e280d3cf1638c892d9246b47d}\label{odla__common_8h_a1766e33e280d3cf1638c892d9246b47d}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_qint32@{odla\_qint32}}
@@ -234,7 +237,7 @@ Definition at line 74 of file odla\+\_\+common.\+h.
 
 32-\/bit signed quantized integer type 
 
-Definition at line 75 of file odla\+\_\+common.\+h.
+Definition at line 76 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_ae11db7721a08fec274632164c0afd399}\label{odla__common_8h_ae11db7721a08fec274632164c0afd399}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_qint64@{odla\_qint64}}
@@ -244,7 +247,7 @@ Definition at line 75 of file odla\+\_\+common.\+h.
 
 64-\/bit signed quantized integer type 
 
-Definition at line 76 of file odla\+\_\+common.\+h.
+Definition at line 77 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_aacf1be22ddf1341e1d39369fd39c2f72}\label{odla__common_8h_aacf1be22ddf1341e1d39369fd39c2f72}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_qint8@{odla\_qint8}}
@@ -254,7 +257,7 @@ Definition at line 76 of file odla\+\_\+common.\+h.
 
 8-\/bit signed quantized integer type 
 
-Definition at line 73 of file odla\+\_\+common.\+h.
+Definition at line 74 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_a24af12d9854e5945e989ce9c660e3faf}\label{odla__common_8h_a24af12d9854e5945e989ce9c660e3faf}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_quint16@{odla\_quint16}}
@@ -264,7 +267,7 @@ Definition at line 73 of file odla\+\_\+common.\+h.
 
 16-\/bit unsigned quantized integer type 
 
-Definition at line 80 of file odla\+\_\+common.\+h.
+Definition at line 81 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_ac7491c5982654776eb48710a97c33e75}\label{odla__common_8h_ac7491c5982654776eb48710a97c33e75}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_quint32@{odla\_quint32}}
@@ -274,7 +277,7 @@ Definition at line 80 of file odla\+\_\+common.\+h.
 
 32-\/bit unsigned quantized integer type 
 
-Definition at line 82 of file odla\+\_\+common.\+h.
+Definition at line 83 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_a02772eefb47a8a4219be7e23d56cbe24}\label{odla__common_8h_a02772eefb47a8a4219be7e23d56cbe24}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_quint64@{odla\_quint64}}
@@ -284,7 +287,7 @@ Definition at line 82 of file odla\+\_\+common.\+h.
 
 64-\/bit unsigned quantized integer type 
 
-Definition at line 84 of file odla\+\_\+common.\+h.
+Definition at line 85 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_a47681b75cefcd1e2355ef155beb6931b}\label{odla__common_8h_a47681b75cefcd1e2355ef155beb6931b}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_quint8@{odla\_quint8}}
@@ -294,7 +297,17 @@ Definition at line 84 of file odla\+\_\+common.\+h.
 
 8-\/bit unsigned quantized integer type 
 
-Definition at line 78 of file odla\+\_\+common.\+h.
+Definition at line 79 of file odla\+\_\+common.\+h.
+
+\mbox{\Hypertarget{odla__common_8h_abd5c0aa787a6e04de64aef40f80c8cc2}\label{odla__common_8h_abd5c0aa787a6e04de64aef40f80c8cc2}} 
+\index{odla\_common.h@{odla\_common.h}!odla\_string@{odla\_string}}
+\index{odla\_string@{odla\_string}!odla\_common.h@{odla\_common.h}}
+\doxysubsubsection{\texorpdfstring{odla\_string}{odla\_string}}
+{\footnotesize\ttfamily typedef const char$\ast$ \mbox{\hyperlink{odla__common_8h_abd5c0aa787a6e04de64aef40f80c8cc2}{odla\+\_\+string}}}
+
+pointer to NULL-\/terminated string 
+
+Definition at line 92 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_a06050332dcc769101e4de49f7ccc2139}\label{odla__common_8h_a06050332dcc769101e4de49f7ccc2139}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_uint16@{odla\_uint16}}
@@ -304,7 +317,7 @@ Definition at line 78 of file odla\+\_\+common.\+h.
 
 16-\/bit unsigned integer type 
 
-Definition at line 68 of file odla\+\_\+common.\+h.
+Definition at line 69 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}\label{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_uint32@{odla\_uint32}}
@@ -314,7 +327,7 @@ Definition at line 68 of file odla\+\_\+common.\+h.
 
 32-\/bit unsigned integer type 
 
-Definition at line 69 of file odla\+\_\+common.\+h.
+Definition at line 70 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_aeb84ef9d7f788f94b03b14ad3517b374}\label{odla__common_8h_aeb84ef9d7f788f94b03b14ad3517b374}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_uint64@{odla\_uint64}}
@@ -324,7 +337,7 @@ Definition at line 69 of file odla\+\_\+common.\+h.
 
 64-\/bit unsigned integer type 
 
-Definition at line 70 of file odla\+\_\+common.\+h.
+Definition at line 71 of file odla\+\_\+common.\+h.
 
 \mbox{\Hypertarget{odla__common_8h_a865438a9ae649ef089e0e577dabc280d}\label{odla__common_8h_a865438a9ae649ef089e0e577dabc280d}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_uint8@{odla\_uint8}}
@@ -334,7 +347,7 @@ Definition at line 70 of file odla\+\_\+common.\+h.
 
 8-\/bit unsigned integer type 
 
-Definition at line 67 of file odla\+\_\+common.\+h.
+Definition at line 68 of file odla\+\_\+common.\+h.
 
 
 
@@ -389,26 +402,26 @@ ODLA\+\_\+\+UNRECOVERABLE\+\_\+\+ERR&unrecoverable error \\
 \end{DoxyEnumFields}
 
 
-Definition at line 137 of file odla\+\_\+common.\+h.
+Definition at line 140 of file odla\+\_\+common.\+h.
 
 
 \begin{DoxyCode}{0}
-\DoxyCodeLine{137              \{}
-\DoxyCodeLine{138   ODLA\_SUCCESS,}
-\DoxyCodeLine{140   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a6d455c06ecdf45fe88b1e126ca213087}{ODLA\_DL\_ERROR}},}
-\DoxyCodeLine{141   ODLA\_FILE\_NOT\_EXIST,}
-\DoxyCodeLine{143   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a5b894b19f9456cae708edc778f63218f}{ODLA\_INVALID\_PARAM}},}
-\DoxyCodeLine{145   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a3bbe59e41327500a9a709ae05af34dd1}{ODLA\_MEM\_ERROR}},}
-\DoxyCodeLine{146   ODLA\_UNSUPPORTED\_DATATYPE,}
-\DoxyCodeLine{147   ODLA\_UNSUPPORTED\_DEVICE\_TYPE,}
-\DoxyCodeLine{149   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29abb64d0b5146c0236d571cb897384853e}{ODLA\_UNSUPPORTED\_OP}},}
-\DoxyCodeLine{151   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a2a2087e4e487e8ec867e356bdcc95f00}{ODLA\_TIMEOUT}},}
-\DoxyCodeLine{153   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a0c19e9d42ae016f5b9dc9a7054077d13}{ODLA\_INTERNAL\_LOGIC\_ERR}},}
-\DoxyCodeLine{155   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a78d98eb3ea302582a487afa76c9f1344}{ODLA\_RECOVERABLE\_ERR}},}
-\DoxyCodeLine{157   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a4f2a588c748813827894ececed6a4547}{ODLA\_PARTITION\_RESET}},}
-\DoxyCodeLine{158   ODLA\_FULL\_RESET,}
-\DoxyCodeLine{160   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a7f249f9bdd98e4745333b2c83ac73a7c}{ODLA\_UNRECOVERABLE\_ERR}},}
-\DoxyCodeLine{161   ODLA\_FAILURE,}
-\DoxyCodeLine{162 \} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}};}
+\DoxyCodeLine{140              \{}
+\DoxyCodeLine{141   ODLA\_SUCCESS,}
+\DoxyCodeLine{143   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a6d455c06ecdf45fe88b1e126ca213087}{ODLA\_DL\_ERROR}},}
+\DoxyCodeLine{144   ODLA\_FILE\_NOT\_EXIST,}
+\DoxyCodeLine{146   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a5b894b19f9456cae708edc778f63218f}{ODLA\_INVALID\_PARAM}},}
+\DoxyCodeLine{148   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a3bbe59e41327500a9a709ae05af34dd1}{ODLA\_MEM\_ERROR}},}
+\DoxyCodeLine{149   ODLA\_UNSUPPORTED\_DATATYPE,}
+\DoxyCodeLine{150   ODLA\_UNSUPPORTED\_DEVICE\_TYPE,}
+\DoxyCodeLine{152   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29abb64d0b5146c0236d571cb897384853e}{ODLA\_UNSUPPORTED\_OP}},}
+\DoxyCodeLine{154   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a2a2087e4e487e8ec867e356bdcc95f00}{ODLA\_TIMEOUT}},}
+\DoxyCodeLine{156   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a0c19e9d42ae016f5b9dc9a7054077d13}{ODLA\_INTERNAL\_LOGIC\_ERR}},}
+\DoxyCodeLine{158   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a78d98eb3ea302582a487afa76c9f1344}{ODLA\_RECOVERABLE\_ERR}},}
+\DoxyCodeLine{160   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a4f2a588c748813827894ececed6a4547}{ODLA\_PARTITION\_RESET}},}
+\DoxyCodeLine{161   ODLA\_FULL\_RESET,}
+\DoxyCodeLine{163   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a7f249f9bdd98e4745333b2c83ac73a7c}{ODLA\_UNRECOVERABLE\_ERR}},}
+\DoxyCodeLine{164   ODLA\_FAILURE,}
+\DoxyCodeLine{165 \} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}};}
 
 \end{DoxyCode}

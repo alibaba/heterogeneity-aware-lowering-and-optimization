@@ -5,7 +5,72 @@
 \item 
 struct \mbox{\hyperlink{structodla__value__quant__info}{odla\+\_\+value\+\_\+quant\+\_\+info}}
 \begin{DoxyCompactList}\small\item\em Quantization info for each odla value. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__quantization_8h_acfad12ea0cf70193afa3c560b9c50adb}{odla\+\_\+\+Dequantize}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} scale, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} zero\+\_\+point, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} axis, odla\+\_\+element\+\_\+type target\+\_\+data\+\_\+type, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
+\begin{DoxyCompactList}\small\item\em Dequantize a tensor. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__quantization_8h_a5bfd610fde89d3679f13658e7a48f355}{odla\+\_\+\+Quantize}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} scale, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} zero\+\_\+point, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} axis, odla\+\_\+element\+\_\+type target\+\_\+data\+\_\+type, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
+\begin{DoxyCompactList}\small\item\em Quantize a tensor. \end{DoxyCompactList}\end{DoxyCompactItemize}
 
 
 \doxysubsection{Detailed Description}
 This file defines the ODLA quantization related operators. 
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{odla__ops__quantization_8h_acfad12ea0cf70193afa3c560b9c50adb}\label{odla__ops__quantization_8h_acfad12ea0cf70193afa3c560b9c50adb}} 
+\index{odla\_ops\_quantization.h@{odla\_ops\_quantization.h}!odla\_Dequantize@{odla\_Dequantize}}
+\index{odla\_Dequantize@{odla\_Dequantize}!odla\_ops\_quantization.h@{odla\_ops\_quantization.h}}
+\doxysubsubsection{\texorpdfstring{odla\_Dequantize()}{odla\_Dequantize()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Dequantize (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{scale,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{zero\+\_\+point,  }\item[{\mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}}}]{axis,  }\item[{odla\+\_\+element\+\_\+type}]{target\+\_\+data\+\_\+type,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
+
+
+
+Dequantize a tensor. 
+
+Converts a quantized tensor to the full precision tensor. 
+\begin{DoxyParams}{Parameters}
+{\em input} & the input value \\
+\hline
+{\em scale} & scale for input \\
+\hline
+{\em zero\+\_\+point} & zero point for input \\
+\hline
+{\em axis} & the axis of the dequantizing. Ignored if scale is a scalar \\
+\hline
+{\em target\+\_\+data\+\_\+type} & the data type of full precision output \\
+\hline
+{\em value\+\_\+id} & a unique value id (can be NULL)\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+value 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__ops__quantization_8h_a5bfd610fde89d3679f13658e7a48f355}\label{odla__ops__quantization_8h_a5bfd610fde89d3679f13658e7a48f355}} 
+\index{odla\_ops\_quantization.h@{odla\_ops\_quantization.h}!odla\_Quantize@{odla\_Quantize}}
+\index{odla\_Quantize@{odla\_Quantize}!odla\_ops\_quantization.h@{odla\_ops\_quantization.h}}
+\doxysubsubsection{\texorpdfstring{odla\_Quantize()}{odla\_Quantize()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Quantize (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{scale,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{zero\+\_\+point,  }\item[{\mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}}}]{axis,  }\item[{odla\+\_\+element\+\_\+type}]{target\+\_\+data\+\_\+type,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
+
+
+
+Quantize a tensor. 
+
+Converts a tensor to low precision tensor. 
+\begin{DoxyParams}{Parameters}
+{\em input} & the input value \\
+\hline
+{\em scale} & scale for input \\
+\hline
+{\em zero\+\_\+point} & zero point for input \\
+\hline
+{\em axis} & the axis of the quantizing. Ignored if scale is a scalar \\
+\hline
+{\em target\+\_\+data\+\_\+type} & the data type of low precision output \\
+\hline
+{\em value\+\_\+id} & a unique value id (can be NULL)\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+value 
+\end{DoxyReturn}
