@@ -88,6 +88,8 @@ sudo clinfo -l
 
 Set oneAPI Packages
 
+**Note**, please make sure the **release of oneAPI are same in running and build environments**, to avoid the possible compatibility issue.
+
 ```
 source /opt/intel/oneapi/compiler/latest/env/vars.sh
 source /opt/intel/oneapi/dnnl/latest/env/vars.sh
