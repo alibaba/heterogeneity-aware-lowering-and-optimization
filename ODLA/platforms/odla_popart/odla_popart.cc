@@ -99,7 +99,8 @@ odla_status _odla_computation::compile_and_export() {
   int file_prefix = cache_file_name.rfind(file_suffix);
   if (file_prefix == std::string::npos ||
       file_prefix + file_suffix.size() < cache_file_name.size()) {
-    popart::logging::err("Bad cache file name");
+    popart::logging::err(
+        "Bad cache file name. File name should end with '.popart'");
     return ODLA_FAILURE;
   }
   if (file_prefix == std::string::npos) {
@@ -107,9 +108,9 @@ odla_status _odla_computation::compile_and_export() {
   }
   std::string config_file_name(cache_file_name.substr(0, file_prefix) +
                                ".json");
-  std::fstream cache_fs(cache_file_name,
-                        std::ios_base::out | std::ifstream::binary |
-                        std::ios_base::trunc);
+  std::fstream cache_fs(cache_file_name, std::ios_base::out |
+                                             std::ifstream::binary |
+                                             std::ios_base::trunc);
   if (!cache_fs.is_open()) {
     popart::logging::err("Open or create cache file falied");
     return ODLA_FAILURE;
@@ -120,7 +121,7 @@ odla_status _odla_computation::compile_and_export() {
     config_fs.open(config_file_name, std::ios_base::in | std::ifstream::binary);
     if (!config_fs.is_open()) {
       popart::logging::warn(
-          "invalid config file name:[ {} ] will use default config",
+          "Open config file failed:[ {} ] will use default config",
           config_file_name);
       PopartConfig::instance()->use_default();
       config_string = PopartConfig::instance()->get_default_config_string();
@@ -233,7 +234,7 @@ odla_status _odla_computation::init(bool is_compile) {
       }
 
       if (!is_compile) {
-        if (PopartConfig::instance()->load_cache()) {
+        if (PopartConfig::instance()->load_or_save_cache()) {
           popart::logging::info("Load cachefile from existing stream");
           std::string version_string(popart::core::versionString());
           if (!PopartConfig::instance()->sdk_version_match(version_string)) {
@@ -244,12 +245,18 @@ odla_status _odla_computation::init(bool is_compile) {
           auto cache_fs = PopartConfig::instance()->get_cache_fs();
           if (cache_fs->is_open()) {
             try {
+              cache_fs->seekg(0, std::ios::beg);
+              int config_len = 0;
+              cache_fs->read((char*)&config_len, sizeof(config_len));
+              cache_fs->seekg(config_len + sizeof(config_len), std::ios::beg);
               new_session->loadExecutableFromStream(*(cache_fs.get()));
             } catch (std::exception& e) {
               popart::logging::err("bad cache file, will compile the graph:{}",
                                    e.what());
+              return ODLA_FAILURE;
             } catch (...) {
               popart::logging::err("bad cache file, will compile the graph");
+              return ODLA_FAILURE;
             }
           }
         }
@@ -285,7 +292,7 @@ odla_status _odla_computation::init(bool is_compile) {
           popart::logging::info("Poplar unknown exception caught, {}", e.what());
           return ODLA_UNRECOVERABLE_ERR;
         } catch (...) {
-          popart::logging::info("Poplar unknown exception caught, {}", e.what());
+          popart::logging::info("Poplar unknown exception caught");
           return ODLA_UNRECOVERABLE_ERR;
 		}
         // If in parallel mode, start the thread
@@ -304,6 +311,7 @@ odla_status _odla_computation::init(bool is_compile) {
           std::move(new_session); // set session after all initialization done.
     }
   }
+  return ODLA_SUCCESS;
 }
 
 // Now we set this by config file, should set by the caller?

@@ -59,8 +59,9 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
       comp->opts.cache_dir = (reinterpret_cast<char*>(value));
       break;
     case 1001: // load cache directly, need set path of cache file
-      PopartConfig::instance()->set_load_cache(true);
-      PopartConfig::instance()->set_cache_path(reinterpret_cast<char*>(value));
+      PopartConfig::instance()->set_load_or_save_cache(true);
+      PopartConfig::instance()->set_cache_path(
+          (std::string) reinterpret_cast<char*>(value));
       break;
     default:
       std::cerr << "Unsupported property type: " << type << std::endl;
@@ -120,21 +121,25 @@ odla_status odla_CreateComputation(odla_computation* comp) {
     }
   }
   // Read the config file
+  popart::logging::info("loading config");
   if (!PopartConfig::instance()->inited()) {
-    if (PopartConfig::instance()->load_cache()) {
-      odla_status ret = PopartConfig::instance()->extract_config_from_cache();
-      if (ret == ODLA_FAILURE) {
-        popart::logging::err("load config from cache failed");
-        return ret;
-      }
-    } else {
-      auto ret = PopartConfig::instance()->load_config(
-          std::getenv("ODLA_POPART_CONFIG"));
-      if (ret != ODLA_SUCCESS) {
-        popart::logging::err("error load config");
-        return ret;
-      }
+    auto ret = PopartConfig::instance()->load_config(
+        std::getenv("ODLA_POPART_CONFIG"));
+    if (ret != ODLA_SUCCESS) {
+      popart::logging::err("error load config");
+      return ret;
     }
+  }
+  odla_status status = _odla_computation::instance()->set_executor();
+  if (status != ODLA_SUCCESS) {
+    popart::logging::err("set_executor failed");
+    return ODLA_FAILURE;
+  }
+  if (PopartConfig::instance()->execution_mode() == PARALLEL ||
+      PopartConfig::instance()->execution_mode() == PIPELINE) {
+    QManager::instance()->createQ(PopartConfig::instance()->queue_type());
+    QManager::instance()->getQ()->init(
+        PopartConfig::instance()->queue_capacity());
   }
   odla_status status = _odla_computation::instance()->set_executor();
   if (status != ODLA_SUCCESS) {
@@ -178,6 +183,8 @@ odla_status odla_DestroyComputation(odla_computation comp) {
     comp->release_session();
     _odla_computation::destruct(); // release the real computation
   }
+  popart::logging::info("reset config state");
+  PopartConfig::instance()->reset_init_state();
 
   return ODLA_SUCCESS;
 }
