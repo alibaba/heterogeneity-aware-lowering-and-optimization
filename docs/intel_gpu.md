@@ -72,39 +72,8 @@ export LD_LIBRARY_PATH=$DNNLROOT/lib:$HALO_ROOT/heterogeneity-aware-lowering-and
 
 Add `-lodla_dnnl_gpu` in link cmd.
 
-## Execute the Binary in Host
+## Test the Binary in Host
 
-Since the Intel GPU driver only supports Ubuntu 20, please run the binary in Ubuntu 20.
-If the building environment is not Ubuntu 20, please switch to Ubuntu 20 to execute it.
-
-Check Hardware
-
-Run the cmd to check the Intel GPU is ready:
-```
-clinfo -l
-or
-sudo clinfo -l
-```
-
-Set oneAPI Packages
-
-**Note**, please make sure the **release of oneAPI are same in running and build environments**, to avoid the possible compatibility issue.
-
-```
-source /opt/intel/oneapi/compiler/latest/env/vars.sh
-source /opt/intel/oneapi/dnnl/latest/env/vars.sh
-source /opt/intel/oneapi/dpl/latest/env/vars.sh
-source /opt/intel/oneapi/tbb/latest/env/vars.sh
-```
-
-Set path for binary and library:
-```
-export HALO_ROOT=/xxx/halo
-export PATH=$HALO_ROOT/heterogeneity-aware-lowering-and-optimization/build/bin/:$PATH
-export LD_LIBRARY_PATH=$DNNLROOT/lib:$HALO_ROOT/heterogeneity-aware-lowering-and-optimization/build/lib:$LD_LIBRARY_PATH
-```
-
-If the build & running time environment are different, you would meet error to miss: libprotobuf.so.3.9.1.0
-Please search and copy it from build environment to running time.
+Please refer to [Test HALO on Intel® GPU](test_intel_gpu.md)
 
 
