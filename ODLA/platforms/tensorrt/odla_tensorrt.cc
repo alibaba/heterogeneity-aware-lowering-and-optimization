@@ -42,6 +42,11 @@ using namespace nvinfer1;
 #error This library requires minimum ODLA version 0.5
 #endif
 
+// Explicitly load cuda runtime before all other ctors, so cuda rt will be
+// released after calling dtors of all other global objs. This avoids the error
+// of "driver shutting down".
+static auto Dummy = cudaFree(0);
+
 struct TrtDestroyer {
   template <typename T>
   void operator()(T* t) {
