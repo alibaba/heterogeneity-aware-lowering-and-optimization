@@ -39,6 +39,7 @@ list(APPEND INST_TDS
   nn_rnn_instructions.td
   nn_instructions.td
   object_detection_instructions.td
+  quantization_instructions.td
   customize_instructions.td
 )
 tblgen_instructions(${INST_TDS})

@@ -1,7 +1,7 @@
 #!/bin/bash -xe
 
 REPO="registry-intl.us-west-1.aliyuncs.com/computation/halo"
-VER="0.7.3"
+VER="0.7.4"
 FLAVOR="devel"
 
 MOUNT_DIR="$PWD"
@@ -34,7 +34,7 @@ cmake_flags="$cmake_flags -DHALO_USE_STATIC_PROTOBUF=ON -DCPACK_SYSTEM_NAME=ubun
 gid=$(id -g ${USER})
 group=$(id -g -n ${USER})
 uid=$(id -u ${USER})
-extra_mnt="-v /opt/poplar_sdk:/opt/poplar_sdk:ro"
+extra_mnt="-v /opt/poplar_sdk-ubuntu_18_04-2.3.0_774:/opt/poplar_sdk:ro"
 mkdir -p /tmp/ubuntu.cache
 extra_mnt="$extra_mnt -v /tmp/ubuntu.cache:/cache"
 

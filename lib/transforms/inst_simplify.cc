@@ -237,17 +237,30 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
     }
   }
 
-  // ADD/SUB(x, 0) ==> x.
-  if ((opc == OpCode::ADD || opc == OpCode::SUB) && IsA<Constant>(op1)) {
+  IRBuilder builder(binary_inst->GetParent());
+  // ADD/SUB(x, 0) ==> x, SUB(0, x) ==> -x
+  if ((opc == OpCode::ADD || (opc == OpCode::SUB && !has_swapped)) &&
+      IsA<Constant>(op1)) {
     const Constant* c = DynCast<Constant>(op1);
     if (c->HasSameValueOf(0)) {
-      return {orig_def, op0};
+      if (opc == OpCode::ADD || !has_swapped) {
+        return {orig_def, op0};
+      }
+      auto neg = builder.CreateNeg(binary_inst->GetName(), op0);
+      return {orig_def, *neg};
     }
   }
 
-  IRBuilder builder(binary_inst->GetParent());
   builder.SetInsertAfter(binary_inst);
   ConstantBuilder cb(binary_inst->GetParent()->GetParent());
+  // SUB(x, x) ==> 0
+  if (opc == OpCode::SUB && op0 == op1) {
+    const auto& ty = binary_inst->GetResultType();
+    DefaultDataLayout dl;
+    std::vector<char> data(dl.DataLayout::Bytes(ty), 0);
+    auto zero = cb.CreateConstant(binary_inst->GetName(), ty, data.data());
+    return {orig_def, *zero};
+  }
 
   // fuse to fully_connected
   if (opc == OpCode::ADD && fuse_fully_connected) {
@@ -2520,6 +2533,42 @@ static bool FixUpLSTM(LSTMInst* inst) {
   }
 
   return changed;
+}
+
+std::pair<Def, Def> InstSimplify::RunOnInstruction(UniqueInst* inst) {
+  Def orig_def{inst, 1};
+  if (!simplify_for_preprocess_) {
+    return {orig_def, orig_def};
+  }
+  const auto& result_type0 = inst->GetResultsTypes()[0];
+  const auto& result_type1 = inst->GetResultsTypes()[1];
+  auto num_uses = inst->GetResultsUses()[0].size();
+  if (!result_type0.IsValid() || !result_type1.IsValid() || num_uses != 0) {
+    return {orig_def, orig_def};
+  }
+
+  auto bitcast_inst = DynCast<BitcastInst>(inst->GetOperand(0));
+  if (bitcast_inst != nullptr && bitcast_inst->GetNumberOfUses() == 1) {
+    auto stack_inst = DynCast<StackInst>(bitcast_inst->GetOperand(0));
+    if (stack_inst != nullptr && stack_inst->GetNumberOfUses() == 1) {
+      bool check_all = true;
+      for (size_t i = 0; i < stack_inst->GetNumOfOperands(); ++i) {
+        const auto& op_i = stack_inst->GetOperand(i);
+        if (!IsA<Argument>(op_i) || !op_i.GetUses().HasOneUse()) {
+          check_all = false;
+          break;
+        }
+      }
+      if (check_all) {
+        ArgumentBuilder arg_builder(inst->GetParent()->GetParent());
+        auto arg = arg_builder.CreateArgument(inst->GetName() + "_preprocess",
+                                              result_type1);
+        return {orig_def, *arg};
+      }
+    }
+  }
+
+  return {orig_def, orig_def};
 }
 
 bool InstSimplify::RunOnBasicBlock(BasicBlock* bb) {

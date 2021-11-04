@@ -182,6 +182,14 @@ def ONNX_DepthToSpace : ONNXExtension<"DepthToSpace"> {
   ];
 }
 
+def ONNX_DequantizeLinear: OpMapping<"DequantizeLinear", Dequantize> {
+   let attr_mapping_ = [ AttributeMapping<"axis", "axis", "1"> ];
+}
+
+def ONNX_Det: OpMapping<"Det", Det>;
+
+def ONNX_DynamicQuantizeLinear: ONNXExtension<"DynamicQuantizeLinear">;
+
 def ONNX_Div : OpMapping<"Div", Div>;
 
 def ONNX_Dropout : ONNXExtension<"Dropout">;
@@ -238,6 +246,10 @@ def ONNX_Greater : OpMapping<"Greater", Cmp> {
   let attr_mapping_ = [AttributeMapping<"", "predicator", "GT">];
 }
 
+def ONNX_GreaterOrEqual : OpMapping<"GreaterOrEqual", Cmp> {
+  let attr_mapping_ = [AttributeMapping<"", "predicator", "GE">];
+}
+
 def ONNX_Identity : ONNXExtension<"Identity">;
 
 def ONNX_LeakyRelu : OpMapping<"LeakyRelu", LeakyRelu> {
@@ -246,6 +258,10 @@ def ONNX_LeakyRelu : OpMapping<"LeakyRelu", LeakyRelu> {
 
 def ONNX_Less : OpMapping<"Less", Cmp> {
   let attr_mapping_ = [AttributeMapping<"", "predicator", "LT">];
+}
+
+def ONNX_LessOrEqual : OpMapping<"LessOrEqual", Cmp> {
+  let attr_mapping_ = [AttributeMapping<"", "predicator", "LE">];
 }
 
 def ONNX_Log : OpMapping<"Log", Log>;
@@ -293,6 +309,12 @@ def ONNX_MaxPool : OpMapping<"MaxPool", PoolingMax> {
 
 def ONNX_Min : OpMapping<"Min", Minimum>;
 
+def ONNX_Mod : OpMapping<"Mod", Mod> {
+   let attr_mapping_ = [
+     AttributeMapping<"fmod", "fmod", "0">,
+   ];
+ }
+
 def ONNX_Mul : OpMapping<"Mul", Mul>;
 
 def ONNX_Neg : OpMapping<"Neg", Neg>;
@@ -335,6 +357,14 @@ def ONNX_Pow : OpMapping<"Pow", Pow>;
 
 def ONNX_PRelu: OpMapping<"PRelu", PRelu>;
 
+def ONNX_QuantizeLinear: OpMapping<"QuantizeLinear", Quantize> {
+   let attr_mapping_ = [
+     AttributeMapping<"axis", "axis", "1">,
+     AttributeMapping<"", "bits", "8">,
+     AttributeMapping<"", "sign_bit", "false">
+   ];
+}
+
 def ONNX_Reciprocal : OpMapping<"Reciprocal", Rcp>;
 
 let attr_mapping_ = [
@@ -376,6 +406,13 @@ def ONNX_Selu : OpMapping<"Selu", Selu> {
 }
 
 def ONNX_Shape : ONNXExtension<"Shape">;
+
+def ONNX_Shrink : OpMapping<"Shrink", Shrink>{
+  let attr_mapping_ = [
+    AttributeMapping<"bias", "bias", "0.0">,
+    AttributeMapping<"lambd", "lambd", "0.5">
+    ];
+}
 
 def ONNX_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
 

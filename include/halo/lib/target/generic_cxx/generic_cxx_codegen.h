@@ -33,6 +33,7 @@
 #include "halo/lib/ir/nn_activation_instructions.h"
 #include "halo/lib/ir/nn_cnn_instructions.h"
 #include "halo/lib/ir/nn_instructions.h"
+#include "halo/lib/ir/quantization_instructions.h"
 #include "halo/lib/mm/memory_analyzer.h"
 #include "halo/lib/target/codegen.h"
 
@@ -105,6 +106,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(ConcatInst*) override;
   virtual void RunOnInstruction(ConvertFromStringInst*) override;
   virtual void RunOnInstruction(ConvertToStringInst*) override;
+  virtual void RunOnInstruction(DetInst*) override;
   virtual void RunOnInstruction(DivInst*) override;
   virtual void RunOnInstruction(ErfInst*) override;
   virtual void RunOnInstruction(ExpInst*) override;
@@ -129,6 +131,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(CompressInst*) override;
   virtual void RunOnInstruction(Conv2DInst*) override;
   virtual void RunOnInstruction(Conv2DTransposeInst*) override;
+  virtual void RunOnInstruction(DequantizeInst*) override;
   virtual void RunOnInstruction(GatherInst*) override;
   virtual void RunOnInstruction(GatherElementsInst*) override;
   virtual void RunOnInstruction(GemmInst*) override;
@@ -140,6 +143,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(MatMulInst*) override;
   virtual void RunOnInstruction(MaximumInst*) override;
   virtual void RunOnInstruction(MinimumInst*) override;
+  virtual void RunOnInstruction(ModInst*) override;
   virtual void RunOnInstruction(NegativeLogLikelihoodLossInst*) override;
   virtual void RunOnInstruction(NonMaxSuppressionInst*) override;
   virtual void RunOnInstruction(NegInst*) override;
@@ -152,6 +156,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(PoolingAvgInst*) override;
   virtual void RunOnInstruction(PowInst*) override;
   virtual void RunOnInstruction(PReluInst*) override;
+  virtual void RunOnInstruction(QuantizeInst*) override;
   virtual void RunOnInstruction(RandomUniformInst*) override;
   virtual void RunOnInstruction(ReduceL1Inst*) override;
   virtual void RunOnInstruction(ReduceL2Inst*) override;
@@ -171,6 +176,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(RNNInst*) override;
   virtual void RunOnInstruction(SelectInst*) override;
   virtual void RunOnInstruction(ShiftInst*) override;
+  virtual void RunOnInstruction(ShrinkInst*) override;
   virtual void RunOnInstruction(SItoFPInst*) override;
   virtual void RunOnInstruction(SliceInst*) override;
   virtual void RunOnInstruction(SoftmaxInst*) override;

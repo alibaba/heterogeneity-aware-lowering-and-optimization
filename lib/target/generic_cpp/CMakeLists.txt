@@ -43,12 +43,14 @@ set(SRCS
   onehot.cc
   pad.cc
   pooling.cc
+  quantization.cc
   random.cc
   reduction.cc
   relu.cc
   reshape.cc
   resize.cc
   return.cc
+  shrink.cc
   sigmoid.cc
   hardsigmoid.cc
   slice.cc

@@ -1,6 +1,6 @@
 //===- tfextension_legalizer.cc -------------------------------------------===//
 //
-// Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+// Copyright (C) 2019-2021 Alibaba Group Holding Limited.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -149,22 +149,19 @@ static std::vector<Def> ConvertCast(const TFExtensionInst* ext,
   HLCHECK(attr->GetName() == "Truncate");
   // bool truncate = attr->GetValueAsBool();
   builder->SetInsertAfter(ext);
-  DefaultDataLayout data_layout;
   auto op0 = ext->GetOperand(0);
   if (Type::IsIntegerType(src_type)) {
     if (Type::IsIntegerType(dst_type)) {
-      if (data_layout.Bits(src_type) < data_layout.Bits(dst_type)) {
-        ZExtInst* new_inst = builder->CreateZExt(ext->GetName(), op0);
-        new_inst->SetDataType(dst_type);
-        return {*new_inst};
-      }
-    } else {
-      HLCHECK(Type::IsFloatingPointType(dst_type));
-      SItoFPInst* new_inst = builder->CreateSItoFP(ext->GetName(), op0);
+      ZExtInst* new_inst = builder->CreateZExt(ext->GetName(), op0);
       new_inst->SetDataType(dst_type);
       return {*new_inst};
     }
-  } else if (Type::IsFloatingPointType(src_type)) {
+    HLCHECK(Type::IsFloatingPointType(dst_type));
+    SItoFPInst* new_inst = builder->CreateSItoFP(ext->GetName(), op0);
+    new_inst->SetDataType(dst_type);
+    return {*new_inst};
+  }
+  if (Type::IsFloatingPointType(src_type)) {
     if (Type::IsIntegerType(dst_type)) {
       FPtoSIInst* new_inst = builder->CreateFPtoSI(ext->GetName(), op0);
       new_inst->SetDataType(dst_type);
@@ -190,6 +187,7 @@ static std::vector<Def> ConvertExpandDims(const TFExtensionInst* ext,
   if (!input_type.IsValid() || axis_c == nullptr) {
     return {};
   }
+
   int64_t axis = axis_c->GetDataAsInt64(0);
   int input_rank = input_type.GetNumOfDims();
   HLCHECK(-1 - input_rank <= axis && axis <= input_rank);
@@ -280,6 +278,17 @@ static std::vector<Def> ConvertShape(const TFExtensionInst* ext,
       Type{DataType::INT32, {static_cast<int64_t>(input_type.GetNumOfDims())}},
       shape.data());
   return {*c};
+}
+
+static std::vector<Def> ConvertSize(const TFExtensionInst* ext,
+                                    IRBuilder* builder) {
+  const auto& type = ext->GetOperand(0).GetType();
+  if (!type.IsValid()) {
+    return {};
+  }
+  auto n = type.GetTotalNumOfElements();
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  return {*(cb.CreateConstant(ext->GetName(), Type{DataType::INT64, {1}}, &n))};
 }
 
 static std::vector<Def> ConvertSplit(const TFExtensionInst* ext,
@@ -1012,6 +1021,9 @@ static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
     case TFExtOpCode::QUEUEDEQUEUEV2:
     case TFExtOpCode::IDENTITY: {
       return {tf_inst->GetOperand(0)};
+    }
+    case TFExtOpCode::SIZE: {
+      return ConvertSize(tf_inst, builder);
     }
     case TFExtOpCode::SHAPE: {
       return ConvertShape(tf_inst, builder);
