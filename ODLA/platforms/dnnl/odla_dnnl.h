@@ -105,7 +105,6 @@ struct _odla_computation {
 #else
   _odla_computation() : eng(dnnl::engine::kind::cpu, 0), opts({BF16_DISABLE}) {}
 #endif
-
 };
 
 static inline dnnl::memory::dims getDims(const odla_value_shape& od) {
