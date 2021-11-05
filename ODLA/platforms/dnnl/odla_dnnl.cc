@@ -14,7 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // =============================================================================
-
 #include "odla_dnnl.h"
 
 #include <stdio.h>
@@ -36,6 +35,13 @@
 #include "ODLA/ops/odla_ops_nn.h"
 #include "dnnl_threadpool_iface.hpp"
 #include "dnnl_utils.h"
+
+#ifdef ODLA_BUILD_DNNL_GPU
+#include <CL/sycl.hpp>
+using namespace sycl;
+using namespace std;
+#include "example_utils.hpp"
+#endif
 
 #if !defined(ODLA_VERSION_NUMBER) || (ODLA_VERSION_NUMBER < 50)
 #error This library requires minimum ODLA version 0.5
@@ -224,14 +230,25 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
     auto src_md = dnnl::memory::desc(value->mem.get_desc().dims(),
                                      getDataType(ODLA_FLOAT32),
                                      getFormatTag(value->shape));
+#ifdef ODLA_BUILD_DNNL_GPU
+    auto src_mem = dnnl::memory(src_md, context->comp->eng);
+    write_to_dnnl_memory(const_cast<void*>(data_ptr), src_mem);
+#else
     auto src_mem =
         dnnl::memory(src_md, context->comp->eng, const_cast<void*>(data_ptr));
+#endif
+
     auto r = dnnl::reorder(src_mem, value->mem);
     r.execute(dnnl::stream(context->comp->eng),
               {{DNNL_ARG_FROM, src_mem}, {DNNL_ARG_TO, value->mem}});
   } else {
+#ifdef ODLA_BUILD_DNNL_GPU
+    write_to_dnnl_memory(const_cast<void*>(data_ptr), value->mem);
+#else
     value->mem.set_data_handle(const_cast<void*>(data_ptr));
+#endif
   }
+
   return ODLA_SUCCESS;
 }
 
@@ -263,7 +280,13 @@ odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
   //                      dnnl::memory::format_tag::hwio);
   rewrite_scalar_type(type);
   dnnl::memory::desc md = getMemoryDesc(type);
+
+#ifdef ODLA_BUILD_DNNL_GPU
+  dnnl::memory mem = dnnl::memory(md, g_comp->eng);
+  write_to_dnnl_memory(const_cast<void*>(ptr), mem);
+#else
   dnnl::memory mem = dnnl::memory(md, g_comp->eng, const_cast<void*>(ptr));
+#endif
 
   if (g_comp->opts.bf16_mode == BF16_PERFORMACE_MODE &&
       type.element_type == ODLA_FLOAT32) {
@@ -1191,7 +1214,7 @@ odla_value odla_Compress(odla_value input, odla_value condition,
   if (axis == INT_MAX) {
     axis = 0;
     rank = 1;
-    cond_size = std::min(cond_size, n);
+    cond_size = std::min<long long>(cond_size, n);
   } else {
     axis = axis < 0 ? axis + rank : axis;
     cond_size = std::min(cond_size, shape[axis]);
@@ -1891,11 +1914,20 @@ odla_values odla_TopK(odla_value input, odla_uint32 K, odla_bool largest,
   for (int i = 0; i < input->shape.size; i++) {
     input_shape.push_back(input->shape.dims[i]);
   }
+
+#ifdef ODLA_BUILD_DNNL_GPU
+  auto op = [=]() {
+    dnnl_utils::topk_func_gpu(input->mem, dst_mem, dst_idx_mem, input_shape, K,
+                              largest, sorted, axis);
+  };
+#else
   auto op = [=]() {
     dnnl_utils::topk_func(input_ptr, (float*)dst_mem.get_data_handle(),
                           (int*)dst_idx_mem.get_data_handle(), input_shape, K,
                           largest, sorted, axis);
   };
+#endif
+
   add_op(op);
   auto dst_elements = CreateValue(dst_mem, output_dims, value_ids.value_ids[0]);
   auto dst_idxs = CreateValue(dst_idx_mem, output_dims, value_ids.value_ids[1]);

@@ -99,7 +99,12 @@ struct _odla_computation {
     bufs.push_back(std::vector<char>(len));
     return bufs.back().data();
   }
+
+#ifdef ODLA_BUILD_DNNL_GPU
+  _odla_computation() : eng(dnnl::engine::kind::gpu, 0), opts({BF16_DISABLE}) {}
+#else
   _odla_computation() : eng(dnnl::engine::kind::cpu, 0), opts({BF16_DISABLE}) {}
+#endif
 };
 
 static inline dnnl::memory::dims getDims(const odla_value_shape& od) {
