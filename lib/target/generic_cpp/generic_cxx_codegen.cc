@@ -606,6 +606,11 @@ static void EmitComputationItems(std::ostream* os, const CXXCodeGenOpts& opts) {
     *os << "odla_SetComputationItem(comp, ODLA_OPT_BATCH_SIZE, "
            "(odla_item_value) &opt_batch_size);\n";
   }
+  if (opts.fp16_mode) {
+    *os << "bool fp16_mode = true;\n";
+    *os << "odla_SetComputationItem(comp, ODLA_FP16_MODE, "
+           "(odla_item_value) &fp16_mode);\n";
+  }
   if (opts.bf16_mode != BF16Mode::Disable) {
     *os << "odla_bf16_mode mode = " << GetBF16Mode(opts.bf16_mode) << ";\n";
     *os << "odla_SetComputationItem(comp, ODLA_BF16_MODE, "
