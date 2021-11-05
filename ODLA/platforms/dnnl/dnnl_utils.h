@@ -23,14 +23,12 @@
 
 #ifdef ODLA_BUILD_DNNL_GPU
 
+#include <CL/sycl.hpp>
+#include <iomanip>
+#include <iostream>
 #include <oneapi/dpl/algorithm>
 #include <oneapi/dpl/execution>
 #include <oneapi/dpl/iterator>
-
-#include <iomanip>
-#include <iostream>
-
-#include <CL/sycl.hpp>
 using namespace sycl;
 using namespace std;
 
@@ -43,47 +41,46 @@ using namespace std;
 
 namespace dnnl_utils {
 
-inline void floorbf_func(int len, int16_t *src, float *dst) { assert(0); }
+inline void floorbf_func(int len, int16_t* src, float* dst) { assert(0); }
 
-inline void floorf_func(int len, float *src, float *dst) { assert(0); }
+inline void floorf_func(int len, float* src, float* dst) { assert(0); }
 
-inline void rsqrtf_func(int len, float *src, float *dst) { assert(0); }
+inline void rsqrtf_func(int len, float* src, float* dst) { assert(0); }
 
-inline void rsqrtbf_func(int len, int16_t *src, float *dst) { assert(0); }
+inline void rsqrtbf_func(int len, int16_t* src, float* dst) { assert(0); }
 
-inline void topk_func(float *src, float *dst_data, int *dst_idx,
+inline void topk_func(float* src, float* dst_data, int* dst_idx,
                       std::vector<int32_t> src_dims, uint32_t K, bool largest,
                       bool sorted, uint32_t axis) {
   assert(0);
 }
 
-inline void gather_func(char *params, int32_t *idx, size_t idx_size,
+inline void gather_func(char* params, int32_t* idx, size_t idx_size,
                         size_t inner_size, size_t outer_loop, size_t outer_size,
-                        size_t byte_size, char *dst) {
+                        size_t byte_size, char* dst) {
   assert(0);
 }
 
-inline void erf_bf16_func(int16_t *src, float *dst, size_t len) { assert(0); }
+inline void erf_bf16_func(int16_t* src, float* dst, size_t len) { assert(0); }
 
-inline void erf_func(float *src, float *dst, size_t len) { assert(0); }
+inline void erf_func(float* src, float* dst, size_t len) { assert(0); }
 
-inline void binary_s32_func(dnnl::algorithm alg, int32_t *lhs, int32_t *rhs,
-                            int32_t *dst, int len) {
+inline void binary_s32_func(dnnl::algorithm alg, int32_t* lhs, int32_t* rhs,
+                            int32_t* dst, int len) {
   assert(0);
 }
 
-void nms_func(float *boxes, float *scores, size_t batch_idx, size_t class_num,
+void nms_func(float* boxes, float* scores, size_t batch_idx, size_t class_num,
               size_t num_boxes, size_t max_num_outputs, float score_threshold,
-              float iou_threshold, int32_t *output_indices) {
+              float iou_threshold, int32_t* output_indices) {
   assert(0);
 }
 
 using SizeVector = std::vector<int>;
-void topk_gpu(const dnnl::memory &src, const dnnl::memory &dst,
-              const dnnl::memory &dst_idx_mem, SizeVector in_dims, int32_t axis,
+void topk_gpu(const dnnl::memory& src, const dnnl::memory& dst,
+              const dnnl::memory& dst_idx_mem, SizeVector in_dims, int32_t axis,
               int before_num, int dim, int src_k, int count_vec,
               bool sort_value) {
-
   dnnl::engine eng = src.get_engine();
 
   size_t size = src.get_desc().get_size();
@@ -91,9 +88,9 @@ void topk_gpu(const dnnl::memory &src, const dnnl::memory &dst,
 
   auto sycl_queue = dnnl::sycl_interop::get_queue(dnnl::stream(eng));
 
-  auto src_data = (float *)src.get_data_handle();
-  auto dst_data = (float *)dst.get_data_handle();
-  auto dst_idx = (float *)dst_idx_mem.get_data_handle();
+  auto src_data = (float*)src.get_data_handle();
+  auto dst_data = (float*)dst.get_data_handle();
+  auto dst_idx = (float*)dst_idx_mem.get_data_handle();
 
   int n = size / sizeof(float);
 
@@ -129,18 +126,16 @@ void topk_gpu(const dnnl::memory &src, const dnnl::memory &dst,
 
 inline int count(SizeVector dims, int start_ind, int end_ind) {
   size_t count = 1;
-  for (size_t i = start_ind; i < end_ind; i++)
-    count *= dims[i];
+  for (size_t i = start_ind; i < end_ind; i++) count *= dims[i];
   return static_cast<int>(count);
 }
 
 inline int count(SizeVector dims, size_t start_ind = 0) {
   return count(dims, start_ind, dims.size());
 }
-void topk_func_gpu(const dnnl::memory &src, const dnnl::memory &dst,
-                   const dnnl::memory &dst_idx, std::vector<int32_t> src_dims,
+void topk_func_gpu(const dnnl::memory& src, const dnnl::memory& dst,
+                   const dnnl::memory& dst_idx, std::vector<int32_t> src_dims,
                    uint32_t K, bool largest, bool sorted, uint32_t axis) {
-
   std::cout << "topk_func_gpu "
             << " K" << K << "general code " << std::endl;
   auto in_dims = src_dims;
@@ -153,8 +148,7 @@ void topk_func_gpu(const dnnl::memory &src, const dnnl::memory &dst,
   bool mode_max, sort_value;
   int dim, before_num;
   int axis_ = -1;
-  if (axis_ < 0)
-    axis_ += src_dims.size();
+  if (axis_ < 0) axis_ += src_dims.size();
   axis = static_cast<size_t>(axis_);
   if (largest)
     mode_max = true;
@@ -166,11 +160,9 @@ void topk_func_gpu(const dnnl::memory &src, const dnnl::memory &dst,
     sort_value = false;
   int j;
   for (j = src_dims.size() - 1; j >= 0; j--) {
-    if (src_dims[j] != 1)
-      break;
+    if (src_dims[j] != 1) break;
   }
-  if (static_cast<size_t>(j) == axis)
-    is_last_dim = true;
+  if (static_cast<size_t>(j) == axis) is_last_dim = true;
 
   for (size_t i = 0; i < axis; i++) {
     axis_step *= src_dims[i];

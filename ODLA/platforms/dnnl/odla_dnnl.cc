@@ -232,21 +232,20 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                      getFormatTag(value->shape));
 #ifdef ODLA_BUILD_DNNL_GPU
     auto src_mem = dnnl::memory(src_md, context->comp->eng);
-    write_to_dnnl_memory(const_cast<void *>(data_ptr), src_mem);
+    write_to_dnnl_memory(const_cast<void*>(data_ptr), src_mem);
 #else
     auto src_mem =
-        dnnl::memory(src_md, context->comp->eng, const_cast<void *>(data_ptr));
+        dnnl::memory(src_md, context->comp->eng, const_cast<void*>(data_ptr));
 #endif
 
     auto r = dnnl::reorder(src_mem, value->mem);
     r.execute(dnnl::stream(context->comp->eng),
               {{DNNL_ARG_FROM, src_mem}, {DNNL_ARG_TO, value->mem}});
   } else {
-
 #ifdef ODLA_BUILD_DNNL_GPU
-    write_to_dnnl_memory(const_cast<void *>(data_ptr), value->mem);
+    write_to_dnnl_memory(const_cast<void*>(data_ptr), value->mem);
 #else
-    value->mem.set_data_handle(const_cast<void *>(data_ptr));
+    value->mem.set_data_handle(const_cast<void*>(data_ptr));
 #endif
   }
 
@@ -284,9 +283,9 @@ odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
 
 #ifdef ODLA_BUILD_DNNL_GPU
   dnnl::memory mem = dnnl::memory(md, g_comp->eng);
-  write_to_dnnl_memory(const_cast<void *>(ptr), mem);
+  write_to_dnnl_memory(const_cast<void*>(ptr), mem);
 #else
-  dnnl::memory mem = dnnl::memory(md, g_comp->eng, const_cast<void *>(ptr));
+  dnnl::memory mem = dnnl::memory(md, g_comp->eng, const_cast<void*>(ptr));
 #endif
 
   if (g_comp->opts.bf16_mode == BF16_PERFORMACE_MODE &&
@@ -1923,8 +1922,8 @@ odla_values odla_TopK(odla_value input, odla_uint32 K, odla_bool largest,
   };
 #else
   auto op = [=]() {
-    dnnl_utils::topk_func(input_ptr, (float *)dst_mem.get_data_handle(),
-                          (int *)dst_idx_mem.get_data_handle(), input_shape, K,
+    dnnl_utils::topk_func(input_ptr, (float*)dst_mem.get_data_handle(),
+                          (int*)dst_idx_mem.get_data_handle(), input_shape, K,
                           largest, sorted, axis);
   };
 #endif
