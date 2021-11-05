@@ -79,7 +79,9 @@ list(APPEND PLUGIN_SOURCES "${PLUGIN_CU_SOURCES}")
 list(APPEND PLUGIN_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/initPlugin.cc")
 #list(APPEND PLUGIN_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/../samples/common/logger.cpp")
 
-set(CUB_ROOT_DIR  ${CUDA_ROOT}/include)
+if (CUDA_VERSION VERSION_GREATER "11.0")
+  set(CUB_ROOT_DIR  ${CUDA_ROOT}/include)
+ endif()
 ################################## SHARED LIBRARY #######################################
 
 add_library(${SHARED_TARGET} SHARED
