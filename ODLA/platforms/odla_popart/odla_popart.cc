@@ -119,7 +119,53 @@ void compute_loop(odla_computation comp) {
   comp->thread_done();
 }
 
-void _odla_computation::init() {
+odla_status _odla_computation::compile_and_export() {
+  popart::logging::warn("Start compile and export");
+  const std::string& cache_file_name =
+      PopartConfig::instance()->get_cache_path();
+  int file_prefix = cache_file_name.rfind('.');
+  if (file_prefix == std::string::npos) {
+    file_prefix = cache_file_name.size() - 1;
+  }
+  std::string config_file_name(cache_file_name.substr(0, file_prefix) +
+                               ".json");
+  std::fstream cache_fs(cache_file_name,
+                        std::ios_base::out | std::ifstream::binary);
+  if (!cache_fs.is_open()) {
+    popart::logging::err("Open or create cache file falied");
+    return ODLA_FAILURE;
+  }
+  std::fstream config_fs;
+  std::string config_string;
+  if (config_file_name.size() > 0) {
+    config_fs.open(config_file_name, std::ios_base::in | std::ifstream::binary);
+    if (!config_fs.is_open()) {
+      popart::logging::warn(
+          "invalid config file name:[ {} ] will use default config",
+          config_file_name);
+      PopartConfig::instance()->use_default();
+      config_string = PopartConfig::instance()->get_default_config_string();
+    } else {
+      std::ostringstream config_ss;
+      config_ss << config_fs.rdbuf();
+      config_string = config_ss.str();
+    }
+  } else {
+    config_string = PopartConfig::instance()->get_default_config_string();
+  }
+
+  int config_size = config_string.size();
+  cache_fs.write((char*)&config_size, sizeof(config_size));
+  cache_fs.write(config_string.c_str(), config_string.size());
+
+  _odla_computation::instance()->session->compileAndExport(cache_fs.flush());
+
+  cache_fs.flush();
+  cache_fs.close();
+  config_fs.close();
+}
+
+void _odla_computation::init(bool is_compile) {
   if (!session) {
     std::lock_guard<std::mutex> guard(init_mutex_);
     if (!session) {
@@ -167,14 +213,19 @@ void _odla_computation::init() {
       auto new_session = popart::InferenceSession::createFromOnnxModel(
           proto, data_flow, device, popart::InputShapeInfo(), session_opts_);
 
-      if (PopartConfig::instance()->load_cache()) {
+      if (!is_compile && PopartConfig::instance()->load_cache()) {
         popart::logging::info("Load cachefile from existing stream");
         auto cache_fs = PopartConfig::instance()->get_cache_fs();
-        new_session->loadExecutableFromStream(*(cache_fs.get()));
+        if (cache_fs->is_open()) {
+          new_session->loadExecutableFromStream(*(cache_fs.get()));
+        }
       }
+      popart::logging::info("prepare device");
+
       new_session->prepareDevice();
       new_session->setRandomSeed(0);  // Init seed
       new_session->weightsFromHost(); // Copy weights from host to IPU
+
       // If in parallel mode, start the thread
       ExecutionMode mode = PopartConfig::instance()->execution_mode();
       if (PIPELINE == mode || PARALLEL == mode) {
@@ -185,6 +236,14 @@ void _odla_computation::init() {
       }
       session =
           std::move(new_session); // set session after all initialization done.
+
+      if (is_compile) {
+        popart::logging::info("Save cache file...");
+        auto cache_fs = PopartConfig::instance()->get_cache_fs();
+        if (cache_fs->is_open()) {
+          compile_and_export(); // compileAndExport(*(cache_fs.get()));
+        }
+      }
     }
   }
 }
