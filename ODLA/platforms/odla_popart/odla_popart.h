@@ -131,13 +131,13 @@ struct _odla_computation {
         thread_state_(DONE) {
     builder->setAttribute(popart::sVirtualGraphAttribute, 0);
   }
-  void init(bool is_compile = false);
   std::string set_pipeline_stage();
+  void init(bool is_compile = false);
   void set_session_opts();
-  void set_executor();
-  void set_opts();
   bool use_pipeline();
   bool hold();
+  odla_status set_executor();
+  odla_status set_opts();
   odla_status compile_and_export();
 
   inline Execution* executor() { return executor_; }
