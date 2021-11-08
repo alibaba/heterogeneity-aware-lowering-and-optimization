@@ -206,7 +206,7 @@ bool PopartConfig::get_pipeline_setting(const std::string& node_name,
   return false;
 }
 
-void PopartConfig::extract_config_from_cache() {
+odla_status PopartConfig::extract_config_from_cache() {
   cache_fs = std::make_shared<std::fstream>(
       cache_path_,
       std::ios_base::in | std::ios_base::out | std::ifstream::binary);
@@ -214,14 +214,20 @@ void PopartConfig::extract_config_from_cache() {
   popart::logging::info("load config from cache file: {}", cache_path_.c_str());
   if (!cache_fs->is_open()) {
     popart::logging::err("cache file is not exist");
-    return;
+    return ODLA_FAILURE;
   }
   if (cache_fs->read((char*)&config_len, sizeof(config_len))) {
     std::vector<char> config_data_buffer(config_len);
     if (cache_fs->read(config_data_buffer.data(), config_len)) {
       std::string config_string(config_data_buffer.begin(),
                                 config_data_buffer.end());
-      load_from_string(config_string);
+      try {
+        load_from_string(config_string);
+      } catch (std::exception& e) {
+        popart::logging::err("load from cached config string failed.");
+        return ODLA_FAILURE;
+      }
     }
   }
+  return ODLA_SUCCESS;
 }

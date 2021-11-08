@@ -35,36 +35,6 @@
 _odla_computation* _odla_computation::instance_ = nullptr;
 std::mutex _odla_computation::comp_mutex_;
 
-void compile_and_export_cache(std::string catch_file_name,
-                              std::string config_file_name) {
-  std::fstream catch_fs(catch_file_name,
-                        std::ios_base::out | std::ifstream::binary);
-  std::fstream config_fs;
-  std::string config_string;
-  if (config_file_name.size() > 0) {
-    config_fs.open(config_file_name, std::ios_base::in | std::ifstream::binary);
-    if (!config_fs.is_open()) {
-      popart::logging::warn(
-          "invalid config file name:[ {} ] will use default config",
-          config_file_name);
-      config_string = PopartConfig::instance()->get_default_config_string();
-    }
-    std::ostringstream config_ss;
-    config_ss << config_fs.rdbuf();
-    config_string = config_ss.str();
-  } else {
-    config_string = PopartConfig::instance()->get_default_config_string();
-  }
-
-  int config_size = config_string.size();
-  catch_fs.write((char*)&config_size, sizeof(config_string.size()));
-  catch_fs.write(config_string.c_str(), config_string.size());
-
-  _odla_computation::instance()->session->compileAndExport(catch_fs.flush());
-  catch_fs.flush();
-  catch_fs.close();
-}
-
 void compute_loop(odla_computation comp) {
   // setup the stepio with allbacks
   popart::StepIOCallback stepio(input_callback, input_complete_callback,
@@ -123,7 +93,13 @@ odla_status _odla_computation::compile_and_export() {
   popart::logging::warn("Start compile and export");
   const std::string& cache_file_name =
       PopartConfig::instance()->get_cache_path();
-  int file_prefix = cache_file_name.rfind('.');
+  std::string file_suffix(".popart");
+  int file_prefix = cache_file_name.rfind(file_suffix);
+  if (file_prefix == std::string::npos ||
+      file_prefix + file_suffix.size() < cache_file_name.size()) {
+    popart::logging::err("Bad cache file name");
+    return ODLA_FAILURE;
+  }
   if (file_prefix == std::string::npos) {
     file_prefix = cache_file_name.size() - 1;
   }
@@ -213,37 +189,34 @@ void _odla_computation::init(bool is_compile) {
       auto new_session = popart::InferenceSession::createFromOnnxModel(
           proto, data_flow, device, popart::InputShapeInfo(), session_opts_);
 
-      if (!is_compile && PopartConfig::instance()->load_cache()) {
-        popart::logging::info("Load cachefile from existing stream");
-        auto cache_fs = PopartConfig::instance()->get_cache_fs();
-        if (cache_fs->is_open()) {
-          new_session->loadExecutableFromStream(*(cache_fs.get()));
+      if (!is_compile) {
+        if (PopartConfig::instance()->load_cache()) {
+          popart::logging::info("Load cachefile from existing stream");
+          auto cache_fs = PopartConfig::instance()->get_cache_fs();
+          if (cache_fs->is_open()) {
+            try {
+              new_session->loadExecutableFromStream(*(cache_fs.get()));
+            } catch (std::exception& e) {
+              popart::logging::err("bad cache file, will compile the graph");
+            }
+          }
         }
-      }
-      popart::logging::info("prepare device");
 
-      new_session->prepareDevice();
-      new_session->setRandomSeed(0);  // Init seed
-      new_session->weightsFromHost(); // Copy weights from host to IPU
+        new_session->prepareDevice();
+        new_session->setRandomSeed(0);  // Init seed
+        new_session->weightsFromHost(); // Copy weights from host to IPU
 
-      // If in parallel mode, start the thread
-      ExecutionMode mode = PopartConfig::instance()->execution_mode();
-      if (PIPELINE == mode || PARALLEL == mode) {
-        std::thread parallel_thread(compute_loop, this);
-        thread_state_ = RUNNING;
-        popart::logging::warn("Parallel loop has been started");
-        parallel_thread.detach();
+        // If in parallel mode, start the thread
+        ExecutionMode mode = PopartConfig::instance()->execution_mode();
+        if (PIPELINE == mode || PARALLEL == mode) {
+          std::thread parallel_thread(compute_loop, this);
+          thread_state_ = RUNNING;
+          popart::logging::warn("Parallel loop has been started");
+          parallel_thread.detach();
+        }
       }
       session =
           std::move(new_session); // set session after all initialization done.
-
-      if (is_compile) {
-        popart::logging::info("Save cache file...");
-        auto cache_fs = PopartConfig::instance()->get_cache_fs();
-        if (cache_fs->is_open()) {
-          compile_and_export(); // compileAndExport(*(cache_fs.get()));
-        }
-      }
     }
   }
 }

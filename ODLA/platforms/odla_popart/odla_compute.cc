@@ -83,6 +83,7 @@ odla_status odla_CreateExecutable(odla_executable* executable,
       _odla_computation::instance()->init(true); // set is_compile to true
                                                  // this comp init will create
                                                  // executable
+      _odla_computation::instance()->compile_and_export();
     }
   }
   return ODLA_SUCCESS;
@@ -113,7 +114,11 @@ odla_status odla_CreateComputation(odla_computation* comp) {
   // Read the config file
   if (!PopartConfig::instance()->inited()) {
     if (PopartConfig::instance()->load_cache()) {
-      PopartConfig::instance()->extract_config_from_cache();
+      odla_status ret = PopartConfig::instance()->extract_config_from_cache();
+      if (ret == ODLA_FAILURE) {
+        popart::logging::err("load config from cache failed");
+        return ret;
+      }
     }
     PopartConfig::instance()->load_config(std::getenv("ODLA_POPART_CONFIG"));
   }

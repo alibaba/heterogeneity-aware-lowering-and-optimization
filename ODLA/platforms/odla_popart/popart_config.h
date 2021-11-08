@@ -25,6 +25,7 @@
 #include <string>
 #include <vector>
 
+#include "ODLA/odla_common.h"
 #include "json.hpp"
 /**
  * The configuration format like follows:
@@ -136,7 +137,7 @@ class PopartConfig {
   void load_config(const char* file_path);
   bool get_pipeline_setting(const std::string& node_name, int64_t& ipu_idx,
                             int64_t& pipeline_stage);
-  void extract_config_from_cache();
+  odla_status extract_config_from_cache();
 
  private:
   void set_pipeline_setting(const std::string& name_pattern, int ipu_idx,
