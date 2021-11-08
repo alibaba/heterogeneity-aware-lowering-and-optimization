@@ -56,14 +56,18 @@ void PopartConfig::use_default() {
       }\n";
 }
 
-void PopartConfig::load_config(const char* file_path) {
+odla_status PopartConfig::load_config(const char* file_path) {
+  odla_status ret_value = ODLA_SUCCESS;
   if (inited_) {
     popart::logging::info("config already inited");
-    return;
+    return ODLA_SUCCESS;
   }
   popart::logging::info("use default config");
   use_default();
-  if (file_path != nullptr) load_from_file(file_path);
+  if (file_path != nullptr) {
+    load_from_file(file_path);
+  }
+  return ODLA_SUCCESS;
 }
 
 void PopartConfig::parse_from_json(const json& jf) {
@@ -122,25 +126,37 @@ void PopartConfig::parse_from_json(const json& jf) {
   inited_ = true;
 }
 
-void PopartConfig::load_from_string(const std::string& config_string) {
+odla_status PopartConfig::load_from_string(const std::string& config_string) {
   if (inited_) {
-    return;
+    return ODLA_SUCCESS;
   }
-  json jf = json::parse(config_string);
+  json jf;
+  try {
+    jf = json::parse(config_string);
+  } catch (std::exception& e) {
+    popart::logging::err("parse config falied:{}", e.what());
+    return ODLA_FAILURE;
+  }
   parse_from_json(jf);
+  return ODLA_SUCCESS;
 }
 
-void PopartConfig::load_from_file(const std::string& file_path) {
+odla_status PopartConfig::load_from_file(const std::string& file_path) {
   if (inited_) {
-    return;
+    return ODLA_SUCCESS;
   }
   using json = nlohmann::json;
   std::ifstream ifs(file_path);
-  if (!ifs.good())
-    throw std::invalid_argument(std::string("Configuraton file [") + file_path +
-                                "] was not found.");
+  if (!ifs.good()) {
+    popart::logging::err("config file {} not found", file_path);
+    return ODLA_FAILURE;
+    //  throw std::invalid_argument(std::string("Configuraton file [") +
+    //  file_path +
+    //                              "] was not found.");
+  }
   json jf = json::parse(ifs);
   parse_from_json(jf);
+  return ODLA_SUCCESS;
 }
 
 void PopartConfig::print() {
@@ -221,9 +237,9 @@ odla_status PopartConfig::extract_config_from_cache() {
     if (cache_fs->read(config_data_buffer.data(), config_len)) {
       std::string config_string(config_data_buffer.begin(),
                                 config_data_buffer.end());
-      try {
-        load_from_string(config_string);
-      } catch (std::exception& e) {
+
+      odla_status ret = load_from_string(config_string);
+      if (ret != ODLA_SUCCESS) {
         popart::logging::err("load from cached config string failed.");
         return ODLA_FAILURE;
       }

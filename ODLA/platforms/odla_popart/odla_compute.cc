@@ -123,9 +123,18 @@ odla_status odla_CreateComputation(odla_computation* comp) {
         return ret;
       }
     }
-    PopartConfig::instance()->load_config(std::getenv("ODLA_POPART_CONFIG"));
+    auto ret = PopartConfig::instance()->load_config(
+        std::getenv("ODLA_POPART_CONFIG"));
+    if (ret != ODLA_SUCCESS) {
+      popart::logging::err("error load config");
+      return ret;
+    }
   }
-  _odla_computation::instance()->set_executor();
+  odla_status status = _odla_computation::instance()->set_executor();
+  if (status != ODLA_SUCCESS) {
+    popart::logging::err("set_executor failed");
+    return ODLA_FAILURE;
+  }
   if (PopartConfig::instance()->execution_mode() == PARALLEL ||
       PopartConfig::instance()->execution_mode() == PIPELINE) {
     QManager::instance()->createQ(PopartConfig::instance()->queue_type());
@@ -139,6 +148,10 @@ odla_status odla_CreateComputation(odla_computation* comp) {
 odla_status odla_CreateContext(odla_context* context) {
   _odla_computation::instance(false)
       ->init(); // Place the init here to avoid long execution problem
+  if (_odla_computation::instance()->session == nullptr) {
+    popart::logging::err("init computation item in CreateContext failed.");
+    return ODLA_FAILURE;
+  }
   *context = new _odla_pipeline_context(_odla_computation::instance());
   return ODLA_SUCCESS;
 }

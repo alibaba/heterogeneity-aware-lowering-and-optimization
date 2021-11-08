@@ -86,7 +86,7 @@ class PopartConfig {
   std::shared_ptr<std::fstream> cache_fs;
 
   static PopartConfig* instance_;
-  void load_from_file(const std::string& file_path);
+  odla_status load_from_file(const std::string& file_path);
 
  public:
   PopartConfig()
@@ -133,8 +133,8 @@ class PopartConfig {
   }
 
   void parse_from_json(const json&);
-  void load_from_string(const std::string& config_string);
-  void load_config(const char* file_path);
+  odla_status load_from_string(const std::string& config_string);
+  odla_status load_config(const char* file_path);
   bool get_pipeline_setting(const std::string& node_name, int64_t& ipu_idx,
                             int64_t& pipeline_stage);
   odla_status extract_config_from_cache();

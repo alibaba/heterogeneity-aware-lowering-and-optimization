@@ -90,6 +90,7 @@ void compute_loop(odla_computation comp) {
 }
 
 odla_status _odla_computation::compile_and_export() {
+  odla_status ret_value = ODLA_SUCCESS;
   popart::logging::warn("Start compile and export");
   const std::string& cache_file_name =
       PopartConfig::instance()->get_cache_path();
@@ -134,18 +135,28 @@ odla_status _odla_computation::compile_and_export() {
   cache_fs.write((char*)&config_size, sizeof(config_size));
   cache_fs.write(config_string.c_str(), config_string.size());
 
-  _odla_computation::instance()->session->compileAndExport(cache_fs.flush());
-
+  try {
+    _odla_computation::instance()->session->compileAndExport(cache_fs.flush());
+  } catch (std::exception& e) {
+    popart::logging::err("compileAndExport Falied: {}", e.what());
+    ret_value = ODLA_FAILURE;
+  }
   cache_fs.flush();
   cache_fs.close();
   config_fs.close();
+
+  return ret_value;
 }
 
 void _odla_computation::init(bool is_compile) {
   if (!session) {
     std::lock_guard<std::mutex> guard(init_mutex_);
     if (!session) {
-      set_opts();
+      odla_status status = set_opts();
+      if (status != ODLA_SUCCESS) {
+        popart::logging::err("set computation option failed");
+        return;
+      }
       // Cretate the dataflow
       std::vector<popart::TensorId> ids;
       for (const auto& output : outputs_map)
@@ -185,9 +196,16 @@ void _odla_computation::init(bool is_compile) {
                               PopartConfig::instance()->save_model_path());
       }
 
-      // Create InferenceSession
-      auto new_session = popart::InferenceSession::createFromOnnxModel(
-          proto, data_flow, device, popart::InputShapeInfo(), session_opts_);
+      std::unique_ptr<popart::InferenceSession> new_session;
+      try {
+        // Create InferenceSession
+        new_session = std::move(popart::InferenceSession::createFromOnnxModel(
+            proto, data_flow, device, popart::InputShapeInfo(), session_opts_));
+      } catch (std::exception& e) {
+        popart::logging::err("Session::createFromOnnxModel failed:{}",
+                             e.what());
+        return;
+      }
 
       if (!is_compile) {
         if (PopartConfig::instance()->load_cache()) {
@@ -202,10 +220,14 @@ void _odla_computation::init(bool is_compile) {
           }
         }
 
-        new_session->prepareDevice();
-        new_session->setRandomSeed(0);  // Init seed
-        new_session->weightsFromHost(); // Copy weights from host to IPU
-
+        try {
+          new_session->prepareDevice();
+          new_session->setRandomSeed(0);  // Init seed
+          new_session->weightsFromHost(); // Copy weights from host to IPU
+        } catch (std::exception& e) {
+          popart::logging::err("session init failed: {}", e.what());
+          return;
+        }
         // If in parallel mode, start the thread
         ExecutionMode mode = PopartConfig::instance()->execution_mode();
         if (PIPELINE == mode || PARALLEL == mode) {
@@ -222,25 +244,31 @@ void _odla_computation::init(bool is_compile) {
 }
 
 // Now we set this by config file, should set by the caller?
-void _odla_computation::set_opts() {
+odla_status _odla_computation::set_opts() {
   if (PopartConfig::instance()->debug()) {
     opts.ipu_num = PopartConfig::instance()->ipu_num();
     opts.batches_per_step = PopartConfig::instance()->batches_per_step();
   } else if (use_pipeline()) { // Only check when use pipeline
-    if (opts.ipu_num != PopartConfig::instance()->ipu_num())
-      throw std::invalid_argument(
+    if (opts.ipu_num != PopartConfig::instance()->ipu_num()) {
+      popart::logging::err(
           "number of ipus in pipeline configuration:" +
           std::to_string(PopartConfig::instance()->ipu_num()) +
           " must same with options: " + std::to_string(opts.ipu_num));
-    if (opts.batches_per_step != PopartConfig::instance()->batches_per_step())
-      throw std::invalid_argument(
+      return ODLA_FAILURE;
+    }
+    if (opts.batches_per_step != PopartConfig::instance()->batches_per_step()) {
+      popart::logging::err(
           "batches per step in pipeline configuration:" +
           std::to_string(PopartConfig::instance()->batches_per_step()) +
           " must same with options: " + std::to_string(opts.batches_per_step));
+      return ODLA_FAILURE;
+    }
   }
+  return ODLA_SUCCESS;
 }
 
-void _odla_computation::set_executor() {
+odla_status _odla_computation::set_executor() {
+  odla_status ret_value = ODLA_SUCCESS;
   ExecutionMode mode = PopartConfig::instance()->execution_mode();
   if (PIPELINE == mode || PARALLEL == mode) {
     popart::logging::info("set the executor as parallel");
@@ -249,10 +277,17 @@ void _odla_computation::set_executor() {
     popart::logging::info("set the executor as sequence");
     executor_ = new Sequence();
   } else {
-    throw std::invalid_argument(
-        "*** FATAL *** unknown execution mode: {}" + std::to_string(mode) +
-        ". Should be one of pipeline, parallel or sequence");
+    popart::logging::err(
+        "unknown excution mode: {}, Should be one of pipeline, parallel or "
+        "sequence",
+        std::to_string(mode));
+    // throw std::invalid_argument(
+    //        "*** FATAL *** unknown execution mode: {}" + std::to_string(mode)
+    //        +
+    //        ". Should be one of pipeline, parallel or sequence");
+    ret_value = ODLA_FAILURE;
   }
+  return ret_value;
 }
 
 void _odla_computation::set_session_opts() {
@@ -270,9 +305,9 @@ void _odla_computation::set_session_opts() {
     session_opts_.cachePath =
         opts.enable_engine_cache ? opts.cache_dir : envEngineCachePath;
   }
-  // session_opts_.matmulOptions["use128BitConvUnitLoad"] = "true";
-  // session_opts_.matmulOptions["enableMultiStageReduce"] = "false";
-  // session_opts_.matmulOptions["enableFastReduce"] = "true";
+  session_opts_.matmulOptions["use128BitConvUnitLoad"] = "true";
+  session_opts_.matmulOptions["enableMultiStageReduce"] = "false";
+  session_opts_.matmulOptions["enableFastReduce"] = "true";
   session_opts_.enableFloatingPointChecks = false;
   session_opts_.enableStochasticRounding = false;
   session_opts_.enablePrefetchDatastreams = false; // true;
