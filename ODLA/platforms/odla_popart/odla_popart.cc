@@ -179,8 +179,12 @@ void _odla_computation::init(bool is_compile) {
 
       // Create and config SessionOptions
       set_session_opts();
-      if (use_pipeline())
-        builder = popart::Builder::createFromOnnxModel(set_pipeline_stage());
+      if (use_pipeline()) try {
+          builder = popart::Builder::createFromOnnxModel(set_pipeline_stage());
+        } catch (std::exception& e) {
+          popart::logging::err("create builder from onnx model failed.");
+          return;
+        }
       auto proto = builder->getModelProto(); // So, the init must be called at
                                              // odla_ExecuteCompute
 
@@ -281,10 +285,6 @@ odla_status _odla_computation::set_executor() {
         "unknown excution mode: {}, Should be one of pipeline, parallel or "
         "sequence",
         std::to_string(mode));
-    // throw std::invalid_argument(
-    //        "*** FATAL *** unknown execution mode: {}" + std::to_string(mode)
-    //        +
-    //        ". Should be one of pipeline, parallel or sequence");
     ret_value = ODLA_FAILURE;
   }
   return ret_value;
@@ -427,9 +427,12 @@ bool _odla_context::hold(const std::string& function_name) {
     ss_holder << thread_id_of_holder;
     popart::logging::err(
         "[{}] odla_context {} has been held by thread: {}"
-        ", when try to hold it in function {}.",
+        ", when try to hold it in function {}. multi threads try to hold the "
+        "same context.",
         this_thread_id, this, thread_id_of_holder, function_name);
-    throw std::runtime_error("Multiple threads try to hold the same context");
+    return false;
+    //    throw std::runtime_error("Multiple threads try to hold the same
+    //    context");
   }
   return false;
 }
