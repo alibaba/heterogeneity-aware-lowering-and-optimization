@@ -150,9 +150,6 @@ odla_status PopartConfig::load_from_file(const std::string& file_path) {
   if (!ifs.good()) {
     popart::logging::err("config file {} not found", file_path);
     return ODLA_FAILURE;
-    //  throw std::invalid_argument(std::string("Configuraton file [") +
-    //  file_path +
-    //                              "] was not found.");
   }
   json jf = json::parse(ifs);
   parse_from_json(jf);
@@ -216,6 +213,7 @@ bool PopartConfig::get_pipeline_setting(const std::string& node_name,
     pipeline_stage = default_setting_iter->second[1];
     return true;
   }
+
   throw std::runtime_error(
       "Node: " + node_name +
       " was not configured to any ipu or stage for pipeline");
