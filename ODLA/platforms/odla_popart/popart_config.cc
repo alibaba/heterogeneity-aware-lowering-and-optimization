@@ -42,18 +42,18 @@ void PopartConfig::use_default() {
   queue_capacity_ = 1024 * 1024;
   debug_ = false;
   default_config_string_ =
-      "{ \
-      \"version\":\"1.0.0\", \
-      \"amp\":0.6, \
-      \"batches_per_step\":1, \
-      \"execution_mode\":\"sequence\", \
-      \"ipu_num\":1, \
-      \"load_onnx\":false, \
-      \"load_onnx_path\":\"test-load-time.onnx\", \
-      \"queue_type\":\"LockFreeQueue\", \
-      \"queue_capacity\":1048576, \
-      \"debug\": false \
-      }";
+      "{\n\
+      \"version\":\"1.0.0\",\n\
+      \"amp\":0.6,\n\
+      \"batches_per_step\":1,\n\
+      \"execution_mode\":\"sequence\",\n\
+      \"ipu_num\":1,\n\
+      \"load_onnx\":false, \n\
+      \"load_onnx_path\":\"test-load-time.onnx\",\n\
+      \"queue_type\":\"LockFreeQueue\",\n\
+      \"queue_capacity\":1048576,\n\
+      \"debug\": false\n\
+      }\n";
 }
 
 void PopartConfig::load_config(const char* file_path) {
@@ -206,14 +206,28 @@ bool PopartConfig::get_pipeline_setting(const std::string& node_name,
   return false;
 }
 
-void PopartConfig::extract_config_from_cache() {
-  cache_fs =
-      std::make_shared<std::ifstream>(cache_path_, std::ifstream::binary);
+odla_status PopartConfig::extract_config_from_cache() {
+  cache_fs = std::make_shared<std::fstream>(
+      cache_path_,
+      std::ios_base::in | std::ios_base::out | std::ifstream::binary);
   int config_len = 0;
-  cache_fs->read((char*)&config_len, sizeof(config_len));
-  std::vector<char> config_data_buffer(config_len);
-  cache_fs->read(config_data_buffer.data(), config_len);
-  std::string config_string(config_data_buffer.begin(),
-                            config_data_buffer.end());
-  load_from_string(config_string);
+  popart::logging::info("load config from cache file: {}", cache_path_.c_str());
+  if (!cache_fs->is_open()) {
+    popart::logging::err("cache file is not exist");
+    return ODLA_FAILURE;
+  }
+  if (cache_fs->read((char*)&config_len, sizeof(config_len))) {
+    std::vector<char> config_data_buffer(config_len);
+    if (cache_fs->read(config_data_buffer.data(), config_len)) {
+      std::string config_string(config_data_buffer.begin(),
+                                config_data_buffer.end());
+      try {
+        load_from_string(config_string);
+      } catch (std::exception& e) {
+        popart::logging::err("load from cached config string failed.");
+        return ODLA_FAILURE;
+      }
+    }
+  }
+  return ODLA_SUCCESS;
 }

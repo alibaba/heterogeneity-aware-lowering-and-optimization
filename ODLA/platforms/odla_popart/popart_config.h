@@ -25,6 +25,7 @@
 #include <string>
 #include <vector>
 
+#include "ODLA/odla_common.h"
 #include "json.hpp"
 /**
  * The configuration format like follows:
@@ -82,10 +83,9 @@ class PopartConfig {
 
   bool inited_;
 
-  std::shared_ptr<std::ifstream> cache_fs;
+  std::shared_ptr<std::fstream> cache_fs;
 
   static PopartConfig* instance_;
-  void use_default();
   void load_from_file(const std::string& file_path);
 
  public:
@@ -99,6 +99,8 @@ class PopartConfig {
         inited_(false),
         ipu_num_(1) {}
   ~PopartConfig() {}
+
+  void use_default();
   static PopartConfig* instance() { return instance_; }
   const std::string& version() { return version_; }
   inline float amp() { return amp_; };
@@ -118,11 +120,11 @@ class PopartConfig {
   inline int queue_capacity() { return queue_capacity_; }
   inline bool debug() { return debug_; }
   inline bool inited() { return inited_; }
-  inline std::shared_ptr<std::ifstream> get_cache_fs() { return cache_fs; }
-  inline void set_cache_fs(std::shared_ptr<std::ifstream> fs) { cache_fs = fs; }
+  inline std::shared_ptr<std::fstream> get_cache_fs() { return cache_fs; }
+  inline void set_cache_fs(std::shared_ptr<std::fstream> fs) { cache_fs = fs; }
 
   inline bool load_cache() { return load_cache_; }
-  inline const std::string load_cache_path() { return cache_path_; }
+  inline const std::string& get_cache_path() { return cache_path_; }
   inline void set_load_cache(bool is_load_cache) {
     load_cache_ = is_load_cache;
   }
@@ -135,7 +137,7 @@ class PopartConfig {
   void load_config(const char* file_path);
   bool get_pipeline_setting(const std::string& node_name, int64_t& ipu_idx,
                             int64_t& pipeline_stage);
-  void extract_config_from_cache();
+  odla_status extract_config_from_cache();
 
  private:
   void set_pipeline_setting(const std::string& name_pattern, int ipu_idx,

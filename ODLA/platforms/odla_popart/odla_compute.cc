@@ -61,11 +61,30 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
     case 1001: // load cache directly, need set path of cache file
       PopartConfig::instance()->set_load_cache(true);
       PopartConfig::instance()->set_cache_path(reinterpret_cast<char*>(value));
-      PopartConfig::instance()->extract_config_from_cache();
       break;
     default:
       std::cerr << "Unsupported property type: " << type << std::endl;
       return ODLA_UNSUPPORTED_DATATYPE;
+  }
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_CreateExecutable(odla_executable* executable,
+                                  odla_context context, odla_computation comp) {
+  popart::logging::info("Start to create Executable...");
+  if (comp == nullptr) {
+    popart::logging::err(
+        "Failed to create Executable... Computation haven't been intialized.");
+    return ODLA_FAILURE;
+  } else {
+    if (comp->session) {
+      return comp->compile_and_export();
+    } else {
+      _odla_computation::instance()->init(true); // set is_compile to true
+                                                 // this comp init will create
+                                                 // executable
+      _odla_computation::instance()->compile_and_export();
+    }
   }
   return ODLA_SUCCESS;
 }
@@ -94,6 +113,13 @@ odla_status odla_CreateComputation(odla_computation* comp) {
   }
   // Read the config file
   if (!PopartConfig::instance()->inited()) {
+    if (PopartConfig::instance()->load_cache()) {
+      odla_status ret = PopartConfig::instance()->extract_config_from_cache();
+      if (ret == ODLA_FAILURE) {
+        popart::logging::err("load config from cache failed");
+        return ret;
+      }
+    }
     PopartConfig::instance()->load_config(std::getenv("ODLA_POPART_CONFIG"));
   }
   _odla_computation::instance()->set_executor();
@@ -103,6 +129,7 @@ odla_status odla_CreateComputation(odla_computation* comp) {
     QManager::instance()->getQ()->init(
         PopartConfig::instance()->queue_capacity());
   }
+
   return ODLA_SUCCESS;
 }
 
