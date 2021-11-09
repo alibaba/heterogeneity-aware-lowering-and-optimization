@@ -94,7 +94,7 @@ enum \mbox{\hyperlink{odla__compute_8h_acdd4e76bab81ce3f41e2dc909c0051bd}{odla\+
 \begin{DoxyCompactList}\small\item\em Destroy a created constants array object. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__compute_8h_ac60269f20a44910d950b2405b022169e}{odla\+\_\+\+Create\+Executable}} (\mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} $\ast$executable, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} context, \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} computation)
 \begin{DoxyCompactList}\small\item\em Create an executable object. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__compute_8h_a39be52018b4e63c528b65f0ce87f2cee}{odla\+\_\+\+Load\+Executable}} (const \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\+\_\+char}} $\ast$file\+\_\+name, \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} device, \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} $\ast$executable, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} $\ast$context, \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} $\ast$computation)
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__compute_8h_a38cba75456fe9991346e68cacab44827}{odla\+\_\+\+Load\+Executable}} (const \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\+\_\+char}} $\ast$file\+\_\+name, \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} $\ast$executable, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} $\ast$context, \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} $\ast$computation)
 \begin{DoxyCompactList}\small\item\em Load an executable from the file system. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__compute_8h_adaa295d5753d91bb0fc99061df748781}{odla\+\_\+\+Store\+Executable}} (const \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\+\_\+char}} $\ast$file\+\_\+name, \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} executable)
 \begin{DoxyCompactList}\small\item\em Store an executable object into the file system. \end{DoxyCompactList}\item 
@@ -720,11 +720,11 @@ Load a constants array from the file system.
 \begin{DoxyReturn}{Returns}
 odla\+\_\+status 
 \end{DoxyReturn}
-\mbox{\Hypertarget{odla__compute_8h_a39be52018b4e63c528b65f0ce87f2cee}\label{odla__compute_8h_a39be52018b4e63c528b65f0ce87f2cee}} 
+\mbox{\Hypertarget{odla__compute_8h_a38cba75456fe9991346e68cacab44827}\label{odla__compute_8h_a38cba75456fe9991346e68cacab44827}} 
 \index{odla\_compute.h@{odla\_compute.h}!odla\_LoadExecutable@{odla\_LoadExecutable}}
 \index{odla\_LoadExecutable@{odla\_LoadExecutable}!odla\_compute.h@{odla\_compute.h}}
 \doxysubsubsection{\texorpdfstring{odla\_LoadExecutable()}{odla\_LoadExecutable()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Load\+Executable (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\+\_\+char}} $\ast$}]{file\+\_\+name,  }\item[{\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}}]{device,  }\item[{\mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} $\ast$}]{executable,  }\item[{\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} $\ast$}]{context,  }\item[{\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} $\ast$}]{computation }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Load\+Executable (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\+\_\+char}} $\ast$}]{file\+\_\+name,  }\item[{\mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\+\_\+executable}} $\ast$}]{executable,  }\item[{\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} $\ast$}]{context,  }\item[{\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} $\ast$}]{computation }\end{DoxyParamCaption})}
 
 
 
@@ -733,8 +733,6 @@ Load an executable from the file system.
 
 \begin{DoxyParams}{Parameters}
 {\em file\+\_\+name} & the file name \\
-\hline
-{\em device} & the device object \\
 \hline
 {\em executable} & the pointer to the loaded executable object \\
 \hline
