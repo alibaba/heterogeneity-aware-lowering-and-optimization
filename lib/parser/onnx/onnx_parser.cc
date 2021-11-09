@@ -235,6 +235,18 @@ Status ONNXParser::ConvertToHaloIR(const onnx::GraphProto& graph_def) {
             attr_val = Attribute::CreateInteger("value", temp.GetData()[0]);
             break;
           }
+          case DataType::INT8: {
+            const Tensor<int8_t> temp = ProcessTensor<int8_t>(tensor_def);
+            HLCHECK(temp.GetShape().size() == 1 && temp.GetShape()[0] == 1);
+            attr_val = Attribute::CreateInteger("value", temp.GetData()[0]);
+            break;
+          }
+          case DataType::UINT8: {
+            const Tensor<uint8_t> temp = ProcessTensor<uint8_t>(tensor_def);
+            HLCHECK(temp.GetShape().size() == 1 && temp.GetShape()[0] == 1);
+            attr_val = Attribute::CreateInteger("value", temp.GetData()[0]);
+            break;
+          }
           case DataType::INT64: {
             const Tensor<int64_t> temp = ProcessTensor<int64_t>(tensor_def);
             HLCHECK(temp.GetShape().size() == 1 && temp.GetShape()[0] == 1);
@@ -654,8 +666,8 @@ std::vector<Def> ONNXParser::GetInputOperands(const onnx::NodeProto& node_def) {
     } else {
       operands.emplace_back(Def::GetUndefined());
       // those errors will be record in diagnostic report file
-      LOG(ERROR) << node_def.name() << " Node's" << i
-                 << "th operand:" << node_def.input(i) << " not found";
+      LOG(ERROR) << "operand " << i << " of " << node_def.name() << ": "
+                 << node_def.input(i) << " not found";
     }
   }
   return operands;
