@@ -204,6 +204,10 @@ def ONNX_Equal: OpMapping<"Equal", Cmp> {
   let attr_mapping_ = [AttributeMapping<"", "predicator", "EQ">];
 }
 
+def ONNX_Einsum: OpMapping<"Einsum", Einsum> {
+  let attr_mapping_ = [AttributeMapping<"equation", "equation", "\"\"">];
+}
+
 def ONNX_Exp : OpMapping<"Exp", Exp>;
 
 def ONNX_Expand : OpMapping<"Expand", ExpandDims>;
@@ -364,6 +368,8 @@ def ONNX_QuantizeLinear: OpMapping<"QuantizeLinear", Quantize> {
      AttributeMapping<"", "sign_bit", "false">
    ];
 }
+
+def ONNX_Range:  ONNXExtension<"Range">;
 
 def ONNX_Reciprocal : OpMapping<"Reciprocal", Rcp>;
 
