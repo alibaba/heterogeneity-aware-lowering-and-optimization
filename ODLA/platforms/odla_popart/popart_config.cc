@@ -61,12 +61,11 @@ odla_status PopartConfig::load_config(const char* file_path) {
     popart::logging::info("config already inited");
     return ODLA_SUCCESS;
   }
-  popart::logging::info("use default config");
   use_default();
   if (file_path != nullptr) {
     load_from_file(file_path);
   } else {
-    return ODLA_FILE_NOT_EXIST;
+    popart::logging::info("use default config");
   }
   return ODLA_SUCCESS;
 }
