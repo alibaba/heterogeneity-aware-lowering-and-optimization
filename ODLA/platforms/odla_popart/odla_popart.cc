@@ -36,36 +36,6 @@
 _odla_computation* _odla_computation::instance_ = nullptr;
 std::mutex _odla_computation::comp_mutex_;
 
-void compile_and_export_cache(std::string catch_file_name,
-                              std::string config_file_name) {
-  std::fstream catch_fs(catch_file_name,
-                        std::ios_base::out | std::ifstream::binary);
-  std::fstream config_fs;
-  std::string config_string;
-  if (config_file_name.size() > 0) {
-    config_fs.open(config_file_name, std::ios_base::in | std::ifstream::binary);
-    if (!config_fs.is_open()) {
-      popart::logging::warn(
-          "invalid config file name:[ {} ] will use default config",
-          config_file_name);
-      config_string = PopartConfig::instance()->get_default_config_string();
-    }
-    std::ostringstream config_ss;
-    config_ss << config_fs.rdbuf();
-    config_string = config_ss.str();
-  } else {
-    config_string = PopartConfig::instance()->get_default_config_string();
-  }
-
-  int config_size = config_string.size();
-  catch_fs.write((char*)&config_size, sizeof(config_string.size()));
-  catch_fs.write(config_string.c_str(), config_string.size());
-
-  _odla_computation::instance()->session->compileAndExport(catch_fs.flush());
-  catch_fs.flush();
-  catch_fs.close();
-}
-
 void compute_loop(odla_computation comp) {
   // setup the stepio with allbacks
   popart::StepIOCallback stepio(input_callback, input_complete_callback,
