@@ -132,10 +132,10 @@ struct _odla_computation {
     builder->setAttribute(popart::sVirtualGraphAttribute, 0);
   }
   std::string set_pipeline_stage();
-  void init(bool is_compile = false);
   void set_session_opts();
   bool use_pipeline();
   bool hold();
+  odla_status init(bool is_compile = false);
   odla_status set_executor();
   odla_status set_opts();
   odla_status compile_and_export();
