@@ -567,7 +567,7 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
     std::vector<Def> ops{op0, op_starts, *op_len};
 
     if (ext->GetNumOfOperands() >= 4) {
-      ops.push_back(ext->GetOperand(4));
+      ops.push_back(ext->GetOperand(3));
     }
     if (ext->GetNumOfOperands() > 4) {
       ops.push_back(ext->GetOperand(4));
