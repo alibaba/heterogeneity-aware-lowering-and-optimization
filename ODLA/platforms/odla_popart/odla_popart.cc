@@ -148,14 +148,14 @@ odla_status _odla_computation::compile_and_export() {
   return ret_value;
 }
 
-void _odla_computation::init(bool is_compile) {
+odla_status _odla_computation::init(bool is_compile) {
   if (!session) {
     std::lock_guard<std::mutex> guard(init_mutex_);
     if (!session) {
       odla_status status = set_opts();
       if (status != ODLA_SUCCESS) {
         popart::logging::err("set computation option failed");
-        return;
+        return status;
       }
       // Cretate the dataflow
       std::vector<popart::TensorId> ids;
@@ -179,12 +179,14 @@ void _odla_computation::init(bool is_compile) {
 
       // Create and config SessionOptions
       set_session_opts();
-      if (use_pipeline()) try {
+      if (use_pipeline()) {
+        try {
           builder = popart::Builder::createFromOnnxModel(set_pipeline_stage());
         } catch (std::exception& e) {
           popart::logging::err("create builder from onnx model failed.");
-          return;
+          return ODLA_FAILURE;
         }
+      }
       auto proto = builder->getModelProto(); // So, the init must be called at
                                              // odla_ExecuteCompute
 
@@ -208,7 +210,7 @@ void _odla_computation::init(bool is_compile) {
       } catch (std::exception& e) {
         popart::logging::err("Session::createFromOnnxModel failed:{}",
                              e.what());
-        return;
+        return ODLA_FAILURE;
       }
 
       if (!is_compile) {
@@ -230,7 +232,7 @@ void _odla_computation::init(bool is_compile) {
           new_session->weightsFromHost(); // Copy weights from host to IPU
         } catch (std::exception& e) {
           popart::logging::err("session init failed: {}", e.what());
-          return;
+          return ODLA_FAILURE;
         }
         // If in parallel mode, start the thread
         ExecutionMode mode = PopartConfig::instance()->execution_mode();

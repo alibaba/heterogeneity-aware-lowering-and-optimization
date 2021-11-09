@@ -119,12 +119,13 @@ odla_status odla_CreateComputation(odla_computation* comp) {
         popart::logging::err("load config from cache failed");
         return ret;
       }
-    }
-    auto ret = PopartConfig::instance()->load_config(
-        std::getenv("ODLA_POPART_CONFIG"));
-    if (ret != ODLA_SUCCESS) {
-      popart::logging::err("error load config");
-      return ret;
+    } else {
+      auto ret = PopartConfig::instance()->load_config(
+          std::getenv("ODLA_POPART_CONFIG"));
+      if (ret != ODLA_SUCCESS) {
+        popart::logging::err("error load config");
+        return ret;
+      }
     }
   }
   odla_status status = _odla_computation::instance()->set_executor();
@@ -143,8 +144,9 @@ odla_status odla_CreateComputation(odla_computation* comp) {
 }
 
 odla_status odla_CreateContext(odla_context* context) {
-  _odla_computation::instance(false)
-      ->init(); // Place the init here to avoid long execution problem
+  odla_status status =
+      _odla_computation::instance(false)
+          ->init(); // Place the init here to avoid long execution problem
   if (_odla_computation::instance()->session == nullptr) {
     popart::logging::err("init computation item in CreateContext failed.");
     return ODLA_FAILURE;
