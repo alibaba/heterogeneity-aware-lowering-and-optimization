@@ -66,7 +66,8 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Data Structures</a>  </div>
+<a href="#nested-classes">Data Structures</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">odla_ops_quantization.h File Reference</div>  </div>
 </div><!--header-->
@@ -79,12 +80,154 @@ Data Structures</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structodla__value__quant__info.html">odla_value_quant_info</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Quantization info for each odla value.  <a href="structodla__value__quant__info.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:acfad12ea0cf70193afa3c560b9c50adb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__quantization_8h.html#acfad12ea0cf70193afa3c560b9c50adb">odla_Dequantize</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> scale, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> zero_point, <a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a> axis, odla_element_type target_data_type, const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
+<tr class="memdesc:acfad12ea0cf70193afa3c560b9c50adb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dequantize a tensor.  <a href="odla__ops__quantization_8h.html#acfad12ea0cf70193afa3c560b9c50adb">More...</a><br /></td></tr>
+<tr class="separator:acfad12ea0cf70193afa3c560b9c50adb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5bfd610fde89d3679f13658e7a48f355"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__quantization_8h.html#a5bfd610fde89d3679f13658e7a48f355">odla_Quantize</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> scale, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> zero_point, <a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a> axis, odla_element_type target_data_type, const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
+<tr class="memdesc:a5bfd610fde89d3679f13658e7a48f355"><td class="mdescLeft">&#160;</td><td class="mdescRight">Quantize a tensor.  <a href="odla__ops__quantization_8h.html#a5bfd610fde89d3679f13658e7a48f355">More...</a><br /></td></tr>
+<tr class="separator:a5bfd610fde89d3679f13658e7a48f355"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This file defines the ODLA quantization related operators. </p>
 
 <p class="definition">Definition in file <a class="el" href="odla__ops__quantization_8h_source.html">odla_ops_quantization.h</a>.</p>
-</div></div><!-- contents -->
+</div><h2 class="groupheader">Function Documentation</h2>
+<a id="acfad12ea0cf70193afa3c560b9c50adb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acfad12ea0cf70193afa3c560b9c50adb">&#9670;&nbsp;</a></span>odla_Dequantize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL odla_Dequantize </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
+          <td class="paramname"><em>input</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
+          <td class="paramname"><em>scale</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
+          <td class="paramname"><em>zero_point</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a>&#160;</td>
+          <td class="paramname"><em>axis</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">odla_element_type&#160;</td>
+          <td class="paramname"><em>target_data_type</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a>&#160;</td>
+          <td class="paramname"><em>value_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Dequantize a tensor. </p>
+<p>Converts a quantized tensor to the full precision tensor. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">input</td><td>the input value </td></tr>
+    <tr><td class="paramname">scale</td><td>scale for input </td></tr>
+    <tr><td class="paramname">zero_point</td><td>zero point for input </td></tr>
+    <tr><td class="paramname">axis</td><td>the axis of the dequantizing. Ignored if scale is a scalar </td></tr>
+    <tr><td class="paramname">target_data_type</td><td>the data type of full precision output </td></tr>
+    <tr><td class="paramname">value_id</td><td>a unique value id (can be NULL)</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>odla_value </dd></dl>
+
+</div>
+</div>
+<a id="a5bfd610fde89d3679f13658e7a48f355"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5bfd610fde89d3679f13658e7a48f355">&#9670;&nbsp;</a></span>odla_Quantize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL odla_Quantize </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
+          <td class="paramname"><em>input</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
+          <td class="paramname"><em>scale</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
+          <td class="paramname"><em>zero_point</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a>&#160;</td>
+          <td class="paramname"><em>axis</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">odla_element_type&#160;</td>
+          <td class="paramname"><em>target_data_type</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a>&#160;</td>
+          <td class="paramname"><em>value_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Quantize a tensor. </p>
+<p>Converts a tensor to low precision tensor. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">input</td><td>the input value </td></tr>
+    <tr><td class="paramname">scale</td><td>scale for input </td></tr>
+    <tr><td class="paramname">zero_point</td><td>zero point for input </td></tr>
+    <tr><td class="paramname">axis</td><td>the axis of the quantizing. Ignored if scale is a scalar </td></tr>
+    <tr><td class="paramname">target_data_type</td><td>the data type of low precision output </td></tr>
+    <tr><td class="paramname">value_id</td><td>a unique value id (can be NULL)</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>odla_value </dd></dl>
+
+</div>
+</div>
+</div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
