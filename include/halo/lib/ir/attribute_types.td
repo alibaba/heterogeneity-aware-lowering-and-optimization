@@ -23,6 +23,8 @@ include "value_type.td"
 /// Common Attribute types
 let is_integer_ = 1 in {
   def Bool : ValueType<1, "bool">;
+  def Int8: ValueType<8, "int8_t">;
+  def UInt8: ValueType<8, "uint8_t">;
   def Integer : ValueType<32, "int">;
   def Integer64 : ValueType<64, "int64_t">;
   def BoolList : ValueType<1, "std::vector<bool>"> { let is_array_ = 1; }
