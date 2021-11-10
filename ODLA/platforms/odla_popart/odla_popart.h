@@ -115,6 +115,7 @@ struct _odla_computation {
       }
     }
   }
+  bool is_compile_only_;
   bool done_;
   bool thread_complete_;
   std::mutex init_mutex_;
@@ -127,14 +128,18 @@ struct _odla_computation {
         device(nullptr),
         opts({false, 1, 1}),
         done_(false),
+        is_compile_only_(false),
         executor_(nullptr),
         thread_state_(DONE) {
     builder->setAttribute(popart::sVirtualGraphAttribute, 0);
   }
   std::string set_pipeline_stage();
   void set_session_opts();
+
   bool use_pipeline();
   bool hold();
+
+  odla_status init_working_thread();
   odla_status init(bool is_compile = false);
   odla_status set_executor();
   odla_status set_opts();
@@ -142,6 +147,15 @@ struct _odla_computation {
 
   inline Execution* executor() { return executor_; }
   inline bool is_done() { return thread_state_ != RUNNING; }
+  inline bool is_compile_only() { return is_compile_only_; }
+  inline void release_session() {
+    if (session != nullptr) {
+      session->getDevice().getDeviceInfo()->detach();
+      session.reset();
+      assert(session == nullptr);
+    }
+  }
+
   inline void mark_done() {
     while (thread_state_ != DONE) {
       std::unique_lock<std::mutex> lock(thread_done_mutex_);
@@ -150,11 +164,7 @@ struct _odla_computation {
     }
     // Once get notified, only detach the device once
     std::lock_guard<std::mutex> guard(init_mutex_);
-    if (session != nullptr) {
-      session->getDevice().getDeviceInfo()->detach();
-      session.reset();
-      assert(session == nullptr);
-    }
+    release_session();
   }
   inline void thread_done() {
     std::unique_lock<std::mutex> lock(thread_done_mutex_);
