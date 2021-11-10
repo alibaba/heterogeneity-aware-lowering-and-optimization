@@ -242,7 +242,10 @@ odla_status _odla_computation::init(bool is_compile) {
           popart::logging::warn("Parallel loop has been started");
           parallel_thread.detach();
         }
+      } else {
+        is_compile_only_ = true;
       }
+
       session =
           std::move(new_session); // set session after all initialization done.
     }
