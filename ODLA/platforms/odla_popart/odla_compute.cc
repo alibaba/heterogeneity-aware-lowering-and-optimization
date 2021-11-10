@@ -81,8 +81,10 @@ odla_status odla_CreateExecutable(odla_executable* executable,
     return ODLA_FAILURE;
   } else {
     if (comp->session) {
+      popart::logging::info("Create cache file from exist session");
       return comp->compile_and_export();
     } else {
+      popart::logging::info("Computation is not initialized. init it first");
       _odla_computation::instance()->init(true); // set is_compile to true
                                                  // this comp init will create
                                                  // executable
@@ -107,6 +109,7 @@ odla_status odla_LoadExecutable(const odla_char* file_name,
 odla_status odla_CreateComputation(odla_computation* comp) {
   static void* custom_op_handle = nullptr;
   *comp = _odla_computation::instance();
+  popart::logging::info("computation created");
   if (custom_op_handle == nullptr) {
     custom_op_handle = dlopen("libcustom_ops.so", RTLD_NOW | RTLD_GLOBAL);
     if (custom_op_handle == nullptr) {
@@ -150,7 +153,8 @@ odla_status odla_CreateContext(odla_context* context) {
   odla_status status =
       _odla_computation::instance(false)
           ->init(); // Place the init here to avoid long execution problem
-  if (_odla_computation::instance()->session == nullptr) {
+  if (status != ODLA_SUCCESS &&
+      _odla_computation::instance()->session == nullptr) {
     popart::logging::err("init computation item in CreateContext failed.");
     return ODLA_FAILURE;
   }
@@ -164,15 +168,27 @@ odla_status odla_DestroyContext(odla_context ctx) {
 }
 
 odla_status odla_DestroyComputation(odla_computation comp) {
-  comp->mark_done();
-  _odla_computation::destruct();
-  QManager::instance()->deleteQ(); // delete current queue
+  if (comp != nullptr) {
+    if (!comp->is_compile_only()) {
+      comp->mark_done();
+      QManager::instance()->deleteQ(); // delete current queue
+    }
+    comp->release_session();
+    _odla_computation::destruct(); // release the real computation
+  }
+
   return ODLA_SUCCESS;
 }
 
 odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
+  if (_odla_computation::instance()->is_compile_only()) {
+    popart::logging::err(
+        "This computation is created for compile executable, please re-create "
+        "another computation for computing");
+    return ODLA_FAILURE;
+  }
   if (!context->hold("odla_ExecuteComputation")) return ODLA_FAILURE;
   return comp->executor()->compute(comp, context, mode, device);
 }
