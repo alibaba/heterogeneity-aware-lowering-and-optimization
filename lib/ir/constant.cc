@@ -370,6 +370,13 @@ bool Constant::HasSameValueOf(float x) const {
         }
         break;
       }
+      case DataType::BOOL: {
+        bool t = x != 0;
+        if (GetData<bool>(i) != t) {
+          return false;
+        }
+        break;
+      }
       default: {
         return false;
       }

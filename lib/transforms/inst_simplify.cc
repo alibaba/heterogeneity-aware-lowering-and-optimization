@@ -2381,6 +2381,33 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
   return {orig_def, orig_def};
 }
 
+std::pair<Def, Def> InstSimplify::RunOnInstruction(SelectInst* inst) {
+  Def orig_def{inst, 0};
+  auto cond = DynCast<Constant>(inst->GetOperand(0));
+  const auto& ret_type = inst->GetResultType();
+  if (cond == nullptr || !ret_type.IsValid()) {
+    return {orig_def, orig_def};
+  }
+  const auto& lhs = inst->GetOperand(1);
+  const auto& rhs = inst->GetOperand(2);
+  // If no broadcasting, we can simply return the true/false value.
+  if (lhs.GetType() == ret_type && cond->HasSameValueOf(1)) {
+    return {orig_def, lhs};
+  }
+  if (rhs.GetType() == ret_type && cond->HasSameValueOf(0)) {
+    return {orig_def, rhs};
+  }
+
+  auto tv = DynCast<Constant>(lhs);
+  auto fv = DynCast<Constant>(rhs);
+  if (tv != nullptr && fv != nullptr) {
+    // TODO(unknown): constant folding
+    return {orig_def, orig_def};
+  }
+
+  return {orig_def, orig_def};
+}
+
 std::pair<Def, Def> InstSimplify::RunOnInstruction(FPtoSIInst* inst) {
   Def orig_def{inst, 0};
   auto op0 = inst->GetOperand(0);

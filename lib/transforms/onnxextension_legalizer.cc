@@ -567,7 +567,7 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
     std::vector<Def> ops{op0, op_starts, *op_len};
 
     if (ext->GetNumOfOperands() >= 4) {
-      ops.push_back(ext->GetOperand(4));
+      ops.push_back(ext->GetOperand(3));
     }
     if (ext->GetNumOfOperands() > 4) {
       ops.push_back(ext->GetOperand(4));
@@ -856,6 +856,45 @@ static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
   }
 
   return ret_v;
+}
+
+static std::vector<Def> ConvertRange(const ONNXExtensionInst* ext,
+                                     IRBuilder* builder) {
+  HLCHECK(ext->GetNumOfOperands() == 3);
+  const Constant* start = DynCast<Constant>(ext->GetOperand(0));
+  const Constant* limit = DynCast<Constant>(ext->GetOperand(1));
+  const Constant* delta = DynCast<Constant>(ext->GetOperand(2));
+
+  if (start == nullptr || limit == nullptr || delta == nullptr) {
+    return {};
+  }
+  const auto& elem_type = start->GetResultType().GetDataType();
+  int64_t begin = start->GetDataAsInt64(0);
+  int64_t end = limit->GetDataAsInt64(0);
+  int64_t step = delta->GetDataAsInt64(0);
+
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+
+  auto fill = [&cb, ext](DataType dt, auto data, int64_t start, int64_t limit,
+                         int64_t delta) {
+    int64_t n = std::max(0L, (limit - start + delta - 1) / delta);
+    data.reserve(n);
+    for (int64_t i = start; i != limit; i += delta) {
+      data.push_back(i);
+    }
+    return cb.CreateConstant(ext->GetName(), Type{dt, {n}}, data.data());
+  };
+  switch (elem_type) {
+    case DataType::INT32:
+      return {*fill(elem_type, std::vector<int32_t>{}, begin, end, step)};
+    case DataType::INT64:
+      return {*fill(elem_type, std::vector<int64_t>{}, begin, end, step)};
+    case DataType::FLOAT32:
+      return {*fill(elem_type, std::vector<float>{}, begin, end, step)};
+    default:
+      HLCHECK("Unhandled type for range");
+  }
+  return {};
 }
 
 std::vector<Def> ConvertGlobalMaxPooling(const ONNXExtensionInst* ext,
@@ -1611,6 +1650,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::ONEHOT: {
       return ConvertOneHot(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::RANGE: {
+      return ConvertRange(onnx_inst, builder);
     }
     case ONNXExtOpCode::SIZE: {
       return ConvertSize(onnx_inst, builder);
