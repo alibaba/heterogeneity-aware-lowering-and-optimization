@@ -15,6 +15,8 @@
 // limitations under the License.
 // =============================================================================
 
+#include <numeric>
+
 #include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/pass/pass.h"
 
@@ -142,6 +144,74 @@ std::vector<Def> ConvertSqueezeImpl(const T* ext, IRBuilder* builder,
   auto new_inst = builder->CreateReshape(ext->GetName(), {input, *c});
   return {*new_inst};
 }
+
+template <typename T>
+class ConstantAccessor {
+ public:
+  class Iterator {
+   public:
+    explicit Iterator(const ConstantAccessor& ca,
+                      const std::vector<int64_t>& pos)
+        : ca_(ca), indices_(pos) {}
+    Iterator& operator++() {
+      for (int i = ca_.rank_ - 1, c = 1; i >= 0 && c > 0; --i) {
+        indices_[i] += c;
+        c = 0;
+        if (indices_[i] >= ca_.shape_[i]) {
+          c = 1;
+          indices_[i] = 0;
+        }
+      }
+      return *this;
+    }
+
+    const T& operator*() {
+      int64_t pos = std::inner_product(indices_.begin(), indices_.end(),
+                                       ca_.strides_.begin(), 0UL);
+      return ca_.constant_.template GetData<T>(pos);
+    }
+
+    Iterator operator++(int) {
+      auto tmp = *this;
+      operator++();
+      return tmp;
+    }
+
+    bool operator!=(const Iterator& other) {
+      return indices_ != other.indices_;
+    }
+
+   private:
+    const ConstantAccessor& ca_;
+    std::vector<int64_t> indices_;
+  };
+
+  ConstantAccessor(const Constant& constant, const Type& broadcasted_type)
+      : constant_(constant) {
+    HLCHECK(constant.GetResultType().BroadcastableTo(broadcasted_type));
+    shape_ = broadcasted_type.GetDimSizes();
+    rank_ = shape_.size();
+    strides_.resize(rank_);
+    int64_t p = 1;
+    const auto& actual_shape = constant.GetResultType().GetDimSizes();
+    int actual_rank = static_cast<int>(actual_shape.size());
+    for (int i = rank_ - 1, j = actual_rank - 1; i >= 0 && j >= 0; --i, --j) {
+      strides_[i] = (actual_shape[j] == 1) ? 0 : p;
+      p *= actual_shape[i];
+    }
+  }
+  explicit ConstantAccessor(const Constant& constant)
+      : ConstantAccessor(constant, constant.GetResultType()) {}
+  Iterator begin() { return Iterator(*this, std::vector<int64_t>(rank_)); }
+  Iterator end() { return Iterator(*this, shape_); }
+  friend Iterator;
+
+ private:
+  const Constant& constant_;
+  std::vector<int64_t> shape_;
+  std::vector<int64_t> strides_;
+  int rank_ = 0;
+};
 
 } // end namespace halo.
 #endif // HALO_LIB_TRANSFORMS_TRANSFORMS_UTIL_H_

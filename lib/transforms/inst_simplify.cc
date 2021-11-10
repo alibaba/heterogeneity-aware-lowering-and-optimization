@@ -44,53 +44,56 @@ static Constant* RunConstantFoldingOnMathBinary(const std::string& name,
                                                 const Type& ret_type, Def op0,
                                                 Def op1, OpCode opcode,
                                                 KindPredicate pred) {
-  if (!IsA<Constant>(op0) || !IsA<Constant>(op1)) {
-    return nullptr;
-  }
-  if ((op0.GetType().GetTotalNumOfElements() !=
-           op1.GetType().GetTotalNumOfElements() &&
-       op1.GetType().GetTotalNumOfElements() != 1)) {
-    return nullptr;
-  }
-  if (opcode == OpCode::CMP) {
-    if (pred == KindPredicate::GE) {
-      pred = KindPredicate::LT;
-      std::swap(op0, op1);
-    } else if (pred == KindPredicate::GT) {
-      pred = KindPredicate::LE;
-      std::swap(op0, op1);
-    }
-  }
   Constant* c_lhs = DynCast<Constant>(op0);
   Constant* c_rhs = DynCast<Constant>(op1);
-  size_t num_elements = op0.GetType().GetTotalNumOfElements();
+  if (c_lhs == nullptr || c_rhs == nullptr) {
+    return nullptr;
+  }
+
+  if (opcode == OpCode::CMP) {
+    if (pred == KindPredicate::GE || pred == KindPredicate::GT) {
+      pred =
+          (pred == KindPredicate::GE) ? KindPredicate::LT : KindPredicate::LE;
+      std::swap(op0, op1);
+      std::swap(c_lhs, c_rhs);
+    }
+  }
+
+  ConstantAccessor<T> lhs_accessor(*c_lhs, ret_type);
+  ConstantAccessor<T> rhs_accessor(*c_rhs, ret_type);
+  auto lhs_it = lhs_accessor.begin();
+  auto rhs_it = rhs_accessor.begin();
+
+  size_t num_elements = ret_type.GetTotalNumOfElements();
   Constant* c_ret = nullptr;
   ConstantBuilder cb(DynCast<Function>(c_lhs->GetParent()));
   std::vector<T> ret;
   ret.reserve(num_elements);
-  bool rhs_is_scalar = op1.GetType().GetTotalNumOfElements() == 1;
-
   switch (opcode) {
     case OpCode::ADD: {
       for (size_t i = 0; i < num_elements; ++i) {
-        ret.push_back(c_lhs->GetData<T>(i) +
-                      c_rhs->GetData<T>(rhs_is_scalar ? 0 : i));
+        ret.push_back(*lhs_it++ + *rhs_it++);
+      }
+      c_ret = cb.CreateConstant(name, ret_type, ret.data());
+      break;
+    }
+    case OpCode::SUB: {
+      for (size_t i = 0; i < num_elements; ++i) {
+        ret.push_back(*lhs_it++ - *rhs_it++);
       }
       c_ret = cb.CreateConstant(name, ret_type, ret.data());
       break;
     }
     case OpCode::MUL: {
       for (size_t i = 0; i < num_elements; ++i) {
-        ret.push_back(c_lhs->GetData<T>(i) *
-                      c_rhs->GetData<T>(rhs_is_scalar ? 0 : i));
+        ret.push_back(*lhs_it++ * *rhs_it++);
       }
       c_ret = cb.CreateConstant(name, ret_type, ret.data());
       break;
     }
     case OpCode::DIV: {
       for (size_t i = 0; i < num_elements; ++i) {
-        ret.push_back(c_lhs->GetData<T>(i) /
-                      c_rhs->GetData<T>(rhs_is_scalar ? 0 : i));
+        ret.push_back(*lhs_it++ / *rhs_it++);
       }
       c_ret = cb.CreateConstant(name, ret_type, ret.data());
       break;
@@ -100,8 +103,18 @@ static Constant* RunConstantFoldingOnMathBinary(const std::string& name,
       switch (pred) {
         case KindPredicate::LT: {
           for (size_t i = 0; i < num_elements; ++i) {
-            if (c_lhs->GetData<T>(i) <
-                c_rhs->GetData<T>(rhs_is_scalar ? 0 : i)) {
+            if (*lhs_it++ < *rhs_it++) {
+              ret.push_back(1);
+            } else {
+              ret.push_back(0);
+            }
+          }
+          c_ret = cb.CreateConstant(name, ret_type, ret.data());
+          break;
+        }
+        case KindPredicate::EQ: {
+          for (size_t i = 0; i < num_elements; ++i) {
+            if (*lhs_it++ == *rhs_it++) {
               ret.push_back(1);
             } else {
               ret.push_back(0);
@@ -220,15 +233,20 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
   auto op1 = binary_inst->GetOperand(1);
   auto opc = binary_inst->GetOpCode();
   bool has_swapped = false;
-  if (IsA<Constant>(op0)) {
+  bool commutative = opc == OpCode::ADD || opc == OpCode::MUL;
+
+  Constant* op0_c = DynCast<Constant>(op0);
+  Constant* op1_c = DynCast<Constant>(op1);
+
+  if (op0_c != nullptr && commutative) {
     std::swap(op0, op1);
+    std::swap(op0_c, op1_c);
     has_swapped = true;
   }
 
   // MUL(x, 1) ==> x.
-  if (opc == OpCode::MUL && IsA<Constant>(op1)) {
-    const Constant* c = DynCast<Constant>(op1);
-    if (c->HasSameValueOf(1)) {
+  if (opc == OpCode::MUL && op1_c != nullptr) {
+    if (op1_c->HasSameValueOf(1)) {
       const Type& type0 = op0.GetType();
       const Type& type1 = op1.GetType();
       if (IsSameType(type0, type1)) {
@@ -238,20 +256,18 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
   }
 
   IRBuilder builder(binary_inst->GetParent());
-  // ADD/SUB(x, 0) ==> x, SUB(0, x) ==> -x
-  if ((opc == OpCode::ADD || (opc == OpCode::SUB && !has_swapped)) &&
-      IsA<Constant>(op1)) {
-    const Constant* c = DynCast<Constant>(op1);
-    if (c->HasSameValueOf(0)) {
-      if (opc == OpCode::ADD || !has_swapped) {
-        return {orig_def, op0};
-      }
-      auto neg = builder.CreateNeg(binary_inst->GetName(), op0);
-      return {orig_def, *neg};
-    }
+  builder.SetInsertAfter(binary_inst);
+  // ADD/SUB(x, 0) ==> x
+  if ((opc == OpCode::ADD || opc == OpCode::SUB) && op1_c != nullptr &&
+      op1_c->HasSameValueOf(0)) {
+    return {orig_def, op0};
+  }
+  // SUB(0, x) ==> -x
+  if (opc == OpCode::SUB && op0_c != nullptr && op0_c->HasSameValueOf(0)) {
+    auto neg = builder.CreateNeg(binary_inst->GetName(), op1);
+    return {orig_def, *neg};
   }
 
-  builder.SetInsertAfter(binary_inst);
   ConstantBuilder cb(binary_inst->GetParent()->GetParent());
   // SUB(x, x) ==> 0
   if (opc == OpCode::SUB && op0 == op1) {
@@ -266,8 +282,10 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
   if (opc == OpCode::ADD && fuse_fully_connected) {
     if (IsA<MatMulInst>(op1)) {
       std::swap(op0, op1);
+      std::swap(op0_c, op1_c);
+      has_swapped = !has_swapped;
     }
-    if (IsA<MatMulInst>(op0) && IsA<Constant>(op1)) {
+    if (IsA<MatMulInst>(op0) && op1_c != nullptr) {
       int16_t kernel_dim =
           DynCast<MatMulInst>(op0)->GetOperand(1).GetType().GetNumOfDims();
       if ((!DynCast<MatMulInst>(op0)->GetTransposeA()) &&
@@ -298,10 +316,12 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
   }
 
   if (fuse_matmul_mul && opc == OpCode::MUL) {
-    if (IsA<Constant>(op0)) {
+    if (op0_c != nullptr) {
       std::swap(op0, op1);
+      std::swap(op0_c, op1_c);
+      has_swapped = !has_swapped;
     }
-    if (IsA<MatMulInst>(op0) && IsA<Constant>(op1)) {
+    if (IsA<MatMulInst>(op0) && op1_c != nullptr) {
       auto op_matmul0 = DynCast<MatMulInst>(op0)->GetOperand(0); // input
       auto op_matmul1 = DynCast<MatMulInst>(op0)->GetOperand(1); // weight
       if (IsA<Constant>(op_matmul1) &&
@@ -318,7 +338,7 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
         const auto& kernel_type = kernel->GetResultType();
         int32_t h = kernel_type.GetNumOfElementsInDim(0);
         int32_t w = kernel_type.GetNumOfElementsInDim(1);
-        auto weight_2 = DynCast<Constant>(op1);
+        auto weight_2 = op1_c;
         std::vector<float> mul_buf(h * w);
 
         for (int32_t i = 0; i < w; i++) {
@@ -354,14 +374,14 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
 
   // Fuse mul/add into conv.
   if ((opc == OpCode::MUL || (fuse_conv_bias && opc == OpCode::ADD)) &&
-      IsA<Constant>(op1)) {
-    const Constant* c = DynCast<Constant>(op1);
+      op1_c != nullptr) {
     // check if mul can be fused with conv
     Instruction* new_inst = nullptr;
     if (IsA<Conv2DInst>(op0)) {
-      new_inst = FuseToConvDeConv(DynCast<Conv2DInst>(op0), opc, c);
+      new_inst = FuseToConvDeConv(DynCast<Conv2DInst>(op0), opc, op1_c);
     } else if (IsA<Conv2DTransposeInst>(op0)) {
-      new_inst = FuseToConvDeConv(DynCast<Conv2DTransposeInst>(op0), opc, c);
+      new_inst =
+          FuseToConvDeConv(DynCast<Conv2DTransposeInst>(op0), opc, op1_c);
     }
     if (new_inst != nullptr) {
       return {orig_def, *new_inst};
@@ -383,6 +403,8 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
   if (ret_type.IsValid()) {
     if (has_swapped) {
       std::swap(op0, op1);
+      std::swap(op0_c, op1_c);
+      has_swapped = !has_swapped;
     }
     Constant* c_ret = nullptr;
     switch (op0_type.GetDataType()) {
@@ -2352,7 +2374,6 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
       }
     }
     bool all_steps_are_one = has_constant_steps;
-
     if (rank == 1 && all_steps_are_one) {
       auto idx = starts->GetDataAsInt64(0);
       auto len = lens->GetDataAsInt64(0);

@@ -125,7 +125,7 @@ static void RunOnMathBinaryInstruction(Instruction* inst) {
   auto rank = (op1_rank > op2_rank) ? op1_rank : op2_rank;
 
   int diff = std::abs(op1_rank - op2_rank);
-  ret_shape.reserve(diff);
+  ret_shape.reserve(rank);
   for (int i = 0; i < diff; i++) {
     ret_shape.push_back((op1_rank > op2_rank) ? type0.GetNumOfElementsInDim(i)
                                               : type1.GetNumOfElementsInDim(i));
