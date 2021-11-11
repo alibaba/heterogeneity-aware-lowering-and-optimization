@@ -63,14 +63,35 @@ void static QuantTo(Constant* val, DataType dt, float scale, float offset) {
   val->SetData(new_type, quant_data.data());
 }
 
-void WeightsQuantizer::RunOnConstant(Constant* val) {
+void static QuantToFp16(Constant* val) {
   const auto& type = val->GetResultType();
-  // So far only quint8 is supported.
-  HLCHECK(quant_ == Quantization::QUINT8);
   if (type.GetDataType() != DataType::FLOAT32) {
     return;
   }
+  size_t len = type.GetTotalNumOfElements();
+  std::vector<uint16_t> quant_data(len);
 
+  for (size_t i = 0; i < len; ++i) {
+    float ori_data = val->GetDataAsFloat32(i);
+    uint16_t q = halo::Float::GetFP16(ori_data);
+    quant_data[i] = q;
+  }
+
+  halo::Type new_type{DataType::FLOAT16, type.GetDimSizes()};
+  val->SetData(new_type, quant_data.data());
+}
+
+void WeightsQuantizer::RunOnConstant(Constant* val) {
+  const auto& type = val->GetResultType();
+  // So far quint8 and float16 are supported.
+  HLCHECK(quant_ == Quantization::QUINT8 || quant_ == Quantization::FLOAT16);
+  if (type.GetDataType() != DataType::FLOAT32) {
+    return;
+  }
+  if (quant_ == Quantization::FLOAT16) {
+    QuantToFp16(val);
+    return;
+  }
   const float* data = val->GetDataPtr<float>();
   size_t len = type.GetTotalNumOfElements();
   constexpr int range = 255;
