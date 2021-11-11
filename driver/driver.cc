@@ -220,7 +220,9 @@ static llvm::cl::list<std::string> Outputs(
 
 static llvm::cl::opt<Quantization> QuantWeights(
     llvm::cl::values(clEnumValN(Quantization::QUINT8, "quint8",
-                                "Quantize weigths as quint8")),
+                                "Quantize weigths as quint8"),
+                     clEnumValN(Quantization::FLOAT16, "float16",
+                                "Quantize weigths as float16")),
     "quantize-weights", llvm::cl::desc("Emit weights as quantized"),
     llvm::cl::init(Quantization::None), llvm::cl::cat(HaloOptCat));
 

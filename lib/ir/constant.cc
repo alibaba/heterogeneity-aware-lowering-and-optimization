@@ -52,65 +52,6 @@ Constant::Constant(const Constant& from)
       data_(from.data_),
       string_data_(from.string_data_) {}
 
-struct Float {
-  // TODO(unknown): no infinity, underflow/overflow handling.
- private:
-  Float() = delete;
-  static constexpr int BitsPerInt = CHAR_BIT * sizeof(int);
-  template <typename T, int exp, int mantissa>
-  static std::array<int, 3> Extract(T x) {
-    static_assert(exp + mantissa + 1 == sizeof(T) * CHAR_BIT);
-    int sign = x >> (exp + mantissa);
-    int m = x & ((1 << mantissa) - 1);
-    int e = (x >> mantissa) & ((1 << exp) - 1);
-    return {sign, e, m};
-  }
-
-  template <typename T, int exp, int mantissa>
-  static T Combine(int sign, int e, int m) {
-    static_assert(exp + mantissa + 1 == sizeof(T) * CHAR_BIT);
-    T x{0};
-    x = sign ? 1U << (exp + mantissa) : 0;
-    m >>= BitsPerInt - mantissa;
-    x |= m & ((1U << mantissa) - 1);
-    x |= (e & ((1U << exp) - 1)) << mantissa;
-    return x;
-  }
-  static constexpr int FP32Exp = 8;
-  static constexpr int FP32Mantissa = 23;
-  static constexpr int FP32ExpBias = 127;
-  static constexpr int FP16Exp = 5;
-  static constexpr int FP16Mantissa = 10;
-  static constexpr int FP16ExpBias = 15;
-
-  static inline float GetFP32(uint8_t sign, int32_t e, uint32_t m) {
-    uint32_t x =
-        Combine<uint32_t, FP32Exp, FP32Mantissa>(sign, e + FP32ExpBias, m);
-    const void* p = &x;
-    return *(reinterpret_cast<const float*>(p)); // NOLINT.
-  }
-  static inline uint16_t GetFP16(uint8_t sign, int32_t e, uint32_t m) {
-    return Combine<uint16_t, FP16Exp, FP16Mantissa>(sign, e + FP16ExpBias, m);
-  }
-
- public:
-  static inline uint16_t GetFP16(float x) {
-    const void* p = &x;
-    uint32_t v = *(reinterpret_cast<const int*>(p)); // NOLINT.
-    auto components = Extract<uint32_t, FP32Exp, FP32Mantissa>(v);
-    components[1] -= FP32ExpBias;
-    components[2] <<= BitsPerInt - FP32Mantissa;
-    return GetFP16(components[0], components[1], components[2]);
-  }
-
-  static inline float GetFP32(uint16_t x) {
-    auto components = Extract<uint16_t, FP16Exp, FP16Mantissa>(x);
-    components[1] -= FP16ExpBias;
-    components[2] <<= BitsPerInt - FP16Mantissa;
-    return GetFP32(components[0], components[1], components[2]);
-  }
-};
-
 template <typename T>
 static void PrintValues(std::ostream* os, const T* ptr, size_t n) {
   for (size_t i = 0; i < n; ++i) {
