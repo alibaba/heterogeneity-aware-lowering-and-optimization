@@ -214,7 +214,7 @@ odla_status _odla_computation::init(bool is_compile) {
       }
 
       if (!is_compile) {
-        if (PopartConfig::instance()->load_cache()) {
+        if (PopartConfig::instance()->load_or_save_cache()) {
           popart::logging::info("Load cachefile from existing stream");
           auto cache_fs = PopartConfig::instance()->get_cache_fs();
           if (cache_fs->is_open()) {

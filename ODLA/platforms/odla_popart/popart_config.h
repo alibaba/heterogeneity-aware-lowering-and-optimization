@@ -62,7 +62,7 @@ class PopartConfig {
       execution_mode_; // The execution mode {PIPELINE, PARALLEL, SEQUENCE}
   bool load_onnx_;     // Whether load onnx model to run instead of the model
                        // constructed. Use for test
-  bool load_cache_;    // If the session will load graph from cache
+  bool load_or_save_cache_; // If the session will load graph from cache
   std::string cache_path_; // the path of cache file, for load cache
                            // directly
 
@@ -94,7 +94,7 @@ class PopartConfig {
         batches_per_step_(1),
         execution_mode_(UNKNOWN),
         load_onnx_(false),
-        load_cache_(false),
+        load_or_save_cache_(false),
         save_model_(false),
         inited_(false),
         ipu_num_(1) {}
@@ -123,12 +123,12 @@ class PopartConfig {
   inline std::shared_ptr<std::fstream> get_cache_fs() { return cache_fs; }
   inline void set_cache_fs(std::shared_ptr<std::fstream> fs) { cache_fs = fs; }
 
-  inline bool load_cache() { return load_cache_; }
+  inline bool load_or_save_cache() { return load_or_save_cache_; }
   inline const std::string& get_cache_path() { return cache_path_; }
-  inline void set_load_cache(bool is_load_cache) {
-    load_cache_ = is_load_cache;
+  inline void set_load_or_save_cache(bool is_load_or_save_cache) {
+    load_or_save_cache_ = is_load_or_save_cache;
   }
-  inline void set_cache_path(std::string catch_path) {
+  inline void set_cache_path(const std::string& catch_path) {
     cache_path_ = catch_path;
   }
 
