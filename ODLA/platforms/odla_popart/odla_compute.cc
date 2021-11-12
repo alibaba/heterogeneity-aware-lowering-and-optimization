@@ -62,8 +62,9 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
       comp->opts.cache_dir = (reinterpret_cast<char*>(value));
       break;
     case 1001: // load cache directly, need set path of cache file
-      PopartConfig::instance()->set_load_cache(true);
-      PopartConfig::instance()->set_cache_path(reinterpret_cast<char*>(value));
+      PopartConfig::instance()->set_load_or_save_cache(true);
+      PopartConfig::instance()->set_cache_path(
+          (std::string) reinterpret_cast<char*>(value));
       break;
     default:
       std::cerr << "Unsupported property type: " << type << std::endl;
@@ -81,8 +82,10 @@ odla_status odla_CreateExecutable(odla_executable* executable,
     return ODLA_FAILURE;
   } else {
     if (comp->session) {
+      popart::logging::info("Create cache file from exist session");
       return comp->compile_and_export();
     } else {
+      popart::logging::info("Computation is not initialized. init it first");
       _odla_computation::instance()->init(true); // set is_compile to true
                                                  // this comp init will create
                                                  // executable
@@ -107,6 +110,7 @@ odla_status odla_LoadExecutable(const odla_char* file_name,
 odla_status odla_CreateComputation(odla_computation* comp) {
   static void* custom_op_handle = nullptr;
   *comp = _odla_computation::instance();
+  popart::logging::info("computation created");
   if (custom_op_handle == nullptr) {
     custom_op_handle = dlopen("libcustom_ops.so", RTLD_NOW | RTLD_GLOBAL);
     if (custom_op_handle == nullptr) {
@@ -116,16 +120,18 @@ odla_status odla_CreateComputation(odla_computation* comp) {
   }
   // Read the config file
   if (!PopartConfig::instance()->inited()) {
-    if (PopartConfig::instance()->load_cache()) {
-      odla_status ret = PopartConfig::instance()->extract_config_from_cache();
-      if (ret == ODLA_FAILURE) {
-        popart::logging::err("load config from cache failed");
-        return ret;
-      }
+    auto ret = PopartConfig::instance()->load_config(
+        std::getenv("ODLA_POPART_CONFIG"));
+    if (ret != ODLA_SUCCESS) {
+      popart::logging::err("error load config");
+      return ret;
     }
-    PopartConfig::instance()->load_config(std::getenv("ODLA_POPART_CONFIG"));
   }
-  _odla_computation::instance()->set_executor();
+  odla_status status = _odla_computation::instance()->set_executor();
+  if (status != ODLA_SUCCESS) {
+    popart::logging::err("set_executor failed");
+    return ODLA_FAILURE;
+  }
   if (PopartConfig::instance()->execution_mode() == PARALLEL ||
       PopartConfig::instance()->execution_mode() == PIPELINE) {
     QManager::instance()->createQ(PopartConfig::instance()->queue_type());
@@ -137,8 +143,14 @@ odla_status odla_CreateComputation(odla_computation* comp) {
 }
 
 odla_status odla_CreateContext(odla_context* context) {
-  _odla_computation::instance(false)
-      ->init(); // Place the init here to avoid long execution problem
+  odla_status status =
+      _odla_computation::instance(false)
+          ->init(); // Place the init here to avoid long execution problem
+  if (status != ODLA_SUCCESS &&
+      _odla_computation::instance()->session == nullptr) {
+    popart::logging::err("init computation item in CreateContext failed.");
+    return ODLA_FAILURE;
+  }
   *context = new _odla_pipeline_context(_odla_computation::instance());
   return ODLA_SUCCESS;
 }
@@ -149,15 +161,27 @@ odla_status odla_DestroyContext(odla_context ctx) {
 }
 
 odla_status odla_DestroyComputation(odla_computation comp) {
-  comp->mark_done();
-  _odla_computation::destruct();
-  QManager::instance()->deleteQ(); // delete current queue
+  if (comp != nullptr) {
+    if (!comp->is_compile_only()) {
+      comp->mark_done();
+      QManager::instance()->deleteQ(); // delete current queue
+    }
+    comp->release_session();
+    _odla_computation::destruct(); // release the real computation
+  }
+
   return ODLA_SUCCESS;
 }
 
 odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
+  if (_odla_computation::instance()->is_compile_only()) {
+    popart::logging::err(
+        "This computation is created for compile executable, please re-create "
+        "another computation for computing");
+    return ODLA_FAILURE;
+  }
   if (!context->hold("odla_ExecuteComputation")) return ODLA_FAILURE;
   return comp->executor()->compute(comp, context, mode, device);
 }

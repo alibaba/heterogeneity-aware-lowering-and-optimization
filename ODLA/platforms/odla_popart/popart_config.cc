@@ -28,6 +28,19 @@
 
 PopartConfig* PopartConfig::instance_ = new PopartConfig();
 
+const std::string& get_config_path_from_cache_file(
+    const std::string& cache_path) {
+  std::string file_suffix(".popart");
+  int file_prefix = cache_path.rfind(file_suffix);
+  if (file_prefix == std::string::npos ||
+      file_prefix + file_suffix.size() < cache_path.size()) {
+    popart::logging::err(
+        "Bad cache file name. File name should end with '.popart'");
+    return std::move(std::string(""));
+  }
+  return std::move(std::string(cache_path.substr(0, file_prefix) + ".json"));
+}
+
 void PopartConfig::use_default() {
   amp_ = 0.6;
   version_ = "1.0.0";
@@ -56,14 +69,36 @@ void PopartConfig::use_default() {
       }\n";
 }
 
-void PopartConfig::load_config(const char* file_path) {
+odla_status PopartConfig::load_config(const char* env_file_path) {
   if (inited_) {
     popart::logging::info("config already inited");
-    return;
+    return ODLA_SUCCESS;
   }
-  popart::logging::info("use default config");
-  use_default();
-  if (file_path != nullptr) load_from_file(file_path);
+  odla_status ret = ODLA_FAILURE;
+  if (load_or_save_cache()) {
+    ret = extract_config_from_cache();
+    if (ret != ODLA_SUCCESS) {
+      popart::logging::warn("load config from cache failed");
+      std::string config_file_path =
+          get_config_path_from_cache_file(std::string(cache_path_));
+      if (!config_file_path.empty()) {
+        popart::logging::info("try load from file: {}", config_file_path);
+        ret = load_from_file(config_file_path);
+      }
+    }
+  }
+  if (ret != ODLA_SUCCESS) {
+    use_default();
+    if (env_file_path != nullptr) {
+      ret = load_from_file(env_file_path);
+      if (ret != ODLA_SUCCESS) {
+        popart::logging::info("use default config");
+      }
+    } else {
+      popart::logging::info("use default config");
+    }
+  }
+  return ODLA_SUCCESS;
 }
 
 void PopartConfig::parse_from_json(const json& jf) {
@@ -122,25 +157,34 @@ void PopartConfig::parse_from_json(const json& jf) {
   inited_ = true;
 }
 
-void PopartConfig::load_from_string(const std::string& config_string) {
+odla_status PopartConfig::load_from_string(const std::string& config_string) {
   if (inited_) {
-    return;
+    return ODLA_SUCCESS;
   }
-  json jf = json::parse(config_string);
+  json jf;
+  try {
+    jf = json::parse(config_string);
+  } catch (std::exception& e) {
+    popart::logging::err("parse config falied:{}", e.what());
+    return ODLA_FAILURE;
+  }
   parse_from_json(jf);
+  return ODLA_SUCCESS;
 }
 
-void PopartConfig::load_from_file(const std::string& file_path) {
+odla_status PopartConfig::load_from_file(const std::string& file_path) {
   if (inited_) {
-    return;
+    return ODLA_SUCCESS;
   }
   using json = nlohmann::json;
-  std::ifstream ifs(file_path);
-  if (!ifs.good())
-    throw std::invalid_argument(std::string("Configuraton file [") + file_path +
-                                "] was not found.");
+  std::ifstream ifs(file_path, std::ios_base::in);
+  if (!ifs.good()) {
+    popart::logging::err("config file {} not found", file_path);
+    return ODLA_FAILURE;
+  }
   json jf = json::parse(ifs);
   parse_from_json(jf);
+  return ODLA_SUCCESS;
 }
 
 void PopartConfig::print() {
@@ -200,6 +244,7 @@ bool PopartConfig::get_pipeline_setting(const std::string& node_name,
     pipeline_stage = default_setting_iter->second[1];
     return true;
   }
+
   throw std::runtime_error(
       "Node: " + node_name +
       " was not configured to any ipu or stage for pipeline");
@@ -221,9 +266,9 @@ odla_status PopartConfig::extract_config_from_cache() {
     if (cache_fs->read(config_data_buffer.data(), config_len)) {
       std::string config_string(config_data_buffer.begin(),
                                 config_data_buffer.end());
-      try {
-        load_from_string(config_string);
-      } catch (std::exception& e) {
+
+      odla_status ret = load_from_string(config_string);
+      if (ret != ODLA_SUCCESS) {
         popart::logging::err("load from cached config string failed.");
         return ODLA_FAILURE;
       }
