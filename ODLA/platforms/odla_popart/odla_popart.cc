@@ -98,7 +98,8 @@ odla_status _odla_computation::compile_and_export() {
   int file_prefix = cache_file_name.rfind(file_suffix);
   if (file_prefix == std::string::npos ||
       file_prefix + file_suffix.size() < cache_file_name.size()) {
-    popart::logging::err("Bad cache file name");
+    popart::logging::err(
+        "Bad cache file name. File name should end with '.popart'");
     return ODLA_FAILURE;
   }
   if (file_prefix == std::string::npos) {
@@ -118,7 +119,7 @@ odla_status _odla_computation::compile_and_export() {
     config_fs.open(config_file_name, std::ios_base::in | std::ifstream::binary);
     if (!config_fs.is_open()) {
       popart::logging::warn(
-          "invalid config file name:[ {} ] will use default config",
+          "Open config file failed:[ {} ] will use default config",
           config_file_name);
       PopartConfig::instance()->use_default();
       config_string = PopartConfig::instance()->get_default_config_string();

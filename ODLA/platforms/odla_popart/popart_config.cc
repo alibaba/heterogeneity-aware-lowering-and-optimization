@@ -34,7 +34,8 @@ const std::string& get_config_path_from_cache_file(
   int file_prefix = cache_path.rfind(file_suffix);
   if (file_prefix == std::string::npos ||
       file_prefix + file_suffix.size() < cache_path.size()) {
-    popart::logging::err("Bad cache file name");
+    popart::logging::err(
+        "Bad cache file name. File name should end with '.popart'");
     return std::move(std::string(""));
   }
   return std::move(std::string(cache_path.substr(0, file_prefix) + ".json"));
@@ -176,7 +177,7 @@ odla_status PopartConfig::load_from_file(const std::string& file_path) {
     return ODLA_SUCCESS;
   }
   using json = nlohmann::json;
-  std::ifstream ifs(file_path);
+  std::ifstream ifs(file_path, std::ios_base::in);
   if (!ifs.good()) {
     popart::logging::err("config file {} not found", file_path);
     return ODLA_FAILURE;

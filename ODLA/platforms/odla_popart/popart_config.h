@@ -63,8 +63,8 @@ class PopartConfig {
   bool load_onnx_;     // Whether load onnx model to run instead of the model
                        // constructed. Use for test
   bool load_or_save_cache_; // If the session will load graph from cache
-  std::string cache_path_; // the path of cache file, for load cache
-                           // directly
+  std::string cache_path_;  // the path of cache file, for load cache
+                            // directly
 
   std::string load_onnx_path_; // The path of onnx model file to load if
                                // load_onnx set to be true
