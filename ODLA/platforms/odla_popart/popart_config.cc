@@ -28,6 +28,19 @@
 
 PopartConfig* PopartConfig::instance_ = new PopartConfig();
 
+const std::string& get_config_path_from_cache_file(
+    const std::string& cache_path) {
+  std::string file_suffix(".popart");
+  int file_prefix = cache_path.rfind(file_suffix);
+  if (file_prefix == std::string::npos ||
+      file_prefix + file_suffix.size() < cache_path.size()) {
+    popart::logging::err(
+        "Bad cache file name. File name should end with '.popart'");
+    return std::move(std::string(""));
+  }
+  return std::move(std::string(cache_path.substr(0, file_prefix) + ".json"));
+}
+
 void PopartConfig::use_default() {
   amp_ = 0.6;
   version_ = "1.0.0";
@@ -56,16 +69,34 @@ void PopartConfig::use_default() {
       }\n";
 }
 
-odla_status PopartConfig::load_config(const char* file_path) {
+odla_status PopartConfig::load_config(const char* env_file_path) {
   if (inited_) {
     popart::logging::info("config already inited");
     return ODLA_SUCCESS;
   }
-  use_default();
-  if (file_path != nullptr) {
-    load_from_file(file_path);
-  } else {
-    popart::logging::info("use default config");
+  odla_status ret = ODLA_FAILURE;
+  if (load_or_save_cache()) {
+    ret = extract_config_from_cache();
+    if (ret != ODLA_SUCCESS) {
+      popart::logging::warn("load config from cache failed");
+      std::string config_file_path =
+          get_config_path_from_cache_file(std::string(cache_path_));
+      if (!config_file_path.empty()) {
+        popart::logging::info("try load from file: {}", config_file_path);
+        ret = load_from_file(config_file_path);
+      }
+    }
+  }
+  if (ret != ODLA_SUCCESS) {
+    use_default();
+    if (env_file_path != nullptr) {
+      ret = load_from_file(env_file_path);
+      if (ret != ODLA_SUCCESS) {
+        popart::logging::info("use default config");
+      }
+    } else {
+      popart::logging::info("use default config");
+    }
   }
   return ODLA_SUCCESS;
 }
@@ -149,7 +180,7 @@ odla_status PopartConfig::load_from_file(const std::string& file_path) {
     return ODLA_SUCCESS;
   }
   using json = nlohmann::json;
-  std::ifstream ifs(file_path);
+  std::ifstream ifs(file_path, std::ios_base::in);
   if (!ifs.good()) {
     popart::logging::err("config file {} not found", file_path);
     return ODLA_FAILURE;
