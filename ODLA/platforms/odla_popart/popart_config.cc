@@ -74,7 +74,7 @@ odla_status PopartConfig::load_config(const char* env_file_path) {
     popart::logging::info("config already inited");
     return ODLA_SUCCESS;
   }
-  odla_status ret = ODLA_SUCCESS;
+  odla_status ret = ODLA_FAILURE;
   if (load_or_save_cache()) {
     ret = extract_config_from_cache();
     if (ret != ODLA_SUCCESS) {
