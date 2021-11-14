@@ -28,7 +28,7 @@ namespace halo {
 
 enum class ExecMode { Compile, Interpret };
 enum class API { HALO_RT, ODLA_05 };
-enum class Quantization { QUINT8, None };
+enum class Quantization { QUINT8, FLOAT16, None };
 enum class BF16Mode { Disable, Accuracy, Performace, Auto };
 enum class Dialect {
   CXX_11,
