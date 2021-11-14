@@ -136,6 +136,9 @@ odla_status PopartConfig::load_from_string(const std::string& config_string) {
   } catch (std::exception& e) {
     popart::logging::err("parse config falied:{}", e.what());
     return ODLA_FAILURE;
+  } catch (...) {
+    popart::logging::err("parse config falied");
+    return ODLA_FAILURE;
   }
   parse_from_json(jf);
   return ODLA_SUCCESS;
