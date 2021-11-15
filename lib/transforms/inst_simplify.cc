@@ -469,21 +469,22 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
     Instruction* op0_inst = DynCast<Instruction>(op0);
     if (!IsA<Argument>(op0_inst->GetOperand(0))) {
       // Add(transpose(op0), op1) ==> transpose(add(op0, transpose'(op1))
+      // if rank_1 < rank_0, we first unsqueeze(reshape) op1 to the same rank as
+      // op0. Then we do the reverse transpose on op1.
+      // For example: given add(To_NCHW(op0<n, h, w, c>), op1<c, 1, 1,>), we do
+      //  To_NCHW(add op0<n, h, w, c>, To_NHWC(op1<1, c, 1, 1>))
       TransposeInst* orig_transpose = DynCast<TransposeInst>(op0_inst);
       IRBuilder builder(binary_inst->GetParent());
       builder.SetInsertAfter(binary_inst);
       const auto& orig_perm = orig_transpose->GetPermutation();
       Instruction* new_op1 = nullptr;
-      if (op1_type.GetSqueezedNumOfDims() == 1) {
-        auto dims = std::vector<int64_t>(op0_type.GetNumOfDims(), 1);
-        int64_t op1_vector_axis = op0_type.GetNumOfDims() - 1;
-        for (auto n = op1_type.GetTotalNumOfElements(); op1_vector_axis >= 0;
-             --op1_vector_axis) {
-          if (op0_type.GetNumOfElementsInDim(op1_vector_axis) == n) {
-            break;
-          }
+      if (auto rank_0 = op0_type.GetNumOfDims(),
+          rank_1 = op1_type.GetNumOfDims();
+          rank_1 < rank_0) {
+        auto dims = op1_type.GetDimSizes();
+        for (unsigned i = 0; i < rank_0 - rank_1; ++i) {
+          dims.insert(dims.begin(), 1);
         }
-        dims[orig_perm[op1_vector_axis]] = op1_type.GetTotalNumOfElements();
         ConstantBuilder cb(binary_inst->GetParent()->GetParent());
         Constant* c_shape = cb.CreateConstant(
             op1.GetDef()->GetName() + "_shape",
@@ -491,19 +492,18 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
             dims.data());
         auto new_addend = builder.CreateReshape(op1.GetDef()->GetName() + "_r",
                                                 {op1, *c_shape});
-        new_op1 = new_addend;
         new_addend->GetResultsTypes()[0] =
             Type{op1.GetType().GetDataType(), dims};
-      } else {
-        auto reverse_perm = orig_perm;
-        for (int i = 0, e = orig_perm.size(); i < e; ++i) {
-          reverse_perm[orig_perm[i]] = i;
-        }
-        auto new_addend =
-            builder.CreateTranspose(op1.GetDef()->GetName() + "_t", {op1});
-        new_addend->SetPermutation(reverse_perm);
-        new_op1 = new_addend;
+        op1 = *new_addend;
       }
+      auto reverse_perm = orig_perm;
+      for (int i = 0, e = orig_perm.size(); i < e; ++i) {
+        reverse_perm[orig_perm[i]] = i;
+      }
+      auto new_addend =
+          builder.CreateTranspose(op1.GetDef()->GetName() + "_t", {op1});
+      new_addend->SetPermutation(reverse_perm);
+      new_op1 = new_addend;
 
       auto new_binary =
           builder.CreateBinary(binary_inst->GetName(),
