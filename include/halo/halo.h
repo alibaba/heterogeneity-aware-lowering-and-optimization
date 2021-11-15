@@ -53,6 +53,7 @@ enum class ChannelOrder {
 struct AnalyzerOpts {
   bool print_details = false;
   int batch_size = 1;
+  int ips = 0; // image per second
 };
 
 struct CXXCodeGenOpts {
@@ -95,9 +96,12 @@ struct CXXCodeGenOpts {
 };
 
 #define HALO_MODEL_INFO_MAX_OUTPUT_NR 64
+#define HALO_VODLA_MAX_OUTPUT_RSC_EST 1024
 struct ModelInfo {
   size_t num_outputs;
   size_t output_buf_sizes[HALO_MODEL_INFO_MAX_OUTPUT_NR];
+  int input_ips = 0;
+  char output_rsc_est[HALO_VODLA_MAX_OUTPUT_RSC_EST];
 };
 
 int CompileTFGraph(const char* pb_buf, size_t pb_buf_size,
