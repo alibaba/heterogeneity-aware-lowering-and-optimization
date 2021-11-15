@@ -229,7 +229,7 @@ odla_status _odla_computation::init(bool is_compile) {
       } catch (...) {
         popart::logging::err("Session::createFromOnnxModel failed");
         return ODLA_FAILURE;
-	  }
+      }
 
       if (!is_compile) {
         if (PopartConfig::instance()->load_cache()) {
@@ -245,10 +245,11 @@ odla_status _odla_computation::init(bool is_compile) {
             try {
               new_session->loadExecutableFromStream(*(cache_fs.get()));
             } catch (std::exception& e) {
-              popart::logging::err("bad cache file, will compile the graph:{}", e.what());
+              popart::logging::err("bad cache file, will compile the graph:{}",
+                                   e.what());
             } catch (...) {
               popart::logging::err("bad cache file, will compile the graph");
-			}
+            }
           }
         }
 
