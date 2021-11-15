@@ -72,7 +72,10 @@ class Analyzer final : public ModulePass {
 
   void GenerateRscInfo(std::ostream& os);
 
-  std::string& GetReourceEst() { return rsc_req_; }
+  std::string& GetReourceEst(int& bsz) {
+    bsz = adaptive_bsz;
+    return rsc_req_;
+  }
 
  private:
   static float GetNumOfOperators(const Instruction* inst);
@@ -121,6 +124,7 @@ class Analyzer final : public ModulePass {
   // alive tensor buffer
   std::unordered_map<std::string, TensorInfo> alive_tensor_;
   std::string rsc_req_;
+  int adaptive_bsz = 1;
 };
 
 } // namespace halo
