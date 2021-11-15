@@ -139,6 +139,7 @@ odla_status _odla_computation::compile_and_export() {
   config_string.insert(1, version_string);
   popart::logging::info("the config_string with sdk_version is: {}",
                         config_string);
+  // added the sdk_version information to the file content
   int config_size = config_string.size();
   cache_fs.write((char*)&config_size, sizeof(config_size));
   cache_fs.write(config_string.c_str(), config_string.size());
