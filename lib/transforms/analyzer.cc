@@ -669,20 +669,21 @@ void Analyzer::GenerateRscInfo(std::ostream& os) {
     float max_batch = (t4_max_mem - total_weights) / max_io;
     int b_log2 = static_cast<int>(std::log2f(max_batch));
     b_log2 = SearchBatchSize(b_log2, init_latency, knl_latency, opts_.ips);
-    opts_.batch_size = 1 << b_log2;
-    knl_latency *= static_cast<float>(opts_.batch_size);
-    max_io *= static_cast<float>(opts_.batch_size);
+    adaptive_bsz = 1 << b_log2;
+    knl_latency *= static_cast<float>(adaptive_bsz);
+    max_io *= static_cast<float>(adaptive_bsz);
   } else {
     // error input when ips and batch_size are both given.
     HLCHECK(opts_.ips == 0);
+    adaptive_bsz = opts_.batch_size;
   }
 
   float trt_mem = total_weights + max_io;
   const int trt_base = 800;
   const int adjust_bsz = 64;
   const int adjust_mem = 1;
-  int trt_env = (opts_.batch_size > adjust_bsz)
-                    ? trt_base - (opts_.batch_size - adjust_bsz) * adjust_mem
+  int trt_env = (adaptive_bsz > adjust_bsz)
+                    ? trt_base - (adaptive_bsz - adjust_bsz) * adjust_mem
                     : trt_base;
   trt_env = std::max(0, trt_env);
   trt_mem += static_cast<float>(trt_env);
@@ -691,22 +692,22 @@ void Analyzer::GenerateRscInfo(std::ostream& os) {
 
   os << "Device: GPU T4"
      << "\n";
-  os << "Batch size: " << opts_.batch_size << "\n";
+  os << "batch size: " << adaptive_bsz << "\n";
   os << "est latency: " << est_latency << "\n";
   os << "est mem: " << trt_mem << " MB.\n";
   /*-----Generated T4 parameters-----------------*/
 
   // fill in resource request for scheduling
   rsc_req_.clear();
-  rsc_req_.append("{");
-  rsc_req_.append("\"key:\",");
+  // rsc_req_.append("{");
+  // rsc_req_.append("\"key:\","); // key will be inserted in vODLA IF
   rsc_req_.append("\"options\":");
   rsc_req_.append("[");
   // opt1
   rsc_req_.append("[");
   // dev1
   rsc_req_.append("{");
-  rsc_req_.append("\"applyType\":\"bySize\"");
+  rsc_req_.append("\"applyType\":\"bySize\",");
   rsc_req_.append("\"type\":\"GPU\",");
   rsc_req_.append("\"model\":\"T4\",");
   rsc_req_.append("\"size\":1,");
