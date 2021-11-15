@@ -229,7 +229,7 @@ odla_status _odla_computation::init(bool is_compile) {
               new_session->loadExecutableFromStream(*(cache_fs.get()));
             } catch (std::exception& e) {
               popart::logging::err("bad cache file, will compile the graph:{}",
-					               e.what());
+                                   e.what());
             } catch (...) {
               popart::logging::err("bad cache file, will compile the graph");
             }
@@ -245,7 +245,8 @@ odla_status _odla_computation::init(bool is_compile) {
               "Poplar exception application_runtime_error caught:{}", e.what());
           return ODLA_INTERNAL_LOGIC_ERR;
         } catch (poplar::recoverable_runtime_error& e) {
-          popart::logging::err("Poplar recoverable_runtime_error exception caught");
+          popart::logging::err(
+              "Poplar recoverable_runtime_error exception caught");
           auto action = e.getRecoveryAction();
           popart::logging::err("need to take action:{}", action);
           if (action == poplar::RecoveryAction::IPU_RESET) {
@@ -256,7 +257,8 @@ odla_status _odla_computation::init(bool is_compile) {
             return ODLA_FULL_RESET;
           }
         } catch (poplar::unrecoverable_runtime_error& e) {
-          popart::logging::err("Poplar unrecoverable_runtime_error exception caught");
+          popart::logging::err(
+              "Poplar unrecoverable_runtime_error exception caught");
           return ODLA_UNRECOVERABLE_ERR;
         } catch (poplar::unknown_runtime_error& e) {
           popart::logging::info("Poplar unknown runtime exception caught}");
