@@ -70,7 +70,9 @@ class Analyzer final : public ModulePass {
 
   bool RunOnModule(Module* m) override;
 
-  void WriteCSVReport(std::ostream& os);
+  void GenerateRscInfo(std::ostream& os);
+
+  std::string& GetReourceEst() { return rsc_req_; }
 
  private:
   static float GetNumOfOperators(const Instruction* inst);
@@ -117,7 +119,8 @@ class Analyzer final : public ModulePass {
   std::vector<Analyzer::NodeInfo> node_infos_;
   AnalyzerOpts opts_;
   // alive tensor buffer
-  std::unordered_map<std::string, TensorInfo> AliveTensor;
+  std::unordered_map<std::string, TensorInfo> alive_tensor_;
+  std::string rsc_req_;
 };
 
 } // namespace halo
