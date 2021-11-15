@@ -108,12 +108,15 @@ static int InvokeCompiler(Module* m, const std::string& target, int batch,
         static_cast<Analyzer*>(pm.AddAnalyzerPass(&std::cout, alz_opts));
     pm.Run(m);
     if (model_info != nullptr) {
-      std::string& s = analyzer->GetReourceEst();
+      int bsz = 1;
+      std::string& s = analyzer->GetReourceEst(bsz);
       size_t sz = s.size();
-      if (sz > HALO_VODLA_MAX_OUTPUT_RSC_EST) {
+      if (sz >= HALO_VODLA_MAX_OUTPUT_RSC_EST) {
         return 1;
       } else {
         s.copy(model_info->output_rsc_est, sz);
+        model_info->output_rsc_est[sz] = '\0';
+        model_info->adaptive_bsz = bsz;
       }
     }
   }
