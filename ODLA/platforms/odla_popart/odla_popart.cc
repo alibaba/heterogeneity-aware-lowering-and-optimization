@@ -218,7 +218,7 @@ odla_status _odla_computation::init(bool is_compile) {
       } catch (...) {
         popart::logging::err("Session::createFromOnnxModel failed");
         return ODLA_FAILURE;
-	  }
+      }
 
       if (!is_compile) {
         if (PopartConfig::instance()->load_or_save_cache()) {
@@ -228,10 +228,11 @@ odla_status _odla_computation::init(bool is_compile) {
             try {
               new_session->loadExecutableFromStream(*(cache_fs.get()));
             } catch (std::exception& e) {
-              popart::logging::err("bad cache file, will compile the graph:{}", e.what());
+              popart::logging::err("bad cache file, will compile the graph:{}",
+					               e.what());
             } catch (...) {
               popart::logging::err("bad cache file, will compile the graph");
-			}
+            }
           }
         }
 
@@ -240,7 +241,8 @@ odla_status _odla_computation::init(bool is_compile) {
           new_session->setRandomSeed(0);  // Init seed
           new_session->weightsFromHost(); // Copy weights from host to IPU
         } catch (poplar::application_runtime_error& e) {
-          popart::logging::err("Poplar exception application_runtime_error caught:");
+          popart::logging::err(
+              "Poplar exception application_runtime_error caught:{}", e.what());
           return ODLA_INTERNAL_LOGIC_ERR;
         } catch (poplar::recoverable_runtime_error& e) {
           popart::logging::err("Poplar recoverable_runtime_error exception caught");
