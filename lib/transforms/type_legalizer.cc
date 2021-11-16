@@ -782,8 +782,11 @@ static void RunOnInstruction(ConcatInst* inst) {
   size_t num_inputs = inst->GetN();
   int axis = inst->GetAxis();
   auto& input_type = inst->GetOperand(0).GetType();
-  if (!input_type.IsValid()) {
-    return;
+  for (size_t i = 0, e = inst->GetNumOfOperands(); i != e; ++i) {
+    const auto& type = inst->GetOperand(i).GetType();
+    if (!type.IsValid()) {
+      return;
+    }
   }
 
   if (num_inputs != 0 && inst->GetNumOfOperands() > num_inputs) {
@@ -811,9 +814,7 @@ static void RunOnInstruction(ConcatInst* inst) {
   int new_dim = 0;
   for (size_t i = 0, e = num_inputs; i != e; ++i) {
     auto& type = inst->GetOperand(i).GetType();
-    if (!type.IsValid()) {
-      return;
-    }
+    HLCHECK(type.GetNumOfDims() == input_type.GetNumOfDims());
     new_dim += type.GetNumOfDims() > 0
                    ? static_cast<int>(type.GetNumOfElementsInDim(axis))
                    : 1;
@@ -900,7 +901,6 @@ static void RunOnInstruction(SliceInst* inst) {
   auto& input_type = op0.GetType();
 
   if (!input_type.IsValid() || !IsA<Constant>(op_len)) {
-    inst->GetResultsTypes()[0] = halo::Type{op0.GetType().GetDataType(), {1}};
     return;
   }
 
