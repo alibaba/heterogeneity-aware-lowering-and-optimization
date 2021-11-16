@@ -187,6 +187,10 @@ odla_status _odla_computation::init(bool is_compile) {
         try {
           builder = popart::Builder::createFromOnnxModel(set_pipeline_stage());
         } catch (std::exception& e) {
+          popart::logging::err("create builder from onnx model failed:{}",
+                               e.what());
+          return ODLA_FAILURE;
+        } catch (...) {
           popart::logging::err("create builder from onnx model failed.");
           return ODLA_FAILURE;
         }
