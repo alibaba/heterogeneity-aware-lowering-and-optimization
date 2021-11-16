@@ -86,9 +86,14 @@ odla_status odla_CreateExecutable(odla_executable* executable,
       return comp->compile_and_export();
     } else {
       popart::logging::info("Computation is not initialized. init it first");
-      _odla_computation::instance()->init(true); // set is_compile to true
-                                                 // this comp init will create
-                                                 // executable
+      odla_status ret =
+          _odla_computation::instance()->init(true); // set is_compile to true
+                                                     // this comp init will
+                                                     // create executable
+      if (ret != ODLA_SUCCESS) {
+        popart::logging::err("Failed to init computation when compiling.");
+        return ODLA_FAILURE;
+      }
       _odla_computation::instance()->compile_and_export();
     }
   }
