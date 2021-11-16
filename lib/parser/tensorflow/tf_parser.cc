@@ -120,19 +120,41 @@ Status TFParser::ConvertToHaloIR(const tensorflow::GraphDef& graph_def) {
   int i = 0;
   Status s = Status::SUCCESS;
   std::vector<const tensorflow::NodeDef*> ret_vals;
-  for (const auto& cur_node : graph_def.node()) {
-    VLOG(4) << "==========layer[" << i << "]==========";
-    if (cur_node.op() == "_Retval") {
-      ret_vals.push_back(&cur_node);
-      ++i;
-      continue;
-    }
-    s = ConvertOneNode(ir_builder_.get(), cur_node, i++);
-    if (s != Status::SUCCESS) {
-      return s;
-    }
+  std::unordered_set<const tensorflow::NodeDef*> visited;
+  std::vector<const tensorflow::NodeDef*> all_nodes;
+  all_nodes.reserve(graph_def.node_size());
+  for (const auto& node : graph_def.node()) {
+    all_nodes.push_back(&node);
   }
+  for (bool changed = true; !all_nodes.empty() && changed;) {
+    std::vector<const tensorflow::NodeDef*> skipped;
+    changed = false;
+    for (const auto& node : all_nodes) {
+      const auto& cur_node = *node;
+      if (visited.count(node) > 0) {
+        continue;
+      }
+      VLOG(4) << "==========layer[" << i << "]==========";
+      if (cur_node.op() == "_Retval") {
+        ret_vals.push_back(&cur_node);
+        ++i;
+        continue;
+      }
 
+      if (cur_node.input_size() >
+          static_cast<signed>(GetInputOperands(cur_node).size())) {
+        skipped.push_back(&cur_node);
+        continue;
+      }
+      s = ConvertOneNode(ir_builder_.get(), cur_node, i++);
+      visited.insert(&cur_node);
+      changed = true;
+      if (s != Status::SUCCESS) {
+        return s;
+      }
+    }
+    all_nodes.swap(skipped);
+  }
   VLOG(4) << "Total convert node num: " << graph_def.node_size();
   HLCHECK(graph_def.node_size() == i);
   ConvertReturnNodes(ir_builder_.get(), ret_vals);
