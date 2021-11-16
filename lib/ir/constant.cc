@@ -331,18 +331,21 @@ static T GetDataAs(const Constant& c, size_t idx) {
   const Type& type = c.GetResultType();
   switch (type.GetDataType()) {
     case DataType::INT32: {
-      return (c.GetData<int32_t>(idx));
+      return c.GetData<int32_t>(idx);
     }
     case DataType::FLOAT32: {
-      return (c.GetData<float>(idx));
+      return c.GetData<float>(idx);
     }
     case DataType::INT64: {
-      return (c.GetData<int64_t>(idx));
+      return c.GetData<int64_t>(idx);
+    }
+    case DataType::BOOL: {
+      return c.GetData<bool>(idx) ? 1 : 0;
     }
     default: {
-      return -1;
     }
   }
+  HLCHECK("Unsupported data type");
   return -1;
 }
 
