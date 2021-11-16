@@ -141,6 +141,9 @@ odla_status _odla_computation::compile_and_export() {
   } catch (std::exception& e) {
     popart::logging::err("compileAndExport Falied: {}", e.what());
     ret_value = ODLA_FAILURE;
+  } catch (...) {
+    popart::logging::err("compileAndExport Falied");
+    ret_value = ODLA_FAILURE;
   }
   cache_fs.flush();
   cache_fs.close();
@@ -184,6 +187,10 @@ odla_status _odla_computation::init(bool is_compile) {
         try {
           builder = popart::Builder::createFromOnnxModel(set_pipeline_stage());
         } catch (std::exception& e) {
+          popart::logging::err("create builder from onnx model failed:{}",
+                               e.what());
+          return ODLA_FAILURE;
+        } catch (...) {
           popart::logging::err("create builder from onnx model failed.");
           return ODLA_FAILURE;
         }
@@ -212,6 +219,9 @@ odla_status _odla_computation::init(bool is_compile) {
         popart::logging::err("Session::createFromOnnxModel failed:{}",
                              e.what());
         return ODLA_FAILURE;
+      } catch (...) {
+        popart::logging::err("Session::createFromOnnxModel failed");
+        return ODLA_FAILURE;
       }
 
       if (!is_compile) {
@@ -222,6 +232,9 @@ odla_status _odla_computation::init(bool is_compile) {
             try {
               new_session->loadExecutableFromStream(*(cache_fs.get()));
             } catch (std::exception& e) {
+              popart::logging::err("bad cache file, will compile the graph:{}",
+                                   e.what());
+            } catch (...) {
               popart::logging::err("bad cache file, will compile the graph");
             }
           }
@@ -231,9 +244,32 @@ odla_status _odla_computation::init(bool is_compile) {
           new_session->prepareDevice();
           new_session->setRandomSeed(0);  // Init seed
           new_session->weightsFromHost(); // Copy weights from host to IPU
-        } catch (std::exception& e) {
-          popart::logging::err("session init failed: {}", e.what());
-          return ODLA_FAILURE;
+        } catch (poplar::application_runtime_error& e) {
+          popart::logging::err(
+              "Poplar exception application_runtime_error caught:{}", e.what());
+          return ODLA_INTERNAL_LOGIC_ERR;
+        } catch (poplar::recoverable_runtime_error& e) {
+          popart::logging::err(
+              "Poplar recoverable_runtime_error exception caught");
+          auto action = e.getRecoveryAction();
+          popart::logging::err("need to take action:{}", action);
+          if (action == poplar::RecoveryAction::IPU_RESET) {
+            return ODLA_RECOVERABLE_ERR;
+          } else if (action == poplar::RecoveryAction::PARTITION_RESET) {
+            return ODLA_PARTITION_RESET;
+          } else if (action == poplar::RecoveryAction::FULL_RESET) {
+            return ODLA_FULL_RESET;
+          }
+        } catch (poplar::unrecoverable_runtime_error& e) {
+          popart::logging::err(
+              "Poplar unrecoverable_runtime_error exception caught");
+          return ODLA_UNRECOVERABLE_ERR;
+        } catch (poplar::unknown_runtime_error& e) {
+          popart::logging::info("Poplar unknown runtime exception caught}");
+          return ODLA_UNRECOVERABLE_ERR;
+        } catch (...) {
+          popart::logging::info("Poplar unknown exception caught");
+          return ODLA_UNRECOVERABLE_ERR;
         }
         // If in parallel mode, start the thread
         ExecutionMode mode = PopartConfig::instance()->execution_mode();
