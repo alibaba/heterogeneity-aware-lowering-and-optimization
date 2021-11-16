@@ -103,7 +103,7 @@ static int InvokeCompiler(Module* m, const std::string& target, int batch,
     AnalyzerOpts alz_opts;
     alz_opts.batch_size = batch;
     alz_opts.print_details = false;
-    alz_opts.ips = model_info->input_ips;
+    alz_opts.qps = model_info->input_qps;
     Analyzer* analyzer =
         static_cast<Analyzer*>(pm.AddAnalyzerPass(&std::cout, alz_opts));
     pm.Run(m);
