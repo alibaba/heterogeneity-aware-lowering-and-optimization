@@ -235,6 +235,8 @@ def TF_Mean : OpMapping<"Mean", ReduceMean> {
   ];
 }
 
+def TF_Merge : TFExtension<"Merge">;
+
 def TF_Mul : OpMapping<"Mul", Mul>;
 
 def TF_Neg : OpMapping<"Neg", Neg>;
@@ -352,6 +354,8 @@ def TF_TopK  : OpMapping<"TopKV2", TopK>;
 def TF_Range : OpMapping<"Range", Range>;
 
 def TF_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
+
+def TF_Switch : TFExtension<"Switch"> { let num_outputs_ = 2; }
 
 def TF_Tile : OpMapping<"Tile", Tile>;
 
