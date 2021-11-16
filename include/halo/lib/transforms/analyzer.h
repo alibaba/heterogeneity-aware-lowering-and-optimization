@@ -66,7 +66,7 @@ class Analyzer final : public ModulePass {
     size_t size = 0;
   };
 
-  struct HW_Info {
+  struct HWInfo {
     float conv_time;      // ms/Gflops
     float conv_knl_init;  // per kernel init time (ms)
     float mm_time;        // ms/Gflops
@@ -84,7 +84,7 @@ class Analyzer final : public ModulePass {
   void GenerateRscInfo(std::ostream& os);
 
   std::string& GetReourceEst(int& bsz) {
-    bsz = adaptive_bsz;
+    bsz = adaptive_bsz_;
     return rsc_req_;
   }
 
@@ -135,8 +135,8 @@ class Analyzer final : public ModulePass {
   // alive tensor buffer
   std::unordered_map<std::string, TensorInfo> alive_tensor_;
   std::string rsc_req_;
-  int adaptive_bsz = 1;
-  std::map<std::string, HW_Info> HW_Paras = {
+  int adaptive_bsz_ = 1;
+  std::map<std::string, HWInfo> hw_paras_ = {
       {"GPU_t4", {1.476, 0.03, 0.35, 0.06, 26.8, 0.01, 16000}}};
 };
 

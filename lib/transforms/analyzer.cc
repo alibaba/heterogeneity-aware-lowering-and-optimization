@@ -650,36 +650,37 @@ void Analyzer::GenerateRscInfo(std::ostream& os) {
   total_flops /= gflops;
 
   float init_latency =
-      static_cast<float>(conv_op_num) * HW_Paras["GPU_t4"].conv_knl_init;
+      static_cast<float>(conv_op_num) * hw_paras_["GPU_t4"].conv_knl_init;
   init_latency +=
-      static_cast<float>(matmul_op_num) * HW_Paras["GPU_t4"].mm_knl_init;
+      static_cast<float>(matmul_op_num) * hw_paras_["GPU_t4"].mm_knl_init;
   init_latency += static_cast<float>(other_op_num - conv_act_num) *
-                  HW_Paras["GPU_t4"].other_knl_init;
+                  hw_paras_["GPU_t4"].other_knl_init;
   float knl_latency =
-      HW_Paras["GPU_t4"].conv_time * (conv_flops + conv_act_flops);
-  knl_latency += HW_Paras["GPU_t4"].mm_time * matmul_flops;
-  knl_latency += HW_Paras["GPU_t4"].other_time *
+      hw_paras_["GPU_t4"].conv_time * (conv_flops + conv_act_flops);
+  knl_latency += hw_paras_["GPU_t4"].mm_time * matmul_flops;
+  knl_latency += hw_paras_["GPU_t4"].other_time *
                  (total_flops - conv_flops - conv_act_flops - matmul_flops);
 
   if (opts_.batch_size == 1 && opts_.qps > 0) {
-    float max_batch = (HW_Paras["GPU_t4"].max_mem - total_weights) / max_io;
+    float max_batch = (hw_paras_["GPU_t4"].max_mem - total_weights) / max_io;
     int b_log2 = static_cast<int>(std::log2f(max_batch));
     b_log2 = SearchBatchSize(b_log2, init_latency, knl_latency, opts_.qps);
-    adaptive_bsz = 1 << b_log2;
-    knl_latency *= static_cast<float>(adaptive_bsz);
-    max_io *= static_cast<float>(adaptive_bsz);
+    adaptive_bsz_ = 1 << b_log2;
+    knl_latency *= static_cast<float>(adaptive_bsz_);
+    max_io *= static_cast<float>(adaptive_bsz_);
+    total_flops *= static_cast<float>(adaptive_bsz_);
   } else {
     // error input when qps and batch_size are both given.
     HLCHECK(opts_.qps == 0);
-    adaptive_bsz = opts_.batch_size;
+    adaptive_bsz_ = opts_.batch_size;
   }
 
   float trt_mem = total_weights + max_io;
   const int trt_base = 800;
   const int adjust_bsz = 64;
   const int adjust_mem = 1;
-  int trt_env = (adaptive_bsz > adjust_bsz)
-                    ? trt_base - (adaptive_bsz - adjust_bsz) * adjust_mem
+  int trt_env = (adaptive_bsz_ > adjust_bsz)
+                    ? trt_base - (adaptive_bsz_ - adjust_bsz) * adjust_mem
                     : trt_base;
   trt_env = std::max(0, trt_env);
   trt_mem += static_cast<float>(trt_env);
@@ -688,9 +689,10 @@ void Analyzer::GenerateRscInfo(std::ostream& os) {
 
   os << "Device: GPU T4"
      << "\n";
-  os << "batch size: " << adaptive_bsz << "\n";
-  os << "est latency: " << est_latency << "ms\n";
-  os << "est mem: " << trt_mem << "MB\n";
+  os << "batch size: " << adaptive_bsz_ << "\n";
+  os << "est FLOPs: " << total_flops << " gFlops\n";
+  os << "est latency: " << est_latency << " ms\n";
+  os << "est mem: " << trt_mem << " MB\n";
   /*-----Generated T4 parameters-----------------*/
 
   // fill in resource request for scheduling
@@ -708,11 +710,13 @@ void Analyzer::GenerateRscInfo(std::ostream& os) {
   rsc_req_.append("\"model\":\"T4\",");
   rsc_req_.append("\"size\":1,");
   rsc_req_.append("\"flops\":\"");
-  rsc_req_.append(std::to_string(total_flops * gflops));
+  std::string s = std::to_string(total_flops * gflops);
+  rsc_req_.append(s.substr(0, s.find('.') + 3));
   rsc_req_.append("\",");
   rsc_req_.append("\"precision\":\"int32\",");
   rsc_req_.append("\"memory\":\"");
-  rsc_req_.append(std::to_string(trt_mem));
+  s = std::to_string(trt_mem);
+  rsc_req_.append(s.substr(0, s.find('.') + 3));
   rsc_req_.append("\",");
   rsc_req_.append("\"allowSplit\":false,");
   rsc_req_.append("}");
