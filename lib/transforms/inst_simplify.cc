@@ -1314,18 +1314,23 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(BatchNormInst* inst) {
 std::pair<Def, Def> InstSimplify::RunOnInstruction(StackInst* inst) {
   Def orig_def{inst, 0};
   int num_inputs = inst->GetNumOfOperands();
-  if (inst->GetAxis() != 0) {
-    return {orig_def, orig_def};
-  }
   for (int i = 0; i < num_inputs; ++i) {
     if (!IsA<Constant>(inst->GetOperand(i))) {
       return {orig_def, orig_def};
     }
   }
-  // convert to an array of constant
   const auto& input0_type = inst->GetOperand(0).GetType();
-  std::vector<int64_t> ret_shape(input0_type.GetDimSizes());
-  ret_shape.insert(ret_shape.begin(), num_inputs);
+  int rank = input0_type.GetNumOfDims();
+  int axis = inst->GetAxis();
+  if (axis < 0) {
+    axis += rank + 1;
+  }
+  if (axis != 0) {
+    return {orig_def, orig_def};
+  }
+  // convert to an array of constant
+  std::vector<int64_t> ret_shape = input0_type.GetDimSizes();
+  ret_shape.insert(ret_shape.begin() + axis, num_inputs);
   ConstantBuilder cb(inst->GetParent()->GetParent());
   auto count = input0_type.GetTotalNumOfElements();
   Constant* c_input0 = DynCast<Constant>(inst->GetOperand(0).GetOwner());
