@@ -18,6 +18,7 @@
 #ifndef HALO_LIB_TRANSFORM_ANALYZER_H_
 #define HALO_LIB_TRANSFORM_ANALYZER_H_
 
+#include <map>
 #include <unordered_map>
 
 #include "halo/api/halo_data.h"
@@ -63,6 +64,16 @@ class Analyzer final : public ModulePass {
   struct TensorInfo {
     size_t liveness = 0;
     size_t size = 0;
+  };
+
+  struct HW_Info {
+    float conv_time;      // ms/Gflops
+    float conv_knl_init;  // per kernel init time (ms)
+    float mm_time;        // ms/Gflops
+    float mm_knl_init;    // per kernel init time (ms)
+    float other_time;     // ms/Gflops
+    float other_knl_init; // per kernel init time (ms)
+    float max_mem;        // MB
   };
 
   Analyzer(std::ostream* os, const AnalyzerOpts& opts)
@@ -125,6 +136,8 @@ class Analyzer final : public ModulePass {
   std::unordered_map<std::string, TensorInfo> alive_tensor_;
   std::string rsc_req_;
   int adaptive_bsz = 1;
+  std::map<std::string, HW_Info> HW_Paras = {
+      {"GPU_t4", {1.476, 0.03, 0.35, 0.06, 26.8, 0.01, 16000}}};
 };
 
 } // namespace halo
