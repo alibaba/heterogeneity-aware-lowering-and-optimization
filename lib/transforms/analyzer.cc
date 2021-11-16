@@ -531,14 +531,14 @@ static int SearchBatchSize(int bsz_log2, float init_latency, float knl_latency,
                            int ips) {
   const float epsilon = 1;
   const float ms2s = 1000;
-  float cur_ips = ms2s / (init_latency + knl_latency);
+  float cur_qps = ms2s / (init_latency + knl_latency);
   float qps = static_cast<float>(ips);
-  if (cur_ips > qps) {
+  if (cur_qps > qps) {
     return 0;
   }
   float bsz = static_cast<float>(1 << bsz_log2);
-  cur_ips = bsz * ms2s / (init_latency + knl_latency * bsz);
-  if (cur_ips < qps) {
+  cur_qps = bsz * ms2s / (init_latency + knl_latency * bsz);
+  if (cur_qps < qps) {
     return bsz_log2;
   }
   int l = 0;
@@ -546,12 +546,12 @@ static int SearchBatchSize(int bsz_log2, float init_latency, float knl_latency,
   while (l < r) {
     int mid = (l + r) / 2;
     bsz = static_cast<float>(1 << mid);
-    cur_ips = bsz * ms2s / (init_latency + knl_latency * bsz);
-    if (std::abs(cur_ips - qps) < epsilon) {
+    cur_qps = bsz * ms2s / (init_latency + knl_latency * bsz);
+    if (std::abs(cur_qps - qps) < epsilon) {
       l = mid;
       break;
     }
-    if (cur_ips > qps) {
+    if (cur_qps > qps) {
       r = mid;
     } else {
       l = mid + 1;
@@ -649,32 +649,28 @@ void Analyzer::GenerateRscInfo(std::ostream& os) {
   matmul_flops /= gflops;
   total_flops /= gflops;
 
-  const float conv_time = 1.476;     // ms/Gflops
-  const float conv_knl_init = 0.03;  // per kernel init time (ms)
-  const float mm_time = 0.35;        // ms/Gflops
-  const float mm_knl_init = 0.06;    // per kernel init time (ms)
-  const float other_time = 26.8;     // ms/Gflops
-  const float other_knl_init = 0.01; // per kernel init time (ms)
-  float init_latency = static_cast<float>(conv_op_num) * conv_knl_init;
-  init_latency += static_cast<float>(matmul_op_num) * mm_knl_init;
+  float init_latency =
+      static_cast<float>(conv_op_num) * HW_Paras["GPU_t4"].conv_knl_init;
   init_latency +=
-      static_cast<float>(other_op_num - conv_act_num) * other_knl_init;
-  float knl_latency = conv_time * (conv_flops + conv_act_flops);
-  knl_latency += mm_time * matmul_flops;
-  knl_latency +=
-      other_time * (total_flops - conv_flops - conv_act_flops - matmul_flops);
+      static_cast<float>(matmul_op_num) * HW_Paras["GPU_t4"].mm_knl_init;
+  init_latency += static_cast<float>(other_op_num - conv_act_num) *
+                  HW_Paras["GPU_t4"].other_knl_init;
+  float knl_latency =
+      HW_Paras["GPU_t4"].conv_time * (conv_flops + conv_act_flops);
+  knl_latency += HW_Paras["GPU_t4"].mm_time * matmul_flops;
+  knl_latency += HW_Paras["GPU_t4"].other_time *
+                 (total_flops - conv_flops - conv_act_flops - matmul_flops);
 
-  const float t4_max_mem = 16000; // MB
-  if (opts_.batch_size == 1 && opts_.ips > 0) {
-    float max_batch = (t4_max_mem - total_weights) / max_io;
+  if (opts_.batch_size == 1 && opts_.qps > 0) {
+    float max_batch = (HW_Paras["GPU_t4"].max_mem - total_weights) / max_io;
     int b_log2 = static_cast<int>(std::log2f(max_batch));
-    b_log2 = SearchBatchSize(b_log2, init_latency, knl_latency, opts_.ips);
+    b_log2 = SearchBatchSize(b_log2, init_latency, knl_latency, opts_.qps);
     adaptive_bsz = 1 << b_log2;
     knl_latency *= static_cast<float>(adaptive_bsz);
     max_io *= static_cast<float>(adaptive_bsz);
   } else {
-    // error input when ips and batch_size are both given.
-    HLCHECK(opts_.ips == 0);
+    // error input when qps and batch_size are both given.
+    HLCHECK(opts_.qps == 0);
     adaptive_bsz = opts_.batch_size;
   }
 
@@ -693,8 +689,8 @@ void Analyzer::GenerateRscInfo(std::ostream& os) {
   os << "Device: GPU T4"
      << "\n";
   os << "batch size: " << adaptive_bsz << "\n";
-  os << "est latency: " << est_latency << "\n";
-  os << "est mem: " << trt_mem << " MB.\n";
+  os << "est latency: " << est_latency << "ms\n";
+  os << "est mem: " << trt_mem << "MB\n";
   /*-----Generated T4 parameters-----------------*/
 
   // fill in resource request for scheduling
