@@ -55,9 +55,10 @@ using json = nlohmann::json;
 class PopartConfig {
  private:
   float amp_;
-  std::string version_;  // Version of the configuration file
-  int batches_per_step_; // Batch per step for PIPELINE & PARALLEL execution
-                         // mode
+  std::string version_;     // Version of the configuration file
+  std::string sdk_version_; // version of the sdk
+  int batches_per_step_;    // Batch per step for PIPELINE & PARALLEL execution
+                            // mode
   ExecutionMode
       execution_mode_; // The execution mode {PIPELINE, PARALLEL, SEQUENCE}
   bool load_onnx_;     // Whether load onnx model to run instead of the model
@@ -91,6 +92,7 @@ class PopartConfig {
  public:
   PopartConfig()
       : version_("1.0.0"),
+        sdk_version_("NA"),
         batches_per_step_(1),
         execution_mode_(UNKNOWN),
         load_onnx_(false),
@@ -132,6 +134,9 @@ class PopartConfig {
     cache_path_ = catch_path;
   }
 
+  bool sdk_version_match(std::string& sdk_version) {
+    return (sdk_version_.compare(sdk_version) == 0);
+  }
   void parse_from_json(const json&);
   odla_status load_from_string(const std::string& config_string);
   odla_status load_config(const char* file_path);
