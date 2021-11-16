@@ -71,6 +71,9 @@ odla_status PopartConfig::load_config(const char* file_path) {
 }
 
 void PopartConfig::parse_from_json(const json& jf) {
+  if (jf.contains("sdk_version")) {
+    sdk_version_ = jf["sdk_version"].get<std::string>();
+  }
   if (jf.contains("amp")) {
     amp_ = jf["amp"].get<float>();
   }
