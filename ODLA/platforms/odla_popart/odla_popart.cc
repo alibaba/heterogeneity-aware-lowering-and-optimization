@@ -186,6 +186,10 @@ odla_status _odla_computation::init(bool is_compile) {
         try {
           builder = popart::Builder::createFromOnnxModel(set_pipeline_stage());
         } catch (std::exception& e) {
+          popart::logging::err("create builder from onnx model failed:{}",
+                               e.what());
+          return ODLA_FAILURE;
+        } catch (...) {
           popart::logging::err("create builder from onnx model failed.");
           return ODLA_FAILURE;
         }
@@ -239,10 +243,12 @@ odla_status _odla_computation::init(bool is_compile) {
           new_session->setRandomSeed(0);  // Init seed
           new_session->weightsFromHost(); // Copy weights from host to IPU
         } catch (poplar::application_runtime_error& e) {
-          popart::logging::err("Poplar exception application_runtime_error caught:");
+          popart::logging::err(
+              "Poplar exception application_runtime_error caught:{}", e.what());
           return ODLA_INTERNAL_LOGIC_ERR;
         } catch (poplar::recoverable_runtime_error& e) {
-          popart::logging::err("Poplar recoverable_runtime_error exception caught");
+          popart::logging::err(
+              "Poplar recoverable_runtime_error exception caught");
           auto action = e.getRecoveryAction();
           popart::logging::err("need to take action:{}", action);
           if (action == poplar::RecoveryAction::IPU_RESET) {
@@ -253,15 +259,19 @@ odla_status _odla_computation::init(bool is_compile) {
             return ODLA_FULL_RESET;
           }
         } catch (poplar::unrecoverable_runtime_error& e) {
-          popart::logging::err("Poplar unrecoverable_runtime_error exception caught");
+          popart::logging::err(
+              "Poplar unrecoverable_runtime_error exception caught");
           return ODLA_UNRECOVERABLE_ERR;
         } catch (poplar::unknown_runtime_error& e) {
           popart::logging::info("Poplar unknown runtime exception caught}");
           return ODLA_UNRECOVERABLE_ERR;
-        } catch (...) {
-          popart::logging::info("Poplar unknown exception caught");
+        } catch (std::exception &e) {
+          popart::logging::info("Poplar unknown exception caught, {}", e.what());
           return ODLA_UNRECOVERABLE_ERR;
-        }
+        } catch (...) {
+          popart::logging::info("Poplar unknown exception caught, {}", e.what());
+          return ODLA_UNRECOVERABLE_ERR;
+		}
         // If in parallel mode, start the thread
         ExecutionMode mode = PopartConfig::instance()->execution_mode();
         if (PIPELINE == mode || PARALLEL == mode) {
