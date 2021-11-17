@@ -18,6 +18,7 @@
 #ifndef HALO_LIB_TRANSFORM_ANALYZER_H_
 #define HALO_LIB_TRANSFORM_ANALYZER_H_
 
+#include <map>
 #include <unordered_map>
 
 #include "halo/api/halo_data.h"
@@ -65,12 +66,27 @@ class Analyzer final : public ModulePass {
     size_t size = 0;
   };
 
+  struct HWInfo {
+    float conv_time;      // ms/Gflops
+    float conv_knl_init;  // per kernel init time (ms)
+    float mm_time;        // ms/Gflops
+    float mm_knl_init;    // per kernel init time (ms)
+    float other_time;     // ms/Gflops
+    float other_knl_init; // per kernel init time (ms)
+    float max_mem;        // MB
+  };
+
   Analyzer(std::ostream* os, const AnalyzerOpts& opts)
       : ModulePass("Analyzer"), os_(os), opts_(opts) {}
 
   bool RunOnModule(Module* m) override;
 
-  void WriteCSVReport(std::ostream& os);
+  void GenerateRscInfo(std::ostream& os);
+
+  std::string& GetReourceEst(int& bsz) {
+    bsz = adaptive_bsz_;
+    return rsc_req_;
+  }
 
  private:
   static float GetNumOfOperators(const Instruction* inst);
@@ -117,7 +133,11 @@ class Analyzer final : public ModulePass {
   std::vector<Analyzer::NodeInfo> node_infos_;
   AnalyzerOpts opts_;
   // alive tensor buffer
-  std::unordered_map<std::string, TensorInfo> AliveTensor;
+  std::unordered_map<std::string, TensorInfo> alive_tensor_;
+  std::string rsc_req_;
+  int adaptive_bsz_ = 1;
+  std::map<std::string, HWInfo> hw_paras_ = {
+      {"GPU_t4", {1.476, 0.03, 0.35, 0.06, 26.8, 0.01, 16000}}};
 };
 
 } // namespace halo

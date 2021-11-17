@@ -79,6 +79,10 @@ UseList& Def::GetUses() const {
 
 /// Return the type of the def object.
 const Type& Def::GetType() const {
+  if (IsNull()) {
+    const static Type invalid_type;
+    return invalid_type;
+  }
   return GetOwner()->GetResultsTypes()[GetIdx()];
 }
 

@@ -68,8 +68,8 @@ Analyzer::NodeInfo& Analyzer::GenerateCommonInfo(const Instruction* inst) {
       node_info.weight_mem += size;
     } else {
       std::string name = inst->GetOperand(i).GetOwner()->GetName();
-      if (AliveTensor.find(name) != AliveTensor.end()) {
-        AliveTensor[name].liveness--;
+      if (alive_tensor_.find(name) != alive_tensor_.end()) {
+        alive_tensor_[name].liveness--;
       }
 
       node_info.io_mem += size;
@@ -85,11 +85,11 @@ Analyzer::NodeInfo& Analyzer::GenerateCommonInfo(const Instruction* inst) {
     node_info.output_shape = op_type.GetDimSizes();
   }
   TensorInfo tif = {op_tgts, Dl->Bytes(op_type)};
-  AliveTensor[node_info.name] = tif;
+  alive_tensor_[node_info.name] = tif;
 
-  for (auto iter = AliveTensor.begin(); iter != AliveTensor.end();) {
+  for (auto iter = alive_tensor_.begin(); iter != alive_tensor_.end();) {
     if (iter->second.liveness == 0) {
-      iter = AliveTensor.erase(iter);
+      iter = alive_tensor_.erase(iter);
     } else {
       node_info.io_mem += iter->second.size * iter->second.liveness;
       iter++;
@@ -139,11 +139,6 @@ void Analyzer::CalConvInst(const T* inst) {
   const auto& weight_type = weight_op.GetType();
   size_t weight_size = weight_type.GetTotalNumOfElements();
 
-  // Conv computational estimator:
-  // 1 kernel per pixel: (2 * Kh * Kw - 1)
-  // all chanels (2 * Kh * Kw - 1) * Cin + 1 (bias)
-  // all output pixels:
-  // ((2 * Kh * Kw - 1) * Cin + 1) * Cout * Hout * Wout * Batch (Cout == Nk)
   const auto& out_type = inst->GetResultType();
   size_t out_size = out_type.GetTotalNumOfElements();
   const size_t dims = out_type.GetNumOfDims();
@@ -162,13 +157,35 @@ void Analyzer::CalConvInst(const T* inst) {
       HLCHECK(0 && "Invalid format");
     }
   }
-  node_info.flops = 2;
-  node_info.flops *= static_cast<float>(weight_size * out_size);
-  node_info.flops /= out_type.GetNumOfElementsInDim(chn);
-  node_info.flops =
-      node_info.flops -
-      static_cast<float>(weight_type.GetNumOfElementsInDim(chn) * out_size -
-                         out_size);
+
+  int grp = inst->GetGroup();
+
+  if (grp == 1) {
+    // Normal Conv computational estimator:
+    // 1 kernel per pixel: (2 * Kh * Kw - 1)
+    // all chanels (2 * Kh * Kw - 1) * Cin + 1 (bias)
+    // all output pixels:
+    // ((2 * Kh * Kw - 1) * Cin + 1) * Cout * Hout * Wout * Batch (Cout == Nk)
+    node_info.flops = 2;
+    node_info.flops *= static_cast<float>(weight_size * out_size);
+    node_info.flops /= out_type.GetNumOfElementsInDim(chn);
+    node_info.flops =
+        node_info.flops -
+        static_cast<float>(weight_type.GetNumOfElementsInDim(1) * out_size -
+                           out_size);
+  } else {
+    // depthwise convolution estimator:
+    // 1 kernel per pixel: (2 * Kh * Kw - 1)
+    // all groups (2 * Kh * Kw - 1) * Cout + 1 (bias)
+    // all output pixels:
+    // ((2 * Kh * Kw - 1) * Cout + 1) * Hout * Wout * Batch
+    node_info.flops = 2;
+    node_info.flops *=
+        static_cast<float>(weight_type.GetNumOfElementsInDim(2) *
+                           weight_type.GetNumOfElementsInDim(3) * out_size);
+    size_t t = out_size / out_type.GetNumOfElementsInDim(chn);
+    node_info.flops = node_info.flops - static_cast<float>(out_size - t);
+  }
 }
 
 void Analyzer::RunOnInstruction(Instruction* inst) {
@@ -385,15 +402,21 @@ void Analyzer::RunOnInstruction(BatchNormInst* inst) {
       GetNumOfOperators(inst) * input_type.GetTotalNumOfElements();
 }
 
-void Analyzer::RunOnInstruction(GatherInst* inst) {
-  auto& node_info = GenerateCommonInfo(inst);
-  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
-}
-
 void Analyzer::RunOnInstruction(ReduceMeanInst* inst) {
   auto& node_info = GenerateCommonInfo(inst);
   node_info.flops = GetNumOfOperators(inst) *
                     inst->GetOperand(0).GetType().GetTotalNumOfElements();
+}
+
+void Analyzer::RunOnInstruction(SoftmaxInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
+  node_info.flops = GetNumOfOperators(inst) *
+                    inst->GetOperand(0).GetType().GetTotalNumOfElements();
+}
+
+void Analyzer::RunOnInstruction(GatherInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
+  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
 }
 
 void Analyzer::RunOnInstruction(ReluInst* inst) {
@@ -406,56 +429,82 @@ void Analyzer::RunOnInstruction(Relu6Inst* inst) {
   node_info.flops = inst->GetOperand(0).GetType().GetTotalNumOfElements();
 }
 
-void Analyzer::RunOnInstruction(SoftmaxInst* inst) {
+void Analyzer::RunOnInstruction(ArgmaxInst* inst) {
   auto& node_info = GenerateCommonInfo(inst);
-  node_info.flops = GetNumOfOperators(inst) *
-                    inst->GetOperand(0).GetType().GetTotalNumOfElements();
+  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
 }
 
-void Analyzer::RunOnInstruction(ArgmaxInst* inst) { GenerateCommonInfo(inst); }
+void Analyzer::RunOnInstruction(ConcatInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
+  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
+}
 
-void Analyzer::RunOnInstruction(ConcatInst* inst) { GenerateCommonInfo(inst); }
+void Analyzer::RunOnInstruction(OneHotInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
+  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
+}
 
-void Analyzer::RunOnInstruction(OneHotInst* inst) { GenerateCommonInfo(inst); }
+void Analyzer::RunOnInstruction(PadInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
+  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
+}
 
-void Analyzer::RunOnInstruction(PadInst* inst) { GenerateCommonInfo(inst); }
-
-void Analyzer::RunOnInstruction(RangeInst* inst) { GenerateCommonInfo(inst); }
+void Analyzer::RunOnInstruction(RangeInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
+  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
+}
 
 void Analyzer::RunOnInstruction(RandomUniformInst* inst) {
-  GenerateCommonInfo(inst);
+  auto& node_info = GenerateCommonInfo(inst);
+  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
 }
 
 void Analyzer::RunOnInstruction(ReduceMaxInst* inst) {
-  GenerateCommonInfo(inst);
+  auto& node_info = GenerateCommonInfo(inst);
+  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
 }
 
 void Analyzer::RunOnInstruction(ReduceProductInst* inst) {
-  GenerateCommonInfo(inst);
+  auto& node_info = GenerateCommonInfo(inst);
+  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
 }
 
-void Analyzer::RunOnInstruction(ReshapeInst* inst) { GenerateCommonInfo(inst); }
+void Analyzer::RunOnInstruction(ReshapeInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
+  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
+}
 
 void Analyzer::RunOnInstruction(SetDiff1DInst* inst) {
-  GenerateCommonInfo(inst);
+  auto& node_info = GenerateCommonInfo(inst);
+  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
 }
 
-void Analyzer::RunOnInstruction(SliceInst* inst) { GenerateCommonInfo(inst); }
+void Analyzer::RunOnInstruction(SliceInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
+  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
+}
 
-void Analyzer::RunOnInstruction(StackInst* inst) { GenerateCommonInfo(inst); }
+void Analyzer::RunOnInstruction(StackInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
+  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
+}
 
 void Analyzer::RunOnInstruction(TransposeInst* inst) {
-  GenerateCommonInfo(inst);
+  auto& node_info = GenerateCommonInfo(inst);
+  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
 }
 
-void Analyzer::RunOnInstruction(ZExtInst* inst) { GenerateCommonInfo(inst); }
+void Analyzer::RunOnInstruction(ZExtInst* inst) {
+  auto& node_info = GenerateCommonInfo(inst);
+  node_info.flops = inst->GetResultType().GetTotalNumOfElements();
+}
 
 void Analyzer::RunOnInstruction(ReturnInst* inst) {
   // do nothing
 }
 
 bool Analyzer::RunOnModule(Module* m) {
-  AliveTensor.clear();
+  alive_tensor_.clear();
   node_infos_.clear();
   for (auto& func : *m) {
     for (auto& bb : *func) {
@@ -472,13 +521,47 @@ bool Analyzer::RunOnModule(Module* m) {
       }
     }
   }
-  if (os_ != nullptr) {
-    WriteCSVReport(*os_);
-  }
+
+  GenerateRscInfo(*os_);
+
   return false;
 }
 
-void Analyzer::WriteCSVReport(std::ostream& os) {
+static int SearchBatchSize(int bsz_log2, float init_latency, float knl_latency,
+                           int ips) {
+  const float epsilon = 1;
+  const float ms2s = 1000;
+  float cur_qps = ms2s / (init_latency + knl_latency);
+  float qps = static_cast<float>(ips);
+  if (cur_qps > qps) {
+    return 0;
+  }
+  float bsz = static_cast<float>(1 << bsz_log2);
+  cur_qps = bsz * ms2s / (init_latency + knl_latency * bsz);
+  if (cur_qps < qps) {
+    return bsz_log2;
+  }
+  int l = 0;
+  int r = bsz_log2;
+  while (l < r) {
+    int mid = (l + r) / 2;
+    bsz = static_cast<float>(1 << mid);
+    cur_qps = bsz * ms2s / (init_latency + knl_latency * bsz);
+    if (std::abs(cur_qps - qps) < epsilon) {
+      l = mid;
+      break;
+    }
+    if (cur_qps > qps) {
+      r = mid;
+    } else {
+      l = mid + 1;
+    }
+  }
+
+  return l;
+}
+
+void Analyzer::GenerateRscInfo(std::ostream& os) {
   static constexpr float mflops = 1000000.0F;
   static constexpr float gflops = 1000 * mflops;
   static constexpr float mb = 1024 * 1024.0F;
@@ -486,15 +569,42 @@ void Analyzer::WriteCSVReport(std::ostream& os) {
 
   float total_flops = 0;
   float total_weights = 0;
+  float conv_flops = 0;
+  float conv_act_flops = 0;
+  int conv_op_num = 0;
+  int conv_act_num = 0;
+  bool last_is_conv = false;
+  float matmul_flops = 0;
+  int matmul_op_num = 0;
+  int other_op_num = 0;
   size_t max_io = 0;
   for (const auto& it : node_infos_) {
     total_flops += it.flops;
     total_weights += it.weight_mem;
 
     max_io = std::max(max_io, it.io_mem);
+
+    if (it.type == OpCode::MATMUL || it.type == OpCode::GEMM ||
+        it.type == OpCode::BATCHMATMUL) {
+      matmul_flops += it.flops;
+      matmul_op_num++;
+      last_is_conv = false;
+    } else if (it.type == OpCode::CONV2D ||
+               it.type == OpCode::CONV2DTRANSPOSE) {
+      conv_flops += it.flops;
+      conv_op_num++;
+      last_is_conv = true;
+    } else {
+      other_op_num++;
+      if (last_is_conv) {
+        conv_act_flops += it.flops;
+        conv_act_num++;
+      }
+      last_is_conv = false;
+    }
   }
 
-  if (opts_.print_details) {
+  if (opts_.print_details && os) {
     os << "Analysis Report\n"
        << "layerID, "
        << "layerName, "
@@ -531,12 +641,90 @@ void Analyzer::WriteCSVReport(std::ostream& os) {
     os << "\n";
   }
 
-  size_t total_layers = node_infos_.size();
-  float total_mem = (total_weights + max_io) / mb;
-  os << "Total layers: " << total_layers
-     << "\nTotal GFLOPs: " << total_flops / gflops
-     << "\nTotal Weights(MB): " << total_weights / mb
-     << "\nTotal Memory (MB): " << total_mem << "\n";
+  /*-----Calculate T4 parameters-----------------*/
+  total_weights /= mb;
+  max_io /= mb;
+  conv_flops /= gflops;
+  conv_act_flops /= gflops;
+  matmul_flops /= gflops;
+  total_flops /= gflops;
+
+  float init_latency =
+      static_cast<float>(conv_op_num) * hw_paras_["GPU_t4"].conv_knl_init;
+  init_latency +=
+      static_cast<float>(matmul_op_num) * hw_paras_["GPU_t4"].mm_knl_init;
+  init_latency += static_cast<float>(other_op_num - conv_act_num) *
+                  hw_paras_["GPU_t4"].other_knl_init;
+  float knl_latency =
+      hw_paras_["GPU_t4"].conv_time * (conv_flops + conv_act_flops);
+  knl_latency += hw_paras_["GPU_t4"].mm_time * matmul_flops;
+  knl_latency += hw_paras_["GPU_t4"].other_time *
+                 (total_flops - conv_flops - conv_act_flops - matmul_flops);
+
+  if (opts_.batch_size == 1 && opts_.qps > 0) {
+    float max_batch = (hw_paras_["GPU_t4"].max_mem - total_weights) / max_io;
+    int b_log2 = static_cast<int>(std::log2f(max_batch));
+    b_log2 = SearchBatchSize(b_log2, init_latency, knl_latency, opts_.qps);
+    adaptive_bsz_ = 1 << b_log2;
+    knl_latency *= static_cast<float>(adaptive_bsz_);
+    max_io *= static_cast<float>(adaptive_bsz_);
+    total_flops *= static_cast<float>(adaptive_bsz_);
+  } else {
+    // error input when qps and batch_size are both given.
+    HLCHECK(opts_.qps == 0);
+    adaptive_bsz_ = opts_.batch_size;
+  }
+
+  float trt_mem = total_weights + max_io;
+  const int trt_base = 800;
+  const int adjust_bsz = 64;
+  const int adjust_mem = 1;
+  int trt_env = (adaptive_bsz_ > adjust_bsz)
+                    ? trt_base - (adaptive_bsz_ - adjust_bsz) * adjust_mem
+                    : trt_base;
+  trt_env = std::max(0, trt_env);
+  trt_mem += static_cast<float>(trt_env);
+
+  float est_latency = init_latency + knl_latency;
+
+  os << "Device: GPU T4"
+     << "\n";
+  os << "batch size: " << adaptive_bsz_ << "\n";
+  os << "est FLOPs: " << total_flops << " gFlops\n";
+  os << "est latency: " << est_latency << " ms\n";
+  os << "est mem: " << trt_mem << " MB\n";
+  /*-----Generated T4 parameters-----------------*/
+
+  // fill in resource request for scheduling
+  rsc_req_.clear();
+  // rsc_req_.append("{");
+  // rsc_req_.append("\"key:\","); // key will be inserted in vODLA IF
+  rsc_req_.append("\"options\":");
+  rsc_req_.append("[");
+  // opt1
+  rsc_req_.append("[");
+  // dev1
+  rsc_req_.append("{");
+  rsc_req_.append("\"applyType\":\"bySize\",");
+  rsc_req_.append("\"type\":\"GPU\",");
+  rsc_req_.append("\"model\":\"T4\",");
+  rsc_req_.append("\"size\":1,");
+  rsc_req_.append("\"flops\":\"");
+  std::string s = std::to_string(total_flops * gflops);
+  rsc_req_.append(s.substr(0, s.find('.') + 3));
+  rsc_req_.append("\",");
+  rsc_req_.append("\"precision\":\"int32\",");
+  rsc_req_.append("\"memory\":\"");
+  s = std::to_string(trt_mem);
+  rsc_req_.append(s.substr(0, s.find('.') + 3));
+  rsc_req_.append("\",");
+  rsc_req_.append("\"allowSplit\":false,");
+  rsc_req_.append("}");
+  // end dev1
+  rsc_req_.append("]");
+  // end opt1
+  rsc_req_.append("]");
+  rsc_req_.append("}");
 }
 
 } // namespace halo

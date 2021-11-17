@@ -24,6 +24,7 @@
 #include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/parser/parser.h"
 #include "halo/lib/pass/pass_manager.h"
+#include "halo/lib/transforms/analyzer.h"
 #include "halo/lib/transforms/fusion.h"
 #include "halo/utils/passes_helper.h"
 #include "halo/utils/path.h"
@@ -102,8 +103,22 @@ static int InvokeCompiler(Module* m, const std::string& target, int batch,
     AnalyzerOpts alz_opts;
     alz_opts.batch_size = batch;
     alz_opts.print_details = false;
-    pm.AddAnalyzerPass(&std::cout, alz_opts);
+    alz_opts.qps = model_info->input_qps;
+    Analyzer* analyzer =
+        static_cast<Analyzer*>(pm.AddAnalyzerPass(&std::cout, alz_opts));
     pm.Run(m);
+    if (model_info != nullptr) {
+      int bsz = 1;
+      std::string& s = analyzer->GetReourceEst(bsz);
+      size_t sz = s.size();
+      if (sz >= HALO_VODLA_MAX_OUTPUT_RSC_EST) {
+        return 1;
+      } else {
+        s.copy(model_info->output_rsc_est, sz);
+        model_info->output_rsc_est[sz] = '\0';
+        model_info->adaptive_bsz = bsz;
+      }
+    }
   }
 
   return 0;
