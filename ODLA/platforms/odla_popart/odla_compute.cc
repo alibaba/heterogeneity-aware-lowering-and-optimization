@@ -124,6 +124,7 @@ odla_status odla_CreateComputation(odla_computation* comp) {
     }
   }
   // Read the config file
+  popart::logging::info("loading config");
   if (!PopartConfig::instance()->inited()) {
     auto ret = PopartConfig::instance()->load_config(
         std::getenv("ODLA_POPART_CONFIG"));
@@ -174,6 +175,8 @@ odla_status odla_DestroyComputation(odla_computation comp) {
     comp->release_session();
     _odla_computation::destruct(); // release the real computation
   }
+  popart::logging::info("reset config state");
+  PopartConfig::instance()->reset_init_state();
 
   return ODLA_SUCCESS;
 }
