@@ -407,6 +407,7 @@ void Inst::Run() {
   EmitClone();
   EmitAccessAttributes();
   EmitVerify();
+  EmitOperandOptional();
   EmitClassof();
 
   os_ << "\n";
@@ -460,6 +461,17 @@ void Inst::EmitDoc() {
       }
     }
   }
+}
+
+void Inst::EmitOperandOptional() {
+  os_ << "  bool IsOperandOptional(size_t idx) const noexcept override {\n";
+  for (int i = 0; i < args_.size(); ++i) {
+    if (args_[i].IsOptional()) {
+      os_ << "    if (idx == " << i << ") { return true;}\n";
+    }
+  }
+  os_ << "    return false;\n";
+  os_ << "  }";
 }
 
 void Inst::EmitVerify() {

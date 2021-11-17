@@ -1918,7 +1918,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(TransposeInst* inst) {
   }
 
   const auto& perm = inst->GetPermutation();
-  auto input_type = (input.GetDef()->GetResultsTypes()[input.GetIdx()]);
+  const auto& input_type = input.GetType();
   int dims = -1;
   std::vector<int64_t> new_shape;
   std::vector<size_t> perm_strides;
