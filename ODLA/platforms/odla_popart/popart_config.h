@@ -19,6 +19,7 @@
 #ifndef POPART_CONFIG_H_
 #define POPART_CONFIG_H_
 
+#include <fstream>
 #include <iostream>
 #include <map>
 #include <regex>
@@ -105,6 +106,12 @@ class PopartConfig {
   void use_default();
   static PopartConfig* instance() { return instance_; }
   const std::string& version() { return version_; }
+  inline void reset_init_state() {
+    inited_ = false;
+    if (cache_fs->is_open()) {
+      cache_fs->close();
+    }
+  }
   inline float amp() { return amp_; };
   inline int batches_per_step() { return batches_per_step_; }
   inline ExecutionMode execution_mode() { return execution_mode_; }
