@@ -486,6 +486,39 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
   return {*new_slice_inst};
 }
 
+static std::vector<Def> ConvertSwitch(const TFExtensionInst* ext,
+                                      IRBuilder* builder) {
+  const auto& data = ext->GetOperand(0);
+  if (const Constant* pred = DynCast<Constant>(ext->GetOperand(1));
+      pred != nullptr) {
+    HLCHECK(pred->GetResultType().GetTotalNumOfElements() == 1);
+    bool cond = pred->GetDataAsInt64(0) != 0;
+    std::vector<Def> ret_true{Def::GetUndefined(), data};
+    std::vector<Def> ret_false{data, Def::GetUndefined()};
+    return cond ? ret_true : ret_false;
+  }
+  return {};
+}
+
+static std::vector<Def> ConvertMerge(const TFExtensionInst* ext,
+                                     IRBuilder* builder) {
+  Def ret = Def::GetUndefined();
+  for (int i = 0, e = ext->GetNumOfOperands(); i != e; ++i) {
+    const auto& op = ext->GetOperand(i);
+    // Check if there is one and only one valid operand.
+    if (!op.IsNull()) {
+      if (!ret.IsNull()) {
+        return {};
+      }
+      ret = op;
+    }
+  }
+  if (!ret.IsNull()) {
+    return {ret};
+  }
+  return {};
+}
+
 static std::vector<Def> ConvertZerosLike(const TFExtensionInst* ext,
                                          IRBuilder* builder) {
   const auto& op0_type = ext->GetOperand(0).GetType();
@@ -1017,6 +1050,9 @@ static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
     case TFExtOpCode::IPUGELU: {
       return ConvertIpuGelu(tf_inst, builder);
     }
+    case TFExtOpCode::MERGE: {
+      return ConvertMerge(tf_inst, builder);
+    }
     case TFExtOpCode::STOPGRADIENT:
     case TFExtOpCode::QUEUEDEQUEUEV2:
     case TFExtOpCode::IDENTITY: {
@@ -1042,6 +1078,9 @@ static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
     }
     case TFExtOpCode::STRIDEDSLICE: {
       return ConvertStridedSlice(tf_inst, builder);
+    }
+    case TFExtOpCode::SWITCH: {
+      return ConvertSwitch(tf_inst, builder);
     }
     case TFExtOpCode::RESHAPE: {
       return ConvertReshape(tf_inst, builder);
