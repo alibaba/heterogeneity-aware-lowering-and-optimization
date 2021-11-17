@@ -22,6 +22,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <mutex>
 #include <regex>
 #include <string>
 #include <vector>
@@ -87,6 +88,7 @@ class PopartConfig {
 
   std::shared_ptr<std::fstream> cache_fs;
 
+  std::mutex config_mutex_;
   static PopartConfig* instance_;
   odla_status load_from_file(const std::string& file_path);
 
@@ -107,9 +109,17 @@ class PopartConfig {
   static PopartConfig* instance() { return instance_; }
   const std::string& version() { return version_; }
   inline void reset_init_state() {
-    inited_ = false;
-    if (cache_fs->is_open()) {
-      cache_fs->close();
+    if (inited_) {
+      std::lock_guard<std::mutex> guard(config_mutex_);
+      if (inited_) {
+        inited_ = false;
+        if (cache_fs->is_open()) {
+          cache_fs->close();
+        }
+        pipeline_setting_.clear();
+        load_or_save_cache_ = false;
+        sdk_version_ = "NA";
+      }
     }
   }
   inline float amp() { return amp_; };
