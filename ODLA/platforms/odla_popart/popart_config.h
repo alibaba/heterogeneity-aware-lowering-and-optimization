@@ -115,6 +115,7 @@ class PopartConfig {
         inited_ = false;
         if (cache_fs->is_open()) {
           cache_fs->close();
+		  cache_fs->clear();
         }
         pipeline_setting_.clear();
         load_or_save_cache_ = false;
