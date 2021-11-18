@@ -108,8 +108,9 @@ odla_status _odla_computation::compile_and_export() {
   }
   std::string config_file_name(cache_file_name.substr(0, file_prefix) +
                                ".json");
-  std::fstream cache_fs(cache_file_name,
-                        std::ios_base::out | std::ifstream::binary);
+  std::fstream cache_fs(cache_file_name, std::ios_base::out |
+                                             std::ifstream::binary |
+                                             std::ios_base::trunc);
   if (!cache_fs.is_open()) {
     popart::logging::err("Open or create cache file falied");
     return ODLA_FAILURE;
@@ -307,6 +308,7 @@ odla_status _odla_computation::init(bool is_compile) {
           std::move(new_session); // set session after all initialization done.
     }
   }
+  return ODLA_SUCCESS;
 }
 
 // Now we set this by config file, should set by the caller?
