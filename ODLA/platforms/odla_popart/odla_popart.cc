@@ -307,6 +307,7 @@ odla_status _odla_computation::init(bool is_compile) {
           std::move(new_session); // set session after all initialization done.
     }
   }
+  return ODLA_SUCCESS;
 }
 
 // Now we set this by config file, should set by the caller?
