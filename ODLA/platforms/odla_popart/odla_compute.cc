@@ -141,7 +141,7 @@ odla_status odla_CreateComputation(odla_computation* comp) {
     QManager::instance()->getQ()->init(
         PopartConfig::instance()->queue_capacity());
   }
-  odla_status status = _odla_computation::instance()->set_executor();
+  status = _odla_computation::instance()->set_executor();
   if (status != ODLA_SUCCESS) {
     popart::logging::err("set_executor failed");
     return ODLA_FAILURE;
