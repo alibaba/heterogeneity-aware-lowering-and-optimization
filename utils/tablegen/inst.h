@@ -159,6 +159,8 @@ class Inst {
   void EmitInitAttributes();
   /// Emit a public function to copy attributes from the same Instr class.
   void EmitVerify();
+  /// Emit a override function to test if an operand is optional or not.
+  void EmitOperandOptional();
   /// Emit classof and casting code.
   void EmitClassof();
   /// Emit formated (markdown) document.

@@ -281,14 +281,17 @@ class IRObject {
     return results_types_[idx];
   }
 
-  /// Returns true if the object holds valid result types.
+  /// Return true if the object holds valid result types.
   bool HasValidResultTypes() const;
 
-  /// Retuns true if the object has variadic returns.
+  /// Return true if the object has variadic returns.
   bool HasVariadicReturns() const noexcept { return has_variadic_returns_; }
 
   /// Compute the result type. Returns false if failed.
   virtual bool ComputeResultTypes();
+
+  /// Return true if the operand is optional.
+  virtual bool IsOperandOptional(size_t idx) const noexcept { return false; }
 
   /// Return the results' use_list.
   std::vector<UseList>& GetResultsUses() noexcept { return results_uses_; }
