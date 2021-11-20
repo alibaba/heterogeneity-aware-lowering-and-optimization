@@ -79,7 +79,7 @@ void compute_loop(odla_computation comp) {
     popart::logging::err("Poplar unrecoverable_runtime_error exception caught");
     QManager::instance()->set_status(ODLA_UNRECOVERABLE_ERR);
   } catch (poplar::unknown_runtime_error& e) {
-    popart::logging::info("Poplar unknown runtime exception caught}");
+    popart::logging::info("Poplar unknown runtime exception caught");
     QManager::instance()->set_status(ODLA_UNRECOVERABLE_ERR);
   } catch (...) {
     popart::logging::info("Poplar unknown exception caught");
@@ -544,10 +544,10 @@ odla_status Sequence::compute(odla_computation comp, odla_context context,
     popart::logging::err("Poplar unrecoverable_runtime_error exception caught");
     return ODLA_UNRECOVERABLE_ERR;
   } catch (poplar::unknown_runtime_error& e) {
-    popart::logging::info("Poplar unknown runtime exception caught}");
+    popart::logging::err("Poplar unknown runtime exception caught.");
     return ODLA_UNRECOVERABLE_ERR;
   } catch (...) {
-    popart::logging::info("Poplar unknown exception caught");
+    popart::logging::err("Poplar unknown exception caught");
     return ODLA_UNRECOVERABLE_ERR;
   }
   return ODLA_SUCCESS;
