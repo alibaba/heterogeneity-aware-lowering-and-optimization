@@ -526,7 +526,7 @@ odla_status Sequence::compute(odla_computation comp, odla_context context,
     popart::logging::info("[ {} ] [Sequence::compute] takes {} s.", i++,
                           elapsed_seconds.count());
     popart::logging::err("[ {} ] [Sequence::compute] takes {} s.", i++,
-                          elapsed_seconds.count());
+                         elapsed_seconds.count());
     popart::logging::info("<<< Sequence::compute() with ctx: {}", context);
   } catch (poplar::application_runtime_error& e) {
     popart::logging::err("Poplar exception application_runtime_error caught:");
