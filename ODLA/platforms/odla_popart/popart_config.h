@@ -23,6 +23,7 @@
 #include <iostream>
 #include <map>
 #include <mutex>
+#include <popart/version.hpp>
 #include <regex>
 #include <string>
 #include <vector>
@@ -61,6 +62,7 @@ class PopartConfig {
   std::string sdk_version_; // version of the sdk
   int batches_per_step_;    // Batch per step for PIPELINE & PARALLEL execution
                             // mode
+  static std::vector<std::string> mode; // string value of execution mode
   ExecutionMode
       execution_mode_; // The execution mode {PIPELINE, PARALLEL, SEQUENCE}
   bool load_onnx_;     // Whether load onnx model to run instead of the model
