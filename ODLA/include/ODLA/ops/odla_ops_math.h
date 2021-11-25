@@ -254,6 +254,20 @@ odla_CumSum(odla_value input, odla_value axis, odla_bool exclusion,
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Div(odla_value lhs, odla_value rhs, const odla_value_id value_id);
 
+//! \brief Compute Einstein summation.
+/*!
+  Einsum returns the Einstein summation convention on the inputs.
+  \param inputs the input values
+  \param equation the expression
+  \param output_dims the optional output shape (can be undefined)
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Einsum(odla_values inputs, const odla_char* equation,
+            odla_value_shape output_dims, const odla_value_id value_id);
+
 //! \brief Compute guass error of the given input
 /*!
   Erf returns element-wise guass error of \p input.
