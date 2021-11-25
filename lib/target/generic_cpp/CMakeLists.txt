@@ -30,6 +30,7 @@ set(SRCS
   conv.cc
   custom.cc
   deconv.cc
+  einsum.cc
   expand.cc
   gather.cc
   gemm.cc

@@ -199,6 +199,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(IsNaNInst*) override;
   virtual void RunOnInstruction(IsInfInst*) override;
   virtual void RunOnInstruction(SignInst*) override;
+  virtual void RunOnInstruction(EinsumInst*) override;
 
   virtual void RunOnBinaryInstruction(Instruction*);
   virtual void RunOnCastInstruction(Instruction*);
