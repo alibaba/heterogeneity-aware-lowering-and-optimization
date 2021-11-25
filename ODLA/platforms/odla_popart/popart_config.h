@@ -118,7 +118,6 @@ class PopartConfig {
           cache_fs->clear();
         }
         pipeline_setting_.clear();
-        load_or_save_cache_ = false;
         sdk_version_ = "NA";
       }
     }
