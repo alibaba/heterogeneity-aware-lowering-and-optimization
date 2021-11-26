@@ -18,6 +18,7 @@
 
 #include <ODLA/odla.h>
 #include <dlfcn.h>
+#include <stdlib.h>
 
 #include <cstdlib>
 #include <fstream>
@@ -62,6 +63,7 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
       comp->opts.cache_dir = (reinterpret_cast<char*>(value));
       break;
     case 1001: // load cache directly, need set path of cache file
+      setenv("POPART_LOG_LEVEL", "INFO", 1);
       PopartConfig::instance()->set_load_or_save_cache(true);
       PopartConfig::instance()->set_cache_path(
           (std::string) reinterpret_cast<char*>(value));
@@ -167,6 +169,7 @@ odla_status odla_DestroyContext(odla_context ctx) {
 }
 
 odla_status odla_DestroyComputation(odla_computation comp) {
+  popart::logging::info("call odla_destroyComputation");
   if (comp != nullptr) {
     if (!comp->is_compile_only()) {
       comp->mark_done();

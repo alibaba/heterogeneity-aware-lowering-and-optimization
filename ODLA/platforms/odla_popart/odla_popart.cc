@@ -79,14 +79,14 @@ void compute_loop(odla_computation comp) {
     popart::logging::err("Poplar unrecoverable_runtime_error exception caught");
     QManager::instance()->set_status(ODLA_UNRECOVERABLE_ERR);
   } catch (poplar::unknown_runtime_error& e) {
-    popart::logging::info("Poplar unknown runtime exception caught");
+    popart::logging::err("Poplar unknown runtime exception caught");
     QManager::instance()->set_status(ODLA_UNRECOVERABLE_ERR);
   } catch (...) {
-    popart::logging::info("Poplar unknown exception caught");
+    popart::logging::err("Poplar unknown exception caught");
     QManager::instance()->set_status(ODLA_UNRECOVERABLE_ERR);
   }
 
-  popart::logging::warn("The pipeline loop finished");
+  popart::logging::info("The pipeline loop finished");
   comp->thread_done();
 }
 
@@ -134,10 +134,12 @@ odla_status _odla_computation::compile_and_export() {
     config_string = PopartConfig::instance()->get_default_config_string();
   }
   // add sdk_version in the file content
-  std::string version_string(popart::core::versionString());
+  std::string version_string(popart::core::packageHash());
   popart::logging::info("the popart version is: {}", version_string);
-  version_string = "\n\"sdk_version\":\"" + version_string + "\",";
-  config_string.insert(1, version_string);
+  if (config_string.find("sdk_version") == std::string::npos) {
+    std::string item_string = "\n\"sdk_version\":\"" + version_string + "\",";
+    config_string.insert(1, item_string);
+  }
   popart::logging::info("the config_string with sdk_version is: {}",
                         config_string);
   // added the sdk_version information to the file content
@@ -236,7 +238,7 @@ odla_status _odla_computation::init(bool is_compile) {
       if (!is_compile) {
         if (PopartConfig::instance()->load_or_save_cache()) {
           popart::logging::info("Load cachefile from existing stream");
-          std::string version_string(popart::core::versionString());
+          std::string version_string(popart::core::packageHash());
           if (!PopartConfig::instance()->sdk_version_match(version_string)) {
             popart::logging::err("The sdk version of cache does not match {}",
                                  version_string);
