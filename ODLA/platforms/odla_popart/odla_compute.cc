@@ -169,17 +169,14 @@ odla_status odla_DestroyContext(odla_context ctx) {
 }
 
 odla_status odla_DestroyComputation(odla_computation comp) {
-  popart::logging::err("call odla_destroyComputation-----");
+  popart::logging::info("call odla_destroyComputation");
   if (comp != nullptr) {
-    popart::logging::err("call odla_destroyComputation-----1");
     if (!comp->is_compile_only()) {
       comp->mark_done();
       QManager::instance()->deleteQ(); // delete current queue
     }
-    popart::logging::err("call odla_destroyComputation-----2");
     comp->release_session();
     _odla_computation::destruct(); // release the real computation
-    popart::logging::err("call odla_destroyComputation-----3 finish");
   }
   popart::logging::info("reset config state");
   PopartConfig::instance()->reset_init_state();
