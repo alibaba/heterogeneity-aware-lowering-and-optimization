@@ -134,7 +134,7 @@ odla_status _odla_computation::compile_and_export() {
     config_string = PopartConfig::instance()->get_default_config_string();
   }
   // add sdk_version in the file content
-  std::string version_string(popart::core::versionString());
+  std::string version_string(poplar::packageHash());
   popart::logging::info("the popart version is: {}", version_string);
   version_string = "\n\"sdk_version\":\"" + version_string + "\",";
   config_string.insert(1, version_string);
@@ -236,7 +236,7 @@ odla_status _odla_computation::init(bool is_compile) {
       if (!is_compile) {
         if (PopartConfig::instance()->load_or_save_cache()) {
           popart::logging::info("Load cachefile from existing stream");
-          std::string version_string(popart::core::versionString());
+          std::string version_string(poplar::packageHash());
           if (!PopartConfig::instance()->sdk_version_match(version_string)) {
             popart::logging::err("The sdk version of cache does not match {}",
                                  version_string);
