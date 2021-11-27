@@ -18,6 +18,7 @@
 
 #include <ODLA/odla.h>
 #include <dlfcn.h>
+#include <stdlib.h>
 
 #include <cstdlib>
 #include <fstream>
@@ -167,6 +168,7 @@ odla_status odla_DestroyContext(odla_context ctx) {
 }
 
 odla_status odla_DestroyComputation(odla_computation comp) {
+  popart::logging::info("call odla_destroyComputation");
   if (comp != nullptr) {
     if (!comp->is_compile_only()) {
       comp->mark_done();
