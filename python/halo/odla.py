@@ -17,8 +17,6 @@ from enum import Enum
 from time import time
 import logging
 import os
-from pdb import set_trace
-import numpy as np
 
 class Device(Enum):
     CUDA = 1
