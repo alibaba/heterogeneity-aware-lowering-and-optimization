@@ -94,7 +94,7 @@ RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 6
 SHELL ["/bin/bash", "-c"]
 
 # Install TensorRT
-ARG TENSORRT_VERSION=8.0.3-1+cuda11.3
+ARG TENSORRT_VERSION=8.2.0-1+cuda11.4
 RUN if [[ "${BASE_IMAGE}" =~ "nvidia" ]]; then apt-get update -y && \
     apt-get install -y --no-install-recommends --allow-change-held-packages \
         libnvinfer8=${TENSORRT_VERSION} \
