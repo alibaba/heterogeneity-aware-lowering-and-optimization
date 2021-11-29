@@ -23,6 +23,22 @@
 
 namespace halo {
 
+template <typename Tsrc, typename Tdst>
+static bool ReplaceConstant(Constant* c, DataType src_type, DataType new_type) {
+  const auto& orig_type = c->GetResultType(0);
+  if (orig_type.GetDataType() != src_type) {
+    return false;
+  }
+  std::vector<Tdst> ret;
+  auto n = orig_type.GetTotalNumOfElements();
+  ret.reserve(n);
+  for (unsigned int i = 0; i < n; ++i) {
+    ret.push_back(static_cast<float>(c->GetData<Tsrc>(i)));
+  }
+  c->SetData(halo::Type{new_type, orig_type.GetDimSizes()}, ret.data());
+  return true;
+}
+
 bool TypeCast::RunOnFunction(Function* func) {
   bool changed = false;
   // Replace arguments.
@@ -32,25 +48,27 @@ bool TypeCast::RunOnFunction(Function* func) {
       halo::Type new_ty{DataType::INT32, ty.GetDimSizes()};
       arg->SetType(new_ty);
       changed |= true;
+    } else if (ty.GetDataType() == DataType::FLOAT64) {
+      halo::Type new_ty{DataType::FLOAT32, ty.GetDimSizes()};
+      arg->SetType(new_ty);
+      changed |= true;
     }
   }
+
   // Replace constants.
-  ConstantBuilder cb(func);
-  Function::ConstantList& constants = func->Constants();
-  for (auto it = constants.begin(), ie = constants.end(); it != ie; ++it) {
-    const auto& orig_type = (*it)->GetResultType(0);
-    if (orig_type.GetDataType() == DataType::INT64) {
-      std::vector<int> ret;
-      ret.reserve(orig_type.GetTotalNumOfElements());
-      for (unsigned int i = 0; i < orig_type.GetTotalNumOfElements(); ++i) {
-        ret.push_back(static_cast<int>((*it)->GetData<int64_t>(i)));
-      }
-      Constant* c_ret = cb.CreateConstant(
-          (*it)->GetName() + "_castdown",
-          halo::Type{DataType::INT32, orig_type.GetDimSizes()}, ret.data());
-      (*it)->ReplaceAllUsesWith(0, *c_ret);
-      changed = true;
-    }
+  Module* m = func->GetParent();
+  for (auto& c : m->Constants()) {
+    changed |= ReplaceConstant<double, float>(c.get(), DataType::FLOAT64,
+                                              DataType::FLOAT32);
+    changed |= ReplaceConstant<int64_t, int32_t>(c.get(), DataType::INT64,
+                                                 DataType::INT32);
+  }
+
+  for (auto& c : func->Constants()) {
+    changed |= ReplaceConstant<double, float>(c.get(), DataType::FLOAT64,
+                                              DataType::FLOAT32);
+    changed |= ReplaceConstant<int64_t, int32_t>(c.get(), DataType::INT64,
+                                                 DataType::INT32);
   }
 
   for (auto& bb : *func) {
@@ -60,11 +78,15 @@ bool TypeCast::RunOnFunction(Function* func) {
         if (orig_type.IsValid() && orig_type.GetDataType() == DataType::INT64) {
           inst->GetResultsTypes()[i] =
               halo::Type{DataType::INT32, orig_type.GetDimSizes()};
+        } else if (orig_type.IsValid() &&
+                   orig_type.GetDataType() == DataType::FLOAT64) {
+          inst->GetResultsTypes()[i] =
+              halo::Type{DataType::FLOAT32, orig_type.GetDimSizes()};
         }
       }
     }
   }
   return changed;
-} // namespace halo
+}
 
 } // end namespace halo
