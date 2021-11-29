@@ -1097,6 +1097,103 @@ static void RunOnInstruction(SetDiff1DInst* inst) {
   ;
 }
 
+static void RunOnInstruction(EinsumInst* inst) {
+  int n = inst->GetNumOfOperands();
+  for (int i = 0; i < n; ++i) {
+    if (!inst->GetOperand(i).GetType().IsValid()) {
+      return;
+    }
+  }
+  HLCHECK(n >= 1);
+  std::vector<std::string> terms;
+  const std::string equ = inst->GetEquation();
+  std::unordered_map<char, int64_t> char2dim;
+  bool has_output = false;
+  for (int i = 0, e = equ.size(), new_term = 1; i < e; ++i) {
+    auto c = equ[i];
+    if (new_term == 1) {
+      terms.push_back("");
+      new_term = 0;
+    }
+    if (c == ' ') {
+      continue;
+    }
+    if (c == '.') {
+      HLCHECK(i + 2 < e && equ[i + 1] == '.' && equ[i + 2] == '.');
+      terms.back().push_back('.');
+      i += 2;
+    }
+    if (c == ',') {
+      new_term = 1;
+      continue;
+    }
+    if (c == '-') {
+      HLCHECK(i + 1 < e && equ[i + 1] == '>');
+      HLCHECK(!has_output);
+      i += 1;
+      has_output = true;
+      new_term = 1;
+      continue;
+    }
+    if (std::isalpha(c) != 0) {
+      std::string& term = terms.back();
+      term.push_back(c);
+    }
+  }
+
+  int num_terms = terms.size();
+  auto elem_ty = inst->GetOperand(0).GetType().GetDataType();
+  if (!has_output) {
+    HLCHECK(num_terms == n);
+    inst->GetResultsTypes()[0] = Type{elem_ty, {}};
+    return;
+  }
+
+  HLCHECK(num_terms == n + 1);
+  // Setup character to dimension mapping for inputs.
+  std::vector<int64_t> ellipsis_dims;
+  for (int i = 0; i < n; ++i) {
+    const auto& ty = inst->GetOperand(i).GetType();
+    unsigned rank = ty.GetNumOfDims();
+    const auto& term = terms[i];
+    HLCHECK(term.size() <= rank);
+    for (unsigned j = 0, s = term.size(), dim_idx = 0; j < s; ++j, ++dim_idx) {
+      char c = terms[i][j];
+      if (c == '.') {
+        bool init = ellipsis_dims.empty();
+        for (unsigned k = 0; k < rank - term.size(); ++k) {
+          auto v = ty.GetNumOfElementsInDim(dim_idx++);
+          if (init) {
+            ellipsis_dims.push_back(v);
+          } else {
+            HLCHECK(ellipsis_dims[k] == v);
+          }
+        }
+        continue;
+      }
+      int64_t d = ty.GetNumOfElementsInDim(dim_idx);
+      if (char2dim.count(c) == 0) {
+        char2dim[c] = d;
+      } else {
+        HLCHECK(char2dim[c] == d);
+      }
+    }
+  }
+  const auto& out_term = terms.back();
+  std::vector<int64_t> out_shape;
+  out_shape.reserve(out_term.size());
+  for (auto c : out_term) {
+    if (c == '.') {
+      out_shape.insert(out_shape.end(), ellipsis_dims.begin(),
+                       ellipsis_dims.end());
+    } else {
+      HLCHECK(char2dim.count(c) > 0);
+      out_shape.push_back(char2dim[c]);
+    }
+  }
+  inst->GetResultsTypes()[0] = Type{elem_ty, out_shape};
+}
+
 static void RunOnInstruction(ExpandDimsInst* inst) {
   const auto& idx_op = inst->GetOperand(1);
   const auto& idx_type = idx_op.GetType();
