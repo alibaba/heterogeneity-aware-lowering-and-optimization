@@ -888,7 +888,8 @@ static std::vector<Def> ConvertRange(const ONNXExtensionInst* ext,
 
   auto fill = [&cb, ext](DataType dt, auto data, int64_t start, int64_t limit,
                          int64_t delta) {
-    int64_t n = std::max(0L, (limit - start + delta - 1) / delta);
+    int64_t n =
+        std::max(0L, static_cast<int64_t>(std::ceil((limit - start) / delta)));
     data.reserve(n);
     for (int64_t i = start; i != limit; i += delta) {
       data.push_back(i);
