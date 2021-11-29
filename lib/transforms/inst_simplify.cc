@@ -2324,9 +2324,10 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
     std::vector<int> size_adj(dim);
     bool new_size = false;
     for (int i = 0; i != dim; ++i) {
-      int size_i = c_size->GetDataAsInt64(i);
-      if (size_i == -1) {
-        size_adj[i] = dst_type.GetNumOfElementsInDim(i);
+      int64_t size_i = c_size->GetDataAsInt64(i);
+      int64_t s = dst_type.GetNumOfElementsInDim(i);
+      if (size_i == -1 && s != -1) {
+        size_adj[i] = s;
         new_size = true;
       } else {
         size_adj[i] = size_i;
