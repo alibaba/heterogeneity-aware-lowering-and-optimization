@@ -1614,6 +1614,22 @@ odla_value odla_Concat(odla_values inputs, odla_int32 axis,
   return CreateValue(concat, output_type, id);
 }
 
+#if NV_TENSORRT_MAJOR > 8 || (NV_TENSORRT_MAJOR == 8 && NV_TENSORRT_MINOR >= 2)
+odla_value odla_Einsum(odla_values inputs, const odla_char* equation,
+                       odla_value_shape output_dims, const odla_value_id id) {
+  int num = inputs.size;
+  std::vector<nvinfer1::ITensor*> input_tensors(num);
+  for (int i = 0; i < num; ++i) {
+    input_tensors[i] = inputs.values[i]->tensor;
+  }
+  auto ret = g_comp->network->addEinsum(input_tensors.data(), num, equation);
+  odla_value_type output_type{
+      .element_type = inputs.values[0]->type.element_type,
+      .shape = output_dims};
+  return CreateValue(ret, output_type, id);
+}
+#endif
+
 odla_value odla_MaxPool(odla_value input, odla_memory_layout input_layout,
                         const odla_uint32* window_dims,
                         const odla_uint32* strides,
