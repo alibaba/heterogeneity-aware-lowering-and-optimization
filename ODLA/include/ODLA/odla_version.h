@@ -22,6 +22,8 @@
  * \details This file defines the ODLA version number.
  */
 
+#include <ODLA/odla_common.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,6 +34,15 @@ extern "C" {
 
 //! \brief ODLA version number.
 #define ODLA_VERSION_NUMBER ((ODLA_MAJOR)*100 + (ODLA_MINOR)*10 + (OLDA_PATCH))
+
+const char* ODLAAPIVersion __attribute__((weak)) =
+    ODLA_VERSION_STR(ODLA_MAJOR, ODLA_MINOR, ODLA_PATCH);
+
+//! \brief Get version string of the library.
+/*!
+  \return NULL-terminated string of version info.
+*/
+const odla_char* odla_GetVersionString();
 
 #ifdef __cplusplus
 } // C extern
