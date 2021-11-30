@@ -35,7 +35,7 @@ set(POPART_ROOT ${POPART_ROOT} PARENT_SCOPE)
 
 list(APPEND CMAKE_PREFIX_PATH ${POPLAR_ROOT})
 list(APPEND CMAKE_PREFIX_PATH ${POPART_ROOT})
-find_package(popart 2.3.0... REQUIRED CONFIG COMPONENTS popart-only REQUIRED)
+find_package(popart 2.3.1... REQUIRED CONFIG COMPONENTS popart-only REQUIRED)
 
 message(STATUS "Found popart, version: ${popart_VERSION}")
 
