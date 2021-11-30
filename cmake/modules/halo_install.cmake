@@ -16,7 +16,7 @@
 
 # Install halo
 
-install(TARGETS halo halolib
+install(TARGETS halo halolib analyzer
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         INCLUDES DESTINATION include/halo
@@ -43,7 +43,7 @@ install(DIRECTORY ${CMAKE_BINARY_DIR}/odla_docs/html
 install(FILES ${CMAKE_BINARY_DIR}/odla_docs/latex/refman.pdf
         DESTINATION docs/odla RENAME ODLA_reference.pdf OPTIONAL)
 
-set(CPACK_GENERATOR "TBZ2")
+set(CPACK_GENERATOR "TBZ2;DEB")
 string(TOLOWER "${CPACK_SYSTEM_NAME}" os)
 if (os MATCHES "centos.*")
   set(CPACK_GENERATOR "TBZ2;RPM")
