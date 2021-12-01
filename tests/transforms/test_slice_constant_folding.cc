@@ -64,7 +64,7 @@ void build() {
   // clang-format off
   // CHECK: Constant slice_folded([INT32: 2x2x4]) = [5, 6, 7, 8, 9, 10, 11, 12, 17, 18, 19, 20, 21, 22, 23, 24]
   // CHECK: BasicBlock: bb0()
-  // CHECK-NEXT: Inst: ret() = return(<slice_folded, 0>:[INT32: 2x2x4])
+  // CHECK-NEXT: Inst: ret([INT32: 2x2x4]) = return(<slice_folded, 0>:[INT32: 2x2x4])
   // clang-format on
 }
 

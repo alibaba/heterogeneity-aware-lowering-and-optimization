@@ -286,9 +286,13 @@ void Inst::EmitConstructorCommon() {
     os_.indent(4);
     os_ << "InitAttributes();\n";
   }
-  if (opcode_ == "OpCode::CALL") {
+  if (opcode_ == "OpCode::CALL" || opcode_ == "OpCode::IF" ||
+      opcode_ == "OpCode::RETURN") {
     os_.indent(4);
     os_ << "SetVariadicReturns(true);\n";
+    if (opcode_ == "OpCode::RETURN") {
+      os_ << "SetNumOfResults(GetNumOfOperands());\n";
+    }
   }
 }
 

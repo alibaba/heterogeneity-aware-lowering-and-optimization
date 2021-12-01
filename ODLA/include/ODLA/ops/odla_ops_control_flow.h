@@ -72,7 +72,7 @@ odla_BeginLoop(odla_value trip_count, odla_value_id value_id);
   condition is assumed as True, therefore the loop will be solely controlled by
   the `trip count` defined in `odla_BeginLoop`.
   \param output_values The values as loop outputs. These values must be created
-  by `odla_CraeteLoopVariable`.
+  by `odla_CreateLoopVariable`.
   \param flags Each output value has a corresponding flag. If the flag is not
   `ODLA_LOOP_LAST_VALUE`, an extra concatenated value will be returned.
   \param value_ids unique value ids (can be NULL)
@@ -82,6 +82,13 @@ odla_BeginLoop(odla_value trip_count, odla_value_id value_id);
 extern ODLA_API_EXPORT odla_values ODLA_API_CALL
 odla_EndLoop(odla_value condition, odla_values output_values,
              const odla_loop_output_mode* flags, odla_value_ids);
+
+extern ODLA_API_EXPORT odla_status ODLA_API_CALL
+odla_BeginIf(odla_value condition, odla_value_id);
+
+extern ODLA_API_EXPORT odla_status odla_EnterBranchBody(odla_bool true_branch);
+
+extern ODLA_API_EXPORT odla_values ODLA_API_CALL odla_EndIf(odla_value_ids);
 
 #ifdef __cplusplus
 } // C extern

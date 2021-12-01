@@ -23,6 +23,7 @@
 #include <memory>
 #include <sstream>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "halo/lib/framework/global_context.h"
 #include "halo/lib/ir/common_cast_instructions.h"
@@ -136,6 +137,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(GatherElementsInst*) override;
   virtual void RunOnInstruction(GemmInst*) override;
   virtual void RunOnInstruction(GRUInst*) override;
+  virtual void RunOnInstruction(IfInst*) override;
   virtual void RunOnInstruction(LogInst*) override;
   virtual void RunOnInstruction(LogSoftmaxInst*) override;
   virtual void RunOnInstruction(LRNInst*) override;
@@ -208,6 +210,7 @@ class GenericCXXCodeGen : public CodeGen {
                                          bool keep_dims,
                                          const char* odla_func_name);
   virtual void RunOnUnaryInstruction(Instruction*);
+  virtual void RunOnBranchBody(const IfInst& inst, bool is_taken);
 
   virtual CXXValue AllocateBuffer(const Def& def, bool on_stack);
   std::string GetFunctionDecl(const Function& func, const Instruction& ret_inst,
@@ -245,6 +248,8 @@ class GenericCXXCodeGen : public CodeGen {
     EmitODLAArgs(args...);
   }
 
+  void EmitODLAArgs() {}
+
   inline void EmitODLAVauleId(const CXXValue& lhs, std::ostream& os) {
     if (opts_.emit_value_id_as_int) {
       os << lhs.id;
@@ -256,7 +261,9 @@ class GenericCXXCodeGen : public CodeGen {
   template <int indent = 2, bool is_op = true, typename... Targs>
   void EmitODLACall(const CXXValue& lhs, const char* func_name, Targs... args) {
     os_ << std::string(indent, ' ');
-    os_ << EmitLValue(lhs.name) << " = ";
+    if (!lhs.name.empty()) {
+      os_ << EmitLValue(lhs.name) << " = ";
+    }
     os_ << func_name << "(";
     EmitODLAArgs(args...);
     if (is_op) {
@@ -273,10 +280,16 @@ class GenericCXXCodeGen : public CodeGen {
     auto ret_array = lhs[0].name + "_array";
     os_ << EmitLValues(ret_array) << " = ";
     os_ << func_name << "(";
-    EmitODLAArgs(args...);
+    constexpr std::size_t n = sizeof...(args);
+    if (n > 0) {
+      EmitODLAArgs(args...);
+    }
     if (is_op) {
       unsigned int id = 0;
-      os_ << ", {.size = " << lhs.size() << ", .value_ids = {";
+      if (n > 0) {
+        os_ << ", ";
+      }
+      os_ << "{.size = " << lhs.size() << ", .value_ids = {";
       for (auto& one : lhs) {
         os_ << "(const odla_value_id)";
         EmitODLAVauleId(one, os_);
@@ -338,6 +351,7 @@ class GenericCXXCodeGen : public CodeGen {
   std::ostream& dynamic_check_os_;
   std::unordered_map<Def, CXXValue> ir_mapping_;
   std::unique_ptr<MemoryAnalyzer> memory_analyzer_;
+  std::unordered_set<const BasicBlock*> visited_;
   CXXCodeGenOpts opts_;
 };
 

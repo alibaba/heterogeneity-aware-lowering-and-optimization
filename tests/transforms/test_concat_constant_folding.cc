@@ -91,7 +91,7 @@ int main() {
            // CHECK: Function: axis_0()
            // CHECK-NEXT: Constant concat_folding([INT32: 3x2x4]) = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
            // CHECK-NEXT: BasicBlock: concat_2_inputs_on_axis_0()
-           // CHECK-NEXT: Inst: ret() = return(<concat_folding, 0>:[INT32: 3x2x4])
+           // CHECK-NEXT: Inst: ret([INT32: 3x2x4]) = return(<concat_folding, 0>:[INT32: 3x2x4])
            // clang-format on
            {.name = "axis_1",
             .inputs = {{.name = "x", .dims = {2, 1, 4}},
@@ -101,7 +101,7 @@ int main() {
            // CHECK: Function: axis_1()
            // CHECK-NEXT: Constant concat_folding([INT32: 2x3x4]) = [1, 2, 3, 4, 9, 10, 11, 12, 13, 14, 15, 16, 5, 6, 7, 8, 17, 18, 19, 20, 21, 22, 23, 24]
            // CHECK-NEXT: BasicBlock: concat_2_inputs_on_axis_1()
-           // CHECK-NEXT: Inst: ret() = return(<concat_folding, 0>:[INT32: 2x3x4])
+           // CHECK-NEXT: Inst: ret([INT32: 2x3x4]) = return(<concat_folding, 0>:[INT32: 2x3x4])
            // clang-format on
            {.name = "axis_2",
             .inputs = {{.name = "x", .dims = {2, 2, 2}},
@@ -111,7 +111,7 @@ int main() {
            // CHECK: Function: axis_2()
            // CHECK-NEXT: Constant concat_folding([INT32: 2x2x5]) = [1, 2, 9, 10, 11, 3, 4, 12, 13, 14, 5, 6, 15, 16, 17, 7, 8, 18, 19, 20]
            // CHECK-NEXT: BasicBlock: concat_2_inputs_on_axis_2()
-           // CHECK-NEXT: Inst: ret() = return(<concat_folding, 0>:[INT32: 2x2x5])
+           // CHECK-NEXT: Inst: ret([INT32: 2x2x5]) = return(<concat_folding, 0>:[INT32: 2x2x5])
            // clang-format on
        }});
 }

@@ -920,6 +920,9 @@ void GenericCXXCodeGen::PostRunOnInstruction(Instruction* inst) {
 }
 
 void GenericCXXCodeGen::RunOnBasicBlock(BasicBlock& bb) {
+  if (visited_.count(&bb) > 0) {
+    return;
+  }
   for (auto& inst : bb) {
     Instruction* i = inst.get();
     PreRunOnInstruction(i);

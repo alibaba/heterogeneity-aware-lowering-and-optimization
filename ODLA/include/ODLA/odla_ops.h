@@ -19,8 +19,8 @@
 #define _ODLA_OPS_H_
 
 #include <ODLA/ops/odla_ops_basic.h>
+#include <ODLA/ops/odla_ops_control_flow.h>
 #include <ODLA/ops/odla_ops_custom.h>
-#include <ODLA/ops/odla_ops_loop.h>
 #include <ODLA/ops/odla_ops_math.h>
 #include <ODLA/ops/odla_ops_nn.h>
 #include <ODLA/ops/odla_ops_process.h>

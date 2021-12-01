@@ -57,7 +57,7 @@ void build() {
   // CHECK-NEXT: Inst: sub1({{.*}}) = sub(<add2, 0>:{{.*}}, <add2, 0>:{{.*}})
   // CHECK-NEXT: Inst: add0({{.*}}) = mul()
   // CHECK-NEXT: Inst: add2({{.*}}) = add()
-  // CHECK-NEXT: Inst: ret() = return(<sub1, 0>:{{.*}})
+  // CHECK-NEXT: Inst: ret({{.*}}) = return(<sub1, 0>:{{.*}})
 }
 
 int main() { build(); }
