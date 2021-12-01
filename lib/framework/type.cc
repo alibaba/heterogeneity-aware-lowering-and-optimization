@@ -39,17 +39,31 @@ Type::Type(const DataType dt_id, const std::vector<int64_t>& shape)
     : data_type_id_(dt_id), shape_(shape) {
   if (!shape.empty()) {
     total_num_of_elements_ = 1;
-    for (int64_t dim_size : shape) {
-      if (dim_size < 0) {
-        if (dim_size == kDynamicBatchSize) {
+
+    if (shape[0] == kDynamicBatchSize) {
+      is_dynamic_batch_ = true;
+      total_num_of_elements_ = std::numeric_limits<int64_t>::max();
+    } else if (shape[0] > 0) {
+      total_num_of_elements_ *= shape[0];
+    } else {
+      total_num_of_elements_ = -1;
+    }
+
+    for (int64_t i = 1, e = shape.size(); i != e; ++i) {
+      if (shape[i] < 0) {
+        if (shape[i] == kDynamicShapeSize) {
+          is_dynamic_shape_ = true;
           total_num_of_elements_ = std::numeric_limits<int64_t>::max();
-          is_dynamic_batch_ = true;
         } else {
           total_num_of_elements_ = -1;
         }
         break;
       }
-      total_num_of_elements_ *= dim_size;
+      total_num_of_elements_ *= shape[i];
+    }
+
+    if (is_dynamic_batch_) {
+      total_num_of_elements_ = std::numeric_limits<int64_t>::max();
     }
   } else {
     // scalar type

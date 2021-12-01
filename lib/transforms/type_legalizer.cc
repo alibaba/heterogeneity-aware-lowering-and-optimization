@@ -285,7 +285,11 @@ static void RunOnInstruction(ReshapeInst* inst) {
   size_t product = 1;
   size_t elements_num = 1;
   int neg_dim = -1;
-  if (op0_type.IsDynamicBatch()) {
+  if (op0_type.IsDynamicShape()) {
+    halo::Type new_type{op0_type.GetDataType(), new_shape};
+    inst->GetResultsTypes()[0] = new_type;
+
+  } else if (op0_type.IsDynamicBatch()) {
     new_shape[0] = op0_type.GetNumOfElementsInDim(0);
     for (size_t i = 1; i < op0_type.GetNumOfDims(); ++i) {
       elements_num *= op0_type.GetNumOfElementsInDim(i);
@@ -318,6 +322,10 @@ static void RunOnInstruction(ReshapeInst* inst) {
       HLCHECK(elements_num % product == 0 && "Invalid reshape operand");
       new_shape[neg_dim] = elements_num / product;
     }
+
+    halo::Type new_type{op0_type.GetDataType(), new_shape};
+    inst->GetResultsTypes()[0] = new_type;
+
   } else {
     for (int i = 0, e = new_shape.size(); i != e; ++i) {
       if (new_shape[i] == 0) {
@@ -348,10 +356,10 @@ static void RunOnInstruction(ReshapeInst* inst) {
               "Invalid reshape operand");
       new_shape[neg_dim] = op0_type.GetTotalNumOfElements() / product;
     }
-  }
 
-  halo::Type new_type{op0_type.GetDataType(), new_shape};
-  inst->GetResultsTypes()[0] = new_type;
+    halo::Type new_type{op0_type.GetDataType(), new_shape};
+    inst->GetResultsTypes()[0] = new_type;
+  }
 }
 
 static void RunOnInstruction(DequantizeInst* inst) {
