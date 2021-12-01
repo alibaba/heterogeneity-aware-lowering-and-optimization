@@ -326,6 +326,9 @@ void ONNXParser::RegisterOp() {
   func_lists_.emplace("Loop",
                       std::bind(&ONNXParser::ConvertLoopNode, this,
                                 std::placeholders::_1, std::placeholders::_2));
+  func_lists_.emplace(
+      "If", std::bind(&ONNXParser::ConvertIfNode, this, std::placeholders::_1,
+                      std::placeholders::_2));
 #include "onnx_regist_op.h.inc"
 }
 
@@ -952,27 +955,18 @@ std::unique_ptr<Parser> CreateONNXParser() {
   return std::make_unique<ONNXParser>();
 }
 
-Status ONNXParser::ConvertLoopNode(IRBuilder* ir_builder,
-                                   const onnx::NodeProto& cur_node) {
-  std::string cur_node_name = cur_node.name();
-  if (cur_node_name.empty()) {
-    // TODO(unknown) current node name must unique
-    cur_node_name = "unknown";
-  }
-  const auto& operands = GetInputOperands(cur_node);
-  // first 2 inputs(loop_cnt/loop_cond) is optional
-  for (int64_t i = operands.size() - 1; i >= 0; --i) {
-    loop_arg_types_.push(operands[i].GetType());
-  }
-
+BasicBlock* ONNXParser::ConvertSubgraph(const onnx::NodeProto& cur_node,
+                                        const std::string& subgraph_name,
+                                        const std::string& block_name,
+                                        int output_start_idx) {
   ONNXAttrs attrs(cur_node);
   onnx::GraphProto subgraph;
   curr_scope_ = curr_scope_->CreateScope();
-  attrs.Process<onnx::GraphProto>("body", &subgraph);
-  auto loop_body = bb_builder_->CreateBasicBlock("bb_" + cur_node_name);
-  auto loop_ir_builder = std::make_unique<IRBuilder>(loop_body);
-  auto arg_builder = std::make_unique<ArgumentBuilder>(loop_body);
-  auto c_builder = std::make_unique<ConstantBuilder>(loop_body);
+  attrs.Process<onnx::GraphProto>(subgraph_name, &subgraph);
+  auto body = bb_builder_->CreateBasicBlock(block_name);
+  auto ir_builder = std::make_unique<IRBuilder>(body);
+  auto arg_builder = std::make_unique<ArgumentBuilder>(body);
+  auto c_builder = std::make_unique<ConstantBuilder>(body);
   std::set<std::string> const_input_names;
   for (int i = 0, const_inputs_size = subgraph.initializer_size();
        i < const_inputs_size; ++i) {
@@ -994,13 +988,13 @@ Status ONNXParser::ConvertLoopNode(IRBuilder* ir_builder,
       ConvertConstNode(c_builder.get(), subgraph.node(i));
       continue;
     }
-    ConvertOneNode(loop_ir_builder.get(), subgraph.node(i));
+    ConvertOneNode(ir_builder.get(), subgraph.node(i));
   }
 
   // Convert output. Skip the first operand as "cond" is not a real output.
   std::vector<Def> outputs;
 
-  for (int i = 1, output_infos_size = subgraph.output_size();
+  for (int i = output_start_idx, output_infos_size = subgraph.output_size();
        i < output_infos_size; ++i) {
     auto name = subgraph.output(i).name();
     VLOG(1) << "output node name: " << name;
@@ -1013,9 +1007,48 @@ Status ONNXParser::ConvertLoopNode(IRBuilder* ir_builder,
     }
   }
   if (!outputs.empty()) {
-    loop_ir_builder->CreateReturn("output", outputs);
+    auto ret = ir_builder->CreateReturn("output", outputs);
+    ret->SetNumOfResults(outputs.size());
   }
   curr_scope_ = curr_scope_->GetParent();
+  return body;
+}
+
+Status ONNXParser::ConvertIfNode(IRBuilder* ir_builder,
+                                 const onnx::NodeProto& cur_node) {
+  std::string cur_node_name = cur_node.name();
+  if (cur_node_name.empty()) {
+    // TODO(unknown) current node name must unique
+    cur_node_name = "unknown";
+  }
+
+  const auto& operands = GetInputOperands(cur_node);
+  HLCHECK(operands.size() == 1);
+  auto br = ir_builder->CreateIf(cur_node.name(), operands);
+  br->SetThenBranch(ConvertSubgraph(cur_node, "then_branch",
+                                    "bb_" + cur_node_name + "_true", 0));
+  br->SetElseBranch(ConvertSubgraph(cur_node, "else_branch",
+                                    "bb_" + cur_node_name + "_false", 0));
+  br->GetResultsUses().resize(2);
+  br->GetResultsTypes().resize(2);
+
+  InsertIDToInstMap(cur_node, br);
+  return Status::SUCCESS;
+}
+
+Status ONNXParser::ConvertLoopNode(IRBuilder* ir_builder,
+                                   const onnx::NodeProto& cur_node) {
+  std::string cur_node_name = cur_node.name();
+  if (cur_node_name.empty()) {
+    // TODO(unknown) current node name must unique
+    cur_node_name = "unknown";
+  }
+  const auto& operands = GetInputOperands(cur_node);
+  // first 2 inputs(loop_cnt/loop_cond) is optional
+  for (int64_t i = operands.size() - 1; i >= 0; --i) {
+    loop_arg_types_.push(operands[i].GetType());
+  }
+  auto loop_body = ConvertSubgraph(cur_node, "body", "bb_" + cur_node_name, 1);
   auto loop = ir_builder->CreateLoop(cur_node.name(), operands);
   loop->SetBody(loop_body);
   loop_body->SetLoopInst(loop);

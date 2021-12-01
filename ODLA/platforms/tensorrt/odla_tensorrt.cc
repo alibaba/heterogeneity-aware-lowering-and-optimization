@@ -30,6 +30,7 @@
 #include <iostream>
 #include <memory>
 #include <numeric>
+#include <stack>
 #include <unordered_map>
 #include <vector>
 
@@ -100,6 +101,7 @@ class Logger : public nvinfer1::ILogger {
         break;
       case ILogger::Severity::kVERBOSE:
         log_level = 4;
+        break;
       default:
         log_level = 5;
     }
@@ -161,6 +163,13 @@ static constexpr size_t MAX_WORKSPACE_SIZE_BYTES = 1ul * 1024 * 1024 * 1024;
 static const int MAX_INT64_CONVERTION_NUM = 65536ul;
 static bool g_load_engine_mode = false;
 
+typedef struct {
+  IIfConditional* branch;
+  std::vector<odla_value> true_outputs;
+  std::vector<odla_value> false_outputs;
+  bool in_true_body;
+} branch_info;
+
 struct _odla_computation {
   std::shared_ptr<nvinfer1::IBuilder> builder = nullptr;
   std::shared_ptr<nvinfer1::INetworkDefinition> network = nullptr;
@@ -170,6 +179,7 @@ struct _odla_computation {
   std::vector<std::unique_ptr<_odla_value>> vals;
   std::vector<odla_value> input_vals;
   std::vector<odla_value> output_vals;
+  std::stack<branch_info> branchs;
   bool fp16_mode = false;
 
   bool is_dynamic_batch = false;
@@ -628,6 +638,15 @@ odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
 }
 
 odla_status odla_SetValueAsOutput(const odla_value val) {
+  if (!g_comp->branchs.empty()) {
+    auto& br_info = g_comp->branchs.top();
+    if (br_info.in_true_body) {
+      br_info.true_outputs.push_back(val);
+    } else {
+      br_info.false_outputs.push_back(val);
+    }
+    return ODLA_SUCCESS;
+  }
   const char* name =
       val->layer != nullptr ? val->layer->getName() : val->tensor->getName();
   g_comp->outputs[name] = val;
@@ -2372,6 +2391,38 @@ odla_value odla_Select(odla_value condition, odla_value a, odla_value b,
   return CreateValue(select_layer->getOutput(0),
                      odla_value_type{a->type.element_type, output_dims},
                      value_id);
+}
+
+odla_status odla_BeginIf(odla_value condition, odla_value_id value_id) {
+  branch_info br_info;
+  br_info.branch = g_comp->network->addIfConditional();
+  br_info.branch->setCondition(*condition);
+  br_info.branch->setName(reinterpret_cast<const char*>(value_id));
+  g_comp->branchs.push(br_info);
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_EnterBranchBody(odla_bool true_branch) {
+  g_comp->branchs.top().in_true_body = true_branch != 0;
+  return ODLA_SUCCESS;
+}
+
+odla_values odla_EndIf(odla_value_ids value_ids) {
+  auto br_info = g_comp->branchs.top();
+  int n = br_info.true_outputs.size();
+  assert(n == br_info.false_outputs.size());
+  assert(n <= ODLA_MAX_OUTPUTS);
+  odla_values ret;
+  ret.size = n;
+  auto br = br_info.branch;
+  g_comp->branchs.pop();
+  for (int i = 0; i < n; ++i) {
+    auto out =
+        br->addOutput(*br_info.true_outputs[i], *br_info.false_outputs[i]);
+    ret.values[i] =
+        CreateValue(out, br_info.true_outputs[i]->type, value_ids.value_ids[i]);
+  }
+  return ret;
 }
 
 } // C extern

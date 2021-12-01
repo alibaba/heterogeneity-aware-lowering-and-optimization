@@ -51,10 +51,10 @@ void build() {
 // CHECK: Constant input_data([FLOAT32: 6]) = [1, 2, 3, 4, 5, 6]
 // CHECK: BasicBlock: bb0
 // CHECK: Inst: jump0([BOOL: 1]) = jump(<condition, 0>:[BOOL: 1]) {Attrs: <target: {{.*}}>}
-// CHECK: Inst: ret() = return(<jump0, 0>:[BOOL: 1])
+// CHECK: Inst: ret([BOOL: 1]) = return(<jump0, 0>:[BOOL: 1])
 // CHECK: BasicBlock: target_block
 // CHECK: Inst: add0([FLOAT32: 6]) = add(<input_data, 0>:[FLOAT32: 6], <arg0, 0>:[FLOAT32: 6])
-// CHECK: Inst: ret() = return(<add0, 0>:[FLOAT32: 6])
+// CHECK: Inst: ret([FLOAT32: 6]) = return(<add0, 0>:[FLOAT32: 6])
   // clang-format on
 }
 

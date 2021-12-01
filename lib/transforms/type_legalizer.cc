@@ -1318,6 +1318,25 @@ static void RunOnInstruction(HgEngineInst* inst) {
   }
 }
 
+static void RunOnInstruction(IfInst* inst) {
+  auto& ret_types = inst->GetResultsTypes();
+  if (inst->GetNumOfOperands() == 1) {
+    auto ret0 = inst->GetElseBranch()->GetReturnInst();
+    auto ret1 = inst->GetThenBranch()->GetReturnInst();
+    if (ret0 != nullptr && ret0->HasValidResultTypes()) {
+      ret_types = ret0->GetResultsTypes();
+    } else if (ret1 != nullptr && ret1->HasValidResultTypes()) {
+      ret_types = ret1->GetResultsTypes();
+    }
+    return;
+  }
+  const auto& data_type = inst->GetOperand(1).GetType();
+  if (data_type.IsValid()) {
+    ret_types[0] = data_type;
+    ret_types[1] = data_type;
+  }
+}
+
 static void RunOnInstruction(LoopInst* inst) {
   auto& ret_types = inst->GetResultsTypes();
   auto ret_inst = inst->GetBody()->GetReturnInst();
@@ -1414,6 +1433,15 @@ static void RunOnInstruction(TFIDFVectorizeInst* inst) {
     inst->GetResultsTypes()[0] = Type{
         DataType::FLOAT32, {static_cast<int64_t>(rank), inst->GetMaxIdx() + 1}};
   }
+}
+
+static void RunOnInstruction(ReturnInst* inst) {
+  std::vector<Type> types;
+  types.reserve(inst->GetNumOfOperands());
+  for (auto& op : inst->GetOperands()) {
+    types.push_back(op.GetType());
+  }
+  inst->GetResultsTypes() = types;
 }
 
 static void RunOnInstruction(SelectInst* inst) {

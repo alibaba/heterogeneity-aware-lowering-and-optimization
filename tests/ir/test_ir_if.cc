@@ -45,7 +45,7 @@ void build() {
   std::vector<float> input_data1{1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
   auto c_input_data1 = c_builder.CreateConstant(
       "input_data1", Type(DataType::FLOAT32, {6}), input_data1.data());
-  Instruction* add1 = ir_builder1.CreateAdd("add1", *c_input_data1, *arg1);
+  Instruction* add1 = ir_builder2.CreateAdd("add1", *c_input_data1, *arg1);
   if0->SetThenBranch(then_branch);
   ir_builder2.CreateReturn("ret", std::vector<Def>{*add1});
 
@@ -63,14 +63,14 @@ void build() {
 // CHECK: Constant input_data([FLOAT32: 6]) = [1, 2, 3, 4, 5, 6]
 // CHECK: Constant input_data1([FLOAT32: 6]) = [1, 2, 3, 4, 5, 6]
 // CHECK: BasicBlock: bb0
-// CHECK: Inst: if0([BOOL: 1]) = if(<condition, 0>:[BOOL: 1]) {Attrs: <else_branch: {{.*}}>, <then_branch: {{.*}}>}
-// CHECK: Inst: ret() = return(<if0, 0>:[BOOL: 1])
+// CHECK: Inst: if0([FLOAT32: 6]) = if(<condition, 0>:[BOOL: 1]) {Attrs: <else_branch: {{.*}}>, <then_branch: {{.*}}>}
+// CHECK: Inst: ret([FLOAT32: 6]) = return(<if0, 0>:[FLOAT32: 6])
 // CHECK: BasicBlock: else_branch
 // CHECK: Inst: add0([FLOAT32: 6]) = add(<input_data, 0>:[FLOAT32: 6], <arg0, 0>:[FLOAT32: 6])
-// CHECK: Inst: ret() = return(<add0, 0>:[FLOAT32: 6])
-// CHECK: Inst: add1([FLOAT32: 6]) = add(<input_data1, 0>:[FLOAT32: 6], <arg1, 0>:[FLOAT32: 6])
+// CHECK: Inst: ret([FLOAT32: 6]) = return(<add0, 0>:[FLOAT32: 6])
 // CHECK: BasicBlock: then_branch
-// CHECK: Inst: ret() = return(<add1, 0>:[FLOAT32: 6])
+// CHECK: Inst: add1([FLOAT32: 6]) = add(<input_data1, 0>:[FLOAT32: 6], <arg1, 0>:[FLOAT32: 6])
+// CHECK: Inst: ret([FLOAT32: 6]) = return(<add1, 0>:[FLOAT32: 6])
   // clang-format on
 }
 
