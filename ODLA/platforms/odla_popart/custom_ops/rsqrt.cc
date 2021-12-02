@@ -70,8 +70,7 @@ RsqrtOpx::RsqrtOpx(popart::Op* op, popart::popx::Devicex* devicex)
 void RsqrtOpx::grow(snap::program::Sequence& prog) const {
   auto result =
       popops::map(graph().getPoplarGraph(), popops::expr::UnaryOpType::RSQRT,
-                  getInTensor(0).getPoplarTensor(), prog.getPoplarSequence(),
-                  debugContext());
+                  getInTensor(0).getPoplarTensor(), prog.getPoplarSequence(), debugContext());
   setOutTensor(0, snap::Tensor{result, graph()});
 }
 
