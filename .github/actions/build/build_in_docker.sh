@@ -36,7 +36,7 @@ DOCKER_ID=`docker ps -aq -f name=$CONTAINER_NAME -f status=running`
 gid=$(id -g ${USER})
 group=$(id -g -n ${USER})
 uid=$(id -u ${USER})
-extra_mnt="-v /opt/poplar_sdk-ubuntu_18_04-2.2.2+711-26aba6cf16:/opt/poplar_sdk:ro"
+extra_mnt="-v /opt/poplar_sdk-ubuntu_18_04-2.3.1_793:/opt/poplar_sdk:ro"
 mkdir -p /tmp/ubuntu.cache
 extra_mnt="$extra_mnt -v /tmp/ubuntu.cache:/cache"
 

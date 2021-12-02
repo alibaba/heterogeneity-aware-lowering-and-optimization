@@ -59,7 +59,7 @@ static popart::OpCreator<RsqrtOp> rsqrtOpCreator(popart::OpDefinitions({
 class RsqrtOpx : public popart::popx::ElementWiseUnaryOpx {
  public:
   RsqrtOpx(popart::Op*, popart::popx::Devicex*);
-  void grow(poplar::program::Sequence&) const final;
+  void grow(snap::program::Sequence&) const final;
 };
 
 RsqrtOpx::RsqrtOpx(popart::Op* op, popart::popx::Devicex* devicex)
@@ -67,10 +67,10 @@ RsqrtOpx::RsqrtOpx(popart::Op* op, popart::popx::Devicex* devicex)
   verifyOp<RsqrtOp>(op, CustomOperators::Rsqrt_1);
 }
 
-void RsqrtOpx::grow(poplar::program::Sequence& prog) const {
+void RsqrtOpx::grow(snap::program::Sequence& prog) const {
   auto result =
       popops::map(graph().getPoplarGraph(), popops::expr::UnaryOpType::RSQRT,
-                  getInTensor(0).getPoplarTensor(), prog, debugContext());
+                  getInTensor(0).getPoplarTensor(), prog.getPoplarSequence(), debugContext());
   setOutTensor(0, snap::Tensor{result, graph()});
 }
 
