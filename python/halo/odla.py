@@ -17,6 +17,8 @@ from enum import Enum
 from time import time
 import logging
 import os
+from pathlib import Path
+from halo import halo
 
 class Device(Enum):
     CUDA = 1
@@ -33,23 +35,44 @@ class ValueType(Structure):
 
 
 class ODLAModel:
-    def __init__(self, so_file, files):
+    def __init__(self, so_file):
         self.logger = logging.getLogger(__name__)
         self.so_file = so_file
         self.h = None
-        self.buffers = []
-        self.files = files
+        self.save_temps = False
+        self.intermediate_files = []
 
-    def Load(self,model):
+    def __del__(self):
+        self.logger.info(str(self.intermediate_files))
+        for file in self.intermediate_files:
+            if not self.save_temps:
+                Path(file).unlink()
+        if self.h is not None:
+            self.h.odla_DestroyContext(self.ctx)
+            self.h.odla_DestroyComputation(self.comp)
+            self.h.odla_DestroyDevice(self.device)
+
+    def Load(self,model,input_shapes,output_names,format,batch,qps):
         if self.h is None:
             self.h = CDLL(self.so_file)
         self.comp = c_void_p(0)
         self.device = c_void_p(0)
-        self.h.odla_AllocateDevice(c_void_p(0), 0, pointer(self.device))
-        self.h.odla_CreateComputation(pointer(self.comp))
-        # TODO:
-        # use_sim = c_bool(True)
-        # self.h.odla_SetComputationItem(self.comp, 7, pointer(use_sim))
+        model_info = halo.ModelInfo()
+        model_info.input_qps = qps
+        model_info.adaptive_bsz = batch
+        rsc_est = c_void_p(0)
+        if qps>0 and batch==1:
+            halo.AnalyzeModel(model,[],1,format,model_info)
+            rsc_est = (c_char_p)(model_info.output_rsc_est)
+        self.h.odla_AllocateDevice(c_void_p(0), 0, pointer(self.device), rsc_est)
+        self.files = halo.CompileModel(
+            model,
+            input_shapes,
+            output_names,
+            model_info.adaptive_bsz,
+            format,    
+        )
+        self.intermediate_files = [*self.files]
         cc_file = str(self.files[0]).encode("utf-8")
         bin_file = str(self.files[1]).encode("utf-8")
 

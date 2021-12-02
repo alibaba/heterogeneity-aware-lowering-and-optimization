@@ -62,6 +62,17 @@ class CXXCodeGenOpts(Structure):
         ("save_temps", c_bool),
     ]
 
+HALO_MODEL_INFO_MAX_OUTPUT_NR = 64
+HALO_VODLA_MAX_OUTPUT_RSC_EST = 2048
+class ModelInfo(Structure):
+    _fields_ = [
+        ("num_outputs", c_size_t),
+        ("output_buf_sizes", c_size_t*HALO_MODEL_INFO_MAX_OUTPUT_NR),
+        ("input_qps", c_int),
+        ("adaptive_bsz", c_int),
+        ("output_rsc_est", c_char*HALO_VODLA_MAX_OUTPUT_RSC_EST),
+    ]
+
 
 """
 int halo_Compile(halo::ModelFormat model_format, unsigned num_models,
@@ -74,6 +85,24 @@ int halo_Compile(halo::ModelFormat model_format, unsigned num_models,
 """
 
 Compile.argtypes = [
+    c_int,  # model_format
+    c_uint,  # num_models
+    c_void_p,  # models
+    c_void_p,  # model_sizes
+    c_char_p,  # target
+    c_int,  # batch
+    c_uint,  # num_input_shapes
+    c_void_p,  # input_shapes
+    c_uint,  # num_inputs
+    c_void_p,  # inputs
+    c_uint,  # num_outputs
+    c_void_p,  # outputs
+    c_void_p,  # cg_opts
+    c_char_p,  # filename
+    c_void_p,  # model_info
+]
+
+Analyze.argtypes = [
     c_int,  # model_format
     c_uint,  # num_models
     c_void_p,  # models
@@ -163,7 +192,7 @@ def CompileModel(model_file, input_shapes, output_names, batch, format):
     return [output_file, output_bin]
 
 
-def AnalyzeModel(model_file, input_shapes, batch, format):
+def AnalyzeModel(model_file, input_shapes, batch, format, model_info):
     output_file = ""
     odla_lib = cast(create_string_buffer(b""), c_char_p)
     opts = CXXCodeGenOpts()
@@ -215,9 +244,8 @@ def AnalyzeModel(model_file, input_shapes, batch, format):
         outputs,
         pointer(opts),
         output_filename,
-        0
+        pointer(model_info),
     )
-
 
 def CompileODLAModel(files, device, debug=False):
     cc_file = files[0]
