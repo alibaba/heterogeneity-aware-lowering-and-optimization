@@ -286,13 +286,13 @@ odla_status _odla_computation::init(bool is_compile) {
               "Poplar unrecoverable_runtime_error exception caught");
           return ODLA_UNRECOVERABLE_ERR;
         } catch (poplar::unknown_runtime_error& e) {
-          popart::logging::info("Poplar unknown runtime exception caught}");
+          popart::logging::err("Poplar unknown runtime exception caught");
           return ODLA_UNRECOVERABLE_ERR;
         } catch (std::exception &e) {
           popart::logging::info("Poplar unknown exception caught, {}", e.what());
           return ODLA_UNRECOVERABLE_ERR;
         } catch (...) {
-          popart::logging::info("Poplar unknown exception caught");
+          popart::logging::err("Poplar unknown exception caught");
           return ODLA_UNRECOVERABLE_ERR;
 		}
         // If in parallel mode, start the thread
