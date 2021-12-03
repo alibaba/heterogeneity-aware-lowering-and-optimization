@@ -50,6 +50,13 @@ class ExtensionInst : public Instruction {
   void SetOpname(const std::string& name) noexcept { opname_ = name; }
   void PrintOpcode(std::ostream& os) const final { os << opname_; }
   virtual ExtensionKind GetExtensionKind() const noexcept = 0;
+  static inline bool Classof(const IRObject* obj) {
+    if (!Instruction::Classof(obj)) {
+      return false;
+    }
+    const Instruction* inst = Downcast<const Instruction>(obj);
+    return inst->GetOpCode() == OpCode::EXTENSION;
+  }
 
  private:
   std::string opname_;
@@ -70,6 +77,15 @@ class TFExtensionInst final : public ExtensionInst {
     return ExtensionKind::kExtension_TENSORFLOW;
   }
   std::unique_ptr<Instruction> Clone() const override;
+
+  static inline bool Classof(const IRObject* obj) {
+    if (!ExtensionInst::Classof(obj)) {
+      return false;
+    }
+    const ExtensionInst* inst = Downcast<const ExtensionInst>(obj);
+    return inst->GetExtensionKind() ==
+           ExtensionInst::ExtensionKind::kExtension_TENSORFLOW;
+  }
 
  private:
   // A string name to TF extension opcode map.
@@ -130,6 +146,15 @@ class ONNXExtensionInst final : public ExtensionInst {
   }
   std::unique_ptr<Instruction> Clone() const override;
 
+  static inline bool Classof(const IRObject* obj) {
+    if (!ExtensionInst::Classof(obj)) {
+      return false;
+    }
+    const ExtensionInst* inst = Downcast<const ExtensionInst>(obj);
+    return inst->GetExtensionKind() ==
+           ExtensionInst::ExtensionKind::kExtension_ONNX;
+  }
+
  private:
   // A string name to extension opcode map.
   static const NameToOpMap ONNXMap;
@@ -153,6 +178,15 @@ class TFLITEExtensionInst final : public ExtensionInst {
   }
   std::unique_ptr<Instruction> Clone() const override;
 
+  static inline bool Classof(const IRObject* obj) {
+    if (!ExtensionInst::Classof(obj)) {
+      return false;
+    }
+    const ExtensionInst* inst = Downcast<const ExtensionInst>(obj);
+    return inst->GetExtensionKind() ==
+           ExtensionInst::ExtensionKind::kExtension_TFLITE;
+  }
+
  private:
   // A string name to extension opcode map.
   static const NameToOpMap TFLITEMap;
@@ -175,6 +209,15 @@ class CAFFEExtensionInst final : public ExtensionInst {
     return ExtensionKind::kExtension_CAFFE;
   }
   std::unique_ptr<Instruction> Clone() const override;
+
+  static inline bool Classof(const IRObject* obj) {
+    if (!ExtensionInst::Classof(obj)) {
+      return false;
+    }
+    const ExtensionInst* inst = Downcast<const ExtensionInst>(obj);
+    return inst->GetExtensionKind() ==
+           ExtensionInst::ExtensionKind::kExtension_CAFFE;
+  }
 
  private:
   // A string name to extension opcode map.
