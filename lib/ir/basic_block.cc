@@ -84,6 +84,7 @@ void BasicBlock::Print(std::ostream& os) const {
     c->Print(os);
   }
   for (const auto& inst : *this) {
+    os << "  ";
     inst->Print(os);
   }
 }
