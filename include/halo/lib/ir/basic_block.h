@@ -122,6 +122,8 @@ class BasicBlock final : public IRObject {
 
   void SetLoopInst(LoopInst* inst) noexcept { loop_inst_ = inst; }
 
+  void MoveTo(BasicBlock* dst) noexcept;
+
   static inline bool Classof(const BasicBlock* bb) { return true; }
   static inline bool Classof(const IRObject* obj) {
     return obj->GetKind() == Kind::BasicBlock;
