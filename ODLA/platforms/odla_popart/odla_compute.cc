@@ -18,6 +18,7 @@
 
 #include <ODLA/odla.h>
 #include <dlfcn.h>
+#include <stdlib.h>
 
 #include <cstdlib>
 #include <fstream>
@@ -28,6 +29,9 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/voiddata.hpp>
+#include <poplar/exceptions.hpp>
+#include <random>
+#include <stdexcept>
 #include <string>
 
 #include "ODLA/odla_common.h"
@@ -86,9 +90,14 @@ odla_status odla_CreateExecutable(odla_executable* executable,
       return comp->compile_and_export();
     } else {
       popart::logging::info("Computation is not initialized. init it first");
-      _odla_computation::instance()->init(true); // set is_compile to true
-                                                 // this comp init will create
-                                                 // executable
+      odla_status ret =
+          _odla_computation::instance()->init(true); // set is_compile to true
+                                                     // this comp init will
+                                                     // create executable
+      if (ret != ODLA_SUCCESS) {
+        popart::logging::err("Failed to init computation when compiling.");
+        return ODLA_FAILURE;
+      }
       _odla_computation::instance()->compile_and_export();
     }
   }
@@ -100,7 +109,7 @@ odla_status odla_StoreExecutable(const odla_char* file_name,
   return ODLA_SUCCESS;
 }
 
-odla_status odla_LoadExecutable(const odla_char* file_name, odla_device device,
+odla_status odla_LoadExecutable(const odla_char* file_name,
                                 odla_executable* executable,
                                 odla_context* context,
                                 odla_computation* computation) {
@@ -119,20 +128,13 @@ odla_status odla_CreateComputation(odla_computation* comp) {
     }
   }
   // Read the config file
+  popart::logging::info("loading config");
   if (!PopartConfig::instance()->inited()) {
-    if (PopartConfig::instance()->load_cache()) {
-      odla_status ret = PopartConfig::instance()->extract_config_from_cache();
-      if (ret == ODLA_FAILURE) {
-        popart::logging::err("load config from cache failed");
-        return ret;
-      }
-    } else {
-      auto ret = PopartConfig::instance()->load_config(
-          std::getenv("ODLA_POPART_CONFIG"));
-      if (ret != ODLA_SUCCESS) {
-        popart::logging::err("error load config");
-        return ret;
-      }
+    auto ret = PopartConfig::instance()->load_config(
+        std::getenv("ODLA_POPART_CONFIG"));
+    if (ret != ODLA_SUCCESS) {
+      popart::logging::err("error load config");
+      return ret;
     }
   }
   odla_status status = _odla_computation::instance()->set_executor();
@@ -169,6 +171,7 @@ odla_status odla_DestroyContext(odla_context ctx) {
 }
 
 odla_status odla_DestroyComputation(odla_computation comp) {
+  popart::logging::info("call odla_destroyComputation");
   if (comp != nullptr) {
     if (!comp->is_compile_only()) {
       comp->mark_done();
@@ -177,6 +180,8 @@ odla_status odla_DestroyComputation(odla_computation comp) {
     comp->release_session();
     _odla_computation::destruct(); // release the real computation
   }
+  popart::logging::info("reset config state");
+  PopartConfig::instance()->reset_init_state();
 
   return ODLA_SUCCESS;
 }
