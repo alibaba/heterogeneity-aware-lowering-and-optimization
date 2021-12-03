@@ -149,7 +149,7 @@ void ContextQueues::pop_output(odla_context ctx) {
     throw std::runtime_error("Got out before input all read on index " +
                              std::to_string(wait_));
   assert(ctx == buffer_[wait_]);
-  buffer_[wait_] == nullptr; // clear the buffer to nullptr;
+  buffer_[wait_] = nullptr; // clear the buffer to nullptr;
   wait_ = (wait_ + 1) % capacity_;
 }
 
