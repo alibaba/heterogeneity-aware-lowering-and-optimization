@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Open Deep Learning API: ODLA/ops/odla_ops_loop.h File Reference</title>
+<title>Open Deep Learning API: ODLA/ops/odla_ops_control_flow.h File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -69,16 +69,16 @@ $(function() {
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
-<div class="title">odla_ops_loop.h File Reference</div>  </div>
+<div class="title">odla_ops_control_flow.h File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p><a href="odla__ops__loop_8h_source.html">Go to the source code of this file.</a></p>
+<p><a href="odla__ops__control__flow_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:a3fa6f4b753812a9e096934d08678b896"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__loop_8h.html#a3fa6f4b753812a9e096934d08678b896">odla_loop_output_mode</a> { <br />
-&#160;&#160;<a class="el" href="odla__ops__loop_8h.html#a3fa6f4b753812a9e096934d08678b896aa1020ac3795d21a6f4d096a09cdec5a7">ODLA_LOOP_LAST_VALUE</a>
+<tr class="memitem:a3fa6f4b753812a9e096934d08678b896"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__control__flow_8h.html#a3fa6f4b753812a9e096934d08678b896">odla_loop_output_mode</a> { <br />
+&#160;&#160;<a class="el" href="odla__ops__control__flow_8h.html#a3fa6f4b753812a9e096934d08678b896aa1020ac3795d21a6f4d096a09cdec5a7">ODLA_LOOP_LAST_VALUE</a>
 , <b>ODLA_LOOP_FWD_BEFORE</b>
 , <b>ODLA_LOOP_FWD_AFTER</b>
 , <b>ODLA_LOOP_REV_BEFORE</b>
@@ -86,24 +86,33 @@ Enumerations</h2></td></tr>
 &#160;&#160;<b>ODLA_LOOP_REV_AFTER</b>
 <br />
  }</td></tr>
-<tr class="memdesc:a3fa6f4b753812a9e096934d08678b896"><td class="mdescLeft">&#160;</td><td class="mdescRight">Types of loop output.  <a href="odla__ops__loop_8h.html#a3fa6f4b753812a9e096934d08678b896">More...</a><br /></td></tr>
+<tr class="memdesc:a3fa6f4b753812a9e096934d08678b896"><td class="mdescLeft">&#160;</td><td class="mdescRight">Types of loop output.  <a href="odla__ops__control__flow_8h.html#a3fa6f4b753812a9e096934d08678b896">More...</a><br /></td></tr>
 <tr class="separator:a3fa6f4b753812a9e096934d08678b896"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ac37086a8e049f77c5c16ed85424ef5d4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__loop_8h.html#ac37086a8e049f77c5c16ed85424ef5d4">odla_CreateLoopVariable</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> init_value, <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
-<tr class="memdesc:ac37086a8e049f77c5c16ed85424ef5d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a loop variable which has an initial value and recurrent values.  <a href="odla__ops__loop_8h.html#ac37086a8e049f77c5c16ed85424ef5d4">More...</a><br /></td></tr>
+<tr class="memitem:ac37086a8e049f77c5c16ed85424ef5d4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__control__flow_8h.html#ac37086a8e049f77c5c16ed85424ef5d4">odla_CreateLoopVariable</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> init_value, <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
+<tr class="memdesc:ac37086a8e049f77c5c16ed85424ef5d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a loop variable which has an initial value and recurrent values.  <a href="odla__ops__control__flow_8h.html#ac37086a8e049f77c5c16ed85424ef5d4">More...</a><br /></td></tr>
 <tr class="separator:ac37086a8e049f77c5c16ed85424ef5d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1c5a091d433a4af5d10439c5bb29c7b0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__loop_8h.html#a1c5a091d433a4af5d10439c5bb29c7b0">odla_BeginLoop</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> trip_count, <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
-<tr class="memdesc:a1c5a091d433a4af5d10439c5bb29c7b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a loop. All subsequent loop related APIs are specific to this one until the correspoding odla_EndLoop is called.  <a href="odla__ops__loop_8h.html#a1c5a091d433a4af5d10439c5bb29c7b0">More...</a><br /></td></tr>
+<tr class="memitem:a1c5a091d433a4af5d10439c5bb29c7b0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__control__flow_8h.html#a1c5a091d433a4af5d10439c5bb29c7b0">odla_BeginLoop</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> trip_count, <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
+<tr class="memdesc:a1c5a091d433a4af5d10439c5bb29c7b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a loop. All subsequent loop related APIs are specific to this one until the correspoding odla_EndLoop is called.  <a href="odla__ops__control__flow_8h.html#a1c5a091d433a4af5d10439c5bb29c7b0">More...</a><br /></td></tr>
 <tr class="separator:a1c5a091d433a4af5d10439c5bb29c7b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa2e04b16e339c1c19195677c0184a044"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="structodla__values.html">odla_values</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__loop_8h.html#aa2e04b16e339c1c19195677c0184a044">odla_EndLoop</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> condition, <a class="el" href="structodla__values.html">odla_values</a> output_values, const <a class="el" href="odla__ops__loop_8h.html#a3fa6f4b753812a9e096934d08678b896">odla_loop_output_mode</a> *flags, <a class="el" href="structodla__value__ids.html">odla_value_ids</a>)</td></tr>
+<tr class="memitem:aa2e04b16e339c1c19195677c0184a044"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="structodla__values.html">odla_values</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__control__flow_8h.html#aa2e04b16e339c1c19195677c0184a044">odla_EndLoop</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> condition, <a class="el" href="structodla__values.html">odla_values</a> output_values, const <a class="el" href="odla__ops__control__flow_8h.html#a3fa6f4b753812a9e096934d08678b896">odla_loop_output_mode</a> *flags, <a class="el" href="structodla__value__ids.html">odla_value_ids</a>)</td></tr>
 <tr class="separator:aa2e04b16e339c1c19195677c0184a044"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af678d682d6e52d88320125ffdade5fc6"><td class="memItemLeft" align="right" valign="top"><a id="af678d682d6e52d88320125ffdade5fc6"></a>
+<a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><b>odla_BeginIf</b> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> condition, <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a>)</td></tr>
+<tr class="separator:af678d682d6e52d88320125ffdade5fc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0e56994e2663b74002991ef73b9f1fe3"><td class="memItemLeft" align="right" valign="top"><a id="a0e56994e2663b74002991ef73b9f1fe3"></a>
+<a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a>&#160;</td><td class="memItemRight" valign="bottom"><b>odla_EnterBranchBody</b> (<a class="el" href="odla__common_8h.html#a86f265601c0773152f4e193a8614c0ac">odla_bool</a> true_branch)</td></tr>
+<tr class="separator:a0e56994e2663b74002991ef73b9f1fe3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c22153d8ebf6fd15478a89a439b5af0"><td class="memItemLeft" align="right" valign="top"><a id="a3c22153d8ebf6fd15478a89a439b5af0"></a>
+<a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="structodla__values.html">odla_values</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><b>odla_EndIf</b> (<a class="el" href="structodla__value__ids.html">odla_value_ids</a>)</td></tr>
+<tr class="separator:a3c22153d8ebf6fd15478a89a439b5af0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This file defines the ODLA loop operators. </p>
 
-<p class="definition">Definition in file <a class="el" href="odla__ops__loop_8h_source.html">odla_ops_loop.h</a>.</p>
+<p class="definition">Definition in file <a class="el" href="odla__ops__control__flow_8h_source.html">odla_ops_control_flow.h</a>.</p>
 </div><h2 class="groupheader">Enumeration Type Documentation</h2>
 <a id="a3fa6f4b753812a9e096934d08678b896"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3fa6f4b753812a9e096934d08678b896">&#9670;&nbsp;</a></span>odla_loop_output_mode</h2>
@@ -112,7 +121,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">enum <a class="el" href="odla__ops__loop_8h.html#a3fa6f4b753812a9e096934d08678b896">odla_loop_output_mode</a></td>
+          <td class="memname">enum <a class="el" href="odla__ops__control__flow_8h.html#a3fa6f4b753812a9e096934d08678b896">odla_loop_output_mode</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -123,9 +132,9 @@ Functions</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="odla__ops__loop_8h_source.html#l00033">33</a> of file <a class="el" href="odla__ops__loop_8h_source.html">odla_ops_loop.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__ops__control__flow_8h_source.html#l00033">33</a> of file <a class="el" href="odla__ops__control__flow_8h_source.html">odla_ops_control_flow.h</a>.</p>
 <div class="fragment"><div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;             {</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;  <a class="code" href="odla__ops__loop_8h.html#a3fa6f4b753812a9e096934d08678b896aa1020ac3795d21a6f4d096a09cdec5a7">ODLA_LOOP_LAST_VALUE</a>, </div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;  <a class="code" href="odla__ops__control__flow_8h.html#a3fa6f4b753812a9e096934d08678b896aa1020ac3795d21a6f4d096a09cdec5a7">ODLA_LOOP_LAST_VALUE</a>, </div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;  ODLA_LOOP_FWD_BEFORE, <span class="comment">/* !&lt; Concatenated values for each iteration:</span></div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="comment">                           [init_value...last_value) */</span></div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;  ODLA_LOOP_FWD_AFTER,  <span class="comment">/* !&lt; Concatenated values for each iteration:</span></div>
@@ -134,9 +143,9 @@ Functions</h2></td></tr>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="comment">                           in reverse order: (last_value...init_value]) */</span></div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;  ODLA_LOOP_REV_AFTER,  <span class="comment">/* !&lt; Concatenated values for each iteration, in</span></div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="comment">                           reverse order: [last_value...init_value) */</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;} <a class="code" href="odla__ops__loop_8h.html#a3fa6f4b753812a9e096934d08678b896">odla_loop_output_mode</a>;</div>
-<div class="ttc" id="aodla__ops__loop_8h_html_a3fa6f4b753812a9e096934d08678b896"><div class="ttname"><a href="odla__ops__loop_8h.html#a3fa6f4b753812a9e096934d08678b896">odla_loop_output_mode</a></div><div class="ttdeci">odla_loop_output_mode</div><div class="ttdoc">Types of loop output.</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__loop_8h_source.html#l00033">odla_ops_loop.h:33</a></div></div>
-<div class="ttc" id="aodla__ops__loop_8h_html_a3fa6f4b753812a9e096934d08678b896aa1020ac3795d21a6f4d096a09cdec5a7"><div class="ttname"><a href="odla__ops__loop_8h.html#a3fa6f4b753812a9e096934d08678b896aa1020ac3795d21a6f4d096a09cdec5a7">ODLA_LOOP_LAST_VALUE</a></div><div class="ttdeci">@ ODLA_LOOP_LAST_VALUE</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__loop_8h_source.html#l00034">odla_ops_loop.h:34</a></div></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;} <a class="code" href="odla__ops__control__flow_8h.html#a3fa6f4b753812a9e096934d08678b896">odla_loop_output_mode</a>;</div>
+<div class="ttc" id="aodla__ops__control__flow_8h_html_a3fa6f4b753812a9e096934d08678b896"><div class="ttname"><a href="odla__ops__control__flow_8h.html#a3fa6f4b753812a9e096934d08678b896">odla_loop_output_mode</a></div><div class="ttdeci">odla_loop_output_mode</div><div class="ttdoc">Types of loop output.</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__control__flow_8h_source.html#l00033">odla_ops_control_flow.h:33</a></div></div>
+<div class="ttc" id="aodla__ops__control__flow_8h_html_a3fa6f4b753812a9e096934d08678b896aa1020ac3795d21a6f4d096a09cdec5a7"><div class="ttname"><a href="odla__ops__control__flow_8h.html#a3fa6f4b753812a9e096934d08678b896aa1020ac3795d21a6f4d096a09cdec5a7">ODLA_LOOP_LAST_VALUE</a></div><div class="ttdeci">@ ODLA_LOOP_LAST_VALUE</div><div class="ttdef"><b>Definition:</b> <a href="odla__ops__control__flow_8h_source.html#l00034">odla_ops_control_flow.h:34</a></div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -238,7 +247,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="odla__ops__loop_8h.html#a3fa6f4b753812a9e096934d08678b896">odla_loop_output_mode</a> *&#160;</td>
+          <td class="paramtype">const <a class="el" href="odla__ops__control__flow_8h.html#a3fa6f4b753812a9e096934d08678b896">odla_loop_output_mode</a> *&#160;</td>
           <td class="paramname"><em>flags</em>, </td>
         </tr>
         <tr>
@@ -257,7 +266,7 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">condition</td><td>The boolean condition to end the loop. If it is NULL, the condition is assumed as True, therefore the loop will be solely controlled by the <code>trip count</code> defined in <code>odla_BeginLoop</code>. </td></tr>
-    <tr><td class="paramname">output_values</td><td>The values as loop outputs. These values must be created by <code>odla_CraeteLoopVariable</code>. </td></tr>
+    <tr><td class="paramname">output_values</td><td>The values as loop outputs. These values must be created by <code>odla_CreateLoopVariable</code>. </td></tr>
     <tr><td class="paramname">flags</td><td>Each output value has a corresponding flag. If the flag is not <code>ODLA_LOOP_LAST_VALUE</code>, an extra concatenated value will be returned. </td></tr>
     <tr><td class="paramname">value_ids</td><td>unique value ids (can be NULL)</td></tr>
   </table>
