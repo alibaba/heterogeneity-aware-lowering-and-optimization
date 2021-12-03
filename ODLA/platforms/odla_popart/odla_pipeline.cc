@@ -121,25 +121,25 @@ void ContextQueues::put(odla_context ctx) {
     buffer_[tail_] = ctx;
     tail_ = new_tail;
   } // Make sure the queue mutex released here.
-  //Notify the batch wait we got a batch data
+  // Notify the batch wait we got a batch data
   std::unique_lock<std::mutex> lock(batch_wait_mutex_);
   batch_wait_cv_.notify_one();
 }
 
 odla_context ContextQueues::get_input_context() {
-  throw std::runtime_error("ContextQueues::get_input_context we should never call this.");
+  throw std::runtime_error(
+      "ContextQueues::get_input_context we should never call this.");
 }
 
 odla_context ContextQueues::get_output_context() {
-  //std::lock_guard<std::mutex> guard(queue_mutex_);
   if (wait_ == tail_)
-    throw std::out_of_range("ContextQueues: queue is empty when get_output_context()");
+    throw std::out_of_range(
+        "ContextQueues: queue is empty when get_output_context()");
   return buffer_[wait_];
 }
 
 void ContextQueues::pop_input(odla_context ctx) {
   popart::logging::info("ContextQueues::pop_input with ctx: {}", ctx);
-  //std::lock_guard<std::mutex> guard(queue_mutex_);
   assert(ctx == buffer_[head_]);
   head_ = (head_ + 1) % capacity_;
 }
@@ -169,12 +169,12 @@ odla_context ContextQueues::get_ctx_by_tensor(const popart::TensorId& id) {
   while (idx == tail_) {
     auto locked_tail = tail_;
     {
-       std::lock_guard<std::mutex> guard(queue_mutex_);
-       locked_tail = tail_;
+      std::lock_guard<std::mutex> guard(queue_mutex_);
+      locked_tail = tail_;
     }
     if (idx == locked_tail) {
       std::unique_lock<std::mutex> lock(batch_wait_mutex_);
-      batch_wait_cv_.wait_for(lock, std::chrono::milliseconds(5)); //TODO: make it configurable
+      batch_wait_cv_.wait_for(lock, std::chrono::milliseconds(5));
     }
     if (idx != tail_) break;
     popart::logging::info(
@@ -236,7 +236,7 @@ void LockFreeQueue::put(odla_context ctx) {
     if (cnt++ > 5)
       throw std::runtime_error("LockFreeQueue::put No one should stop me");
   }
-  //Notify the batch wait we got a batch data
+  // Notify the batch wait we got a batch data
   std::unique_lock<std::mutex> lock(batch_wait_mutex_);
   batch_wait_cv_.notify_one();
   popart::logging::info(
@@ -307,22 +307,11 @@ odla_context LockFreeQueue::get_ctx_by_tensor(const popart::TensorId& id) {
   popart::logging::info("LockFreeQueue::get_ctx_by_tensor queue has size: {}",
                         size());
   while (idx == tail_.load()) {
-	/*
-    bool got_data = false;
-    for (int i = 0; i < 5; i++) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
-      if (idx != tail_.load()) {
-        got_data = true;
-        break;
-      }
+    if (idx == tail_.load()) {
+      std::unique_lock<std::mutex> lock(batch_wait_mutex_);
+      batch_wait_cv_.wait_for(lock, std::chrono::milliseconds(5));
     }
-	if (got_data) break;
-	*/
-	if ( idx == tail_.load() ) {
-	  std::unique_lock<std::mutex> lock(batch_wait_mutex_);
-	  batch_wait_cv_.wait_for(lock, std::chrono::milliseconds(5)); //TODO: make it configurable
-	}
-	if (idx != tail_.load()) break;
+    if (idx != tail_.load()) break;
     popart::logging::info(
         "[get_ctx_by_tensor] the queue is empty when read, add zero contexts");
     if (cnt++ > 1)

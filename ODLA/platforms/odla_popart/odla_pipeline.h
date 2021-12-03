@@ -23,8 +23,8 @@
 
 #include <atomic>
 #include <chrono>
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
 #include <popart/stepio.hpp>
 #include <queue>
 #include <thread>
@@ -57,10 +57,10 @@ class ContextQueues : public Queue {
   std::map<popart::TensorId, std::uint32_t> tensor_to_idx_;
   std::mutex batch_wait_mutex_;
   std::condition_variable batch_wait_cv_;
-  std::mutex queue_mutex_; //lock the read & write
+  std::mutex queue_mutex_; // lock the read & write
 
  public:
-  ContextQueues() : head_(0), tail_(0), wait_(0) {};
+  ContextQueues() : head_(0), tail_(0), wait_(0){};
   ~ContextQueues() {
     if (buffer_) delete[] buffer_;
   }
@@ -71,9 +71,7 @@ class ContextQueues : public Queue {
   odla_context get_output_context() final;
   void pop_input(odla_context ctx) final;
   void pop_output(odla_context ctx) final;
-  std::size_t size() final {
-    return (tail_ - wait_ + capacity_) % capacity_;
-  }
+  std::size_t size() final { return (tail_ - wait_ + capacity_) % capacity_; }
 };
 
 class LockFreeQueue : public Queue {
