@@ -1,6 +1,6 @@
 #!/bin/bash -xe
 
-VER="0.7.5
+VER="0.7.6"
 FLAVOR="devel"
 NAMESPACE="registry-intl.us-west-1.aliyuncs.com/computation"
 
