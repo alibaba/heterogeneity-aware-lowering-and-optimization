@@ -28,7 +28,7 @@ namespace halo {
 
 enum class ExecMode { Compile, Interpret };
 enum class API { HALO_RT, ODLA_05 };
-enum class Quantization { QUINT8, None };
+enum class Quantization { QUINT8, FLOAT16, None };
 enum class BF16Mode { Disable, Accuracy, Performace, Auto };
 enum class Dialect {
   CXX_11,
@@ -53,6 +53,7 @@ enum class ChannelOrder {
 struct AnalyzerOpts {
   bool print_details = false;
   int batch_size = 1;
+  int qps = 0; // image per second
 };
 
 struct CXXCodeGenOpts {
@@ -95,9 +96,13 @@ struct CXXCodeGenOpts {
 };
 
 #define HALO_MODEL_INFO_MAX_OUTPUT_NR 64
+#define HALO_VODLA_MAX_OUTPUT_RSC_EST 2048
 struct ModelInfo {
   size_t num_outputs;
   size_t output_buf_sizes[HALO_MODEL_INFO_MAX_OUTPUT_NR];
+  int input_qps = 0;                                  // input of analyzer
+  int adaptive_bsz = 0;                               // output of analyzer
+  char output_rsc_est[HALO_VODLA_MAX_OUTPUT_RSC_EST]; // output of analyzer
 };
 
 int CompileTFGraph(const char* pb_buf, size_t pb_buf_size,
@@ -116,7 +121,7 @@ int Compile(ModelFormat model_format, const std::vector<const char*>& models,
             const std::vector<std::string>& inputs,
             const std::vector<std::string>& outputs,
             const CXXCodeGenOpts& cg_opts, const std::string& main_output_file,
-            ModelInfo* model_info);
+            ModelInfo* model_info, bool is_compile_mode);
 
 } // namespace halo
 
@@ -124,23 +129,27 @@ extern "C" {
 typedef struct CXXCodeGenOps HaloCodeGenOpts;
 typedef struct halo::ModelInfo HaloModelInfo;
 
-int halo_CompileTFPbGraph(const char* pb_buf, size_t pb_buf_size,
-                          size_t num_input_shapes, const char* input_shapes[],
-                          const HaloCodeGenOpts* cg_opts,
-                          const char* main_output_file,
-                          HaloModelInfo* model_info);
+[[deprecated]] int halo_CompileTFPbGraph(const char* pb_buf, size_t pb_buf_size,
+                                         size_t num_input_shapes,
+                                         const char* input_shapes[], int batch,
+                                         const HaloCodeGenOpts* cg_opts,
+                                         const char* main_output_file,
+                                         HaloModelInfo* model_info);
 
-int halo_CompileTFGraphdef(const void* graphdef, size_t num_input_shapes,
-                           const char* input_shapes[],
-                           const HaloCodeGenOpts* cg_opts,
-                           const char* main_output_file,
-                           HaloModelInfo* model_info);
+int halo_Compile(halo::ModelFormat model_format, unsigned num_models,
+                 const char* const models[], size_t const model_sizes[],
+                 const char* target, int batch, unsigned num_input_shapes,
+                 const char* const input_shapes[], unsigned num_inputs,
+                 const char* const inputs[], unsigned num_outputs,
+                 const char* const outputs[], const HaloCodeGenOpts* cg_opts,
+                 const char* main_output_file, HaloModelInfo* model_info);
 
-int halo_Compile(unsigned model_format, size_t num_models, const char* models[],
-                 const size_t* model_sizes[], const char* target, int batch,
-                 size_t num_input_shapes, const char* input_shapes[],
-                 size_t num_inputs, const char* inputs[], size_t num_outputs,
-                 const char* outputs[], const HaloCodeGenOpts& cg_opts,
+int halo_Analyze(halo::ModelFormat model_format, unsigned num_models,
+                 const char* const models[], size_t const model_sizes[],
+                 const char* target, int batch, unsigned num_input_shapes,
+                 const char* const input_shapes[], unsigned num_inputs,
+                 const char* const inputs[], unsigned num_outputs,
+                 const char* const outputs[], const HaloCodeGenOpts* cg_opts,
                  const char* main_output_file, HaloModelInfo* model_info);
 }
 

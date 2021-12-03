@@ -27,5 +27,5 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_sce_NCd1d2d3d4d5_mean_weight | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_sce_NCd1d2d3d4d5_mean_weight_dnnl.cc.tmp.main.cc.in"

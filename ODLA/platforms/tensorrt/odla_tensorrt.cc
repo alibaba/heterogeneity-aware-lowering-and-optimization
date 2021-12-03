@@ -18,6 +18,7 @@
 #include <NvInfer.h>
 #include <NvInferPlugin.h>
 #include <NvInferRuntime.h>
+#include <NvInferRuntimeCommon.h>
 #include <ODLA/odla.h>
 #include <bits/stdint-intn.h>
 #include <cuda_runtime.h>
@@ -29,9 +30,11 @@
 #include <iostream>
 #include <memory>
 #include <numeric>
+#include <stack>
 #include <unordered_map>
 #include <vector>
 
+#include "common.h"
 #include "plugins/initPlugin.h"
 
 using namespace nvinfer1;
@@ -40,13 +43,24 @@ using namespace nvinfer1;
 #error This library requires minimum ODLA version 0.5
 #endif
 
-template <typename T>
+// Explicitly load cuda runtime before all other ctors, so cuda rt will be
+// released after calling dtors of all other global objs. This avoids the error
+// of "driver shutting down".
+static auto Dummy = cudaFree(0);
+
 struct TrtDestroyer {
-  void operator()(T* t) { t->destroy(); }
+  template <typename T>
+  void operator()(T* t) {
+    if (t) {
+      t->destroy();
+    }
+  }
 };
 
 template <typename T>
-using TrtUniquePtr = std::unique_ptr<T, TrtDestroyer<T>>;
+std::shared_ptr<T> trt_shared_obj(T* obj) {
+  return std::shared_ptr<T>(obj, TrtDestroyer());
+}
 
 inline bool check(cudaError_t e, int line, const char* file_name) {
   if (e != cudaSuccess) {
@@ -70,7 +84,7 @@ inline bool check(bool result, int line, const char* file_name) {
 namespace open_dla_tensorrt {
 class Logger : public nvinfer1::ILogger {
  public:
-  void log(ILogger::Severity severity, const char* msg) override {
+  void log(ILogger::Severity severity, const char* msg) NOEXCEPT override {
     int log_level;
     switch (severity) {
       case ILogger::Severity::kINTERNAL_ERROR:
@@ -87,9 +101,11 @@ class Logger : public nvinfer1::ILogger {
         break;
       case ILogger::Severity::kVERBOSE:
         log_level = 4;
+        break;
       default:
         log_level = 5;
     }
+
     if (log_level <= 1) {
       std::cerr << "[" << log_level << "]: " << msg << "\n";
     }
@@ -98,6 +114,23 @@ class Logger : public nvinfer1::ILogger {
 } // namespace open_dla_tensorrt
 
 static open_dla_tensorrt::Logger Logger;
+
+#ifndef NDEBUG
+static void LOG_VERBOSE(const std::string& msg) {
+  Logger.log(ILogger::Severity::kVERBOSE, msg.c_str());
+}
+
+static std::string gen_str(const nvinfer1::Dims& d) {
+  std::string s{"("};
+  if (d.nbDims != 0) {
+    for (int64_t i = 0; i < d.nbDims; i++)
+      (s += std::to_string(d.d[i])) += ", ";
+    s.pop_back();
+    s.pop_back();
+  }
+  return s + ')';
+}
+#endif
 
 struct _odla_value {
   _odla_value(nvinfer1::ITensor* tensor, const odla_value_type& type,
@@ -130,15 +163,23 @@ static constexpr size_t MAX_WORKSPACE_SIZE_BYTES = 1ul * 1024 * 1024 * 1024;
 static const int MAX_INT64_CONVERTION_NUM = 65536ul;
 static bool g_load_engine_mode = false;
 
+typedef struct {
+  IIfConditional* branch;
+  std::vector<odla_value> true_outputs;
+  std::vector<odla_value> false_outputs;
+  bool in_true_body;
+} branch_info;
+
 struct _odla_computation {
-  nvinfer1::IBuilder* builder = nullptr;
-  nvinfer1::INetworkDefinition* network = nullptr;
+  std::shared_ptr<nvinfer1::IBuilder> builder = nullptr;
+  std::shared_ptr<nvinfer1::INetworkDefinition> network = nullptr;
   std::unordered_map<std::string, odla_value> inputs;
   std::unordered_map<std::string, odla_value> outputs;
   std::vector<std::vector<float>> buffers;
   std::vector<std::unique_ptr<_odla_value>> vals;
   std::vector<odla_value> input_vals;
   std::vector<odla_value> output_vals;
+  std::stack<branch_info> branchs;
   bool fp16_mode = false;
 
   bool is_dynamic_batch = false;
@@ -157,11 +198,7 @@ struct _odla_computation {
     }
 
     if (!load_engine_mode) {
-      builder = nvinfer1::createInferBuilder(Logger);
-#if NV_TENSORRT_MAJOR < 7
-      builder->setMaxWorkspaceSize(max_workspace_size);
-      network = builder->createNetwork();
-#else
+      builder = trt_shared_obj(nvinfer1::createInferBuilder(Logger));
       initODLAPlugin(&Logger, "");
       nvinfer1::NetworkDefinitionCreationFlags flags = 0;
       if (const char* env_p = std::getenv("ODLA_TRT_USE_EXPLICIT_BATCH")) {
@@ -170,16 +207,11 @@ struct _odla_computation {
                       nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
         }
       }
-      network = builder->createNetworkV2(flags);
-#endif
+      network = trt_shared_obj(builder->createNetworkV2(flags));
     }
   }
 
   ~_odla_computation() {
-    if (!load_engine_mode) {
-      builder->destroy();
-      network->destroy();
-    }
     builder = nullptr;
     network = nullptr;
   }
@@ -187,24 +219,21 @@ struct _odla_computation {
 
 struct _odla_context {
   odla_computation comp = nullptr;
-  nvinfer1::ICudaEngine* engine = nullptr;
-  nvinfer1::IExecutionContext* ctx = nullptr;
-#if NV_TENSORRT_MAJOR >= 7
-  nvinfer1::IBuilderConfig* builder_cfg = nullptr;
+  std::shared_ptr<nvinfer1::ICudaEngine> engine = nullptr;
+  std::shared_ptr<nvinfer1::IExecutionContext> ctx = nullptr;
+  std::shared_ptr<nvinfer1::IBuilderConfig> builder_cfg = nullptr;
   nvinfer1::IOptimizationProfile* builder_profile = nullptr;
 
-#endif
-
   typedef struct {
-    void* host_ptr;
-    void* dev_ptr;
-    size_t len;
+    void* host_ptr = nullptr;
+    void* dev_ptr = nullptr;
+    size_t len = 0;
     odla_value_type vt;
   } OutputPtrInfo;
 
   typedef struct {
-    const void* host_ptr;
-    void* dev_ptr;
+    const void* host_ptr = nullptr;
+    void* dev_ptr = nullptr;
   } InputPtrInfo;
   std::unordered_map<std::string, OutputPtrInfo> output_ptrs;
   std::unordered_map<std::string, InputPtrInfo> input_ptrs;
@@ -212,10 +241,7 @@ struct _odla_context {
   int run_batch_size = 0;
   _odla_context(odla_computation comp) : comp(comp) {
     if (!comp->load_engine_mode) {
-#if NV_TENSORRT_MAJOR < 7
-      engine = comp->builder->buildCudaEngine(*comp->network);
-#else
-      builder_cfg = comp->builder->createBuilderConfig();
+      builder_cfg = trt_shared_obj(comp->builder->createBuilderConfig());
 
       if (comp->is_dynamic_batch) {
         builder_profile = comp->builder->createOptimizationProfile();
@@ -243,20 +269,13 @@ struct _odla_context {
         builder_cfg->setFlag(BuilderFlag::kFP16);
         builder_cfg->setFlag(BuilderFlag::kSTRICT_TYPES);
       }
-      engine =
-          comp->builder->buildEngineWithConfig(*comp->network, *builder_cfg);
-#endif
-      ctx = engine->createExecutionContext();
+      engine = trt_shared_obj(comp->builder->buildEngineWithConfig(
+          *comp->network.get(), *builder_cfg.get()));
+
+      ctx = trt_shared_obj(engine->createExecutionContext());
     }
   }
   ~_odla_context() {
-    ctx->destroy();
-    if (!comp->load_engine_mode) {
-      engine->destroy();
-#if NV_TENSORRT_MAJOR >= 7
-      builder_cfg->destroy();
-#endif
-    }
     comp = nullptr;
     engine = nullptr;
     ctx = nullptr;
@@ -354,9 +373,20 @@ static nvinfer1::Dims BroadcastDims(const odla_value_shape& dims,
   return ret;
 }
 
+static nvinfer1::Dims SqueezeNVDims(const nvinfer1::Dims dims, int index) {
+  nvinfer1::Dims ret;
+  ret.nbDims = dims.nbDims - 1;
+  for (int i = 0, j = 0; i < dims.nbDims; ++i) {
+    if (i != index) {
+      ret.d[j++] = dims.d[i];
+    }
+  }
+  return ret;
+}
+
 thread_local odla_computation g_comp;
 static std::vector<std::unique_ptr<_odla_computation>> g_comps;
-static std::vector<int> g_workspace;
+static std::vector<std::unique_ptr<int[]>> g_workspace;
 
 static nvinfer1::DataType GetNVDataType(odla_element_type type) {
   switch (type) {
@@ -372,6 +402,7 @@ static nvinfer1::DataType GetNVDataType(odla_element_type type) {
     case ODLA_BOOL:
       return nvinfer1::DataType::kBOOL;
     default:
+      assert(0 && "unsupported");
       return nvinfer1::DataType::kFLOAT;
   }
 }
@@ -401,19 +432,20 @@ static odla_value_type ValidateValueType(const odla_value_type& type) {
   return type;
 }
 
-static void* ValidateValuePtr(const odla_value_type& type, void* ptr) {
+static std::unique_ptr<int[]> ConvertData(const odla_value_type& type,
+                                          const void* ptr) {
   if (type.element_type == ODLA_INT64) {
-    int64_t* src = static_cast<int64_t*>(ptr);
+    const int64_t* src = static_cast<const int64_t*>(ptr);
     auto num_elements = GetTotalElements(type.shape);
-    auto workspace_size = g_workspace.size();
-    assert(workspace_size + num_elements < MAX_INT64_CONVERTION_NUM);
-    int* tmp = g_workspace.data() + workspace_size;
+    auto buf = std::make_unique<int[]>(num_elements);
+    int* tmp = buf.get();
     for (int i = 0; i < num_elements; ++i) {
-      g_workspace.push_back(static_cast<int>(*src++));
+      assert(*src < MAX_INT64_CONVERTION_NUM);
+      tmp[i] = (static_cast<int>(*src++));
     }
-    return tmp;
+    return buf;
   }
-  return ptr;
+  return nullptr;
 }
 
 template <typename T>
@@ -427,12 +459,43 @@ static odla_value CreateValue(T* t, const odla_value_type& type,
   return ret;
 }
 
+static std::vector<nvinfer1::RNNGateType> GetRNNGateOrder(
+    const odla_rnn_gate_order gate_order) {
+  const nvinfer1::RNNGateType trt_gate_iofc[] = {
+      nvinfer1::RNNGateType::kINPUT, nvinfer1::RNNGateType::kOUTPUT,
+      nvinfer1::RNNGateType::kFORGET, nvinfer1::RNNGateType::kCELL};
+  const nvinfer1::RNNGateType trt_gate_ifco[] = {
+      nvinfer1::RNNGateType::kINPUT, nvinfer1::RNNGateType::kFORGET,
+      nvinfer1::RNNGateType::kCELL, nvinfer1::RNNGateType::kOUTPUT};
+  const nvinfer1::RNNGateType trt_gate_ifoc[] = {
+      nvinfer1::RNNGateType::kINPUT, nvinfer1::RNNGateType::kFORGET,
+      nvinfer1::RNNGateType::kOUTPUT, nvinfer1::RNNGateType::kCELL};
+  const nvinfer1::RNNGateType trt_gate_icof[] = {
+      nvinfer1::RNNGateType::kINPUT, nvinfer1::RNNGateType::kCELL,
+      nvinfer1::RNNGateType::kOUTPUT, nvinfer1::RNNGateType::kFORGET};
+
+  switch (gate_order) {
+    case ODLA_RNN_IFCO:
+      return std::vector<nvinfer1::RNNGateType>(trt_gate_ifco,
+                                                trt_gate_ifco + 4);
+    case ODLA_RNN_IFOC:
+      return std::vector<nvinfer1::RNNGateType>(trt_gate_ifoc,
+                                                trt_gate_ifoc + 4);
+    case ODLA_RNN_ICOF:
+      return std::vector<nvinfer1::RNNGateType>(trt_gate_icof,
+                                                trt_gate_icof + 4);
+    default:
+      // default order as iofc
+      return std::vector<nvinfer1::RNNGateType>(trt_gate_iofc,
+                                                trt_gate_iofc + 4);
+  }
+}
+
 extern "C" {
 odla_status odla_CreateComputation(odla_computation* computation) {
   g_comps.push_back(std::make_unique<_odla_computation>());
   g_comp = g_comps.back().get();
   *computation = g_comp;
-  g_workspace.reserve(MAX_INT64_CONVERTION_NUM);
   return ODLA_SUCCESS;
 }
 
@@ -464,11 +527,12 @@ odla_status odla_SetComputationItem(odla_computation computation,
           (computation->is_dynamic_batch != is_dynamic_batch)) {
         computation->is_dynamic_batch = is_dynamic_batch;
         if (!computation->load_engine_mode) {
-          computation->network->destroy();
+          computation->network.reset();
           nvinfer1::NetworkDefinitionCreationFlags flags =
               1U << static_cast<uint32_t>(
                   nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
-          computation->network = computation->builder->createNetworkV2(flags);
+          computation->network =
+              trt_shared_obj(computation->builder->createNetworkV2(flags));
         }
       }
       break;
@@ -558,10 +622,15 @@ odla_status odla_GetArgFromComputationByIdx(const odla_computation computation,
 
 odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
                                const odla_value_id id) {
-  nvinfer1::Weights weight{
-      .type = GetNVDataType(type.element_type),
-      .values = ValidateValuePtr(type, const_cast<void*>(ptr)),
-      .count = GetTotalElements(type.shape)};
+  void* host_ptr = const_cast<void*>(ptr);
+  auto buf = ConvertData(type, ptr);
+  if (buf != nullptr) {
+    host_ptr = buf.get();
+    g_workspace.push_back(std::move(buf));
+  }
+  nvinfer1::Weights weight{.type = GetNVDataType(type.element_type),
+                           .values = host_ptr,
+                           .count = GetTotalElements(type.shape)};
   auto c = g_comp->network->addConstant(GetNVDims(type.shape), weight);
   odla_value v = CreateValue(c->getOutput(0), ValidateValueType(type), id);
   v->const_layer = c;
@@ -569,11 +638,21 @@ odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
 }
 
 odla_status odla_SetValueAsOutput(const odla_value val) {
+  if (!g_comp->branchs.empty()) {
+    auto& br_info = g_comp->branchs.top();
+    if (br_info.in_true_body) {
+      br_info.true_outputs.push_back(val);
+    } else {
+      br_info.false_outputs.push_back(val);
+    }
+    return ODLA_SUCCESS;
+  }
   const char* name =
       val->layer != nullptr ? val->layer->getName() : val->tensor->getName();
   g_comp->outputs[name] = val;
   g_comp->output_vals.push_back(val);
   val->tensor->setName(name);
+  val->tensor->setType(GetNVDataType(val->type.element_type));
   g_comp->network->markOutput(*val->tensor);
   return ODLA_SUCCESS;
 }
@@ -596,19 +675,26 @@ odla_status odla_GetOutputFromComputationByIdx(
 
 odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                 odla_context context) {
-  void* dev_ptr = nullptr;
   odla_value_shape real_shape = value->type.shape;
+  bool dynamic_input_size = false;
   if ((g_comp && g_comp->is_dynamic_batch) || context->run_batch_size) {
     real_shape.dims[0] = context->run_batch_size;
+    dynamic_input_size = true;
   }
   size_t bytes =
       GetTotalElements(real_shape) * GetElementSize(value->type.element_type);
-  CHECK(cudaMalloc(&dev_ptr, bytes));
-  void* validated_data_ptr =
-      ValidateValuePtr(value->type, const_cast<void*>(data_ptr));
-  CHECK(cudaMemcpy(dev_ptr, validated_data_ptr, bytes, cudaMemcpyHostToDevice));
-
+  void* validated_data_ptr = const_cast<void*>(data_ptr);
+  auto buf = ConvertData(value->type, data_ptr);
+  if (buf != nullptr) {
+    validated_data_ptr = buf.get();
+  }
+  void* dev_ptr = context->input_ptrs[value->name].dev_ptr;
+  if (dev_ptr == nullptr) {
+    CHECK(cudaMalloc(&dev_ptr, bytes));
+  }
   context->input_ptrs[value->name] = {.host_ptr = data_ptr, .dev_ptr = dev_ptr};
+
+  CHECK(cudaMemcpy(dev_ptr, validated_data_ptr, bytes, cudaMemcpyHostToDevice));
 
   return ODLA_SUCCESS;
 }
@@ -623,15 +709,17 @@ odla_status odla_BindToArgumentById(const odla_value_id value_id,
 
 odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
                               odla_context context) {
-  void* dst = nullptr;
   odla_value_shape real_shape = value->type.shape;
   if ((g_comp && g_comp->is_dynamic_batch) || context->run_batch_size) {
     real_shape.dims[0] = context->run_batch_size;
   }
   size_t bytes =
       GetTotalElements(real_shape) * GetElementSize(value->type.element_type);
-
-  CHECK(cudaMalloc(&dst, bytes));
+  // TODO: convert to int64 for int64 outputs?
+  void* dst = context->output_ptrs[value->name].dev_ptr;
+  if (dst == nullptr) {
+    CHECK(cudaMalloc(&dst, bytes));
+  }
 
   context->output_ptrs[value->name] = {
       .host_ptr = data_ptr, .dev_ptr = dst, .len = bytes, .vt = value->type};
@@ -661,8 +749,7 @@ static odla_status odla_StoreEngine(odla_context context,
     return ODLA_FAILURE;
   }
 
-  TrtUniquePtr<IHostMemory> serializedEngine{context->engine->serialize()};
-
+  std::shared_ptr<IHostMemory> serializedEngine{context->engine->serialize()};
   if (serializedEngine == nullptr) {
     std::cerr << "Engine serialization failed" << std::endl;
     return ODLA_FAILURE;
@@ -703,19 +790,19 @@ static odla_status odla_LoadEngine(odla_context context,
     return ODLA_FAILURE;
   }
 
-  TrtUniquePtr<IRuntime> runtime{createInferRuntime(Logger)};
+  std::shared_ptr<IRuntime> runtime{createInferRuntime(Logger)};
   if (DLACore != -1) {
     runtime->setDLACore(DLACore);
   }
 
-  context->engine =
-      runtime->deserializeCudaEngine(engineData.data(), fsize, nullptr);
-  context->ctx = context->engine->createExecutionContext();
+  context->engine = trt_shared_obj(
+      runtime->deserializeCudaEngine(engineData.data(), fsize, nullptr));
+  context->ctx = trt_shared_obj(context->engine->createExecutionContext());
 
   return ODLA_SUCCESS;
 }
 
-odla_status odla_LoadExecutable(const odla_char* file_name,
+odla_status odla_LoadExecutable(const odla_char* file_name, odla_device device,
                                 odla_executable* executable,
                                 odla_context* context,
                                 odla_computation* computation) {
@@ -894,7 +981,9 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                        cudaMemcpyDeviceToHost));
     }
   }
-
+  if (!comp->is_dynamic_batch) {
+    return ODLA_SUCCESS;
+  }
   // copy results and free temp buffers.
   for (auto& ptr : buffers) {
     CHECK(cudaFree(ptr));
@@ -934,17 +1023,17 @@ static odla_value binary_op(nvinfer1::ElementWiseOperation op, odla_value lhs,
   auto out_dim =
       broadcastTensor(g_comp, lhs_tensor, rhs_tensor, dims_lhs, dims_rhs);
   auto sub = g_comp->network->addElementWise(*lhs_tensor, *rhs_tensor, op);
-
-  nvinfer1::Dims sub_dim = sub->getOutput(0)->getDimensions();
-  if (!SameNVDims(rhs_tensor->getDimensions(), lhs_tensor->getDimensions())) {
-    // fix the case when dims_lhs and dims_rhs both need to broadcast
-    // e.g., dims_lhs = (256,1), dims_rhs = (1,768), out_dims = (256,768)
-    out_dim.size = (odla_int32)sub_dim.nbDims;
-    for (int i = 0; i < sub_dim.nbDims; ++i) {
-      out_dim.dims[i] = (odla_int64)sub_dim.d[i];
-    }
+  for (int i = 0; i < out_dim.size; ++i) {
+    out_dim.dims[i] = std::max(lhs_tensor->getDimensions().d[i],
+                               rhs_tensor->getDimensions().d[i]);
   }
-  return CreateValue(sub, {lhs->type.element_type, out_dim}, id);
+  auto ret_type = lhs->type.element_type;
+  if (op == nvinfer1::ElementWiseOperation::kEQUAL ||
+      op == nvinfer1::ElementWiseOperation::kGREATER ||
+      op == nvinfer1::ElementWiseOperation::kLESS) {
+    ret_type = ODLA_BOOL;
+  }
+  return CreateValue(sub, {ret_type, out_dim}, id);
 }
 
 odla_value odla_Add(odla_value lhs, odla_value rhs, const odla_value_id id) {
@@ -1372,10 +1461,12 @@ odla_value odla_BatchNormalization(odla_value input,
                                    const odla_value_id value_id) {
   auto const& type = input->type.element_type;
   const auto& input_dims = input->type.shape;
-  assert(input_layout == odla_memory_layout::ODLA_CHANNELS_FIRST);
   assert(type == ODLA_FLOAT32);
 
-  int64_t C = input_dims.dims[1];
+  int channel_index = (input_layout == odla_memory_layout::ODLA_CHANNELS_FIRST)
+                          ? 1
+                          : input_dims.size - 1;
+  int64_t C = input_dims.dims[channel_index];
 
   g_comp->buffers.push_back(std::vector<float>(C));
   g_comp->buffers.push_back(std::vector<float>(C));
@@ -1413,21 +1504,28 @@ odla_value odla_BatchNormalization(odla_value input,
 
   auto bn = g_comp->network->addScale(*input, nvinfer1::ScaleMode::kCHANNEL,
                                       shift, multiply, power);
+  bn->setChannelAxis(channel_index);
   return CreateValue(bn, input->type, value_id);
 }
 
 odla_value odla_InstanceNormalization(
-    odla_value input, odla_memory_layout input_layout, odla_value mean,
-    odla_value var, odla_float32 epsilon, odla_value scale, odla_value offset,
-    odla_float32 scalar_scale, odla_float32 scalar_offset,
-    const odla_value_id value_id) {
+    odla_value input, odla_memory_layout input_layout, odla_float32 epsilon,
+    odla_value scale, odla_value offset, odla_float32 scalar_scale,
+    odla_float32 scalar_offset, const odla_value_id value_id) {
   std::vector<nvinfer1::ITensor*> inputs = {input->tensor, scale->tensor,
                                             offset->tensor};
   const static char* plugin_name = "InstanceNormalization_TRT";
-  const static char* plugin_ver = "1";
+  const static char* plugin_ver = "001";
   auto creator = getPluginRegistry()->getPluginCreator(plugin_name, plugin_ver);
   std::vector<nvinfer1::PluginField> f;
+  int nb_chs = input->type.shape.dims[1];
   f.emplace_back("epsilon", &epsilon, nvinfer1::PluginFieldType::kFLOAT32, 1);
+  assert(scale->const_layer != nullptr && offset->const_layer != nullptr);
+  f.emplace_back("scales", scale->const_layer->getWeights().values,
+                 nvinfer1::PluginFieldType::kFLOAT32, nb_chs);
+  f.emplace_back("bias", offset->const_layer->getWeights().values,
+                 nvinfer1::PluginFieldType::kFLOAT32, nb_chs);
+
   nvinfer1::PluginFieldCollection plugin_data;
   plugin_data.nbFields = f.size();
   plugin_data.fields = f.data();
@@ -1534,6 +1632,22 @@ odla_value odla_Concat(odla_values inputs, odla_int32 axis,
       .shape = output_dims};
   return CreateValue(concat, output_type, id);
 }
+
+#if NV_TENSORRT_MAJOR > 8 || (NV_TENSORRT_MAJOR == 8 && NV_TENSORRT_MINOR >= 2)
+odla_value odla_Einsum(odla_values inputs, const odla_char* equation,
+                       odla_value_shape output_dims, const odla_value_id id) {
+  int num = inputs.size;
+  std::vector<nvinfer1::ITensor*> input_tensors(num);
+  for (int i = 0; i < num; ++i) {
+    input_tensors[i] = inputs.values[i]->tensor;
+  }
+  auto ret = g_comp->network->addEinsum(input_tensors.data(), num, equation);
+  odla_value_type output_type{
+      .element_type = inputs.values[0]->type.element_type,
+      .shape = output_dims};
+  return CreateValue(ret, output_type, id);
+}
+#endif
 
 odla_value odla_MaxPool(odla_value input, odla_memory_layout input_layout,
                         const odla_uint32* window_dims,
@@ -1676,7 +1790,7 @@ odla_value odla_ArgMax(odla_value input, odla_int32 axis, odla_bool keep_dims,
                        odla_bool return_last_index,
                        odla_value_type output_value_type,
                        const odla_value_id id) {
-  unsigned reduce_axes = axis < 0 ? input->type.shape.size - 1 : axis;
+  unsigned reduce_axes = axis < 0 ? input->type.shape.size + axis : axis;
   auto topk = g_comp->network->addTopK(*input, nvinfer1::TopKOperation::kMAX, 1,
                                        1 << reduce_axes);
   return CreateValue(topk->getOutput(1), output_value_type, id);
@@ -1686,7 +1800,7 @@ odla_value odla_ArgMin(odla_value input, odla_int32 axis, odla_bool keep_dims,
                        odla_bool return_last_index,
                        odla_value_type output_value_type,
                        const odla_value_id id) {
-  unsigned reduce_axes = axis < 0 ? input->type.shape.size - 1 : axis;
+  unsigned reduce_axes = axis < 0 ? input->type.shape.size + axis : axis;
   auto topk = g_comp->network->addTopK(*input, nvinfer1::TopKOperation::kMIN, 1,
                                        1 << reduce_axes);
   return CreateValue(topk->getOutput(1), output_value_type, id);
@@ -1696,7 +1810,28 @@ odla_value odla_Gather(odla_value input, const odla_value indices,
                        odla_int32 axis, odla_value_shape output_dims,
                        const odla_value_id id) {
   axis = axis < 0 ? input->type.shape.size - 1 : axis;
-  auto gather = g_comp->network->addGather(*input, *indices, axis);
+  assert(indices->type.element_type == ODLA_INT32 ||
+         indices->type.element_type == ODLA_INT64);
+  auto input_t = input->tensor;
+  if (input->type.element_type == ODLA_BOOL) {
+    const auto& name = std::string(input->name) + "_cast";
+    input_t =
+        odla_Cast(input, ODLA_INT32, (const odla_value_id)name.c_str())->tensor;
+  }
+  auto gather = g_comp->network->addGather(*input_t, *indices, axis);
+  if (input->type.element_type == ODLA_BOOL) {
+    const auto& gather_name =
+        std::string(reinterpret_cast<const char*>(id)) + "_extra";
+    auto gather_v =
+        CreateValue(gather, odla_value_type{ODLA_INT32, output_dims},
+                    (const odla_value_id)gather_name.c_str());
+    g_comp->buffers.push_back(std::vector<float>(1, 0.0));
+    const auto& zero_name = std::string(gather_name) + "_comp_zero";
+    auto zero_v = odla_CreateConstant(
+        odla_value_type{ODLA_INT32, odla_value_shape{0, {}}},
+        g_comp->buffers.back().data(), (const odla_value_id)zero_name.c_str());
+    return odla_Greater(gather_v, zero_v, id);
+  }
   return CreateValue(gather, {input->type.element_type, output_dims}, id);
 }
 
@@ -1834,6 +1969,460 @@ odla_value odla_Pow(odla_value base, odla_value exponent,
 
 odla_value odla_Reciprocal(odla_value input, const odla_value_id value_id) {
   return unary_op(nvinfer1::UnaryOperation::kRECIP, input, value_id);
+}
+
+#ifndef REPLACE_RNN_WITH_LOOP
+odla_values odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
+                      odla_rnn_gate_order gate_order,
+                      odla_value_shape weight_dims, odla_value W, odla_value R,
+                      odla_value B, odla_value sequence_lens,
+                      odla_value initial_h, odla_value initial_c, odla_value P,
+                      odla_int32 hidden_size, odla_rnn_direction direction,
+                      odla_rnn_outputs outputs, const odla_value_ids value_id) {
+  const int num_layers = 1;
+  const int num_gates = 4;
+  const int seq_size = input->type.shape.dims[0];
+  const int batch_size = input->type.shape.dims[1];
+  const int input_size = input->type.shape.dims[2];
+  const int num_directions = (direction == ODLA_RNN_BIDIRECTIONAL) ? 2 : 1;
+  const auto rnn_dir = (direction == ODLA_RNN_BIDIRECTIONAL)
+                           ? nvinfer1::RNNDirection::kBIDIRECTION
+                           : nvinfer1::RNNDirection::kUNIDIRECTION;
+
+  auto input_t = input->tensor;
+  // input layout [seq, batch, input]
+  // trt assume [batch, seq, input]
+  auto transpose_layer = g_comp->network->addShuffle(*input_t);
+  nvinfer1::Permutation perm{1, 0, 2};
+  transpose_layer->setFirstTranspose(perm);
+  transpose_layer->setReshapeDimensions(
+      nvinfer1::Dims{3, {batch_size, seq_size, input_size}});
+  input_t = transpose_layer->getOutput(0);
+  nvinfer1::IRNNv2Layer* rnn_layer =
+      g_comp->network->addRNNv2(*input_t, num_layers, hidden_size, seq_size,
+                                nvinfer1::RNNOperation::kLSTM);
+  rnn_layer->setDirection(rnn_dir);
+
+  // prepare initial hidden and initial cell
+  auto getInitTensor = [&num_directions, &hidden_size,
+                        &batch_size](odla_value init_v) -> nvinfer1::ITensor* {
+    if (init_v) {
+      return init_v->tensor;
+    }
+    odla_value_shape dim{.size = 3,
+                         .dims = {batch_size, num_directions, hidden_size}};
+    g_comp->buffers.push_back(std::vector<float>(GetTotalElements(dim), 0.0f));
+    nvinfer1::Weights weight{.type = nvinfer1::DataType::kFLOAT,
+                             .values = g_comp->buffers.back().data(),
+                             .count = GetTotalElements(dim)};
+    return g_comp->network->addConstant(GetNVDims(dim), weight)->getOutput(0);
+  };
+  nvinfer1::ITensor* init_hidden_t = getInitTensor(initial_h);
+  // LOG_VERBOSE("init_hidden dim:" +
+  // gen_str(init_hidden_t->getDimensions()));
+  nvinfer1::ITensor* init_cell_t = getInitTensor(initial_c);
+  rnn_layer->setHiddenState(*init_hidden_t);
+  rnn_layer->setCellState(*init_cell_t);
+
+  // weight order [iofc]
+  assert(W->const_layer != nullptr && R->const_layer != nullptr);
+  nvinfer1::Weights input_w = W->const_layer->getWeights();
+  nvinfer1::Weights recurrence_w = R->const_layer->getWeights();
+  const auto& trt_gate_orders = GetRNNGateOrder(gate_order);
+  size_t offset_w = 0, offset_bias = 0;
+  for (int gate_index = 0; gate_index < 2 * num_gates; ++gate_index) {
+    bool isW = (gate_index < num_gates);
+    int64_t weight_count = (isW ? input_size : hidden_size) * hidden_size;
+    const float* weight_ptr =
+        isW ? static_cast<const float*>(input_w.values)
+            : static_cast<const float*>(recurrence_w.values);
+    nvinfer1::Weights gate_weight{nvinfer1::DataType::kFLOAT,
+                                  weight_ptr + offset_w, weight_count};
+    rnn_layer->setWeightsForGate(0, trt_gate_orders[gate_index % num_gates],
+                                 isW, gate_weight);
+    if (num_directions == 2) {
+      const float* weight_back_ptr = weight_ptr + weight_count * num_gates;
+      nvinfer1::Weights gate_weight_back{
+          nvinfer1::DataType::kFLOAT, weight_back_ptr + offset_w, weight_count};
+      rnn_layer->setWeightsForGate(1, trt_gate_orders[gate_index % num_gates],
+                                   isW, gate_weight_back);
+    }
+    offset_w += weight_count;
+    if (gate_index % num_gates == num_gates - 1) {
+      offset_w = 0;
+    }
+  }
+
+  // Bias shape [dir, 4 * hidden_size] or [dir, 8 * hidden_size]
+  assert(B && B->const_layer);
+  bool combined_bias = (B->type.shape.dims[1] == num_gates * hidden_size);
+  nvinfer1::Weights bias_w = B->const_layer->getWeights();
+  g_comp->buffers.push_back(std::vector<float>(hidden_size, 0.0f));
+  nvinfer1::Weights zero_bias_w{nvinfer1::DataType::kFLOAT,
+                                g_comp->buffers.back().data(), hidden_size};
+  const float* bias_ptr = static_cast<const float*>(bias_w.values);
+
+  for (int gate_index = 0; gate_index < 2 * num_gates; ++gate_index) {
+    bool isW = (gate_index < num_gates);
+    if (!combined_bias || isW) {
+      nvinfer1::Weights gate_bias{nvinfer1::DataType::kFLOAT,
+                                  bias_ptr + offset_bias, hidden_size};
+      rnn_layer->setBiasForGate(0, trt_gate_orders[gate_index % num_gates], isW,
+                                gate_bias);
+      if (num_directions == 2) {
+        const float* bias_back_ptr = bias_ptr + num_gates * hidden_size;
+        nvinfer1::Weights gate_bias_back{nvinfer1::DataType::kFLOAT,
+                                         bias_back_ptr + offset_bias,
+                                         hidden_size};
+        rnn_layer->setBiasForGate(1, trt_gate_orders[gate_index % num_gates],
+                                  isW, gate_bias_back);
+      }
+      offset_bias += hidden_size;
+    } else {
+      rnn_layer->setBiasForGate(0, trt_gate_orders[gate_index % num_gates], isW,
+                                zero_bias_w);
+      if (num_directions == 2) {
+        rnn_layer->setBiasForGate(1, trt_gate_orders[gate_index % num_gates],
+                                  isW, zero_bias_w);
+      }
+    }
+  }
+
+  // TRT result layout transformation
+  // [0]: [seq, batch, dir, hidden]  --> [seq, dir, batch, hidden]
+  // [1] [2] : [batch, dir, hidden]  --> [dir, batch, hidden]
+  nvinfer1::ITensor* transformed_rnn[3]{rnn_layer->getOutput(0),
+                                        rnn_layer->getOutput(1),
+                                        rnn_layer->getOutput(2)};
+  if (false && num_directions == 2) {
+    for (int i = 0; i < 3; ++i) {
+      auto transform_layer =
+          g_comp->network->addShuffle(*rnn_layer->getOutput(i));
+      if (i = 0) {
+        transform_layer->setReshapeDimensions(nvinfer1::Dims{
+            4, {seq_size, batch_size, num_directions, hidden_size}});
+        transform_layer->setSecondTranspose(nvinfer1::Permutation{0, 2, 1, 3});
+      } else {
+        transform_layer->setReshapeDimensions(
+            nvinfer1::Dims{3, {batch_size, num_directions, hidden_size}});
+        transform_layer->setSecondTranspose(nvinfer1::Permutation{1, 0, 2});
+      }
+      transformed_rnn[i] = transform_layer->getOutput(0);
+    }
+  }
+  odla_value_shape ret_shape{
+      4, {seq_size, num_directions, batch_size, hidden_size}};
+  odla_value_shape ret_iter_shape{3, {num_directions, batch_size, hidden_size}};
+  const auto& dt = input->type.element_type;
+  auto ret =
+      CreateValue(transformed_rnn[0], {dt, ret_shape}, value_id.value_ids[0]);
+  auto ret_h = CreateValue(transformed_rnn[1], {dt, ret_iter_shape},
+                           value_id.value_ids[1]);
+  auto ret_c = CreateValue(transformed_rnn[2], {dt, ret_iter_shape},
+                           value_id.value_ids[2]);
+
+  return {.size = 3, .values = {ret, ret_h, ret_c}};
+}
+
+#else
+odla_values odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
+                      odla_rnn_gate_order gate_order,
+                      odla_value_shape weight_dims, odla_value W, odla_value R,
+                      odla_value B, odla_value sequence_lens,
+                      odla_value initial_h, odla_value initial_c, odla_value P,
+                      odla_int32 hidden_size, odla_rnn_direction direction,
+                      odla_rnn_outputs outputs, const odla_value_ids value_id) {
+  //[iofc]
+  const int num_gates = 4;
+  const int num_directions = (direction == ODLA_RNN_BIDIRECTIONAL) ? 2 : 1;
+  assert(num_direction == weight_dims.dims[0]);
+  const int batch_size = input->type.shape.dims[1];
+  const int len_seq = input->type.shape.dims[0];
+  std::vector<nvinfer1::ActivationType> activations{
+      nvinfer1::ActivationType::kSIGMOID, nvinfer1::ActivationType::kTANH,
+      nvinfer1::ActivationType::kTANH};
+
+  auto input_t = input->tensor;
+  auto weight_t = W->tensor;
+  auto recurrence_t = R->tensor;
+
+  // prepare initial hidden and initial cell
+  auto getInitTensor = [&num_directions, &hidden_size,
+                        &batch_size](odla_value init_v) -> nvinfer1::ITensor* {
+    if (init_v) {
+      return init_v->tensor;
+    }
+    odla_value_shape dim{.size = 3,
+                         .dims = {num_directions, batch_size, hidden_size}};
+    g_comp->buffers.push_back(std::vector<float>(GetTotalElements(dim), 0.0f));
+    nvinfer1::Weights weight{.type = nvinfer1::DataType::kFLOAT,
+                             .values = g_comp->buffers.back().data(),
+                             .count = GetTotalElements(dim)};
+    return g_comp->network->addConstant(GetNVDims(dim), weight)->getOutput(0);
+  };
+  nvinfer1::ITensor* init_hidden_t = getInitTensor(initial_h);
+  // LOG_VERBOSE("init_hidden dim:" +
+  // gen_str(init_hidden_t->getDimensions()));
+  nvinfer1::ITensor* init_cell_t = getInitTensor(initial_c);
+  // LOG("init_cell dim:" << init_cell_t->getDimensions());
+
+  assert(B && sequence_lens);
+  auto bias_t = B->tensor;
+  bool combined_bias = (B->type.shape.dims[1] == 4 * hidden_size);
+  if (!combined_bias) {
+    // Bias is of the shape of [Wb[iofc], Rb[iofc], WBb[iofc], RBb[iofc]]
+    // Reshape to [[Wb[iofc], Rb[iofc]], [WBb[iofc], RBb[iofc]]]
+    // in order to perform reduction to add Wb and Rb and to add WBb and RBb.
+    auto reshape_bias = g_comp->network->addShuffle(*B->tensor);
+    odla_value_shape dim{.size = 3,
+                         .dims = {num_directions, 2, num_gates * hidden_size}};
+    reshape_bias->setReshapeDimensions(GetNVDims(dim));
+    bias_t = g_comp->network
+                 ->addReduce(*reshape_bias->getOutput(0),
+                             nvinfer1::ReduceOperation::kSUM, 2, false)
+                 ->getOutput(0);
+  }
+
+  if (num_directions == 1) {
+    auto squeezeDir = [](nvinfer1::ITensor* t) -> nvinfer1::ITensor* {
+      auto squeeze_layer = g_comp->network->addShuffle(*t);
+      squeeze_layer->setReshapeDimensions(SqueezeNVDims(t->getDimensions(), 0));
+      return squeeze_layer->getOutput(0);
+    };
+    weight_t = squeezeDir(weight_t);
+    recurrence_t = squeezeDir(recurrence_t);
+    init_hidden_t = squeezeDir(init_hidden_t);
+    init_cell_t = squeezeDir(init_cell_t);
+  }
+
+  // Use loops to represent recurrent layers
+  nvinfer1::ILoop* rnn_loop = g_comp->network->addLoop();
+  nvinfer1::ITensor* seq_lens =
+      g_comp->network
+          ->addConstant(
+              nvinfer1::Dims{},
+              nvinfer1::Weights{nvinfer1::DataType::kINT32, &len_seq, 1})
+          ->getOutput(0);
+  rnn_loop->addTripLimit(*seq_lens, nvinfer1::TripLimit::kCOUNT);
+  // TODO: handle reverse and bidirectional
+  // unsqeeze to match weight dimension
+  nvinfer1::ITensor* input_iterator =
+      rnn_loop->addIterator(*input_t)->getOutput(0);
+  // auto unsqeeze_layer = g_comp->network->addShuffle(*input_iterator);
+  // unsqeeze_layer->setName("input_iterator_unsqueeze");
+  // FIXME
+  // unsqeeze_layer->setReshapeDimensions(
+  //  nvinfer1::Dims3{1, batch_size, input->type.shape.dims[2]});
+  // input_iterator = unsqeeze_layer->getOutput(0);
+  nvinfer1::IRecurrenceLayer* hidden = rnn_loop->addRecurrence(*init_hidden_t);
+  nvinfer1::IRecurrenceLayer* cell = rnn_loop->addRecurrence(*init_cell_t);
+
+  // Xt*(W^T) + Ht-1*(R^T) + (Wb + Rb)
+  auto mm1 =
+      g_comp->network
+          ->addMatrixMultiply(*input_iterator, nvinfer1::MatrixOperation::kNONE,
+                              *weight_t, nvinfer1::MatrixOperation::kTRANSPOSE)
+          ->getOutput(0);
+  auto mm2 = g_comp->network
+                 ->addMatrixMultiply(
+                     *hidden->getOutput(0), nvinfer1::MatrixOperation::kNONE,
+                     *recurrence_t, nvinfer1::MatrixOperation::kTRANSPOSE)
+                 ->getOutput(0);
+  auto add1 =
+      g_comp->network
+          ->addElementWise(*mm1, *mm2, nvinfer1::ElementWiseOperation::kSUM)
+          ->getOutput(0);
+  auto add2 =
+      g_comp->network
+          ->addElementWise(*add1, *bias_t, nvinfer1::ElementWiseOperation::kSUM)
+          ->getOutput(0);
+
+  auto sliceGate = [&hidden_size, &num_directions, &batch_size](
+                       nvinfer1::ITensor* gates,
+                       int index) -> nvinfer1::ITensor* {
+    auto slice = g_comp->network->addSlice(
+        *gates, nvinfer1::Dims2{0, index * hidden_size},
+        nvinfer1::Dims2{batch_size, hidden_size}, nvinfer1::Dims2{1, 1});
+    return slice->getOutput(0);
+  };
+
+  auto addPeephole = [&P, &hidden_size, &num_directions](
+                         nvinfer1::ITensor* gate, nvinfer1::ITensor* cell,
+                         int index) -> nvinfer1::ITensor* {
+    if (!P) {
+      return gate;
+    }
+    // TODO
+    auto slice = g_comp->network->addSlice(
+        *P->tensor, nvinfer1::Dims2{0, index * hidden_size},
+        nvinfer1::Dims2{num_directions, hidden_size}, nvinfer1::Dims2{1, 1});
+    auto reshape = g_comp->network->addShuffle(*slice->getOutput(0));
+    reshape->setReshapeDimensions(nvinfer1::Dims{1, {hidden_size}});
+
+    auto mm_peep = g_comp->network
+                       ->addElementWise(*reshape->getOutput(0), *cell,
+                                        nvinfer1::ElementWiseOperation::kPROD)
+                       ->getOutput(0);
+    return g_comp->network
+        ->addElementWise(*gate, *mm_peep, nvinfer1::ElementWiseOperation::kSUM)
+        ->getOutput(0);
+  };
+
+  auto i_gate = sliceGate(add2, 0);
+  // LOG("input gate dim:" << i_gate->getDimensions());
+  // LOG_VERBOSE("input gate dim:" + gen_str(i_gate->getDimensions()));
+  // it = it + P . Ct-1
+  i_gate = addPeephole(i_gate, cell->getOutput(0), 0);
+  // it = sigmoid(it)
+  i_gate =
+      g_comp->network->addActivation(*i_gate, activations.at(0))->getOutput(0);
+
+  auto f_gate = sliceGate(add2, 2);
+  // ft = ft + P . Ct-1
+  f_gate = addPeephole(f_gate, cell->getOutput(0), 2);
+  // ft = sigmoid(ft)
+  f_gate =
+      g_comp->network->addActivation(*f_gate, activations.at(0))->getOutput(0);
+
+  auto c_gate = sliceGate(add2, 3);
+  // ct = tanh(ct)
+  c_gate =
+      g_comp->network->addActivation(*c_gate, activations.at(1))->getOutput(0);
+
+  // Ct = ft . Ct-1 + it . ct
+  auto C_1 = g_comp->network
+                 ->addElementWise(*f_gate, *cell->getOutput(0),
+                                  nvinfer1::ElementWiseOperation::kPROD)
+                 ->getOutput(0);
+  auto C_2 = g_comp->network
+                 ->addElementWise(*i_gate, *c_gate,
+                                  nvinfer1::ElementWiseOperation::kPROD)
+                 ->getOutput(0);
+  auto C =
+      g_comp->network
+          ->addElementWise(*C_1, *C_2, nvinfer1::ElementWiseOperation::kSUM)
+          ->getOutput(0);
+
+  // ot
+  auto o_gate = sliceGate(add2, 1);
+  // ot = ot + P . Ct
+  o_gate = addPeephole(o_gate, C, 1);
+  // ot = sigmoid(ot)
+  o_gate =
+      g_comp->network->addActivation(*o_gate, activations.at(0))->getOutput(0);
+
+  // Ht = ot . tanh(Ct)
+  auto H = g_comp->network->addActivation(*C, activations.at(2))->getOutput(0);
+  H = g_comp->network
+          ->addElementWise(*o_gate, *H, nvinfer1::ElementWiseOperation::kPROD)
+          ->getOutput(0);
+
+  // backedge
+  cell->setInput(1, *C);
+  hidden->setInput(1, *H);
+
+  // TODO: handle reverse and bidirectional
+  auto output_layer =
+      rnn_loop->addLoopOutput(*H, nvinfer1::LoopOutput::kCONCATENATE);
+  output_layer->setInput(1, *seq_lens);
+  auto hidden_out = rnn_loop->addLoopOutput(*hidden->getOutput(0),
+                                            nvinfer1::LoopOutput::kLAST_VALUE);
+  auto cell_out = rnn_loop->addLoopOutput(*cell->getOutput(0),
+                                          nvinfer1::LoopOutput::kLAST_VALUE);
+
+  odla_value_shape ret_shape{
+      4, {len_seq, num_directions, batch_size, hidden_size}};
+  odla_value_shape ret_iter_shape{3, {num_directions, batch_size, hidden_size}};
+
+  const auto& dt = input->type.element_type;
+  auto ret = CreateValue(output_layer->getOutput(0), {dt, ret_shape},
+                         value_id.value_ids[0]);
+  auto ret_h = CreateValue(hidden_out->getOutput(0), {dt, ret_iter_shape},
+                           value_id.value_ids[1]);
+  auto ret_c = CreateValue(cell_out->getOutput(0), {dt, ret_iter_shape},
+                           value_id.value_ids[2]);
+  return {.size = 3, .values = {ret, ret_h, ret_c}};
+}
+#endif
+
+odla_value odla_HardSigmoid(odla_value input, odla_float32 alpha,
+                            odla_float32 beta, const odla_value_id value_id) {
+  auto layer = g_comp->network->addActivation(
+      *input, nvinfer1::ActivationType::kHARD_SIGMOID);
+  layer->setAlpha(alpha);
+  layer->setBeta(beta);
+  return CreateValue(layer->getOutput(0), input->type, value_id);
+}
+
+odla_value odla_Select(odla_value condition, odla_value a, odla_value b,
+                       odla_value_shape output_dims,
+                       const odla_value_id value_id) {
+  nvinfer1::ITensor* lhs = a->tensor;
+  nvinfer1::ITensor* rhs = b->tensor;
+  nvinfer1::ITensor* cond = condition->tensor;
+  const auto& dims_lhs = a->type.shape;
+  const auto& dims_rhs = b->type.shape;
+  const auto& dims_cond = condition->type.shape;
+  if (dims_lhs.size < output_dims.size) {
+    auto reshape = g_comp->network->addShuffle(*lhs);
+    reshape->setReshapeDimensions(BroadcastDims(dims_lhs, output_dims.size));
+    lhs = reshape->getOutput(0);
+  }
+  if (dims_rhs.size < output_dims.size) {
+    auto reshape = g_comp->network->addShuffle(*rhs);
+    reshape->setReshapeDimensions(BroadcastDims(dims_rhs, output_dims.size));
+    rhs = reshape->getOutput(0);
+  }
+  if (dims_cond.size < output_dims.size) {
+    auto reshape = g_comp->network->addShuffle(*cond);
+    if (dims_cond.size == 1 && dims_cond.dims[0] == output_dims.dims[0]) {
+      nvinfer1::Dims broadcast_cond_dims;
+      broadcast_cond_dims.nbDims = output_dims.size;
+      for (int i = 0; i < output_dims.size; ++i) {
+        broadcast_cond_dims.d[i] = (i == 0) ? dims_cond.dims[0] : 1;
+      }
+      reshape->setReshapeDimensions(broadcast_cond_dims);
+    } else {
+      reshape->setReshapeDimensions(BroadcastDims(dims_cond, output_dims.size));
+    }
+    cond = reshape->getOutput(0);
+  }
+  auto select_layer = g_comp->network->addSelect(*cond, *lhs, *rhs);
+  return CreateValue(select_layer->getOutput(0),
+                     odla_value_type{a->type.element_type, output_dims},
+                     value_id);
+}
+
+odla_status odla_BeginIf(odla_value condition, odla_value_id value_id) {
+  branch_info br_info;
+  br_info.branch = g_comp->network->addIfConditional();
+  br_info.branch->setCondition(*condition);
+  br_info.branch->setName(reinterpret_cast<const char*>(value_id));
+  g_comp->branchs.push(br_info);
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_EnterBranchBody(odla_bool true_branch) {
+  g_comp->branchs.top().in_true_body = true_branch != 0;
+  return ODLA_SUCCESS;
+}
+
+odla_values odla_EndIf(odla_value_ids value_ids) {
+  auto br_info = g_comp->branchs.top();
+  int n = br_info.true_outputs.size();
+  assert(n == br_info.false_outputs.size());
+  assert(n <= ODLA_MAX_OUTPUTS);
+  odla_values ret;
+  ret.size = n;
+  auto br = br_info.branch;
+  g_comp->branchs.pop();
+  for (int i = 0; i < n; ++i) {
+    auto out =
+        br->addOutput(*br_info.true_outputs[i], *br_info.false_outputs[i]);
+    ret.values[i] =
+        CreateValue(out, br_info.true_outputs[i]->type, value_ids.value_ids[i]);
+  }
+  return ret;
 }
 
 } // C extern

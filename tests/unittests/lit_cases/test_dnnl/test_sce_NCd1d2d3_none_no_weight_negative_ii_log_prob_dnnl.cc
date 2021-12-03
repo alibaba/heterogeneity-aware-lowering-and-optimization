@@ -27,5 +27,5 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_sce_NCd1d2d3_none_no_weight_negative_ii_log_prob | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_sce_NCd1d2d3_none_no_weight_negative_ii_log_prob_dnnl.cc.tmp.main.cc.in"

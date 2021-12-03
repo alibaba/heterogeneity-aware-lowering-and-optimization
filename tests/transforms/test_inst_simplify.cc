@@ -49,7 +49,7 @@ void build() {
   // CHECK: Constant folded_pad([FLOAT32: 4x4]) = [0, 0, 0, 0, 0, 1, 2, 0, 0, 3, 4, 0, 0, 0, 0, 0]
 
   // CHECK: BasicBlock: bb0
-  // CHECK-NEXT: Inst: ret() = return(<folded_pad, 0>:[FLOAT32: 4x4])
+  // CHECK-NEXT: Inst: ret({{.*}}) = return(<folded_pad, 0>:[FLOAT32: 4x4])
   // clang-format on
 }
 

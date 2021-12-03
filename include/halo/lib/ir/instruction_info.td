@@ -25,6 +25,7 @@ def cat_common_reduction : Category;
 def cat_controlFlow : Category;
 def cat_creator : Category;
 def cat_image : Category;
+def cat_loss : Category;
 def cat_math : Category;
 def cat_math_binary : Category;
 def cat_math_unary : Category;

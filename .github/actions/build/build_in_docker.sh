@@ -1,7 +1,7 @@
 #!/bin/bash -xe
 
 REPO="registry-intl.us-west-1.aliyuncs.com/computation/halo"
-VER="latest"
+VER="0.7.6"
 FLAVOR="devel"
 
 MOUNT_DIR="$PWD"
@@ -31,12 +31,10 @@ fi
 
 cmake_flags="$cmake_flags -DHALO_USE_STATIC_PROTOBUF=ON -DCPACK_SYSTEM_NAME=ubuntu-i686"
 
-DOCKER_ID=`docker ps -aq -f name=$CONTAINER_NAME -f status=running`
-
 gid=$(id -g ${USER})
 group=$(id -g -n ${USER})
 uid=$(id -u ${USER})
-extra_mnt="-v /opt/poplar_sdk-ubuntu_18_04-2.2.2+711-26aba6cf16:/opt/poplar_sdk:ro"
+extra_mnt="-v /opt/poplar_sdk-ubuntu_18_04-2.3.0_774:/opt/poplar_sdk:ro"
 mkdir -p /tmp/ubuntu.cache
 extra_mnt="$extra_mnt -v /tmp/ubuntu.cache:/cache"
 

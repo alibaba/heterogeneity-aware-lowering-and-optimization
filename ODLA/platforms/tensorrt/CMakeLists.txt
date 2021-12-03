@@ -16,7 +16,7 @@
 
 enable_language(CUDA)
 
-set(CUDA_VERSION 10.0 CACHE STRING "Version of CUDA tool-kit.")
+set(CUDA_VERSION 11.3 CACHE STRING "Version of CUDA tool-kit.")
 set(CUDNN_VERSION 7.6 CACHE STRING "Version of Cudnn.")
 set(CUDA_ROOT /usr/local/cuda-${CUDA_VERSION}/targets/x86_64-linux)
 find_library(CUDART_LIB NAMES cudart PATHS ${CUDA_ROOT} PATH_SUFFIXES lib NO_DEFAULT_PATH)
@@ -40,6 +40,6 @@ target_compile_options(odla_tensorrt PRIVATE -Wno-deprecated-declarations)
 target_link_libraries(odla_tensorrt ODLA ${nvinfer} ${CUDART_LIB} ${nvinfer_plugin})
 set_target_properties(odla_tensorrt PROPERTIES LINK_FLAGS
                       "-Wl,-rpath=\\\${ORIGIN}/tensorrt:\\\${ORIGIN} -L${CMAKE_BINARY_DIR}/tensorrt")
-target_link_libraries(odla_tensorrt ${PLUGIN_NAME}_obj)
+target_link_libraries(odla_tensorrt ${PLUGIN_NAME})
 set_target_properties(odla_tensorrt PROPERTIES LINK_FLAGS
                       "-Wl,-rpath=${CMAKE_BINARY_DIR}/lib -L${CMAKE_BINARY_DIR}/lib")

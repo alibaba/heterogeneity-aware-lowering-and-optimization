@@ -37,6 +37,7 @@
 #include <string>
 #include <vector>
 
+#include "../common.h"
 #include "batchedNMSInference.h"
 #include "gatherNMSOutputs.h"
 #include "kernel.h"
@@ -52,54 +53,61 @@ class BatchedNMSPluginV2 : public IPluginV2Ext {
 
   ~BatchedNMSPluginV2() override = default;
 
-  int getNbOutputs() const override;
+  int getNbOutputs() const NOEXCEPT override;
 
   Dims getOutputDimensions(int index, const Dims* inputs,
-                           int nbInputDims) override;
+                           int nbInputDims) NOEXCEPT override;
 
-  int initialize() override;
+  int initialize() NOEXCEPT override;
 
-  void terminate() override;
+  void terminate() NOEXCEPT override;
 
-  size_t getWorkspaceSize(int maxBatchSize) const override;
+  size_t getWorkspaceSize(int maxBatchSize) const NOEXCEPT override;
 
-  int enqueue(int batchSize, const void* const* inputs, void** outputs,
-              void* workspace, cudaStream_t stream) override;
+#if NV_TENSORRT_MAJOR >= 8
+  using enqueue_output_ty = void* const*;
+#else
+  using enqueue_output_ty = void**;
+#endif
+  int enqueue(int batchSize, const void* const* inputs,
+              enqueue_output_ty outputs, void* workspace,
+              cudaStream_t stream) NOEXCEPT override;
 
-  size_t getSerializationSize() const override;
+  size_t getSerializationSize() const NOEXCEPT override;
 
-  void serialize(void* buffer) const override;
+  void serialize(void* buffer) const NOEXCEPT override;
 
   void configurePlugin(const Dims* inputDims, int nbInputs,
                        const Dims* outputDims, int nbOutputs,
                        const DataType* inputTypes, const DataType* outputTypes,
                        const bool* inputIsBroadcast,
                        const bool* outputIsBroadcast, PluginFormat floatFormat,
-                       int maxBatchSize) override;
+                       int maxBatchSize) NOEXCEPT override;
 
-  bool supportsFormat(DataType type, PluginFormat format) const override;
+  bool supportsFormat(DataType type,
+                      PluginFormat format) const NOEXCEPT override;
 
-  const char* getPluginType() const override;
+  const char* getPluginType() const NOEXCEPT override;
 
-  const char* getPluginVersion() const override;
+  const char* getPluginVersion() const NOEXCEPT override;
 
-  void destroy() override;
+  void destroy() NOEXCEPT override;
 
-  IPluginV2Ext* clone() const override;
+  IPluginV2Ext* clone() const NOEXCEPT override;
 
   nvinfer1::DataType getOutputDataType(int index,
                                        const nvinfer1::DataType* inputType,
-                                       int nbInputs) const override;
+                                       int nbInputs) const NOEXCEPT override;
 
-  void setPluginNamespace(const char* libNamespace) override;
+  void setPluginNamespace(const char* libNamespace) NOEXCEPT override;
 
-  const char* getPluginNamespace() const override;
+  const char* getPluginNamespace() const NOEXCEPT override;
 
   bool isOutputBroadcastAcrossBatch(int outputIndex,
                                     const bool* inputIsBroadcasted,
-                                    int nbInputs) const override;
+                                    int nbInputs) const NOEXCEPT override;
 
-  bool canBroadcastInputAcrossBatch(int inputIndex) const override;
+  bool canBroadcastInputAcrossBatch(int inputIndex) const NOEXCEPT override;
 
   void setClipParam(bool clip);
 
@@ -119,23 +127,25 @@ class BatchedNMSPluginV2Creator : public IPluginCreator {
 
   ~BatchedNMSPluginV2Creator() override = default;
 
-  const char* getPluginName() const override;
+  const char* getPluginName() const NOEXCEPT override;
 
-  const char* getPluginVersion() const override;
+  const char* getPluginVersion() const NOEXCEPT override;
 
-  void setPluginNamespace(const char* libNamespace) override {
+  void setPluginNamespace(const char* libNamespace) NOEXCEPT override {
     mNamespace = libNamespace;
   }
 
-  const char* getPluginNamespace() const override { return mNamespace.c_str(); }
+  const char* getPluginNamespace() const NOEXCEPT override {
+    return mNamespace.c_str();
+  }
 
-  const PluginFieldCollection* getFieldNames() override;
+  const PluginFieldCollection* getFieldNames() NOEXCEPT override;
 
   IPluginV2Ext* createPlugin(const char* name,
-                             const PluginFieldCollection* fc) override;
+                             const PluginFieldCollection* fc) NOEXCEPT override;
 
   IPluginV2Ext* deserializePlugin(const char* name, const void* serialData,
-                                  size_t serialLength) override;
+                                  size_t serialLength) NOEXCEPT override;
 
  private:
   static PluginFieldCollection mFC;

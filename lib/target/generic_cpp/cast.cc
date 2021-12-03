@@ -42,7 +42,16 @@ void GenericCXXCodeGen::RunOnInstruction(SItoFPInst* inst) {
 void GenericCXXCodeGen::RunOnInstruction(ZExtInst* inst) {
   RunOnCastInstruction(inst);
 }
+
 void GenericCXXCodeGen::RunOnInstruction(FPtoFPInst* inst) {
+  RunOnCastInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(ConvertFromStringInst* inst) {
+  RunOnCastInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(ConvertToStringInst* inst) {
   RunOnCastInstruction(inst);
 }
 } // end namespace halo

@@ -36,8 +36,36 @@ static void RemoveLoopBody(LoopInst* loop_inst) {
   }
 }
 
+// For instructions with `undef` operands, they are unreachable except for
+// `tf_merge` and optional operands.
+static bool RemoveUndefInstrs(BasicBlock* bb) {
+  bool changed = false;
+  const auto& undef = Def::GetUndefined();
+  for (auto it = bb->begin(), e = bb->end(); it != e; ++it) {
+    Instruction* inst = it->get();
+    if (auto ext = DynCast<TFExtensionInst>(inst);
+        inst->GetOpCode() == OpCode::RETURN ||
+        (ext != nullptr && ext->GetExtOpCode() == TFExtOpCode::MERGE)) {
+      continue;
+    }
+    bool has_undef = false;
+    for (int i = 0, e = inst->GetNumOfOperands(); !has_undef && i < e; ++i) {
+      has_undef = !inst->IsOperandOptional(i) && inst->GetOperand(i).IsNull();
+    }
+    if (!has_undef) {
+      continue;
+    }
+    for (int idx = 0, e = inst->GetNumOfResults(); idx < e; ++idx) {
+      inst->ReplaceAllUsesWith(idx, undef);
+    }
+    changed |= true;
+  }
+  return changed;
+}
+
 bool DCE::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
+  changed |= RemoveUndefInstrs(bb);
   std::set<Instruction*> dead_instrs;
   for (BasicBlock::reverse_iterator it = bb->rbegin(), e = bb->rend(); it != e;
        ++it) {

@@ -59,14 +59,14 @@ BatchedNMSPluginV2::BatchedNMSPluginV2(const void* data, size_t length) {
   ASSERT(d == a + length);
 }
 
-int BatchedNMSPluginV2::getNbOutputs() const { return 5; }
+int BatchedNMSPluginV2::getNbOutputs() const NOEXCEPT { return 5; }
 
-int BatchedNMSPluginV2::initialize() { return STATUS_SUCCESS; }
+int BatchedNMSPluginV2::initialize() NOEXCEPT { return STATUS_SUCCESS; }
 
-void BatchedNMSPluginV2::terminate() {}
+void BatchedNMSPluginV2::terminate() NOEXCEPT {}
 
 Dims BatchedNMSPluginV2::getOutputDimensions(int index, const Dims* inputs,
-                                             int nbInputDims) {
+                                             int nbInputDims) NOEXCEPT {
   ASSERT(nbInputDims == 2);
   ASSERT(index >= 0 && index < this->getNbOutputs());
   ASSERT(inputs[0].nbDims == 3);
@@ -96,7 +96,7 @@ Dims BatchedNMSPluginV2::getOutputDimensions(int index, const Dims* inputs,
   return dim1;
 }
 
-size_t BatchedNMSPluginV2::getWorkspaceSize(int maxBatchSize) const {
+size_t BatchedNMSPluginV2::getWorkspaceSize(int maxBatchSize) const NOEXCEPT {
   return detectionInferenceWorkspaceSize(
       param.shareLocation, maxBatchSize, boxesSize, scoresSize,
       param.numClasses, numPriors, param.topK, DataType::kFLOAT,
@@ -104,8 +104,8 @@ size_t BatchedNMSPluginV2::getWorkspaceSize(int maxBatchSize) const {
 }
 
 int BatchedNMSPluginV2::enqueue(int batchSize, const void* const* inputs,
-                                void** outputs, void* workspace,
-                                cudaStream_t stream) {
+                                enqueue_output_ty outputs, void* workspace,
+                                cudaStream_t stream) NOEXCEPT {
   const void* const locData = inputs[0];
   const void* const confData = inputs[1];
 
@@ -126,12 +126,12 @@ int BatchedNMSPluginV2::enqueue(int batchSize, const void* const* inputs,
   return 0;
 }
 
-size_t BatchedNMSPluginV2::getSerializationSize() const {
+size_t BatchedNMSPluginV2::getSerializationSize() const NOEXCEPT {
   // NMSParameters, boxesSize,scoresSize,numPriors
   return sizeof(NMSParameters) + sizeof(int) * 3 + sizeof(bool);
 }
 
-void BatchedNMSPluginV2::serialize(void* buffer) const {
+void BatchedNMSPluginV2::serialize(void* buffer) const NOEXCEPT {
   char *d = reinterpret_cast<char*>(buffer), *a = d;
   write(d, param);
   write(d, boxesSize);
@@ -145,7 +145,7 @@ void BatchedNMSPluginV2::configurePlugin(
     const Dims* inputDims, int nbInputs, const Dims* outputDims, int nbOutputs,
     const DataType* inputTypes, const DataType* outputTypes,
     const bool* inputIsBroadcast, const bool* outputIsBroadcast,
-    nvinfer1::PluginFormat format, int maxBatchSize) {
+    nvinfer1::PluginFormat format, int maxBatchSize) NOEXCEPT {
   ASSERT(nbInputs == 2);
   ASSERT(nbOutputs == 5);
   ASSERT(inputDims[0].nbDims == 3);
@@ -166,21 +166,21 @@ void BatchedNMSPluginV2::configurePlugin(
 }
 
 bool BatchedNMSPluginV2::supportsFormat(DataType type,
-                                        PluginFormat format) const {
+                                        PluginFormat format) const NOEXCEPT {
   return ((type == DataType::kFLOAT || type == DataType::kINT32) &&
-          format == PluginFormat::kNCHW);
+          format == PluginFormat::kLINEAR);
 }
-const char* BatchedNMSPluginV2::getPluginType() const {
+const char* BatchedNMSPluginV2::getPluginType() const NOEXCEPT {
   return NMS_PLUGIN_NAME;
 }
 
-const char* BatchedNMSPluginV2::getPluginVersion() const {
+const char* BatchedNMSPluginV2::getPluginVersion() const NOEXCEPT {
   return NMS_PLUGIN_VERSION;
 }
 
-void BatchedNMSPluginV2::destroy() { delete this; }
+void BatchedNMSPluginV2::destroy() NOEXCEPT { delete this; }
 
-IPluginV2Ext* BatchedNMSPluginV2::clone() const {
+IPluginV2Ext* BatchedNMSPluginV2::clone() const NOEXCEPT {
   auto* plugin = new BatchedNMSPluginV2(param);
   plugin->boxesSize = boxesSize;
   plugin->scoresSize = scoresSize;
@@ -190,16 +190,18 @@ IPluginV2Ext* BatchedNMSPluginV2::clone() const {
   return plugin;
 }
 
-void BatchedNMSPluginV2::setPluginNamespace(const char* pluginNamespace) {
+void BatchedNMSPluginV2::setPluginNamespace(
+    const char* pluginNamespace) NOEXCEPT {
   mPluginNamespace = pluginNamespace;
 }
 
-const char* BatchedNMSPluginV2::getPluginNamespace() const {
+const char* BatchedNMSPluginV2::getPluginNamespace() const NOEXCEPT {
   return mPluginNamespace;
 }
 
 nvinfer1::DataType BatchedNMSPluginV2::getOutputDataType(
-    int index, const nvinfer1::DataType* inputTypes, int nbInputs) const {
+    int index, const nvinfer1::DataType* inputTypes,
+    int nbInputs) const NOEXCEPT {
   if (index == 0 || index == 4) {
     return nvinfer1::DataType::kINT32;
   }
@@ -209,11 +211,13 @@ nvinfer1::DataType BatchedNMSPluginV2::getOutputDataType(
 void BatchedNMSPluginV2::setClipParam(bool clip) { mClipBoxes = clip; }
 
 bool BatchedNMSPluginV2::isOutputBroadcastAcrossBatch(
-    int outputIndex, const bool* inputIsBroadcasted, int nbInputs) const {
+    int outputIndex, const bool* inputIsBroadcasted,
+    int nbInputs) const NOEXCEPT {
   return false;
 }
 
-bool BatchedNMSPluginV2::canBroadcastInputAcrossBatch(int inputIndex) const {
+bool BatchedNMSPluginV2::canBroadcastInputAcrossBatch(
+    int inputIndex) const NOEXCEPT {
   return false;
 }
 
@@ -241,20 +245,21 @@ BatchedNMSPluginV2Creator::BatchedNMSPluginV2Creator() : params{} {
   mFC.fields = mPluginAttributes.data();
 }
 
-const char* BatchedNMSPluginV2Creator::getPluginName() const {
+const char* BatchedNMSPluginV2Creator::getPluginName() const NOEXCEPT {
   return NMS_PLUGIN_NAME;
 }
 
-const char* BatchedNMSPluginV2Creator::getPluginVersion() const {
+const char* BatchedNMSPluginV2Creator::getPluginVersion() const NOEXCEPT {
   return NMS_PLUGIN_VERSION;
 }
 
-const PluginFieldCollection* BatchedNMSPluginV2Creator::getFieldNames() {
+const PluginFieldCollection* BatchedNMSPluginV2Creator::getFieldNames()
+    NOEXCEPT {
   return &mFC;
 }
 
 IPluginV2Ext* BatchedNMSPluginV2Creator::createPlugin(
-    const char* name, const PluginFieldCollection* fc) {
+    const char* name, const PluginFieldCollection* fc) NOEXCEPT {
   const PluginField* fields = fc->fields;
   mClipBoxes = true;
 
@@ -294,7 +299,7 @@ IPluginV2Ext* BatchedNMSPluginV2Creator::createPlugin(
 }
 
 IPluginV2Ext* BatchedNMSPluginV2Creator::deserializePlugin(
-    const char* name, const void* serialData, size_t serialLength) {
+    const char* name, const void* serialData, size_t serialLength) NOEXCEPT {
   // This object will be deleted when the network is destroyed, which will
   // call NMS::destroy()
   BatchedNMSPluginV2* plugin = new BatchedNMSPluginV2(serialData, serialLength);

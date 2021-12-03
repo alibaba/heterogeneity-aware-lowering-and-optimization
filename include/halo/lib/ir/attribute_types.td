@@ -23,9 +23,13 @@ include "value_type.td"
 /// Common Attribute types
 let is_integer_ = 1 in {
   def Bool : ValueType<1, "bool">;
+  def Int8: ValueType<8, "int8_t">;
+  def UInt8: ValueType<8, "uint8_t">;
   def Integer : ValueType<32, "int">;
+  def Integer64 : ValueType<64, "int64_t">;
   def BoolList : ValueType<1, "std::vector<bool>"> { let is_array_ = 1; }
   def IntegerList : ValueType<32, "std::vector<int>"> { let is_array_ = 1; }
+  def Integer64List : ValueType<64, "std::vector<int64_t>"> { let is_array_ = 1; }
   def IntegerListList : ValueType<64, "std::vector<std::vector<int64_t>>"> { let is_2d_array_ = 1;}
 }
 
@@ -87,6 +91,11 @@ def EnumResizeMode : EnumValueType<"ResizeMode",
                                    "ALIGN_CORNERS",
                                    "ASYMMETRIC"
                                   ]>;
+
+def EnumRNNWeightFormat : EnumValueType<"RNNWeightFormat", ["LDGOI", "LDGIO"]>;
+
+def EnumRNNGateOrder : EnumValueType<"RNNGateOrder", ["IOFC", "IFCO", "IFOC", "ICOF", "URO"]>;
+
 def EnumInterpolation: EnumValueType<"Interpolation",
                                     ["NEAREST", "LINEAR", "CUBIC"]>;
 
@@ -98,3 +107,50 @@ def EnumActivationType : EnumValueType<"ActivationType",
                                      "TANH",
                                      "SIGN_BIT"
                                      ]>;
+
+/// Image
+def EnumColorSpace: EnumValueType<"ColorSpace",
+                                    ["RGB",
+                                     "BGR",
+                                     "YUV",
+                                     "GRAY"]>;
+def EnumCvtColorType: EnumValueType<"CvtColorType",
+                                    ["RGB2Gray",
+                                     "RGB2BGR",
+                                     "BGR2RGB",
+                                     "RGB2YUV"]>;
+def EnumImageElementType: EnumValueType<"ImageElementType",
+                                    ["I8C1",
+                                     "I8C3",
+                                     "I32C1",
+                                     "I32C3",
+                                     "F32C1",
+                                     "F32C3"]>;
+def EnumRotateType: EnumValueType<"RotateType",
+                                  ["ROTATE_90_CLOCKWISE",
+                                   "ROTATE_180_CLOCKWISE",
+                                   "ROTATE_270_CLOCKWISE"]>;
+def EnumFlipType: EnumValueType<"FlipType",
+                                ["FLIP_VERTICAL",
+                                 "FLIP_HORIZONTAL",
+                                 "FLIP_BOTH"]>;
+def EnumNormType: EnumValueType<"NormType",
+                                ["NORM_MIN_MAX",
+                                 "NORM_L1",
+                                 "NORM_L2"]>;
+///Video
+def EnumVideoFormat: EnumValueType<"VideoFormat",
+                                    ["MP4",
+                                     "H264",
+                                     "H265"]>;
+///Pipeline
+def EnumMergeOrder: EnumValueType<"MergeOrder",
+                                    ["ORDERED",
+                                     "UNORDERED"]>;
+
+def EnumDirection
+    : EnumValueType<"Direction", ["FORWARD", "REVERSE", "BIDIRECTIONAL"]>;
+
+def EnumTFIDF : EnumValueType<"TFIDFMode", ["TF", "IDF", "TFIDF"]>;
+
+def EnumReduction: EnumValueType<"ReductionMode", ["None", "SUM", "MEAN"]>;

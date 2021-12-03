@@ -25,30 +25,41 @@ set(SRCS
   call.cc
   cast.cc
   code_formatter.cc
+  compress.cc
   concat.cc
   conv.cc
   custom.cc
   deconv.cc
+  einsum.cc
   expand.cc
   gather.cc
   gemm.cc
   generic_cxx_codegen.cc
   generic_cxx_constant_writer.cc
+  if.cc
+  loss.cc
   lrn.cc
+  lstm.cc
   matmul.cc
   nms.cc
   onehot.cc
   pad.cc
   pooling.cc
+  quantization.cc
   random.cc
   reduction.cc
   relu.cc
   reshape.cc
   resize.cc
   return.cc
+  shrink.cc
   sigmoid.cc
+  hardsigmoid.cc
   slice.cc
   softmax.cc
+  softplus.cc
+  softsign.cc
+  tfidf.cc
   tile.cc
   topk.cc
   transpose.cc

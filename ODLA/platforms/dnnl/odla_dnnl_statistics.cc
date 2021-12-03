@@ -180,7 +180,7 @@ odla_value odla_CumSum(odla_value input, odla_value axis, odla_bool exclusion,
   auto dt = input->mem.get_desc().data_type();
   auto ret_md = getMemoryDesc(shape, dt);
   assert(dt == dnnl::memory::data_type::f32);
-  bool is_double = input->elem_size == 8 && dt == dnnl::memory::data_type::f32;
+  bool is_double = input->elem_type == ODLA_FLOAT64;
   auto ret_mem =
       is_double ? dnnl::memory(ret_md, g_comp->eng,
                                g_comp->CreateBuffer(elem_n * sizeof(double)))
@@ -205,9 +205,7 @@ odla_value odla_CumSum(odla_value input, odla_value axis, odla_bool exclusion,
   add_op(op);
   InterpretIfNeeded();
   odla_value v = CreateValue(ret_mem, input->shape, id);
-  if (input->elem_size == 8) {
-    v->elem_size = 8;
-  }
+  v->elem_type = input->elem_type;
   return v;
 }
 
@@ -281,9 +279,7 @@ static odla_value arg_min_max(bool is_arg_max, odla_value input,
   add_op(op);
   InterpretIfNeeded();
   auto v = CreateValue(dst_mem, output_value_type.shape, value_id);
-  if (output_value_type.element_type == ODLA_INT64) {
-    v->elem_size = 8;
-  }
+  v->elem_type = output_value_type.element_type;
   return v;
 }
 

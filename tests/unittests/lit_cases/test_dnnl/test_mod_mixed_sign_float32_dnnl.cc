@@ -26,5 +26,4 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_mod_mixed_sign_float32 | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_mod_mixed_sign_float32_dnnl.cc.tmp.main.cc.in"

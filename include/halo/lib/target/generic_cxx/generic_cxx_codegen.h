@@ -23,14 +23,18 @@
 #include <memory>
 #include <sstream>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "halo/lib/framework/global_context.h"
 #include "halo/lib/ir/common_cast_instructions.h"
 #include "halo/lib/ir/common_instructions.h"
 #include "halo/lib/ir/common_reduction_instructions.h"
 #include "halo/lib/ir/instruction.h"
+#include "halo/lib/ir/loss_instructions.h"
 #include "halo/lib/ir/nn_activation_instructions.h"
 #include "halo/lib/ir/nn_cnn_instructions.h"
+#include "halo/lib/ir/nn_instructions.h"
+#include "halo/lib/ir/quantization_instructions.h"
 #include "halo/lib/mm/memory_analyzer.h"
 #include "halo/lib/target/codegen.h"
 
@@ -101,6 +105,9 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(CumSumInst*) override;
   virtual void RunOnInstruction(CustomInst*) override;
   virtual void RunOnInstruction(ConcatInst*) override;
+  virtual void RunOnInstruction(ConvertFromStringInst*) override;
+  virtual void RunOnInstruction(ConvertToStringInst*) override;
+  virtual void RunOnInstruction(DetInst*) override;
   virtual void RunOnInstruction(DivInst*) override;
   virtual void RunOnInstruction(ErfInst*) override;
   virtual void RunOnInstruction(ExpInst*) override;
@@ -115,31 +122,43 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(LeakyReluInst*) override;
   virtual void RunOnInstruction(SeluInst*) override;
   virtual void RunOnInstruction(EluInst*) override;
+  virtual void RunOnInstruction(CeluInst*) override;
   virtual void RunOnInstruction(ThresholdedReluInst*) override;
   virtual void RunOnInstruction(SqrtInst*) override;
   virtual void RunOnInstruction(RsqrtInst*) override;
   virtual void RunOnInstruction(BatchNormInst*) override;
   virtual void RunOnInstruction(InstanceNormInst*) override;
   virtual void RunOnInstruction(BatchMatMulInst*) override;
+  virtual void RunOnInstruction(CompressInst*) override;
   virtual void RunOnInstruction(Conv2DInst*) override;
   virtual void RunOnInstruction(Conv2DTransposeInst*) override;
+  virtual void RunOnInstruction(DequantizeInst*) override;
   virtual void RunOnInstruction(GatherInst*) override;
+  virtual void RunOnInstruction(GatherElementsInst*) override;
   virtual void RunOnInstruction(GemmInst*) override;
+  virtual void RunOnInstruction(GRUInst*) override;
+  virtual void RunOnInstruction(IfInst*) override;
   virtual void RunOnInstruction(LogInst*) override;
   virtual void RunOnInstruction(LogSoftmaxInst*) override;
   virtual void RunOnInstruction(LRNInst*) override;
+  virtual void RunOnInstruction(LSTMInst*) override;
   virtual void RunOnInstruction(MatMulInst*) override;
   virtual void RunOnInstruction(MaximumInst*) override;
   virtual void RunOnInstruction(MinimumInst*) override;
+  virtual void RunOnInstruction(ModInst*) override;
+  virtual void RunOnInstruction(NegativeLogLikelihoodLossInst*) override;
   virtual void RunOnInstruction(NonMaxSuppressionInst*) override;
   virtual void RunOnInstruction(NegInst*) override;
   virtual void RunOnInstruction(NotInst*) override;
   virtual void RunOnInstruction(OneHotInst*) override;
+  virtual void RunOnInstruction(OrInst*) override;
+  virtual void RunOnInstruction(XorInst*) override;
   virtual void RunOnInstruction(PadInst*) override;
   virtual void RunOnInstruction(PoolingMaxInst*) override;
   virtual void RunOnInstruction(PoolingAvgInst*) override;
   virtual void RunOnInstruction(PowInst*) override;
   virtual void RunOnInstruction(PReluInst*) override;
+  virtual void RunOnInstruction(QuantizeInst*) override;
   virtual void RunOnInstruction(RandomUniformInst*) override;
   virtual void RunOnInstruction(ReduceL1Inst*) override;
   virtual void RunOnInstruction(ReduceL2Inst*) override;
@@ -156,20 +175,33 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(ReshapeInst*) override;
   virtual void RunOnInstruction(ResizeInst*) override;
   virtual void RunOnInstruction(ReturnInst*) override;
+  virtual void RunOnInstruction(RNNInst*) override;
+  virtual void RunOnInstruction(SelectInst*) override;
+  virtual void RunOnInstruction(ShiftInst*) override;
+  virtual void RunOnInstruction(ShrinkInst*) override;
   virtual void RunOnInstruction(SItoFPInst*) override;
   virtual void RunOnInstruction(SliceInst*) override;
   virtual void RunOnInstruction(SoftmaxInst*) override;
+  virtual void RunOnInstruction(SoftplusInst*) override;
+  virtual void RunOnInstruction(SoftsignInst*) override;
   virtual void RunOnInstruction(SigmoidInst*) override;
+  virtual void RunOnInstruction(HardSigmoidInst*) override;
   virtual void RunOnInstruction(SinInst*) override;
   virtual void RunOnInstruction(SinhInst*) override;
   virtual void RunOnInstruction(CosInst*) override;
   virtual void RunOnInstruction(CoshInst*) override;
+  virtual void RunOnInstruction(TanInst*) override;
   virtual void RunOnInstruction(TanhInst*) override;
   virtual void RunOnInstruction(TopKInst*) override;
   virtual void RunOnInstruction(TransposeInst*) override;
+  virtual void RunOnInstruction(TFIDFVectorizeInst*) override;
   virtual void RunOnInstruction(TileInst*) override;
   virtual void RunOnInstruction(ZExtInst*) override;
   virtual void RunOnInstruction(HgEngineInst*) override;
+  virtual void RunOnInstruction(IsNaNInst*) override;
+  virtual void RunOnInstruction(IsInfInst*) override;
+  virtual void RunOnInstruction(SignInst*) override;
+  virtual void RunOnInstruction(EinsumInst*) override;
 
   virtual void RunOnBinaryInstruction(Instruction*);
   virtual void RunOnCastInstruction(Instruction*);
@@ -178,6 +210,7 @@ class GenericCXXCodeGen : public CodeGen {
                                          bool keep_dims,
                                          const char* odla_func_name);
   virtual void RunOnUnaryInstruction(Instruction*);
+  virtual void RunOnBranchBody(const IfInst& inst, bool is_taken);
 
   virtual CXXValue AllocateBuffer(const Def& def, bool on_stack);
   std::string GetFunctionDecl(const Function& func, const Instruction& ret_inst,
@@ -215,6 +248,8 @@ class GenericCXXCodeGen : public CodeGen {
     EmitODLAArgs(args...);
   }
 
+  void EmitODLAArgs() {}
+
   inline void EmitODLAVauleId(const CXXValue& lhs, std::ostream& os) {
     if (opts_.emit_value_id_as_int) {
       os << lhs.id;
@@ -226,7 +261,9 @@ class GenericCXXCodeGen : public CodeGen {
   template <int indent = 2, bool is_op = true, typename... Targs>
   void EmitODLACall(const CXXValue& lhs, const char* func_name, Targs... args) {
     os_ << std::string(indent, ' ');
-    os_ << EmitLValue(lhs.name) << " = ";
+    if (!lhs.name.empty()) {
+      os_ << EmitLValue(lhs.name) << " = ";
+    }
     os_ << func_name << "(";
     EmitODLAArgs(args...);
     if (is_op) {
@@ -243,10 +280,16 @@ class GenericCXXCodeGen : public CodeGen {
     auto ret_array = lhs[0].name + "_array";
     os_ << EmitLValues(ret_array) << " = ";
     os_ << func_name << "(";
-    EmitODLAArgs(args...);
+    constexpr std::size_t n = sizeof...(args);
+    if (n > 0) {
+      EmitODLAArgs(args...);
+    }
     if (is_op) {
       unsigned int id = 0;
-      os_ << ", {.size = " << lhs.size() << ", .value_ids = {";
+      if (n > 0) {
+        os_ << ", ";
+      }
+      os_ << "{.size = " << lhs.size() << ", .value_ids = {";
       for (auto& one : lhs) {
         os_ << "(const odla_value_id)";
         EmitODLAVauleId(one, os_);
@@ -308,6 +351,7 @@ class GenericCXXCodeGen : public CodeGen {
   std::ostream& dynamic_check_os_;
   std::unordered_map<Def, CXXValue> ir_mapping_;
   std::unique_ptr<MemoryAnalyzer> memory_analyzer_;
+  std::unordered_set<const BasicBlock*> visited_;
   CXXCodeGenOpts opts_;
 };
 

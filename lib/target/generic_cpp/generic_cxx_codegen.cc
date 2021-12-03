@@ -79,6 +79,7 @@ GenericCXXCodeGen::GenericCXXCodeGen(std::ostringstream& os,
       opts_(opts) {
   SetAPI(opts_.api);
   CXXValue::Reset();
+  ir_mapping_[Def::GetUndefined()] = CXXValue("nullptr", CXXType("void"));
 }
 
 GenericCXXCodeGen::~GenericCXXCodeGen() = default;
@@ -173,6 +174,9 @@ CXXType GenericCXXCodeGen::SNTypeToCXXType(DataType dt) {
     case DataType::FLOAT16: {
       return (CXXType("odla_float16"));
     }
+    case DataType::BFLOAT16: {
+      return (CXXType("odla_bfloat16"));
+    }
     case DataType::FLOAT32: {
       return (CXXType("float"));
     }
@@ -188,8 +192,14 @@ CXXType GenericCXXCodeGen::SNTypeToCXXType(DataType dt) {
     case DataType::INT64: {
       return (CXXType("odla_int64"));
     }
+    case DataType::UINT64: {
+      return (CXXType("odla_uint64"));
+    }
     case DataType::BOOL: {
       return (CXXType("bool"));
+    }
+    case DataType::STRING: {
+      return (CXXType("odla_string"));
     }
     default: {
       HLCHECK(0 && "Unhandled Type");
@@ -328,8 +338,17 @@ std::string GenericCXXCodeGen::GetODLAType(DataType type) const noexcept {
     case DataType::UINT8: {
       return "ODLA_UINT8";
     }
+    case DataType::INT16: {
+      return "ODLA_INT16";
+    }
+    case DataType::UINT16: {
+      return "ODLA_UINT16";
+    }
     case DataType::FLOAT16: {
       return "ODLA_FLOAT16";
+    }
+    case DataType::BFLOAT16: {
+      return "ODLA_BFLOAT16";
     }
     case DataType::FLOAT32: {
       return "ODLA_FLOAT32";
@@ -346,8 +365,14 @@ std::string GenericCXXCodeGen::GetODLAType(DataType type) const noexcept {
     case DataType::INT64: {
       return "ODLA_INT64";
     }
+    case DataType::UINT64: {
+      return "ODLA_UINT64";
+    }
     case DataType::BOOL: {
       return "ODLA_BOOL";
+    }
+    case DataType::STRING: {
+      return "ODLA_STRING";
     }
     default: {
       return "INVALID";
@@ -391,6 +416,14 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
       case DataType::FLOAT64:
         data_type_str = "double";
         break;
+      case DataType::INT16:
+        data_type_str = "int16_t";
+        break;
+      case DataType::UINT16:
+      case DataType::FLOAT16:
+      case DataType::BFLOAT16:
+        data_type_str = "uint16_t";
+        break;
       case DataType::INT32:
         data_type_str = "int32_t";
         break;
@@ -400,8 +433,20 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
       case DataType::INT64:
         data_type_str = "int64_t";
         break;
+      case DataType::UINT64:
+        data_type_str = "uint64_t";
+        break;
       case DataType::BOOL:
         data_type_str = "bool";
+        break;
+      case DataType::INT8:
+        data_type_str = "signed char";
+        break;
+      case DataType::UINT8:
+        data_type_str = "unsigned char";
+        break;
+      case DataType::STRING:
+        data_type_str = "const char*";
         break;
       default:
         HLCHECK(0);
@@ -430,7 +475,7 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
       const auto elem_nums = type.GetTotalNumOfElements();
       data_type.clear();
       data_type = convert_data_type(type.GetDataType());
-      oss << "  extern const " << data_type;
+      oss << "  extern " << data_type << " const ";
       oss << "  input_" << i << "[" << elem_nums << "];\n";
       oss << "  inputs.push_back(input_" << i << ");\n";
       i++;
@@ -444,12 +489,11 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
       const auto elem_nums = type.GetTotalNumOfElements();
       data_type.clear();
       data_type = convert_data_type(type.GetDataType());
-      oss << "  extern const " << data_type;
-      oss << "  output_" << i << "[" << elem_nums << "];\n";
       oss << "  output_refs.push_back(output_" << i << ");\n";
       oss << "  " << data_type << " out_" << i << "[" << elem_nums
           << "] = {};\n";
-      oss << "  output_elems.push_back(" << elem_nums << ");\n";
+      oss << "  output_elems.push_back(sizeof(output_" << i
+          << ") / sizeof(output_" << i << "[0]));\n";
       oss << "  outputs.push_back(out_" << i++ << ");\n";
     }
 
@@ -561,6 +605,11 @@ static void EmitComputationItems(std::ostream* os, const CXXCodeGenOpts& opts) {
            "(odla_item_value) &max_batch_size);\n";
     *os << "odla_SetComputationItem(comp, ODLA_OPT_BATCH_SIZE, "
            "(odla_item_value) &opt_batch_size);\n";
+  }
+  if (opts.fp16_mode) {
+    *os << "bool fp16_mode = true;\n";
+    *os << "odla_SetComputationItem(comp, ODLA_FP16_MODE, "
+           "(odla_item_value) &fp16_mode);\n";
   }
   if (opts.bf16_mode != BF16Mode::Disable) {
     *os << "odla_bf16_mode mode = " << GetBF16Mode(opts.bf16_mode) << ";\n";
@@ -827,10 +876,10 @@ void GenericCXXCodeGen::RunOnConstant(Constant& constant, bool decl) {
   if (decl) {
     CXXValue value(constant.GetName(), TensorTypeToCXXType(type, true));
     if (constant.IsScalarOne()) {
-      os_ << "extern const " << value.type.name << " " << value.name
+      os_ << "extern " << value.type.name << " const " << value.name
           << "[1];\n";
     } else {
-      os_ << "extern const " << value.type.name << " " << value.name << "["
+      os_ << "extern " << value.type.name << " const " << value.name << "["
           << Join(type.GetDimSizes(), '*') << "];\n";
     }
     ir_mapping_[constant] = value;
@@ -871,6 +920,9 @@ void GenericCXXCodeGen::PostRunOnInstruction(Instruction* inst) {
 }
 
 void GenericCXXCodeGen::RunOnBasicBlock(BasicBlock& bb) {
+  if (visited_.count(&bb) > 0) {
+    return;
+  }
   for (auto& inst : bb) {
     Instruction* i = inst.get();
     PreRunOnInstruction(i);

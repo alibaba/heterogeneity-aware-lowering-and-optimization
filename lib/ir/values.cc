@@ -34,10 +34,11 @@ bool Value::operator!=(const Value& other) const noexcept {
 void Value::Print(std::ostream& os) const {
   os << "<";
   if (IsNull()) {
-    HLCHECK(0 && "Null Operand");
-  } else {
-    os << GetOwner()->GetName();
+    os << "UNDEF>";
+    return;
   }
+  os << GetOwner()->GetName();
+
   os << ", " << GetIdx() << ">:";
   GetOwner()->GetResultsTypes()[GetIdx()].Print(os);
 }
@@ -78,6 +79,10 @@ UseList& Def::GetUses() const {
 
 /// Return the type of the def object.
 const Type& Def::GetType() const {
+  if (IsNull()) {
+    const static Type invalid_type;
+    return invalid_type;
+  }
   return GetOwner()->GetResultsTypes()[GetIdx()];
 }
 
@@ -240,6 +245,9 @@ void IRObject::ReplaceOperandWith(size_t idx, const Def& new_def) {
 void IRObject::ReplaceAllUsesWith(size_t result_idx, const Def& new_def) {
   // Copy the use list because the list will be updated by ReplaceOperandWith()
   // function.
+  if (result_idx >= results_uses_.size()) {
+    return;
+  }
   auto uses = GetIthResultUses(result_idx).GetUses();
   for (Use& use : uses) {
     if (use != new_def) {

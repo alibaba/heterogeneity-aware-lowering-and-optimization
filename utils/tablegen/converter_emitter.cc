@@ -247,11 +247,18 @@ void Converter::EmitHaloInstDef(llvm::Record* record, llvm::raw_ostream& os) {
     os << "  " << framework_name_ << "Attrs attrs(node_def);\n";
   }
   os << "  std::vector<Def> operands = GetInputOperands(node_def);\n";
+  if (framework_name_ != "TFLITE") {
+    os << "  auto name = node_def.name();\n";
+  }
+  if (framework_name_ == "ONNX") {
+    os << "  name = (name.empty() && node_def.output_size() > 0) ? "
+          "node_def.output(0) : name;\n";
+  }
   os << "  auto inst = ir_builder->Create" << sn_inst_name;
   if (framework_name_ == "TFLITE") {
     os << "(\"\", operands);\n"; // Instruction constructor auto set inst name
   } else {
-    os << "(node_def.name(), operands);\n";
+    os << "(name, operands);\n";
   }
 
   bool need_new_attr = true;
@@ -261,6 +268,10 @@ void Converter::EmitHaloInstDef(llvm::Record* record, llvm::raw_ostream& os) {
   llvm::StringRef param_name = record->getValueAsString(ParamName);
   ProcessExtensionAttributesImpl(extension_attrs, framework_name_,
                                  param_name.str(), os, need_new_attr);
+
+  if (auto code = record->getValueAsString(CustomCode); !code.empty()) {
+    os << code;
+  }
 
   os << "  InsertIDToInstMap(node_def, inst);\n";
   os << "  return Status::SUCCESS;\n}\n\n";
@@ -281,16 +292,27 @@ void Converter::EmitExtensionInstDef(llvm::Record* record,
       record->getValueAsListOfDefs("extension_attr_");
 
   os << "  std::vector<Def> operands = GetInputOperands(node_def);\n";
+  if (framework_name_ != "TFLITE") {
+    os << "  auto name = node_def.name();\n";
+  }
+  if (framework_name_ == "ONNX") {
+    os << "  name = (name.empty() && node_def.output_size() > 0) ? "
+          "node_def.output(0) : name;\n";
+  }
   os << "  auto inst = ir_builder->Create" << framework_name_ << sn_inst_name;
   if (framework_name_ == "TFLITE") {
     os << "(\"\""; // Instruction constructor auto set inst name
   } else {
-    os << "(node_def.name()";
+    os << "(name";
   }
   os << ", operands, " << num_outputs << ", \"" << extern_op_name << "\");\n";
 
   ProcessExtensionAttributes(extension_attrs, framework_name_, param_name.str(),
                              os);
+
+  if (auto code = record->getValueAsString(CustomCode); !code.empty()) {
+    os << code;
+  }
 
   os << "  InsertIDToInstMap(node_def, inst);\n";
   os << "  return Status::SUCCESS;\n}\n\n";

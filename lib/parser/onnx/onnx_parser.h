@@ -93,7 +93,8 @@ class ONNXParser : public Parser {
   ONNXParser(const ONNXParser&) = delete;
   ONNXParser& operator=(const ONNXParser&) = delete;
 
-  static halo::DataType ProcessDataType(int data_type);
+  static halo::DataType ProcessDataType(int data_type,
+                                        bool allow_invalid = false);
   static void WriteCSVReport(const onnx::NodeProto& cur_node, std::ostream& os);
 
  private:
@@ -109,6 +110,11 @@ class ONNXParser : public Parser {
                           const onnx::NodeProto& cur_node);
   Status ConvertDummyNode(IRBuilder* ir_builder,
                           const onnx::NodeProto& cur_node);
+  BasicBlock* ConvertSubgraph(const onnx::NodeProto& cur_node,
+                              const std::string& subgraph_name,
+                              const std::string& cur_node_name,
+                              int output_start_idx);
+  Status ConvertIfNode(IRBuilder* ir_builder, const onnx::NodeProto& cur_node);
   Status ConvertLoopNode(IRBuilder* ir_builder,
                          const onnx::NodeProto& cur_node);
   Status ConvertPlaceholderNode(ArgumentBuilder* arg_builder,

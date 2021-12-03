@@ -26,5 +26,5 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_nllloss_NCd1d2_no_weight_reduction_mean_ii | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_nllloss_NCd1d2_no_weight_reduction_mean_ii_dnnl.cc.tmp.main.cc.in"

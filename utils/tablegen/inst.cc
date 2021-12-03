@@ -32,6 +32,7 @@ Type::Type(const llvm::Record* record) {
   Is2DArray = record->getValueAsBit("is_2d_array_");
   IsUnsigned = record->getValueAsBit("is_unsigned_");
   IsQuantized = record->getValueAsBit("is_quantized_");
+  AltName = record->getValueAsString("alt_name");
 }
 
 void Type::EmitDoc(llvm::raw_ostream& o) const {
@@ -285,9 +286,13 @@ void Inst::EmitConstructorCommon() {
     os_.indent(4);
     os_ << "InitAttributes();\n";
   }
-  if (opcode_ == "OpCode::CALL") {
+  if (opcode_ == "OpCode::CALL" || opcode_ == "OpCode::IF" ||
+      opcode_ == "OpCode::RETURN") {
     os_.indent(4);
     os_ << "SetVariadicReturns(true);\n";
+    if (opcode_ == "OpCode::RETURN") {
+      os_ << "SetNumOfResults(GetNumOfOperands());\n";
+    }
   }
 }
 
@@ -406,6 +411,7 @@ void Inst::Run() {
   EmitClone();
   EmitAccessAttributes();
   EmitVerify();
+  EmitOperandOptional();
   EmitClassof();
 
   os_ << "\n";
@@ -459,6 +465,17 @@ void Inst::EmitDoc() {
       }
     }
   }
+}
+
+void Inst::EmitOperandOptional() {
+  os_ << "  bool IsOperandOptional(size_t idx) const noexcept override {\n";
+  for (int i = 0; i < args_.size(); ++i) {
+    if (args_[i].IsOptional()) {
+      os_ << "    if (idx == " << i << ") { return true;}\n";
+    }
+  }
+  os_ << "    return false;\n";
+  os_ << "  }";
 }
 
 void Inst::EmitVerify() {

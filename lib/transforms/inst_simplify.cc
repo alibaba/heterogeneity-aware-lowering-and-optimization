@@ -44,53 +44,56 @@ static Constant* RunConstantFoldingOnMathBinary(const std::string& name,
                                                 const Type& ret_type, Def op0,
                                                 Def op1, OpCode opcode,
                                                 KindPredicate pred) {
-  if (!IsA<Constant>(op0) || !IsA<Constant>(op1)) {
-    return nullptr;
-  }
-  if ((op0.GetType().GetTotalNumOfElements() !=
-           op1.GetType().GetTotalNumOfElements() &&
-       op1.GetType().GetTotalNumOfElements() != 1)) {
-    return nullptr;
-  }
-  if (opcode == OpCode::CMP) {
-    if (pred == KindPredicate::GE) {
-      pred = KindPredicate::LT;
-      std::swap(op0, op1);
-    } else if (pred == KindPredicate::GT) {
-      pred = KindPredicate::LE;
-      std::swap(op0, op1);
-    }
-  }
   Constant* c_lhs = DynCast<Constant>(op0);
   Constant* c_rhs = DynCast<Constant>(op1);
-  size_t num_elements = op0.GetType().GetTotalNumOfElements();
+  if (c_lhs == nullptr || c_rhs == nullptr) {
+    return nullptr;
+  }
+
+  if (opcode == OpCode::CMP) {
+    if (pred == KindPredicate::GE || pred == KindPredicate::GT) {
+      pred =
+          (pred == KindPredicate::GE) ? KindPredicate::LT : KindPredicate::LE;
+      std::swap(op0, op1);
+      std::swap(c_lhs, c_rhs);
+    }
+  }
+
+  ConstantAccessor<T> lhs_accessor(*c_lhs, ret_type);
+  ConstantAccessor<T> rhs_accessor(*c_rhs, ret_type);
+  auto lhs_it = lhs_accessor.begin();
+  auto rhs_it = rhs_accessor.begin();
+
+  size_t num_elements = ret_type.GetTotalNumOfElements();
   Constant* c_ret = nullptr;
   ConstantBuilder cb(DynCast<Function>(c_lhs->GetParent()));
   std::vector<T> ret;
   ret.reserve(num_elements);
-  bool rhs_is_scalar = op1.GetType().GetTotalNumOfElements() == 1;
-
   switch (opcode) {
     case OpCode::ADD: {
       for (size_t i = 0; i < num_elements; ++i) {
-        ret.push_back(c_lhs->GetData<T>(i) +
-                      c_rhs->GetData<T>(rhs_is_scalar ? 0 : i));
+        ret.push_back(*lhs_it++ + *rhs_it++);
+      }
+      c_ret = cb.CreateConstant(name, ret_type, ret.data());
+      break;
+    }
+    case OpCode::SUB: {
+      for (size_t i = 0; i < num_elements; ++i) {
+        ret.push_back(*lhs_it++ - *rhs_it++);
       }
       c_ret = cb.CreateConstant(name, ret_type, ret.data());
       break;
     }
     case OpCode::MUL: {
       for (size_t i = 0; i < num_elements; ++i) {
-        ret.push_back(c_lhs->GetData<T>(i) *
-                      c_rhs->GetData<T>(rhs_is_scalar ? 0 : i));
+        ret.push_back(*lhs_it++ * *rhs_it++);
       }
       c_ret = cb.CreateConstant(name, ret_type, ret.data());
       break;
     }
     case OpCode::DIV: {
       for (size_t i = 0; i < num_elements; ++i) {
-        ret.push_back(c_lhs->GetData<T>(i) /
-                      c_rhs->GetData<T>(rhs_is_scalar ? 0 : i));
+        ret.push_back(*lhs_it++ / *rhs_it++);
       }
       c_ret = cb.CreateConstant(name, ret_type, ret.data());
       break;
@@ -100,8 +103,18 @@ static Constant* RunConstantFoldingOnMathBinary(const std::string& name,
       switch (pred) {
         case KindPredicate::LT: {
           for (size_t i = 0; i < num_elements; ++i) {
-            if (c_lhs->GetData<T>(i) <
-                c_rhs->GetData<T>(rhs_is_scalar ? 0 : i)) {
+            if (*lhs_it++ < *rhs_it++) {
+              ret.push_back(1);
+            } else {
+              ret.push_back(0);
+            }
+          }
+          c_ret = cb.CreateConstant(name, ret_type, ret.data());
+          break;
+        }
+        case KindPredicate::EQ: {
+          for (size_t i = 0; i < num_elements; ++i) {
+            if (*lhs_it++ == *rhs_it++) {
               ret.push_back(1);
             } else {
               ret.push_back(0);
@@ -212,23 +225,28 @@ static bool IsSameType(const Type& lhs, const Type& rhs) {
   return true;
 }
 
-static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
-                                                      bool disable_broadcasting,
-                                                      bool fuse_conv_bias) {
+static std::pair<Def, Def> RunOnMathBinaryInstruction(
+    Instruction* binary_inst, bool disable_broadcasting, bool fuse_conv_bias,
+    bool fuse_matmul_mul, bool fuse_fully_connected) {
   Def orig_def{binary_inst, 0};
   auto op0 = binary_inst->GetOperand(0);
   auto op1 = binary_inst->GetOperand(1);
   auto opc = binary_inst->GetOpCode();
   bool has_swapped = false;
-  if (IsA<Constant>(op0)) {
+  bool commutative = opc == OpCode::ADD || opc == OpCode::MUL;
+
+  Constant* op0_c = DynCast<Constant>(op0);
+  Constant* op1_c = DynCast<Constant>(op1);
+
+  if (op0_c != nullptr && commutative) {
     std::swap(op0, op1);
+    std::swap(op0_c, op1_c);
     has_swapped = true;
   }
 
   // MUL(x, 1) ==> x.
-  if (opc == OpCode::MUL && IsA<Constant>(op1)) {
-    const Constant* c = DynCast<Constant>(op1);
-    if (c->HasSameValueOf(1)) {
+  if (opc == OpCode::MUL && op1_c != nullptr) {
+    if (op1_c->HasSameValueOf(1)) {
       const Type& type0 = op0.GetType();
       const Type& type1 = op1.GetType();
       if (IsSameType(type0, type1)) {
@@ -237,28 +255,133 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
     }
   }
 
-  // ADD/SUB(x, 0) ==> x.
-  if ((opc == OpCode::ADD || opc == OpCode::SUB) && IsA<Constant>(op1)) {
-    const Constant* c = DynCast<Constant>(op1);
-    if (c->HasSameValueOf(0)) {
-      return {orig_def, op0};
+  IRBuilder builder(binary_inst->GetParent());
+  builder.SetInsertAfter(binary_inst);
+  // ADD/SUB(x, 0) ==> x
+  if ((opc == OpCode::ADD || opc == OpCode::SUB) && op1_c != nullptr &&
+      op1_c->HasSameValueOf(0)) {
+    return {orig_def, op0};
+  }
+  // SUB(0, x) ==> -x
+  if (opc == OpCode::SUB && op0_c != nullptr && op0_c->HasSameValueOf(0)) {
+    auto neg = builder.CreateNeg(binary_inst->GetName(), op1);
+    return {orig_def, *neg};
+  }
+
+  ConstantBuilder cb(binary_inst->GetParent()->GetParent());
+  // SUB(x, x) ==> 0
+  if (opc == OpCode::SUB && op0 == op1) {
+    const auto& ty = binary_inst->GetResultType();
+    DefaultDataLayout dl;
+    std::vector<char> data(dl.DataLayout::Bytes(ty), 0);
+    auto zero = cb.CreateConstant(binary_inst->GetName(), ty, data.data());
+    return {orig_def, *zero};
+  }
+
+  // fuse to fully_connected
+  if (opc == OpCode::ADD && fuse_fully_connected) {
+    if (IsA<MatMulInst>(op1)) {
+      std::swap(op0, op1);
+      std::swap(op0_c, op1_c);
+      has_swapped = !has_swapped;
+    }
+    if (IsA<MatMulInst>(op0) && op1_c != nullptr) {
+      int16_t kernel_dim =
+          DynCast<MatMulInst>(op0)->GetOperand(1).GetType().GetNumOfDims();
+      if ((!DynCast<MatMulInst>(op0)->GetTransposeA()) &&
+          (!DynCast<MatMulInst>(op0)->GetTransposeB()) && (kernel_dim == 2)) {
+        auto op_matmul0 = DynCast<MatMulInst>(op0)->GetOperand(0);
+        auto op_matmul1 = DynCast<MatMulInst>(op0)->GetOperand(1);
+        if (IsA<Constant>(op_matmul0)) {
+          std::swap(op_matmul0, op_matmul1);
+        }
+
+        Instruction* new_inst = nullptr;
+
+        if (IsA<Constant>(op_matmul1)) {
+          TransposeInst* op_matmul1_t = builder.CreateTranspose(
+              DynCast<Constant>(op_matmul1)->GetName() + "_t", {op_matmul1});
+
+          op_matmul1_t->SetPermutation({1, 0});
+          new_inst = builder.CreateGemm(binary_inst->GetName() + "_fused",
+                                        op_matmul0, *op_matmul1_t, op1);
+          if (new_inst != nullptr) {
+            GemmInst* new_gemm = DynCast<GemmInst>(new_inst);
+            new_gemm->SetTransposeB(true);
+            return {orig_def, *new_gemm};
+          }
+        }
+      }
     }
   }
 
-  IRBuilder builder(binary_inst->GetParent());
-  builder.SetInsertAfter(binary_inst);
-  ConstantBuilder cb(binary_inst->GetParent()->GetParent());
+  if (fuse_matmul_mul && opc == OpCode::MUL) {
+    if (op0_c != nullptr) {
+      std::swap(op0, op1);
+      std::swap(op0_c, op1_c);
+      has_swapped = !has_swapped;
+    }
+    if (IsA<MatMulInst>(op0) && op1_c != nullptr) {
+      auto op_matmul0 = DynCast<MatMulInst>(op0)->GetOperand(0); // input
+      auto op_matmul1 = DynCast<MatMulInst>(op0)->GetOperand(1); // weight
+      if (IsA<Constant>(op_matmul1) &&
+          DynCast<Constant>(op_matmul1)->GetResultType().GetNumOfDims() == 2 &&
+          DynCast<Constant>(op_matmul1)->GetResultType().GetDataType() ==
+              halo::DataType::FLOAT32) {
+        MatMulInst* matmul = DynCast<MatMulInst>(op0);
+
+        ConstantBuilder cb(matmul->GetParent()->GetParent());
+        IRBuilder builder(matmul->GetParent());
+        builder.SetInsertAfter(matmul);
+
+        const auto kernel = DynCast<Constant>(op_matmul1);
+        const auto& kernel_type = kernel->GetResultType();
+        int32_t h = kernel_type.GetNumOfElementsInDim(0);
+        int32_t w = kernel_type.GetNumOfElementsInDim(1);
+        auto weight_2 = op1_c;
+        std::vector<float> mul_buf(h * w);
+
+        for (int32_t i = 0; i < w; i++) {
+          for (int32_t j = 0; j < h; j++) {
+            auto a = kernel->GetData<float>(j + i * w);
+            auto b = weight_2->GetData<float>(i);
+            auto c = a * b;
+            mul_buf[i * w + j] = c;
+          }
+        }
+
+        MatMulInst* new_mm = nullptr;
+        auto new_kernel =
+            cb.CreateConstant(kernel->GetName(), kernel_type, mul_buf.data());
+
+        if (!DynCast<MatMulInst>(op0)->GetTransposeB()) {
+          TransposeInst* new_kernel_t = builder.CreateTranspose(
+              DynCast<Constant>(new_kernel)->GetName() + "_t", {*new_kernel});
+          new_kernel_t->SetPermutation({1, 0});
+
+          auto new_inst = builder.Clone(*matmul, {op_matmul0, *new_kernel_t});
+          new_mm = DynCast<MatMulInst>(new_inst);
+          new_mm->SetTransposeB(true);
+        } else {
+          auto new_inst = builder.Clone(*matmul, {op_matmul0, *new_kernel});
+          new_mm = DynCast<MatMulInst>(new_inst);
+        }
+
+        return {orig_def, *new_mm};
+      }
+    }
+  }
 
   // Fuse mul/add into conv.
   if ((opc == OpCode::MUL || (fuse_conv_bias && opc == OpCode::ADD)) &&
-      IsA<Constant>(op1)) {
-    const Constant* c = DynCast<Constant>(op1);
+      op1_c != nullptr) {
     // check if mul can be fused with conv
     Instruction* new_inst = nullptr;
     if (IsA<Conv2DInst>(op0)) {
-      new_inst = FuseToConvDeConv(DynCast<Conv2DInst>(op0), opc, c);
+      new_inst = FuseToConvDeConv(DynCast<Conv2DInst>(op0), opc, op1_c);
     } else if (IsA<Conv2DTransposeInst>(op0)) {
-      new_inst = FuseToConvDeConv(DynCast<Conv2DTransposeInst>(op0), opc, c);
+      new_inst =
+          FuseToConvDeConv(DynCast<Conv2DTransposeInst>(op0), opc, op1_c);
     }
     if (new_inst != nullptr) {
       return {orig_def, *new_inst};
@@ -280,6 +403,8 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
   if (ret_type.IsValid()) {
     if (has_swapped) {
       std::swap(op0, op1);
+      std::swap(op0_c, op1_c);
+      has_swapped = !has_swapped;
     }
     Constant* c_ret = nullptr;
     switch (op0_type.GetDataType()) {
@@ -344,21 +469,22 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
     Instruction* op0_inst = DynCast<Instruction>(op0);
     if (!IsA<Argument>(op0_inst->GetOperand(0))) {
       // Add(transpose(op0), op1) ==> transpose(add(op0, transpose'(op1))
+      // if rank_1 < rank_0, we first unsqueeze(reshape) op1 to the same rank as
+      // op0. Then we do the reverse transpose on op1.
+      // For example: given add(To_NCHW(op0<n, h, w, c>), op1<c, 1, 1,>), we do
+      //  To_NCHW(add op0<n, h, w, c>, To_NHWC(op1<1, c, 1, 1>))
       TransposeInst* orig_transpose = DynCast<TransposeInst>(op0_inst);
       IRBuilder builder(binary_inst->GetParent());
       builder.SetInsertAfter(binary_inst);
       const auto& orig_perm = orig_transpose->GetPermutation();
       Instruction* new_op1 = nullptr;
-      if (op1_type.GetSqueezedNumOfDims() == 1) {
-        auto dims = std::vector<int64_t>(op0_type.GetNumOfDims(), 1);
-        int64_t op1_vector_axis = op0_type.GetNumOfDims() - 1;
-        for (auto n = op1_type.GetTotalNumOfElements(); op1_vector_axis >= 0;
-             --op1_vector_axis) {
-          if (op0_type.GetNumOfElementsInDim(op1_vector_axis) == n) {
-            break;
-          }
+      if (auto rank_0 = op0_type.GetNumOfDims(),
+          rank_1 = op1_type.GetNumOfDims();
+          rank_1 < rank_0) {
+        auto dims = op1_type.GetDimSizes();
+        for (unsigned i = 0; i < rank_0 - rank_1; ++i) {
+          dims.insert(dims.begin(), 1);
         }
-        dims[orig_perm[op1_vector_axis]] = op1_type.GetTotalNumOfElements();
         ConstantBuilder cb(binary_inst->GetParent()->GetParent());
         Constant* c_shape = cb.CreateConstant(
             op1.GetDef()->GetName() + "_shape",
@@ -366,19 +492,18 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(Instruction* binary_inst,
             dims.data());
         auto new_addend = builder.CreateReshape(op1.GetDef()->GetName() + "_r",
                                                 {op1, *c_shape});
-        new_op1 = new_addend;
         new_addend->GetResultsTypes()[0] =
             Type{op1.GetType().GetDataType(), dims};
-      } else {
-        auto reverse_perm = orig_perm;
-        for (int i = 0, e = orig_perm.size(); i < e; ++i) {
-          reverse_perm[orig_perm[i]] = i;
-        }
-        auto new_addend =
-            builder.CreateTranspose(op1.GetDef()->GetName() + "_t", {op1});
-        new_addend->SetPermutation(reverse_perm);
-        new_op1 = new_addend;
+        op1 = *new_addend;
       }
+      auto reverse_perm = orig_perm;
+      for (int i = 0, e = orig_perm.size(); i < e; ++i) {
+        reverse_perm[orig_perm[i]] = i;
+      }
+      auto new_addend =
+          builder.CreateTranspose(op1.GetDef()->GetName() + "_t", {op1});
+      new_addend->SetPermutation(reverse_perm);
+      new_op1 = new_addend;
 
       auto new_binary =
           builder.CreateBinary(binary_inst->GetName(),
@@ -606,7 +731,8 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Instruction* inst) {
     case OpCode::SUB:
     case OpCode::CMP: {
       return RunOnMathBinaryInstruction(inst, disable_broadcasting_,
-                                        fuse_conv_bias_);
+                                        fuse_conv_bias_, fuse_mul_matmul_,
+                                        fuse_fc_add_);
     }
     case OpCode::REDUCEMAX:
     case OpCode::REDUCEMIN:
@@ -1188,18 +1314,23 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(BatchNormInst* inst) {
 std::pair<Def, Def> InstSimplify::RunOnInstruction(StackInst* inst) {
   Def orig_def{inst, 0};
   int num_inputs = inst->GetNumOfOperands();
-  if (inst->GetAxis() != 0) {
-    return {orig_def, orig_def};
-  }
   for (int i = 0; i < num_inputs; ++i) {
     if (!IsA<Constant>(inst->GetOperand(i))) {
       return {orig_def, orig_def};
     }
   }
-  // convert to an array of constant
   const auto& input0_type = inst->GetOperand(0).GetType();
-  std::vector<int64_t> ret_shape(input0_type.GetDimSizes());
-  ret_shape.insert(ret_shape.begin(), num_inputs);
+  int rank = input0_type.GetNumOfDims();
+  int axis = inst->GetAxis();
+  if (axis < 0) {
+    axis += rank + 1;
+  }
+  if (axis != 0) {
+    return {orig_def, orig_def};
+  }
+  // convert to an array of constant
+  std::vector<int64_t> ret_shape = input0_type.GetDimSizes();
+  ret_shape.insert(ret_shape.begin() + axis, num_inputs);
   ConstantBuilder cb(inst->GetParent()->GetParent());
   auto count = input0_type.GetTotalNumOfElements();
   Constant* c_input0 = DynCast<Constant>(inst->GetOperand(0).GetOwner());
@@ -1424,6 +1555,62 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(GatherInst* inst) {
   return {orig_def, *c_ret};
 }
 
+std::pair<Def, Def> InstSimplify::RunOnInstruction(GatherElementsInst* inst) {
+  HLCHECK(inst->GetNumOfOperands() == 2);
+  auto input_op = inst->GetOperand(0);
+  auto idx_op = inst->GetOperand(1);
+  auto const& input_type = input_op.GetType();
+  auto const& idx_type = idx_op.GetType();
+  Def orig_def{inst, 0};
+
+  if (!input_type.IsValid() || !idx_type.IsValid()) {
+    return {orig_def, orig_def};
+  }
+
+  const auto& input_shape = input_type.GetDimSizes();
+  auto idx_shape = idx_type.GetDimSizes();
+
+  int axis = inst->GetAxis();
+  int rank = input_type.GetNumOfDims();
+  axis = axis < 0 ? rank + axis : axis;
+  inst->SetAxis(axis);
+
+  // if idx_shape[i] and input_shape[i] are 1 for all dims except for
+  // "axis", it can be converted to Gather. Otherwise, if idx_shape is a
+  // result of broadcasting, the input of broadcasting might be converted.
+  bool can_be_gather = input_shape.size() == idx_shape.size();
+  for (unsigned i = 0, e = input_shape.size(); can_be_gather && i < e; ++i) {
+    can_be_gather &= (input_shape[i] == idx_shape[i] && input_shape[i] == 1) ||
+                     (i == static_cast<unsigned>(axis));
+  }
+  if (!can_be_gather) {
+    // try to check if input_shape is a result of broadcasting.
+    if (IsA<Instruction>(idx_op) &&
+        DynCast<Instruction>(idx_op)->GetOpCode() == OpCode::EXPANDDIMS) {
+      ExpandDimsInst* exp_dim = DynCast<ExpandDimsInst>(idx_op);
+      idx_op = exp_dim->GetOperand(0);
+      idx_shape = idx_op.GetType().GetDimSizes(); // FIXME: more checks
+      can_be_gather = true;
+    }
+  }
+  if (can_be_gather) {
+    ConstantBuilder cb(inst->GetParent()->GetParent());
+    std::vector<int64_t> new_dims{idx_shape[axis]};
+    Constant* c = cb.CreateConstant(
+        inst->GetName() + "_shape",
+        halo::Type{DataType::INT64, {static_cast<int64_t>(new_dims.size())}},
+        new_dims.data());
+    IRBuilder builder(inst->GetParent());
+    builder.SetInsertAfter(inst);
+    auto reshape =
+        builder.CreateReshape(inst->GetName() + "_reshape", idx_op, *c);
+    auto new_inst = builder.CreateGather(inst->GetName(), {input_op, *reshape});
+    new_inst->SetAxis(axis);
+    return {orig_def, *new_inst};
+  }
+  return {orig_def, orig_def};
+}
+
 std::pair<Def, Def> InstSimplify::RunOnInstruction(CeilInst* inst) {
   Def orig_def{inst, 0};
   const auto& op0 = inst->GetOperand(0);
@@ -1441,6 +1628,104 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(CeilInst* inst) {
     }
   }
   return {orig_def, orig_def};
+}
+
+static Constant* FoldConcatConstant(ConcatInst* inst) {
+  if (!inst->GetResultType().IsValid()) {
+    return nullptr;
+  }
+
+  int num_inputs = inst->GetN();
+
+  std::vector<Constant*> input_cs(num_inputs);
+
+  for (int i = 0; i < num_inputs; ++i) {
+    Constant* opi = DynCast<Constant>(inst->GetOperand(i));
+
+    if (opi == nullptr) {
+      return nullptr;
+    }
+
+    input_cs[i] = opi;
+  }
+
+  const Type& op0_type = input_cs.at(0)->GetResultType();
+  int dim_num = static_cast<int>(op0_type.GetNumOfDims());
+
+  int64_t axis = inst->GetAxis();
+  if (axis < 0) {
+    axis += op0_type.GetNumOfDims();
+  }
+
+  int64_t total_num_elems = inst->GetResultType().GetTotalNumOfElements();
+  int element_byte_size = input_cs.at(0)->GetElementSizeInBytes();
+  int64_t total_bytes = total_num_elems * element_byte_size;
+
+  int base_size = element_byte_size;
+
+  auto data = std::vector<uint8_t>(total_bytes);
+  uint8_t* dst = data.data();
+
+  // Scalars and 1D-tensors need special treatement
+  if (op0_type.IsScalar() || dim_num == 1) {
+    for (Constant* c : input_cs) {
+      size_t num_bytes =
+          c->GetResultType().GetTotalNumOfElements() * element_byte_size;
+      const uint8_t* src =
+          static_cast<const uint8_t*>(c->GetRawDataPtr()); // NOLINT
+      std::copy_n(src, num_bytes, dst);
+      dst += num_bytes; // NOLINT
+    }
+
+    std::vector<int64_t> dims{total_num_elems};
+
+    ConstantBuilder cb(inst->GetParent()->GetParent());
+    std::string name = inst->GetName() + "_folding";
+    return cb.CreateConstant(name, inst->GetResultType(), data.data());
+  }
+
+  // Normal tensors
+  for (int64_t i = axis + 1; i < dim_num; ++i) {
+    base_size *= op0_type.GetNumOfElementsInDim(i);
+  }
+
+  int total_num_elements_along_axis = 0;
+  std::vector<int> chunk_sizes;
+  std::vector<const uint8_t*> src_ptrs;
+
+  for (Constant* opi : input_cs) {
+    int num_elements_along_axis =
+        opi->GetResultType().GetNumOfElementsInDim(axis);
+
+    chunk_sizes.push_back(num_elements_along_axis * base_size);
+
+    src_ptrs.push_back(
+        static_cast<const uint8_t*>(opi->GetRawDataPtr())); // NOLINT
+
+    total_num_elements_along_axis += num_elements_along_axis;
+  }
+
+  int group_num = 1;
+  for (int i = 0; i < axis; ++i) {
+    group_num *= op0_type.GetNumOfElementsInDim(i);
+  }
+
+  for (int i = 0; i < group_num; ++i) {
+    for (int j = 0; j < num_inputs; ++j) {
+      std::copy_n(src_ptrs[j], chunk_sizes[j], dst);
+      src_ptrs[j] += chunk_sizes[j]; // NOLINT
+      dst += chunk_sizes[j];         // NOLINT
+    }
+  }
+
+  std::vector<int64_t> dims(op0_type.GetDimSizes());
+  dims[axis] = total_num_elements_along_axis;
+
+  ConstantBuilder cb(inst->GetParent()->GetParent());
+  std::string name = inst->GetName() + "_folding";
+  Type new_type(op0_type.GetDataType(), dims);
+
+  return cb.CreateConstant(name, new_type, data.data());
 }
 
 std::pair<Def, Def> InstSimplify::RunOnInstruction(ConcatInst* inst) {
@@ -1495,32 +1780,117 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(ConcatInst* inst) {
     }
   }
 
-  int num_inputs = inst->GetN();
-  int axis = inst->GetAxis();
-  const auto& dst_type = inst->GetResultsTypes()[0];
-  if (!dst_type.IsValid() || axis != 0) {
+  if (!inst->GetResultsTypes()[0].IsValid()) {
     return {orig_def, orig_def};
   }
-  // Constant propagating on axis = 0
-  DataType dt = dst_type.GetDataType();
-  DefaultDataLayout data_layout;
 
-  size_t byte_per_element = data_layout.Bytes(dt);
-  size_t bytes = byte_per_element * dst_type.GetTotalNumOfElements();
-  std::vector<unsigned char> buf(bytes);
-  size_t offset = 0;
-  for (int i = 0; i < num_inputs; ++i) {
-    auto input = inst->GetOperand(i);
-    Constant* c_input = DynCast<Constant>(input.GetOwner());
-    size_t num_elements = input.GetType().GetTotalNumOfElements();
-    size_t copy_bytes = num_elements * byte_per_element;
-    std::copy_n(static_cast<unsigned char*>(c_input->GetRawDataPtr()),
-                copy_bytes, buf.begin() + offset);
-    offset += copy_bytes;
+  if (auto new_inst = FoldConcatConstant(inst)) {
+    return {orig_def, *new_inst};
   }
+
+  return {orig_def, orig_def};
+}
+
+class CopyTileData {
+ public:
+  CopyTileData(const void* src, void* dst, int64_t elem_byte_size,
+               const std::vector<int64_t>& dims,
+               const std::vector<int64_t>& multiplies)
+      : src_(static_cast<const uint8_t*>(src)),
+        dst_(static_cast<uint8_t*>(dst)),
+        elem_byte_size_(elem_byte_size),
+        dims_(dims),
+        multiplies_(multiplies) {}
+
+  void Run() { RunImpl(0); }
+
+ private:
+  void RunImpl(size_t index) {
+    if (index + 1 == dims_.size()) {
+      int64_t total_bytes = dims_[index] * elem_byte_size_;
+      int factor = multiplies_[index];
+
+      for (int i = 0; i < factor; ++i, dst_ += total_bytes) { // NOLINT
+        std::copy_n(src_, total_bytes, dst_);
+      }
+
+      src_ += total_bytes; // NOLINT
+
+    } else {
+      int num_elems = dims_[index];
+
+      // The dst_ will be increased in the following recursions.
+      const uint8_t* initial_dst = dst_;
+
+      for (int i = 0; i < num_elems; ++i) {
+        RunImpl(index + 1);
+      }
+
+      int factor = multiplies_[index];
+
+      int64_t total_bytes = dst_ - initial_dst;
+
+      for (int i = 1; i < factor; ++i, dst_ += total_bytes) { // NOLINT
+        std::copy_n(initial_dst, total_bytes, dst_);
+      }
+    }
+  }
+
+ private:
+  const uint8_t* src_;
+  uint8_t* dst_;
+  int64_t elem_byte_size_;
+  const std::vector<int64_t>& dims_;
+  const std::vector<int64_t>& multiplies_;
+};
+
+enum TileArgIndex { TILE_ARG_INPUT_IDX = 0, TILE_ARG_MULTIPLES_IDX = 1 };
+
+std::pair<Def, Def> InstSimplify::RunOnInstruction(TileInst* inst) {
+  Def orig_def{inst, 0};
+
+  if (!inst->GetResultType().IsValid()) {
+    return {orig_def, orig_def};
+  }
+
+  auto c_input = DynCast<Constant>(inst->GetOperand(TILE_ARG_INPUT_IDX));
+  if (c_input == nullptr || !c_input->GetResultType().IsValid()) {
+    return {orig_def, orig_def};
+  }
+
+  auto c_multiplies =
+      DynCast<Constant>(inst->GetOperand(TILE_ARG_MULTIPLES_IDX));
+  if (c_multiplies == nullptr || !c_multiplies->GetResultType().IsValid()) {
+    return {orig_def, orig_def};
+  }
+
+  const halo::Type& input_type = c_input->GetResultType();
+  const std::vector<int64_t>& input_dims = input_type.GetDimSizes();
+
+  std::vector<int64_t> multiplies(input_dims.size());
+  std::vector<int64_t> output_dims(input_dims);
+
+  for (size_t i = 0; i < output_dims.size(); ++i) {
+    int64_t m = c_multiplies->GetDataAsInt64(i);
+    multiplies[i] = m;
+    output_dims[i] *= m;
+  }
+
+  int64_t total_num_elems = std::accumulate(
+      output_dims.begin(), output_dims.end(), 1, std::multiplies<>{});
+
+  size_t total_byte_sizes = total_num_elems * c_input->GetElementSizeInBytes();
+  auto buffer = std::make_unique<uint8_t[]>(total_byte_sizes); // NOLINT
+
+  CopyTileData worker(c_input->GetRawDataPtr(), buffer.get(),
+                      c_input->GetElementSizeInBytes(), input_dims, multiplies);
+
+  worker.Run();
+
   ConstantBuilder cb(inst->GetParent()->GetParent());
-  Constant* c_ret =
-      cb.CreateConstant(inst->GetName() + "_folding", dst_type, buf.data());
+  std::string name = inst->GetName() + "_folding";
+  halo::Type output_type(input_type.GetDataType(), output_dims);
+  Constant* c_ret = cb.CreateConstant(name, output_type, buffer.get());
   return {orig_def, *c_ret};
 }
 
@@ -1548,7 +1918,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(TransposeInst* inst) {
   }
 
   const auto& perm = inst->GetPermutation();
-  auto input_type = (input.GetDef()->GetResultsTypes()[input.GetIdx()]);
+  const auto& input_type = input.GetType();
   int dims = -1;
   std::vector<int64_t> new_shape;
   std::vector<size_t> perm_strides;
@@ -1757,39 +2127,225 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(RandomUniformInst* inst) {
   return {orig_def, orig_def};
 }
 
+template <typename T>
+static Constant* GetSlicedConstantDataRankOne(Instruction* inst,
+                                              Constant* input, int idx,
+                                              int len) {
+  const auto& dt = inst->GetResultType();
+  std::vector<T> data(dt.GetTotalNumOfElements());
+
+  HLCHECK(static_cast<size_t>(len) == data.size());
+  for (int i = 0; i < len; ++i) {
+    data[i] = input->GetData<T>(idx + i);
+  }
+  ConstantBuilder cb(inst->GetParent()->GetParent());
+  return cb.CreateConstant(inst->GetName(), dt, data.data());
+}
+
+struct SingleDim {
+  int64_t First;
+  int64_t Last;
+  int64_t DimSize;
+};
+
+class CopySliceData {
+ public:
+  CopySliceData(const void* src, void* dst, int element_byte_size,
+                std::vector<SingleDim> ranges)
+      : src_(static_cast<const uint8_t*>(src)),
+        dst_(static_cast<uint8_t*>(dst)),
+        group_offset_(0),
+        dst_offset_(0),
+        ranges_(std::move(ranges)),
+        scales_(ranges_.size() - 1),
+        element_size_(element_byte_size),
+        chunk_offset_(ranges_.back().First),
+        chunk_size_((ranges_.back().Last - ranges_.back().First) *
+                    element_size_) {
+    for (int i = static_cast<int>(ranges_.size()) - 1, acc = 1; i > 0; --i) {
+      acc *= ranges_[i].DimSize;
+      scales_[i - 1] = acc;
+    }
+  }
+
+  void Run() { RunImpl(0); }
+
+ private:
+  // TODO(lingqing.zz): refactor the recursion into an iteration.
+  void RunImpl(int dim) {
+    if (dim + 1 == static_cast<int>(ranges_.size())) {
+      int64_t src_offset = (group_offset_ + chunk_offset_) * element_size_;
+      std::copy_n(src_ + src_offset, chunk_size_, dst_ + dst_offset_); // NOLINT
+      dst_offset_ += chunk_size_;
+    } else {
+      int first = ranges_[dim].First;
+      int last = ranges_[dim].Last;
+
+      for (int i = first; i < last; ++i) {
+        int64_t delta = i * scales_[dim];
+        group_offset_ += delta;
+        RunImpl(dim + 1);
+        group_offset_ -= delta;
+      }
+    }
+  }
+
+ private:
+  const uint8_t* src_;
+  uint8_t* dst_;
+  int64_t group_offset_;
+  int64_t dst_offset_;
+  std::vector<SingleDim> ranges_;
+  std::vector<int> scales_;
+  int64_t element_size_;
+  int64_t chunk_offset_;
+  int64_t chunk_size_;
+};
+
+enum SliceArgIndex {
+  SLICE_ARG_INPUT_IDX = 0,
+  SLICE_ARG_STARTS_IDX = 1,
+  SLICE_ARG_SIZES_IDX = 2,
+  SLICE_ARG_STEPS_IDX = 3,
+  SLICE_ARG_AXES_IDX = 4
+};
+
+struct SliceParameters {
+  Constant* Input = nullptr;
+  Constant* Starts = nullptr;
+  Constant* Sizes = nullptr;
+  Constant* Steps = nullptr;
+  Constant* Axes = nullptr;
+};
+
+static bool IsFoldableSlice(SliceInst* inst, SliceParameters* params) {
+  Constant* c_input = DynCast<Constant>(inst->GetOperand(SLICE_ARG_INPUT_IDX));
+  if (c_input == nullptr || !c_input->GetResultType().IsValid()) {
+    return false;
+  }
+
+  Constant* starts_c =
+      DynCast<Constant>(inst->GetOperand(SLICE_ARG_STARTS_IDX));
+  if (starts_c == nullptr || !starts_c->GetResultType().IsValid()) {
+    return false;
+  }
+
+  Constant* slice_sizes_c =
+      DynCast<Constant>(inst->GetOperand(SLICE_ARG_SIZES_IDX));
+  if (slice_sizes_c == nullptr || !slice_sizes_c->GetResultType().IsValid()) {
+    return false;
+  }
+
+  if (inst->GetNumOfOperands() <= SLICE_ARG_STEPS_IDX) {
+    return false;
+  }
+
+  Constant* steps_c = DynCast<Constant>(inst->GetOperand(SLICE_ARG_STEPS_IDX));
+  if (steps_c == nullptr || !steps_c->GetResultType().IsValid()) {
+    return false;
+  }
+
+  // TODO(lingqing.zz): Relax the restriction.
+  if (!steps_c->HasSameValueOf(1)) {
+    return false;
+  }
+
+  if (inst->GetNumOfOperands() <= SLICE_ARG_AXES_IDX) {
+    return false;
+  }
+
+  Constant* axes_c = DynCast<Constant>(inst->GetOperand(SLICE_ARG_AXES_IDX));
+  if (axes_c == nullptr || !axes_c->GetResultType().IsValid()) {
+    return false;
+  }
+
+  params->Input = c_input;
+  params->Starts = starts_c;
+  params->Sizes = slice_sizes_c;
+  params->Steps = steps_c;
+  params->Axes = axes_c;
+
+  return true;
+}
+
+static Constant* FoldSliceInst(SliceInst* inst) {
+  SliceParameters params;
+
+  if (!IsFoldableSlice(inst, &params)) {
+    return nullptr;
+  }
+
+  const Type& axes_type = params.Axes->GetResultType();
+  int64_t axes_num = axes_type.GetTotalNumOfElements();
+
+  const Type& input_type = params.Input->GetResultType();
+  std::vector<int64_t> dims(input_type.GetDimSizes());
+  std::vector<SingleDim> ranges(input_type.GetNumOfDims());
+
+  for (size_t i = 0; i < input_type.GetNumOfDims(); ++i) {
+    ranges[i] = {0, dims[i], dims[i]};
+  }
+
+  for (int64_t i = 0; i < axes_num; ++i) {
+    int64_t axis = params.Axes->GetDataAsInt64(i);
+    int64_t start = params.Starts->GetDataAsInt64(i);
+    int64_t size = params.Sizes->GetDataAsInt64(i);
+
+    dims[axis] = size;
+    ranges[axis].First = start;
+    ranges[axis].Last = start + size;
+  }
+
+  int total_elements =
+      std::accumulate(dims.begin(), dims.end(), 1, std::multiplies<>{});
+  std::size_t bytes_size =
+      total_elements * params.Input->GetElementSizeInBytes();
+
+  auto data = std::make_unique<uint8_t[]>(bytes_size); // NOLINT
+
+  CopySliceData worker(params.Input->GetRawDataPtr(), data.get(),
+                       params.Input->GetElementSizeInBytes(),
+                       std::move(ranges));
+  worker.Run();
+
+  ConstantBuilder builder(inst->GetParent()->GetParent());
+  std::string name = inst->GetName() + "_folded";
+  Type slice_type(input_type.GetDataType(), dims);
+  return builder.CreateConstant(name, slice_type, data.get());
+}
+
 std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
   Def orig_def{inst, 0};
   auto op_len = inst->GetOperand(2);
   const auto& dst_type = inst->GetResultsTypes()[0];
-  const auto& src_type = inst->GetOperand(0).GetType();
   if (dst_type.IsValid() && IsA<Constant>(op_len)) {
     Constant* c_size = DynCast<Constant>(op_len);
-    if (op_len.GetType().GetDataType() == DataType::INT32) {
-      int dim = op_len.GetType().GetTotalNumOfElements();
-      std::vector<int> size_adj(dim);
-      bool new_size = false;
-      for (int i = 0; i != dim; ++i) {
-        int size_i = c_size->GetData<int>(i);
-        if (size_i == -1) {
-          size_adj[i] = src_type.GetNumOfElementsInDim(i);
-          new_size = true;
-        } else {
-          size_adj[i] = size_i;
-        }
+    int dim = op_len.GetType().GetTotalNumOfElements();
+    std::vector<int> size_adj(dim);
+    bool new_size = false;
+    for (int i = 0; i != dim; ++i) {
+      int64_t size_i = c_size->GetDataAsInt64(i);
+      int64_t s = dst_type.GetNumOfElementsInDim(i);
+      if (size_i == -1 && s != -1) {
+        size_adj[i] = s;
+        new_size = true;
+      } else {
+        size_adj[i] = size_i;
       }
-      if (new_size) {
-        ConstantBuilder cb(inst->GetParent()->GetParent());
-        Constant* c_new_size =
-            cb.CreateConstant(op_len.GetOwner()->GetName() + "_adj",
-                              op_len.GetType(), size_adj.data());
-        IRBuilder builder(inst->GetParent());
-        builder.SetInsertAfter(inst);
-        SliceInst* new_inst = builder.CreateSlice(
-            inst->GetName(),
-            {inst->GetOperand(0), inst->GetOperand(1), *c_new_size});
-        new_inst->GetResultsTypes()[0] = dst_type;
-        return {orig_def, *new_inst};
-      }
+    }
+    if (new_size) {
+      ConstantBuilder cb(inst->GetParent()->GetParent());
+      Constant* c_new_size = cb.CreateConstant(
+          op_len.GetOwner()->GetName() + "_adj",
+          halo::Type{DataType::INT32, op_len.GetType().GetDimSizes()},
+          size_adj.data());
+      IRBuilder builder(inst->GetParent());
+      builder.SetInsertAfter(inst);
+      SliceInst* new_inst = builder.CreateSlice(
+          inst->GetName(),
+          {inst->GetOperand(0), inst->GetOperand(1), *c_new_size});
+      new_inst->GetResultsTypes()[0] = dst_type;
+      return {orig_def, *new_inst};
     }
   }
   const auto& op0 = inst->GetOperand(0);
@@ -1797,6 +2353,9 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
 
   bool has_constant_steps =
       (inst->GetNumOfOperands() < 4 || IsA<Constant>(inst->GetOperand(3)));
+  has_constant_steps &=
+      (inst->GetNumOfOperands() <= 4 || IsA<Constant>(inst->GetOperand(4)));
+
   bool has_constant_axes =
       (inst->GetNumOfOperands() <= 4 || IsA<Constant>(inst->GetOperand(4)));
 
@@ -1805,10 +2364,9 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
       has_constant_axes) {
     Constant* input = DynCast<Constant>(op0);
     const auto& dt = inst->GetResultType();
-    auto starts_c = DynCast<Constant>(op_start);
-    auto lens_c = DynCast<Constant>(op_len);
-    const auto& op0_type = op0.GetType();
-    auto rank = op0_type.GetNumOfDims();
+    auto starts = DynCast<Constant>(op_start);
+    auto lens = DynCast<Constant>(op_len);
+    auto rank = op0.GetType().GetNumOfDims();
     std::unordered_set<int> axes;
     if (inst->GetNumOfOperands() > 4) {
       const auto& data =
@@ -1821,41 +2379,57 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
         axes.insert(i);
       }
     }
-    std::vector<int> starts(rank);
-    std::vector<int> lens(rank);
-    std::vector<int> steps(rank);
-    Constant* steps_c =
-        has_constant_steps ? DynCast<Constant>(inst->GetOperand(3)) : nullptr;
-    for (size_t axis = 0, k = 0; axis < rank; ++axis) {
-      bool to_slice = has_constant_axes && axes.count(axis) != 0;
-      starts[axis] = to_slice ? starts_c->GetDataAsInt64(k) : 0;
-      lens[axis] = to_slice ? lens_c->GetDataAsInt64(k)
-                            : op0_type.GetNumOfElementsInDim(axis);
-      steps[axis] = to_slice ? steps_c->GetDataAsInt64(k) : 1L;
-      k += to_slice ? 1 : 0;
-    }
-
-    if (rank == 1) {
-      DefaultDataLayout dl;
-      auto bytes = dl.DataLayout::Bytes(dt);
-      auto es = dl.Bytes(dt.GetDataType());
-      std::vector<char> data(bytes);
-      int step = steps[0];
-      auto len = lens[0];
-      auto start = starts[0];
-      const char* src = static_cast<const char*>(input->GetRawDataPtr());
-      char* dst = data.data();
-      HLCHECK(len == dt.GetTotalNumOfElements());
-      for (int i = 0; i < len; ++i) {
-        auto src_idx = start + i * step;
-        HLCHECK(src_idx >= 0 &&
-                src_idx < op0.GetType().GetTotalNumOfElements());
-        std::memcpy(&dst[i * es], &src[src_idx * es], es); // NOLINT
+    bool all_steps_are_one = has_constant_steps;
+    if (rank == 1 && all_steps_are_one) {
+      auto idx = starts->GetDataAsInt64(0);
+      auto len = lens->GetDataAsInt64(0);
+      Constant* c = nullptr;
+      switch (dt.GetDataType()) {
+        case DataType::INT64:
+          c = GetSlicedConstantDataRankOne<int64_t>(inst, input, idx, len);
+          break;
+        case DataType::INT32:
+          c = GetSlicedConstantDataRankOne<int>(inst, input, idx, len);
+          break;
+        case DataType::FLOAT32:
+          c = GetSlicedConstantDataRankOne<float>(inst, input, idx, len);
+          break;
+        default:
+          break;
       }
-      ConstantBuilder cb(inst->GetParent()->GetParent());
-      auto c = cb.CreateConstant(inst->GetName(), dt, data.data());
-      return {orig_def, *c};
+      if (c != nullptr) {
+        return {orig_def, *c};
+      }
+    } else if (auto new_inst = FoldSliceInst(inst)) {
+      return {orig_def, *new_inst};
     }
+  }
+
+  return {orig_def, orig_def};
+}
+
+std::pair<Def, Def> InstSimplify::RunOnInstruction(SelectInst* inst) {
+  Def orig_def{inst, 0};
+  auto cond = DynCast<Constant>(inst->GetOperand(0));
+  const auto& ret_type = inst->GetResultType();
+  if (cond == nullptr || !ret_type.IsValid()) {
+    return {orig_def, orig_def};
+  }
+  const auto& lhs = inst->GetOperand(1);
+  const auto& rhs = inst->GetOperand(2);
+  // If no broadcasting, we can simply return the true/false value.
+  if (lhs.GetType() == ret_type && cond->HasSameValueOf(1)) {
+    return {orig_def, lhs};
+  }
+  if (rhs.GetType() == ret_type && cond->HasSameValueOf(0)) {
+    return {orig_def, rhs};
+  }
+
+  auto tv = DynCast<Constant>(lhs);
+  auto fv = DynCast<Constant>(rhs);
+  if (tv != nullptr && fv != nullptr) {
+    // TODO(unknown): constant folding
+    return {orig_def, orig_def};
   }
 
   return {orig_def, orig_def};
@@ -1978,6 +2552,79 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(OneHotInst* inst) {
   return {orig_def, orig_def};
 }
 
+enum LSTMArgIndex {
+  LSTM_ARG_X_IDX = 0,
+  LSTM_ARG_W_IDX = 1,
+  LSTM_ARG_R_IDX = 2,
+  LSTM_ARG_B_IDX = 3,
+  LSTM_ARG_SEQUENCE_LENGTH_IDX = 4,
+  LSTM_ARG_INITIAL_H_IDX = 5,
+  LSTM_ARG_INITIAL_C_IDX = 6,
+  LSTM_ARG_P_IDX = 7
+};
+
+static bool FixUpLSTM(LSTMInst* inst) {
+  bool changed = false;
+
+  // Drop the last few all-zero operands
+  while (true) {
+    size_t num_ops = inst->GetNumOfOperands();
+    if (num_ops <= LSTM_ARG_INITIAL_H_IDX) {
+      break;
+    }
+
+    HLCHECK(num_ops > 0);
+    size_t op_idx = num_ops - 1;
+
+    Constant* op = DynCast<Constant>(inst->GetOperand(op_idx));
+    if (nullptr == op || !op->HasSameValueOf(0.0)) {
+      break;
+    }
+
+    inst->ResetOperand(op_idx);
+    inst->GetOperands().pop_back();
+    changed = true;
+  }
+
+  return changed;
+}
+
+std::pair<Def, Def> InstSimplify::RunOnInstruction(UniqueInst* inst) {
+  Def orig_def{inst, 1};
+  if (!simplify_for_preprocess_) {
+    return {orig_def, orig_def};
+  }
+  const auto& result_type0 = inst->GetResultsTypes()[0];
+  const auto& result_type1 = inst->GetResultsTypes()[1];
+  auto num_uses = inst->GetResultsUses()[0].size();
+  if (!result_type0.IsValid() || !result_type1.IsValid() || num_uses != 0) {
+    return {orig_def, orig_def};
+  }
+
+  auto bitcast_inst = DynCast<BitcastInst>(inst->GetOperand(0));
+  if (bitcast_inst != nullptr && bitcast_inst->GetNumberOfUses() == 1) {
+    auto stack_inst = DynCast<StackInst>(bitcast_inst->GetOperand(0));
+    if (stack_inst != nullptr && stack_inst->GetNumberOfUses() == 1) {
+      bool check_all = true;
+      for (size_t i = 0; i < stack_inst->GetNumOfOperands(); ++i) {
+        const auto& op_i = stack_inst->GetOperand(i);
+        if (!IsA<Argument>(op_i) || !op_i.GetUses().HasOneUse()) {
+          check_all = false;
+          break;
+        }
+      }
+      if (check_all) {
+        ArgumentBuilder arg_builder(inst->GetParent()->GetParent());
+        auto arg = arg_builder.CreateArgument(inst->GetName() + "_preprocess",
+                                              result_type1);
+        return {orig_def, *arg};
+      }
+    }
+  }
+
+  return {orig_def, orig_def};
+}
+
 bool InstSimplify::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
   for (auto& inst_t : *bb) {
@@ -2004,6 +2651,10 @@ bool InstSimplify::RunOnBasicBlock(BasicBlock* bb) {
         // Replace all uses
         inst->ReplaceAllUsesWith(ret.first.GetIdx(), ret.second);
       }
+    }
+
+    if (auto lstm = DynCast<LSTMInst>(inst)) {
+      changed |= FixUpLSTM(lstm);
     }
   }
   return changed;

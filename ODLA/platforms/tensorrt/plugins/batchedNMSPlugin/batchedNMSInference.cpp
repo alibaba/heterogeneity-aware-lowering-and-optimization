@@ -123,10 +123,18 @@ pluginStatus_t nmsInference(
   void* sortingWorkspace =
       nextWorkspacePtr((int8_t*)postNMSIndices, postNMSIndicesSize);
   // Sort the scores so that the following NMS could be applied.
+#if NV_TENSORRT_MAJOR >= 8
+  int score_bits = 16;
+  float score_shift = 0;
+  status = sortScoresPerClass(stream, N, numClasses, numPredsPerClass,
+                              backgroundLabelId, scoreThreshold,
+                              DataType::kFLOAT, scores, indices,
+                              sortingWorkspace, score_bits, score_shift);
+#else
   status = sortScoresPerClass(
       stream, N, numClasses, numPredsPerClass, backgroundLabelId,
       scoreThreshold, DataType::kFLOAT, scores, indices, sortingWorkspace);
-
+#endif
   ASSERT_FAILURE(status == STATUS_SUCCESS);
 
   // This is set to true as the input bounding boxes are of the format [ymin,
@@ -134,16 +142,30 @@ pluginStatus_t nmsInference(
   // ymax]
   bool flipXY = true;
   // NMS
+#if NV_TENSORRT_MAJOR >= 8
+  status = allClassNMS(
+      stream, N, numClasses, numPredsPerClass, topK, iouThreshold,
+      shareLocation, isNormalized, DataType::kFLOAT, DataType::kFLOAT, bboxData,
+      scores, indices, postNMSScores, postNMSIndices, flipXY, score_shift);
+#else
   status = allClassNMS(stream, N, numClasses, numPredsPerClass, topK,
                        iouThreshold, shareLocation, isNormalized,
                        DataType::kFLOAT, DataType::kFLOAT, bboxData, scores,
                        indices, postNMSScores, postNMSIndices, flipXY);
+#endif
+
   ASSERT_FAILURE(status == STATUS_SUCCESS);
 
   // Sort the bounding boxes after NMS using scores
+#if NV_TENSORRT_MAJOR >= 8
+  status = sortScoresPerImage(stream, N, numClasses * topK, DataType::kFLOAT,
+                              postNMSScores, postNMSIndices, scores, indices,
+                              sortingWorkspace, score_bits);
+#else
   status = sortScoresPerImage(stream, N, numClasses * topK, DataType::kFLOAT,
                               postNMSScores, postNMSIndices, scores, indices,
                               sortingWorkspace);
+#endif
 
   ASSERT_FAILURE(status == STATUS_SUCCESS);
 

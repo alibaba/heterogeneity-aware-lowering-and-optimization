@@ -57,6 +57,7 @@ class DefaultDataLayout : public DataLayout {
       }
       case DataType::INT16:
       case DataType::UINT16:
+      case DataType::BFLOAT16:
       case DataType::FLOAT16: {
         return 16;
       }

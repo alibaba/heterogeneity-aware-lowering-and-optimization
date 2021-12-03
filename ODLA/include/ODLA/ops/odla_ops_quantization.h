@@ -40,6 +40,38 @@ typedef struct {
   odla_float32 max;
 } odla_value_quant_info;
 
+//! \brief Dequantize a tensor.
+/*!
+  Converts a quantized tensor to the full precision tensor.
+  \param input the input value
+  \param scale scale for input
+  \param zero_point zero point for input
+  \param axis the axis of the dequantizing. Ignored if scale is a scalar
+  \param target_data_type the data type of full precision output
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_Dequantize(
+    odla_value input, odla_value scale, odla_value zero_point, odla_int32 axis,
+    odla_element_type target_data_type, const odla_value_id value_id);
+
+//! \brief Quantize a tensor.
+/*!
+  Converts a tensor to low precision tensor.
+  \param input the input value
+  \param scale scale for input
+  \param zero_point zero point for input
+  \param axis the axis of the quantizing. Ignored if scale is a scalar
+  \param target_data_type the data type of low precision output
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_Quantize(
+    odla_value input, odla_value scale, odla_value zero_point, odla_int32 axis,
+    odla_element_type target_data_type, const odla_value_id value_id);
+
 #ifdef __cplusplus
 } // C extern
 #endif

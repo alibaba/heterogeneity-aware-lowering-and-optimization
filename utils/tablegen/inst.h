@@ -52,6 +52,8 @@ class Type {
   bool IsQuantized;
   /// list of list type flag, always false for an arg type.
   bool Is2DArray;
+  /// alternative name.
+  llvm::StringRef AltName;
 };
 
 /// Attr class and attribute access functions emitter.
@@ -157,6 +159,8 @@ class Inst {
   void EmitInitAttributes();
   /// Emit a public function to copy attributes from the same Instr class.
   void EmitVerify();
+  /// Emit a override function to test if an operand is optional or not.
+  void EmitOperandOptional();
   /// Emit classof and casting code.
   void EmitClassof();
   /// Emit formated (markdown) document.

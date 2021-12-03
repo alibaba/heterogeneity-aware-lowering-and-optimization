@@ -70,7 +70,21 @@ void ONNXParser::Scope::Insert(const std::string& name, const Value& def) {
 Status ONNXParser::Parse(Function* function,
                          const std::vector<const char*>& buffers,
                          const std::vector<size_t>& buffer_sizes) {
-  return Status::ASSERTION;
+  onnx::ModelProto model_def;
+  google::protobuf::io::ArrayInputStream input_stream(buffers[0],
+                                                      buffer_sizes[0]);
+  google::protobuf::io::CodedInputStream coded_stream(&input_stream);
+  coded_stream.SetTotalBytesLimit((2048LL << 20) - 1, 512LL << 20);
+  if (!model_def.ParseFromCodedStream(&coded_stream) ||
+      !model_def.has_graph()) {
+    LOG(ERROR) << "No graph is defined in onnx buffer.";
+    return Status::ASSERTION;
+  }
+  const onnx::GraphProto& graph_def = model_def.graph();
+  bb_builder_ = std::make_unique<BasicBlockBuilder>(function);
+  BasicBlock* bb = bb_builder_->CreateBasicBlock("bb0");
+  armory::Opts opts;
+  return Parse(bb, graph_def, opts);
 }
 
 Status ONNXParser::Parse(Function* function,
@@ -107,7 +121,8 @@ Status ONNXParser::Parse(Function* function,
       data.c_str(), static_cast<int>(data.size()));
   google::protobuf::io::CodedInputStream coded_stream(&input_stream);
   coded_stream.SetTotalBytesLimit((2048LL << 20) - 1, 512LL << 20);
-  if (!model_def.ParseFromCodedStream(&coded_stream)) {
+  if (!model_def.ParseFromCodedStream(&coded_stream) ||
+      !model_def.has_graph()) {
     // Try to parse it as data file.
     ifs.clear();
     ifs.seekg(0);
@@ -220,10 +235,22 @@ Status ONNXParser::ConvertToHaloIR(const onnx::GraphProto& graph_def) {
             attr_val = Attribute::CreateInteger("value", temp.GetData()[0]);
             break;
           }
+          case DataType::INT8: {
+            const Tensor<int8_t> temp = ProcessTensor<int8_t>(tensor_def);
+            HLCHECK(temp.GetShape().size() == 1 && temp.GetShape()[0] == 1);
+            attr_val = Attribute::CreateInteger("value", temp.GetData()[0]);
+            break;
+          }
+          case DataType::UINT8: {
+            const Tensor<uint8_t> temp = ProcessTensor<uint8_t>(tensor_def);
+            HLCHECK(temp.GetShape().size() == 1 && temp.GetShape()[0] == 1);
+            attr_val = Attribute::CreateInteger("value", temp.GetData()[0]);
+            break;
+          }
           case DataType::INT64: {
             const Tensor<int64_t> temp = ProcessTensor<int64_t>(tensor_def);
             HLCHECK(temp.GetShape().size() == 1 && temp.GetShape()[0] == 1);
-            attr_val = Attribute::CreateInteger("value", temp.GetData()[0]);
+            attr_val = Attribute::CreateInteger64("value", temp.GetData()[0]);
             break;
           }
           default:
@@ -299,25 +326,34 @@ void ONNXParser::RegisterOp() {
   func_lists_.emplace("Loop",
                       std::bind(&ONNXParser::ConvertLoopNode, this,
                                 std::placeholders::_1, std::placeholders::_2));
+  func_lists_.emplace(
+      "If", std::bind(&ONNXParser::ConvertIfNode, this, std::placeholders::_1,
+                      std::placeholders::_2));
 #include "onnx_regist_op.h.inc"
 }
 
-halo::DataType ONNXParser::ProcessDataType(int data_type) {
+halo::DataType ONNXParser::ProcessDataType(int data_type, bool allow_invalid) {
   switch (data_type) {
     case onnx::TensorProto::FLOAT:
       return DataType::FLOAT32;
     case onnx::TensorProto::FLOAT16:
       return DataType::FLOAT16;
+    case onnx::TensorProto::BFLOAT16:
+      return DataType::BFLOAT16;
     case onnx::TensorProto::DOUBLE:
       return DataType::FLOAT64;
     case onnx::TensorProto::INT64:
       return DataType::INT64;
+    case onnx::TensorProto::UINT64:
+      return DataType::UINT64;
     case onnx::TensorProto::INT32:
       return DataType::INT32;
     case onnx::TensorProto::UINT32:
       return DataType::UINT32;
     case onnx::TensorProto::INT16:
       return DataType::INT16;
+    case onnx::TensorProto::UINT16:
+      return DataType::UINT16;
     case onnx::TensorProto::INT8:
       return DataType::INT8;
     case onnx::TensorProto::UINT8:
@@ -327,7 +363,9 @@ halo::DataType ONNXParser::ProcessDataType(int data_type) {
     case onnx::TensorProto::BOOL:
       return DataType::BOOL;
     default:
-      LOG(ERROR) << "Unsupported DataType.";
+      if (!allow_invalid) {
+        LOG(ERROR) << "Unsupported DataType.";
+      }
       return DataType::INVALID;
   }
 }
@@ -345,6 +383,7 @@ static size_t GetTensorDataSize(const onnx::TensorProto& tensor_proto) {
     case onnx::TensorProto::FLOAT:
       return tensor_proto.float_data_size();
     case onnx::TensorProto::FLOAT16:
+    case onnx::TensorProto::BFLOAT16:
       return tensor_proto.int32_data_size() * 2;
     case onnx::TensorProto::DOUBLE:
       return tensor_proto.double_data_size();
@@ -352,6 +391,9 @@ static size_t GetTensorDataSize(const onnx::TensorProto& tensor_proto) {
       return tensor_proto.int64_data_size();
     case onnx::TensorProto::INT32:
       return tensor_proto.int32_data_size();
+    case onnx::TensorProto::INT16:
+    case onnx::TensorProto::UINT16:
+      return tensor_proto.int32_data_size() * 2;
     case onnx::TensorProto::INT8:
     case onnx::TensorProto::UINT8:
     case onnx::TensorProto::STRING:
@@ -413,6 +455,14 @@ void GetTensorData(const onnx::TensorProto& tensor, std::vector<int8_t>& v,
   }
 }
 
+template <>
+void GetTensorData(const onnx::TensorProto& tensor, std::vector<std::string>& v,
+                   size_t size) {
+  for (size_t i = 0; i < size; ++i) {
+    v.push_back(std::string(tensor.string_data()[i]));
+  }
+}
+
 template <typename T>
 Tensor<T> ONNXParser::ProcessTensor(const onnx::TensorProto& tensor_proto) {
   const DataType& data_type = ProcessDataType(tensor_proto.data_type());
@@ -466,8 +516,16 @@ IRObject* ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
                                        temp.GetData());
       break;
     }
-    case DataType::FLOAT16: {
+    case DataType::UINT16:
+    case DataType::FLOAT16:
+    case DataType::BFLOAT16: {
       const Tensor<uint16_t> temp = ProcessTensor<uint16_t>(tensor_def);
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData().data());
+      break;
+    }
+    case DataType::INT16: {
+      const Tensor<int16_t> temp = ProcessTensor<int16_t>(tensor_def);
       inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
                                        temp.GetData().data());
       break;
@@ -478,16 +536,41 @@ IRObject* ONNXParser::ConvertConstNode(ConstantBuilder* c_builder,
                                        temp.GetData());
       break;
     }
+    case DataType::UINT32: {
+      const Tensor<uint> temp = ProcessTensor<uint>(tensor_def);
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
+      break;
+    }
     case DataType::INT64: {
       const Tensor<int64_t> temp = ProcessTensor<int64_t>(tensor_def);
       inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
                                        temp.GetData());
       break;
     }
+    case DataType::UINT64: {
+      const Tensor<uint64_t> temp = ProcessTensor<uint64_t>(tensor_def);
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
+      break;
+    }
+    case DataType::STRING: {
+      const Tensor<std::string> temp = ProcessTensor<std::string>(tensor_def);
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
+      break;
+    }
+    case DataType::UINT8: {
+      const Tensor<uint8_t> temp = ProcessTensor<uint8_t>(tensor_def);
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
+      break;
+    }
+    case DataType::INT8:
     case DataType::BOOL: {
       const Tensor<int8_t> temp = ProcessTensor<int8_t>(tensor_def);
-      inst = c_builder->CreateConstant(
-          name, Type(DataType::BOOL, temp.GetShape()), temp.GetData());
+      inst = c_builder->CreateConstant(name, Type(data_type, temp.GetShape()),
+                                       temp.GetData());
       break;
     }
     default:
@@ -584,9 +667,10 @@ std::vector<Def> ONNXParser::GetInputOperands(const onnx::NodeProto& node_def) {
       HLCHECK(0 <= idx && idx <= 1024);
       operands.emplace_back(Def{inst, idx});
     } else {
+      operands.emplace_back(Def::GetUndefined());
       // those errors will be record in diagnostic report file
-      LOG(ERROR) << node_def.name() << " Node's" << i
-                 << "th operand:" << node_def.input(i) << " not found";
+      LOG(ERROR) << "operand " << i << " of " << node_def.name() << ": "
+                 << node_def.input(i) << " not found";
     }
   }
   return operands;
@@ -707,7 +791,7 @@ bool ONNXAttrs::Process<std::vector<int64_t>>(const std::string& key,
   const auto& attr_value = attr_map_.at(key);
   HLCHECK(attr_value.type() == onnx::AttributeProto::INTS);
   int size = attr_value.ints_size();
-  (*value).reserve(size);
+  (*value).resize(size);
   std::copy(attr_value.ints().begin(), attr_value.ints().end(),
             (*value).begin());
   return true;
@@ -785,6 +869,46 @@ bool ONNXAttrs::Process<Padding>(const std::string& key, Padding* padding) {
 }
 
 template <>
+bool ONNXAttrs::Process<TFIDFMode>(const std::string& key, TFIDFMode* mode) {
+  if (attr_map_.count(key) == 0) {
+    return false;
+  }
+
+  HLCHECK(attr_map_.at(key).type() == onnx::AttributeProto::STRING);
+  static const std::unordered_map<std::string, TFIDFMode> enum_map{
+      {"TF", TFIDFMode::TF},
+      {"IDF", TFIDFMode::IDF},
+      {"TFIDF", TFIDFMode::TFIDF},
+  };
+
+  *mode = enum_map.count(attr_map_.at(key).s()) != 0
+              ? enum_map.at(attr_map_.at(key).s())
+              : TFIDFMode::INVALID;
+  return true;
+}
+
+template <>
+bool ONNXAttrs::Process<ReductionMode>(const std::string& key,
+                                       ReductionMode* mode) {
+  static const std::unordered_map<std::string, ReductionMode> enum_map{
+      {"NONE", ReductionMode::None},
+      {"SUM", ReductionMode::SUM},
+      {"MEAN", ReductionMode::MEAN},
+  };
+  if (attr_map_.count(key) == 0) {
+    return false;
+  }
+  const auto& attr = attr_map_.at(key);
+  HLCHECK(attr.type() == onnx::AttributeProto::STRING);
+  std::string val = attr.s();
+  std::transform(val.begin(), val.end(), val.begin(),
+                 [](char c) { return std::toupper(c); });
+
+  *mode = enum_map.count(val) != 0 ? enum_map.at(val) : ReductionMode::INVALID;
+  return true;
+}
+
+template <>
 bool ONNXAttrs::Process<DataType>(const std::string& key, DataType* data_type) {
   if (attr_map_.count(key) == 0) {
     return false;
@@ -831,27 +955,18 @@ std::unique_ptr<Parser> CreateONNXParser() {
   return std::make_unique<ONNXParser>();
 }
 
-Status ONNXParser::ConvertLoopNode(IRBuilder* ir_builder,
-                                   const onnx::NodeProto& cur_node) {
-  std::string cur_node_name = cur_node.name();
-  if (cur_node_name.empty()) {
-    // TODO(unknown) current node name must unique
-    cur_node_name = "unknown";
-  }
-  const auto& operands = GetInputOperands(cur_node);
-  // first 2 inputs(loop_cnt/loop_cond) is optional
-  for (int64_t i = operands.size() - 1; i >= 0; --i) {
-    loop_arg_types_.push(operands[i].GetType());
-  }
-
+BasicBlock* ONNXParser::ConvertSubgraph(const onnx::NodeProto& cur_node,
+                                        const std::string& subgraph_name,
+                                        const std::string& block_name,
+                                        int output_start_idx) {
   ONNXAttrs attrs(cur_node);
   onnx::GraphProto subgraph;
   curr_scope_ = curr_scope_->CreateScope();
-  attrs.Process<onnx::GraphProto>("body", &subgraph);
-  auto loop_body = bb_builder_->CreateBasicBlock("bb_" + cur_node_name);
-  auto loop_ir_builder = std::make_unique<IRBuilder>(loop_body);
-  auto arg_builder = std::make_unique<ArgumentBuilder>(loop_body);
-  auto c_builder = std::make_unique<ConstantBuilder>(loop_body);
+  attrs.Process<onnx::GraphProto>(subgraph_name, &subgraph);
+  auto body = bb_builder_->CreateBasicBlock(block_name);
+  auto ir_builder = std::make_unique<IRBuilder>(body);
+  auto arg_builder = std::make_unique<ArgumentBuilder>(body);
+  auto c_builder = std::make_unique<ConstantBuilder>(body);
   std::set<std::string> const_input_names;
   for (int i = 0, const_inputs_size = subgraph.initializer_size();
        i < const_inputs_size; ++i) {
@@ -873,13 +988,13 @@ Status ONNXParser::ConvertLoopNode(IRBuilder* ir_builder,
       ConvertConstNode(c_builder.get(), subgraph.node(i));
       continue;
     }
-    ConvertOneNode(loop_ir_builder.get(), subgraph.node(i));
+    ConvertOneNode(ir_builder.get(), subgraph.node(i));
   }
 
   // Convert output. Skip the first operand as "cond" is not a real output.
   std::vector<Def> outputs;
 
-  for (int i = 1, output_infos_size = subgraph.output_size();
+  for (int i = output_start_idx, output_infos_size = subgraph.output_size();
        i < output_infos_size; ++i) {
     auto name = subgraph.output(i).name();
     VLOG(1) << "output node name: " << name;
@@ -892,9 +1007,48 @@ Status ONNXParser::ConvertLoopNode(IRBuilder* ir_builder,
     }
   }
   if (!outputs.empty()) {
-    loop_ir_builder->CreateReturn("output", outputs);
+    auto ret = ir_builder->CreateReturn("output", outputs);
+    ret->SetNumOfResults(outputs.size());
   }
   curr_scope_ = curr_scope_->GetParent();
+  return body;
+}
+
+Status ONNXParser::ConvertIfNode(IRBuilder* ir_builder,
+                                 const onnx::NodeProto& cur_node) {
+  std::string cur_node_name = cur_node.name();
+  if (cur_node_name.empty()) {
+    // TODO(unknown) current node name must unique
+    cur_node_name = "unknown";
+  }
+
+  const auto& operands = GetInputOperands(cur_node);
+  HLCHECK(operands.size() == 1);
+  auto br = ir_builder->CreateIf(cur_node.name(), operands);
+  br->SetThenBranch(ConvertSubgraph(cur_node, "then_branch",
+                                    "bb_" + cur_node_name + "_true", 0));
+  br->SetElseBranch(ConvertSubgraph(cur_node, "else_branch",
+                                    "bb_" + cur_node_name + "_false", 0));
+  br->GetResultsUses().resize(2);
+  br->GetResultsTypes().resize(2);
+
+  InsertIDToInstMap(cur_node, br);
+  return Status::SUCCESS;
+}
+
+Status ONNXParser::ConvertLoopNode(IRBuilder* ir_builder,
+                                   const onnx::NodeProto& cur_node) {
+  std::string cur_node_name = cur_node.name();
+  if (cur_node_name.empty()) {
+    // TODO(unknown) current node name must unique
+    cur_node_name = "unknown";
+  }
+  const auto& operands = GetInputOperands(cur_node);
+  // first 2 inputs(loop_cnt/loop_cond) is optional
+  for (int64_t i = operands.size() - 1; i >= 0; --i) {
+    loop_arg_types_.push(operands[i].GetType());
+  }
+  auto loop_body = ConvertSubgraph(cur_node, "body", "bb_" + cur_node_name, 1);
   auto loop = ir_builder->CreateLoop(cur_node.name(), operands);
   loop->SetBody(loop_body);
   loop_body->SetLoopInst(loop);

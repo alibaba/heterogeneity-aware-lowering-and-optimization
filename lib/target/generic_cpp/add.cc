@@ -36,7 +36,9 @@ void GenericCXXCodeGen::RunOnUnaryInstruction(Instruction* inst) {
       {OpCode::ROUND, "odla_Round"},    {OpCode::NEG, "odla_Neg"},
       {OpCode::RCP, "odla_Reciprocal"}, {OpCode::NOT, "odla_Not"},
       {OpCode::CEIL, "odla_Ceil"},      {OpCode::LOG, "odla_Log"},
-      {OpCode::TANH, "odla_Tanh"}};
+      {OpCode::TANH, "odla_Tanh"},      {OpCode::TAN, "odla_Tan"},
+      {OpCode::ISINF, "odla_IsInf"},    {OpCode::SIGN, "odla_Sign"},
+      {OpCode::ISNAN, "odla_IsNaN"},    {OpCode::NOT, "odla_Not"}};
 
   auto it = names.find(inst->GetOpCode());
   HLCHECK(it != names.end());
@@ -55,7 +57,8 @@ void GenericCXXCodeGen::RunOnBinaryInstruction(Instruction* inst) {
       {OpCode::ADD, "odla_Add"},     {OpCode::AND, "odla_And"},
       {OpCode::DIV, "odla_Div"},     {OpCode::MAXIMUM, "odla_Max"},
       {OpCode::MINIMUM, "odla_Min"}, {OpCode::MUL, "odla_Mul"},
-      {OpCode::SUB, "odla_Sub"},     {OpCode::POW, "odla_Pow"}};
+      {OpCode::SUB, "odla_Sub"},     {OpCode::POW, "odla_Pow"},
+      {OpCode::OR, "odla_Or"},       {OpCode::XOR, "odla_Xor"}};
   auto it = names.find(inst->GetOpCode());
   HLCHECK(it != names.end());
   const Def& lhs = inst->GetOperand(0);
@@ -95,6 +98,27 @@ void GenericCXXCodeGen::RunOnInstruction(DivInst* inst) {
 
 void GenericCXXCodeGen::RunOnInstruction(AndInst* inst) {
   RunOnBinaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(OrInst* inst) {
+  RunOnBinaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(XorInst* inst) {
+  RunOnBinaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(ModInst* inst) {
+  const Def& lhs = inst->GetOperand(0);
+  const Def& rhs = inst->GetOperand(1);
+
+  CXXValue op0 = ir_mapping_[lhs];
+  CXXValue op1 = ir_mapping_[rhs];
+
+  CXXValue ret(inst->GetName(), op0.type);
+  auto mod = inst->GetFmod();
+  EmitODLACall(ret, "odla_Mod", op0, op1, mod);
+  ir_mapping_[*inst] = ret;
 }
 
 void GenericCXXCodeGen::RunOnInstruction(CeilInst* inst) {
@@ -192,6 +216,27 @@ void GenericCXXCodeGen::RunOnInstruction(PowInst* inst) {
 void GenericCXXCodeGen::RunOnInstruction(TanhInst* inst) {
   RunOnUnaryInstruction(inst);
 }
+void GenericCXXCodeGen::RunOnInstruction(TanInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(IsNaNInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(IsInfInst* inst) {
+  const Def& lhs = inst->GetOperand(0);
+  CXXValue op0 = ir_mapping_[lhs];
+  CXXValue ret(inst->GetName(), op0.type);
+  auto check_pos = inst->GetDetectPositive();
+  auto check_neg = inst->GetDetectNegative();
+  EmitODLACall(ret, "odla_IsInf", op0, check_pos, check_neg);
+  ir_mapping_[*inst] = ret;
+}
+
+void GenericCXXCodeGen::RunOnInstruction(SignInst* inst) {
+  RunOnUnaryInstruction(inst);
+}
 
 void GenericCXXCodeGen::RunOnInstruction(CmpInst* inst) {
   CXXValue op0 = ir_mapping_[inst->GetOperand(0)];
@@ -209,6 +254,35 @@ void GenericCXXCodeGen::RunOnInstruction(CmpInst* inst) {
   HLCHECK(it != odla_funcs.end());
 
   EmitODLACall(ret, it->second, op0, op1);
+  ir_mapping_[*inst] = ret;
+}
+
+void GenericCXXCodeGen::RunOnInstruction(DetInst* inst) {
+  CXXValue op0 = ir_mapping_[inst->GetOperand(0)];
+
+  CXXValue ret(inst->GetName(), op0.type);
+  const auto& ret_type = inst->GetResultType();
+  EmitODLACall(ret, "odla_Det", op0, EmitShape(ret_type));
+  ir_mapping_[*inst] = ret;
+}
+
+void GenericCXXCodeGen::RunOnInstruction(ShiftInst* inst) {
+  CXXValue op0 = ir_mapping_[inst->GetOperand(0)];
+  CXXValue op1 = ir_mapping_[inst->GetOperand(1)];
+
+  CXXValue ret(inst->GetName(), op0.type);
+  EmitODLACall(ret, "odla_Shift", op0, op1, inst->GetIsLeftShift());
+  ir_mapping_[*inst] = ret;
+}
+
+void GenericCXXCodeGen::RunOnInstruction(SelectInst* inst) {
+  CXXValue op0 = ir_mapping_[inst->GetOperand(0)];
+  CXXValue op1 = ir_mapping_[inst->GetOperand(1)];
+  CXXValue op2 = ir_mapping_[inst->GetOperand(2)];
+
+  CXXValue ret(inst->GetName(), op0.type);
+  EmitODLACall(ret, "odla_Select", op0, op1, op2,
+               EmitShape(inst->GetResultType()));
   ir_mapping_[*inst] = ret;
 }
 

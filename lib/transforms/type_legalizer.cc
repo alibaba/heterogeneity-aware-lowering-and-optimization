@@ -25,8 +25,8 @@
 
 #include "halo/api/halo_data.h"
 #include "halo/lib/framework/common.h"
-#include "halo/lib/ir/common_reduction_instructions.h"
 #include "halo/lib/ir/constant.h"
+#include "halo/lib/ir/loss_instructions.h"
 #include "halo/lib/ir/math_instructions.h"
 
 namespace halo {
@@ -86,6 +86,18 @@ static bool IsSameType(const Type& lhs, const Type& rhs) {
   return true;
 }
 
+static void RunOnMathUnaryInstruction(Instruction* inst) {
+  auto op = inst->GetOperand(0);
+  const Type& type = op.GetType();
+  if (!type.IsValid()) {
+    return;
+  }
+  bool ret_bool = (inst->GetOpCode() == OpCode::ISINF) ||
+                  (inst->GetOpCode() == OpCode::ISNAN);
+  inst->GetResultsTypes()[0] =
+      ret_bool ? Type{DataType::BOOL, type.GetDimSizes()} : type;
+}
+
 static void RunOnMathBinaryInstruction(Instruction* inst) {
   auto op0 = inst->GetOperand(0);
   auto op1 = inst->GetOperand(1);
@@ -113,7 +125,7 @@ static void RunOnMathBinaryInstruction(Instruction* inst) {
   auto rank = (op1_rank > op2_rank) ? op1_rank : op2_rank;
 
   int diff = std::abs(op1_rank - op2_rank);
-  ret_shape.reserve(diff);
+  ret_shape.reserve(rank);
   for (int i = 0; i < diff; i++) {
     ret_shape.push_back((op1_rank > op2_rank) ? type0.GetNumOfElementsInDim(i)
                                               : type1.GetNumOfElementsInDim(i));
@@ -166,8 +178,31 @@ static void RunOnInstruction(Instruction* inst) {
     case OpCode::SHIFTR:
     case OpCode::AND:
     case OpCode::OR:
+    case OpCode::XOR:
+    case OpCode::MOD:
     case OpCode::CMP: {
       RunOnMathBinaryInstruction(inst);
+      break;
+    }
+    case OpCode::ACOS:
+    case OpCode::ACOSH:
+    case OpCode::ASIN:
+    case OpCode::ASINH:
+    case OpCode::ATAN:
+    case OpCode::ATANH:
+    case OpCode::SIN:
+    case OpCode::COS:
+    case OpCode::TAN:
+    case OpCode::CEIL:
+    case OpCode::FLOOR:
+    case OpCode::ABS:
+    case OpCode::EXP:
+    case OpCode::LOG:
+    case OpCode::NOT:
+    case OpCode::SIGN:
+    case OpCode::ISNAN:
+    case OpCode::ISINF: {
+      RunOnMathUnaryInstruction(inst);
       break;
     }
     default: {
@@ -191,6 +226,41 @@ static void RunOnInstruction(SItoFPInst* inst) {
 
 static void RunOnInstruction(FPtoFPInst* inst) {
   RunOnCastInstruction(inst, inst->GetDataType());
+}
+
+static void RunOnInstruction(ConvertFromStringInst* inst) {
+  RunOnCastInstruction(inst, inst->GetDataType());
+}
+
+static void RunOnInstruction(ConvertToStringInst* inst) {
+  RunOnCastInstruction(inst, inst->GetDataType());
+}
+
+static void RunOnInstruction(CompressInst* inst) {
+  auto num_ops = inst->GetNumOfOperands();
+  HLCHECK(num_ops == 2);
+  auto input = inst->GetOperand(0);
+  const auto& input_type = input.GetType();
+  auto mask = inst->GetOperand(1);
+  const auto& mask_type = mask.GetType();
+  if (!input_type.IsValid() || !mask_type.IsValid()) {
+    return;
+  }
+  HLCHECK(mask_type.GetNumOfDims() == 1);
+  int n = mask_type.GetNumOfElementsInDim(0);
+
+  const int inv = std::numeric_limits<int32_t>::max();
+  int64_t axis = inst->GetAxis();
+  const auto& dt = input_type.GetDataType();
+  // FIXME: here we assume all values in mask are true.
+  if (axis == inv) {
+    inst->GetResultsTypes()[0] = Type{dt, {n}};
+    return;
+  }
+  axis = axis < 0 ? axis + input_type.GetNumOfDims() : axis;
+  auto ret_dims = input_type.GetDimSizes();
+  ret_dims[axis] = n;
+  inst->GetResultsTypes()[0] = Type{dt, ret_dims};
 }
 
 static void RunOnInstruction(ReshapeInst* inst) {
@@ -282,6 +352,40 @@ static void RunOnInstruction(ReshapeInst* inst) {
 
   halo::Type new_type{op0_type.GetDataType(), new_shape};
   inst->GetResultsTypes()[0] = new_type;
+}
+
+static void RunOnInstruction(DequantizeInst* inst) {
+  auto op0 = inst->GetOperand(0);
+  if (!op0.GetType().IsValid()) {
+    return;
+  }
+  Type new_type{DataType::FLOAT32, op0.GetType().GetDimSizes()};
+  inst->GetResultsTypes()[0] = new_type;
+}
+
+static void RunOnInstruction(DetInst* inst) {
+  const auto& input_type = inst->GetOperand(0).GetType();
+  auto dt = input_type.GetDataType();
+  auto ret_shape = input_type.GetDimSizes();
+  ret_shape.pop_back();
+  ret_shape.pop_back();
+  inst->GetResultsTypes()[0] = Type{dt, ret_shape};
+}
+
+static void RunOnInstruction(NegativeLogLikelihoodLossInst* inst) {
+  auto& input_type = inst->GetOperand(0).GetType();
+  if (!input_type.IsValid()) {
+    return;
+  }
+  HLCHECK(input_type.GetNumOfDims() >= 2);
+  if (const auto& mode = inst->GetReduction();
+      mode != ReductionMode::None && mode != ReductionMode::INVALID) {
+    inst->GetResultsTypes()[0] = Type{input_type.GetDataType(), {1}};
+    return;
+  }
+  auto dims = input_type.GetDimSizes();
+  dims.erase(dims.begin() + 1);
+  inst->GetResultsTypes()[0] = Type{input_type.GetDataType(), dims};
 }
 
 static void RunOnInstruction(PadInst* inst) {
@@ -678,8 +782,11 @@ static void RunOnInstruction(ConcatInst* inst) {
   size_t num_inputs = inst->GetN();
   int axis = inst->GetAxis();
   auto& input_type = inst->GetOperand(0).GetType();
-  if (!input_type.IsValid()) {
-    return;
+  for (size_t i = 0, e = inst->GetNumOfOperands(); i != e; ++i) {
+    const auto& type = inst->GetOperand(i).GetType();
+    if (!type.IsValid()) {
+      return;
+    }
   }
 
   if (num_inputs != 0 && inst->GetNumOfOperands() > num_inputs) {
@@ -707,9 +814,7 @@ static void RunOnInstruction(ConcatInst* inst) {
   int new_dim = 0;
   for (size_t i = 0, e = num_inputs; i != e; ++i) {
     auto& type = inst->GetOperand(i).GetType();
-    if (!type.IsValid()) {
-      return;
-    }
+    HLCHECK(type.GetNumOfDims() == input_type.GetNumOfDims());
     new_dim += type.GetNumOfDims() > 0
                    ? static_cast<int>(type.GetNumOfElementsInDim(axis))
                    : 1;
@@ -779,6 +884,16 @@ static void RunOnInstruction(GatherInst* inst) {
   inst->GetResultsTypes()[0] = halo::Type{param_type.GetDataType(), ret_shape};
 }
 
+static void RunOnInstruction(GatherElementsInst* inst) {
+  const auto& data_type = inst->GetOperand(0).GetType().GetDataType();
+  const auto& index_type = inst->GetOperand(1).GetType();
+  if (data_type == DataType::INVALID || !index_type.IsValid()) {
+    return;
+  }
+
+  inst->GetResultsTypes()[0] = halo::Type{data_type, index_type.GetDimSizes()};
+}
+
 static void RunOnInstruction(SliceInst* inst) {
   auto op0 = inst->GetOperand(0);
   auto op_start = inst->GetOperand(1);
@@ -786,7 +901,6 @@ static void RunOnInstruction(SliceInst* inst) {
   auto& input_type = op0.GetType();
 
   if (!input_type.IsValid() || !IsA<Constant>(op_len)) {
-    inst->GetResultsTypes()[0] = halo::Type{op0.GetType().GetDataType(), {1}};
     return;
   }
 
@@ -855,6 +969,30 @@ static void RunOnInstruction(RandomUniformInst* inst) {
     }
   }
   inst->GetResultsTypes()[0] = halo::Type{DataType::FLOAT32, ret_shape};
+}
+
+static void RunOnInstruction(QuantizeInst* inst) {
+  auto op0 = inst->GetOperand(0);
+  if (!op0.GetType().IsValid()) {
+    return;
+  }
+  DataType dt = DataType::INVALID;
+  constexpr int char_bits = 8;
+  if (inst->GetBits() == char_bits) {
+    dt = inst->GetSignBit() ? DataType::INT8 : DataType::UINT8;
+  } else if (inst->GetBits() == 2 * char_bits) {
+    dt = inst->GetSignBit() ? DataType::INT16 : DataType::UINT16;
+  } else if (inst->GetBits() == 4 * char_bits) {
+    dt = inst->GetSignBit() ? DataType::INT32 : DataType::UINT32;
+  }
+  HLCHECK(dt != DataType::INVALID);
+  Type new_type{dt, op0.GetType().GetDimSizes()};
+  inst->GetResultsTypes()[0] = new_type;
+  if (inst->GetNumOfOperands() == 1) {
+    // Output scale & zero point
+    inst->GetResultsTypes()[1] = Type{DataType::FLOAT32, {0}};
+    inst->GetResultsTypes()[2] = Type{dt, {0}};
+  }
 }
 
 static void RunOnInstruction(RangeInst* inst) {
@@ -957,6 +1095,103 @@ static void RunOnInstruction(ResizeInst* inst) {
 static void RunOnInstruction(SetDiff1DInst* inst) {
   // an invalid shape util both operands are constant.
   ;
+}
+
+static void RunOnInstruction(EinsumInst* inst) {
+  int n = inst->GetNumOfOperands();
+  for (int i = 0; i < n; ++i) {
+    if (!inst->GetOperand(i).GetType().IsValid()) {
+      return;
+    }
+  }
+  HLCHECK(n >= 1);
+  std::vector<std::string> terms;
+  const std::string equ = inst->GetEquation();
+  std::unordered_map<char, int64_t> char2dim;
+  bool has_output = false;
+  for (int i = 0, e = equ.size(), new_term = 1; i < e; ++i) {
+    auto c = equ[i];
+    if (new_term == 1) {
+      terms.push_back("");
+      new_term = 0;
+    }
+    if (c == ' ') {
+      continue;
+    }
+    if (c == '.') {
+      HLCHECK(i + 2 < e && equ[i + 1] == '.' && equ[i + 2] == '.');
+      terms.back().push_back('.');
+      i += 2;
+    }
+    if (c == ',') {
+      new_term = 1;
+      continue;
+    }
+    if (c == '-') {
+      HLCHECK(i + 1 < e && equ[i + 1] == '>');
+      HLCHECK(!has_output);
+      i += 1;
+      has_output = true;
+      new_term = 1;
+      continue;
+    }
+    if (std::isalpha(c) != 0) {
+      std::string& term = terms.back();
+      term.push_back(c);
+    }
+  }
+
+  int num_terms = terms.size();
+  auto elem_ty = inst->GetOperand(0).GetType().GetDataType();
+  if (!has_output) {
+    HLCHECK(num_terms == n);
+    inst->GetResultsTypes()[0] = Type{elem_ty, {}};
+    return;
+  }
+
+  HLCHECK(num_terms == n + 1);
+  // Setup character to dimension mapping for inputs.
+  std::vector<int64_t> ellipsis_dims;
+  for (int i = 0; i < n; ++i) {
+    const auto& ty = inst->GetOperand(i).GetType();
+    unsigned rank = ty.GetNumOfDims();
+    const auto& term = terms[i];
+    HLCHECK(term.size() <= rank);
+    for (unsigned j = 0, s = term.size(), dim_idx = 0; j < s; ++j, ++dim_idx) {
+      char c = terms[i][j];
+      if (c == '.') {
+        bool init = ellipsis_dims.empty();
+        for (unsigned k = 0; k < rank - term.size(); ++k) {
+          auto v = ty.GetNumOfElementsInDim(dim_idx++);
+          if (init) {
+            ellipsis_dims.push_back(v);
+          } else {
+            HLCHECK(ellipsis_dims[k] == v);
+          }
+        }
+        continue;
+      }
+      int64_t d = ty.GetNumOfElementsInDim(dim_idx);
+      if (char2dim.count(c) == 0) {
+        char2dim[c] = d;
+      } else {
+        HLCHECK(char2dim[c] == d);
+      }
+    }
+  }
+  const auto& out_term = terms.back();
+  std::vector<int64_t> out_shape;
+  out_shape.reserve(out_term.size());
+  for (auto c : out_term) {
+    if (c == '.') {
+      out_shape.insert(out_shape.end(), ellipsis_dims.begin(),
+                       ellipsis_dims.end());
+    } else {
+      HLCHECK(char2dim.count(c) > 0);
+      out_shape.push_back(char2dim[c]);
+    }
+  }
+  inst->GetResultsTypes()[0] = Type{elem_ty, out_shape};
 }
 
 static void RunOnInstruction(ExpandDimsInst* inst) {
@@ -1083,6 +1318,25 @@ static void RunOnInstruction(HgEngineInst* inst) {
   }
 }
 
+static void RunOnInstruction(IfInst* inst) {
+  auto& ret_types = inst->GetResultsTypes();
+  if (inst->GetNumOfOperands() == 1) {
+    auto ret0 = inst->GetElseBranch()->GetReturnInst();
+    auto ret1 = inst->GetThenBranch()->GetReturnInst();
+    if (ret0 != nullptr && ret0->HasValidResultTypes()) {
+      ret_types = ret0->GetResultsTypes();
+    } else if (ret1 != nullptr && ret1->HasValidResultTypes()) {
+      ret_types = ret1->GetResultsTypes();
+    }
+    return;
+  }
+  const auto& data_type = inst->GetOperand(1).GetType();
+  if (data_type.IsValid()) {
+    ret_types[0] = data_type;
+    ret_types[1] = data_type;
+  }
+}
+
 static void RunOnInstruction(LoopInst* inst) {
   auto& ret_types = inst->GetResultsTypes();
   auto ret_inst = inst->GetBody()->GetReturnInst();
@@ -1092,6 +1346,185 @@ static void RunOnInstruction(LoopInst* inst) {
       ret_types[i] = ret_inst->GetOperand(i).GetType();
     }
   }
+}
+
+enum LSTMArgIndex {
+  LSTM_ARG_X_IDX = 0,
+  LSTM_ARG_W_IDX = 1,
+  LSTM_ARG_R_IDX = 2,
+  LSTM_ARG_B_IDX = 3,
+  LSTM_ARG_SEQUENCE_LENGTH_IDX = 4,
+  LSTM_ARG_INITIAL_H_IDX = 5,
+  LSTM_ARG_INITIAL_C_IDX = 6,
+  LSTM_ARG_P_IDX = 7
+};
+
+enum LSTMOutputIndex {
+  LSTM_OUPTUT_Y = 0,
+  LSTM_OUPTUT_Y_H = 1,
+  LSTM_OUPTUT_Y_C = 2
+};
+
+static void RunOnRNNBase(Instruction* inst, int layout) {
+  bool is_lstm = inst->GetOpCode() == OpCode::LSTM;
+  const Def& op_x = inst->GetOperand(LSTM_ARG_X_IDX);
+  const Type& x_type = op_x.GetType();
+
+  if (!x_type.IsValid()) {
+    return;
+  }
+
+  HLCHECK(layout == 0 || layout == 1);
+
+  int64_t seq_length = x_type.GetNumOfElementsInDim(0);
+  int64_t batch_size = x_type.GetNumOfElementsInDim(1);
+
+  if (layout == 1) {
+    std::swap(seq_length, batch_size);
+  }
+
+  const Def& op_r = inst->GetOperand(2);
+  const Type& r_type = op_r.GetType();
+
+  int64_t num_directions = r_type.GetNumOfElementsInDim(0);
+  int64_t hidden_size = r_type.GetNumOfElementsInDim(2);
+
+  if (layout == 0) {
+    inst->GetResultsTypes()[0] =
+        Type{x_type.GetDataType(),
+             {seq_length, num_directions, batch_size, hidden_size}};
+  } else {
+    inst->GetResultsTypes()[0] =
+        Type{x_type.GetDataType(),
+             {batch_size, seq_length, num_directions, hidden_size}};
+  }
+
+  Type common_type{x_type.GetDataType(),
+                   {num_directions, batch_size, hidden_size}};
+
+  inst->GetResultsTypes()[1] = common_type;
+  if (is_lstm) {
+    inst->GetResultsTypes()[2] = common_type;
+  }
+}
+
+static void RunOnInstruction(LSTMInst* inst) {
+  RunOnRNNBase(inst, inst->GetLayout());
+}
+
+static void RunOnInstruction(GRUInst* inst) {
+  RunOnRNNBase(inst, inst->GetLayout());
+}
+
+static void RunOnInstruction(RNNInst* inst) {
+  RunOnRNNBase(inst, inst->GetLayout());
+}
+
+static void RunOnInstruction(TFIDFVectorizeInst* inst) {
+  const auto& type = inst->GetOperand(0).GetType();
+  if (!type.IsValid()) {
+    return;
+  }
+  auto rank = type.GetNumOfDims();
+  if (rank == 1) {
+    inst->GetResultsTypes()[0] =
+        Type{DataType::FLOAT32, {inst->GetMaxIdx() + 1}};
+  } else {
+    inst->GetResultsTypes()[0] = Type{
+        DataType::FLOAT32, {static_cast<int64_t>(rank), inst->GetMaxIdx() + 1}};
+  }
+}
+
+static void RunOnInstruction(ReturnInst* inst) {
+  std::vector<Type> types;
+  types.reserve(inst->GetNumOfOperands());
+  for (auto& op : inst->GetOperands()) {
+    types.push_back(op.GetType());
+  }
+  inst->GetResultsTypes() = types;
+}
+
+static void RunOnInstruction(SelectInst* inst) {
+  const auto& ty_cond = inst->GetOperand(0).GetType();
+  const auto& ty_x = inst->GetOperand(1).GetType();
+  const auto& ty_y = inst->GetOperand(2).GetType();
+  if (!ty_cond.IsValid() || !ty_x.IsValid() || !ty_y.IsValid()) {
+    return;
+  }
+  // Result shape is broadcasted with ty_x and ty_cond.
+  auto rank_x = ty_x.GetNumOfDims();
+  auto rank_c = ty_cond.GetNumOfDims();
+  auto rank_y = ty_y.GetNumOfDims();
+
+  auto rank_r = std::max(rank_x, rank_y);
+  std::vector<int64_t> ret_shape(rank_r);
+
+  // Broadcast between x and y according to the general broadcasting rule
+  for (int64_t i = rank_r - 1, idx_y = rank_y - 1, idx_x = rank_x - 1; i >= 0;
+       --i) {
+    auto dim_x = idx_x < 0 ? 1 : ty_x.GetNumOfElementsInDim(idx_x--);
+    auto dim_y = idx_y < 0 ? 1 : ty_y.GetNumOfElementsInDim(idx_y--);
+    ret_shape[i] = std::max(dim_x, dim_y);
+  }
+
+  // A special case where TF1.x Select requires cond
+  // to be broadcasted in a different way:
+  // cond: [512]    x/y: [512, 3, 4] -->
+  // cond: [512, 1, 1]
+  if (rank_r >= rank_c && rank_c == 1 &&
+      ret_shape[0] == ty_cond.GetNumOfElementsInDim(0)) {
+    inst->GetResultsTypes()[0] = Type{ty_x.GetDataType(), ret_shape};
+    return;
+  }
+  auto rank_xy = rank_r;
+  rank_r = std::max(rank_r, rank_c);
+  ret_shape.resize(rank_r);
+  for (int64_t i = rank_r - 1, idx_c = rank_c - 1, idx_xy = rank_xy - 1; i >= 0;
+       --i) {
+    auto dim_xy = idx_xy < 0 ? 1 : ret_shape[idx_xy--];
+    auto dim_c = idx_c < 0 ? 1 : ty_cond.GetNumOfElementsInDim(idx_c--);
+    ret_shape[i] = std::max(dim_xy, dim_c);
+  }
+  inst->GetResultsTypes()[0] = Type{ty_x.GetDataType(), ret_shape};
+}
+
+static void RunOnInstruction(BitcastInst* inst) {
+  const auto& type = inst->GetOperand(0).GetType();
+  if (!type.IsValid()) {
+    return;
+  }
+  auto dtype = inst->GetDataType();
+  HLCHECK(dtype != DataType::INVALID);
+  auto from_dtype = type.GetDataType();
+  DefaultDataLayout layout;
+  auto from_bits = layout.Bits(from_dtype);
+  auto to_bits = layout.Bits(dtype);
+  auto new_shape(type.GetDimSizes());
+  if (from_bits < to_bits) {
+    auto last_dim = type.GetNumOfElementsInDim(type.GetNumOfDims() - 1);
+    HLCHECK(to_bits == from_bits * last_dim);
+    new_shape.pop_back();
+  } else if (from_bits > to_bits) {
+    HLCHECK(from_bits % to_bits == 0);
+    new_shape.push_back(from_bits / to_bits);
+  }
+  Type result_type{dtype, new_shape};
+  inst->GetResultsTypes()[0] = result_type;
+}
+
+static void RunOnInstruction(UniqueInst* inst) {
+  const auto& type0 = inst->GetOperand(0).GetType();
+  if (!type0.IsValid()) {
+    return;
+  }
+  auto rank = type0.GetNumOfDims();
+  HLCHECK(rank == 1);
+  auto idx_dt = inst->GetOutIdxType();
+  HLCHECK(idx_dt == DataType::INT64 || idx_dt == DataType::INT32);
+  // FIXME: result 0 has at most the same number of
+  // elements of the input
+  inst->GetResultsTypes()[0] = type0;
+  inst->GetResultsTypes()[1] = Type{idx_dt, type0.GetDimSizes()};
 }
 
 bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {

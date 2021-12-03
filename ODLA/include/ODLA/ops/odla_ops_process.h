@@ -80,6 +80,23 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Cast(odla_value input, odla_element_type target_type,
           const odla_value_id value_id);
 
+//! \brief Select slices based on condition
+/*!
+  Select slices from input along specified axis based on condition vector.
+
+  \param input the input value
+  \param condition the condition value (1-D)
+  \param axis the axis on which the slices to be selected
+  \param max_output_shape the maximum result shape (assume all conditions are
+  true)
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Compress(odla_value input, odla_value condition, odla_int32 axis,
+              odla_value_shape max_output_shape, const odla_value_id value_id);
+
 //! \brief Concatenate multiple values into a single value
 /*!
    Concat concatenates multiple values into single one. All inputs
@@ -150,6 +167,22 @@ odla_Fill(odla_value_type type, odla_fill_method method, odla_float32 p0,
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Gather(odla_value input, odla_value indices, odla_int32 axis,
             odla_value_shape output_dims, const odla_value_id value_id);
+
+//! \brief Gather elements
+/*!
+  Gather slices from \p input according to \p indices.
+
+  \param input the input value
+  \param indices the indices value
+  \param axis the axis on which the input is to gather
+  \param output_dims the optional output shape (can be undefined)
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_GatherElements(odla_value input, odla_value indices, odla_int32 axis,
+                    odla_value_shape output_dims, const odla_value_id value_id);
 
 //! \brief one-hot value
 /*!

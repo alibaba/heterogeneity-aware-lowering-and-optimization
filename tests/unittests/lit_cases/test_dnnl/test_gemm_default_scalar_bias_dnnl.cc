@@ -27,5 +27,4 @@
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_gemm_default_scalar_bias | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_gemm_default_scalar_bias_dnnl.cc.tmp.main.cc.in"

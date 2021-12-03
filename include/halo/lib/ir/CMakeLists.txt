@@ -30,13 +30,16 @@ list(APPEND INST_TDS
   common_reduction_instructions.td
   controlflow_instructions.td
   creator_instructions.td
+  loss_instructions.td
   math_instructions.td
   math_binary_instructions.td
   math_unary_instructions.td
   nn_activation_instructions.td
   nn_cnn_instructions.td
+  nn_rnn_instructions.td
   nn_instructions.td
   object_detection_instructions.td
+  quantization_instructions.td
   customize_instructions.td
 )
 tblgen_instructions(${INST_TDS})

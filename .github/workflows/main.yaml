@@ -9,22 +9,15 @@ on:
       - "web"
   release:
 jobs:
-  lint-check:
+  doc-url-check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
         with:
           path: halo
-          submodules: recursive
+          submodules: false
           clean: false
-      - name: Lint
-        uses: DoozyX/clang-format-lint-action@v0.11
-        with:
-          source: "./halo"
-          exclude: "./halo/third_party ./halo/external ./halo/ODLA/external ./halo/ODLA/platforms/odla_popart/custom_ops"
-          clangFormatVersion: 9
-          style: file
       - name: Check markdown for broken links
         uses: ruzickap/action-my-markdown-link-checker@v1
         with:
@@ -33,6 +26,23 @@ jobs:
             external/
             .github/
             third_party/
+
+  lint-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: halo
+          submodules: false
+          clean: false
+      - name: Lint
+        uses: DoozyX/clang-format-lint-action@v0.11
+        with:
+          source: "./halo"
+          exclude: "./halo/third_party ./halo/external ./halo/ODLA/external ./halo/ODLA/platforms/odla_popart/custom_ops"
+          clangFormatVersion: 9
+          style: file
 
   build_ubuntu:
     runs-on: [self-hosted, gpu]
@@ -46,7 +56,7 @@ jobs:
       - name: Build
         uses: ./halo/.github/actions/build
         with:
-          docker_image_variant: cuda10.0-cudnn7
+          docker_image_variant: cuda11.4.2-cudnn8
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
@@ -64,6 +74,7 @@ jobs:
         with:
           path: halo
           submodules: recursive
+          clean: true
 
       - name: Build
         run: |
@@ -75,12 +86,12 @@ jobs:
             -v $poplar_sdk:/opt/poplar_sdk:ro \
             -v ${{runner.workspace}}/$repo_name:/host \
             $image_registry/computation/halo:$image_tag \
-            /bin/bash -c 'source scl_source enable devtoolset-7 && cd /build && cmake -G Ninja /host/halo -DHALO_USE_TIDY_CHECK=OFF -DHALO_GEN_DOCS=OFF -DODLA_BUILD_POPART_USE_CXX11ABI=OFF -DODLA_BUILD_POPART_CUSTOM_OPS=ON -DODLA_BUILD_TRT=OFF -DODLA_BUILD_XNNPACK=OFF -DODLA_BUILD_EIGEN=OFF -DODLA_BUILD_DNNL=OFF -DHALO_BUILD_RTLIB=OFF -DHALO_USE_STATIC_PROTOBUF=ON -DCPACK_SYSTEM_NAME=centos-i686 && ninja && source /opt/poplar_sdk/poplar/enable.sh && ninja check-halo && ninja package && cp /build/*.bz2 /build/*.rpm /host/output_centos'
+            /bin/bash -c 'source scl_source enable devtoolset-7 && cd /build && cmake -G Ninja /host/halo -DHALO_USE_TIDY_CHECK=OFF -DHALO_GEN_DOCS=OFF -DODLA_BUILD_POPART_USE_CXX11ABI=OFF -DODLA_BUILD_POPART_CUSTOM_OPS=ON -DODLA_BUILD_TRT=OFF -DODLA_BUILD_XNNPACK=OFF -DODLA_BUILD_EIGEN=ON -DODLA_BUILD_DNNL=ON -DHALO_BUILD_RTLIB=OFF -DHALO_USE_STATIC_PROTOBUF=ON -DCPACK_SYSTEM_NAME=centos-i686 && ninja && source /opt/poplar_sdk/poplar/enable.sh && ninja check-halo && ninja package && cp /build/*.bz2 /build/*.rpm /host/output_centos'
         env:
-          poplar_sdk: /opt/poplar_sdk-centos_7_6-2.2.2+711-26aba6cf16
+          poplar_sdk: /opt/poplar_sdk-centos_7_6-2.3.0_774
           repo_name : heterogeneity-aware-lowering-and-optimization
           image_registry : registry-intl.us-west-1.aliyuncs.com
-          image_tag : latest-devel-x86_64-centos7
+          image_tag : 0.7.2-devel-x86_64-centos7
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2

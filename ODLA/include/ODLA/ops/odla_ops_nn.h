@@ -56,6 +56,37 @@ typedef enum {
   ODLA_RNN_HIDDEN_CELL_STATE, /*!< output both hidden and cell states */
 } odla_rnn_outputs;
 
+typedef enum {
+  ODLA_REDUCE_NONE,
+  ODLA_REDUCE_MEAN,
+  ODLA_REDUCE_SUM,
+} odla_reduction_mode;
+
+//! \brief RNN weight layout
+typedef enum {
+  ODLA_RNN_LDGOI, /*!< layers, directions, num gates, output channels,
+                     input channels */
+  ODLA_RNN_LDIGO, /*!< layers, directions, input_channels, num gates, output
+                   * channels,
+                   */
+} odla_rnn_weight_format;
+
+//! \brief RNN data layout
+typedef enum {
+  ODLA_RNN_IOFC, /*!< input gate, output gate, forget gate, cell gate */
+  ODLA_RNN_IFCO, /*!< input gate, forget gate, cell gate, output gate */
+  ODLA_RNN_IFOC, /*!< input gate, forget gate, output gate, cell gate */
+  ODLA_RNN_ICOF, /*!< input gate, cell gate, output gate, forget gate */
+  ODLA_RNN_URO,  /*!< update gate, reset gate, hidden gate */
+} odla_rnn_gate_order;
+
+//! \brief  TF-IDF computation mode
+typedef enum {
+  ODLA_TFIDF_TF,    /*!< term frequency */
+  ODLA_TFIDF_IDF,   /*!< inverse document frequency */
+  ODLA_TFIDF_TFIDF, /*!< the combination of TF and IDF */
+} odla_tf_idf_mode;
+
 //! \brief Avgerage pooling
 /*!
   AveragePool computes the average pooling across the \p input according to
@@ -142,6 +173,20 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_BatchNormalization(
     odla_float32 scalar_scale, odla_float32 scalar_offset,
     const odla_value_id value_id);
 
+//! \brief Celu activation
+/*!
+  Celu computes the celu activaion as y = x < 0 ? alpha * (exp(x / alpha) - 1) :
+  x
+
+  \param input the input value
+  \param alpha the coefficient
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Celu(odla_value input, odla_float32 alpha, const odla_value_id value_id);
+
 //! \brief N-dimensional Convolution
 /*!
   Conv computes convolution of \p input and \p kernel based on the strides,
@@ -218,23 +263,30 @@ odla_Elu(odla_value input, odla_float32 alpha, const odla_value_id value_id);
   GRU computes one-layer GRU. The output values are determined by \p outputs.
 
   \param input the input value
+  \param weight_format the data layout of weights
+  \param gate_order the order of gates in weights
   \param weight_dims the dims of weights
   \param W the weights for gates. Assuming layout of [in, out, forget, cell]
   \param R the recurrence weight
   \param B the optional bias
-  \param seq_len the sequence length
+  \param sequence_lens the sequence length
+  \param initial_h the initial value of the hidden(can be NULL)
   \param hidden_size the size of hidden neurons
   \param direction the directon of network
+  \param linear_before_reset Whether to apply linear transformation before
+  multiplying by the output of reset gate
   \param outputs speicify needed option outputs
-  \param value_id a unique value id (can be NULL)
+  \param value_ids an array of values ids (can be NULL)
 
   \return odla_value
 */
 extern ODLA_API_EXPORT odla_values ODLA_API_CALL
-odla_GRU(odla_value input, odla_value_shape weight_dims, odla_value W,
-         odla_value R, odla_value B, odla_uint32 seq_len,
-         odla_int32 hidden_size, odla_rnn_direction direction,
-         odla_rnn_outputs outputs, const odla_value_id value_id);
+odla_GRU(odla_value input, odla_rnn_weight_format weight_format,
+         odla_rnn_gate_order gate_order, odla_value_shape weight_dims,
+         odla_value W, odla_value R, odla_value B, odla_value sequence_lens,
+         odla_value initial_h, odla_int32 hidden_size,
+         odla_rnn_direction direction, odla_bool linear_before_reset,
+         odla_rnn_outputs outputs, const odla_value_ids value_id);
 
 //! \brief HardSigmoid activation
 /*!
@@ -281,8 +333,6 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_GroupNormalization(
 
   \param input the input value
   \param input_layout the memory layout of input
-  \param mean the mean value
-  \param var the variance value
   \param epsilon the epsilon
   \param scale optional scale value (can be NULL)
   \param offset optional offset value (Default is NULL)
@@ -293,10 +343,9 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_GroupNormalization(
   \return odla_value
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_InstanceNormalization(
-    odla_value input, odla_memory_layout input_layout, odla_value mean,
-    odla_value var, odla_float32 epsilon, odla_value scale, odla_value offset,
-    odla_float32 scalar_scale, odla_float32 scalar_offset,
-    const odla_value_id value_id);
+    odla_value input, odla_memory_layout input_layout, odla_float32 epsilon,
+    odla_value scale, odla_value offset, odla_float32 scalar_scale,
+    odla_float32 scalar_offset, const odla_value_id value_id);
 
 //! \brief LeakyRelu activation
 /*!
@@ -330,23 +379,30 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_LogSoftmax(
   LSTM computes one-layer LSTM.
 
   \param input the input value
+  \param weight_format the data layout of weights
+  \param gate_order the order of gates in weights
   \param weight_dims the dims of weights
   \param W the weights for gates. Assuming layout of [in, out, forget, cell]
   \param R the recurrence weight
   \param B the optional bias
-  \param seq_len the sequence length
+  \param sequence_lens the lengths of the sequences in a batch
+  \param initial_h the initial value of the hidden(can be NULL)
+  \param initial_c the initial value of the cell(can be NULL)
+  \param P the weight tensor for peepholes(can be NULL).
   \param hidden_size the size of hidden neurons
   \param direction the directon of network
   \param outputs speicify needed option outputs
-  \param value_id a unique value id (can be NULL)
+  \param value_ids an array of value ids (can be NULL)
 
-  \return odla_value
+  \return odla_values
 */
 extern ODLA_API_EXPORT odla_values ODLA_API_CALL
-odla_LSTM(odla_value input, odla_value_shape weight_dims, odla_value W,
-          odla_value R, odla_value B, odla_uint32 seq_len,
+odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
+          odla_rnn_gate_order gate_order, odla_value_shape weight_dims,
+          odla_value W, odla_value R, odla_value B, odla_value sequence_lens,
+          odla_value initial_h, odla_value initial_c, odla_value P,
           odla_int32 hidden_size, odla_rnn_direction direction,
-          odla_rnn_outputs outputs, const odla_value_id value_id);
+          odla_rnn_outputs outputs, const odla_value_ids value_id);
 
 //! \brief Max Pooling
 /*!
@@ -369,6 +425,26 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_MaxPool(
     const odla_uint32* window_dims, const odla_uint32* strides,
     const odla_uint32* paddings_front, const odla_uint32* paddings_back,
     odla_value_shape output_dims, const odla_value_id value_id);
+
+//! \brief Negative Log Likelihood Loss
+/*!
+  NegativeLogLikeliHoodLoss computes negative log likelihood loss.
+
+  \param input the input value
+  \param gt the ground truth (label) value
+  \param ignored the ignored label value
+  \param reduction optional reduction
+  \param weight optional weight
+  \param output_shape output shape
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_NegativeLogLikeliHoodLoss(
+    odla_value input, odla_value gt, odla_int32 ignored,
+    odla_reduction_mode reduction, odla_value weight,
+    odla_value_shape output_shape, odla_value_id value_id);
 
 //! \brief Non-Max Suppression
 /*!
@@ -414,6 +490,33 @@ odla_PRelu(odla_value input, odla_value slope, const odla_value_id value_id);
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Relu(odla_value input, const odla_value_id value_id);
+
+//! \brief Compute a one-layer RNN
+/*!
+  RNN computes one-layer Recurrent Neuron Network. The output values are
+  determined by \p outputs.
+
+  \param input the input value
+  \param weight_format the data layout of weights
+  \param weight_dims the dims of weights
+  \param W the weights for gates. Assuming layout of [in, out, forget, cell]
+  \param R the recurrence weight
+  \param B the optional bias
+  \param sequence_lens the sequence length
+  \param initial_h the initial value of the hidden(can be NULL)
+  \param hidden_size the size of hidden neurons
+  \param direction the directon of network
+  \param outputs speicify needed option outputs
+  \param value_ids an array of values ids (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_values ODLA_API_CALL
+odla_RNN(odla_value input, odla_rnn_weight_format weight_format,
+         odla_value_shape weight_dims, odla_value W, odla_value R, odla_value B,
+         odla_value sequence_lens, odla_value initial_h, odla_int32 hidden_size,
+         odla_rnn_direction direction, odla_rnn_outputs outputs,
+         const odla_value_ids value_id);
 
 //! \brief Region of Interest align
 /*!
@@ -472,6 +575,22 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Selu(odla_value input, odla_float32 alpha, odla_float32 gamma,
           const odla_value_id value_id);
 
+//! \brief Shrink activation
+/*!
+  Shrink computes the function if x < -lambd, y = x + bias;
+  if x > lambd, y = x - bias; Otherwise, y = 0.
+
+  \param input the input value
+  \param bias value of bias
+  \param lambd value of lambd
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Shrink(odla_value input, odla_float32 bias, odla_float32 lambd,
+            const odla_value_id value_id);
+
 //! \brief Sigmoid activation
 /*!
   Sigmoid computes the sigmoid activation as y = 1 / (1 + exp(-x))
@@ -498,6 +617,30 @@ odla_Sigmoid(odla_value input, const odla_value_id value_id);
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Softmax(odla_value input, odla_int32 axis, const odla_value_id value_id);
 
+//! \brief Softplus activation
+/*!
+  Softplus computes the Softplus activation as y = ln(exp(x) + 1)
+
+  \param input the input value
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Softplus(odla_value input, const odla_value_id value_id);
+
+//! \brief Softsign activation
+/*!
+  Softsign computes the Softsign activation as y = x / (1 + |x|)
+
+  \param input the input value
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Softsign(odla_value input, const odla_value_id value_id);
+
 //! \brief Tanh activation
 /*!
   Tanh computes the tanh activation as (1 - e^{-2x})/(1 + e^{-2x})
@@ -509,6 +652,46 @@ odla_Softmax(odla_value input, odla_int32 axis, const odla_value_id value_id);
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Tanh(odla_value input, const odla_value_id value_id);
+
+//! \brief TF-IDF vectorization
+/*!
+  TFIDF vectorizes input sequence into a vector.
+
+  \param input the input value
+  \param min_gram_length the minimum gram length to extract
+  \param max_gram_length the maximum gram length to extract
+  \param max_skip_count the maximum items to be skipped
+  \param mode the weighting metric to be used
+  \param pool the grams pool
+  \param gram_counts zero-based starting indices of n-grams in the pool
+  \param output_indices the mapping of gram indices to output tensor
+  \param weights optional weights used when mode is ODLA_TFIDF_IDF or
+  ODLA_TFIDF_TFIDF
+   \param output_shape shape of output
+   \param value_id a unique
+  value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_TFIDFVectorize(
+    odla_value input, odla_int32 min_gram_length, odla_int32 max_gram_length,
+    odla_int32 max_skip_count, odla_tf_idf_mode mode, odla_value pool,
+    odla_value gram_counts, odla_value output_indices, odla_value weights,
+    odla_value_shape output_shape, odla_value_id value_id);
+
+//! \brief ThresholdedRelu activation
+/*!
+  ThresholdedRelu computes the ThresholdedRelu activation as y = x > alpha ? x :
+  0
+
+  \param input the input value
+  \param alpha the alpha value
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_ThresholdedRelu(
+    odla_value input, odla_float32 alpha, const odla_value_id value_id);
 
 //! \brief Find Top-K elements
 /*!

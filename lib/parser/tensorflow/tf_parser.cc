@@ -120,19 +120,41 @@ Status TFParser::ConvertToHaloIR(const tensorflow::GraphDef& graph_def) {
   int i = 0;
   Status s = Status::SUCCESS;
   std::vector<const tensorflow::NodeDef*> ret_vals;
-  for (const auto& cur_node : graph_def.node()) {
-    VLOG(4) << "==========layer[" << i << "]==========";
-    if (cur_node.op() == "_Retval") {
-      ret_vals.push_back(&cur_node);
-      ++i;
-      continue;
-    }
-    s = ConvertOneNode(ir_builder_.get(), cur_node, i++);
-    if (s != Status::SUCCESS) {
-      return s;
-    }
+  std::unordered_set<const tensorflow::NodeDef*> visited;
+  std::vector<const tensorflow::NodeDef*> all_nodes;
+  all_nodes.reserve(graph_def.node_size());
+  for (const auto& node : graph_def.node()) {
+    all_nodes.push_back(&node);
   }
+  for (bool changed = true; !all_nodes.empty() && changed;) {
+    std::vector<const tensorflow::NodeDef*> skipped;
+    changed = false;
+    for (const auto& node : all_nodes) {
+      const auto& cur_node = *node;
+      if (visited.count(node) > 0) {
+        continue;
+      }
+      VLOG(4) << "==========layer[" << i << "]==========";
+      if (cur_node.op() == "_Retval") {
+        ret_vals.push_back(&cur_node);
+        ++i;
+        continue;
+      }
 
+      if (cur_node.input_size() >
+          static_cast<signed>(GetInputOperands(cur_node).size())) {
+        skipped.push_back(&cur_node);
+        continue;
+      }
+      s = ConvertOneNode(ir_builder_.get(), cur_node, i++);
+      visited.insert(&cur_node);
+      changed = true;
+      if (s != Status::SUCCESS) {
+        return s;
+      }
+    }
+    all_nodes.swap(skipped);
+  }
   VLOG(4) << "Total convert node num: " << graph_def.node_size();
   HLCHECK(graph_def.node_size() == i);
   ConvertReturnNodes(ir_builder_.get(), ret_vals);
@@ -555,9 +577,14 @@ bool TFAttrs::Process<std::vector<int64_t>>(const std::string& key,
   value->clear();
   const auto& attr_value = attr_map_.at(key);
   if (attr_value.value_case() == tensorflow::AttrValue::kList) {
-    (*value).reserve(attr_value.list().i_size());
-    for (const auto& it : attr_value.list().i()) {
-      (*value).push_back(it);
+    if (auto num_of_shape = attr_value.list().shape_size()) {
+      HLCHECK(num_of_shape == 1);
+      *value = TFParser::ProcessShape(attr_value.list().shape(0));
+    } else {
+      (*value).reserve(attr_value.list().i_size());
+      for (const auto& it : attr_value.list().i()) {
+        (*value).push_back(it);
+      }
     }
   } else if (attr_value.value_case() == tensorflow::AttrValue::kShape) {
     *value = TFParser::ProcessShape(attr_map_.at(key).shape());
@@ -835,6 +862,9 @@ Status TFParser::ConvertPlaceholderNode(IRBuilder* ir_builder,
     // Add default shape if no shape info in placehold
     std::vector<int64_t> shape = {};
     attrs.Process<std::vector<int64_t>>("shape", &shape);
+    if (shape.empty()) {
+      attrs.Process<std::vector<int64_t>>("_output_shapes", &shape);
+    }
     Argument* arg = nullptr;
     arg = arg_builder_->CreateArgument(node_def.name(), Type(data_type, shape));
     inst_name_to_ptr_.emplace(node_def.name(), arg);
@@ -870,6 +900,10 @@ Status TFParser::ConvertConstNode(IRBuilder* ir_builder,
   DataType data_type = DataType::INVALID;
   if (attrs.Process<DataType>("dtype", &data_type)) {
     switch (data_type) {
+      case DataType::BOOL: {
+        CreateConstant<int8_t>(&attrs, data_type, node_def);
+        break;
+      }
       case DataType::UINT8: {
         CreateConstant<uint8_t>(&attrs, data_type, node_def);
         break;

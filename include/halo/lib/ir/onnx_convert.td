@@ -23,6 +23,17 @@ def ONNX_Acosh : OpMapping<"Acosh", ACosh>;
 def ONNX_Add : OpMapping<"Add", Add>;
 def ONNX_And : OpMapping<"And", And>;
 
+def ONNX_Sign: OpMapping<"Sign",Sign>;
+
+def ONNX_IsInf: OpMapping<"IsInf", IsInf>{
+  let attr_mapping_ = [
+    AttributeMapping<"detect_negative", "detect_negative", "true">,
+    AttributeMapping<"detect_positive", "detect_positive", "true">
+  ];
+}
+
+def ONNX_IsNaN: OpMapping<"IsNaN", IsNaN>;
+
 def ONNX_ArgMax : OpMapping<"ArgMax", Argmax> {
  let attr_mapping_ = [
    AttributeMapping<"axis", "axis", "0">,
@@ -61,10 +72,17 @@ def ONNX_AveragePool : OpMapping<"AveragePool", PoolingAvg> {
     ExtensionAttr<"storage_order", Integer, "0">];
 }
 
-def ONNX_BatchNormalization : OpMapping<"BatchNormalization", BatchNorm> {
-  let attr_mapping_ = [
+let attr_mapping_ = [
     AttributeMapping<"epsilon", "epsilon", "0.00001">,
-    AttributeMapping<"", "data_format", "NCHW">];
+    AttributeMapping<"", "data_format", "NCHW">] in {
+  def ONNX_BatchNormalization : OpMapping<"BatchNormalization", BatchNorm>;
+  def ONNX_InstanceNormalization : OpMapping<"InstanceNormalization", InstanceNorm>;
+}
+
+def ONNX_Eyelike : ONNXExtension<"EyeLike"> {
+  let extension_attr_ = [
+    ExtensionAttr<"dtype", Integer, "-1">,
+    ExtensionAttr<"k", Integer, "0"> ];
 }
 
 def ONNX_GroupNormalization : OpMapping<"GroupNormalization", GroupNorm> {
@@ -74,17 +92,38 @@ def ONNX_GroupNormalization : OpMapping<"GroupNormalization", GroupNorm> {
     AttributeMapping<"", "data_format", "NCHW">];
 }
 
+def ONNX_BitShift : OpMapping<"BitShift", Shift,
+    [{ inst->SetIsLeftShift(direction == "LEFT"); }]> {
+  let extension_attr_ = [ExtensionAttr<"direction", String, "\"\"">];
+}
+
 def ONNX_Cast : ONNXExtension<"Cast"> {
   let extension_attr_ = [ ExtensionAttr<"to", Integer, "0"> ];
+}
+
+def ONNX_Compress : OpMapping<"Compress", Compress> {
+  let attr_mapping_ = [ AttributeMapping<"axis", "axis", "std::numeric_limits<int>::max()"> ];
 }
 
 def ONNX_IpuAttentionMask : ONNXExtension<"AttentionMask">;
 
 def ONNX_IpuGelu : ONNXExtension<"Gelu">;
 
-def ONNX_Clip : OpMapping<"Clip", Relu6>;
+def ONNX_Clip : ONNXExtension<"Clip"> {
+  let extension_attr_ = [
+    ExtensionAttr<"max", Float, "std::numeric_limits<float>::max()">,
+    ExtensionAttr<"min", Float, "std::numeric_limits<float>::lowest()">
+  ];
+}
 
 def ONNX_Ceil : OpMapping<"Ceil", Ceil>;
+
+def ONNX_Celu : OpMapping<"Celu", Celu> {
+  let attr_mapping_ = [ AttributeMapping<"alpha", "alpha", "1.0"> ];
+}
+
+def ONNX_Round : OpMapping<"Round", Round>;
+
 // def ONNX_Compress
 def ONNX_Concat : OpMapping<"Concat", Concat> {
   let attr_mapping_ = [AttributeMapping<"axis", "axis", "1">,
@@ -136,6 +175,21 @@ def ONNX_CumSum : OpMapping<"CumSum", CumSum> {
   ];
 }
 
+def ONNX_DepthToSpace : ONNXExtension<"DepthToSpace"> {
+  let extension_attr_ = [
+    ExtensionAttr<"blocksize", Integer, "-1">,
+    ExtensionAttr<"mode", String, "\"DCR\"">
+  ];
+}
+
+def ONNX_DequantizeLinear: OpMapping<"DequantizeLinear", Dequantize> {
+   let attr_mapping_ = [ AttributeMapping<"axis", "axis", "1"> ];
+}
+
+def ONNX_Det: OpMapping<"Det", Det>;
+
+def ONNX_DynamicQuantizeLinear: ONNXExtension<"DynamicQuantizeLinear">;
+
 def ONNX_Div : OpMapping<"Div", Div>;
 
 def ONNX_Dropout : ONNXExtension<"Dropout">;
@@ -148,6 +202,10 @@ def ONNX_Erf : OpMapping<"Erf", Erf>;
 
 def ONNX_Equal: OpMapping<"Equal", Cmp> {
   let attr_mapping_ = [AttributeMapping<"", "predicator", "EQ">];
+}
+
+def ONNX_Einsum: OpMapping<"Einsum", Einsum> {
+  let attr_mapping_ = [AttributeMapping<"equation", "equation", "\"\"">];
 }
 
 def ONNX_Exp : OpMapping<"Exp", Exp>;
@@ -166,8 +224,8 @@ def ONNX_Gather : OpMapping<"Gather", Gather> {
   let attr_mapping_ = [AttributeMapping<"axis", "axis", "0">];
 }
 
-def ONNX_GatherElements : ONNXExtension <"GatherElements"> {
-  let extension_attr_ = [ ExtensionAttr<"axis", Integer, "0"> ];
+def ONNX_GatherElements : OpMapping <"GatherElements", GatherElements> {
+  let attr_mapping_ = [AttributeMapping<"axis", "axis", "0">];
 }
 
 def ONNX_Gemm: OpMapping<"Gemm", Gemm> {
@@ -192,6 +250,10 @@ def ONNX_Greater : OpMapping<"Greater", Cmp> {
   let attr_mapping_ = [AttributeMapping<"", "predicator", "GT">];
 }
 
+def ONNX_GreaterOrEqual : OpMapping<"GreaterOrEqual", Cmp> {
+  let attr_mapping_ = [AttributeMapping<"", "predicator", "GE">];
+}
+
 def ONNX_Identity : ONNXExtension<"Identity">;
 
 def ONNX_LeakyRelu : OpMapping<"LeakyRelu", LeakyRelu> {
@@ -200,6 +262,10 @@ def ONNX_LeakyRelu : OpMapping<"LeakyRelu", LeakyRelu> {
 
 def ONNX_Less : OpMapping<"Less", Cmp> {
   let attr_mapping_ = [AttributeMapping<"", "predicator", "LT">];
+}
+
+def ONNX_LessOrEqual : OpMapping<"LessOrEqual", Cmp> {
+  let attr_mapping_ = [AttributeMapping<"", "predicator", "LE">];
 }
 
 def ONNX_Log : OpMapping<"Log", Log>;
@@ -247,9 +313,22 @@ def ONNX_MaxPool : OpMapping<"MaxPool", PoolingMax> {
 
 def ONNX_Min : OpMapping<"Min", Minimum>;
 
+def ONNX_Mod : OpMapping<"Mod", Mod> {
+   let attr_mapping_ = [
+     AttributeMapping<"fmod", "fmod", "0">,
+   ];
+ }
+
 def ONNX_Mul : OpMapping<"Mul", Mul>;
 
 def ONNX_Neg : OpMapping<"Neg", Neg>;
+
+def ONNX_NLLL : OpMapping<"NegativeLogLikelihoodLoss", NegativeLogLikelihoodLoss> {
+  let attr_mapping_ = [
+    AttributeMapping<"ignore_index", "ignored", "-1">,
+    AttributeMapping<"reduction", "reduction", "MEAN">,
+  ];
+}
 
 def ONNX_NonMaxSupression : OpMapping<"NonMaxSuppression", NonMaxSuppression> {
   let attr_mapping_ = [
@@ -266,6 +345,10 @@ def ONNX_OneHot : ONNXExtension<"OneHot"> {
   let extension_attr_ = [ ExtensionAttr<"axis", Integer, "-1"> ];
 }
 
+def ONNX_Or : OpMapping<"Or", Or>;
+
+def ONNX_Xor : OpMapping<"Xor", Xor>;
+
 def ONNX_Pad : ONNXExtension<"Pad"> {
   let extension_attr_ = [
     ExtensionAttr<"mode", EnumPadMode, "CONSTANT">,
@@ -277,6 +360,16 @@ def ONNX_Pad : ONNXExtension<"Pad"> {
 def ONNX_Pow : OpMapping<"Pow", Pow>;
 
 def ONNX_PRelu: OpMapping<"PRelu", PRelu>;
+
+def ONNX_QuantizeLinear: OpMapping<"QuantizeLinear", Quantize> {
+   let attr_mapping_ = [
+     AttributeMapping<"axis", "axis", "1">,
+     AttributeMapping<"", "bits", "8">,
+     AttributeMapping<"", "sign_bit", "false">
+   ];
+}
+
+def ONNX_Range:  ONNXExtension<"Range">;
 
 def ONNX_Reciprocal : OpMapping<"Reciprocal", Rcp>;
 
@@ -311,21 +404,62 @@ def ONNX_Resize : OpMapping<"Resize", Resize> {
     ];
 }
 
+def ONNX_Selu : OpMapping<"Selu", Selu> {
+  let attr_mapping_ = [
+    AttributeMapping<"gamma", "lambda", "1.0507">,
+    AttributeMapping<"alpha", "alpha", "1.67326">
+    ];
+}
+
 def ONNX_Shape : ONNXExtension<"Shape">;
 
+def ONNX_Shrink : OpMapping<"Shrink", Shrink>{
+  let attr_mapping_ = [
+    AttributeMapping<"bias", "bias", "0.0">,
+    AttributeMapping<"lambd", "lambd", "0.5">
+    ];
+}
+
 def ONNX_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
+
+def ONNX_HardSigmoid : OpMapping<"HardSigmoid", HardSigmoid>{
+  let attr_mapping_ = [
+    AttributeMapping<"alpha", "alpha", "0.2">,
+    AttributeMapping<"beta", "beta", "0.5">
+    ];
+}
 
 def ONNX_Sin : OpMapping<"Sin", Sin>;
 
 def ONNX_Sinh : OpMapping<"Sinh", Sinh>;
 
+def ONNX_Size: ONNXExtension<"Size">;
+
 // onnx slice op operands order is different from halo ir
-def ONNX_Slice : ONNXExtension<"Slice">;
+def ONNX_Slice : ONNXExtension<"Slice"> {
+  let extension_attr_ = [
+    ExtensionAttr<"axes", IntegerList, "{}">,
+    ExtensionAttr<"starts", IntegerList, "{}">,
+    ExtensionAttr<"ends", IntegerList, "{}">,
+  ];
+}
 
 let attr_mapping_ = [AttributeMapping<"axis", "axis", "-1">] in {
   def ONNX_Hardmax : OpMapping<"Hardmax", Hardmax>;
   def ONNX_Softmax : OpMapping<"Softmax", Softmax>;
+  def ONNX_LogSoftmax : OpMapping<"LogSoftmax", LogSoftmax>;
 }
+
+def ONNX_SoftmaxCrossEntropy : ONNXExtension<"SoftmaxCrossEntropyLoss"> {
+  let extension_attr_ = [
+    ExtensionAttr<"ignore_index", Integer, "-1">,
+    ExtensionAttr<"reduction", EnumReduction, "MEAN">,
+  ];
+}
+
+def ONNX_Softplus : OpMapping<"Softplus", Softplus>;
+
+def ONNX_Softsign : OpMapping<"Softsign", Softsign>;
 
 def ONNX_Split : ONNXExtension<"Split"> {
   let extension_attr_ = [
@@ -355,6 +489,12 @@ def ONNX_TopK : OpMapping<"TopK", TopK> {
 }
 
 def ONNX_Tanh : OpMapping<"Tanh", Tanh>;
+
+def ONNX_Tan : OpMapping<"Tan", Tan>;
+
+def ONNX_ThresholdedRelu : OpMapping<"ThresholdedRelu", ThresholdedRelu> {
+  let attr_mapping_ = [ AttributeMapping<"alpha", "alpha", "1"> ];
+}
 
 def ONNX_Tile : OpMapping<"Tile", Tile>;
 
@@ -415,3 +555,39 @@ def ONNX_HgDequant : TFExtension<"HgDequant"> {
     ExtensionAttr<"out_type", String, "\"FLOAT32\"">
   ];
 }
+
+defvar RNN_attrs = [
+    ExtensionAttr<"hidden_size", Integer, "1">,
+    ExtensionAttr<"layout", Integer, "0">,
+    ExtensionAttr<"direction", String, "\"FORWARD\"">
+];
+
+def ONNX_LSTM : ONNXExtension<"LSTM"> {
+  let extension_attr_ = RNN_attrs;
+}
+
+def ONNX_GRU : ONNXExtension<"GRU"> {
+  let extension_attr_ = !listconcat(RNN_attrs, [
+    ExtensionAttr<"linear_before_reset", Integer, "0">,
+  ]);
+}
+
+def ONNX_RNN : ONNXExtension<"RNN"> {
+  let extension_attr_ = RNN_attrs;
+}
+
+def ONNX_TFIDFVec : ONNXExtension<"TfIdfVectorizer"> {
+  let extension_attr_ = [
+    ExtensionAttr<"min_gram_length", Integer, "1">,
+    ExtensionAttr<"max_gram_length", Integer, "1">,
+    ExtensionAttr<"max_skip_count", Integer, "1">,
+    ExtensionAttr<"mode", EnumTFIDF, "INVALID">,
+    ExtensionAttr<"ngram_counts", Integer64List, "{}">,
+    ExtensionAttr<"ngram_indexes", Integer64List, "{}">,
+    ExtensionAttr<"pool_int64s", Integer64List, "{}">,
+    ExtensionAttr<"pool_strings", StringList, "{}">,
+    ExtensionAttr<"weights", FloatList, "{}">,
+  ];
+}
+
+def ONNX_WHERE: OpMapping<"Where", Select>;

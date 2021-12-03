@@ -30,6 +30,13 @@ let cat_ = cat_common in {
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
   }
 
+  def Compress : Inst<"Select slices of input alone axis."> {
+    let attrs_ = [Attr<"The axis to select from", Integer, "axis", "std::numeric_limits<int>::max()">];
+    let ins_ = [Arg<"The inpput data.", ArgType<[I8,I16,I32,F16,F32]> >,
+                Arg<"The conditions.", ArgType<[I1]> >];
+    let outs_ = [Arg<"The result.", MatchArgType<0> >];
+  }
+
   def OneHot : Inst <"Generate a one-hot NDim array."> {
     let attrs_ = [Attr<"The axis to fill data in the result.",
                        Integer, "axis", "-1">];
@@ -46,6 +53,13 @@ let cat_ = cat_common in {
     let ins_ = [Arg<"The inpput data.", ArgType<[I8,I16,I32,F16,F32]> >,
                 Arg<"The indices.", ArgType<[I32, I64]> >,
                 OptionalArg<"The axis.", ArgType<[I32]>, 0D>];
+    let outs_ = [Arg<"The result.", MatchArgType<0> >];
+  }
+
+  def GatherElements : Inst <"Gather data from input X1 based on indices specified by X2."> {
+    let attrs_ = [Attr<"The axis to gather on", Integer, "axis", "0">];
+    let ins_ = [Arg<"The input data.", ArgType<[I8,I16,I32,F16,F32]> >,
+                Arg<"The indices.", ArgType<[I32, I64]> >];
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
   }
 
@@ -124,6 +138,25 @@ let cat_ = cat_common in {
   def NoOp: Inst<"No Op"> {
     let ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >];
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
+  }
+
+  def Select: Inst<"Tenary selection"> {
+    let ins_ = [
+      Arg<"The condition.", ArgType<[I1]>>,
+      Arg<"The true value.", ArgType<[I1,I8,I16,I32,I64,F16,F32,F64]>>,
+      Arg<"The false value.", MatchArgType<1>>,
+    ];
+    let outs_ = [Arg<"The result.", MatchArgType<1>>];
+  }
+
+  def Unique: Inst<"Find the unique elements of the input."> {
+    let attrs_ = [Attr<"Result indices' type.",
+                  EnumDataType, "out_idx_type", "INVALID">];
+    let ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >];
+    let outs_ = [Arg<"The unique elements of the input.",
+                     MatchArgType<0> >,
+                 Arg<"The indices of the unique elements",
+                 ArgType<[I32,I64]>, 1D>];
   }
 
 }

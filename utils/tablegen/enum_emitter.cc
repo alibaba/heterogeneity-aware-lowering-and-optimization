@@ -89,6 +89,10 @@ void EmitDataTypeEnum(const llvm::RecordKeeper& records,
   for (auto vt : datatypes) {
     enum_strs.push_back("");
     auto& name = enum_strs.back();
+    if (!vt.AltName.empty()) {
+      name = vt.AltName.str();
+      continue;
+    }
     if (vt.IsBool) {
       name = "BOOL";
     } else if (vt.IsString) {

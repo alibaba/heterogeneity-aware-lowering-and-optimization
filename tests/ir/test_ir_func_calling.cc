@@ -60,11 +60,11 @@ void build(Module* m) {
 // CHECK: Function: callee(arg0[FLOAT32: 3], arg1[FLOAT32: 3])
 // CHECK: Inst: mul([FLOAT32: 3]) = mul(<arg0, 0>:[FLOAT32: 3], <w0, 0>:[FLOAT32: 3])
 // CHECK: Inst: add([FLOAT32: 3]) = add(<mul, 0>:[FLOAT32: 3], <arg1, 0>:[FLOAT32: 3])
-// CHECK: Inst: ret() = return(<add, 0>:[FLOAT32: 3])
+// CHECK: Inst: ret([FLOAT32: 3]) = return(<add, 0>:[FLOAT32: 3])
 // CHECK: Function: caller(arg0[FLOAT32: 3])
 // CHECK: Constant w1([FLOAT32: 3]) = [4, 5, 6]
 // CHECK: Inst: call([FLOAT32: 3]) = call(<arg0, 0>:[FLOAT32: 3], <w1, 0>:[FLOAT32: 3])
-// CHECK: Inst: ret() = return(<call, 0>:[FLOAT32: 3])
+// CHECK: Inst: ret([FLOAT32: 3]) = return(<call, 0>:[FLOAT32: 3])
 // clang-format  on
 }
 

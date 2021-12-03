@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <climits>
+#include <cmath>
 #include <iostream>
 #include <variant>
 
@@ -34,71 +35,22 @@ Constant::Constant(GlobalContext& context, const std::string& name,
   SetData(ty, data_ptr, do_splat);
 }
 
+Constant::Constant(GlobalContext& context, const std::string& name,
+                   const Type& type, const std::vector<std::string>& strings)
+    : IRObject(context, name, 1),
+      parent_(nullptr),
+      data_layout_(context.GetDefaultDataLayout()) {
+  HLCHECK(type.GetDataType() == DataType::STRING);
+  HLCHECK(type.IsValid());
+  SetData(type, strings);
+}
+
 Constant::Constant(const Constant& from)
     : IRObject(from.GetGlobalContext(), from.GetName(), 1),
       parent_(nullptr),
       data_layout_(from.data_layout_),
-      data_(from.data_) {}
-
-struct Float {
-  // TODO(unknown): no infinity, underflow/overflow handling.
- private:
-  Float() = delete;
-  static constexpr int BitsPerInt = CHAR_BIT * sizeof(int);
-  template <typename T, int exp, int mantissa>
-  static std::array<int, 3> Extract(T x) {
-    static_assert(exp + mantissa + 1 == sizeof(T) * CHAR_BIT);
-    int sign = x >> (exp + mantissa);
-    int m = x & ((1 << mantissa) - 1);
-    int e = (x >> mantissa) & ((1 << exp) - 1);
-    return {sign, e, m};
-  }
-
-  template <typename T, int exp, int mantissa>
-  static T Combine(int sign, int e, int m) {
-    static_assert(exp + mantissa + 1 == sizeof(T) * CHAR_BIT);
-    T x{0};
-    x = sign ? 1U << (exp + mantissa) : 0;
-    m >>= BitsPerInt - mantissa;
-    x |= m & ((1U << mantissa) - 1);
-    x |= (e & ((1U << exp) - 1)) << mantissa;
-    return x;
-  }
-  static constexpr int FP32Exp = 8;
-  static constexpr int FP32Mantissa = 23;
-  static constexpr int FP32ExpBias = 127;
-  static constexpr int FP16Exp = 5;
-  static constexpr int FP16Mantissa = 10;
-  static constexpr int FP16ExpBias = 15;
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstrict-aliasing"
-  static inline float GetFP32(uint8_t sign, int32_t e, uint32_t m) {
-    uint32_t x =
-        Combine<uint32_t, FP32Exp, FP32Mantissa>(sign, e + FP32ExpBias, m);
-    return *(reinterpret_cast<float*>(&x)); // NOLINT.
-  }
-  static inline uint16_t GetFP16(uint8_t sign, int32_t e, uint32_t m) {
-    return Combine<uint16_t, FP16Exp, FP16Mantissa>(sign, e + FP16Exp, m);
-  }
-
- public:
-  static inline uint16_t GetFP16(float x) {
-    uint32_t v = *(reinterpret_cast<int*>(&x)); // NOLINT.
-    auto components = Extract<uint32_t, FP32Exp, FP32Mantissa>(v);
-    components[1] -= FP32ExpBias;
-    components[2] <<= BitsPerInt - FP32Mantissa;
-    return GetFP16(components[0], components[1], components[2]);
-  }
-#pragma GCC diagnostic pop
-
-  static inline float GetFP32(uint16_t x) {
-    auto components = Extract<uint16_t, FP16Exp, FP16Mantissa>(x);
-    components[1] -= FP16ExpBias;
-    components[2] <<= BitsPerInt - FP16Mantissa;
-    return GetFP32(components[0], components[1], components[2]);
-  }
-};
+      data_(from.data_),
+      string_data_(from.string_data_) {}
 
 template <typename T>
 static void PrintValues(std::ostream* os, const T* ptr, size_t n) {
@@ -110,16 +62,81 @@ static void PrintValues(std::ostream* os, const T* ptr, size_t n) {
   }
 }
 
-static void PrintFP16Values(std::ostream* os, const uint16_t* ptr, size_t n) {
+template <typename T>
+static void PrintFPValue(std::ostream* os, const T& x) {
+  if (std::isnan(x)) {
+    *os << "NAN";
+    return;
+  }
+  if (std::isinf(x)) {
+    if (x < 0) {
+      *os << "-";
+    }
+    *os << "INFINITY";
+    return;
+  }
+  *os << x;
+}
+
+template <>
+void PrintValues<float>(std::ostream* os, const float* ptr, size_t n) {
   for (size_t i = 0; i < n; ++i) {
     if (i > 0) {
       *os << ", ";
     }
-    *os << Float::GetFP32(ptr[i]); // NOLINT.
+    PrintFPValue(os, ptr[i]); // NOLINT.
   }
 }
 
+template <>
+void PrintValues<double>(std::ostream* os, const double* ptr, size_t n) {
+  for (size_t i = 0; i < n; ++i) {
+    if (i > 0) {
+      *os << ", ";
+    }
+    PrintFPValue(os, ptr[i]); // NOLINT.
+  }
+}
+
+static void PrintFP16Values(std::ostream* os, const uint16_t* ptr, size_t n,
+                            bool human_friendly) {
+  for (size_t i = 0; i < n; ++i) {
+    if (i > 0) {
+      *os << ", ";
+    }
+    if (human_friendly) {
+      *os << Float::GetFP32(ptr[i]); // NOLINT.
+      ;
+    } else {
+      *os << ptr[i]; // NOLINT.
+    }
+  }
+}
+
+static void PrintBF16Values(std::ostream* os, const uint16_t* ptr, size_t n,
+                            bool human_friendly) {
+  for (size_t i = 0; i < n; ++i) {
+    if (i > 0) {
+      *os << ", ";
+    }
+    constexpr int shift_amt = 16;
+    int ui32 = ptr[i] << shift_amt; // NOLINT.
+    const void* p = &ui32;
+    *os << *(reinterpret_cast<const float*>(p)); // NOLINT.
+  }
+}
+
+void Constant::SetData(const Type& ty,
+                       const std::vector<std::string>& strings) {
+  HLCHECK(ty.GetDataType() == DataType::STRING);
+  auto& results = GetResultsTypes();
+  results.resize(1);
+  results[0] = ty;
+  string_data_ = strings;
+}
+
 void Constant::SetData(const Type& ty, const void* data_ptr, bool do_splat) {
+  HLCHECK(ty.GetDataType() != DataType::STRING);
   auto& results = GetResultsTypes();
   results.resize(1);
   results[0] = ty;
@@ -130,8 +147,7 @@ void Constant::SetData(const Type& ty, const void* data_ptr, bool do_splat) {
     std::copy_n(src, bytes, data_.data());
   } else {
     size_t byte_per_element = data_layout_.Bytes(ty.GetDataType());
-    for (size_t i = 0, e = bytes / byte_per_element; i != e;
-         i += byte_per_element) {
+    for (size_t i = 0; i != bytes; i += byte_per_element) {
       std::copy_n(src, byte_per_element, data_.begin() + i);
     }
   }
@@ -168,7 +184,18 @@ void PrintValues<bool>(std::ostream* os, const bool* ptr, size_t n) {
   }
 }
 
-void Constant::PrintData(std::ostream* os, size_t num_to_print) const {
+static void PrintValues(std::ostream* os,
+                        const std::vector<std::string>& strings, size_t n) {
+  for (size_t i = 0; i < n; ++i) {
+    if (i > 0) {
+      *os << ", ";
+    }
+    *os << '"' << strings[i] << '"';
+  }
+}
+
+void Constant::PrintData(std::ostream* os, size_t num_to_print,
+                         bool human_friendly) const {
   const Type& type = GetResultType();
   switch (type.GetDataType()) {
     case DataType::BOOL: {
@@ -183,13 +210,30 @@ void Constant::PrintData(std::ostream* os, size_t num_to_print) const {
       PrintValues(os, GetDataPtr<uint8_t>(), num_to_print);
       break;
     }
+    case DataType::INT16: {
+      PrintValues(os, GetDataPtr<int16_t>(), num_to_print);
+      break;
+    }
+    case DataType::UINT16: {
+      PrintValues(os, GetDataPtr<uint16_t>(), num_to_print);
+      break;
+    }
     case DataType::INT32: {
       PrintValues(os, GetDataPtr<int>(), num_to_print);
       break;
     }
+    case DataType::UINT32: {
+      PrintValues(os, GetDataPtr<uint>(), num_to_print);
+      break;
+    }
     case DataType::FLOAT16: {
       PrintFP16Values(os, static_cast<const uint16_t*>(GetRawDataPtr()),
-                      num_to_print);
+                      num_to_print, human_friendly);
+      break;
+    }
+    case DataType::BFLOAT16: {
+      PrintBF16Values(os, static_cast<const uint16_t*>(GetRawDataPtr()),
+                      num_to_print, human_friendly);
       break;
     }
     case DataType::FLOAT32: {
@@ -200,8 +244,16 @@ void Constant::PrintData(std::ostream* os, size_t num_to_print) const {
       PrintValues(os, GetDataPtr<int64_t>(), num_to_print);
       break;
     }
+    case DataType::UINT64: {
+      PrintValues(os, GetDataPtr<uint64_t>(), num_to_print);
+      break;
+    }
     case DataType::FLOAT64: {
       PrintValues(os, GetDataPtr<double>(), num_to_print);
+      break;
+    }
+    case DataType::STRING: {
+      PrintValues(os, string_data_, num_to_print);
       break;
     }
     default:
@@ -219,7 +271,7 @@ void Constant::Print(std::ostream& os) const {
   size_t num_of_elements = type.GetTotalNumOfElements();
   constexpr size_t limit = 32; // maximum number of elements to print.
   if (num_of_elements > 0) {
-    PrintData(&os, std::min(num_of_elements, limit));
+    PrintData(&os, std::min(num_of_elements, limit), true);
   }
   if (num_of_elements > limit) {
     os << ", ...";
@@ -259,6 +311,13 @@ bool Constant::HasSameValueOf(float x) const {
         }
         break;
       }
+      case DataType::BOOL: {
+        bool t = x != 0;
+        if (GetData<bool>(i) != t) {
+          return false;
+        }
+        break;
+      }
       default: {
         return false;
       }
@@ -272,18 +331,21 @@ static T GetDataAs(const Constant& c, size_t idx) {
   const Type& type = c.GetResultType();
   switch (type.GetDataType()) {
     case DataType::INT32: {
-      return (c.GetData<int32_t>(idx));
+      return c.GetData<int32_t>(idx);
     }
     case DataType::FLOAT32: {
-      return (c.GetData<float>(idx));
+      return c.GetData<float>(idx);
     }
     case DataType::INT64: {
-      return (c.GetData<int64_t>(idx));
+      return c.GetData<int64_t>(idx);
+    }
+    case DataType::BOOL: {
+      return c.GetData<bool>(idx) ? 1 : 0;
     }
     default: {
-      return -1;
     }
   }
+  HLCHECK("Unsupported data type");
   return -1;
 }
 

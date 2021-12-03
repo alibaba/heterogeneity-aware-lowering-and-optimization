@@ -24,6 +24,11 @@ let cat_ = cat_nn_activation,
     ins_ = [Arg<"The unary input", ArgType<[F16,F32]> >],
     outs_ = [Arg<"The result.", MatchArgType<0> >] in {
 
+  def Celu : Inst<"Compute celu activation, element-wise. Return "
+                 "alpha * (exp(X1 / alpha) - 1) if X1 < 0, return X1 else."> {
+    let attrs_ = [Attr<"Coefficient of celu", Float, "alpha", "1.0">];
+  }
+
   def Elu : Inst<"Compute elu activation, element-wise. Return "
                  "alpha * (exp(X1) - 1) if X1 < 0, return X1 else."> {
     let attrs_ = [Attr<"Coefficient of elu", Float, "alpha", "1.0">];
@@ -64,10 +69,23 @@ let cat_ = cat_nn_activation,
   def Sigmoid : Inst<"Compute the sigmoid activation, element-wise."
                      " Return 1 / (1 + exp(-X1)).">;
 
+  def HardSigmoid : Inst<"A faster approximation of the sigmoid activation."> {
+    let attrs_ = [
+      Attr<"Value of alpha.", Float, "alpha", "0.2">,
+      Attr<"Value of beta.", Float, "beta", "0.5">
+    ];
+  }
+
   def Softmax : Inst<"Compute the softmax activation."> {
     let attrs_ = [Attr<"The dimension the softmax would be performed on.",
                        Integer, "axis", "-1">];
   }
+
+  def Softplus : Inst<"Compute the softplus activation, element-wise."
+                      " Return ln(exp(x) + 1).">;
+
+  def Softsign : Inst<"Compute the softsign activation, element-wise."
+                      " Return x / (1 + |x|).">;
 
   def Hardmax : Inst<"Compute the hardmax."
                     " Return one-hot tensor for the location of the highest value alone with specified axis."> {
@@ -83,4 +101,17 @@ let cat_ = cat_nn_activation,
     outs_ = [Arg<"The result.", MatchArgType<0> >] in {
   def PRelu : Inst<"Compute prelu activation, element-wise. Return"
                    "f(x) = slope * x for x < 0, f(x) = x for x >= 0.">;
+}
+
+let cat_ = cat_nn_activation,
+    ins_ = [Arg<"The input data.", ArgType<[I8,I16,I32,I64,UI8,UI16,UI32,UI64,F16,F32,F64]> >],
+    outs_ = [Arg<"The result.", MatchArgType<0> >] in {
+  def Shrink : Inst<"Compute Shrink activation, element-wise. Return"
+                   "y = x + bias for x < -lambd, y = x - bias for x > lambd, "
+                   "y = 0 , otherwise.">{
+    let attrs_ = [
+      Attr<"The bias value added to output", Float, "bias", "0.0">,
+      Attr<"The lambd value for the Shrink formulation", Float, "lambd", "0.5">
+    ];
+  }
 }

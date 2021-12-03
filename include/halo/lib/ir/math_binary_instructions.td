@@ -46,6 +46,16 @@ let cat_ = cat_math_binary,
 
 }
 
+def Mod : Inst<"Modulo operation, element-wise, support broadcast."> {
+   let cat_ = cat_math_binary;
+   let attrs_ = [ Attr<"fmod", Integer, "fmod", "0"> ];
+   let ins_ = [
+     Arg<"The left hand side operand.", ArgType<[ I8, I16, I32, F16, F32, F64 ]> >,
+     Arg<"The right hand side operand", MatchArgType<0> >
+   ];
+   let outs_ = [ Arg<"The result.", MatchArgType<0> >];
+ }
+
 let cat_ = cat_math_binary,
     ins_ = [Arg<"The left hand side operand.", ArgType<[I8,I16,I32]> >,
             Arg<"The right hand side operand", MatchArgType<0> >],
@@ -71,11 +81,8 @@ let cat_ = cat_math_binary,
   def Or : Inst<"Logical OR operation, element-wise, return X1 || X2,"
                 " support broadcast.">;
 
-  def Equal : Inst<"Logical EQUAL operation, element-wise, return X1 == X2,"
-                 " support broadcast.">;
-
-  def Greater: Inst<"Logical GREATER operation, element-wise, return X1 > X2,"
-                 " support broadcast.">;
+  def Xor : Inst<"Logical XOR operation, element-wise, return X1 != X2,"
+                " support broadcast.">;
 }
 
 def Cmp : Inst<"Compare operation, element-wise, support broadcast."> {
@@ -86,4 +93,13 @@ def Cmp : Inst<"Compare operation, element-wise, support broadcast."> {
     Arg<"The right hand side operand", MatchArgType<0> >
   ];
   let outs_ = [ Arg<"The result.", ArgType<[ I1 ]> > ];
+}
+
+def Shift : Inst<"Element-wise bit shift."> {
+  let cat_ = cat_math_binary;
+  let attrs_ = [ Attr<"is left shift", Bool, "is_left_shift", "true">];
+  let ins_ = [
+    Arg<"The left hand side operand.", ArgType<[ I8, I16, I32 ]> >,
+    Arg<"The right hand side operand", MatchArgType<0> >
+  ];
 }
