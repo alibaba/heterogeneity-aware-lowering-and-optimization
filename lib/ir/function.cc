@@ -52,6 +52,7 @@ void Function::Print(std::ostream& os) const {
 
   for (auto& bb : *this) {
     bb->Print(os);
+    os << "\n";
   }
 }
 
