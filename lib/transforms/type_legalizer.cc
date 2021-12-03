@@ -1097,6 +1097,103 @@ static void RunOnInstruction(SetDiff1DInst* inst) {
   ;
 }
 
+static void RunOnInstruction(EinsumInst* inst) {
+  int n = inst->GetNumOfOperands();
+  for (int i = 0; i < n; ++i) {
+    if (!inst->GetOperand(i).GetType().IsValid()) {
+      return;
+    }
+  }
+  HLCHECK(n >= 1);
+  std::vector<std::string> terms;
+  const std::string equ = inst->GetEquation();
+  std::unordered_map<char, int64_t> char2dim;
+  bool has_output = false;
+  for (int i = 0, e = equ.size(), new_term = 1; i < e; ++i) {
+    auto c = equ[i];
+    if (new_term == 1) {
+      terms.push_back("");
+      new_term = 0;
+    }
+    if (c == ' ') {
+      continue;
+    }
+    if (c == '.') {
+      HLCHECK(i + 2 < e && equ[i + 1] == '.' && equ[i + 2] == '.');
+      terms.back().push_back('.');
+      i += 2;
+    }
+    if (c == ',') {
+      new_term = 1;
+      continue;
+    }
+    if (c == '-') {
+      HLCHECK(i + 1 < e && equ[i + 1] == '>');
+      HLCHECK(!has_output);
+      i += 1;
+      has_output = true;
+      new_term = 1;
+      continue;
+    }
+    if (std::isalpha(c) != 0) {
+      std::string& term = terms.back();
+      term.push_back(c);
+    }
+  }
+
+  int num_terms = terms.size();
+  auto elem_ty = inst->GetOperand(0).GetType().GetDataType();
+  if (!has_output) {
+    HLCHECK(num_terms == n);
+    inst->GetResultsTypes()[0] = Type{elem_ty, {}};
+    return;
+  }
+
+  HLCHECK(num_terms == n + 1);
+  // Setup character to dimension mapping for inputs.
+  std::vector<int64_t> ellipsis_dims;
+  for (int i = 0; i < n; ++i) {
+    const auto& ty = inst->GetOperand(i).GetType();
+    unsigned rank = ty.GetNumOfDims();
+    const auto& term = terms[i];
+    HLCHECK(term.size() <= rank);
+    for (unsigned j = 0, s = term.size(), dim_idx = 0; j < s; ++j, ++dim_idx) {
+      char c = terms[i][j];
+      if (c == '.') {
+        bool init = ellipsis_dims.empty();
+        for (unsigned k = 0; k < rank - term.size(); ++k) {
+          auto v = ty.GetNumOfElementsInDim(dim_idx++);
+          if (init) {
+            ellipsis_dims.push_back(v);
+          } else {
+            HLCHECK(ellipsis_dims[k] == v);
+          }
+        }
+        continue;
+      }
+      int64_t d = ty.GetNumOfElementsInDim(dim_idx);
+      if (char2dim.count(c) == 0) {
+        char2dim[c] = d;
+      } else {
+        HLCHECK(char2dim[c] == d);
+      }
+    }
+  }
+  const auto& out_term = terms.back();
+  std::vector<int64_t> out_shape;
+  out_shape.reserve(out_term.size());
+  for (auto c : out_term) {
+    if (c == '.') {
+      out_shape.insert(out_shape.end(), ellipsis_dims.begin(),
+                       ellipsis_dims.end());
+    } else {
+      HLCHECK(char2dim.count(c) > 0);
+      out_shape.push_back(char2dim[c]);
+    }
+  }
+  inst->GetResultsTypes()[0] = Type{elem_ty, out_shape};
+}
+
 static void RunOnInstruction(ExpandDimsInst* inst) {
   const auto& idx_op = inst->GetOperand(1);
   const auto& idx_type = idx_op.GetType();
@@ -1221,6 +1318,25 @@ static void RunOnInstruction(HgEngineInst* inst) {
   }
 }
 
+static void RunOnInstruction(IfInst* inst) {
+  auto& ret_types = inst->GetResultsTypes();
+  if (inst->GetNumOfOperands() == 1) {
+    auto ret0 = inst->GetElseBranch()->GetReturnInst();
+    auto ret1 = inst->GetThenBranch()->GetReturnInst();
+    if (ret0 != nullptr && ret0->HasValidResultTypes()) {
+      ret_types = ret0->GetResultsTypes();
+    } else if (ret1 != nullptr && ret1->HasValidResultTypes()) {
+      ret_types = ret1->GetResultsTypes();
+    }
+    return;
+  }
+  const auto& data_type = inst->GetOperand(1).GetType();
+  if (data_type.IsValid()) {
+    ret_types[0] = data_type;
+    ret_types[1] = data_type;
+  }
+}
+
 static void RunOnInstruction(LoopInst* inst) {
   auto& ret_types = inst->GetResultsTypes();
   auto ret_inst = inst->GetBody()->GetReturnInst();
@@ -1317,6 +1433,15 @@ static void RunOnInstruction(TFIDFVectorizeInst* inst) {
     inst->GetResultsTypes()[0] = Type{
         DataType::FLOAT32, {static_cast<int64_t>(rank), inst->GetMaxIdx() + 1}};
   }
+}
+
+static void RunOnInstruction(ReturnInst* inst) {
+  std::vector<Type> types;
+  types.reserve(inst->GetNumOfOperands());
+  for (auto& op : inst->GetOperands()) {
+    types.push_back(op.GetType());
+  }
+  inst->GetResultsTypes() = types;
 }
 
 static void RunOnInstruction(SelectInst* inst) {

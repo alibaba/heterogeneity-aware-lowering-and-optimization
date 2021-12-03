@@ -61,7 +61,7 @@ void build() {
 // CHECK: Constant input_data([FLOAT32: 2x3]) = [1, 2, 3, 4, 5, 6]
 // CHECK: BasicBlock: bb0
 // CHECK: Inst: loop0([FLOAT32: 2x3]) = loop(<loop_cnt, 0>:[INT64: 1], <loop_range, 0>:[BOOL: 1], <input_data, 0>:[FLOAT32: 2x3]) {Attrs: <body: {{.*}}>}
-// CHECK: Inst: ret() = return(<loop0, 0>:[FLOAT32: 2x3])
+// CHECK: Inst: ret([FLOAT32: 2x3]) = return(<loop0, 0>:[FLOAT32: 2x3])
 // CHECK: BasicBlock: loop_body
 // CHECK: Inst: add([FLOAT32: 2x3]) = add(<arg_input_data, 0>:[FLOAT32: 2x3], <arg_input_data, 0>:[FLOAT32: 2x3])
   // clang-format on

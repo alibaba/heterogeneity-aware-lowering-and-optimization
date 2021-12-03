@@ -107,6 +107,7 @@ let cat_ = cat_math in {
   }
 
   def Einsum: Inst<"Einsum calculates the Einstein summation"> {
+     let attrs_ = [Attr<"The expression of equation", String, "equation", "\"\"">];
      let ins_ = [Arg<"Input tensor", ArgType<[F16,F32,F64]> >];
      let outs_ = [Arg<"Input tensor", MatchArgType<0> >];
   }

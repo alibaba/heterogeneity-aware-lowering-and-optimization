@@ -25,7 +25,7 @@ namespace halo {
 /// This pass eliminates usage of int64 by casting down.
 class TypeCast final : public FunctionPass {
  public:
-  TypeCast() : FunctionPass("Cast down int64 to int32") {}
+  TypeCast() : FunctionPass("Cast down int64/fp64 to int32/fp32") {}
 
   bool RunOnFunction(Function* func) override;
 };

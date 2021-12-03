@@ -566,12 +566,23 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
         builder->CreateSub(ext->GetName() + "_len", op_ends, op_starts);
     std::vector<Def> ops{op0, op_starts, *op_len};
 
+    // Operand [step]: if no step, set step=1
+    if (ext->GetNumOfOperands() > 4) {
+      ops.push_back(ext->GetOperand(4));
+    } else {
+      int start_size = op_starts.GetType().GetTotalNumOfElements();
+      std::vector<int> steps(input_type.GetNumOfDims(), 1);
+      Constant* c_steps =
+          cb.CreateConstant(ext->GetName() + "_steps",
+                            Type{DataType::INT32, {start_size}}, steps.data());
+      ops.push_back(*c_steps);
+    }
+
+    // Operand [axes]
     if (ext->GetNumOfOperands() >= 4) {
       ops.push_back(ext->GetOperand(3));
     }
-    if (ext->GetNumOfOperands() > 4) {
-      ops.push_back(ext->GetOperand(4));
-    }
+
     SliceInst* slice = builder->CreateSlice(ext->GetName(), ops);
     return {*slice};
   }
@@ -877,7 +888,8 @@ static std::vector<Def> ConvertRange(const ONNXExtensionInst* ext,
 
   auto fill = [&cb, ext](DataType dt, auto data, int64_t start, int64_t limit,
                          int64_t delta) {
-    int64_t n = std::max(0L, (limit - start + delta - 1) / delta);
+    int64_t n =
+        std::max(0L, static_cast<int64_t>(std::ceil((limit - start) / delta)));
     data.reserve(n);
     for (int64_t i = start; i != limit; i += delta) {
       data.push_back(i);
