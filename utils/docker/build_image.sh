@@ -1,6 +1,6 @@
 #!/bin/bash -xe
 
-VER="0.7.6"
+VER="0.7.7"
 FLAVOR="devel"
 NAMESPACE="registry-intl.us-west-1.aliyuncs.com/computation"
 
@@ -10,6 +10,6 @@ base_image_cpu="ubuntu:18.04"
 #docker build --build-arg BASE_IMAGE=${base_image_cpu} \
 #  -t $NAMESPACE/halo:$VER-$FLAVOR-x86_64-ubuntu18.04 .
 
-docker build --build-arg BASE_IMAGE=${base_image_gpu} \
+DOCKER_BUILDKIT=1 docker build --build-arg BASE_IMAGE=${base_image_gpu} \
   -t $NAMESPACE/halo:$VER-$FLAVOR-cuda11.4.2-cudnn8-ubuntu18.04 .
 
