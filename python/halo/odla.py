@@ -69,7 +69,7 @@ class ODLAModel:
             model,
             input_shapes,
             output_names,
-            model_info.adaptive_bsz,
+            batch,
             format,    
         )
         self.intermediate_files = [*self.files]
