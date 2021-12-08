@@ -314,6 +314,11 @@ void Converter::EmitExtensionInstDef(llvm::Record* record,
     os << code;
   }
 
+  const auto& optional_args = record->getValueAsListOfInts("optional_args_");
+  for (int idx : optional_args) {
+    os << "  inst->MarkOperandOptional(" << idx << ");\n";
+  }
+
   os << "  InsertIDToInstMap(node_def, inst);\n";
   os << "  return Status::SUCCESS;\n}\n\n";
 }

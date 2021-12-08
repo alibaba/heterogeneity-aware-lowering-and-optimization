@@ -18,6 +18,7 @@
 #ifndef HALO_LIB_IR_CUSTOM_INST_H_
 #define HALO_LIB_IR_CUSTOM_INST_H_
 
+#include <set>
 #include <unordered_map>
 
 #include "halo/lib/ir/instruction.h"
@@ -49,10 +50,13 @@ class ExtensionInst : public Instruction {
   /// Set the name.
   void SetOpname(const std::string& name) noexcept { opname_ = name; }
   void PrintOpcode(std::ostream& os) const final { os << opname_; }
+  bool IsOperandOptional(size_t idx) const noexcept override;
+  void MarkOperandOptional(size_t idx) noexcept;
   virtual ExtensionKind GetExtensionKind() const noexcept = 0;
 
  private:
   std::string opname_;
+  std::set<int> optional_args_;
 };
 
 /// This defines a tensorflow op which cannot be one-on-one mapped to

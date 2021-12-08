@@ -666,8 +666,8 @@ std::vector<Def> ONNXParser::GetInputOperands(const onnx::NodeProto& node_def) {
     } else {
       operands.emplace_back(Def::GetUndefined());
       // those errors will be record in diagnostic report file
-      LOG(ERROR) << "operand " << i << " of " << node_def.name() << ": "
-                 << node_def.input(i) << " not found";
+      LOG(WARNING) << "operand " << i << " of " << node_def.name() << ": "
+                   << node_def.input(i) << " not found";
     }
   }
   return operands;

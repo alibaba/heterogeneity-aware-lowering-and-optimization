@@ -56,6 +56,7 @@ class OpMapping<string extern_op, Inst sn_inst, code custom_code = ""> {
   // caffe use only
   string param_name_ = "";
   list<string> optional_attrs_ = [];
+  list<int> optional_args_ = [];
 }
 
 // A marker to represent ExtensionInst

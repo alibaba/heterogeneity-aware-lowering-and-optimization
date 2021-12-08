@@ -29,6 +29,14 @@ ExtensionInst::ExtensionInst(GlobalContext& context, const std::string& name,
   opname_ = opname;
 }
 
+bool ExtensionInst::IsOperandOptional(size_t idx) const noexcept {
+  return optional_args_.count(idx) > 0;
+}
+
+void ExtensionInst::MarkOperandOptional(size_t idx) noexcept {
+  optional_args_.insert(idx);
+}
+
 template <typename T>
 static Instruction* CloneInst(const ExtensionInst& inst,
                               const std::string& opname_prefix) {

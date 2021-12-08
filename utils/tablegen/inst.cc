@@ -59,7 +59,7 @@ void Type::EmitDoc(llvm::raw_ostream& o) const {
   }
 }
 
-// Setup access function name by converting varialbe name to function
+// Setup access function name by converting variable name to function
 // naming convention, e.g., trans_a to TransA
 std::string Attr::SetAccessName(const std::string& attr_name) {
   std::string access_name;
