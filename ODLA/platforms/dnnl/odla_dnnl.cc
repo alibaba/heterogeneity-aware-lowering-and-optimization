@@ -139,8 +139,12 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
   for (auto& output_pair : outputs_v) {
     auto& src_val = output_pair.second.first;
     auto& dst_ptr = output_pair.second.second;
+#ifdef ODLA_BUILD_DNNL_GPU
+    read_from_dnnl_memory(dst_ptr, src_val->mem);
+#else
     auto len = getValueStorageSize(src_val);
     memcpy(dst_ptr, src_val->mem.get_data_handle(), len);
+#endif
   }
   return ODLA_SUCCESS;
 }
@@ -239,8 +243,9 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
 #endif
 
     auto r = dnnl::reorder(src_mem, value->mem);
-    r.execute(dnnl::stream(context->comp->eng),
-              {{DNNL_ARG_FROM, src_mem}, {DNNL_ARG_TO, value->mem}});
+    auto s = dnnl::stream(context->comp->eng);
+    r.execute(s, {{DNNL_ARG_FROM, src_mem}, {DNNL_ARG_TO, value->mem}});
+    s.wait();
   } else {
 #ifdef ODLA_BUILD_DNNL_GPU
     write_to_dnnl_memory(const_cast<void*>(data_ptr), value->mem);
@@ -254,14 +259,22 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
 
 odla_status odla_SetValueData(odla_value value, const void* ptr) {
   assert(g_interpret_mode);
+#ifdef ODLA_BUILD_DNNL_GPU
+  write_to_dnnl_memory(const_cast<void*>(ptr), value->mem);
+#else
   value->mem.set_data_handle(const_cast<void*>(ptr));
+#endif
   return ODLA_SUCCESS;
 }
 
 odla_status odla_GetValueData(const odla_value value, odla_void* data_ptr) {
   assert(g_interpret_mode == true);
+#ifdef ODLA_BUILD_DNNL_GPU
+  read_from_dnnl_memory(data_ptr, value->mem);
+#else
   memcpy(data_ptr, value->mem.get_data_handle(),
          value->mem.get_desc().get_size());
+#endif
   return ODLA_SUCCESS;
 }
 
@@ -352,8 +365,13 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
                               odla_context context) {
   // Handle the case of output is constant due to compile-time optimization.
   if (value->is_const) {
+#ifdef ODLA_BUILD_DNNL_GPU
+    read_from_dnnl_memory(data_ptr, value->mem);
+#else
     size_t len = getValueStorageSize(value);
     memcpy(data_ptr, value->mem.get_data_handle(), len);
+#endif
+
   } else {
     auto name = value->name;
     auto& outputs_v = context->comp->outputs_v;
@@ -1021,8 +1039,10 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
     auto r = dnnl::reorder(
         dnnl::memory(kernel_md_src, g_comp->eng, kernel->mem.get_data_handle()),
         conv_kernel_mem);
-    r.execute(dnnl::stream(g_comp->eng),
+    auto r_stream = dnnl::stream(g_comp->eng, dnnl::stream::flags::in_order);
+    r.execute(r_stream,
               {{DNNL_ARG_FROM, kernel->mem}, {DNNL_ARG_TO, conv_kernel_mem}});
+    r_stream.wait();
     kernel->mem = conv_kernel_mem;
   }
 
