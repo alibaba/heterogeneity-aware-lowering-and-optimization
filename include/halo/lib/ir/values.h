@@ -22,6 +22,7 @@
 #include <iostream>
 #include <list>
 #include <memory>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -248,7 +249,16 @@ class IRObject {
     }
   }
 
-  /// Reset `idx`-th operand to null. The number of operands remains unchanged.
+  /// Append an IRObject that depends on this object.
+  void AddDependant(IRObject* dependent) { dependents_.insert(dependent); }
+
+  /// Return dependents
+  const std::set<IRObject*>& GetDependents() const noexcept {
+    return dependents_;
+  }
+
+  /// Reset `idx`-th operand to null. The number of operands remains
+  /// unchanged.
   void ResetOperand(size_t idx);
 
   /// Drop all operands and reset the operand counter.
@@ -416,6 +426,9 @@ class IRObject {
 
   // Results' use_list
   std::vector<UseList> results_uses_;
+
+  // Results' dependents
+  std::set<IRObject*> dependents_;
 
   // Attribute list
   std::vector<std::unique_ptr<Attribute>> attributes_;

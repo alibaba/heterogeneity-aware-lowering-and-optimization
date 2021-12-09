@@ -130,6 +130,7 @@ class TFParser : public Parser {
   using CallBack =
       std::function<Status(IRBuilder*, const tensorflow::NodeDef&)>;
   std::unordered_map<std::string, CallBack> func_lists_;
+  std::unordered_map<std::string, std::vector<std::string>> control_edges_;
 };
 
 /// Convert pb to ipu graphdef

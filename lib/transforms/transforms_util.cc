@@ -27,7 +27,8 @@ bool AppendReturnInst(BasicBlock* bb) {
   std::vector<Def> outputs;
   for (auto& inst_t : *bb) {
     Instruction* inst = inst_t.get();
-    if (inst->GetNumberOfUses() == 0 && inst->GetOpCode() != OpCode::RETURN) {
+    if (inst->GetNumberOfUses() == 0 && inst->GetOpCode() != OpCode::RETURN &&
+        inst->GetDependents().empty()) {
       outputs.push_back(*inst);
     }
   }
