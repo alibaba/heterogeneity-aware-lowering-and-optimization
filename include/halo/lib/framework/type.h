@@ -28,6 +28,7 @@
 namespace halo {
 
 const int kDynamicBatchSize = -1;
+const int kDynamicShapeSize = -1;
 
 /// This class defines the type for a value in the IR system.
 /// It includes a data type ID, and the dimension sizes.
@@ -73,8 +74,11 @@ class Type final {
   /// Return true if it is a scalar type.
   bool IsScalar() const noexcept { return is_scalar_; }
 
-  /// Return true if it is a scalar type.
+  /// Return true if it is dynamic batch.
   bool IsDynamicBatch() const noexcept { return is_dynamic_batch_; }
+
+  /// Return true if it is dynamic shape.
+  bool IsDynamicShape() const noexcept { return is_dynamic_shape_; }
 
   /// Returns true if it has a valid type.
   bool IsValid() const noexcept {
@@ -137,6 +141,9 @@ class Type final {
 
   /// Dynamic batch flag, the default is false.
   bool is_dynamic_batch_ = false;
+
+  /// Dynamic shape flag, the default is false.
+  bool is_dynamic_shape_ = false;
 
   /// The total number of elements.
   int64_t total_num_of_elements_ = -1;
