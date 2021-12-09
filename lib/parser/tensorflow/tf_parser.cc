@@ -159,6 +159,16 @@ Status TFParser::ConvertToHaloIR(const tensorflow::GraphDef& graph_def) {
   HLCHECK(graph_def.node_size() == i);
   ConvertReturnNodes(ir_builder_.get(), ret_vals);
 
+  // Add control dependents.
+  for (const auto& kv : control_edges_) {
+    auto it = inst_name_to_ptr_.find(kv.first);
+    HLCHECK(it != inst_name_to_ptr_.end());
+    for (const auto& dep_name : kv.second) {
+      auto it_d = inst_name_to_ptr_.find(dep_name);
+      HLCHECK(it_d != inst_name_to_ptr_.end());
+      it->second->AddDependant(it_d->second);
+    }
+  }
   return Status::SUCCESS;
 }
 
@@ -898,6 +908,13 @@ Status TFParser::ConvertConstNode(IRBuilder* ir_builder,
                                   const tensorflow::NodeDef& node_def) {
   TFAttrs attrs(node_def);
   DataType data_type = DataType::INVALID;
+  // Check for control deps
+  for (int i = 0, e = node_def.input_size(); i < e; ++i) {
+    const auto& dep = node_def.input(i);
+    HLCHECK(!dep.empty() && dep.front() == '^');
+    control_edges_[dep.substr(1)].push_back(node_def.name());
+  }
+
   if (attrs.Process<DataType>("dtype", &data_type)) {
     switch (data_type) {
       case DataType::BOOL: {
