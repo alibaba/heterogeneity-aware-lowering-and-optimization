@@ -295,3 +295,10 @@ odla_status PopartConfig::extract_config_from_cache() {
   }
   return ODLA_SUCCESS;
 }
+
+bool PopartConfig::sdk_version_match(std::string& sdk_version) {
+  popart::logging::warn(
+      "sdk version in the cache file is {}, and from sdk is {}", sdk_version_,
+      sdk_version);
+  return (sdk_version_.compare(sdk_version) == 0);
+}
