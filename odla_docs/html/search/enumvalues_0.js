@@ -13,7 +13,7 @@ var searchData=
   ['odla_5finvalid_5fparam_610',['ODLA_INVALID_PARAM',['../odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a5b894b19f9456cae708edc778f63218f',1,'odla_common.h']]],
   ['odla_5fios_611',['ODLA_IOS',['../odla__ops__nn_8h.html#a54eaa7020ac01fc2a354d4fef9313a62a2497359cd68c7f81f24bd947fbd3746b',1,'odla_ops_nn.h']]],
   ['odla_5flinear_612',['ODLA_LINEAR',['../odla__ops__process_8h.html#a527558ca73adc6469aadb7171cb0dfaca3ed9b9de27217e6117d2dfd0818eccab',1,'odla_ops_process.h']]],
-  ['odla_5floop_5flast_5fvalue_613',['ODLA_LOOP_LAST_VALUE',['../odla__ops__control__flow_8h.html#a3fa6f4b753812a9e096934d08678b896aa1020ac3795d21a6f4d096a09cdec5a7',1,'odla_ops_control_flow.h']]],
+  ['odla_5floop_5flast_5fvalue_613',['ODLA_LOOP_LAST_VALUE',['../odla__ops__loop_8h.html#a3fa6f4b753812a9e096934d08678b896aa1020ac3795d21a6f4d096a09cdec5a7',1,'odla_ops_loop.h']]],
   ['odla_5fmem_5ferror_614',['ODLA_MEM_ERROR',['../odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29a3bbe59e41327500a9a709ae05af34dd1',1,'odla_common.h']]],
   ['odla_5fnearest_615',['ODLA_NEAREST',['../odla__ops__process_8h.html#a527558ca73adc6469aadb7171cb0dfacac04d6bda13132ad8378ddd90540a7e86',1,'odla_ops_process.h']]],
   ['odla_5fois_616',['ODLA_OIS',['../odla__ops__nn_8h.html#a54eaa7020ac01fc2a354d4fef9313a62a74e6fc50e34b5b6c7cc3cc0ace96bf73',1,'odla_ops_nn.h']]],
