@@ -141,6 +141,7 @@ jobs:
           elif [[ $GITHUB_REF == refs/pull/* ]]; then
             tag=pr-${{ github.event.number }}
           fi
+          ls /tmp/download
           echo ::set-output name=tag::${tag}
 
       - name: Login to aliyun
