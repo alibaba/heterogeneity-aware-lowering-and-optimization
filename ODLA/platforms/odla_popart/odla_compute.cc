@@ -67,6 +67,8 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
       PopartConfig::instance()->set_load_or_save_cache(true);
       PopartConfig::instance()->set_cache_path(
           (std::string) reinterpret_cast<char*>(value));
+      popart::logging::setLogLevel(popart::logging::Module::popart,
+                                   popart::logging::Level::Info);
       break;
     case 1002:
       setenv("POPART_LOG_LEVEL", "INFO", 1);
