@@ -25,6 +25,7 @@
 
 #include "halo/api/halo_data.h"
 #include "halo/lib/framework/common.h"
+#include "halo/lib/framework/type.h"
 #include "halo/lib/ir/constant.h"
 #include "halo/lib/ir/loss_instructions.h"
 #include "halo/lib/ir/math_instructions.h"
@@ -417,6 +418,15 @@ static void RunOnInstruction(PadInst* inst) {
   inst->GetResultsTypes()[0] = result_type;
 }
 
+static void FixupForDynamicShape(const Type& data_type,
+                                 std::vector<int64_t>* ret_shape) {
+  for (int i = 0, e = data_type.GetNumOfDims(); i < e; ++i) {
+    if (data_type.GetNumOfElementsInDim(i) == kDynamicShapeSize) {
+      ret_shape->at(i) = kDynamicShapeSize;
+    }
+  }
+}
+
 static Type ComputeKernelWiseType(
     const Type& data_type, const std::vector<int64_t>& kernel_shape,
     const std::vector<int>& strides, Padding padding_mode,
@@ -527,7 +537,7 @@ static Type ComputeKernelWiseType(
     std::swap(explicit_paddings[0], explicit_paddings[1]);
     std::swap(explicit_paddings[2], explicit_paddings[3]);
   }
-
+  FixupForDynamicShape(data_type, &ret_shape);
   return Type{data_type.GetDataType(), ret_shape};
 }
 
@@ -1096,6 +1106,7 @@ static void RunOnInstruction(ResizeInst* inst) {
     }
     new_shape[i] = dim;
   }
+  FixupForDynamicShape(input_type, &new_shape);
 
   inst->GetResultsTypes()[0] = Type{input_type.GetDataType(), new_shape};
 }

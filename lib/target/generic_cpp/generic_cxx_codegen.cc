@@ -253,8 +253,10 @@ std::string GenericCXXCodeGen::GetFunctionDecl(const Function& func,
         ss << (is_first ? "" : ", ") << cv.type.Str(true) << " " << cv.name
            << "[";
         auto shape = type.GetDimSizes();
-        if (type.IsDynamicBatch()) {
-          shape[0] = 1;
+        for (auto& dim : shape) {
+          if (dim == kDynamicShapeSize || dim == kDynamicBatchSize) {
+            dim = 1;
+          }
         }
         ss << Join(shape, '*') << "]";
       } else {
