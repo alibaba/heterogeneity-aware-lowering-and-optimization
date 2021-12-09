@@ -564,6 +564,7 @@ defvar RNN_attrs = [
 
 def ONNX_LSTM : ONNXExtension<"LSTM"> {
   let extension_attr_ = RNN_attrs;
+  let optional_args_  = [3, 4, 5, 6, 7];
 }
 
 def ONNX_GRU : ONNXExtension<"GRU"> {
