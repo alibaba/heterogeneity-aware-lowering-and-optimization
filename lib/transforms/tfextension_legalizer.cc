@@ -489,7 +489,9 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
 static std::vector<Def> ConvertSwitch(const TFExtensionInst* ext,
                                       IRBuilder* builder) {
   const auto& data = ext->GetOperand(0);
-  if (const Constant* pred = DynCast<Constant>(ext->GetOperand(1));
+  const auto& cond = ext->GetOperand(1);
+#if 0
+  if (const Constant* pred = DynCast<Constant>(cond);
       pred != nullptr) {
     HLCHECK(pred->GetResultType().GetTotalNumOfElements() == 1);
     bool cond = pred->GetDataAsInt64(0) != 0;
@@ -497,7 +499,33 @@ static std::vector<Def> ConvertSwitch(const TFExtensionInst* ext,
     std::vector<Def> ret_false{data, Def::GetUndefined()};
     return cond ? ret_true : ret_false;
   }
+#endif
+// TODO(unknown): move to separate pass?
+#if 1
+  builder->SetInsertAfter(ext);
+  BasicBlockBuilder bb_builder(ext->GetParent()->GetParent());
+  const auto& name = ext->GetName();
+  auto if_inst = builder->CreateIf(ext->GetName(), cond);
+  if_inst->AddOneOperand(data);
+
+  BasicBlock* bb_t = bb_builder.CreateBasicBlock(name + "_true");
+  if_inst->SetThenBranch(bb_t);
+  IRBuilder builder_t(bb_t);
+  auto arg_builder_t = std::make_unique<ArgumentBuilder>(bb_t);
+  auto arg_t = arg_builder_t->CreateArgument(name + "_t", data.GetType());
+  builder_t.CreateReturn(name + "ret_t", *arg_t);
+
+  BasicBlock* bb_f = bb_builder.CreateBasicBlock(name + "_false");
+  IRBuilder builder_f(bb_f);
+  if_inst->SetElseBranch(bb_f);
+  auto arg_builder_f = std::make_unique<ArgumentBuilder>(bb_f);
+  auto arg_f = arg_builder_f->CreateArgument(name + "_f", data.GetType());
+  builder_f.CreateReturn(name + "ret_f", *arg_f);
+  if_inst->SetNumOfResults(2);
+  return {Def(if_inst, 0), Def(if_inst, 1)};
+#else
   return {};
+#endif
 }
 
 static std::vector<Def> ConvertMerge(const TFExtensionInst* ext,

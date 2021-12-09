@@ -456,6 +456,9 @@ static odla_value CreateValue(T* t, const odla_value_type& type,
   auto v = std::make_unique<_odla_value>(t, type, name);
   auto ret = v.get();
   g_comp->vals.push_back(std::move(v));
+  if (!g_comp->branchs.empty()) {
+    g_comp->branchs.top().branch->addInput(*ret);
+  }
   return ret;
 }
 

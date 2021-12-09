@@ -1531,6 +1531,25 @@ static void RunOnInstruction(BitcastInst* inst) {
   inst->GetResultsTypes()[0] = result_type;
 }
 
+static void RunOnInstruction(TFExtensionInst* inst) {
+  if (inst->GetExtOpCode() == TFExtOpCode::MERGE) {
+    for (auto& op : inst->GetOperands()) {
+      if (op.GetType().IsValid()) {
+        inst->GetResultsTypes()[0] = op.GetType();
+        return;
+      }
+    }
+    return;
+  }
+  if (inst->GetExtOpCode() == TFExtOpCode::SWITCH) {
+    const auto& ty = inst->GetOperand(0).GetType();
+    if (ty.IsValid()) {
+      inst->GetResultsTypes() = {ty, ty};
+    }
+    return;
+  }
+}
+
 static void RunOnInstruction(UniqueInst* inst) {
   const auto& type0 = inst->GetOperand(0).GetType();
   if (!type0.IsValid()) {
@@ -1569,6 +1588,11 @@ bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
 #define GET_INST_DOWNCAST_SWITCH
 #include "halo/lib/ir/instructions_info.def"
 #undef GET_INST_DOWNCAST_SWITCH
+      case OpCode::EXTENSION: {
+        TFExtensionInst* ext = DynCast<TFExtensionInst>(inst);
+        RunOnInstruction(ext);
+        break;
+      }
       default: {
         if (!relaxed_) {
           // HLCHECK(0 && "Unreachable");
