@@ -125,6 +125,7 @@ static std::string GetBF16Mode(BF16Mode mode) {
 }
 
 bool GenericCXXCodeGen::RunOnModule(Module* module) {
+  module->Dump();
   memory_analyzer_ = std::make_unique<MemoryAnalyzer>(*module);
   Function* entry_func = nullptr;
   EmitBanner(&os_, &header_os_, GetAPI());
