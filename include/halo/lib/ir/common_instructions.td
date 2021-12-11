@@ -78,6 +78,12 @@ let cat_ = cat_common in {
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
   }
 
+  def Shape : Inst<"Compute the shape of input."> {
+    let ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >];
+    let attrs_ = [Attr<"The output date type size", EnumDataType, "data_type", "INT64">];
+    let outs_ = [Arg<"The result.", ArgType<[I64, I32]> >];
+  }
+
   def Reshape : Inst<"Reshape the input X1 to create the result with the same"
                      " number of elements and the shape specified by X2."> {
     let ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >,

@@ -261,25 +261,6 @@ static std::vector<Def> ConvertFill(const TFExtensionInst* ext,
   return {};
 }
 
-static std::vector<Def> ConvertShape(const TFExtensionInst* ext,
-                                     IRBuilder* builder) {
-  auto input = ext->GetOperand(0);
-  const Type& input_type = input.GetType();
-  if (!input_type.IsValid()) {
-    return {};
-  }
-  std::vector<int> shape;
-  for (int64_t i : input_type.GetDimSizes()) {
-    shape.push_back(static_cast<int>(i));
-  }
-  ConstantBuilder cb(ext->GetParent()->GetParent());
-  Constant* c = cb.CreateConstant(
-      ext->GetName() + "_shape",
-      Type{DataType::INT32, {static_cast<int64_t>(input_type.GetNumOfDims())}},
-      shape.data());
-  return {*c};
-}
-
 static std::vector<Def> ConvertSize(const TFExtensionInst* ext,
                                     IRBuilder* builder) {
   const auto& type = ext->GetOperand(0).GetType();
@@ -1088,9 +1069,6 @@ static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
     }
     case TFExtOpCode::SIZE: {
       return ConvertSize(tf_inst, builder);
-    }
-    case TFExtOpCode::SHAPE: {
-      return ConvertShape(tf_inst, builder);
     }
     case TFExtOpCode::SPLIT: {
       return ConvertSplit(tf_inst, builder);

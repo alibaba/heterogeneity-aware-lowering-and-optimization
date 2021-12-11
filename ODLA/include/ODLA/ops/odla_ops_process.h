@@ -259,8 +259,8 @@ odla_Resize(odla_value input, odla_interpolation_mode interpolation,
   the result value is implementation determined.
 
   \param input the input value
-  \param value_id a unique value id (can be NULL)
   \param output_dims the optional output shape (can be undefined)
+  \param value_id a unique value id (can be NULL)
 
   \return odla_value
 */
