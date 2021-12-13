@@ -1600,7 +1600,9 @@ bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
 #undef GET_INST_DOWNCAST_SWITCH
       case OpCode::EXTENSION: {
         TFExtensionInst* ext = DynCast<TFExtensionInst>(inst);
-        RunOnInstruction(ext);
+        if (ext != nullptr) {
+          RunOnInstruction(ext);
+        }
         break;
       }
       default: {
