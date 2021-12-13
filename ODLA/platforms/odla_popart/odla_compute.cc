@@ -74,6 +74,7 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
              "vertexName:popops__BinaryOp1DInPlaceSupervisor___popops__expr__"
              "BinaryOpType__SUBTRACT_half\"}",
              1);
+      popart::logging::err("The POPLAR_ENGINE_OPTIONS has been set");
       // popops__BroadcastVectorInnerInPlaceSupervisor___popops__expr__BinaryOpType__ADD_half
       break;
     case 1002:
