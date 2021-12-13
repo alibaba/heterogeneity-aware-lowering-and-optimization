@@ -241,25 +241,27 @@ odla_status _odla_computation::init(bool is_compile) {
           std::string version_string(popart::core::packageHash());
           if (!PopartConfig::instance()->sdk_version_match(version_string)) {
             popart::logging::err(
-                "The sdk version of cache does not match popart hash {}",
+                "The sdk version of cache does not match popart hash {}, will "
+                "compile...",
                 version_string);
-            return ODLA_FAILURE;
-          }
-          auto cache_fs = PopartConfig::instance()->get_cache_fs();
-          if (cache_fs->is_open()) {
-            try {
-              cache_fs->seekg(0, std::ios::beg);
-              int config_len = 0;
-              cache_fs->read((char*)&config_len, sizeof(config_len));
-              cache_fs->seekg(config_len + sizeof(config_len), std::ios::beg);
-              new_session->loadExecutableFromStream(*(cache_fs.get()));
-            } catch (std::exception& e) {
-              popart::logging::err("bad cache file, will compile the graph:{}",
-                                   e.what());
-              return ODLA_FAILURE;
-            } catch (...) {
-              popart::logging::err("bad cache file, will compile the graph");
-              return ODLA_FAILURE;
+            // return ODLA_FAILURE;
+          } else {
+            auto cache_fs = PopartConfig::instance()->get_cache_fs();
+            if (cache_fs->is_open()) {
+              try {
+                cache_fs->seekg(0, std::ios::beg);
+                int config_len = 0;
+                cache_fs->read((char*)&config_len, sizeof(config_len));
+                cache_fs->seekg(config_len + sizeof(config_len), std::ios::beg);
+                new_session->loadExecutableFromStream(*(cache_fs.get()));
+              } catch (std::exception& e) {
+                popart::logging::err(
+                    "bad cache file, will compile the graph:{}", e.what());
+                return ODLA_FAILURE;
+              } catch (...) {
+                popart::logging::err("bad cache file, will compile the graph");
+                return ODLA_FAILURE;
+              }
             }
           }
         }
