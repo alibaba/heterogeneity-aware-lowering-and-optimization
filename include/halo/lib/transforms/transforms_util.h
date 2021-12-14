@@ -136,10 +136,15 @@ std::vector<Def> ConvertSqueezeImpl(const T* ext, IRBuilder* builder,
     }
   }
   ConstantBuilder cb(ext->GetParent()->GetParent());
-  Constant* c = cb.CreateConstant(
-      ext->GetName() + "_squeeze_dims",
-      Type{DataType::INT32, {static_cast<int64_t>(new_dims.size())}},
-      new_dims.data());
+  const int32_t one = 1;
+  std::vector<int64_t> new_shape{static_cast<int64_t>(new_dims.size())};
+  const int32_t* data = new_dims.data();
+  if (new_dims.empty()) {
+    data = &one;
+    new_shape.clear();
+  }
+  Constant* c = cb.CreateConstant(ext->GetName() + "_squeeze_dims",
+                                  Type{DataType::INT32, new_shape}, data);
   builder->SetInsertAfter(ext);
   auto new_inst = builder->CreateReshape(ext->GetName(), {input, *c});
   return {*new_inst};

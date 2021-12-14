@@ -475,11 +475,15 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
       }
       new_axis_mask >>= 1;
     }
-
-    Constant* c_shape = cb.CreateConstant(
-        new_slice_inst->GetName() + "_shape",
-        Type{DataType::INT32, {static_cast<int64_t>(new_dims.size())}},
-        new_dims.data());
+    std::vector<int64_t> new_shape;
+    if (new_dims.empty()) {
+      new_dims.push_back(1);
+    } else {
+      new_shape.push_back(static_cast<int64_t>(new_dims.size()));
+    }
+    Constant* c_shape =
+        cb.CreateConstant(new_slice_inst->GetName() + "_shape",
+                          Type{DataType::INT32, new_shape}, new_dims.data());
     new_slice_inst = builder->CreateReshape(ext->GetName() + "_reshape",
                                             {Def{new_slice_inst, 0}, *c_shape});
   }
