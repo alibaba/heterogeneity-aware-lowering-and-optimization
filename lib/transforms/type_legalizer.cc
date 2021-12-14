@@ -264,9 +264,49 @@ static void RunOnInstruction(CompressInst* inst) {
   inst->GetResultsTypes()[0] = Type{dt, ret_dims};
 }
 
+// TODO: move to util
+static int GetConstantValue(const StackInst& inst, int idx) {
+  int elems = 0;
+  for (auto& op : inst.GetOperands()) {
+    const auto& ty = op.GetType();
+    if (!ty.IsValid()) {
+      return -1;
+    }
+    if (idx >= elems && idx < elems + ty.GetTotalNumOfElements()) {
+      auto c = DynCast<Constant>(op);
+      if (c == nullptr) {
+        return -1;
+      }
+      return c->GetDataAsInt64(idx - elems);
+    }
+    elems += ty.GetTotalNumOfElements();
+  }
+  return -1;
+}
+
 static void RunOnInstruction(ReshapeInst* inst) {
   auto& op0_type = inst->GetOperand(0).GetType();
   Def op1 = inst->GetOperand(1);
+  if (!IsA<Constant>(op1) && op1.GetType().IsValid() &&
+      (op0_type.IsDynamicBatch() || op0_type.IsDynamicShape())) {
+    int rank = op1.GetType().GetTotalNumOfElements();
+    std::vector<int64_t> new_shape(rank);
+    unsigned unknown_dims = 0;
+    if (IsA<StackInst>(op1)) {
+      const auto& stack = *DynCast<StackInst>(op1);
+      for (int i = 0; i < rank; ++i) {
+        new_shape[i] = GetConstantValue(stack, i);
+      }
+      /*
+      unknown_dims = std::count_if(new_shape.begin(), new_shape.end(),
+                                   [](int64_t x) { return x < 0; });*/
+      if (unknown_dims <= 1) { // FIXME: remove
+        inst->GetResultsTypes()[0] =
+            halo::Type{op0_type.GetDataType(), new_shape};
+        return;
+      }
+    }
+  }
   if (!IsA<Constant>(op1)) {
     return;
   }
@@ -659,6 +699,16 @@ static void RunOnCommonReductionInstruction(T* inst, std::vector<int32_t> axis,
   inst->GetResultsTypes()[0] = halo::Type{dt, ret_shape};
 }
 
+static void RunOnInstruction(ShapeInst* inst) {
+  const Type& input_type = inst->GetOperand(0).GetType();
+
+  if (!input_type.IsValid()) {
+    return;
+  }
+  int rank = input_type.GetNumOfDims();
+  inst->GetResultsTypes()[0] = halo::Type{inst->GetDataType(), {rank}};
+}
+
 static void RunOnInstruction(ReduceL1Inst* inst) {
   RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
 }
@@ -918,11 +968,40 @@ static void RunOnInstruction(SliceInst* inst) {
   auto op_len = inst->GetOperand(2);
   auto& input_type = op0.GetType();
 
-  if (!input_type.IsValid() || !IsA<Constant>(op_len)) {
+  if (!input_type.IsValid()) {
     return;
   }
 
   auto dims = input_type.GetNumOfDims();
+  if ((input_type.IsDynamicShape() || input_type.IsDynamicBatch()) &&
+      !IsA<Constant>(op_len)) {
+    auto ret_shape = input_type.GetDimSizes();
+    bool is_constant_len = true;
+    if (IsA<StackInst>(op_len) && op_len.GetType().IsValid()) {
+      for (unsigned i = 0; i < dims; ++i) {
+        if (ret_shape[i] == kDynamicBatchSize ||
+            ret_shape[i] == kDynamicShapeSize) {
+          continue;
+        }
+        int64_t v = GetConstantValue(*DynCast<StackInst>(op_len), (int)i);
+        if (v < 0) {
+          is_constant_len = false;
+          break;
+        }
+        ret_shape[i] = v;
+      }
+      if (is_constant_len) {
+        inst->GetResultsTypes()[0] =
+            halo::Type{input_type.GetDataType(), ret_shape};
+      }
+    }
+    return;
+  }
+
+  if (!IsA<Constant>(op_len)) {
+    return;
+  }
+
   std::unordered_set<int32_t> axes;
   if (inst->GetNumOfOperands() > 4) {
     auto op_axes = inst->GetOperand(4);
@@ -1531,6 +1610,25 @@ static void RunOnInstruction(BitcastInst* inst) {
   inst->GetResultsTypes()[0] = result_type;
 }
 
+static void RunOnInstruction(TFExtensionInst* inst) {
+  if (inst->GetExtOpCode() == TFExtOpCode::MERGE) {
+    for (auto& op : inst->GetOperands()) {
+      if (op.GetType().IsValid()) {
+        inst->GetResultsTypes()[0] = op.GetType();
+        return;
+      }
+    }
+    return;
+  }
+  if (inst->GetExtOpCode() == TFExtOpCode::SWITCH) {
+    const auto& ty = inst->GetOperand(0).GetType();
+    if (ty.IsValid()) {
+      inst->GetResultsTypes() = {ty, ty};
+    }
+    return;
+  }
+}
+
 static void RunOnInstruction(UniqueInst* inst) {
   const auto& type0 = inst->GetOperand(0).GetType();
   if (!type0.IsValid()) {
@@ -1569,6 +1667,13 @@ bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
 #define GET_INST_DOWNCAST_SWITCH
 #include "halo/lib/ir/instructions_info.def"
 #undef GET_INST_DOWNCAST_SWITCH
+      case OpCode::EXTENSION: {
+        TFExtensionInst* ext = DynCast<TFExtensionInst>(inst);
+        if (ext != nullptr) {
+          RunOnInstruction(ext);
+        }
+        break;
+      }
       default: {
         if (!relaxed_) {
           // HLCHECK(0 && "Unreachable");

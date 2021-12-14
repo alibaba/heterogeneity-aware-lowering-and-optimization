@@ -125,6 +125,7 @@ static std::string GetBF16Mode(BF16Mode mode) {
 }
 
 bool GenericCXXCodeGen::RunOnModule(Module* module) {
+  module->Dump();
   memory_analyzer_ = std::make_unique<MemoryAnalyzer>(*module);
   Function* entry_func = nullptr;
   EmitBanner(&os_, &header_os_, GetAPI());
@@ -270,6 +271,9 @@ std::string GenericCXXCodeGen::GetFunctionDecl(const Function& func,
   auto nr_outputs = ret_inst.GetNumOfOperands();
   model_info.num_outputs = nr_outputs;
   for (const auto& out : ret_inst.GetOperands()) {
+    if (out.IsNull()) {
+      continue;
+    }
     const auto& type = out.GetType();
     if (ir_mapping_.find(out) == ir_mapping_.end()) {
       CXXValue cv(out.GetDef()->GetName(), TensorTypeToCXXType(type, false));
@@ -840,6 +844,9 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
   index = 0;
   // Pre-launch binding.
   for (auto& op : return_inst->GetOperands()) {
+    if (op.IsNull()) {
+      continue;
+    }
     auto& cv = ir_mapping_[op];
     std::string arg_name = (opts_.emit_inference_func_sig || is_sub)
                                ? (is_sub ? "outputs.values[" : "outputs[") +

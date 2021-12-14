@@ -25,6 +25,9 @@ namespace halo {
 void GenericCXXCodeGen::RunOnInstruction(ReturnInst* inst) {
   bool is_compile_mode = opts_.exec_mode == ExecMode::Compile;
   for (auto& op : inst->GetOperands()) {
+    if (op.IsNull()) {
+      continue;
+    }
     const CXXValue& val = ir_mapping_[op];
     if (is_compile_mode) {
       bool is_entry_with_calls =

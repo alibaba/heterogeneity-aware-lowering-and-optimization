@@ -31,6 +31,7 @@
 #include "halo/lib/transforms/analyzer.h"
 #include "halo/lib/transforms/caffeextension_legalizer.h"
 #include "halo/lib/transforms/constant_decombine.h"
+#include "halo/lib/transforms/convert_tf_cfg.h"
 #include "halo/lib/transforms/dce.h"
 #include "halo/lib/transforms/device_placement.h"
 #include "halo/lib/transforms/fusion.h"
@@ -264,6 +265,8 @@ Pass* PassManager::AddCodeFormatterPass(std::ostringstream& buf_code,
                                         const CXXCodeGenOpts& opts) {
   return AddPass<CodeFormatter>(buf_code, buf_header, opts);
 }
+
+Pass* PassManager::AddConvertTFCFGPass() { return AddPass<ConvertTFCFG>(); }
 
 Pass* PassManager::AddDCEPass() { return AddPass<DCE>(); }
 

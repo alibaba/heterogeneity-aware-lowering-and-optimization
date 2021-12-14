@@ -873,6 +873,31 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Relu6Inst* inst) {
       });
 }
 
+std::pair<Def, Def> InstSimplify::RunOnInstruction(ShapeInst* inst) {
+  const auto& type = inst->GetOperand(0).GetType();
+
+  Def orig_def{inst, 0};
+  if (!type.IsValid() || type.IsDynamicShape() || type.IsDynamicBatch()) {
+    return {orig_def, orig_def};
+  }
+
+  DataType dt = inst->GetDataType();
+  ConstantBuilder cb(inst->GetParent()->GetParent());
+  int64_t rank = type.GetNumOfDims();
+  if (dt == DataType::INT32) {
+    std::vector<int32_t> shape;
+    for (int64_t i : type.GetDimSizes()) {
+      shape.push_back(static_cast<int>(i));
+    }
+    Constant* c = cb.CreateConstant(inst->GetName(), halo::Type{dt, {rank}},
+                                    shape.data());
+    return {orig_def, *c};
+  }
+  HLCHECK(dt == DataType::INT64);
+  Constant* c = cb.CreateConstant(inst->GetName(), halo::Type{dt, {rank}},
+                                  type.GetDimSizes());
+  return {orig_def, *c};
+}
 std::pair<Def, Def> InstSimplify::RunOnInstruction(SigmoidInst* inst) {
   return SinkTranspose(
       *inst, [](IRBuilder& builder, const std::string& name, const Def& op) {
@@ -2402,6 +2427,41 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
       }
     } else if (auto new_inst = FoldSliceInst(inst)) {
       return {orig_def, *new_inst};
+    }
+  }
+  // Some special cases.
+  // If input is a partial constant (sliced data is constant), we can still
+  // convert the result to contant.
+  const Constant* c_start = DynCast<Constant>(inst->GetOperand(1));
+  const Constant* c_len = DynCast<Constant>(inst->GetOperand(2));
+
+  if (const auto shape_inst = DynCast<ShapeInst>(inst->GetOperand(0));
+      shape_inst != nullptr && shape_inst->GetResultType().IsValid() &&
+      c_start != nullptr && c_len != nullptr &&
+      inst->GetResultType().IsValid()) {
+    const auto& ret_type = inst->GetResultType();
+    HLCHECK(ret_type.GetNumOfDims() <= 1);
+    // rank must be 1 or 0 (scalar) and axis must be 0.
+    const auto& value_type = shape_inst->GetOperand(0).GetType();
+    HLCHECK(value_type.IsValid());
+    const auto& shape = value_type.GetDimSizes();
+    auto from = c_start->GetDataAsInt64(0);
+    auto len = c_len->GetDataAsInt64(0);
+    bool is_constant = true;
+    std::vector<int64_t> data(shape.begin() + from, shape.begin() + from + len);
+    HLCHECK(static_cast<int64_t>(data.size()) ==
+            ret_type.GetTotalNumOfElements());
+    for (auto x : data) {
+      if (x < 0) {
+        is_constant = false;
+        break;
+      }
+    }
+    if (is_constant) {
+      ConstantBuilder cb(inst->GetParent()->GetParent());
+      auto c = cb.CreateConstant(inst->GetName(), inst->GetResultType(),
+                                 data.data());
+      return {orig_def, *c};
     }
   }
 
