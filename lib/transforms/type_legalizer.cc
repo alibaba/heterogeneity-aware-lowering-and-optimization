@@ -264,9 +264,49 @@ static void RunOnInstruction(CompressInst* inst) {
   inst->GetResultsTypes()[0] = Type{dt, ret_dims};
 }
 
+// TODO: move to util
+static int GetConstantValue(const StackInst& inst, int idx) {
+  int elems = 0;
+  for (auto& op : inst.GetOperands()) {
+    const auto& ty = op.GetType();
+    if (!ty.IsValid()) {
+      return -1;
+    }
+    if (idx >= elems && idx < elems + ty.GetTotalNumOfElements()) {
+      auto c = DynCast<Constant>(op);
+      if (c == nullptr) {
+        return -1;
+      }
+      return c->GetDataAsInt64(idx - elems);
+    }
+    elems += ty.GetTotalNumOfElements();
+  }
+  return -1;
+}
+
 static void RunOnInstruction(ReshapeInst* inst) {
   auto& op0_type = inst->GetOperand(0).GetType();
   Def op1 = inst->GetOperand(1);
+  if (!IsA<Constant>(op1) && op1.GetType().IsValid() &&
+      (op0_type.IsDynamicBatch() || op0_type.IsDynamicShape())) {
+    int rank = op1.GetType().GetTotalNumOfElements();
+    std::vector<int64_t> new_shape(rank);
+    unsigned unknown_dims = 0;
+    if (IsA<StackInst>(op1)) {
+      const auto& stack = *DynCast<StackInst>(op1);
+      for (int i = 0; i < rank; ++i) {
+        new_shape[i] = GetConstantValue(stack, i);
+      }
+      /*
+      unknown_dims = std::count_if(new_shape.begin(), new_shape.end(),
+                                   [](int64_t x) { return x < 0; });*/
+      if (unknown_dims <= 1) { // FIXME: remove
+        inst->GetResultsTypes()[0] =
+            halo::Type{op0_type.GetDataType(), new_shape};
+        return;
+      }
+    }
+  }
   if (!IsA<Constant>(op1)) {
     return;
   }
@@ -928,11 +968,40 @@ static void RunOnInstruction(SliceInst* inst) {
   auto op_len = inst->GetOperand(2);
   auto& input_type = op0.GetType();
 
-  if (!input_type.IsValid() || !IsA<Constant>(op_len)) {
+  if (!input_type.IsValid()) {
     return;
   }
 
   auto dims = input_type.GetNumOfDims();
+  if ((input_type.IsDynamicShape() || input_type.IsDynamicBatch()) &&
+      !IsA<Constant>(op_len)) {
+    auto ret_shape = input_type.GetDimSizes();
+    bool is_constant_len = true;
+    if (IsA<StackInst>(op_len) && op_len.GetType().IsValid()) {
+      for (unsigned i = 0; i < dims; ++i) {
+        if (ret_shape[i] == kDynamicBatchSize ||
+            ret_shape[i] == kDynamicShapeSize) {
+          continue;
+        }
+        int64_t v = GetConstantValue(*DynCast<StackInst>(op_len), (int)i);
+        if (v < 0) {
+          is_constant_len = false;
+          break;
+        }
+        ret_shape[i] = v;
+      }
+      if (is_constant_len) {
+        inst->GetResultsTypes()[0] =
+            halo::Type{input_type.GetDataType(), ret_shape};
+      }
+    }
+    return;
+  }
+
+  if (!IsA<Constant>(op_len)) {
+    return;
+  }
+
   std::unordered_set<int32_t> axes;
   if (inst->GetNumOfOperands() > 4) {
     auto op_axes = inst->GetOperand(4);
