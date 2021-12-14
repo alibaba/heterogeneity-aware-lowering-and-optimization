@@ -43,7 +43,7 @@ Type::Type(const DataType dt_id, const std::vector<int64_t>& shape)
     if (shape[0] == kDynamicBatchSize) {
       is_dynamic_batch_ = true;
       total_num_of_elements_ = std::numeric_limits<int64_t>::max();
-    } else if (shape[0] > 0) {
+    } else if (shape[0] >= 0) {
       total_num_of_elements_ *= shape[0];
     } else {
       total_num_of_elements_ = -1;

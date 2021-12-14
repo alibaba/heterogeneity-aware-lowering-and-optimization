@@ -271,6 +271,12 @@ static void RunOnInstruction(ReshapeInst* inst) {
     return;
   }
   const Constant* shape_c = DynCast<Constant>(op1.GetOwner());
+  const auto& shape_type = shape_c->GetResultType();
+  if (shape_type.IsScalar()) {
+    HLCHECK(shape_c->IsScalarOne()); // reshape to a scalar.
+    inst->GetResultsTypes()[0] = halo::Type{op0_type.GetDataType(), {}};
+    return;
+  }
   std::vector<int64_t> new_shape;
   for (size_t i = 0, e = shape_c->GetResultType(0).GetTotalNumOfElements();
        i != e; ++i) {
