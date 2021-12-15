@@ -261,25 +261,6 @@ static std::vector<Def> ConvertFill(const TFExtensionInst* ext,
   return {};
 }
 
-static std::vector<Def> ConvertShape(const TFExtensionInst* ext,
-                                     IRBuilder* builder) {
-  auto input = ext->GetOperand(0);
-  const Type& input_type = input.GetType();
-  if (!input_type.IsValid()) {
-    return {};
-  }
-  std::vector<int> shape;
-  for (int64_t i : input_type.GetDimSizes()) {
-    shape.push_back(static_cast<int>(i));
-  }
-  ConstantBuilder cb(ext->GetParent()->GetParent());
-  Constant* c = cb.CreateConstant(
-      ext->GetName() + "_shape",
-      Type{DataType::INT32, {static_cast<int64_t>(input_type.GetNumOfDims())}},
-      shape.data());
-  return {*c};
-}
-
 static std::vector<Def> ConvertSize(const TFExtensionInst* ext,
                                     IRBuilder* builder) {
   const auto& type = ext->GetOperand(0).GetType();
@@ -493,7 +474,9 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
 static std::vector<Def> ConvertSwitch(const TFExtensionInst* ext,
                                       IRBuilder* builder) {
   const auto& data = ext->GetOperand(0);
-  if (const Constant* pred = DynCast<Constant>(ext->GetOperand(1));
+  const auto& cond = ext->GetOperand(1);
+#if 0
+  if (const Constant* pred = DynCast<Constant>(cond);
       pred != nullptr) {
     HLCHECK(pred->GetResultType().GetTotalNumOfElements() == 1);
     bool cond = pred->GetDataAsInt64(0) != 0;
@@ -501,7 +484,33 @@ static std::vector<Def> ConvertSwitch(const TFExtensionInst* ext,
     std::vector<Def> ret_false{data, Def::GetUndefined()};
     return cond ? ret_true : ret_false;
   }
+#endif
+// TODO(unknown): move to separate pass?
+#if 1
+  builder->SetInsertAfter(ext);
+  BasicBlockBuilder bb_builder(ext->GetParent()->GetParent());
+  const auto& name = ext->GetName();
+  auto if_inst = builder->CreateIf(ext->GetName(), cond);
+  if_inst->AddOneOperand(data);
+
+  BasicBlock* bb_t = bb_builder.CreateBasicBlock(name + "_true");
+  if_inst->SetThenBranch(bb_t);
+  IRBuilder builder_t(bb_t);
+  auto arg_builder_t = std::make_unique<ArgumentBuilder>(bb_t);
+  auto arg_t = arg_builder_t->CreateArgument(name + "_t", data.GetType());
+  builder_t.CreateReturn(name + "ret_t", *arg_t);
+
+  BasicBlock* bb_f = bb_builder.CreateBasicBlock(name + "_false");
+  IRBuilder builder_f(bb_f);
+  if_inst->SetElseBranch(bb_f);
+  auto arg_builder_f = std::make_unique<ArgumentBuilder>(bb_f);
+  auto arg_f = arg_builder_f->CreateArgument(name + "_f", data.GetType());
+  builder_f.CreateReturn(name + "ret_f", *arg_f);
+  if_inst->SetNumOfResults(2);
+  return {Def(if_inst, 0), Def(if_inst, 1)};
+#else
   return {};
+#endif
 }
 
 static std::vector<Def> ConvertMerge(const TFExtensionInst* ext,
@@ -1064,9 +1073,6 @@ static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
     }
     case TFExtOpCode::SIZE: {
       return ConvertSize(tf_inst, builder);
-    }
-    case TFExtOpCode::SHAPE: {
-      return ConvertShape(tf_inst, builder);
     }
     case TFExtOpCode::SPLIT: {
       return ConvertSplit(tf_inst, builder);
