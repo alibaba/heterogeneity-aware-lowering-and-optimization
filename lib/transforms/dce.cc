@@ -24,16 +24,27 @@
 
 namespace halo {
 
-static void RemoveLoopBody(LoopInst* loop_inst) {
-  auto body = loop_inst->GetBody();
-  auto return_inst = body->GetReturnInst();
+static void RemoveBody(BasicBlock* bb) {
+  auto return_inst = bb->GetReturnInst();
   if (return_inst != nullptr) {
     // Drop all the operands of the return instruction so the rest of the body
     // loop will be DCE'ed automatically.
     // Note that the return inst cannot be erased because the current legalizer
     // will try to append one if no return inst exists for a block.
     return_inst->DropAllOperands();
+    if (bb->Instructions().size() == 1) {
+      bb->Instructions().clear();
+      return;
+    }
   }
+}
+static void RemoveLoopBody(LoopInst* loop_inst) {
+  RemoveBody(loop_inst->GetBody());
+}
+
+static void RemoveIfBody(IfInst* if_inst) {
+  RemoveBody(if_inst->GetThenBranch());
+  RemoveBody(if_inst->GetElseBranch());
 }
 
 // For instructions with `undef` operands, they are unreachable except for
@@ -84,6 +95,9 @@ bool DCE::RunOnBasicBlock(BasicBlock* bb) {
     if (dead_instrs.count(inst) > 0) {
       if (inst->GetOpCode() == OpCode::LOOP) {
         RemoveLoopBody(DynCast<LoopInst>(inst));
+      }
+      if (inst->GetOpCode() == OpCode::IF) {
+        RemoveIfBody(DynCast<IfInst>(inst));
       }
       it = bb->Instructions().erase(it);
     } else {
