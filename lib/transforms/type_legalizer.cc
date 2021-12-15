@@ -665,6 +665,16 @@ static void RunOnCommonReductionInstruction(T* inst, std::vector<int32_t> axis,
   inst->GetResultsTypes()[0] = halo::Type{dt, ret_shape};
 }
 
+static void RunOnInstruction(ShapeInst* inst) {
+  const Type& input_type = inst->GetOperand(0).GetType();
+
+  if (!input_type.IsValid()) {
+    return;
+  }
+  int rank = input_type.GetNumOfDims();
+  inst->GetResultsTypes()[0] = halo::Type{inst->GetDataType(), {rank}};
+}
+
 static void RunOnInstruction(ReduceL1Inst* inst) {
   RunOnCommonReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims());
 }

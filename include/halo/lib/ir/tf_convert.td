@@ -44,7 +44,10 @@ def TF_Reshape : TFExtension<"Reshape"> {
   let extension_attr_ = [ ExtensionAttr<"shape", IntegerList, "{}"> ];
 }
 
-def TF_Shape : TFExtension<"Shape">;
+def TF_Shape: OpMapping<"Shape", Shape> {
+  let attr_mapping_ = [
+    AttributeMapping<"", "data_type", "INT32">];
+}
 
 def TF_SquaredDifference : TFExtension<"SquaredDifference">;
 

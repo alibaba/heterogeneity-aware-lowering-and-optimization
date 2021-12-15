@@ -873,6 +873,32 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Relu6Inst* inst) {
       });
 }
 
+std::pair<Def, Def> InstSimplify::RunOnInstruction(ShapeInst* inst) {
+  const auto& type = inst->GetOperand(0).GetType();
+
+  Def orig_def{inst, 0};
+  if (!type.IsValid() || type.IsDynamicShape() || type.IsDynamicBatch()) {
+    return {orig_def, orig_def};
+  }
+
+  DataType dt = inst->GetDataType();
+  ConstantBuilder cb(inst->GetParent()->GetParent());
+  int64_t rank = type.GetNumOfDims();
+  if (dt == DataType::INT32) {
+    std::vector<int32_t> shape;
+    for (int64_t i : type.GetDimSizes()) {
+      shape.push_back(static_cast<int>(i));
+    }
+    Constant* c = cb.CreateConstant(inst->GetName(), halo::Type{dt, {rank}},
+                                    shape.data());
+    return {orig_def, *c};
+  }
+  HLCHECK(dt == DataType::INT64);
+  Constant* c = cb.CreateConstant(inst->GetName(), halo::Type{dt, {rank}},
+                                  type.GetDimSizes());
+  return {orig_def, *c};
+}
+
 std::pair<Def, Def> InstSimplify::RunOnInstruction(SigmoidInst* inst) {
   return SinkTranspose(
       *inst, [](IRBuilder& builder, const std::string& name, const Def& op) {

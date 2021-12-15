@@ -32,4 +32,16 @@ void GenericCXXCodeGen::RunOnInstruction(ReshapeInst* inst) {
   ir_mapping_[*inst] = ret;
 }
 
+void GenericCXXCodeGen::RunOnInstruction(ShapeInst* inst) {
+  const Def& input = inst->GetOperand(0);
+
+  CXXValue op0 = ir_mapping_[input];
+
+  const auto& ret_type = inst->GetResultType();
+  CXXValue ret(inst->GetName(), op0.type);
+  EmitODLACall(ret, "odla_Shape", op0, EmitShape(ret_type));
+
+  ir_mapping_[*inst] = ret;
+}
+
 } // namespace halo
