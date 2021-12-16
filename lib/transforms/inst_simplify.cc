@@ -2431,6 +2431,30 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
     }
   }
 
+  // If all data to be sliced is constant, convert the result to contant.
+  const Constant* c_start = DynCast<Constant>(inst->GetOperand(1));
+  const Constant* c_len = DynCast<Constant>(inst->GetOperand(2));
+  const auto& ret_type = inst->GetResultType();
+  if (c_start != nullptr && c_len != nullptr && ret_type.IsValid() &&
+      ret_type.GetNumOfDims() <= 1) {
+    // so far only support simple case (input is 1-D).
+    auto from = c_start->GetDataAsInt64(0);
+    auto len = c_len->GetDataAsInt64(0);
+    bool is_constant = true;
+    std::vector<int64_t> data(len);
+    for (int64_t i = 0; i < len && is_constant; ++i) {
+      const auto& c = GetAvailIntegerResult(op0, from + i);
+      is_constant &= c.first;
+      data[i] = c.second;
+    }
+    if (is_constant) {
+      ConstantBuilder cb(inst->GetParent()->GetParent());
+      auto c = cb.CreateConstant(inst->GetName(), inst->GetResultType(),
+                                 data.data());
+      return {orig_def, *c};
+    }
+  }
+
   return {orig_def, orig_def};
 }
 
