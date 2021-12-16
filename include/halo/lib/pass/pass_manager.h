@@ -67,6 +67,7 @@ class HL_API_EXPORT PassManager final {
   Pass* AddCodeFormatterPass(std::ostringstream& code,
                              std::ostringstream& header,
                              const CXXCodeGenOpts& opts);
+  Pass* AddConvertTFCFGPass();
   Pass* AddDCEPass();
   Pass* AddDevicePlacementPass();
   Pass* AddFusionPass(const FusionOptions& opts);
