@@ -1340,6 +1340,20 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(BatchNormInst* inst) {
 std::pair<Def, Def> InstSimplify::RunOnInstruction(StackInst* inst) {
   Def orig_def{inst, 0};
   int num_inputs = inst->GetNumOfOperands();
+
+  bool all_scalars = true;
+  for (const auto& op : inst->GetOperands()) {
+    all_scalars &= op.GetType().IsValid() && op.GetType().IsScalar();
+  }
+  if (all_scalars) {
+    IRBuilder builder(inst->GetParent());
+    builder.SetInsertAfter(inst);
+    HLCHECK(inst->GetAxis() == 0);
+    auto concat = builder.CreateConcat(inst->GetName(), inst->GetOperands());
+    concat->SetAxis(0);
+    concat->SetN(inst->GetOperands().size());
+    return {orig_def, *concat};
+  }
   for (int i = 0; i < num_inputs; ++i) {
     if (!IsA<Constant>(inst->GetOperand(i))) {
       return {orig_def, orig_def};
