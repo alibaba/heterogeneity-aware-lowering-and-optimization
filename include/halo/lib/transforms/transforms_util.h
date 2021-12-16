@@ -218,5 +218,8 @@ class ConstantAccessor {
   int rank_ = 0;
 };
 
+// The result of inst may contain compile-time constant.
+std::pair<bool, int64_t> GetAvailIntegerResult(const Def& op, int64_t idx);
+
 } // end namespace halo.
 #endif // HALO_LIB_TRANSFORMS_TRANSFORMS_UTIL_H_
