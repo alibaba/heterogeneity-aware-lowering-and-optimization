@@ -272,19 +272,13 @@ static void RunOnInstruction(ReshapeInst* inst) {
   if (op0_type.IsValid() && !op0_type.IsStaticShape() && !IsA<Constant>(op1) &&
       op1_type.IsValid()) {
     int rank = op1_type.GetTotalNumOfElements();
-    int unknown_dims = 0;
     std::vector<int64_t> new_shape(rank);
     for (int i = 0; i < rank; ++i) {
       const auto& r = GetAvailIntegerResult(op1, i);
-      unknown_dims += r.first ? 0 : 1;
       new_shape[i] = r.second;
     }
-    if (unknown_dims <= 2) {
-      // TODO(unknown): do this after all static type inferencing is done.
-      inst->GetResultsTypes()[0] =
-          halo::Type{op0_type.GetDataType(), new_shape};
-      return;
-    }
+    inst->GetResultsTypes()[0] = halo::Type{op0_type.GetDataType(), new_shape};
+    return;
   }
 
   if (!IsA<Constant>(op1)) {
@@ -1640,7 +1634,12 @@ bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
 
   for (auto& it : *bb) {
     Instruction* inst = it.get();
-    if (inst->HasValidResultTypes()) {
+    auto orig_types = inst->GetResultsTypes();
+    bool fixed = true;
+    for (auto& ty : orig_types) {
+      fixed &= (ty.IsValid() && !ty.IsDynamicShape());
+    }
+    if (fixed) {
       continue;
     }
     switch (inst->GetOpCode()) {
@@ -1660,8 +1659,16 @@ bool TypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
         }
       }
     }
-    if (inst->HasValidResultTypes()) {
-      changed = true;
+    const auto& new_types = inst->GetResultsTypes();
+    if (new_types.size() != orig_types.size()) {
+      changed |= true;
+    } else {
+      for (int i = 0, e = orig_types.size(); i < e; ++i) {
+        const auto& orig_ty = orig_types[i];
+        const auto& new_ty = new_types[i];
+        changed |= (!orig_ty.IsValid() && new_ty.IsValid()) ||
+                   (orig_ty.IsValid() && new_ty.IsValid() && orig_ty != new_ty);
+      }
     }
   }
   return changed;
