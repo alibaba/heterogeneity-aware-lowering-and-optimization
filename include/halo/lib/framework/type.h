@@ -80,6 +80,11 @@ class Type final {
   /// Return true if it is dynamic shape.
   bool IsDynamicShape() const noexcept { return is_dynamic_shape_; }
 
+  /// Return true if it is static shape.
+  bool IsStaticShape() const noexcept {
+    return !IsDynamicBatch() && !IsDynamicShape();
+  };
+
   /// Returns true if it has a valid type.
   bool IsValid() const noexcept {
     return (data_type_id_ != DataType::INVALID && total_num_of_elements_ >= 0);
