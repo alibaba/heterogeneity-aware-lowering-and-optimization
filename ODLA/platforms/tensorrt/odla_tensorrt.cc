@@ -1838,8 +1838,8 @@ odla_value odla_Gather(odla_value input, const odla_value indices,
   return CreateValue(gather, {input->type.element_type, output_dims}, id);
 }
 
-odla_value odla_Slice(odla_value input, const odla_uint32* start,
-                      const odla_uint32* end, const odla_uint32* stride,
+odla_value odla_Slice(odla_value input, const odla_int32* start,
+                      const odla_int32* end, const odla_int32* stride,
                       odla_value_shape output_dims, const odla_value_id id) {
   odla_value_shape start_dims, stride_dims;
   const auto& dims = input->type.shape;

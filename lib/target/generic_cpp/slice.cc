@@ -33,15 +33,14 @@ namespace {
 template <typename T>
 static void NormalizerOperands(const Constant& operand,
                                const std::unordered_set<int32_t>& axes,
-                               const size_t dims,
-                               std::vector<uint32_t>* value) {
+                               const size_t dims, std::vector<int32_t>* value) {
   bool onnx_mode = axes.size() != dims;
   for (size_t i = 0, j = 0; i < dims; ++i) {
     if (axes.count(i) != 0) {
-      (*value)[i] = static_cast<uint32_t>(operand.GetData<T>(j++));
+      (*value)[i] = static_cast<int32_t>(operand.GetData<T>(j++));
     } else {
       if (!onnx_mode) {
-        (*value)[i] = static_cast<uint32_t>(operand.GetData<T>(i));
+        (*value)[i] = static_cast<int32_t>(operand.GetData<T>(i));
       }
     }
   }
@@ -91,7 +90,7 @@ void GenericCXXCodeGen::RunOnInstruction(SliceInst* inst) {
     }
   }
 
-  std::vector<uint32_t> start_v(dims, 0);
+  std::vector<int32_t> start_v(dims, 0);
   HLCHECK(start.GetType().GetTotalNumOfElements() ==
           static_cast<int64_t>(axes.size()));
   HLCHECK(IsA<Constant>(start));
@@ -102,8 +101,8 @@ void GenericCXXCodeGen::RunOnInstruction(SliceInst* inst) {
     NormalizerOperands<int64_t>(*start_c, axes, dims, &start_v);
   }
 
-  std::vector<uint32_t> size_v(input.GetType().GetDimSizes().begin(),
-                               input.GetType().GetDimSizes().end());
+  std::vector<int32_t> size_v(input.GetType().GetDimSizes().begin(),
+                              input.GetType().GetDimSizes().end());
   HLCHECK(size.GetType().GetTotalNumOfElements() ==
           static_cast<int64_t>(axes.size()));
   HLCHECK(IsA<Constant>(size));
@@ -114,7 +113,7 @@ void GenericCXXCodeGen::RunOnInstruction(SliceInst* inst) {
     NormalizerOperands<int64_t>(*size_c, axes, dims, &size_v);
   }
 
-  std::vector<uint32_t> strides_v(dims, 1);
+  std::vector<int32_t> strides_v(dims, 1);
   if (inst->GetNumOfOperands() > 3) {
     const Def& strides = inst->GetOperand(3);
     HLCHECK(IsA<Constant>(strides));
@@ -129,15 +128,15 @@ void GenericCXXCodeGen::RunOnInstruction(SliceInst* inst) {
 
     // stride is provided, calculate ends = starts + sizes * strides
     std::for_each(strides_v.begin(), strides_v.end(),
-                  [=](uint32_t& s) { s = s >= 0 ? s : dims + s; });
+                  [=](int32_t& s) { s = s >= 0 ? s : dims + s; });
     std::transform(strides_v.begin(), strides_v.end(), size_v.begin(),
                    size_v.begin(), std::multiplies<uint32_t>());
     std::transform(start_v.begin(), start_v.end(), size_v.begin(),
-                   size_v.begin(), std::plus<uint32_t>());
+                   size_v.begin(), std::plus<int32_t>());
   } else {
     // stride is omitted, set to [1,1,...,1], calculate ends = starts + sizes
     std::transform(size_v.begin(), size_v.end(), start_v.begin(),
-                   size_v.begin(), std::plus<uint32_t>());
+                   size_v.begin(), std::plus<int32_t>());
   }
 
   EmitODLACall(ret, "odla_Slice", op0, start_v, size_v, strides_v,

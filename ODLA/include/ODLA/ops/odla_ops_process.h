@@ -282,8 +282,8 @@ odla_Shape(odla_value input, odla_value_shape output_dims,
   \return odla_value
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_Slice(odla_value input, const odla_uint32* start, const odla_uint32* end,
-           const odla_uint32* stride, odla_value_shape output_dims,
+odla_Slice(odla_value input, const odla_int32* start, const odla_int32* end,
+           const odla_int32* stride, odla_value_shape output_dims,
            const odla_value_id value_id);
 
 //! \brief Extract a dynamic slice
