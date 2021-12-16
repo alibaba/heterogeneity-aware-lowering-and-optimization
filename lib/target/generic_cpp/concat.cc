@@ -20,9 +20,8 @@
 
 namespace halo {
 
-void GenericCXXCodeGen::RunOnInstruction(ConcatInst* inst) {
-  const auto& axis = inst->GetAxis();
-
+void GenericCXXCodeGen::RunOnConcatInstruction(Instruction* inst, int axis,
+                                               const char* odla_func_name) {
   CXXValue op0 = ir_mapping_[inst->GetOperand(0)];
   CXXValue ret(inst->GetName(), op0.type);
 
@@ -35,7 +34,15 @@ void GenericCXXCodeGen::RunOnInstruction(ConcatInst* inst) {
     CXXValue op_v = ir_mapping_[op];
     inputs.push_back(op_v);
   }
-  EmitODLACall(ret, "odla_Concat", inputs, axis, EmitShape(ret_shape));
+  EmitODLACall(ret, odla_func_name, inputs, axis, EmitShape(ret_shape));
+}
+
+void GenericCXXCodeGen::RunOnInstruction(ConcatInst* inst) {
+  RunOnConcatInstruction(inst, inst->GetAxis(), "odla_Concat");
+}
+
+void GenericCXXCodeGen::RunOnInstruction(StackInst* inst) {
+  RunOnConcatInstruction(inst, inst->GetAxis(), "odla_Stack");
 }
 
 } // namespace halo
