@@ -22,6 +22,7 @@ set(SRCS
   analyzer.cc
   caffeextension_legalizer.cc
   constant_decombine.cc
+  convert_tf_cfg.cc
   dce.cc
   device_placement.cc
   fusion.cc
