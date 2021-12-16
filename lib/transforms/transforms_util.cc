@@ -73,4 +73,58 @@ bool HasAttribute(const Instruction& inst, const std::string& name) {
   return false;
 }
 
+std::pair<bool, int64_t> GetAvailIntegerResult(const IRObject& inst,
+                                               int64_t idx) {
+  return {false, -1};
+}
+
+static std::pair<bool, int64_t> GetAvailIntegerResult(const Constant& inst,
+                                                      int64_t idx) {
+  return {true, inst.GetDataAsInt64(idx)};
+}
+
+static std::pair<bool, int64_t> GetAvailIntegerResult(const StackInst& inst,
+                                                      int64_t idx) {
+  // For stack(x0, x1, x2, ..), some component might be constant.
+  int64_t start = 0;
+  for (auto& op : inst.GetOperands()) {
+    const auto& ty = op.GetType();
+    if (!ty.IsValid() || !ty.IsStaticShape()) {
+      return {false, -1};
+    }
+    int64_t end = start + ty.GetTotalNumOfElements();
+    if (idx >= start && idx < end) {
+      return GetAvailIntegerResult(op, idx - start);
+    }
+    start = end;
+  }
+  return {false, -1};
+}
+
+static std::pair<bool, int64_t> GetAvailIntegerResult(const ShapeInst& inst,
+                                                      int64_t idx) {
+  // shape(x) returns [d0, d1, d2, ...]. If the element is non-negative, it is a
+  // contant.
+  const auto& value_type = inst.GetOperand(0).GetType();
+  if (!value_type.IsValid() || idx < 0 ||
+      idx >= static_cast<int64_t>(value_type.GetNumOfDims())) {
+    return {false, -1};
+  }
+  auto x = value_type.GetNumOfElementsInDim(idx);
+  return {x >= 0, x};
+}
+
+std::pair<bool, int64_t> GetAvailIntegerResult(const Def& op, int64_t idx) {
+  if (IsA<Constant>(op)) {
+    return GetAvailIntegerResult(*DynCast<Constant>(op), idx);
+  }
+  if (IsA<StackInst>(op)) {
+    return GetAvailIntegerResult(*DynCast<StackInst>(op), idx);
+  }
+  if (IsA<ShapeInst>(op)) {
+    return GetAvailIntegerResult(*DynCast<ShapeInst>(op), idx);
+  }
+  return {false, -1};
+}
+
 } // end namespace halo
