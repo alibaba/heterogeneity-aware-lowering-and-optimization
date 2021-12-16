@@ -83,11 +83,11 @@ static std::pair<bool, int64_t> GetAvailIntegerResult(const Constant& inst,
   return {true, inst.GetDataAsInt64(idx)};
 }
 
-static std::pair<bool, int64_t> GetAvailIntegerResult(const StackInst& inst,
-                                                      int64_t idx) {
+static std::pair<bool, int64_t> GetAvailIntegerResultForConcats(
+    const std::vector<Def>& operands, int64_t idx) {
   // For stack(x0, x1, x2, ..), some component might be constant.
   int64_t start = 0;
-  for (auto& op : inst.GetOperands()) {
+  for (auto& op : operands) {
     const auto& ty = op.GetType();
     if (!ty.IsValid() || !ty.IsStaticShape()) {
       return {false, -1};
@@ -99,6 +99,16 @@ static std::pair<bool, int64_t> GetAvailIntegerResult(const StackInst& inst,
     start = end;
   }
   return {false, -1};
+}
+
+static std::pair<bool, int64_t> GetAvailIntegerResult(const ConcatInst& inst,
+                                                      int64_t idx) {
+  return GetAvailIntegerResultForConcats(inst.GetOperands(), idx);
+}
+
+static std::pair<bool, int64_t> GetAvailIntegerResult(const StackInst& inst,
+                                                      int64_t idx) {
+  return GetAvailIntegerResultForConcats(inst.GetOperands(), idx);
 }
 
 static std::pair<bool, int64_t> GetAvailIntegerResult(const ShapeInst& inst,
@@ -121,6 +131,10 @@ std::pair<bool, int64_t> GetAvailIntegerResult(const Def& op, int64_t idx) {
   if (IsA<StackInst>(op)) {
     return GetAvailIntegerResult(*DynCast<StackInst>(op), idx);
   }
+  if (IsA<ConcatInst>(op)) {
+    return GetAvailIntegerResult(*DynCast<ConcatInst>(op), idx);
+  }
+
   if (IsA<ShapeInst>(op)) {
     return GetAvailIntegerResult(*DynCast<ShapeInst>(op), idx);
   }
