@@ -186,6 +186,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(SoftmaxInst*) override;
   virtual void RunOnInstruction(SoftplusInst*) override;
   virtual void RunOnInstruction(SoftsignInst*) override;
+  virtual void RunOnInstruction(StackInst*) override;
   virtual void RunOnInstruction(HardSigmoidInst*) override;
   virtual void RunOnInstruction(SinInst*) override;
   virtual void RunOnInstruction(SinhInst*) override;
@@ -206,6 +207,8 @@ class GenericCXXCodeGen : public CodeGen {
 
   virtual void RunOnBinaryInstruction(Instruction*);
   virtual void RunOnCastInstruction(Instruction*);
+  virtual void RunOnConcatInstruction(Instruction* inst, int axis,
+                                      const char* odla_func_name);
   virtual void RunOnReductionInstruction(Instruction*,
                                          const std::vector<int32_t>& axis_attr,
                                          bool keep_dims,
