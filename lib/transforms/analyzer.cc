@@ -153,9 +153,7 @@ void Analyzer::CalConvInst(const T* inst) {
       chn = 3;
       break;
     }
-    default: {
-      HLCHECK(0 && "Invalid format");
-    }
+    default: { HLCHECK(0 && "Invalid format"); }
   }
 
   int grp = inst->GetGroup();
