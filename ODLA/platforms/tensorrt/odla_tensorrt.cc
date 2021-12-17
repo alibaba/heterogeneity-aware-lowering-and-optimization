@@ -930,6 +930,11 @@ odla_status ODLA_API_CALL odla_GetOutputFromExecutableByIdx(
                                         output_value);
 }
 
+odla_status odla_GetValueId(const odla_value value, odla_value_id* value_id) {
+  *value_id = reinterpret_cast<odla_value_id>(const_cast<char*>(value->name));
+  return ODLA_SUCCESS;
+}
+
 odla_status odla_GetValueType(const odla_value value,
                               odla_value_type* value_type) {
   *value_type = value->type;
