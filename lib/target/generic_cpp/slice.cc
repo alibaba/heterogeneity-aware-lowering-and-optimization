@@ -33,15 +33,14 @@ namespace {
 template <typename T>
 static void NormalizerOperands(const Constant& operand,
                                const std::unordered_set<int32_t>& axes,
-                               const size_t dims,
-                               std::vector<uint32_t>* value) {
+                               const size_t dims, std::vector<int32_t>* value) {
   bool onnx_mode = axes.size() != dims;
   for (size_t i = 0, j = 0; i < dims; ++i) {
     if (axes.count(i) != 0) {
-      (*value)[i] = static_cast<uint32_t>(operand.GetData<T>(j++));
+      (*value)[i] = static_cast<int32_t>(operand.GetData<T>(j++));
     } else {
       if (!onnx_mode) {
-        (*value)[i] = static_cast<uint32_t>(operand.GetData<T>(i));
+        (*value)[i] = static_cast<int32_t>(operand.GetData<T>(i));
       }
     }
   }
@@ -50,7 +49,24 @@ static void NormalizerOperands(const Constant& operand,
 } // end namespace
 
 void GenericCXXCodeGen::RunOnInstruction(SliceInst* inst) {
-  const Def input = inst->GetOperand(0);
+  const Def& input = inst->GetOperand(0);
+  const Def& start = inst->GetOperand(1);
+  const Def& size = inst->GetOperand(2);
+  // auto strides = inst->GetOperand(3); //TODO
+
+  CXXValue op0 = ir_mapping_[input];
+  CXXValue ret(inst->GetName(), op0.type);
+  ir_mapping_[*inst] = ret;
+
+  if (!IsA<Constant>(start) || !IsA<Constant>(size)) {
+    auto op1 = ir_mapping_[start];
+    auto op2 = ir_mapping_[size];
+    // auto op3 = ir_mapping_[strides]; // FIXME
+    EmitODLACall(ret, "odla_SliceDynamic", op0, op1, op2, /*op3,*/
+                 EmitShape(inst->GetResultType()));
+
+    return;
+  }
   size_t dims = input.GetType().GetNumOfDims();
   std::unordered_set<int32_t> axes;
   if (inst->GetNumOfOperands() > 4) {
@@ -74,8 +90,7 @@ void GenericCXXCodeGen::RunOnInstruction(SliceInst* inst) {
     }
   }
 
-  std::vector<uint32_t> start_v(dims, 0);
-  const Def& start = inst->GetOperand(1);
+  std::vector<int32_t> start_v(dims, 0);
   HLCHECK(start.GetType().GetTotalNumOfElements() ==
           static_cast<int64_t>(axes.size()));
   HLCHECK(IsA<Constant>(start));
@@ -86,9 +101,8 @@ void GenericCXXCodeGen::RunOnInstruction(SliceInst* inst) {
     NormalizerOperands<int64_t>(*start_c, axes, dims, &start_v);
   }
 
-  std::vector<uint32_t> size_v(input.GetType().GetDimSizes().begin(),
-                               input.GetType().GetDimSizes().end());
-  const Def& size = inst->GetOperand(2);
+  std::vector<int32_t> size_v(input.GetType().GetDimSizes().begin(),
+                              input.GetType().GetDimSizes().end());
   HLCHECK(size.GetType().GetTotalNumOfElements() ==
           static_cast<int64_t>(axes.size()));
   HLCHECK(IsA<Constant>(size));
@@ -99,7 +113,7 @@ void GenericCXXCodeGen::RunOnInstruction(SliceInst* inst) {
     NormalizerOperands<int64_t>(*size_c, axes, dims, &size_v);
   }
 
-  std::vector<uint32_t> strides_v(dims, 1);
+  std::vector<int32_t> strides_v(dims, 1);
   if (inst->GetNumOfOperands() > 3) {
     const Def& strides = inst->GetOperand(3);
     HLCHECK(IsA<Constant>(strides));
@@ -114,23 +128,19 @@ void GenericCXXCodeGen::RunOnInstruction(SliceInst* inst) {
 
     // stride is provided, calculate ends = starts + sizes * strides
     std::for_each(strides_v.begin(), strides_v.end(),
-                  [=](uint32_t& s) { s = s >= 0 ? s : dims + s; });
+                  [=](int32_t& s) { s = s >= 0 ? s : dims + s; });
     std::transform(strides_v.begin(), strides_v.end(), size_v.begin(),
-                   size_v.begin(), std::multiplies<uint32_t>());
+                   size_v.begin(), std::multiplies<int32_t>());
     std::transform(start_v.begin(), start_v.end(), size_v.begin(),
-                   size_v.begin(), std::plus<uint32_t>());
+                   size_v.begin(), std::plus<int32_t>());
   } else {
     // stride is omitted, set to [1,1,...,1], calculate ends = starts + sizes
     std::transform(size_v.begin(), size_v.end(), start_v.begin(),
-                   size_v.begin(), std::plus<uint32_t>());
+                   size_v.begin(), std::plus<int32_t>());
   }
-
-  CXXValue op0 = ir_mapping_[input];
-  CXXValue ret(inst->GetName(), op0.type);
 
   EmitODLACall(ret, "odla_Slice", op0, start_v, size_v, strides_v,
                EmitShape(inst->GetResultType()));
-  ir_mapping_[*inst] = ret;
 }
 
 } // namespace halo
