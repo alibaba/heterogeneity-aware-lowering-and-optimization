@@ -132,7 +132,9 @@ static void binary_eltwise_T(alg_binary_eltwise alg, void* dst,
       out = in_l.pow(in_r);
       break;
     }
-    default: { assert(0); }
+    default: {
+      assert(0);
+    }
   }
 }
 
