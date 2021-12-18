@@ -253,6 +253,27 @@ odla_Resize(odla_value input, odla_interpolation_mode interpolation,
             odla_resize_coordinate_mode mode, odla_uint32 axes_mask,
             odla_value_shape output_dims, const odla_value_id value_id);
 
+//! \brief Resize by interpolating (dynamic shape)
+/*!
+  Resize resizes the input using specified interpolation method.
+  The shape of output is determined by either `scales` or `sizes`.
+  It is an error if both are specified (non-null).
+
+  \param input the input value
+  \param scales the scaling value
+  \param sizes the size of output value
+  \param interpolation the interpolation method
+  \param mode the coordinate transformation mode
+  \param output_dims the optional output shape (can be undefined)
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_ResizeDynamic(
+    odla_value input, odla_value scales, odla_value sizes,
+    odla_interpolation_mode interpolation, odla_resize_coordinate_mode mode,
+    odla_value_shape output_dims, const odla_value_id value_id);
+
 //! \brief Get the shape of input
 /*!
   Shape returns the shape of \p input as a 1D odla_value. The element type of
