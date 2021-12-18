@@ -1307,6 +1307,45 @@ odla_value odla_Resize(odla_value input, odla_interpolation_mode interpolation,
   return CreateValue(resize, {input->type.element_type, output_dims}, value_id);
 }
 
+odla_value odla_ResizeDynamic(odla_value input, odla_value scales,
+                              odla_value sizes,
+                              odla_interpolation_mode interpolation,
+                              odla_resize_coordinate_mode mode,
+                              odla_value_shape output_dims,
+                              const odla_value_id value_id) {
+  assert(interpolation == ODLA_NEAREST);
+  const auto& name = std::string(reinterpret_cast<const char*>(value_id));
+  const auto& name_shape = name + "_shape";
+  const auto& name_scales = name + "_int_scales";
+  const auto& name_new_shape = name + "_new_shape";
+
+  auto resize = g_comp->network->addResize(*input);
+  assert(scales == nullptr || sizes == nullptr); // can't be both valid.
+  assert(scales != nullptr || sizes != nullptr); // can't be both invalid.
+
+  // if scales are constants, just use setScales method.
+  if (scales != nullptr) {
+    if (scales->const_layer != nullptr) {
+      const float* scales_data =
+          static_cast<const float*>(scales->const_layer->getWeights().values);
+
+      resize->setScales(scales_data, GetTotalElements(scales->type.shape));
+    } else {
+      // compute the output shape by input_shape * scale.
+      // TODO: cast shape to float and then cast the product to int.
+      auto shape = odla_Shape(input, {.size = 1, {input->type.shape.size}},
+                              (odla_value_id)(name_shape.c_str()));
+      auto new_shape =
+          odla_Mul(shape, scales, (odla_value_id)name_new_shape.c_str());
+      resize->setInput(1, *new_shape);
+    }
+  } else {
+    resize->setInput(1, *sizes);
+  }
+  resize->setResizeMode(nvinfer1::ResizeMode::kNEAREST);
+  return CreateValue(resize, {input->type.element_type, output_dims}, value_id);
+}
+
 odla_value odla_Softmax(odla_value input, odla_int32 axis,
                         const odla_value_id id) {
   const auto& dims = input->type.shape;
@@ -2391,6 +2430,13 @@ odla_value odla_Select(odla_value condition, odla_value a, odla_value b,
   return CreateValue(select_layer->getOutput(0),
                      odla_value_type{a->type.element_type, output_dims},
                      value_id);
+}
+
+odla_value odla_Shape(odla_value input, odla_value_shape output_dims,
+                      odla_value_id value_id) {
+  auto shape = g_comp->network->addShape(*input);
+  return CreateValue(shape->getOutput(0),
+                     odla_value_type{ODLA_INT32, output_dims}, value_id);
 }
 
 odla_status odla_BeginIf(odla_value condition, odla_value_id value_id) {

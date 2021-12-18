@@ -1,6 +1,6 @@
-//===- add.cc -------------------------------------------------------------===//
+//===- resize.cc ----------------------------------------------------------===//
 //
-// Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+// Copyright (C) 2019-2021 Alibaba Group Holding Limited.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,16 +56,25 @@ static const std::string& GetCoordModeName(const ResizeInst& inst) {
 
 void GenericCXXCodeGen::RunOnInstruction(ResizeInst* inst) {
   const Def& lhs = inst->GetOperand(0);
+  const Def& scales = inst->GetOperand(1);
 
   CXXValue op0 = ir_mapping_[lhs];
+  CXXValue op_scales = ir_mapping_[scales];
 
   const auto& ret_type = inst->GetResultType();
 
   CXXValue ret(inst->GetName(), op0.type);
-  EmitODLACall(ret, "odla_Resize", op0, GetInterpolationName(*inst),
-               GetCoordModeName(*inst), inst->GetAxesMask(),
-               EmitShape(ret_type));
   ir_mapping_[*inst] = ret;
+  if (!inst->GetResultType().IsDynamicShape()) {
+    EmitODLACall(ret, "odla_Resize", op0, GetInterpolationName(*inst),
+                 GetCoordModeName(*inst), inst->GetAxesMask(),
+                 EmitShape(ret_type));
+    return;
+  }
+  auto op_sizes = ir_mapping_[Def::GetUndefined()];
+  EmitODLACall(ret, "odla_ResizeDynamic", op0, op_scales, op_sizes,
+               GetInterpolationName(*inst), GetCoordModeName(*inst),
+               EmitShape(ret_type));
 }
 
 } // namespace halo
