@@ -145,6 +145,16 @@ def CAFFE_BatchNorm : OpMapping<"BatchNorm", BatchNorm> {
   ];
 }
 
+def CAFFE_Normalize : OpMapping<"Normalize", Normalize> {
+  let param_name_ = "norm_param";
+  let attr_mapping_ = [
+    AttributeMapping<"across_spatial", "across_spatial", "true">,
+    AttributeMapping<"channel_shared", "channel_shared", "true">,
+    AttributeMapping<"eps", "epsilon", "0.0000000001">,
+    AttributeMapping<"", "data_format", "NCHW">
+  ];
+}
+
 def CAFFE_Power : CAFFEExtension<"Power"> {
   let param_name_ = "power_param";
   let optional_attrs_ = ["power", "scale", "shift"];

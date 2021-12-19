@@ -79,4 +79,18 @@ void GenericCXXCodeGen::RunOnInstruction(InstanceNormInst* inst) {
 
   ir_mapping_[*inst] = ret;
 }
+
+void GenericCXXCodeGen::RunOnInstruction(NormalizeInst* inst) {
+  const Def& input = inst->GetOperand(0);
+  const Def& scale = inst->GetOperand(1);
+
+  CXXValue op0 = ir_mapping_[input];
+  CXXValue op1 = ir_mapping_[scale];
+
+  CXXValue ret(inst->GetName(), op0.type);
+
+  EmitODLACall(ret, "odla_Normalize", op0, op1, inst->GetAcrossSpatial(),
+               inst->GetEpsilon(), inst->GetDataFormat());
+  ir_mapping_[*inst] = ret;
+}
 } // end namespace halo
