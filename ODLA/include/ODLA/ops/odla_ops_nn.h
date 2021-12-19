@@ -347,6 +347,27 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_InstanceNormalization(
     odla_value scale, odla_value offset, odla_float32 scalar_scale,
     odla_float32 scalar_offset, const odla_value_id value_id);
 
+//! \brief Normalize
+/*!
+  Normalize computes the L2 normalization as \n
+  yi = scale * ( xi / sqrt(sum(xi^2) + epsilon) ) \n.
+
+  \param input the input value
+  \param input_layout the memory layout of input.
+  \param scale scale value
+  \param across_spatial whether the normalization is cross-dimension
+  \param channel_shared whether or not scale parameters are shared across
+  channels
+  \param epsilon the epsilon
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_L2Normalize(
+    odla_value input, odla_memory_layout input_layout, odla_value scale,
+    odla_bool across_spatial, odla_bool channel_shared, odla_float32 epsilon,
+    const odla_value_id value_id);
+
 //! \brief LeakyRelu activation
 /*!
   LeakyRelu computes the LeakyRelu activation as y = x < 0 ? alpha * x : x

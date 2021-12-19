@@ -158,6 +158,16 @@ def CAFFE_BatchNorm :CAFFEExtension <"BatchNorm"> {
                          ExtensionAttr<"use_global_stats", Bool, "true">];
 }
 
+def CAFFE_Normalize : OpMapping<"Normalize", L2Normalize> {
+  let param_name_ = "norm_param";
+  let attr_mapping_ = [
+    AttributeMapping<"across_spatial", "across_spatial", "true">,
+    AttributeMapping<"channel_shared", "channel_shared", "true">,
+    AttributeMapping<"eps", "epsilon", "0.0000000001">,
+    AttributeMapping<"", "data_format", "NCHW">
+  ];
+}
+
 def CAFFE_Power : CAFFEExtension<"Power"> {
   let param_name_ = "power_param";
   let optional_attrs_ = ["power", "scale", "shift"];
@@ -188,15 +198,6 @@ def CAFFE_Upsample : CAFFEExtension<"Upsample"> {
   let param_name_ = "upsample_param";
   let extension_attr_ = [
     ExtensionAttr<"scale", Integer, "1">
-  ];
-}
-
-def CAFFE_Normalize: CAFFEExtension<"Normalize"> {
-  let param_name_ = "norm_param";
-  let extension_attr_ = [
-    ExtensionAttr<"across_spatial", Bool, "true">,
-    ExtensionAttr<"channel_shared", Bool, "true">,
-    ExtensionAttr<"eps", Float, "1e-10">
   ];
 }
 
