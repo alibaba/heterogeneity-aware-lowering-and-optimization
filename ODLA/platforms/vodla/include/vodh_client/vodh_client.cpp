@@ -1,7 +1,6 @@
 #include <fstream>
 #include <iostream>
 
-#include "resnet_data.h"
 #include "stdlib.h"
 #include "string.h"
 #include "vodh_common.h"
