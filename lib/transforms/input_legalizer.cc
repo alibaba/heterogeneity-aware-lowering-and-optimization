@@ -119,6 +119,7 @@ bool InputLegalizer::RunOnFunction(Function* func) {
                                                  : it->second.GetDimSizes();
       arg->GetResultsTypes()[0] = halo::Type(dt, dims);
       specified_shapes.erase(it);
+      changed = true;
     }
 
     auto dims = ty.GetDimSizes();
