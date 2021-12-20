@@ -1,3 +1,9 @@
+#include <ODLA/odla.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/time.h>
+#include <vodh_client/vodh_common.h>
+
 #include <cassert>
 #include <cstdint>
 #include <fstream>
@@ -5,13 +11,6 @@
 #include <limits>
 #include <memory>
 #include <vector>
-
-#include <stdlib.h>
-#include <string.h>
-#include <sys/time.h>
-
-#include <ODLA/odla.h>
-#include <vodh_client/vodh_common.h>
 
 #define MAX_INPUT_TENSOR 256
 #define MAX_OUTPUT_TENSOR 256
