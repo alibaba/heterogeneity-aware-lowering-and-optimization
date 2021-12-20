@@ -359,8 +359,8 @@ odla_value odla_ReduceMean(odla_value input, odla_size_t num_of_axes,
   return result;
 }
 
-odla_value odla_Slice(odla_value input, const odla_uint32* start,
-                      const odla_uint32* end, const odla_uint32* stride,
+odla_value odla_Slice(odla_value input, const odla_int32* start,
+                      const odla_int32* end, const odla_int32* stride,
                       odla_value_shape output_dims, const odla_value_id id) {
   const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
 

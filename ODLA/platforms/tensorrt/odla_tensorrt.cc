@@ -456,6 +456,9 @@ static odla_value CreateValue(T* t, const odla_value_type& type,
   auto v = std::make_unique<_odla_value>(t, type, name);
   auto ret = v.get();
   g_comp->vals.push_back(std::move(v));
+  if (!g_comp->branchs.empty()) {
+    g_comp->branchs.top().branch->addInput(*ret);
+  }
   return ret;
 }
 
@@ -928,6 +931,11 @@ odla_status ODLA_API_CALL odla_GetOutputFromExecutableByIdx(
 
   return odla_GetValFromExecutableByIdx(executable, getIdxInEngine(),
                                         output_value);
+}
+
+odla_status odla_GetValueId(const odla_value value, odla_value_id* value_id) {
+  *value_id = reinterpret_cast<odla_value_id>(const_cast<char*>(value->name));
+  return ODLA_SUCCESS;
 }
 
 odla_status odla_GetValueType(const odla_value value,
@@ -1874,8 +1882,8 @@ odla_value odla_Gather(odla_value input, const odla_value indices,
   return CreateValue(gather, {input->type.element_type, output_dims}, id);
 }
 
-odla_value odla_Slice(odla_value input, const odla_uint32* start,
-                      const odla_uint32* end, const odla_uint32* stride,
+odla_value odla_Slice(odla_value input, const odla_int32* start,
+                      const odla_int32* end, const odla_int32* stride,
                       odla_value_shape output_dims, const odla_value_id id) {
   odla_value_shape start_dims, stride_dims;
   const auto& dims = input->type.shape;
