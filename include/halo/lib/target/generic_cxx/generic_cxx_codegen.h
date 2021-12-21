@@ -277,6 +277,45 @@ class GenericCXXCodeGen : public CodeGen {
     os_ << ");\n";
   }
 
+  template <int indent = 2, typename... Targs>
+  void EmitODLACustomCall(const std::vector<CXXValue>& lhs,
+                          std::vector<CXXValue> inputs,
+                          const std::string& op_name,
+                          const std::string& func_name, Targs... args) {
+    os_ << std::string(indent, ' ');
+    auto ret_array = lhs[0].name + "_array";
+    os_ << EmitLValues(ret_array) << " = odla_CustomOp(";
+    EmitODLAArgs(inputs);
+    os_ << ", ";
+    EmitODLAArgs(op_name);
+    os_ << ", ";
+
+    EmitODLAArgs(func_name);
+    os_ << ", {.size = " << lhs.size() << ", .value_ids = {";
+    unsigned int id = 0;
+    for (auto& one : lhs) {
+      os_ << "(const odla_value_id)";
+      EmitODLAVauleId(one, os_);
+      if (++id != lhs.size()) {
+        os_ << ", ";
+      }
+    }
+    os_ << "}}";
+    constexpr std::size_t n = sizeof...(args);
+    if (n > 0) {
+      os_ << ",";
+      EmitODLAArgs(args...);
+    }
+
+    os_ << ");\n";
+
+    for (auto& one : lhs) {
+      os_ << std::string(indent, ' ');
+      os_ << EmitLValue(one.name) << " = " << ret_array << ".values[" << id++
+          << "];";
+    }
+  }
+
   template <int indent = 2, bool is_op = true, typename... Targs>
   void EmitODLACall(const std::vector<CXXValue>& lhs, const char* func_name,
                     Targs... args) {
