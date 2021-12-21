@@ -17,6 +17,20 @@
 
 include "convert.td"
 
+def CAFFE_DetectionOutput : CAFFEExtension<"DetectionOutput"> {
+  let param_name_ = "detection_output_param";
+  let extension_attr_ = [
+    ExtensionAttr<"num_classes", Integer, "-1">,
+    ExtensionAttr<"background_label_id", Integer, "0">,
+    ExtensionAttr<"confidence_threshold", Float, "0">,
+    ExtensionAttr<"keep_top_k", Integer, "-1">,
+    ExtensionAttr<"share_location", Bool, "true">,
+    ExtensionAttr<"code_type", Integer, "1">,
+    ExtensionAttr<"variance_encoded_in_target", Bool, "false">,
+    // nms_param is a struct and will be parsed in caffe parser.
+ ];
+}
+
 def CAFFE_Eltwise : CAFFEExtension<"Eltwise"> {
   let param_name_ = "eltwise_param";
   let optional_attrs_ = ["operation"];

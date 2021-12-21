@@ -108,6 +108,31 @@ static std::vector<Def> ConvertConvolution(const CAFFEExtensionInst* ext,
   return {*new_inst};
 }
 
+static std::vector<Def> ConvertDetectionOutput(const CAFFEExtensionInst* ext,
+                                               IRBuilder* builder) {
+  HLCHECK(ext->GetNumOfOperands() == 3);
+  const auto& loc = ext->GetOperand(0);
+  const auto& conf = ext->GetOperand(1);
+  const auto& boxes = ext->GetOperand(2);
+
+  if (!loc.GetType().IsValid() || !conf.GetType().IsValid() ||
+      !boxes.GetType().IsValid()) {
+    return {};
+  }
+
+  builder->SetInsertAfter(ext);
+  auto inst = builder->CreateCustom(ext->GetName(), {loc, conf, boxes}, 1,
+                                    "DetectionOutput");
+  int top_k = FindAttributeValue(*ext, "keep_top_k", -1);
+  int batch = loc.GetType().GetNumOfElementsInDim(0);
+  constexpr int n = 7; // image_id, label, confidence, xmin, ymin, xmax, ymax
+  inst->GetResultsTypes()[0] = Type{DataType::FLOAT32, {batch, top_k, n}};
+  for (auto& attr : ext->GetAttributes()) {
+    inst->AddOneAttribute(attr->Clone());
+  }
+  return {*inst};
+}
+
 static std::vector<Def> ConvertUpsample(const CAFFEExtensionInst* ext,
                                         IRBuilder* builder) {
   HLCHECK(ext->GetNumOfOperands() == 1);
@@ -629,6 +654,9 @@ static std::vector<Def> ConvertCAFFEExtension(
     }
     case CAFFEExtOpCode::DECONVOLUTION: {
       return ConvertDeConvolution(caffe_inst, builder);
+    }
+    case CAFFEExtOpCode::DETECTIONOUTPUT: {
+      return ConvertDetectionOutput(caffe_inst, builder);
     }
     case CAFFEExtOpCode::ELTWISE: {
       return ConvertEltwise(caffe_inst, builder);
