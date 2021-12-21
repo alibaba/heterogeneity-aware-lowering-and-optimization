@@ -212,7 +212,8 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnReductionInstruction(Instruction*,
                                          const std::vector<int32_t>& axis_attr,
                                          bool keep_dims,
-                                         const char* odla_func_name);
+                                         const std::string& odla_func_name,
+                                         float epsilon = 0);
   virtual void RunOnUnaryInstruction(Instruction*);
   virtual void RunOnBranchBody(const IfInst& inst, bool is_taken);
 
