@@ -24,18 +24,27 @@ let cat_ = cat_common_reduction,
     attrs_ = [Attr<"Axis along which to reduce, omitted if X2 exists.",
                    IntegerList, "axis">,
               Attr<"Indicate whether to keep the reduced dimension.",
-                   Bool, "keep_dims", "true">],
+                   Bool, "keep_dims", "true">,
+              Attr<"Use to avoid division by zero.",
+                   Float, "epsilon", "0">,
+    ],
+    ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >,
+              OptionalArg<"The axis.", ArgType<[I32]>, 1D>],
     outs_ = [Arg<"The result", MatchArgType<0> >] in {
-
-  let ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >,
-              OptionalArg<"The axis.", ArgType<[I32]>, 1D>] in {
-
-    def ReduceL1 : Inst<"Computes the L1 norm of the elements across"
+      def ReduceL1 : Inst<"Computes the L1 norm of the elements across"
                         " dimensions.">;
-
-    def ReduceL2 : Inst<"Compute the L2 norm of the elements across"
+      def ReduceL2 : Inst<"Compute the L2 norm of the elements across"
                         " dimensions.">;
+    }
 
+let cat_ = cat_common_reduction,
+    attrs_ = [Attr<"Axis along which to reduce, omitted if X2 exists.",
+                   IntegerList, "axis">,
+              Attr<"Indicate whether to keep the reduced dimension.",
+                   Bool, "keep_dims", "true">],
+    ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >,
+              OptionalArg<"The axis.", ArgType<[I32]>, 1D>],
+    outs_ = [Arg<"The result", MatchArgType<0> >] in {
     def ReduceLogSum : Inst<"Compute the log sum of the elements across"
                             " dimensions.">;
 
@@ -59,7 +68,6 @@ let cat_ = cat_common_reduction,
 
     def ReduceSum : Inst<"Compute the sum of the elements across"
                          " dimensions">;
-  }
 
   /* def ReduceAll : Inst<"Compute the logical AND of the elements across"
                        " dimensions."> {
@@ -83,7 +91,6 @@ let cat_ = cat_common_reduction,
 
   def Argmin : Inst<"Computes the indices of the smallest value of the input"
                     " along the specified axis.">;
-
 }
 
 let cat_ = cat_common_reduction in {
