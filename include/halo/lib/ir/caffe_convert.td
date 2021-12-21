@@ -199,6 +199,20 @@ def CAFFE_Permute: OpMapping<"Permute", Transpose> {
   ];
 }
 
+def CAFFE_PriorBox: CAFFEExtension<"PriorBox"> {
+  let param_name_ = "prior_box_param";
+  let extension_attr_ = [
+    ExtensionAttr<"min_size", FloatList, "{}">,
+    ExtensionAttr<"max_size", FloatList, "{}">,
+    ExtensionAttr<"aspect_ratio", FloatList, "{1.0}">,
+    ExtensionAttr<"flip", Bool, "true">,
+    ExtensionAttr<"clip", Bool, "false">,
+    ExtensionAttr<"variance", FloatList, "{0.1}">,
+    ExtensionAttr<"step", Float, "0">,
+    ExtensionAttr<"offset", Float, "0.5">,
+  ];
+}
+
 def CAFFE_PRelu: OpMapping<"PReLU", PRelu> { }
 
 def CAFFE_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;

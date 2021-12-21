@@ -17,6 +17,8 @@
 
 #include "halo/lib/transforms/caffeextension_legalizer.h"
 
+#include <cmath>
+
 #include "halo/api/halo_data.h"
 #include "halo/lib/framework/common.h"
 #include "halo/lib/ir/attribute.h"
@@ -270,6 +272,112 @@ static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
     set_pooling_attributes(DynCast<PoolingAvgInst>(inst));
   }
   return {*inst};
+}
+
+static std::vector<Def> ConvertPriorBox(const CAFFEExtensionInst* ext,
+                                        IRBuilder* builder) {
+  const auto& ty0 = ext->GetOperand(0).GetType();
+  const auto& ty1 = ext->GetOperand(1).GetType();
+  if (!ty0.IsValid() || !ty1.IsValid()) {
+    return {};
+  }
+  const int h = ty0.GetNumOfElementsInDim(2);
+  const int w = ty0.GetNumOfElementsInDim(3);
+  const int ih = ty1.GetNumOfElementsInDim(2);
+  const int iw = ty1.GetNumOfElementsInDim(3);
+  auto aspect_ratios =
+      FindAttributeValue(*ext, "aspect_ratio", std::vector<float>{1});
+  const auto& min_sizes =
+      FindAttributeValue(*ext, "min_size", std::vector<float>{});
+  HLCHECK(!min_sizes.empty());
+  const auto& max_sizes =
+      FindAttributeValue(*ext, "max_size", std::vector<float>{});
+  HLCHECK(max_sizes.empty() || max_sizes.size() == min_sizes.size());
+  bool flip = FindAttributeValue<bool>(*ext, "flip");
+  bool clip = FindAttributeValue<bool>(*ext, "clip");
+  std::vector<float> variance =
+      FindAttributeValue<std::vector<float>>(*ext, "variance");
+  float step = FindAttributeValue<float>(*ext, "step");
+  float offset = FindAttributeValue<float>(*ext, "offset");
+
+  {
+    std::vector<float> ars;
+    ars.reserve(aspect_ratios.size() * 2);
+    ars.push_back(1.0F);
+    constexpr float error = 1e-6;
+    for (auto r : aspect_ratios) {
+      bool exists = false;
+      for (auto x : ars) {
+        exists = fabsf(x - r) < error;
+        if (exists) {
+          break;
+        }
+      }
+      if (!exists) {
+        ars.push_back(r);
+        if (flip) {
+          ars.push_back(1.0F / r);
+        }
+      }
+    }
+    ars.swap(aspect_ratios);
+  }
+
+  auto priors_per_point =
+      aspect_ratios.size() * min_sizes.size() + max_sizes.size();
+
+  std::vector<int64_t> shape{
+      1, 2, 4 * h * w * static_cast<int64_t>(priors_per_point)};
+  halo::Type ty{DataType::FLOAT32, shape};
+  std::vector<float> data;
+  data.reserve(ty.GetTotalNumOfElements());
+  const float image_h = static_cast<float>(ih);
+  const float image_w = static_cast<float>(iw);
+  float step_h = step == 0 ? image_h / static_cast<float>(h) : step;
+  float step_w = step == 0 ? image_w / static_cast<float>(w) : step;
+  for (int y = 0; y < h; ++y) {
+    for (int x = 0; x < w; ++x) {
+      float center_x = (static_cast<float>(x) + offset) * step_w;
+      float center_y = (static_cast<float>(y) + offset) * step_h;
+      for (int s = 0, se = min_sizes.size(); s < se; ++s) {
+        float min_size = min_sizes[s];
+        for (float ar : aspect_ratios) {
+          float ar_s = sqrtf(ar);
+          float box_width = min_size * ar_s;
+          float box_height = min_size / ar_s;
+          data.push_back(((center_x - box_width) / 2) / image_w);  // xmin.
+          data.push_back(((center_y - box_height) / 2) / image_h); // ymin.
+          data.push_back(((center_x + box_width) / 2) / image_w);  // xmax
+          data.push_back(((center_y + box_height) / 2) / image_h); // ymax.
+
+          if (ar == 1.0F && !max_sizes.empty()) {
+            float max_size = max_sizes[s];
+            float box_width = sqrtf(min_size * max_size);
+            float box_height = box_width;
+            data.push_back(((center_x - box_width) / 2) / image_w);  // xmin.
+            data.push_back(((center_y - box_height) / 2) / image_h); // ymin.
+            data.push_back(((center_x + box_width) / 2) / image_w);  // xmax
+            data.push_back(((center_y + box_height) / 2) / image_h); // ymax.
+          }
+        }
+      }
+    }
+  }
+  if (clip) {
+    for (auto& x : data) {
+      x = std::min(1.F, std::max(x, 0.F));
+    }
+  }
+  // Fill variance.
+  HLCHECK(static_cast<int64_t>(data.size() * 2) == ty.GetTotalNumOfElements());
+  HLCHECK(variance.size() == 1 || variance.size() == 4);
+  for (int i = 0, e = data.size(), v = variance.size(); i < e; ++i) {
+    data.push_back(variance[i % v]);
+  }
+  HLCHECK(static_cast<int64_t>(data.size()) == ty.GetTotalNumOfElements());
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  auto c = cb.CreateConstant(ext->GetName(), ty, data.data());
+  return {*c};
 }
 
 static std::vector<Def> ConvertInnerProduct(const CAFFEExtensionInst* ext,
@@ -684,6 +792,9 @@ static std::vector<Def> ConvertCAFFEExtension(
     }
     case CAFFEExtOpCode::FLATTEN: {
       return ConvertFlatten(caffe_inst, builder);
+    }
+    case CAFFEExtOpCode::PRIORBOX: {
+      return ConvertPriorBox(caffe_inst, builder);
     }
     case CAFFEExtOpCode::TILE: {
       return ConvertTile(caffe_inst, builder);
