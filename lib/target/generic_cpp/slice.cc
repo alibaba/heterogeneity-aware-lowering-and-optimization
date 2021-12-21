@@ -52,17 +52,19 @@ void GenericCXXCodeGen::RunOnInstruction(SliceInst* inst) {
   const Def& input = inst->GetOperand(0);
   const Def& start = inst->GetOperand(1);
   const Def& size = inst->GetOperand(2);
-  // auto strides = inst->GetOperand(3); //TODO
+  const Def& strides =
+      inst->GetNumOfOperands() > 3 ? inst->GetOperand(3) : Def::GetUndefined();
 
   CXXValue op0 = ir_mapping_[input];
   CXXValue ret(inst->GetName(), op0.type);
   ir_mapping_[*inst] = ret;
 
-  if (!IsA<Constant>(start) || !IsA<Constant>(size)) {
+  if (!IsA<Constant>(start) || !IsA<Constant>(size) ||
+      ((inst->GetNumOfOperands() > 3) && !IsA<Constant>(strides))) {
     auto op1 = ir_mapping_[start];
     auto op2 = ir_mapping_[size];
-    // auto op3 = ir_mapping_[strides]; // FIXME
-    EmitODLACall(ret, "odla_SliceDynamic", op0, op1, op2, /*op3,*/
+    auto op3 = ir_mapping_[strides];
+    EmitODLACall(ret, "odla_SliceDynamic", op0, op1, op2, op3,
                  EmitShape(inst->GetResultType()));
 
     return;
@@ -115,8 +117,6 @@ void GenericCXXCodeGen::RunOnInstruction(SliceInst* inst) {
 
   std::vector<int32_t> strides_v(dims, 1);
   if (inst->GetNumOfOperands() > 3) {
-    const Def& strides = inst->GetOperand(3);
-    HLCHECK(IsA<Constant>(strides));
     const Constant* strides_c = DynCast<Constant>(strides);
     HLCHECK(strides.GetType().GetTotalNumOfElements() ==
             static_cast<int64_t>(axes.size()));
