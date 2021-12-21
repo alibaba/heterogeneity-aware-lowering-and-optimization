@@ -192,6 +192,15 @@ def CAFFE_Upsample : CAFFEExtension<"Upsample"> {
   ];
 }
 
+def CAFFE_Normalize: CAFFEExtension<"Normalize"> {
+  let param_name_ = "norm_param";
+  let extension_attr_ = [
+    ExtensionAttr<"across_spatial", Bool, "true">,
+    ExtensionAttr<"channel_shared", Bool, "true">,
+    ExtensionAttr<"eps", Float, "1e-10">
+  ];
+}
+
 def CAFFE_Permute: OpMapping<"Permute", Transpose> {
   let param_name_ = "permute_param";
   let attr_mapping_ = [

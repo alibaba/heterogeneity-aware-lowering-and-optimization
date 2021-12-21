@@ -214,6 +214,47 @@ static std::vector<Def> ConvertFlatten(const CAFFEExtensionInst* ext,
   return {*new_inst};
 }
 
+static std::vector<Def> ConvertNormalize(const CAFFEExtensionInst* ext,
+                                         IRBuilder* builder) {
+  HLCHECK(ext->GetNumOfOperands() == 2);
+  const auto& input = ext->GetOperand(0);
+  const auto& input_ty = input.GetType();
+  auto scale = ext->GetOperand(1);
+  const auto& scale_ty = scale.GetType();
+  if (!input_ty.IsValid() || !scale_ty.IsValid()) {
+    return {};
+  }
+  bool accross_spatial = FindAttributeValue<bool>(*ext, "across_spatial");
+  std::vector<int> axes{1};
+  if (accross_spatial) {
+    for (int i = 2, e = input_ty.GetNumOfDims(); i < e; ++i) {
+      axes.push_back(i);
+    }
+  }
+
+  builder->SetInsertAfter(ext);
+  // TODO(unknown): epsilon
+  auto l2 = builder->CreateReduceL2(ext->GetName() + "_L2", {input});
+  l2->SetAxis(axes);
+  l2->SetKeepDims(true);
+  l2->SetEpsilon(FindAttributeValue<float>(*ext, "eps"));
+  if (!scale_ty.IsScalar()) {
+    HLCHECK(scale_ty.GetNumOfDims() == 1);
+    HLCHECK(scale_ty.GetTotalNumOfElements() ==
+            input_ty.GetNumOfElementsInDim(1));
+    std::vector<int64_t> new_shape{scale_ty.GetNumOfElementsInDim(0), 1, 1};
+    ConstantBuilder cb(ext->GetParent()->GetParent());
+    Constant* c = cb.CreateConstant(
+        ext->GetName() + "_shape",
+        Type{DataType::INT64, {static_cast<int64_t>(new_shape.size())}},
+        new_shape.data());
+    scale = *builder->CreateReshape(ext->GetName() + "_reshape", {scale, *c});
+  }
+
+  auto mul = builder->CreateMul(ext->GetName(), *l2, scale);
+  return {*mul};
+}
+
 static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
                                     IRBuilder* builder) {
   HLCHECK(ext->GetNumOfOperands() == 1);
@@ -733,23 +774,18 @@ static std::vector<Def> ConvertRelu(const CAFFEExtensionInst* ext,
                                     IRBuilder* builder) {
   HLCHECK(ext->GetNumOfOperands() == 1);
   auto input = ext->GetOperand(0);
-  const auto& input_type = input.GetType();
 
-  if (!input_type.IsValid()) {
-    return {};
-  }
   builder->SetInsertAfter(ext);
 
   float alpha = ext->GetNumOfAttributes() != 0
                     ? ext->GetAttributes()[0]->GetValueAsFloat()
                     : 0;
   if (alpha != 0) {
-    auto leakly_relu =
-        builder->CreateLeakyRelu(ext->GetName(), ext->GetOperands());
+    auto leakly_relu = builder->CreateLeakyRelu(ext->GetName(), input);
     leakly_relu->SetAlpha(alpha);
     return {*leakly_relu};
   }
-  auto relu = builder->CreateRelu(ext->GetName(), ext->GetOperands());
+  auto relu = builder->CreateRelu(ext->GetName(), input);
   return {*relu};
 }
 
@@ -792,6 +828,9 @@ static std::vector<Def> ConvertCAFFEExtension(
     }
     case CAFFEExtOpCode::FLATTEN: {
       return ConvertFlatten(caffe_inst, builder);
+    }
+    case CAFFEExtOpCode::NORMALIZE: {
+      return ConvertNormalize(caffe_inst, builder);
     }
     case CAFFEExtOpCode::PRIORBOX: {
       return ConvertPriorBox(caffe_inst, builder);
