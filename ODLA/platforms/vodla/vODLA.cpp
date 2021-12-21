@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
-#include <vodh_client/vodh_common.h>
+#include <vodh_common.h>
 
 #include <cassert>
 #include <cstdint>
