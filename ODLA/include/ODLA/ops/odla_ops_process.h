@@ -314,14 +314,15 @@ odla_Slice(odla_value input, const odla_int32* start, const odla_int32* end,
   \param input the input value
   \param start the offets at each slicing dimension
   \param size the number of elements at each slicing dimension
+  \param stride the stride at each slicing dimension
   \param output_dims the optional output shape (can be undefined)
   \param value_id a unique value id (can be NULL)
 
   \return odla_value
 */
-extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_SliceDynamic(odla_value input, odla_value start, odla_value size,
-                  odla_value_shape output_dims, const odla_value_id value_id);
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_SliceDynamic(
+    odla_value input, odla_value start, odla_value size, odla_value stride,
+    odla_value_shape output_dims, const odla_value_id value_id);
 
 //! \brief Remove dimensions of size 1
 /*!
