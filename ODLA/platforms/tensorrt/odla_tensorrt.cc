@@ -456,6 +456,9 @@ static odla_value CreateValue(T* t, const odla_value_type& type,
   auto v = std::make_unique<_odla_value>(t, type, name);
   auto ret = v.get();
   g_comp->vals.push_back(std::move(v));
+  if (!g_comp->branchs.empty()) {
+    g_comp->branchs.top().branch->addInput(*ret);
+  }
   return ret;
 }
 
@@ -930,6 +933,11 @@ odla_status ODLA_API_CALL odla_GetOutputFromExecutableByIdx(
                                         output_value);
 }
 
+odla_status odla_GetValueId(const odla_value value, odla_value_id* value_id) {
+  *value_id = reinterpret_cast<odla_value_id>(const_cast<char*>(value->name));
+  return ODLA_SUCCESS;
+}
+
 odla_status odla_GetValueType(const odla_value value,
                               odla_value_type* value_type) {
   *value_type = value->type;
@@ -1304,6 +1312,45 @@ odla_value odla_Resize(odla_value input, odla_interpolation_mode interpolation,
   auto resize = g_comp->network->addResize(*input);
   resize->setResizeMode(nvinfer1::ResizeMode::kNEAREST);
   resize->setOutputDimensions(GetNVDims(output_dims));
+  return CreateValue(resize, {input->type.element_type, output_dims}, value_id);
+}
+
+odla_value odla_ResizeDynamic(odla_value input, odla_value scales,
+                              odla_value sizes,
+                              odla_interpolation_mode interpolation,
+                              odla_resize_coordinate_mode mode,
+                              odla_value_shape output_dims,
+                              const odla_value_id value_id) {
+  assert(interpolation == ODLA_NEAREST);
+  const auto& name = std::string(reinterpret_cast<const char*>(value_id));
+  const auto& name_shape = name + "_shape";
+  const auto& name_scales = name + "_int_scales";
+  const auto& name_new_shape = name + "_new_shape";
+
+  auto resize = g_comp->network->addResize(*input);
+  assert(scales == nullptr || sizes == nullptr); // can't be both valid.
+  assert(scales != nullptr || sizes != nullptr); // can't be both invalid.
+
+  // if scales are constants, just use setScales method.
+  if (scales != nullptr) {
+    if (scales->const_layer != nullptr) {
+      const float* scales_data =
+          static_cast<const float*>(scales->const_layer->getWeights().values);
+
+      resize->setScales(scales_data, GetTotalElements(scales->type.shape));
+    } else {
+      // compute the output shape by input_shape * scale.
+      // TODO: cast shape to float and then cast the product to int.
+      auto shape = odla_Shape(input, {.size = 1, {input->type.shape.size}},
+                              (odla_value_id)(name_shape.c_str()));
+      auto new_shape =
+          odla_Mul(shape, scales, (odla_value_id)name_new_shape.c_str());
+      resize->setInput(1, *new_shape);
+    }
+  } else {
+    resize->setInput(1, *sizes);
+  }
+  resize->setResizeMode(nvinfer1::ResizeMode::kNEAREST);
   return CreateValue(resize, {input->type.element_type, output_dims}, value_id);
 }
 
@@ -1835,8 +1882,8 @@ odla_value odla_Gather(odla_value input, const odla_value indices,
   return CreateValue(gather, {input->type.element_type, output_dims}, id);
 }
 
-odla_value odla_Slice(odla_value input, const odla_uint32* start,
-                      const odla_uint32* end, const odla_uint32* stride,
+odla_value odla_Slice(odla_value input, const odla_int32* start,
+                      const odla_int32* end, const odla_int32* stride,
                       odla_value_shape output_dims, const odla_value_id id) {
   odla_value_shape start_dims, stride_dims;
   const auto& dims = input->type.shape;
@@ -2391,6 +2438,13 @@ odla_value odla_Select(odla_value condition, odla_value a, odla_value b,
   return CreateValue(select_layer->getOutput(0),
                      odla_value_type{a->type.element_type, output_dims},
                      value_id);
+}
+
+odla_value odla_Shape(odla_value input, odla_value_shape output_dims,
+                      odla_value_id value_id) {
+  auto shape = g_comp->network->addShape(*input);
+  return CreateValue(shape->getOutput(0),
+                     odla_value_type{ODLA_INT32, output_dims}, value_id);
 }
 
 odla_status odla_BeginIf(odla_value condition, odla_value_id value_id) {

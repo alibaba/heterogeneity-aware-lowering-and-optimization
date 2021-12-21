@@ -211,6 +211,24 @@ Status CAFFEParser::ConvertOneNode(
     if (s != Status::SUCCESS) {
       return s;
     }
+    if (layer_param.type() == "DetectionOutput") {
+      if (!layer_param.has_detection_output_param()) {
+        LOG(ERROR) << "Detection Output Param not found";
+        return Status::ASSERTION;
+      }
+      auto inst = inst_name_to_ptr_[layer_param.name()];
+      auto& dp = layer_param.detection_output_param();
+      caffe::NonMaximumSuppressionParameter dummy_nms_param;
+      const auto& nms_param =
+          dp.has_nms_param() ? dp.nms_param() : dummy_nms_param;
+      inst->AddOneAttribute(std::move(Attribute::CreateInteger(
+          "nms_top_k", nms_param.has_top_k() ? nms_param.top_k() : 0)));
+      inst->AddOneAttribute(std::move(Attribute::CreateFloat(
+          "nms_threshold",
+          nms_param.has_nms_threshold() ? nms_param.nms_threshold() : 0.3F)));
+      inst->AddOneAttribute(std::move(Attribute::CreateFloat(
+          "nms_eta", nms_param.has_eta() ? nms_param.eta() : 1.0F)));
+    }
   } else {
     if (opts_.print_diagnostic_report) {
       CAFFEParser::WriteCSVReport(layer_param, std::cout);

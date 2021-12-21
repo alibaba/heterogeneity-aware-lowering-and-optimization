@@ -253,6 +253,27 @@ odla_Resize(odla_value input, odla_interpolation_mode interpolation,
             odla_resize_coordinate_mode mode, odla_uint32 axes_mask,
             odla_value_shape output_dims, const odla_value_id value_id);
 
+//! \brief Resize by interpolating (dynamic shape)
+/*!
+  Resize resizes the input using specified interpolation method.
+  The shape of output is determined by either `scales` or `sizes`.
+  It is an error if both are specified (non-null).
+
+  \param input the input value
+  \param scales the scaling value
+  \param sizes the size of output value
+  \param interpolation the interpolation method
+  \param mode the coordinate transformation mode
+  \param output_dims the optional output shape (can be undefined)
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_ResizeDynamic(
+    odla_value input, odla_value scales, odla_value sizes,
+    odla_interpolation_mode interpolation, odla_resize_coordinate_mode mode,
+    odla_value_shape output_dims, const odla_value_id value_id);
+
 //! \brief Get the shape of input
 /*!
   Shape returns the shape of \p input as a 1D odla_value. The element type of
@@ -282,9 +303,25 @@ odla_Shape(odla_value input, odla_value_shape output_dims,
   \return odla_value
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_Slice(odla_value input, const odla_uint32* start, const odla_uint32* end,
-           const odla_uint32* stride, odla_value_shape output_dims,
+odla_Slice(odla_value input, const odla_int32* start, const odla_int32* end,
+           const odla_int32* stride, odla_value_shape output_dims,
            const odla_value_id value_id);
+
+//! \brief Extract a dynamic slice
+/*!
+  SliceDynamic extracts a dynamic slice from \p input.
+
+  \param input the input value
+  \param start the offets at each slicing dimension
+  \param size the number of elements at each slicing dimension
+  \param output_dims the optional output shape (can be undefined)
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_SliceDynamic(odla_value input, odla_value start, odla_value size,
+                  odla_value_shape output_dims, const odla_value_id value_id);
 
 //! \brief Remove dimensions of size 1
 /*!
@@ -302,6 +339,22 @@ odla_Slice(odla_value input, const odla_uint32* start, const odla_uint32* end,
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Squeeze(odla_value input, odla_size_t num_of_axes, const odla_uint32* axes,
              odla_value_shape output_dims, const odla_value_id value_id);
+
+//! \brief Join a sequence of Values along a new axis.
+/*!
+   Stack joins multiple values into single one along a new axis. All inputs
+   must have the same dimension.
+
+  \param inputs the input values
+  \param axis the index of the new axis in the dimensions of the result
+  \param output_shape the result shape
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Stack(odla_values inputs, odla_int32 axis, odla_value_shape output_shape,
+           const odla_value_id value_id);
 
 //! \brief Transpose the input
 /*!

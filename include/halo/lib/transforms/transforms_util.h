@@ -87,6 +87,18 @@ inline const ReductionMode& GetAttributeValue(const Attribute& attr) {
 }
 
 template <typename T>
+const T& FindAttributeValue(const Instruction& inst, const std::string& name) {
+  for (const auto& it : inst.GetAttributes()) {
+    if (it->GetName() == name) {
+      return GetAttributeValue<T>(*it);
+    }
+  }
+  HLCHECK(0 && "Attribute not found");
+  static const T def_val{};
+  return def_val;
+}
+
+template <typename T>
 const T& FindAttributeValue(const Instruction& inst, const std::string& name,
                             const T& default_val) {
   for (const auto& it : inst.GetAttributes()) {
