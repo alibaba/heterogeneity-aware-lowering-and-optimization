@@ -192,10 +192,33 @@ def CAFFE_Upsample : CAFFEExtension<"Upsample"> {
   ];
 }
 
+def CAFFE_Normalize: CAFFEExtension<"Normalize"> {
+  let param_name_ = "norm_param";
+  let extension_attr_ = [
+    ExtensionAttr<"across_spatial", Bool, "true">,
+    ExtensionAttr<"channel_shared", Bool, "true">,
+    ExtensionAttr<"eps", Float, "1e-10">
+  ];
+}
+
 def CAFFE_Permute: OpMapping<"Permute", Transpose> {
   let param_name_ = "permute_param";
   let attr_mapping_ = [
     AttributeMapping<"order", "permutation", "{0, 0}">
+  ];
+}
+
+def CAFFE_PriorBox: CAFFEExtension<"PriorBox"> {
+  let param_name_ = "prior_box_param";
+  let extension_attr_ = [
+    ExtensionAttr<"min_size", FloatList, "{}">,
+    ExtensionAttr<"max_size", FloatList, "{}">,
+    ExtensionAttr<"aspect_ratio", FloatList, "{1.0}">,
+    ExtensionAttr<"flip", Bool, "true">,
+    ExtensionAttr<"clip", Bool, "false">,
+    ExtensionAttr<"variance", FloatList, "{0.1}">,
+    ExtensionAttr<"step", Float, "0">,
+    ExtensionAttr<"offset", Float, "0.5">,
   ];
 }
 

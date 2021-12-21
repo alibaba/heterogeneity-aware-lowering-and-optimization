@@ -648,15 +648,16 @@ odla_Reciprocal(odla_value input, const odla_value_id value_id);
   \param num_of_axes nubmer of axes to reduce
   \param axes the axes to reduce
   \param keep_dims keep the reduced dimension or not
+  \param epsilon use to avoid division by zero
   \param output_dims the optional output shape (can be undefined)
   \param value_id a unique value id (can be NULL)
 
   \return odla_value
 */
-extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_ReduceL1(odla_value input, odla_size_t num_of_axes,
-              const odla_uint32* axes, odla_bool keep_dims,
-              odla_value_shape output_dims, const odla_value_id value_id);
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_ReduceL1(
+    odla_value input, odla_size_t num_of_axes, const odla_uint32* axes,
+    odla_bool keep_dims, odla_float32 epsilon, odla_value_shape output_dims,
+    const odla_value_id value_id);
 
 //! \brief Compute the L2 norm alone axes
 /*!
@@ -666,15 +667,16 @@ odla_ReduceL1(odla_value input, odla_size_t num_of_axes,
   \param num_of_axes nubmer of axes to reduce
   \param axes the axes to reduce
   \param keep_dims keep the reduced dimension or not
+  \param epsilon use to avoid division by zero
   \param output_dims the optional output shape (can be undefined)
   \param value_id a unique value id (can be NULL)
 
   \return odla_value
 */
-extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_ReduceL2(odla_value input, odla_size_t num_of_axes,
-              const odla_uint32* axes, odla_bool keep_dims,
-              odla_value_shape output_dims, const odla_value_id value_id);
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_ReduceL2(
+    odla_value input, odla_size_t num_of_axes, const odla_uint32* axes,
+    odla_bool keep_dims, odla_float32 epsilon, odla_value_shape output_dims,
+    const odla_value_id value_id);
 
 //! \brief Compute the log sum alone axes
 /*!

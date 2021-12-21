@@ -1388,7 +1388,8 @@ static odla_value reduce(odla_value input, nvinfer1::ReduceOperation op,
 
 odla_value odla_ReduceL1(odla_value input, odla_size_t num_of_axes,
                          const odla_uint32* axes, odla_bool keep_dims,
-                         odla_value_shape output_dims, const odla_value_id id) {
+                         float epsilon, odla_value_shape output_dims,
+                         const odla_value_id id) {
   const auto& name = std::string(reinterpret_cast<const char*>(id)) + "_extra";
   return reduce(odla_Abs(input, (const odla_value_id)name.c_str()),
                 nvinfer1::ReduceOperation::kSUM, num_of_axes, axes, keep_dims,
@@ -1397,7 +1398,8 @@ odla_value odla_ReduceL1(odla_value input, odla_size_t num_of_axes,
 
 odla_value odla_ReduceL2(odla_value input, odla_size_t num_of_axes,
                          const odla_uint32* axes, odla_bool keep_dims,
-                         odla_value_shape output_dims, const odla_value_id id) {
+                         float epsilon, odla_value_shape output_dims,
+                         const odla_value_id id) {
   const auto& name = std::string(reinterpret_cast<const char*>(id)) + "_extra";
   return odla_Sqrt(
       odla_ReduceSumSquare(input, num_of_axes, axes, keep_dims, output_dims,
