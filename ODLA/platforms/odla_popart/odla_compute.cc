@@ -69,11 +69,6 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
           (std::string) reinterpret_cast<char*>(value));
       popart::logging::setLogLevel(popart::logging::Module::popart,
                                    popart::logging::Level::Info);
-      setenv("POPLAR_ENGINE_OPTIONS",
-             "{\"debug.simulateErrors\":\"FLOATING_POINT_INVALID_OPERATION@ALL:"
-             "vertexName:popops__BinaryOp1DInPlaceSupervisor___popops__expr__"
-             "BinaryOpType__SUBTRACT_half\"}",
-             1);
       popart::logging::err("The POPLAR_ENGINE_OPTIONS has been set");
       // popops__BroadcastVectorInnerInPlaceSupervisor___popops__expr__BinaryOpType__ADD_half
       break;
