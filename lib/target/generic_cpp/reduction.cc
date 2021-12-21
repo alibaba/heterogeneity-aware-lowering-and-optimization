@@ -21,7 +21,7 @@ namespace halo {
 
 void GenericCXXCodeGen::RunOnReductionInstruction(
     Instruction* inst, const std::vector<int32_t>& axis_attr, bool keep_dims,
-    const char* odla_func_name) {
+    const std::string& odla_func_name, float eps) {
   const Def& input = inst->GetOperand(0);
 
   CXXValue op0 = ir_mapping_[input];
@@ -40,9 +40,13 @@ void GenericCXXCodeGen::RunOnReductionInstruction(
       axis.push_back(i);
     }
   }
-
-  EmitODLACall(ret, odla_func_name, op0, axis.size(), axis, keep_dims,
-               EmitShape(ret_type));
+  if (odla_func_name == "odla_ReduceL1" || odla_func_name == "odla_ReduceL2") {
+    EmitODLACall(ret, odla_func_name.c_str(), op0, axis.size(), axis, keep_dims,
+                 eps, EmitShape(ret_type));
+  } else {
+    EmitODLACall(ret, odla_func_name.c_str(), op0, axis.size(), axis, keep_dims,
+                 EmitShape(ret_type));
+  }
   ir_mapping_[*inst] = ret;
 }
 
@@ -63,12 +67,12 @@ void GenericCXXCodeGen::RunOnInstruction(ReduceMaxInst* inst) {
 
 void GenericCXXCodeGen::RunOnInstruction(ReduceL1Inst* inst) {
   RunOnReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims(),
-                            "odla_ReduceL1");
+                            "odla_ReduceL1", inst->GetEpsilon());
 }
 
 void GenericCXXCodeGen::RunOnInstruction(ReduceL2Inst* inst) {
   RunOnReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims(),
-                            "odla_ReduceL2");
+                            "odla_ReduceL2", inst->GetEpsilon());
 }
 
 void GenericCXXCodeGen::RunOnInstruction(ReduceProductInst* inst) {

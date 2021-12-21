@@ -17,6 +17,7 @@
 
 #include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/target/generic_cxx/generic_cxx_codegen.h"
+#include "halo/lib/transforms/transforms_util.h"
 
 namespace halo {
 
@@ -34,6 +35,19 @@ void GenericCXXCodeGen::RunOnInstruction(CustomInst* inst) {
     inputs.push_back(ir_mapping_[op]);
   }
 
+  if (inst->GetOpname() == "custom_DetectionOutput") {
+    const std::string op_name = "\"DetectionOutput\"";
+    const int& bl = FindAttributeValue<int>(*inst, "background_label_id");
+    float threshold = FindAttributeValue<float>(*inst, "confidence_threshold");
+    int keep_top_k = FindAttributeValue<int>(*inst, "keep_top_k");
+    int classes = FindAttributeValue<int>(*inst, "num_classes");
+    bool share_loc = FindAttributeValue<bool>(*inst, "share_location");
+    float nms_threshold = FindAttributeValue<float>(*inst, "nms_threshold");
+
+    EmitODLACustomCall(rets, inputs, op_name, op_name, bl, threshold,
+                       keep_top_k, classes, share_loc, nms_threshold);
+    return;
+  }
   const std::string op_name = "\"" + inst->GetOpname() + "\"";
   EmitODLACall(rets, "odla_CustomOp", inputs, op_name, op_name);
 }

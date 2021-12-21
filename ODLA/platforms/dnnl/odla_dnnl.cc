@@ -1834,8 +1834,8 @@ odla_value odla_Erf(odla_value input, const odla_value_id value_id) {
 
 static void strided_slice(const void* src, int elem_size,
                           const odla_value_shape& input_dims,
-                          const odla_uint32* start, const odla_uint32* end,
-                          const odla_uint32* strides, void* dst,
+                          const odla_int32* start, const odla_int32* end,
+                          const odla_int32* strides, void* dst,
                           const odla_value_shape& output_dims) {
   int64_t dst_elems = GetTotalElements(output_dims);
   int dims = input_dims.size;
@@ -1871,8 +1871,8 @@ static void strided_slice(const void* src, int elem_size,
   }
 }
 
-odla_value odla_Slice(odla_value input, const odla_uint32* start,
-                      const odla_uint32* end, const odla_uint32* strides,
+odla_value odla_Slice(odla_value input, const odla_int32* start,
+                      const odla_int32* end, const odla_int32* strides,
                       odla_value_shape output_dims, const odla_value_id id) {
   const auto& input_dims = input->shape;
   int dims = input_dims.size;

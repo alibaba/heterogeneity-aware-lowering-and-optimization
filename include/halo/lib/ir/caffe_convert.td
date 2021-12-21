@@ -17,6 +17,20 @@
 
 include "convert.td"
 
+def CAFFE_DetectionOutput : CAFFEExtension<"DetectionOutput"> {
+  let param_name_ = "detection_output_param";
+  let extension_attr_ = [
+    ExtensionAttr<"num_classes", Integer, "-1">,
+    ExtensionAttr<"background_label_id", Integer, "0">,
+    ExtensionAttr<"confidence_threshold", Float, "0">,
+    ExtensionAttr<"keep_top_k", Integer, "-1">,
+    ExtensionAttr<"share_location", Bool, "true">,
+    ExtensionAttr<"code_type", Integer, "1">,
+    ExtensionAttr<"variance_encoded_in_target", Bool, "false">,
+    // nms_param is a struct and will be parsed in caffe parser.
+ ];
+}
+
 def CAFFE_Eltwise : CAFFEExtension<"Eltwise"> {
   let param_name_ = "eltwise_param";
   let optional_attrs_ = ["operation"];
@@ -188,10 +202,33 @@ def CAFFE_Upsample : CAFFEExtension<"Upsample"> {
   ];
 }
 
+def CAFFE_Normalize: CAFFEExtension<"Normalize"> {
+  let param_name_ = "norm_param";
+  let extension_attr_ = [
+    ExtensionAttr<"across_spatial", Bool, "true">,
+    ExtensionAttr<"channel_shared", Bool, "true">,
+    ExtensionAttr<"eps", Float, "1e-10">
+  ];
+}
+
 def CAFFE_Permute: OpMapping<"Permute", Transpose> {
   let param_name_ = "permute_param";
   let attr_mapping_ = [
     AttributeMapping<"order", "permutation", "{0, 0}">
+  ];
+}
+
+def CAFFE_PriorBox: CAFFEExtension<"PriorBox"> {
+  let param_name_ = "prior_box_param";
+  let extension_attr_ = [
+    ExtensionAttr<"min_size", FloatList, "{}">,
+    ExtensionAttr<"max_size", FloatList, "{}">,
+    ExtensionAttr<"aspect_ratio", FloatList, "{1.0}">,
+    ExtensionAttr<"flip", Bool, "true">,
+    ExtensionAttr<"clip", Bool, "false">,
+    ExtensionAttr<"variance", FloatList, "{0.1}">,
+    ExtensionAttr<"step", Float, "0">,
+    ExtensionAttr<"offset", Float, "0.5">,
   ];
 }
 
