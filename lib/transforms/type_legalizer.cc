@@ -141,15 +141,20 @@ static void RunOnMathBinaryInstruction(Instruction* inst) {
 
     if (size_i_a != size_i_b) {
       // one of them must be 1
-      if (size_i_a != 1) {
-        HLCHECK(size_i_b == 1);
-        ret_shape.push_back(size_i_a);
-      } else if (size_i_b != 1) {
-        HLCHECK(size_i_a == 1);
+      if (size_i_a == 1) {
         ret_shape.push_back(size_i_b);
+      } else if (size_i_a == -1) {
+        if (size_i_b == 1) {
+          ret_shape.push_back(-1);
+        } else {
+          ret_shape.push_back(size_i_b);
+        }
       } else {
-        ret_shape.push_back(1);
+        HLCHECK(((size_i_b == 1) || (size_i_b == -1)) &&
+                "Violation of the broadcasting rules");
+        ret_shape.push_back(size_i_a);
       }
+
     } else {
       ret_shape.push_back(size_i_a);
     }
