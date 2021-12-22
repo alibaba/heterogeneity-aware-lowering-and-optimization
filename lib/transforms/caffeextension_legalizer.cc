@@ -618,35 +618,11 @@ static std::vector<Def> ConvertReshape(const CAFFEExtensionInst* ext,
     // axis + num_axes]
     HLCHECK(num_axes == -1);
     HLCHECK(axis == 0);
-    const auto& orig_shape = input_type.GetDimSizes();
-    std::vector<int32_t> new_shape;
-    int induced_index = -1;
-    int64_t new_num_elements = 1;
-    auto orig_num_elements = input_type.GetTotalNumOfElements();
-    for (int i = 0, e = shape.size(); i != e; ++i) {
-      if (shape[i] == 0) {
-        new_shape.push_back(static_cast<int32_t>(orig_shape[i]));
-      } else if (shape[i] == -1) {
-        HLCHECK(induced_index == -1 &&
-                "only one dimension is expected to be -1.");
-        induced_index = i;
-        new_shape.push_back(1);
-      } else {
-        new_shape.push_back(shape[i]);
-      }
-      new_num_elements *= new_shape.back();
-    }
-    if (induced_index != -1) {
-      HLCHECK(orig_num_elements % new_num_elements == 0);
-      new_shape[induced_index] = orig_num_elements / new_num_elements;
-    } else {
-      HLCHECK(orig_num_elements == new_num_elements);
-    }
     ConstantBuilder cb(ext->GetParent()->GetParent());
     Constant* c = cb.CreateConstant(
         ext->GetName() + "_shape",
-        Type{DataType::INT32, {static_cast<int64_t>(new_shape.size())}},
-        new_shape.data());
+        Type{DataType::INT32, {static_cast<int64_t>(shape.size())}},
+        shape.data());
     auto new_inst = builder->CreateReshape(ext->GetName(), {bottom, *c});
     return {*new_inst};
   }
