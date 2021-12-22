@@ -178,7 +178,7 @@ var searchData=
   ['odla_5fsin_525',['odla_Sin',['../odla__ops__math_8h.html#ab94f3dd5f303cfc0e41f5a816380996a',1,'odla_ops_math.h']]],
   ['odla_5fsinh_526',['odla_Sinh',['../odla__ops__math_8h.html#a96838327609526b697ddd5fce330bf10',1,'odla_ops_math.h']]],
   ['odla_5fslice_527',['odla_Slice',['../odla__ops__process_8h.html#abf910c48486dda41c1b73db8b9615108',1,'odla_ops_process.h']]],
-  ['odla_5fslicedynamic_528',['odla_SliceDynamic',['../odla__ops__process_8h.html#a8f40ed06c567fd9f4118bc2702a2cc3c',1,'odla_ops_process.h']]],
+  ['odla_5fslicedynamic_528',['odla_SliceDynamic',['../odla__ops__process_8h.html#a1929c14aef69f22429a5d631787b4b54',1,'odla_ops_process.h']]],
   ['odla_5fsoftmax_529',['odla_Softmax',['../odla__ops__nn_8h.html#a7961e5f668b999fad696653d0ecde56c',1,'odla_ops_nn.h']]],
   ['odla_5fsoftplus_530',['odla_Softplus',['../odla__ops__nn_8h.html#a65a8d48997f9932c8b6ae549c7dba3af',1,'odla_ops_nn.h']]],
   ['odla_5fsoftsign_531',['odla_Softsign',['../odla__ops__nn_8h.html#af6a84933cadc045592c57600b15f3afc',1,'odla_ops_nn.h']]],

@@ -276,7 +276,7 @@ var searchData=
   ['odla_5fsio_273',['ODLA_SIO',['../odla__ops__nn_8h.html#a54eaa7020ac01fc2a354d4fef9313a62a2c1c05b5260e1d31bee60277d56e798e',1,'odla_ops_nn.h']]],
   ['odla_5fsize_5ft_274',['odla_size_t',['../odla__common_8h.html#acac65b5a20353d7f068ca61c6ab7569c',1,'odla_common.h']]],
   ['odla_5fslice_275',['odla_Slice',['../odla__ops__process_8h.html#abf910c48486dda41c1b73db8b9615108',1,'odla_ops_process.h']]],
-  ['odla_5fslicedynamic_276',['odla_SliceDynamic',['../odla__ops__process_8h.html#a8f40ed06c567fd9f4118bc2702a2cc3c',1,'odla_ops_process.h']]],
+  ['odla_5fslicedynamic_276',['odla_SliceDynamic',['../odla__ops__process_8h.html#a1929c14aef69f22429a5d631787b4b54',1,'odla_ops_process.h']]],
   ['odla_5fsoftmax_277',['odla_Softmax',['../odla__ops__nn_8h.html#a7961e5f668b999fad696653d0ecde56c',1,'odla_ops_nn.h']]],
   ['odla_5fsoftplus_278',['odla_Softplus',['../odla__ops__nn_8h.html#a65a8d48997f9932c8b6ae549c7dba3af',1,'odla_ops_nn.h']]],
   ['odla_5fsoftsign_279',['odla_Softsign',['../odla__ops__nn_8h.html#af6a84933cadc045592c57600b15f3afc',1,'odla_ops_nn.h']]],
