@@ -1,3 +1,6 @@
+add_definitions(-DTIMING)
+add_definitions(-DLOOP_CNT=1)
+
 link_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_odla_library(vodla SHARED vODLA.cpp)
