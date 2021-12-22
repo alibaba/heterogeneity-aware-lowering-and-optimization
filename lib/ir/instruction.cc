@@ -20,10 +20,6 @@
 namespace halo {
 
 bool Instruction::ComputeResultTypes() {
-  if (HasValidResultTypes()) {
-    return true;
-  }
-
   // By default, returns the 1st operand's type.
   const auto& ops = GetOperands();
   if (ops.empty()) {
