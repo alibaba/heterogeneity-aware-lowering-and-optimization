@@ -87,6 +87,9 @@ void EmitDataTypeEnum(const llvm::RecordKeeper& records,
   std::vector<std::string> enum_strs;
   enum_strs.reserve(datatypes.size());
   for (auto vt : datatypes) {
+    if (vt.IsPointer) {
+      continue; // skip pointer
+    }
     enum_strs.push_back("");
     auto& name = enum_strs.back();
     if (!vt.AltName.empty()) {

@@ -27,6 +27,7 @@ Type::Type(const llvm::Record* record) {
   IsInt = record->getValueAsBit("is_integer_");
   IsBool = (Width == 1) && IsInt;
   IsString = record->getValueAsBit("is_string_");
+  IsPointer = record->getValueAsBit("is_pointer_");
   IsFloat = !IsInt && !IsString;
   IsArray = record->getValueAsBit("is_array_");
   Is2DArray = record->getValueAsBit("is_2d_array_");

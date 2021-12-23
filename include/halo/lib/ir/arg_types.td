@@ -56,3 +56,9 @@ let is_integer_ = 1,
   def QI3 : ValueType<3>;
   def QI4 : ValueType<4>;
 }
+
+//external function
+let is_pointer_ = 1 in {
+  def VOIDPtr : ValueType<0, "void*">;
+  def VOIDPtrList : ValueType<0, "std::vector<void*>">;
+}

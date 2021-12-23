@@ -47,6 +47,7 @@ class Converter {
   enum class Framework {
     FRAMEWORK_TF,
     FRAMEWORK_ONNX,
+    FRAMEWORK_ODLA,
     FRAMEWORK_TFLITE,
     FRAMEWORK_CAFFE,
     FRAMEWORK_MXNET,
@@ -108,6 +109,11 @@ Converter::Converter(const llvm::RecordKeeper& records) : records_(records) {
     framework_kind_ = Framework::FRAMEWORK_ONNX;
     framework_name_ = "ONNX";
     framework_namespace_ = "onnx";
+    pb_node_ = "NodeProto";
+  } else if (one->getName().startswith("ODLA")) {
+    framework_kind_ = Framework::FRAMEWORK_ODLA;
+    framework_name_ = "ODLA";
+    framework_namespace_ = "odla";
     pb_node_ = "NodeProto";
   } else if (one->getName().startswith("CAFFE")) {
     framework_kind_ = Framework::FRAMEWORK_CAFFE;
@@ -243,7 +249,10 @@ void Converter::EmitHaloInstDef(llvm::Record* record, llvm::raw_ostream& os) {
   }
 
   std::vector<llvm::Record*> attrs = sn_inst->getValueAsListOfDefs("attrs_");
-  if (!attrs.empty() && framework_name_ != "TFLITE") {
+  std::vector<llvm::Record*> extension_attrs =
+      record->getValueAsListOfDefs("extension_attr_");
+  if ((!attrs.empty() || !extension_attrs.empty()) &&
+      framework_name_ != "TFLITE") {
     os << "  " << framework_name_ << "Attrs attrs(node_def);\n";
   }
   os << "  std::vector<Def> operands = GetInputOperands(node_def);\n";

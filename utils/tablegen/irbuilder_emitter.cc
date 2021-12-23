@@ -107,5 +107,6 @@ void EmitIRBuilder(const llvm::RecordKeeper& records, llvm::raw_ostream& os,
       }
     }
   }
+}
 
 } // namespace halo
