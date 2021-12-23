@@ -232,6 +232,12 @@ void Converter::EmitHaloInstDefForCaffe(llvm::Record* record,
   os << "  return Status::SUCCESS;\n}\n\n";
 }
 
+static void EmitONNXInstNameRebinding(llvm::raw_ostream& os) {
+  os << "  if (node_def.name().empty()) {\n"
+     << "    inst->SetName(node_def.op_type() + \"_\" + node_def.output(0));\n"
+     << "  }\n";
+}
+
 void Converter::EmitHaloInstDef(llvm::Record* record, llvm::raw_ostream& os) {
   llvm::Record* sn_inst = record->getValueAsDef(SNInst);
   llvm::StringRef sn_inst_name = sn_inst->getName();
@@ -270,10 +276,12 @@ void Converter::EmitHaloInstDef(llvm::Record* record, llvm::raw_ostream& os) {
     os << "(name, operands);\n";
   }
 
+  if (framework_name_ == "ONNX") {
+    EmitONNXInstNameRebinding(os);
+  }
+
   bool need_new_attr = true;
   ProcessAttributes(sn_inst, need_mapping, os, &need_new_attr);
-  std::vector<llvm::Record*> extension_attrs =
-      record->getValueAsListOfDefs("extension_attr_");
   llvm::StringRef param_name = record->getValueAsString(ParamName);
   ProcessExtensionAttributesImpl(extension_attrs, framework_name_,
                                  param_name.str(), os, need_new_attr);
@@ -319,6 +327,9 @@ void Converter::EmitExtensionInstDef(llvm::Record* record,
   ProcessExtensionAttributes(extension_attrs, framework_name_, param_name.str(),
                              os);
 
+  if (framework_name_ == "ONNX") {
+    EmitONNXInstNameRebinding(os);
+  }
   if (auto code = record->getValueAsString(CustomCode); !code.empty()) {
     os << code;
   }
