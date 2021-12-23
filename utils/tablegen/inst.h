@@ -52,6 +52,8 @@ class Type {
   bool IsQuantized;
   /// list of list type flag, always false for an arg type.
   bool Is2DArray;
+  /// pointer type flag
+  bool IsPointer;
   /// alternative name.
   llvm::StringRef AltName;
 };
