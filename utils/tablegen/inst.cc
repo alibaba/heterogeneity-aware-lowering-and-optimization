@@ -1,6 +1,6 @@
 //===- inst.cc --------------------------------------------------*- C++ -*-===//
 //
-// Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+// Copyright (C) 2019-2021 Alibaba Group Holding Limited.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ Type::Type(const llvm::Record* record) {
   IsInt = record->getValueAsBit("is_integer_");
   IsBool = (Width == 1) && IsInt;
   IsString = record->getValueAsBit("is_string_");
+  IsPointer = record->getValueAsBit("is_pointer_");
   IsFloat = !IsInt && !IsString;
   IsArray = record->getValueAsBit("is_array_");
   Is2DArray = record->getValueAsBit("is_2d_array_");

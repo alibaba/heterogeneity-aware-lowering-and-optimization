@@ -37,6 +37,6 @@ let cat_ = cat_common_cast,
   def ConvertFromString: Inst<"Parse input strings into specified data type">;
 
   def ConvertToString: Inst<"Convert input data into string">;
-  
-  def Bitcast : Inst<"Bitcast input tensor to another type.">;
+
+  def Bitcast: Inst<"Bitcast input tensor to another type.">;
 }

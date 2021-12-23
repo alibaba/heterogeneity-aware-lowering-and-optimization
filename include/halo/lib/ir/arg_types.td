@@ -1,6 +1,6 @@
 //===- arg_types.td ------------------------------------------*- tblgen -*-===//
 //
-// Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+// Copyright (C) 2019-2021 Alibaba Group Holding Limited.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,4 +55,10 @@ let is_integer_ = 1,
   def QI2 : ValueType<2>;
   def QI3 : ValueType<3>;
   def QI4 : ValueType<4>;
+}
+
+//external function
+let is_pointer_ = 1 in {
+  def VOIDPtr : ValueType<0, "void*">;
+  def VOIDPtrList : ValueType<0, "std::vector<void*>">;
 }

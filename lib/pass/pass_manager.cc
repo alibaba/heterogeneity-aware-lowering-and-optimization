@@ -24,6 +24,7 @@
 #include "halo/lib/target/cpu/riscv/binary/riscv_llvmir_codegen.h"
 #include "halo/lib/target/cpu/x86/binary/x86_llvmir_codegen.h"
 #include "halo/lib/target/generic_cxx/generic_cxx_codegen.h"
+#include "halo/lib/target/generic_cxx/templated_cxx_codegen.h"
 #include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
 #include "halo/lib/target/jit_compiler/cxx_jit_compiler.h"
 #include "halo/lib/target/jit_compiler/generic_jit_linker.h"
@@ -61,7 +62,7 @@ class PassManagerImpl {
   Pass* Add(std::unique_ptr<FunctionPass> pass);
   Pass* Add(std::unique_ptr<BasicBlockPass> pass);
 
-  GlobalContext& GetGobalContext() { return ctx_; }
+  GlobalContext& GetGlobalContext() { return ctx_; }
 
   Status Run(Module* module);
 
@@ -89,6 +90,10 @@ Pass* PassManager::Add(std::unique_ptr<FunctionPass> pass) {
 
 Pass* PassManager::Add(std::unique_ptr<BasicBlockPass> pass) {
   return impl_->Add(std::move(pass));
+}
+
+GlobalContext& PassManager::GetGlobalContext() const {
+  return impl_->GetGlobalContext();
 }
 
 Status PassManager::Run(Module* module) { return impl_->Run(module); }
@@ -266,6 +271,23 @@ Pass* PassManager::AddCodeFormatterPass(std::ostringstream& buf_code,
   return AddPass<CodeFormatter>(buf_code, buf_header, opts);
 }
 
+Pass* PassManager::AddConstantWriterPass(std::ostream& os,
+                                         const std::string& target) {
+  auto is_begin_with = [](const std::string& s, const std::string& t) {
+    return s.substr(0, t.size()) == t;
+  };
+  if (is_begin_with(target, "x86_64")) {
+    return AddX86ConstantWriterPass(os);
+  }
+  if (is_begin_with(target, "aarch64")) {
+    return AddARMConstantWriterPass(os);
+  }
+  if (is_begin_with(target, "riscv")) {
+    return AddRISCVConstantWriterPass(os);
+  }
+  return AddGenericCXXConstantWriterPass(os);
+}
+
 Pass* PassManager::AddConvertTFCFGPass() { return AddPass<ConvertTFCFG>(); }
 
 Pass* PassManager::AddDCEPass() { return AddPass<DCE>(); }
@@ -374,7 +396,7 @@ Pass* PassManager::AddRISCVBinaryWriterPass(std::ostream& os) {
 }
 
 Pass* PassManager::AddRISCVConstantWriterPass(std::ostream& os) {
-  return AddPass<ARMConstantWriter>(os);
+  return AddPass<RISCVConstantWriter>(os);
 }
 Pass* PassManager::AddRISCVLLVMIRCodeGenPass(
     ConstantDataStorage constant_data_storage, const std::string& rt_lib_name) {
@@ -387,6 +409,12 @@ Pass* PassManager::AddRISCVLLVMIRCodeGenPass(
 }
 
 Pass* PassManager::AddSplittingPass() { return AddPass<Splitting>(); }
+
+Pass* PassManager::AddTemplatedCXXCodeGenPass(std::ostringstream& os,
+                                              std::ostringstream& header_os,
+                                              const CXXCodeGenOpts& opts) {
+  return AddPass<TemplatedCXXCodeGen>(os, header_os, opts);
+}
 
 Pass* PassManager::AddTFExtensionLegalizerPass() {
   return AddPass<TFExtensionLegalizer>();

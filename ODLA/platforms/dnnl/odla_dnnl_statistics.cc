@@ -47,16 +47,18 @@ static odla_value reduce_op(dnnl::algorithm alg, odla_value input,
 
 odla_value odla_ReduceL1(odla_value input, odla_size_t num_of_axes,
                          const odla_uint32* axes, odla_bool keep_dims,
-                         odla_value_shape output_dims, const odla_value_id id) {
+                         odla_float32 epsilon, odla_value_shape output_dims,
+                         const odla_value_id id) {
   return reduce_op(dnnl::algorithm::reduction_norm_lp_sum, input, num_of_axes,
-                   axes, keep_dims, output_dims, id, 1 /* P */);
+                   axes, keep_dims, output_dims, id, 1 /* P */, epsilon);
 }
 
 odla_value odla_ReduceL2(odla_value input, odla_size_t num_of_axes,
                          const odla_uint32* axes, odla_bool keep_dims,
-                         odla_value_shape output_dims, const odla_value_id id) {
+                         odla_float32 epsilon, odla_value_shape output_dims,
+                         const odla_value_id id) {
   return reduce_op(dnnl::algorithm::reduction_norm_lp_sum, input, num_of_axes,
-                   axes, keep_dims, output_dims, id, 2 /* P */);
+                   axes, keep_dims, output_dims, id, 2 /* P */, epsilon);
 }
 
 odla_value odla_ReduceLogSum(odla_value input, odla_size_t num_of_axes,

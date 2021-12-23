@@ -1,6 +1,6 @@
 //===- enum_emitter.cc ------------------------------------------*- C++ -*-===//
 //
-// Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+// Copyright (C) 2019-2021 Alibaba Group Holding Limited.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -87,6 +87,9 @@ void EmitDataTypeEnum(const llvm::RecordKeeper& records,
   std::vector<std::string> enum_strs;
   enum_strs.reserve(datatypes.size());
   for (auto vt : datatypes) {
+    if (vt.IsPointer) {
+      continue; // skip pointer
+    }
     enum_strs.push_back("");
     auto& name = enum_strs.back();
     if (!vt.AltName.empty()) {

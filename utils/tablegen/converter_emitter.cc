@@ -1,6 +1,6 @@
 //===- converter_emitter.cc -------------------------------------*- C++ -*-===//
 //
-// Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+// Copyright (C) 2019-2021 Alibaba Group Holding Limited.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ class Converter {
   enum class Framework {
     FRAMEWORK_TF,
     FRAMEWORK_ONNX,
+    FRAMEWORK_ODLA,
     FRAMEWORK_TFLITE,
     FRAMEWORK_CAFFE,
     FRAMEWORK_MXNET,
@@ -108,6 +109,11 @@ Converter::Converter(const llvm::RecordKeeper& records) : records_(records) {
     framework_kind_ = Framework::FRAMEWORK_ONNX;
     framework_name_ = "ONNX";
     framework_namespace_ = "onnx";
+    pb_node_ = "NodeProto";
+  } else if (one->getName().startswith("ODLA")) {
+    framework_kind_ = Framework::FRAMEWORK_ODLA;
+    framework_name_ = "ODLA";
+    framework_namespace_ = "odla";
     pb_node_ = "NodeProto";
   } else if (one->getName().startswith("CAFFE")) {
     framework_kind_ = Framework::FRAMEWORK_CAFFE;
@@ -226,6 +232,12 @@ void Converter::EmitHaloInstDefForCaffe(llvm::Record* record,
   os << "  return Status::SUCCESS;\n}\n\n";
 }
 
+static void EmitONNXInstNameRebinding(llvm::raw_ostream& os) {
+  os << "  if (node_def.name().empty()) {\n"
+     << "    inst->SetName(node_def.op_type() + \"_\" + node_def.output(0));\n"
+     << "  }\n";
+}
+
 void Converter::EmitHaloInstDef(llvm::Record* record, llvm::raw_ostream& os) {
   llvm::Record* sn_inst = record->getValueAsDef(SNInst);
   llvm::StringRef sn_inst_name = sn_inst->getName();
@@ -243,7 +255,10 @@ void Converter::EmitHaloInstDef(llvm::Record* record, llvm::raw_ostream& os) {
   }
 
   std::vector<llvm::Record*> attrs = sn_inst->getValueAsListOfDefs("attrs_");
-  if (!attrs.empty() && framework_name_ != "TFLITE") {
+  std::vector<llvm::Record*> extension_attrs =
+      record->getValueAsListOfDefs("extension_attr_");
+  if ((!attrs.empty() || !extension_attrs.empty()) &&
+      framework_name_ != "TFLITE") {
     os << "  " << framework_name_ << "Attrs attrs(node_def);\n";
   }
   os << "  std::vector<Def> operands = GetInputOperands(node_def);\n";
@@ -261,10 +276,12 @@ void Converter::EmitHaloInstDef(llvm::Record* record, llvm::raw_ostream& os) {
     os << "(name, operands);\n";
   }
 
+  if (framework_name_ == "ONNX") {
+    EmitONNXInstNameRebinding(os);
+  }
+
   bool need_new_attr = true;
   ProcessAttributes(sn_inst, need_mapping, os, &need_new_attr);
-  std::vector<llvm::Record*> extension_attrs =
-      record->getValueAsListOfDefs("extension_attr_");
   llvm::StringRef param_name = record->getValueAsString(ParamName);
   ProcessExtensionAttributesImpl(extension_attrs, framework_name_,
                                  param_name.str(), os, need_new_attr);
@@ -310,6 +327,9 @@ void Converter::EmitExtensionInstDef(llvm::Record* record,
   ProcessExtensionAttributes(extension_attrs, framework_name_, param_name.str(),
                              os);
 
+  if (framework_name_ == "ONNX") {
+    EmitONNXInstNameRebinding(os);
+  }
   if (auto code = record->getValueAsString(CustomCode); !code.empty()) {
     os << code;
   }

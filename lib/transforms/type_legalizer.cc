@@ -141,15 +141,20 @@ static void RunOnMathBinaryInstruction(Instruction* inst) {
 
     if (size_i_a != size_i_b) {
       // one of them must be 1
-      if (size_i_a != 1) {
-        HLCHECK(size_i_b == 1);
-        ret_shape.push_back(size_i_a);
-      } else if (size_i_b != 1) {
-        HLCHECK(size_i_a == 1);
+      if (size_i_a == 1) {
         ret_shape.push_back(size_i_b);
+      } else if (size_i_a == -1) {
+        if (size_i_b == 1) {
+          ret_shape.push_back(-1);
+        } else {
+          ret_shape.push_back(size_i_b);
+        }
       } else {
-        ret_shape.push_back(1);
+        HLCHECK(((size_i_b == 1) || (size_i_b == -1)) &&
+                "Violation of the broadcasting rules");
+        ret_shape.push_back(size_i_a);
       }
+
     } else {
       ret_shape.push_back(size_i_a);
     }
@@ -281,10 +286,10 @@ static void RunOnInstruction(ReshapeInst* inst) {
     return;
   }
 
-  if (!IsA<Constant>(op1)) {
+  const Constant* shape_c = DynCast<Constant>(op1);
+  if (shape_c == nullptr) {
     return;
   }
-  const Constant* shape_c = DynCast<Constant>(op1.GetOwner());
   const auto& shape_type = shape_c->GetResultType();
   if (shape_type.IsScalar()) {
     HLCHECK(shape_c->IsScalarOne()); // reshape to a scalar.
@@ -292,15 +297,9 @@ static void RunOnInstruction(ReshapeInst* inst) {
     return;
   }
   std::vector<int64_t> new_shape;
-  for (size_t i = 0, e = shape_c->GetResultType(0).GetTotalNumOfElements();
+  for (size_t i = 0, e = shape_c->GetResultType().GetTotalNumOfElements();
        i != e; ++i) {
-    int64_t dim = 0;
-    if (op1.GetType().GetDataType() == DataType::INT64) {
-      dim = shape_c->GetData<int64_t>(i);
-    } else {
-      dim = shape_c->GetData<int32_t>(i);
-    }
-    new_shape.push_back(dim);
+    new_shape.push_back(shape_c->GetDataAsInt64(i));
   }
 
   size_t product = 1;
@@ -309,8 +308,10 @@ static void RunOnInstruction(ReshapeInst* inst) {
   if (op0_type.IsDynamicShape()) {
     halo::Type new_type{op0_type.GetDataType(), new_shape};
     inst->GetResultsTypes()[0] = new_type;
-
   } else if (op0_type.IsDynamicBatch()) {
+    if (new_shape[0] > 0) {
+      return;
+    }
     new_shape[0] = op0_type.GetNumOfElementsInDim(0);
     for (size_t i = 1; i < op0_type.GetNumOfDims(); ++i) {
       elements_num *= op0_type.GetNumOfElementsInDim(i);
