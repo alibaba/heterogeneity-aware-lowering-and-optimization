@@ -271,8 +271,6 @@ Pass* PassManager::AddCodeFormatterPass(std::ostringstream& buf_code,
   return AddPass<CodeFormatter>(buf_code, buf_header, opts);
 }
 
-Pass* PassManager::AddConvertTFCFGPass() { return AddPass<ConvertTFCFG>(); }
-
 Pass* PassManager::AddConstantWriterPass(std::ostream& os,
                                          const std::string& target) {
   auto is_begin_with = [](const std::string& s, const std::string& t) {
@@ -289,6 +287,8 @@ Pass* PassManager::AddConstantWriterPass(std::ostream& os,
   }
   return AddGenericCXXConstantWriterPass(os);
 }
+
+Pass* PassManager::AddConvertTFCFGPass() { return AddPass<ConvertTFCFG>(); }
 
 Pass* PassManager::AddDCEPass() { return AddPass<DCE>(); }
 
@@ -396,7 +396,7 @@ Pass* PassManager::AddRISCVBinaryWriterPass(std::ostream& os) {
 }
 
 Pass* PassManager::AddRISCVConstantWriterPass(std::ostream& os) {
-  return AddPass<ARMConstantWriter>(os);
+  return AddPass<RISCVConstantWriter>(os);
 }
 Pass* PassManager::AddRISCVLLVMIRCodeGenPass(
     ConstantDataStorage constant_data_storage, const std::string& rt_lib_name) {
