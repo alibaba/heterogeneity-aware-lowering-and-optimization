@@ -199,7 +199,7 @@ def AnalyzeModel(model_file, input_shapes, batch, format):
 
     target = "cxx".encode("utf-8")
     output_filename = output_file.encode("utf-8")
-    
+
     Analyze(
         format_val,
         model_num,
