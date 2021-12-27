@@ -77,6 +77,14 @@ class GenericCXXCodeGen : public CodeGen {
   bool RunOnModule(Module* module) override;
 
  protected:
+  template <typename T>
+  struct ArgWithComment {
+    ArgWithComment(const T& arg, const char* comment)
+        : arg_(arg), comment_(comment) {}
+    const T& arg_;
+    const char* comment_;
+  };
+
   virtual void RunOnFunction(Function& function);
   virtual void RunOnHostFunction(Function& function);
   virtual void RunOnConstant(Constant& constant, bool decl);
@@ -241,12 +249,20 @@ class GenericCXXCodeGen : public CodeGen {
   void EmitODLAArgs(const DataFormat& arg);
   void EmitODLAArgs(const std::vector<halo::Type>& arg);
   void EmitODLAArgs(const std::vector<std::string>& arg);
+  template <typename T>
+  void EmitODLAArgs(const ArgWithComment<T>& arg) {
+    EmitODLAArgs(arg.arg_);
+    if (opts_.dialect == Dialect::CXX_11) {
+      os_ << "/*" << arg.comment_ << "*/";
+    } else {
+      os_ << "//" << arg.comment_ << "\n";
+    }
+  }
 
   template <typename T>
   void EmitODLAArgs(const T& arg) {
     os_ << arg;
   }
-
   template <typename T, typename... Targs>
   void EmitODLAArgs(T arg, Targs... args) {
     EmitODLAArgs(arg);
