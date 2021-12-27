@@ -34,14 +34,22 @@ const char* bool_to_str(const bool& value) { return value ? "true" : "false"; }
 
 const std::string& get_config_path_from_cache_file(
     const std::string& cache_path) {
+  popart::logging::warn("get_config_path_from_cache_file");
+  std::cout << "cache_path " << cache_path << "\n";
   std::string file_suffix(".popart");
+  std::cout << "file_suffix: " << file_suffix << "\n";
   int file_prefix = cache_path.rfind(file_suffix);
+  std::cout << "file_prefix " << file_prefix << "\n";
+  std::cout << "file_suffix.size() " << file_suffix.size()
+            << " cache_path.size() " << cache_path.size();
   if (file_prefix == std::string::npos ||
       file_prefix + file_suffix.size() < cache_path.size()) {
     popart::logging::err(
         "Bad cache file name. File name should end with '.popart'");
     return std::move(std::string(""));
   }
+  std::cout << "return "
+            << std::string(cache_path.substr(0, file_prefix) + ".json");
   return std::move(std::string(cache_path.substr(0, file_prefix) + ".json"));
 }
 
@@ -94,12 +102,16 @@ odla_status PopartConfig::load_config(const char* env_file_path) {
       popart::logging::warn("load config from cache failed");
       std::string config_file_path =
           get_config_path_from_cache_file(std::string(cache_path_));
+      popart::logging::warn("pass get_config_path_from_cache_file");
       if (!config_file_path.empty()) {
         popart::logging::info("try load from file: {}", config_file_path);
         ret = load_from_file(config_file_path);
+        popart::logging::info("pass load_from_file")
       }
+      popart::logging::warn("pass !config_file_path.empty()");
     }
   }
+  popart::logging::warn("pass load_or_save_cache()");
   if (ret != ODLA_SUCCESS) {
     use_default();
     if (env_file_path != nullptr) {
