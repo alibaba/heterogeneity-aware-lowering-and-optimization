@@ -42,10 +42,21 @@ void GenericCXXCodeGen::RunOnInstruction(CustomInst* inst) {
     int keep_top_k = FindAttributeValue<int>(*inst, "keep_top_k");
     int classes = FindAttributeValue<int>(*inst, "num_classes");
     bool share_loc = FindAttributeValue<bool>(*inst, "share_location");
+    int code_type = FindAttributeValue<int>(*inst, "code_type");
     float nms_threshold = FindAttributeValue<float>(*inst, "nms_threshold");
+    int nms_top_k = FindAttributeValue<int>(*inst, "nms_top_k");
+    float nms_eta = FindAttributeValue<float>(*inst, "nms_eta");
 
-    EmitODLACustomCall(rets, inputs, op_name, op_name, bl, threshold,
-                       keep_top_k, classes, share_loc, nms_threshold);
+    EmitODLACustomCall(rets, inputs, op_name, op_name,
+                       ArgWithComment(bl, "background label id"),
+                       ArgWithComment(threshold, "conf threshold"),
+                       ArgWithComment(keep_top_k, "keep top k"),
+                       ArgWithComment(classes, "num classes"),
+                       ArgWithComment(share_loc, "share location"),
+                       ArgWithComment(code_type, "code type"),
+                       ArgWithComment(nms_threshold, "nms threshold"),
+                       ArgWithComment(nms_top_k, "nms top k"),
+                       ArgWithComment(nms_eta, "nms eta"));
     return;
   }
   const std::string op_name = "\"" + inst->GetOpname() + "\"";
