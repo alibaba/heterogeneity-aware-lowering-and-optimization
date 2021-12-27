@@ -48,8 +48,8 @@ const std::string& get_config_path_from_cache_file(
         "Bad cache file name. File name should end with '.popart'");
     return std::move(std::string(""));
   }
-  popart::logging::warn("return {}", 
-  std::string(cache_path.substr(0, file_prefix) + ".json"));
+  popart::logging::warn(
+      "return {}", std::string(cache_path.substr(0, file_prefix) + ".json"));
   return std::move(std::string(cache_path.substr(0, file_prefix) + ".json"));
 }
 
