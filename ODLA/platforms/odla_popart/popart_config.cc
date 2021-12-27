@@ -106,7 +106,7 @@ odla_status PopartConfig::load_config(const char* env_file_path) {
       if (!config_file_path.empty()) {
         popart::logging::info("try load from file: {}", config_file_path);
         ret = load_from_file(config_file_path);
-        popart::logging::info("pass load_from_file")
+        popart::logging::info("pass load_from_file");
       }
       popart::logging::warn("pass !config_file_path.empty()");
     }
