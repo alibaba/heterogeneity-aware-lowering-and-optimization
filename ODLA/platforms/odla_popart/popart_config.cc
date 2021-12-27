@@ -35,21 +35,21 @@ const char* bool_to_str(const bool& value) { return value ? "true" : "false"; }
 const std::string& get_config_path_from_cache_file(
     const std::string& cache_path) {
   popart::logging::warn("get_config_path_from_cache_file");
-  std::cout << "cache_path " << cache_path << "\n";
+  popart::logging::warn("cache_path {}", cache_path);
   std::string file_suffix(".popart");
-  std::cout << "file_suffix: " << file_suffix << "\n";
+  popart::logging::warn("file_suffix: {}", file_suffix);
   int file_prefix = cache_path.rfind(file_suffix);
-  std::cout << "file_prefix " << file_prefix << "\n";
-  std::cout << "file_suffix.size() " << file_suffix.size()
-            << " cache_path.size() " << cache_path.size();
+  popart::logging::warn("file_prefix {}", file_prefix);
+  popart::logging::warn("file_suffix.size() {}", file_suffix.size());
+  popart::logging::warn("cache_path.size() {}", cache_path.size());
   if (file_prefix == std::string::npos ||
       file_prefix + file_suffix.size() < cache_path.size()) {
     popart::logging::err(
         "Bad cache file name. File name should end with '.popart'");
     return std::move(std::string(""));
   }
-  std::cout << "return "
-            << std::string(cache_path.substr(0, file_prefix) + ".json");
+  popart::logging::warn("return {}", 
+  std::string(cache_path.substr(0, file_prefix) + ".json"));
   return std::move(std::string(cache_path.substr(0, file_prefix) + ".json"));
 }
 
