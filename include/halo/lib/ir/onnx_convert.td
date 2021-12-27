@@ -514,7 +514,7 @@ def ONNX_Upsample : OpMapping<"Upsample", Resize> {
   ];
 }
 
-def ONNX_HgEngine : TFExtension<"HgEngine"> {
+def ONNX_HgEngine : ONNXExtension<"HgEngine"> {
   let extension_attr_ = [
     ExtensionAttr<"serialized_engine", String, "{}">,
     ExtensionAttr<"in_data_format", String, "{}">,
