@@ -32,7 +32,7 @@ std::vector<std::string> PopartConfig::mode = {"unknown", "pipeline",
 
 const char* bool_to_str(const bool& value) { return value ? "true" : "false"; }
 
-const std::string& get_config_path_from_cache_file(
+const std::string get_config_path_from_cache_file(
     const std::string& cache_path) {
   popart::logging::warn("get_config_path_from_cache_file");
   popart::logging::info("cache_path {}", cache_path);
@@ -46,11 +46,11 @@ const std::string& get_config_path_from_cache_file(
       file_prefix + file_suffix.size() < cache_path.size()) {
     popart::logging::err(
         "Bad cache file name. File name should end with '.popart'");
-    return std::move(std::string(""));
+    return std::string("");
   }
   popart::logging::info(
       "return {}", std::string(cache_path.substr(0, file_prefix) + ".json"));
-  return std::move(std::string(cache_path.substr(0, file_prefix) + ".json"));
+  return std::string(cache_path.substr(0, file_prefix) + ".json");
 }
 
 void PopartConfig::use_default() {
