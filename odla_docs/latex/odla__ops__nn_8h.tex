@@ -23,31 +23,7 @@ enum \mbox{\hyperlink{odla__ops__nn_8h_a848aed5682538d47c5b4a04c3bdc5e1b}{odla\+
 , \mbox{\hyperlink{odla__ops__nn_8h_a848aed5682538d47c5b4a04c3bdc5e1ba58b4e43c606784ca311b373334037a24}{ODLA\+\_\+\+RNN\+\_\+\+CELL\+\_\+\+STATE}}
 , \mbox{\hyperlink{odla__ops__nn_8h_a848aed5682538d47c5b4a04c3bdc5e1ba30ed9507ff76aacc1dc080ff82814616}{ODLA\+\_\+\+RNN\+\_\+\+HIDDEN\+\_\+\+CELL\+\_\+\+STATE}}
  \}
-\begin{DoxyCompactList}\small\item\em RNN outputs. \end{DoxyCompactList}\item 
-\mbox{\Hypertarget{odla__ops__nn_8h_a40c491e0b1b9a04c0262a7927e8368c1}\label{odla__ops__nn_8h_a40c491e0b1b9a04c0262a7927e8368c1}} 
-enum {\bfseries odla\+\_\+reduction\+\_\+mode} \{ {\bfseries ODLA\+\_\+\+REDUCE\+\_\+\+NONE}
-, {\bfseries ODLA\+\_\+\+REDUCE\+\_\+\+MEAN}
-, {\bfseries ODLA\+\_\+\+REDUCE\+\_\+\+SUM}
- \}
-\item 
-enum \mbox{\hyperlink{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5}{odla\+\_\+rnn\+\_\+weight\+\_\+format}} \{ \mbox{\hyperlink{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5a8246331f2d0f9d66b3a27adbd7f09fb8}{ODLA\+\_\+\+RNN\+\_\+\+LDGOI}}
-, \mbox{\hyperlink{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5a1a4e3267750a063ca62d2a3cf344f4da}{ODLA\+\_\+\+RNN\+\_\+\+LDIGO}}
- \}
-\begin{DoxyCompactList}\small\item\em RNN weight layout. \end{DoxyCompactList}\item 
-enum \mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338d}{odla\+\_\+rnn\+\_\+gate\+\_\+order}} \{ \newline
-\mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338daac366a6acaf2752a4180b9239d676c5c}{ODLA\+\_\+\+RNN\+\_\+\+IOFC}}
-, \mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338da8b4d65f75d1d125ba10b6df5f3d112e9}{ODLA\+\_\+\+RNN\+\_\+\+IFCO}}
-, \mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338da7a64e45ad06eca3d135e97e6177edfa0}{ODLA\+\_\+\+RNN\+\_\+\+IFOC}}
-, \mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338da43f56215175a807e8af084540836110c}{ODLA\+\_\+\+RNN\+\_\+\+ICOF}}
-, \newline
-\mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338da0d5fc5c823a2824bd7679a7c6560e71b}{ODLA\+\_\+\+RNN\+\_\+\+URO}}
- \}
-\begin{DoxyCompactList}\small\item\em RNN data layout. \end{DoxyCompactList}\item 
-enum \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980eb}{odla\+\_\+tf\+\_\+idf\+\_\+mode}} \{ \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebae6c8ccfbfef45464c06a36eba6593c20}{ODLA\+\_\+\+TFIDF\+\_\+\+TF}}
-, \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebab29238c0aa741b35e10aba5f8ba75ff9}{ODLA\+\_\+\+TFIDF\+\_\+\+IDF}}
-, \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebaafcee4dc0418167c2b030e97e597b2cb}{ODLA\+\_\+\+TFIDF\+\_\+\+TFIDF}}
- \}
-\begin{DoxyCompactList}\small\item\em TF-\/\+IDF computation mode. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\begin{DoxyCompactList}\small\item\em RNN outputs. \end{DoxyCompactList}\end{DoxyCompactItemize}
 \doxysubsection*{Functions}
 \begin{DoxyCompactItemize}
 \item 
@@ -59,62 +35,46 @@ enum \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980eb}{odla\+
 \item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a1dda39ad8115de52254d5052e4b8b504}{odla\+\_\+\+Batch\+Normalization}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__ops__nn_8h_a54eaa7020ac01fc2a354d4fef9313a62}{odla\+\_\+memory\+\_\+layout}} input\+\_\+layout, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} mean, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} var, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} epsilon, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} scale, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} offset, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} scalar\+\_\+scale, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} scalar\+\_\+offset, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Compute batch normalization. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a2519b4e39170f69f6042ab9655cd049a}{odla\+\_\+\+Celu}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} alpha, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
-\begin{DoxyCompactList}\small\item\em Celu activation. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a057e0941dfaea8ff0ff5ab2fce96ee81}{odla\+\_\+\+Conv}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__ops__nn_8h_a54eaa7020ac01fc2a354d4fef9313a62}{odla\+\_\+memory\+\_\+layout}} input\+\_\+layout, \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} group, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} kernel, \mbox{\hyperlink{odla__ops__nn_8h_a54eaa7020ac01fc2a354d4fef9313a62}{odla\+\_\+memory\+\_\+layout}} kernel\+\_\+layout, const \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} $\ast$strides, const \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} $\ast$dilations, const \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} $\ast$paddings\+\_\+front, const \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} $\ast$paddings\+\_\+back, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} bias, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+dims, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em N-\/dimensional Convolution. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a22d453236e1b9c3e725dc28a7a5b6a02}{odla\+\_\+\+De\+Conv}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__ops__nn_8h_a54eaa7020ac01fc2a354d4fef9313a62}{odla\+\_\+memory\+\_\+layout}} input\+\_\+layout, \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} group, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} kernel, \mbox{\hyperlink{odla__ops__nn_8h_a54eaa7020ac01fc2a354d4fef9313a62}{odla\+\_\+memory\+\_\+layout}} kernel\+\_\+layout, const \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} $\ast$strides, const \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} $\ast$dilations, const \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} $\ast$paddings\+\_\+front, const \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} $\ast$paddings\+\_\+back, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} bias, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+dims, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em N-\/dimensional Deconvolution. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a47f46d2dd1635e2f7085244d38d0b035}{odla\+\_\+\+Elu}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} alpha, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Elu activation. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{structodla__values}{odla\+\_\+values}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_af98a23349470614735838061cb5b9089}{odla\+\_\+\+GRU}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5}{odla\+\_\+rnn\+\_\+weight\+\_\+format}} weight\+\_\+format, \mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338d}{odla\+\_\+rnn\+\_\+gate\+\_\+order}} gate\+\_\+order, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} weight\+\_\+dims, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} W, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} R, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} B, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} sequence\+\_\+lens, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} initial\+\_\+h, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} hidden\+\_\+size, \mbox{\hyperlink{odla__ops__nn_8h_a9270ccb090ddf6229c74cd04026120a0}{odla\+\_\+rnn\+\_\+direction}} direction, \mbox{\hyperlink{odla__common_8h_a86f265601c0773152f4e193a8614c0ac}{odla\+\_\+bool}} linear\+\_\+before\+\_\+reset, \mbox{\hyperlink{odla__ops__nn_8h_a848aed5682538d47c5b4a04c3bdc5e1b}{odla\+\_\+rnn\+\_\+outputs}} outputs, const \mbox{\hyperlink{structodla__value__ids}{odla\+\_\+value\+\_\+ids}} value\+\_\+id)
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{structodla__values}{odla\+\_\+values}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a84c5a4fa7da403261045341650b7c8ac}{odla\+\_\+\+GRU}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} weight\+\_\+dims, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} W, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} R, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} B, \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} seq\+\_\+len, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} hidden\+\_\+size, \mbox{\hyperlink{odla__ops__nn_8h_a9270ccb090ddf6229c74cd04026120a0}{odla\+\_\+rnn\+\_\+direction}} direction, \mbox{\hyperlink{odla__ops__nn_8h_a848aed5682538d47c5b4a04c3bdc5e1b}{odla\+\_\+rnn\+\_\+outputs}} outputs, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Compute a one-\/layer GRU. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a3c93f0a511c7379c31528912aee2c60b}{odla\+\_\+\+Hard\+Sigmoid}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} alpha, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} beta, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Hard\+Sigmoid activation. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a138ce93e73664e656e86e39ef4b8282d}{odla\+\_\+\+Group\+Normalization}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__ops__nn_8h_a54eaa7020ac01fc2a354d4fef9313a62}{odla\+\_\+memory\+\_\+layout}} input\+\_\+layout, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} groups, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} epsilon, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} scale, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} offset, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} scalar\+\_\+scale, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} scalar\+\_\+offset, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Group Normalization. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a5f7042cbc5391c1780df9482f08b0c5a}{odla\+\_\+\+Instance\+Normalization}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__ops__nn_8h_a54eaa7020ac01fc2a354d4fef9313a62}{odla\+\_\+memory\+\_\+layout}} input\+\_\+layout, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} epsilon, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} scale, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} offset, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} scalar\+\_\+scale, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} scalar\+\_\+offset, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a5d1a23c3a6af0219533ad553cdaf2216}{odla\+\_\+\+Instance\+Normalization}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__ops__nn_8h_a54eaa7020ac01fc2a354d4fef9313a62}{odla\+\_\+memory\+\_\+layout}} input\+\_\+layout, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} mean, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} var, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} epsilon, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} scale, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} offset, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} scalar\+\_\+scale, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} scalar\+\_\+offset, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Instance Normalization. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a1fb9261fccb2ccd982d21ffb6487dcdf}{odla\+\_\+\+Leaky\+Relu}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} alpha, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Leaky\+Relu activation. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a99191f8d0f64a8b430603ea6410622b3}{odla\+\_\+\+Log\+Softmax}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} axis, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Log\+Softmax activation. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{structodla__values}{odla\+\_\+values}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a439bebbd851f5849e7f97d10e40e2ac8}{odla\+\_\+\+LSTM}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5}{odla\+\_\+rnn\+\_\+weight\+\_\+format}} weight\+\_\+format, \mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338d}{odla\+\_\+rnn\+\_\+gate\+\_\+order}} gate\+\_\+order, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} weight\+\_\+dims, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} W, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} R, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} B, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} sequence\+\_\+lens, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} initial\+\_\+h, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} initial\+\_\+c, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} P, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} hidden\+\_\+size, \mbox{\hyperlink{odla__ops__nn_8h_a9270ccb090ddf6229c74cd04026120a0}{odla\+\_\+rnn\+\_\+direction}} direction, \mbox{\hyperlink{odla__ops__nn_8h_a848aed5682538d47c5b4a04c3bdc5e1b}{odla\+\_\+rnn\+\_\+outputs}} outputs, const \mbox{\hyperlink{structodla__value__ids}{odla\+\_\+value\+\_\+ids}} value\+\_\+id)
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{structodla__values}{odla\+\_\+values}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a589a505e52929f100e2da9c517a12669}{odla\+\_\+\+LSTM}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} weight\+\_\+dims, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} W, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} R, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} B, \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} seq\+\_\+len, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} hidden\+\_\+size, \mbox{\hyperlink{odla__ops__nn_8h_a9270ccb090ddf6229c74cd04026120a0}{odla\+\_\+rnn\+\_\+direction}} direction, \mbox{\hyperlink{odla__ops__nn_8h_a848aed5682538d47c5b4a04c3bdc5e1b}{odla\+\_\+rnn\+\_\+outputs}} outputs, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em LSTM. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a81b06c3f7fbdd2ebc225a86d8e054748}{odla\+\_\+\+Max\+Pool}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__ops__nn_8h_a54eaa7020ac01fc2a354d4fef9313a62}{odla\+\_\+memory\+\_\+layout}} input\+\_\+layout, const \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} $\ast$window\+\_\+dims, const \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} $\ast$strides, const \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} $\ast$paddings\+\_\+front, const \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} $\ast$paddings\+\_\+back, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+dims, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Max Pooling. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_abaa1419d8e6015c29e5e62c6d0c40c88}{odla\+\_\+\+Negative\+Log\+Likeli\+Hood\+Loss}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} gt, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} ignored, odla\+\_\+reduction\+\_\+mode reduction, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} weight, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+shape, \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
-\begin{DoxyCompactList}\small\item\em Negative Log Likelihood Loss. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a7e3b40942af8b94aca7c78668845b72c}{odla\+\_\+\+NMS}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} boxes, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} scores, \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} max\+\_\+num\+\_\+outputs, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} iou\+\_\+threshold, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} score\+\_\+threshold, \mbox{\hyperlink{structodla__value__type}{odla\+\_\+value\+\_\+type}} output\+\_\+value\+\_\+type, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Non-\/\+Max Suppression. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a966d316002f7e06faa3910beb55741e7}{odla\+\_\+\+PRelu}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} slope, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em PRelu activation. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a8ad521e873e88d799009056d9265dad1}{odla\+\_\+\+Relu}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Relu activateion. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{structodla__values}{odla\+\_\+values}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a5b24257db96a50c2664dbbb702518150}{odla\+\_\+\+RNN}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5}{odla\+\_\+rnn\+\_\+weight\+\_\+format}} weight\+\_\+format, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} weight\+\_\+dims, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} W, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} R, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} B, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} sequence\+\_\+lens, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} initial\+\_\+h, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} hidden\+\_\+size, \mbox{\hyperlink{odla__ops__nn_8h_a9270ccb090ddf6229c74cd04026120a0}{odla\+\_\+rnn\+\_\+direction}} direction, \mbox{\hyperlink{odla__ops__nn_8h_a848aed5682538d47c5b4a04c3bdc5e1b}{odla\+\_\+rnn\+\_\+outputs}} outputs, const \mbox{\hyperlink{structodla__value__ids}{odla\+\_\+value\+\_\+ids}} value\+\_\+id)
-\begin{DoxyCompactList}\small\item\em Compute a one-\/layer RNN. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_ad16fe838447f7fd88fa91e7bb3cfdb8f}{odla\+\_\+\+ROIAlign}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__ops__nn_8h_a54eaa7020ac01fc2a354d4fef9313a62}{odla\+\_\+memory\+\_\+layout}} input\+\_\+layout, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} rois, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} sampling\+\_\+ratio, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} scale, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+dim, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Region of Interest align. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_addb541a83de2d4776ab6055caf5ef85a}{odla\+\_\+\+ROIMax\+Pool}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__ops__nn_8h_a54eaa7020ac01fc2a354d4fef9313a62}{odla\+\_\+memory\+\_\+layout}} input\+\_\+layout, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} rois, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} win\+\_\+h, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} win\+\_\+w, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} scale, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+dim, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em ROI max pooling. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a3e87e7f3a93ea291bcb10552a723f530}{odla\+\_\+\+Selu}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} alpha, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} gamma, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Selu activation. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a530e7b4251390f2979b8e3dece16c501}{odla\+\_\+\+Shrink}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} bias, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} lambd, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
-\begin{DoxyCompactList}\small\item\em Shrink activation. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a1e42919601fefc9dc6948abaa3d7f2f9}{odla\+\_\+\+Sigmoid}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Sigmoid activation. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a7961e5f668b999fad696653d0ecde56c}{odla\+\_\+\+Softmax}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} axis, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Softmax activation. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a65a8d48997f9932c8b6ae549c7dba3af}{odla\+\_\+\+Softplus}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
-\begin{DoxyCompactList}\small\item\em Softplus activation. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_af6a84933cadc045592c57600b15f3afc}{odla\+\_\+\+Softsign}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
-\begin{DoxyCompactList}\small\item\em Softsign activation. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a88c73b46ef6ff6838bc6d945cf1ac217}{odla\+\_\+\+Tanh}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Tanh activation. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a79465412384e1f136beaad67f0b8f086}{odla\+\_\+\+TFIDFVectorize}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} min\+\_\+gram\+\_\+length, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} max\+\_\+gram\+\_\+length, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} max\+\_\+skip\+\_\+count, \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980eb}{odla\+\_\+tf\+\_\+idf\+\_\+mode}} mode, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} pool, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} gram\+\_\+counts, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} output\+\_\+indices, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} weights, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+shape, \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
-\begin{DoxyCompactList}\small\item\em TF-\/\+IDF vectorization. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_aeb2f3d624857d69143d99c805d94da1f}{odla\+\_\+\+Thresholded\+Relu}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}} alpha, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
-\begin{DoxyCompactList}\small\item\em Thresholded\+Relu activation. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{structodla__values}{odla\+\_\+values}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a7598587ec9f622f5b3cb77e381660ad4}{odla\+\_\+\+TopK}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} K, \mbox{\hyperlink{odla__common_8h_a86f265601c0773152f4e193a8614c0ac}{odla\+\_\+bool}} largest, \mbox{\hyperlink{odla__common_8h_a86f265601c0773152f4e193a8614c0ac}{odla\+\_\+bool}} sorted, \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} axis, \mbox{\hyperlink{structodla__value__type}{odla\+\_\+value\+\_\+type}} output\+\_\+value\+\_\+type, \mbox{\hyperlink{structodla__value__type}{odla\+\_\+value\+\_\+type}} output\+\_\+value\+\_\+index\+\_\+type, const \mbox{\hyperlink{structodla__value__ids}{odla\+\_\+value\+\_\+ids}} value\+\_\+ids)
 \begin{DoxyCompactList}\small\item\em Find Top-\/K elements. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{structodla__values}{odla\+\_\+values}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__nn_8h_a51be673f1703abd00fb1044d4a015dce}{odla\+\_\+\+Post\+Process}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} orig\+\_\+img\+\_\+w, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} orig\+\_\+img\+\_\+h, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} bb13, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} bb26, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} bb52, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
@@ -214,53 +174,6 @@ Definition at line 45 of file odla\+\_\+ops\+\_\+nn.\+h.
 \DoxyCodeLine{49 \} \mbox{\hyperlink{odla__ops__nn_8h_a9270ccb090ddf6229c74cd04026120a0}{odla\_rnn\_direction}};}
 
 \end{DoxyCode}
-\mbox{\Hypertarget{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338d}\label{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338d}} 
-\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_rnn\_gate\_order@{odla\_rnn\_gate\_order}}
-\index{odla\_rnn\_gate\_order@{odla\_rnn\_gate\_order}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
-\doxysubsubsection{\texorpdfstring{odla\_rnn\_gate\_order}{odla\_rnn\_gate\_order}}
-{\footnotesize\ttfamily enum \mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338d}{odla\+\_\+rnn\+\_\+gate\+\_\+order}}}
-
-
-
-RNN data layout. 
-
-\begin{DoxyEnumFields}{Enumerator}
-\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_RNN\_IOFC@{ODLA\_RNN\_IOFC}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!ODLA\_RNN\_IOFC@{ODLA\_RNN\_IOFC}}}\mbox{\Hypertarget{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338daac366a6acaf2752a4180b9239d676c5c}\label{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338daac366a6acaf2752a4180b9239d676c5c}} 
-ODLA\+\_\+\+RNN\+\_\+\+IOFC&input gate, output gate, forget gate, cell gate \\
-\hline
-
-\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_RNN\_IFCO@{ODLA\_RNN\_IFCO}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!ODLA\_RNN\_IFCO@{ODLA\_RNN\_IFCO}}}\mbox{\Hypertarget{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338da8b4d65f75d1d125ba10b6df5f3d112e9}\label{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338da8b4d65f75d1d125ba10b6df5f3d112e9}} 
-ODLA\+\_\+\+RNN\+\_\+\+IFCO&input gate, forget gate, cell gate, output gate \\
-\hline
-
-\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_RNN\_IFOC@{ODLA\_RNN\_IFOC}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!ODLA\_RNN\_IFOC@{ODLA\_RNN\_IFOC}}}\mbox{\Hypertarget{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338da7a64e45ad06eca3d135e97e6177edfa0}\label{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338da7a64e45ad06eca3d135e97e6177edfa0}} 
-ODLA\+\_\+\+RNN\+\_\+\+IFOC&input gate, forget gate, output gate, cell gate \\
-\hline
-
-\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_RNN\_ICOF@{ODLA\_RNN\_ICOF}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!ODLA\_RNN\_ICOF@{ODLA\_RNN\_ICOF}}}\mbox{\Hypertarget{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338da43f56215175a807e8af084540836110c}\label{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338da43f56215175a807e8af084540836110c}} 
-ODLA\+\_\+\+RNN\+\_\+\+ICOF&input gate, cell gate, output gate, forget gate \\
-\hline
-
-\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_RNN\_URO@{ODLA\_RNN\_URO}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!ODLA\_RNN\_URO@{ODLA\_RNN\_URO}}}\mbox{\Hypertarget{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338da0d5fc5c823a2824bd7679a7c6560e71b}\label{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338da0d5fc5c823a2824bd7679a7c6560e71b}} 
-ODLA\+\_\+\+RNN\+\_\+\+URO&update gate, reset gate, hidden gate \\
-\hline
-
-\end{DoxyEnumFields}
-
-
-Definition at line 75 of file odla\+\_\+ops\+\_\+nn.\+h.
-
-
-\begin{DoxyCode}{0}
-\DoxyCodeLine{75              \{}
-\DoxyCodeLine{76   \mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338daac366a6acaf2752a4180b9239d676c5c}{ODLA\_RNN\_IOFC}}, }
-\DoxyCodeLine{77   \mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338da8b4d65f75d1d125ba10b6df5f3d112e9}{ODLA\_RNN\_IFCO}}, }
-\DoxyCodeLine{78   \mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338da7a64e45ad06eca3d135e97e6177edfa0}{ODLA\_RNN\_IFOC}}, }
-\DoxyCodeLine{79   \mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338da43f56215175a807e8af084540836110c}{ODLA\_RNN\_ICOF}}, }
-\DoxyCodeLine{80   \mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338da0d5fc5c823a2824bd7679a7c6560e71b}{ODLA\_RNN\_URO}},  }
-\DoxyCodeLine{81 \} \mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338d}{odla\_rnn\_gate\_order}};}
-
-\end{DoxyCode}
 \mbox{\Hypertarget{odla__ops__nn_8h_a848aed5682538d47c5b4a04c3bdc5e1b}\label{odla__ops__nn_8h_a848aed5682538d47c5b4a04c3bdc5e1b}} 
 \index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_rnn\_outputs@{odla\_rnn\_outputs}}
 \index{odla\_rnn\_outputs@{odla\_rnn\_outputs}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
@@ -301,75 +214,6 @@ Definition at line 52 of file odla\+\_\+ops\+\_\+nn.\+h.
 \DoxyCodeLine{55   \mbox{\hyperlink{odla__ops__nn_8h_a848aed5682538d47c5b4a04c3bdc5e1ba58b4e43c606784ca311b373334037a24}{ODLA\_RNN\_CELL\_STATE}},        }
 \DoxyCodeLine{56   \mbox{\hyperlink{odla__ops__nn_8h_a848aed5682538d47c5b4a04c3bdc5e1ba30ed9507ff76aacc1dc080ff82814616}{ODLA\_RNN\_HIDDEN\_CELL\_STATE}}, }
 \DoxyCodeLine{57 \} \mbox{\hyperlink{odla__ops__nn_8h_a848aed5682538d47c5b4a04c3bdc5e1b}{odla\_rnn\_outputs}};}
-
-\end{DoxyCode}
-\mbox{\Hypertarget{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5}\label{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5}} 
-\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_rnn\_weight\_format@{odla\_rnn\_weight\_format}}
-\index{odla\_rnn\_weight\_format@{odla\_rnn\_weight\_format}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
-\doxysubsubsection{\texorpdfstring{odla\_rnn\_weight\_format}{odla\_rnn\_weight\_format}}
-{\footnotesize\ttfamily enum \mbox{\hyperlink{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5}{odla\+\_\+rnn\+\_\+weight\+\_\+format}}}
-
-
-
-RNN weight layout. 
-
-\begin{DoxyEnumFields}{Enumerator}
-\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_RNN\_LDGOI@{ODLA\_RNN\_LDGOI}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!ODLA\_RNN\_LDGOI@{ODLA\_RNN\_LDGOI}}}\mbox{\Hypertarget{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5a8246331f2d0f9d66b3a27adbd7f09fb8}\label{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5a8246331f2d0f9d66b3a27adbd7f09fb8}} 
-ODLA\+\_\+\+RNN\+\_\+\+LDGOI&layers, directions, num gates, output channels, input channels \\
-\hline
-
-\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_RNN\_LDIGO@{ODLA\_RNN\_LDIGO}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!ODLA\_RNN\_LDIGO@{ODLA\_RNN\_LDIGO}}}\mbox{\Hypertarget{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5a1a4e3267750a063ca62d2a3cf344f4da}\label{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5a1a4e3267750a063ca62d2a3cf344f4da}} 
-ODLA\+\_\+\+RNN\+\_\+\+LDIGO&layers, directions, input\+\_\+channels, num gates, output channels, \\
-\hline
-
-\end{DoxyEnumFields}
-
-
-Definition at line 66 of file odla\+\_\+ops\+\_\+nn.\+h.
-
-
-\begin{DoxyCode}{0}
-\DoxyCodeLine{66              \{}
-\DoxyCodeLine{67   \mbox{\hyperlink{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5a8246331f2d0f9d66b3a27adbd7f09fb8}{ODLA\_RNN\_LDGOI}}, }
-\DoxyCodeLine{69   \mbox{\hyperlink{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5a1a4e3267750a063ca62d2a3cf344f4da}{ODLA\_RNN\_LDIGO}}, }
-\DoxyCodeLine{72 \} \mbox{\hyperlink{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5}{odla\_rnn\_weight\_format}};}
-
-\end{DoxyCode}
-\mbox{\Hypertarget{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980eb}\label{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980eb}} 
-\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_tf\_idf\_mode@{odla\_tf\_idf\_mode}}
-\index{odla\_tf\_idf\_mode@{odla\_tf\_idf\_mode}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
-\doxysubsubsection{\texorpdfstring{odla\_tf\_idf\_mode}{odla\_tf\_idf\_mode}}
-{\footnotesize\ttfamily enum \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980eb}{odla\+\_\+tf\+\_\+idf\+\_\+mode}}}
-
-
-
-TF-\/\+IDF computation mode. 
-
-\begin{DoxyEnumFields}{Enumerator}
-\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_TFIDF\_TF@{ODLA\_TFIDF\_TF}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!ODLA\_TFIDF\_TF@{ODLA\_TFIDF\_TF}}}\mbox{\Hypertarget{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebae6c8ccfbfef45464c06a36eba6593c20}\label{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebae6c8ccfbfef45464c06a36eba6593c20}} 
-ODLA\+\_\+\+TFIDF\+\_\+\+TF&term frequency \\
-\hline
-
-\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_TFIDF\_IDF@{ODLA\_TFIDF\_IDF}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!ODLA\_TFIDF\_IDF@{ODLA\_TFIDF\_IDF}}}\mbox{\Hypertarget{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebab29238c0aa741b35e10aba5f8ba75ff9}\label{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebab29238c0aa741b35e10aba5f8ba75ff9}} 
-ODLA\+\_\+\+TFIDF\+\_\+\+IDF&inverse document frequency \\
-\hline
-
-\raisebox{\heightof{T}}[0pt][0pt]{\index{ODLA\_TFIDF\_TFIDF@{ODLA\_TFIDF\_TFIDF}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!ODLA\_TFIDF\_TFIDF@{ODLA\_TFIDF\_TFIDF}}}\mbox{\Hypertarget{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebaafcee4dc0418167c2b030e97e597b2cb}\label{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebaafcee4dc0418167c2b030e97e597b2cb}} 
-ODLA\+\_\+\+TFIDF\+\_\+\+TFIDF&the combination of TF and IDF \\
-\hline
-
-\end{DoxyEnumFields}
-
-
-Definition at line 84 of file odla\+\_\+ops\+\_\+nn.\+h.
-
-
-\begin{DoxyCode}{0}
-\DoxyCodeLine{84              \{}
-\DoxyCodeLine{85   \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebae6c8ccfbfef45464c06a36eba6593c20}{ODLA\_TFIDF\_TF}},    }
-\DoxyCodeLine{86   \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebab29238c0aa741b35e10aba5f8ba75ff9}{ODLA\_TFIDF\_IDF}},   }
-\DoxyCodeLine{87   \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980ebaafcee4dc0418167c2b030e97e597b2cb}{ODLA\_TFIDF\_TFIDF}}, }
-\DoxyCodeLine{88 \} \mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980eb}{odla\_tf\_idf\_mode}};}
 
 \end{DoxyCode}
 
@@ -440,30 +284,6 @@ Batch\+Normalization computes the batch normalization on {\ttfamily input} as y 
 {\em scalar\+\_\+scale} & If {\ttfamily scale} is NULL, this value will be used. \\
 \hline
 {\em scalar\+\_\+offset} & if {\ttfamily offset} is NULL, this value will be used. \\
-\hline
-{\em value\+\_\+id} & a unique value id (can be NULL)\\
-\hline
-\end{DoxyParams}
-\begin{DoxyReturn}{Returns}
-odla\+\_\+value 
-\end{DoxyReturn}
-\mbox{\Hypertarget{odla__ops__nn_8h_a2519b4e39170f69f6042ab9655cd049a}\label{odla__ops__nn_8h_a2519b4e39170f69f6042ab9655cd049a}} 
-\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_Celu@{odla\_Celu}}
-\index{odla\_Celu@{odla\_Celu}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
-\doxysubsubsection{\texorpdfstring{odla\_Celu()}{odla\_Celu()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Celu (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}}}]{alpha,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
-
-
-
-Celu activation. 
-
-Celu computes the celu activaion as y = x $<$ 0 ? alpha $\ast$ (exp(x / alpha) -\/ 1) \+: x
-
-
-\begin{DoxyParams}{Parameters}
-{\em input} & the input value \\
-\hline
-{\em alpha} & the coefficient \\
 \hline
 {\em value\+\_\+id} & a unique value id (can be NULL)\\
 \hline
@@ -613,11 +433,11 @@ Group\+Normalization normalizes the features within channel groups.
 \begin{DoxyReturn}{Returns}
 odla\+\_\+value 
 \end{DoxyReturn}
-\mbox{\Hypertarget{odla__ops__nn_8h_af98a23349470614735838061cb5b9089}\label{odla__ops__nn_8h_af98a23349470614735838061cb5b9089}} 
+\mbox{\Hypertarget{odla__ops__nn_8h_a84c5a4fa7da403261045341650b7c8ac}\label{odla__ops__nn_8h_a84c5a4fa7da403261045341650b7c8ac}} 
 \index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_GRU@{odla\_GRU}}
 \index{odla\_GRU@{odla\_GRU}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
 \doxysubsubsection{\texorpdfstring{odla\_GRU()}{odla\_GRU()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{structodla__values}{odla\+\_\+values}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+GRU (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5}{odla\+\_\+rnn\+\_\+weight\+\_\+format}}}]{weight\+\_\+format,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338d}{odla\+\_\+rnn\+\_\+gate\+\_\+order}}}]{gate\+\_\+order,  }\item[{\mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}}}]{weight\+\_\+dims,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{W,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{R,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{B,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{sequence\+\_\+lens,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{initial\+\_\+h,  }\item[{\mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}}}]{hidden\+\_\+size,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_a9270ccb090ddf6229c74cd04026120a0}{odla\+\_\+rnn\+\_\+direction}}}]{direction,  }\item[{\mbox{\hyperlink{odla__common_8h_a86f265601c0773152f4e193a8614c0ac}{odla\+\_\+bool}}}]{linear\+\_\+before\+\_\+reset,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_a848aed5682538d47c5b4a04c3bdc5e1b}{odla\+\_\+rnn\+\_\+outputs}}}]{outputs,  }\item[{const \mbox{\hyperlink{structodla__value__ids}{odla\+\_\+value\+\_\+ids}}}]{value\+\_\+id }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{structodla__values}{odla\+\_\+values}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+GRU (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}}}]{weight\+\_\+dims,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{W,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{R,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{B,  }\item[{\mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}}}]{seq\+\_\+len,  }\item[{\mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}}}]{hidden\+\_\+size,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_a9270ccb090ddf6229c74cd04026120a0}{odla\+\_\+rnn\+\_\+direction}}}]{direction,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_a848aed5682538d47c5b4a04c3bdc5e1b}{odla\+\_\+rnn\+\_\+outputs}}}]{outputs,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
 
 
 
@@ -629,10 +449,6 @@ GRU computes one-\/layer GRU. The output values are determined by {\ttfamily out
 \begin{DoxyParams}{Parameters}
 {\em input} & the input value \\
 \hline
-{\em weight\+\_\+format} & the data layout of weights \\
-\hline
-{\em gate\+\_\+order} & the order of gates in weights \\
-\hline
 {\em weight\+\_\+dims} & the dims of weights \\
 \hline
 {\em W} & the weights for gates. Assuming layout of \mbox{[}in, out, forget, cell\mbox{]} \\
@@ -641,19 +457,15 @@ GRU computes one-\/layer GRU. The output values are determined by {\ttfamily out
 \hline
 {\em B} & the optional bias \\
 \hline
-{\em sequence\+\_\+lens} & the sequence length \\
-\hline
-{\em initial\+\_\+h} & the initial value of the hidden(can be NULL) \\
+{\em seq\+\_\+len} & the sequence length \\
 \hline
 {\em hidden\+\_\+size} & the size of hidden neurons \\
 \hline
 {\em direction} & the directon of network \\
 \hline
-{\em linear\+\_\+before\+\_\+reset} & Whether to apply linear transformation before multiplying by the output of reset gate \\
-\hline
 {\em outputs} & speicify needed option outputs \\
 \hline
-{\em value\+\_\+ids} & an array of values ids (can be NULL)\\
+{\em value\+\_\+id} & a unique value id (can be NULL)\\
 \hline
 \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
@@ -712,11 +524,11 @@ Hard\+Sigmoid computes the hard sigmoid function as y = max(0, min( 1, alpha $\a
 \begin{DoxyReturn}{Returns}
 odla\+\_\+value 
 \end{DoxyReturn}
-\mbox{\Hypertarget{odla__ops__nn_8h_a5f7042cbc5391c1780df9482f08b0c5a}\label{odla__ops__nn_8h_a5f7042cbc5391c1780df9482f08b0c5a}} 
+\mbox{\Hypertarget{odla__ops__nn_8h_a5d1a23c3a6af0219533ad553cdaf2216}\label{odla__ops__nn_8h_a5d1a23c3a6af0219533ad553cdaf2216}} 
 \index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_InstanceNormalization@{odla\_InstanceNormalization}}
 \index{odla\_InstanceNormalization@{odla\_InstanceNormalization}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
 \doxysubsubsection{\texorpdfstring{odla\_InstanceNormalization()}{odla\_InstanceNormalization()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Instance\+Normalization (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_a54eaa7020ac01fc2a354d4fef9313a62}{odla\+\_\+memory\+\_\+layout}}}]{input\+\_\+layout,  }\item[{\mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}}}]{epsilon,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{scale,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{offset,  }\item[{\mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}}}]{scalar\+\_\+scale,  }\item[{\mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}}}]{scalar\+\_\+offset,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Instance\+Normalization (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_a54eaa7020ac01fc2a354d4fef9313a62}{odla\+\_\+memory\+\_\+layout}}}]{input\+\_\+layout,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{mean,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{var,  }\item[{\mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}}}]{epsilon,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{scale,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{offset,  }\item[{\mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}}}]{scalar\+\_\+scale,  }\item[{\mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}}}]{scalar\+\_\+offset,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
 
 
 
@@ -731,6 +543,10 @@ y = scale $\ast$ (x -\/ mean) / sqrt(variance + epsilon) + bias ~\newline
 {\em input} & the input value \\
 \hline
 {\em input\+\_\+layout} & the memory layout of input \\
+\hline
+{\em mean} & the mean value \\
+\hline
+{\em var} & the variance value \\
 \hline
 {\em epsilon} & the epsilon \\
 \hline
@@ -824,11 +640,11 @@ Local Response Normalization normalizes over local regions on {\ttfamily input} 
 \begin{DoxyReturn}{Returns}
 odla\+\_\+value 
 \end{DoxyReturn}
-\mbox{\Hypertarget{odla__ops__nn_8h_a439bebbd851f5849e7f97d10e40e2ac8}\label{odla__ops__nn_8h_a439bebbd851f5849e7f97d10e40e2ac8}} 
+\mbox{\Hypertarget{odla__ops__nn_8h_a589a505e52929f100e2da9c517a12669}\label{odla__ops__nn_8h_a589a505e52929f100e2da9c517a12669}} 
 \index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_LSTM@{odla\_LSTM}}
 \index{odla\_LSTM@{odla\_LSTM}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
 \doxysubsubsection{\texorpdfstring{odla\_LSTM()}{odla\_LSTM()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{structodla__values}{odla\+\_\+values}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+LSTM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5}{odla\+\_\+rnn\+\_\+weight\+\_\+format}}}]{weight\+\_\+format,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_a71dec80a52d199c1951f804e5a32338d}{odla\+\_\+rnn\+\_\+gate\+\_\+order}}}]{gate\+\_\+order,  }\item[{\mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}}}]{weight\+\_\+dims,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{W,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{R,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{B,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{sequence\+\_\+lens,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{initial\+\_\+h,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{initial\+\_\+c,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{P,  }\item[{\mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}}}]{hidden\+\_\+size,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_a9270ccb090ddf6229c74cd04026120a0}{odla\+\_\+rnn\+\_\+direction}}}]{direction,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_a848aed5682538d47c5b4a04c3bdc5e1b}{odla\+\_\+rnn\+\_\+outputs}}}]{outputs,  }\item[{const \mbox{\hyperlink{structodla__value__ids}{odla\+\_\+value\+\_\+ids}}}]{value\+\_\+id }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{structodla__values}{odla\+\_\+values}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+LSTM (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}}}]{weight\+\_\+dims,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{W,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{R,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{B,  }\item[{\mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}}}]{seq\+\_\+len,  }\item[{\mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}}}]{hidden\+\_\+size,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_a9270ccb090ddf6229c74cd04026120a0}{odla\+\_\+rnn\+\_\+direction}}}]{direction,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_a848aed5682538d47c5b4a04c3bdc5e1b}{odla\+\_\+rnn\+\_\+outputs}}}]{outputs,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
 
 
 
@@ -840,10 +656,6 @@ LSTM computes one-\/layer LSTM.
 \begin{DoxyParams}{Parameters}
 {\em input} & the input value \\
 \hline
-{\em weight\+\_\+format} & the data layout of weights \\
-\hline
-{\em gate\+\_\+order} & the order of gates in weights \\
-\hline
 {\em weight\+\_\+dims} & the dims of weights \\
 \hline
 {\em W} & the weights for gates. Assuming layout of \mbox{[}in, out, forget, cell\mbox{]} \\
@@ -852,13 +664,7 @@ LSTM computes one-\/layer LSTM.
 \hline
 {\em B} & the optional bias \\
 \hline
-{\em sequence\+\_\+lens} & the lengths of the sequences in a batch \\
-\hline
-{\em initial\+\_\+h} & the initial value of the hidden(can be NULL) \\
-\hline
-{\em initial\+\_\+c} & the initial value of the cell(can be NULL) \\
-\hline
-{\em P} & the weight tensor for peepholes(can be NULL). \\
+{\em seq\+\_\+len} & the sequence length \\
 \hline
 {\em hidden\+\_\+size} & the size of hidden neurons \\
 \hline
@@ -866,11 +672,11 @@ LSTM computes one-\/layer LSTM.
 \hline
 {\em outputs} & speicify needed option outputs \\
 \hline
-{\em value\+\_\+ids} & an array of value ids (can be NULL)\\
+{\em value\+\_\+id} & a unique value id (can be NULL)\\
 \hline
 \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
-\mbox{\hyperlink{structodla__values}{odla\+\_\+values}} 
+odla\+\_\+value 
 \end{DoxyReturn}
 \mbox{\Hypertarget{odla__ops__nn_8h_a81b06c3f7fbdd2ebc225a86d8e054748}\label{odla__ops__nn_8h_a81b06c3f7fbdd2ebc225a86d8e054748}} 
 \index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_MaxPool@{odla\_MaxPool}}
@@ -899,38 +705,6 @@ Max\+Pool computes the max pooling across the {\ttfamily input} according to the
 {\em paddings\+\_\+back} & paddings applied to the end of each spatial dim \\
 \hline
 {\em output\+\_\+dims} & the optional output shape (can be undefined) \\
-\hline
-{\em value\+\_\+id} & a unique value id (can be NULL)\\
-\hline
-\end{DoxyParams}
-\begin{DoxyReturn}{Returns}
-odla\+\_\+value 
-\end{DoxyReturn}
-\mbox{\Hypertarget{odla__ops__nn_8h_abaa1419d8e6015c29e5e62c6d0c40c88}\label{odla__ops__nn_8h_abaa1419d8e6015c29e5e62c6d0c40c88}} 
-\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_NegativeLogLikeliHoodLoss@{odla\_NegativeLogLikeliHoodLoss}}
-\index{odla\_NegativeLogLikeliHoodLoss@{odla\_NegativeLogLikeliHoodLoss}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
-\doxysubsubsection{\texorpdfstring{odla\_NegativeLogLikeliHoodLoss()}{odla\_NegativeLogLikeliHoodLoss()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Negative\+Log\+Likeli\+Hood\+Loss (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{gt,  }\item[{\mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}}}]{ignored,  }\item[{odla\+\_\+reduction\+\_\+mode}]{reduction,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{weight,  }\item[{\mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}}}]{output\+\_\+shape,  }\item[{\mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
-
-
-
-Negative Log Likelihood Loss. 
-
-Negative\+Log\+Likeli\+Hood\+Loss computes negative log likelihood loss.
-
-
-\begin{DoxyParams}{Parameters}
-{\em input} & the input value \\
-\hline
-{\em gt} & the ground truth (label) value \\
-\hline
-{\em ignored} & the ignored label value \\
-\hline
-{\em reduction} & optional reduction \\
-\hline
-{\em weight} & optional weight \\
-\hline
-{\em output\+\_\+shape} & output shape \\
 \hline
 {\em value\+\_\+id} & a unique value id (can be NULL)\\
 \hline
@@ -1046,48 +820,6 @@ Relu computes the relu activation as y = x $<$ 0 \+: 0 ? x
 \begin{DoxyReturn}{Returns}
 odla\+\_\+value 
 \end{DoxyReturn}
-\mbox{\Hypertarget{odla__ops__nn_8h_a5b24257db96a50c2664dbbb702518150}\label{odla__ops__nn_8h_a5b24257db96a50c2664dbbb702518150}} 
-\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_RNN@{odla\_RNN}}
-\index{odla\_RNN@{odla\_RNN}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
-\doxysubsubsection{\texorpdfstring{odla\_RNN()}{odla\_RNN()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{structodla__values}{odla\+\_\+values}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+RNN (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_af4b6795b2666bb0feff24897881c2ac5}{odla\+\_\+rnn\+\_\+weight\+\_\+format}}}]{weight\+\_\+format,  }\item[{\mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}}}]{weight\+\_\+dims,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{W,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{R,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{B,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{sequence\+\_\+lens,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{initial\+\_\+h,  }\item[{\mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}}}]{hidden\+\_\+size,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_a9270ccb090ddf6229c74cd04026120a0}{odla\+\_\+rnn\+\_\+direction}}}]{direction,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_a848aed5682538d47c5b4a04c3bdc5e1b}{odla\+\_\+rnn\+\_\+outputs}}}]{outputs,  }\item[{const \mbox{\hyperlink{structodla__value__ids}{odla\+\_\+value\+\_\+ids}}}]{value\+\_\+id }\end{DoxyParamCaption})}
-
-
-
-Compute a one-\/layer RNN. 
-
-RNN computes one-\/layer Recurrent Neuron Network. The output values are determined by {\ttfamily outputs}.
-
-
-\begin{DoxyParams}{Parameters}
-{\em input} & the input value \\
-\hline
-{\em weight\+\_\+format} & the data layout of weights \\
-\hline
-{\em weight\+\_\+dims} & the dims of weights \\
-\hline
-{\em W} & the weights for gates. Assuming layout of \mbox{[}in, out, forget, cell\mbox{]} \\
-\hline
-{\em R} & the recurrence weight \\
-\hline
-{\em B} & the optional bias \\
-\hline
-{\em sequence\+\_\+lens} & the sequence length \\
-\hline
-{\em initial\+\_\+h} & the initial value of the hidden(can be NULL) \\
-\hline
-{\em hidden\+\_\+size} & the size of hidden neurons \\
-\hline
-{\em direction} & the directon of network \\
-\hline
-{\em outputs} & speicify needed option outputs \\
-\hline
-{\em value\+\_\+ids} & an array of values ids (can be NULL)\\
-\hline
-\end{DoxyParams}
-\begin{DoxyReturn}{Returns}
-odla\+\_\+value 
-\end{DoxyReturn}
 \mbox{\Hypertarget{odla__ops__nn_8h_ad16fe838447f7fd88fa91e7bb3cfdb8f}\label{odla__ops__nn_8h_ad16fe838447f7fd88fa91e7bb3cfdb8f}} 
 \index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_ROIAlign@{odla\_ROIAlign}}
 \index{odla\_ROIAlign@{odla\_ROIAlign}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
@@ -1180,32 +912,6 @@ Selu computes the selu activation as y = x $<$= 0 ? gamma $\ast$ (alpha $\ast$ e
 \begin{DoxyReturn}{Returns}
 odla\+\_\+value 
 \end{DoxyReturn}
-\mbox{\Hypertarget{odla__ops__nn_8h_a530e7b4251390f2979b8e3dece16c501}\label{odla__ops__nn_8h_a530e7b4251390f2979b8e3dece16c501}} 
-\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_Shrink@{odla\_Shrink}}
-\index{odla\_Shrink@{odla\_Shrink}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
-\doxysubsubsection{\texorpdfstring{odla\_Shrink()}{odla\_Shrink()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Shrink (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}}}]{bias,  }\item[{\mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}}}]{lambd,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
-
-
-
-Shrink activation. 
-
-Shrink computes the function if x $<$ -\/lambd, y = x + bias; if x $>$ lambd, y = x -\/ bias; Otherwise, y = 0.
-
-
-\begin{DoxyParams}{Parameters}
-{\em input} & the input value \\
-\hline
-{\em bias} & value of bias \\
-\hline
-{\em lambd} & value of lambd \\
-\hline
-{\em value\+\_\+id} & a unique value id (can be NULL)\\
-\hline
-\end{DoxyParams}
-\begin{DoxyReturn}{Returns}
-odla\+\_\+value 
-\end{DoxyReturn}
 \mbox{\Hypertarget{odla__ops__nn_8h_a1e42919601fefc9dc6948abaa3d7f2f9}\label{odla__ops__nn_8h_a1e42919601fefc9dc6948abaa3d7f2f9}} 
 \index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_Sigmoid@{odla\_Sigmoid}}
 \index{odla\_Sigmoid@{odla\_Sigmoid}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
@@ -1252,50 +958,6 @@ Softmax computes the softmax activation as y = exp(x) / reduce\+\_\+sum(exp(x), 
 \begin{DoxyReturn}{Returns}
 odla\+\_\+value 
 \end{DoxyReturn}
-\mbox{\Hypertarget{odla__ops__nn_8h_a65a8d48997f9932c8b6ae549c7dba3af}\label{odla__ops__nn_8h_a65a8d48997f9932c8b6ae549c7dba3af}} 
-\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_Softplus@{odla\_Softplus}}
-\index{odla\_Softplus@{odla\_Softplus}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
-\doxysubsubsection{\texorpdfstring{odla\_Softplus()}{odla\_Softplus()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Softplus (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
-
-
-
-Softplus activation. 
-
-Softplus computes the Softplus activation as y = ln(exp(x) + 1)
-
-
-\begin{DoxyParams}{Parameters}
-{\em input} & the input value \\
-\hline
-{\em value\+\_\+id} & a unique value id (can be NULL)\\
-\hline
-\end{DoxyParams}
-\begin{DoxyReturn}{Returns}
-odla\+\_\+value 
-\end{DoxyReturn}
-\mbox{\Hypertarget{odla__ops__nn_8h_af6a84933cadc045592c57600b15f3afc}\label{odla__ops__nn_8h_af6a84933cadc045592c57600b15f3afc}} 
-\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_Softsign@{odla\_Softsign}}
-\index{odla\_Softsign@{odla\_Softsign}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
-\doxysubsubsection{\texorpdfstring{odla\_Softsign()}{odla\_Softsign()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Softsign (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
-
-
-
-Softsign activation. 
-
-Softsign computes the Softsign activation as y = x / (1 + $\vert$x$\vert$)
-
-
-\begin{DoxyParams}{Parameters}
-{\em input} & the input value \\
-\hline
-{\em value\+\_\+id} & a unique value id (can be NULL)\\
-\hline
-\end{DoxyParams}
-\begin{DoxyReturn}{Returns}
-odla\+\_\+value 
-\end{DoxyReturn}
 \mbox{\Hypertarget{odla__ops__nn_8h_a88c73b46ef6ff6838bc6d945cf1ac217}\label{odla__ops__nn_8h_a88c73b46ef6ff6838bc6d945cf1ac217}} 
 \index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_Tanh@{odla\_Tanh}}
 \index{odla\_Tanh@{odla\_Tanh}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
@@ -1311,70 +973,6 @@ Tanh computes the tanh activation as (1 -\/ e$^\wedge$\{-\/2x\})/(1 + e$^\wedge$
 
 \begin{DoxyParams}{Parameters}
 {\em input} & the input value \\
-\hline
-{\em value\+\_\+id} & a unique value id (can be NULL)\\
-\hline
-\end{DoxyParams}
-\begin{DoxyReturn}{Returns}
-odla\+\_\+value 
-\end{DoxyReturn}
-\mbox{\Hypertarget{odla__ops__nn_8h_a79465412384e1f136beaad67f0b8f086}\label{odla__ops__nn_8h_a79465412384e1f136beaad67f0b8f086}} 
-\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_TFIDFVectorize@{odla\_TFIDFVectorize}}
-\index{odla\_TFIDFVectorize@{odla\_TFIDFVectorize}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
-\doxysubsubsection{\texorpdfstring{odla\_TFIDFVectorize()}{odla\_TFIDFVectorize()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+TFIDFVectorize (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}}}]{min\+\_\+gram\+\_\+length,  }\item[{\mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}}}]{max\+\_\+gram\+\_\+length,  }\item[{\mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}}}]{max\+\_\+skip\+\_\+count,  }\item[{\mbox{\hyperlink{odla__ops__nn_8h_a4b7910500dd621f0d6fab963c8b980eb}{odla\+\_\+tf\+\_\+idf\+\_\+mode}}}]{mode,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{pool,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{gram\+\_\+counts,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{output\+\_\+indices,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{weights,  }\item[{\mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}}}]{output\+\_\+shape,  }\item[{\mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
-
-
-
-TF-\/\+IDF vectorization. 
-
-TFIDF vectorizes input sequence into a vector.
-
-
-\begin{DoxyParams}{Parameters}
-{\em input} & the input value \\
-\hline
-{\em min\+\_\+gram\+\_\+length} & the minimum gram length to extract \\
-\hline
-{\em max\+\_\+gram\+\_\+length} & the maximum gram length to extract \\
-\hline
-{\em max\+\_\+skip\+\_\+count} & the maximum items to be skipped \\
-\hline
-{\em mode} & the weighting metric to be used \\
-\hline
-{\em pool} & the grams pool \\
-\hline
-{\em gram\+\_\+counts} & zero-\/based starting indices of n-\/grams in the pool \\
-\hline
-{\em output\+\_\+indices} & the mapping of gram indices to output tensor \\
-\hline
-{\em weights} & optional weights used when mode is ODLA\+\_\+\+TFIDF\+\_\+\+IDF or ODLA\+\_\+\+TFIDF\+\_\+\+TFIDF \\
-\hline
-{\em output\+\_\+shape} & shape of output \\
-\hline
-{\em value\+\_\+id} & a unique value id (can be NULL)\\
-\hline
-\end{DoxyParams}
-\begin{DoxyReturn}{Returns}
-odla\+\_\+value 
-\end{DoxyReturn}
-\mbox{\Hypertarget{odla__ops__nn_8h_aeb2f3d624857d69143d99c805d94da1f}\label{odla__ops__nn_8h_aeb2f3d624857d69143d99c805d94da1f}} 
-\index{odla\_ops\_nn.h@{odla\_ops\_nn.h}!odla\_ThresholdedRelu@{odla\_ThresholdedRelu}}
-\index{odla\_ThresholdedRelu@{odla\_ThresholdedRelu}!odla\_ops\_nn.h@{odla\_ops\_nn.h}}
-\doxysubsubsection{\texorpdfstring{odla\_ThresholdedRelu()}{odla\_ThresholdedRelu()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Thresholded\+Relu (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}{odla\+\_\+float32}}}]{alpha,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
-
-
-
-Thresholded\+Relu activation. 
-
-Thresholded\+Relu computes the Thresholded\+Relu activation as y = x $>$ alpha ? x \+: 0
-
-
-\begin{DoxyParams}{Parameters}
-{\em input} & the input value \\
-\hline
-{\em alpha} & the alpha value \\
 \hline
 {\em value\+\_\+id} & a unique value id (can be NULL)\\
 \hline
