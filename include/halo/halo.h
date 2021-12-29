@@ -42,7 +42,15 @@ enum class ConstantDataStorage {
   DefinedAsGlobal          // external, constant, with initializer.
 };
 
-enum class ModelFormat { TENSORFLOW, CAFFE, ONNX, TFLITE, MXNET, INVALID };
+enum class ModelFormat {
+  TENSORFLOW,
+  CAFFE,
+  ONNX,
+  ODLA,
+  TFLITE,
+  MXNET,
+  INVALID
+};
 
 enum class ChannelOrder {
   None,
