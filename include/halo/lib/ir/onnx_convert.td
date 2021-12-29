@@ -526,7 +526,7 @@ def ONNX_HgEngine : ONNXExtension<"HgEngine"> {
     ExtensionAttr<"out_type_list", String, "{}">,];
 }
 
-def ONNX_HgQuant : TFExtension<"HgQuant"> {
+def ONNX_HgQuant : ONNXExtension<"HgQuant"> {
   let extension_attr_ = [
     ExtensionAttr<"in_scale", String, "\"1.0\"">,
     ExtensionAttr<"in_bias", String, "\"0.0\"">,
@@ -542,7 +542,7 @@ def ONNX_HgQuant : TFExtension<"HgQuant"> {
   ];
 }
 
-def ONNX_HgDequant : TFExtension<"HgDequant"> {
+def ONNX_HgDequant : ONNXExtension<"HgDequant"> {
   let extension_attr_ = [
     ExtensionAttr<"in_scale", String, "\"1.0\"">,
     ExtensionAttr<"in_bias", String, "\"0.0\"">,
