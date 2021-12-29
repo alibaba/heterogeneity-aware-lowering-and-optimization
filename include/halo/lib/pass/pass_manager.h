@@ -67,8 +67,9 @@ class HL_API_EXPORT PassManager final {
   Pass* AddCodeFormatterPass(std::ostringstream& code,
                              std::ostringstream& header,
                              const CXXCodeGenOpts& opts);
-  Pass* AddConvertTFCFGPass();
+  Pass* AddConstantDecombinePass();
   Pass* AddConstantWriterPass(std::ostream& os, const std::string& target);
+  Pass* AddConvertTFCFGPass();
   Pass* AddDCEPass();
   Pass* AddDevicePlacementPass();
   Pass* AddFusionPass(const FusionOptions& opts);
@@ -128,7 +129,6 @@ class HL_API_EXPORT PassManager final {
   Pass* AddX86ConstantWriterPass(std::ostream& os);
   Pass* AddX86LLVMIRCodeGenPass();
   Pass* AddX86LLVMIRCodeGenPass(ConstantDataStorage constant_data_storage);
-  Pass* AddConstantDecombinePass();
   GlobalContext& GetGlobalContext() const;
 
  private:
