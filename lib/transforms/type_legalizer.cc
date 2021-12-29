@@ -495,6 +495,11 @@ static Type ComputeKernelWiseType(
 
   auto index_h = info.data_spatial_axis;
   auto index_w = index_h + 1;
+  auto dilation_h = dilations[index_h];
+  auto dilation_w = dilations[index_w];
+  auto kernel_h_dilated = dilation_h * (kernel_h - 1) + 1;
+  auto kernel_w_dilated = dilation_w * (kernel_w - 1) + 1;
+
   switch (padding_mode) {
     case Padding::SAME: {
       ret_shape[index_h] =
@@ -504,10 +509,12 @@ static Type ComputeKernelWiseType(
       break;
     }
     case Padding::VALID: {
-      ret_shape[index_h] = (data_shape[index_h] - kernel_h + strides[index_h]) /
-                           strides[index_h];
-      ret_shape[index_w] = (data_shape[index_w] - kernel_w + strides[index_w]) /
-                           strides[index_w];
+      ret_shape[index_h] =
+          (data_shape[index_h] - kernel_h_dilated + strides[index_h]) /
+          strides[index_h];
+      ret_shape[index_w] =
+          (data_shape[index_w] - kernel_w_dilated + strides[index_w]) /
+          strides[index_w];
       break;
     }
     case Padding::EXPLICIT: {
@@ -520,9 +527,9 @@ static Type ComputeKernelWiseType(
                              explicit_paddings[3];
       } else {
         ret_shape[index_h] = (data_shape[index_h] + explicit_paddings[0] +
-                              explicit_paddings[1] - kernel_h);
+                              explicit_paddings[1] - kernel_h_dilated);
         ret_shape[index_w] = (data_shape[index_w] + explicit_paddings[2] +
-                              explicit_paddings[3] - kernel_w);
+                              explicit_paddings[3] - kernel_w_dilated);
         if (ceil_mode) {
           ret_shape[index_h] =
               (ret_shape[index_h] + strides[index_h] - 1) / strides[index_h] +
@@ -542,15 +549,15 @@ static Type ComputeKernelWiseType(
     }
   }
 
-  auto paddings = std::max(
-      0L, (ret_shape[index_h] - 1) * strides[index_h] + kernel_h +
-              (dilations[index_h] - 1) * (kernel_h - 1) - data_shape[index_h]);
+  auto paddings =
+      std::max(0L, (ret_shape[index_h] - 1) * strides[index_h] + kernel_h +
+                       (dilation_h - 1) * (kernel_h - 1) - data_shape[index_h]);
 
   explicit_paddings[0] = paddings / 2;
   explicit_paddings[1] = paddings - explicit_paddings[0];
-  paddings = std::max(
-      0L, (ret_shape[index_w] - 1) * strides[index_w] + kernel_w +
-              (dilations[index_w] - 1) * (kernel_w - 1) - data_shape[index_w]);
+  paddings =
+      std::max(0L, (ret_shape[index_w] - 1) * strides[index_w] + kernel_w +
+                       (dilation_w - 1) * (kernel_w - 1) - data_shape[index_w]);
   explicit_paddings[2] = paddings / 2;
   explicit_paddings[3] = paddings - explicit_paddings[2];
 
@@ -574,7 +581,7 @@ static void RunOnInstruction(Conv2DInst* inst) {
     auto input = inst->GetOperand(0);
     int in_channel = static_cast<int>(input.GetType().GetNumOfElementsInDim(
         input.GetType().GetNumOfDims() - 1));
-    // TODO(unkonwn) support depth_multipiler
+    // TODO(unknown) support depth_multiplier
     inst->SetGroup(in_channel);
   }
 
