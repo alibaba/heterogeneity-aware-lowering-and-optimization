@@ -32,7 +32,7 @@ std::vector<std::string> PopartConfig::mode = {"unknown", "pipeline",
 
 const char* bool_to_str(const bool& value) { return value ? "true" : "false"; }
 
-const std::string& get_config_path_from_cache_file(
+const std::string get_config_path_from_cache_file(
     const std::string& cache_path) {
   std::string file_suffix(".popart");
   int file_prefix = cache_path.rfind(file_suffix);
@@ -40,9 +40,9 @@ const std::string& get_config_path_from_cache_file(
       file_prefix + file_suffix.size() < cache_path.size()) {
     popart::logging::err(
         "Bad cache file name. File name should end with '.popart'");
-    return std::move(std::string(""));
+    return std::string("");
   }
-  return std::move(std::string(cache_path.substr(0, file_prefix) + ".json"));
+  return std::string(cache_path.substr(0, file_prefix) + ".json");
 }
 
 void PopartConfig::use_default() {
@@ -189,6 +189,35 @@ odla_status PopartConfig::load_from_string(const std::string& config_string) {
   }
   parse_from_json(jf);
   return ODLA_SUCCESS;
+}
+
+std::string PopartConfig::temp_get_error_inject_env(
+    const std::string& temp_config_path) {
+  using json = nlohmann::json;
+  std::ifstream ifs(temp_config_path, std::ios_base::in);
+  if (!ifs.good()) {
+    popart::logging::err("config file {} not found", temp_config_path);
+    return std::string("");
+  }
+  json jf = json::parse(ifs);
+  /*
+  try {
+    jf = json::parse(temp_config_path);
+  } catch (std::exception& e) {
+    popart::logging::err("parse config falied:{}", e.what());
+    return std::string("");
+  } catch (...) {
+    popart::logging::err("parse config falied");
+    return std::string("");
+  }*/
+  if (jf.contains("POPLAR_ENGINE_OPTIONS")) {
+    auto poplar_engine_options = jf["POPLAR_ENGINE_OPTIONS"].get<std::string>();
+    popart::logging::info(
+        "Read the POPLAR_ENGINE_OPTIONS from file:{} with value: {}.",
+        temp_config_path, poplar_engine_options);
+    return poplar_engine_options;
+  }
+  return std::string("");
 }
 
 odla_status PopartConfig::load_from_file(const std::string& file_path) {

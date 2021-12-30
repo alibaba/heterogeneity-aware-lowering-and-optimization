@@ -63,15 +63,32 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
       comp->opts.cache_dir = (reinterpret_cast<char*>(value));
       break;
     case 1001: // load cache directly, need set path of cache file
+    {
       popart::logging::info("set load_or_save_cache");
       PopartConfig::instance()->set_load_or_save_cache(true);
       PopartConfig::instance()->set_cache_path(
           (std::string) reinterpret_cast<char*>(value));
       popart::logging::setLogLevel(popart::logging::Module::popart,
                                    popart::logging::Level::Info);
-      popart::logging::err("The POPLAR_ENGINE_OPTIONS has been set");
+      ///
+      std::string cache_path(reinterpret_cast<char*>(value));
+      popart::logging::info("The cache path is: {}", cache_path);
+      std::string file_suffix("/");
+      int file_prefix = cache_path.rfind(file_suffix);
+      if (file_prefix == std::string::npos)
+        popart::logging::err(
+            "Bad cache file name. File name should contain '/'");
+
+      std::string temp_error_injector =
+          cache_path.substr(0, file_prefix) +
+          std::string("/temp_error_injector.json");
+      popart::logging::err("The POPLAR_ENGINE_OPTIONS has been set by: {}",
+                           temp_error_injector);
+      auto injector = PopartConfig::instance()->temp_get_error_inject_env(
+          temp_error_injector);
+      setenv("POPLAR_ENGINE_OPTIONS", injector.c_str(), 1);
       // popops__BroadcastVectorInnerInPlaceSupervisor___popops__expr__BinaryOpType__ADD_half
-      break;
+    } break;
     case 1002:
       setenv("POPART_LOG_LEVEL", "INFO", 1);
     default:
