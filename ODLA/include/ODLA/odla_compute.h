@@ -44,6 +44,10 @@ typedef enum {
   ODLA_MAX_BATCH_SIZE,
   ODLA_OPT_BATCH_SIZE,
   ODLA_RUN_BATCH_SIZE,
+  ODLA_DYNAMIC_SHAPE,
+  ODLA_MIN_SHAPE,
+  ODLA_MAX_SHAPE,
+  ODLA_OPT_SHAPE,
   ODLA_BF16_MODE,
   ODLA_FP16_MODE,
   ODLA_USE_SIM_MODE,
@@ -219,6 +223,39 @@ odla_DestroyComputation(odla_computation computation);
 */
 extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_SetComputationItem(
     odla_computation computation, odla_item_type type, odla_item_value value);
+
+//! \brief Set the computation arguments shape info with a property item
+/*!
+  \param value the odla_value
+  \param type the property item type
+  \param value_shape the property value_shape
+
+  \return odla_status
+*/
+extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_SetValueShapeInfo(
+    odla_value value, odla_item_type type, odla_value_shape value_shape);
+
+//! \brief Set the context runtime shapes to an odla_value
+/*!
+  \param context the context object
+  \param value the property odla value
+  \param value_shape the property value_shape
+
+  \return odla_status
+*/
+extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_SetRuntimeShape(
+    odla_context context, odla_value value, odla_value_shape value_shape);
+
+//! \brief Get the context runtime shapes
+/*!
+  \param context the context object
+  \param value the property odla value
+  \param value_shape_ptr the pointer to the value_shape
+
+  \return odla_status
+*/
+extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_GetRuntimeShape(
+    odla_context context, odla_value value, odla_value_shape* value_shape_ptr);
 
 //! \brief Create a constants array object
 /*!
