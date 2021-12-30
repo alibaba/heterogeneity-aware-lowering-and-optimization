@@ -25,9 +25,14 @@ namespace halo {
 /// This pass splitting a function into sub functions.
 class Splitting final : public FunctionPass {
  public:
-  Splitting() : FunctionPass("Function Splitting") {}
+  Splitting(bool group_by_device = false) : FunctionPass("Function Splitting") {
+    group_by_device_ = group_by_device;
+  }
 
   bool RunOnFunction(Function* func) override;
+
+ private:
+  bool group_by_device_;
 };
 
 } // end namespace halo.
