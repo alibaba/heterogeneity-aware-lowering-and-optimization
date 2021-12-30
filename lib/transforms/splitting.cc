@@ -1,6 +1,6 @@
 //===- splitting.cc -------------------------------------------------------===//
 //
-// Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+// Copyright (C) 2019-2021 Alibaba Group Holding Limited.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ struct InstNode {
   Instruction* Inst;
 };
 
-static std::unique_ptr<InstNode> GetSimpleSchedule(Function* func) {
+static std::unique_ptr<InstNode> PrepareInstNode(Function* func) {
   auto root = std::make_unique<InstNode>(nullptr);
   if (!func->IsEntryFunction()) {
     return root;
@@ -52,6 +52,11 @@ static std::unique_ptr<InstNode> GetSimpleSchedule(Function* func) {
       root->Children.push_back(std::make_unique<InstNode>(inst));
     }
   }
+  return root;
+}
+
+static std::unique_ptr<InstNode> GetSimpleSchedule(Function* func) {
+  auto root = PrepareInstNode(func);
 
   InstNode* last_func = nullptr;
   for (auto it = root->Children.begin(), e = root->Children.end(); it != e;) {
@@ -75,6 +80,68 @@ static std::unique_ptr<InstNode> GetSimpleSchedule(Function* func) {
         inst_op_num += IsA<Instruction>(op) ? 1 : 0;
       }
       if (inst_op_num > 1) {
+        add_to_new_node = true;
+      }
+    }
+
+    if (add_to_new_node) {
+      auto node = std::make_unique<InstNode>((*it)->Inst);
+      (*it)->Inst = nullptr;
+      last_func = it->get();
+      last_func->Children.push_back(std::move(node));
+      ++it;
+    } else {
+      last_func->Children.push_back(std::move(*it));
+      it = root->Children.erase(it);
+    }
+  }
+  return root;
+}
+
+static std::string GetDeviceInfo(Instruction* inst) {
+  auto& attrs = inst->GetAttributes();
+  for (auto& attr : attrs) {
+    if (attr->GetKind() == Attribute::AttrKind::STRING) {
+      if (attr->GetName() == "device") {
+        return attr->GetValueAsString();
+      }
+    }
+  }
+  return "";
+}
+
+static std::unique_ptr<InstNode> GetDeviceGroupSchedule(Function* func) {
+  auto root = PrepareInstNode(func);
+
+  InstNode* last_func = nullptr;
+  for (auto it = root->Children.begin(), e = root->Children.end(); it != e;) {
+    if ((*it)->Inst->GetOpCode() == OpCode::RETURN) {
+      ++it;
+      continue;
+    }
+
+    bool add_to_new_node = false;
+    if (last_func == nullptr) {
+      add_to_new_node = true;
+    } else {
+      Instruction* last_inst = last_func->Children.back()->Inst;
+
+      if (last_inst != nullptr &&
+          GetDeviceInfo(last_inst) != GetDeviceInfo((*it)->Inst)) {
+        add_to_new_node = true;
+      }
+    }
+    if (!add_to_new_node) {
+      int inst_op_num = 0;
+      Instruction* last_inst = last_func->Children.back()->Inst;
+      bool is_consumer = false;
+      for (auto& op : (*it)->Inst->GetOperands()) {
+        inst_op_num += IsA<Instruction>(op) ? 1 : 0;
+        if (op.GetDef() == last_inst) {
+          is_consumer = true;
+        }
+      }
+      if (inst_op_num > 1 || !is_consumer) {
         add_to_new_node = true;
       }
     }
@@ -216,9 +283,15 @@ static Instruction* ScheduleToFunctions(Function* caller, InstNode* parent,
 }
 
 bool Splitting::RunOnFunction(Function* func) {
-  auto sched = GetSimpleSchedule(func);
+  std::unique_ptr<InstNode> sched;
+  if (group_by_device_) {
+    sched = GetDeviceGroupSchedule(func);
+  } else {
+    sched = GetSimpleSchedule(func);
+  }
 
-  return ScheduleToFunctions(func, nullptr, sched.get()) != nullptr;
+  bool ret = ScheduleToFunctions(func, nullptr, sched.get()) != nullptr;
+  return ret;
 }
 
 } // end namespace halo

@@ -39,6 +39,7 @@
 #include <string>
 
 #include "halo/halo.h"
+
 static bool FormatCode(std::ostringstream& input, bool is_cxx) {
   const std::string& code = input.str();
   unsigned int len = code.size();

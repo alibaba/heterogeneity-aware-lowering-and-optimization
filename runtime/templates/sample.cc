@@ -11,10 +11,10 @@ static odla_uint32 nr_inputs;
 static odla_uint32 nr_outputs;
 
 static int init_model() {
-  if (comp == NULL) {
+  if (comp == nullptr) {
     comp = build_model();
   }
-  if (ctx == NULL) {
+  if (ctx == nullptr) {
     odla_CreateContext(&ctx);
   }
   odla_GetNumOfArgsFromComputation(comp, &nr_inputs);
@@ -26,6 +26,12 @@ static int init_model() {
 #ifdef __cplusplus
 extern "C" {
 #endif
+void sample_model_fini() {
+  odla_DestroyComputation(comp);
+  comp = nullptr;
+  odla_DestroyContext(ctx);
+  ctx = nullptr;
+}
 
 int run_sample_model(const void* const inputs[], void* const outputs[]) {
   init_model();
