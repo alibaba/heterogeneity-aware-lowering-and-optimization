@@ -86,7 +86,16 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
                            temp_error_injector);
       auto injector = PopartConfig::instance()->temp_get_error_inject_env(
           temp_error_injector);
-      setenv("POPLAR_ENGINE_OPTIONS", injector.c_str(), 1);
+      if (injector.empty()) {
+        popart::logging::err("NO VALUE SET for error injector");
+      } else {
+        setenv("POPLAR_ENGINE_OPTIONS", injector.c_str(), 1);
+      }
+      if (nullptr != getenv("POPLAR_ENGINE_OPTIONS"))
+        popart::logging::info("The env POPLAR_ENGINE_OPTIONS value is: {}",
+                              getenv("POPLAR_ENGINE_OPTIONS"));
+      else
+        popart::logging::info("The env POPLAR_ENGINE_OPTIONS value is not set");
       // popops__BroadcastVectorInnerInPlaceSupervisor___popops__expr__BinaryOpType__ADD_half
     } break;
     case 1002:
