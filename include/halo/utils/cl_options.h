@@ -81,6 +81,7 @@ static ModelFormat InferFormat(const llvm::cl::list<std::string>& model_files,
                     .Case(".pb", ModelFormat::TENSORFLOW)
                     .Case(".pbtxt", ModelFormat::TENSORFLOW)
                     .Case(".prototxt", ModelFormat::TENSORFLOW)
+                    .Case(".odla", ModelFormat::ODLA)
                     .Case(".onnx", ModelFormat::ONNX)
                     .Case(".json", ModelFormat::MXNET)
                     .Case(".tflite", ModelFormat::TFLITE)
