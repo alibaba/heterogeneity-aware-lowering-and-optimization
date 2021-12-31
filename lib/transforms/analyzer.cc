@@ -284,11 +284,12 @@ void Analyzer::RunOnInstruction(BatchMatMulInst* inst) {
   auto& node_info = GenerateCommonInfo(inst);
 
   // batch matmul computational estimator: batch * ((2 * Cin - 1) * Cout)
-  const auto& input_type = inst->GetOperand(0).GetType();
   size_t batch = 1;
-  if (input_type.GetNumOfDims() >= 1) {
-    batch = input_type.GetNumOfElementsInDim(input_type.GetNumOfDims() - 1);
-  }
+  //   const auto& input_type = inst->GetOperand(0).GetType();
+  //   if (input_type.GetNumOfDims() >= 1) {
+  //     batch = input_type.GetNumOfElementsInDim(input_type.GetNumOfDims() -
+  //     1);
+  //   }
 
   const auto& matrixb = inst->GetOperand(1);
   const auto& matrixb_type = matrixb.GetType();
@@ -527,39 +528,42 @@ bool Analyzer::RunOnModule(Module* m) {
   return false;
 }
 
-static int SearchBatchSize(int bsz_log2, float init_latency, float knl_latency,
-                           int ips) {
-  const float epsilon = 1;
-  const float ms2s = 1000;
-  float cur_qps = ms2s / (init_latency + knl_latency);
-  float qps = static_cast<float>(ips);
-  if (cur_qps > qps) {
-    return 0;
-  }
-  float bsz = static_cast<float>(1 << bsz_log2);
-  cur_qps = bsz * ms2s / (init_latency + knl_latency * bsz);
-  if (cur_qps < qps) {
-    return bsz_log2;
-  }
-  int l = 0;
-  int r = bsz_log2;
-  while (l < r) {
-    int mid = (l + r) / 2;
-    bsz = static_cast<float>(1 << mid);
-    cur_qps = bsz * ms2s / (init_latency + knl_latency * bsz);
-    if (std::abs(cur_qps - qps) < epsilon) {
-      l = mid;
-      break;
-    }
-    if (cur_qps > qps) {
-      r = mid;
-    } else {
-      l = mid + 1;
-    }
-  }
+// static int SearchBatchSize(int bsz_log2, float init_latency, float
+// knl_latency,
+//                            int ips) {
+//   const float epsilon = 1;
+//   const float ms2s = 1000;
+//   float cur_qps = ms2s / (init_latency + knl_latency);
+//   float qps = static_cast<float>(ips);
+//   if (cur_qps > qps) {
+//     return 0;
+//   }
+//   float bsz = static_cast<float>(1 << bsz_log2);
+//   cur_qps = bsz * ms2s / (init_latency + knl_latency * bsz);
+//   if (cur_qps < qps) {
+//     return bsz_log2;
+//   }
+//   int l = 0;
+//   int r = bsz_log2;
 
-  return l;
-}
+//   while (l < r) {
+//     int mid = (l + r) / 2;
+//     bsz = static_cast<float>(1 << mid);
+//     cur_qps = bsz * ms2s / (init_latency + knl_latency * bsz);
+
+//     if (std::abs(cur_qps - qps) < epsilon) {
+//       l = mid;
+//       break;
+//     }
+//     if (cur_qps > qps) {
+//       r = mid;
+//     } else {
+//       l = mid + 1;
+//     }
+//   }
+
+//   return l;
+// }
 
 void Analyzer::GenerateRscInfo(std::ostream& os) {
   static constexpr float mflops = 1000000.0F;
@@ -648,33 +652,83 @@ void Analyzer::GenerateRscInfo(std::ostream& os) {
   conv_act_flops /= gflops;
   matmul_flops /= gflops;
   total_flops /= gflops;
-
   float init_latency =
       static_cast<float>(conv_op_num) * hw_paras_["GPU_t4"].conv_knl_init;
   init_latency +=
       static_cast<float>(matmul_op_num) * hw_paras_["GPU_t4"].mm_knl_init;
   init_latency += static_cast<float>(other_op_num - conv_act_num) *
                   hw_paras_["GPU_t4"].other_knl_init;
-  float knl_latency =
-      hw_paras_["GPU_t4"].conv_time * (conv_flops + conv_act_flops);
-  knl_latency += hw_paras_["GPU_t4"].mm_time * matmul_flops;
-  knl_latency += hw_paras_["GPU_t4"].other_time *
-                 (total_flops - conv_flops - conv_act_flops - matmul_flops);
+  float floatsrate = 0;
+  float knl_latency = 0;
+  adaptive_bsz_ = opts_.batch_size;
 
-  if (opts_.batch_size == 1 && opts_.qps > 0) {
-    float max_batch = (hw_paras_["GPU_t4"].max_mem - total_weights) / max_io;
-    int b_log2 = static_cast<int>(std::log2f(max_batch));
-    b_log2 = SearchBatchSize(b_log2, init_latency, knl_latency, opts_.qps);
-    adaptive_bsz_ = 1 << b_log2;
-    knl_latency *= static_cast<float>(adaptive_bsz_);
-    max_io *= static_cast<float>(adaptive_bsz_);
-    total_flops *= static_cast<float>(adaptive_bsz_);
-  } else {
-    // error input when qps and batch_size are both given.
-    HLCHECK(opts_.qps == 0);
-    adaptive_bsz_ = opts_.batch_size;
+  float max_batch = (hw_paras_["GPU_t4"].max_mem - total_weights) / max_io;
+  //   os << "max_batch: " << max_batch << "\n";
+  //   os << "total_weights: " << total_weights << "\n";
+  //   os << "max_io: " << max_io << "\n";
+  //   os << "opts_.batch_size: " << opts_.batch_size << "\n";
+  //   os << "conv_flops: " << conv_flops << "\n";
+  //   os << "conv_act_flops: " << conv_act_flops << "\n";
+  //   os << "total_flops: " << total_flops << "\n";
+  HLCHECK(max_batch >= opts_.batch_size);
+  const float t4_flops = hw_paras_["GPU_t4"].max_flops;
+  const float step_sz = 0.05;
+  float cur_qps = 0;
+  for (float step = step_sz; step <= 1.01; step += step_sz) {
+    std::map<std::string, HWInfo> hw_paras_step = hw_paras_;
+    hw_paras_step["GPU_t4"].conv_time *= 1 / step;
+    hw_paras_step["GPU_t4"].mm_time *= 1 / step;
+    hw_paras_step["GPU_t4"].other_time *= 1 / step;
+    const float ms2s = 1000;
+    float knl_latency_temp =
+        hw_paras_step["GPU_t4"].conv_time * (conv_flops + conv_act_flops);
+    knl_latency_temp += hw_paras_step["GPU_t4"].mm_time * matmul_flops;
+    knl_latency_temp +=
+        hw_paras_step["GPU_t4"].other_time *
+        (total_flops - conv_flops - conv_act_flops - matmul_flops);
+    // knl_latency_temp *= static_cast<float>(adaptive_bsz_);
+    cur_qps = opts_.batch_size * ms2s * 4 /
+              (init_latency + knl_latency_temp * opts_.batch_size);
+    // os << "step:" << step << " ,cur_qps:" << cur_qps << "\n";
+    // os << "hw_paras_step[GPU_t4].conv_time" <<
+    // hw_paras_step["GPU_t4"].conv_time
+    //    << "\n";
+    if (cur_qps >= opts_.qps) {
+      floatsrate = step * t4_flops;
+      knl_latency = knl_latency_temp;
+      break;
+    }
   }
+  // if (opts_.batch_size == 1 && opts_.qps > 0) {
+  //   float max_batch =
+  //       (hw_paras_step["GPU_t4"].max_mem - total_weights) / max_io;
+  //   int b_log2 = static_cast<int>(std::log2f(max_batch));
+  //   b_log2 = SearchBatchSize(b_log2, init_latency, knl_latency, opts_.qps);
+  //   adaptive_bsz_ = 1 << b_log2;
+  //   knl_latency *= static_cast<float>(adaptive_bsz_);
+  //   max_io *= static_cast<float>(adaptive_bsz_);
+  //   total_flops *= static_cast<float>(adaptive_bsz_);
 
+  // } else {
+  //   // error input when qps and batch_size are both given.
+  //   HLCHECK(opts_.qps == 0);
+  //   adaptive_bsz_ = opts_.batch_size;
+  // }
+
+  max_io *= static_cast<float>(adaptive_bsz_);
+  total_flops *= static_cast<float>(adaptive_bsz_);
+  if (floatsrate == 0 || knl_latency == 0) {
+    os << "Can not reach required qps: " << opts_.qps
+       << " with batch size: " << opts_.batch_size
+       << " ,max possible qps is: " << cur_qps << " \n";
+    floatsrate = t4_flops;
+    knl_latency = hw_paras_["GPU_t4"].conv_time * (conv_flops + conv_act_flops);
+    knl_latency += hw_paras_["GPU_t4"].mm_time * matmul_flops;
+    knl_latency += hw_paras_["GPU_t4"].other_time *
+                   (total_flops - conv_flops - conv_act_flops - matmul_flops);
+  }
+  // HLCHECK(floatsrate != 0);
+  // HLCHECK(knl_latency != 0);
   float trt_mem = total_weights + max_io;
   const int trt_base = 800;
   const int adjust_bsz = 64;
@@ -686,11 +740,12 @@ void Analyzer::GenerateRscInfo(std::ostream& os) {
   trt_mem += static_cast<float>(trt_env);
 
   float est_latency = init_latency + knl_latency;
-
+  const float t4 = t4_flops / 100;
   os << "Device: GPU T4"
      << "\n";
   os << "batch size: " << adaptive_bsz_ << "\n";
-  os << "est FLOPs: " << total_flops << " gFlops\n";
+  os << "est FLOPs: " << floatsrate << " gFlops\n";
+  os << "est split: " << floatsrate / t4 << "% T4\n";
   os << "est latency: " << est_latency << " ms\n";
   os << "est mem: " << trt_mem << " MB\n";
   /*-----Generated T4 parameters-----------------*/
@@ -712,7 +767,7 @@ void Analyzer::GenerateRscInfo(std::ostream& os) {
   rsc_req_.append("\"size\":1,");
   rsc_req_.append("\"flops\":\"");
   // std::string s = std::to_string(total_flops * gflops);
-  std::string s = std::to_string(ceil(total_flops));
+  std::string s = std::to_string(ceil(floatsrate));
   rsc_req_.append(s.substr(0, s.find('.')));
   rsc_req_.append("\",");
   rsc_req_.append("\"precision\":\"Fp32\",");

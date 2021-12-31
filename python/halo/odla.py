@@ -61,8 +61,8 @@ class ODLAModel:
         model_info.input_qps = qps
         model_info.adaptive_bsz = batch
         rsc_est = c_void_p(0)
-        if qps>0 and batch==1:
-            halo.AnalyzeModel(model,input_shapes,1,format,model_info)
+        if qps>0:
+            halo.AnalyzeModel(model,input_shapes,batch,format,model_info)
             rsc_est = (c_char_p)(model_info.output_rsc_est)
         self.h.odla_AllocateDevice(c_void_p(0), 0, pointer(self.device), rsc_est)
         self.files = halo.CompileModel(
