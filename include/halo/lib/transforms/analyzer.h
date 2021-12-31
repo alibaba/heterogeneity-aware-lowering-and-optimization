@@ -74,6 +74,7 @@ class Analyzer final : public ModulePass {
     float other_time;     // ms/Gflops
     float other_knl_init; // per kernel init time (ms)
     float max_mem;        // MB
+    float max_flops;      // GFLOPS
   };
 
   Analyzer(std::ostream* os, const AnalyzerOpts& opts)
@@ -137,7 +138,7 @@ class Analyzer final : public ModulePass {
   std::string rsc_req_;
   int adaptive_bsz_ = 1;
   std::map<std::string, HWInfo> hw_paras_ = {
-      {"GPU_t4", {1.476, 0.03, 0.35, 0.06, 26.8, 0.01, 16000}}};
+      {"GPU_t4", {1.476, 0.03, 0.35, 0.06, 26.8, 0.01, 16000, 8100}}};
 };
 
 } // namespace halo
