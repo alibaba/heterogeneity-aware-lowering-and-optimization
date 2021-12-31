@@ -63,9 +63,10 @@ static int InvokeCompiler(Module* m, const std::string& target, int batch,
 
   PassManager pm(ctx);
   FusionOptions fusion_opts;
-  PopulateOptPasses(&pm, target, input_shapes, inputs, outputs, batch, "",
-                    false, model_format, cg_opts, fusion_opts);
+
   if (is_compile_model) {
+    PopulateOptPasses(&pm, target, input_shapes, inputs, outputs, batch, "",
+                      false, model_format, cg_opts, fusion_opts);
     std::string ext = (cg_opts.dialect == halo::Dialect::C99) ? ".c" : ".cc";
     bool is_c_or_cxx_output =
         target.substr(0, 3) == "cxx" || target.substr(0, 2) == "cc";
@@ -100,8 +101,10 @@ static int InvokeCompiler(Module* m, const std::string& target, int batch,
       *model_info = ctx.GetModelInfo();
     }
   } else { // model analysis
+    PopulateOptPasses(&pm, target, input_shapes, inputs, outputs, 1, "", false,
+                      model_format, cg_opts, fusion_opts);
     AnalyzerOpts alz_opts;
-    alz_opts.batch_size = batch;
+    alz_opts.batch_size = model_info->adaptive_bsz;
     alz_opts.print_details = false;
     alz_opts.qps = model_info->input_qps;
     Analyzer* analyzer =
