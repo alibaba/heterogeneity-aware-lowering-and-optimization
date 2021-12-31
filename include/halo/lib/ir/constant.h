@@ -192,6 +192,7 @@ class Constant : public IRObject {
   /// Check Special constant
   bool IsScalarZero() const;
   bool IsScalarOne() const;
+  bool IsFullOfZeros() const;
   bool HasSameValueOf(float x) const;
 
  private:

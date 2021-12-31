@@ -2641,7 +2641,7 @@ static bool FixUpLSTM(LSTMInst* inst) {
     size_t op_idx = num_ops - 1;
 
     Constant* op = DynCast<Constant>(inst->GetOperand(op_idx));
-    if (nullptr == op || !op->HasSameValueOf(0.0)) {
+    if (nullptr == op || !op->IsFullOfZeros()) {
       break;
     }
 
