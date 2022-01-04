@@ -674,7 +674,8 @@ void Analyzer::GenerateRscInfo(std::ostream& os) {
   const float t4_flops = hw_paras_["GPU_t4"].max_flops;
   const float step_sz = 0.05;
   float cur_qps = 0;
-  for (float step = step_sz; step <= 1.01; step += step_sz) {
+  const float max_step = 1.01;
+  for (float step = step_sz; step <= max_step; step += step_sz) {
     std::map<std::string, HWInfo> hw_paras_step = hw_paras_;
     hw_paras_step["GPU_t4"].conv_time *= 1 / step;
     hw_paras_step["GPU_t4"].mm_time *= 1 / step;
