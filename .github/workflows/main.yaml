@@ -116,7 +116,7 @@ jobs:
       - name: Prepare
         id: prepare
         run: |
-          echo "::set-output name=file::$(cd /tmp/download && ls HALO-*-ubuntu*.bz2)"
+          echo "::set-output name=file::$(cd /tmp/download && ls HALO*-ubuntu*.bz2)"
           echo "::set-output name=date::$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           tag=latest
           if [[ $GITHUB_REF == refs/tags/Release/* ]]; then
