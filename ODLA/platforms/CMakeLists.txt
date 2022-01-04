@@ -39,9 +39,7 @@ endif()
 
 option(ODLA_BUILD_DNNL "Build ODLA Runtime Library for DNNL" ON)
 if (ODLA_BUILD_DNNL)
-  set(CMAKE_CXX_STANDARD 14)
   add_subdirectory(dnnl)
-  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 option(ODLA_BUILD_POPART "Build ODLA Runtime Library for POPART" ON)
