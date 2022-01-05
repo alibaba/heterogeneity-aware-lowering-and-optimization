@@ -8,7 +8,7 @@
 	url = https://github.com/NVIDIA/TensorRT.git
 	branch = release/8.0
 
-[submodule "ODLA/platforms/odla_popart/custom_ops/third_party/onnx"]
+[submodule "platforms/odla_popart/custom_ops/third_party/onnx"]
 	path = ODLA/platforms/odla_popart/custom_ops/third_party/onnx
 	url = https://github.com/onnx/onnx.git
 	branch = rel-1.6.0
