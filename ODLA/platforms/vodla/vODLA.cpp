@@ -23,6 +23,8 @@
 #define USE_FILE_DMA 0
 #endif
 
+#include <unistd.h>
+
 // -DTIMING for timing, -DDEBUG for debug info print
 
 enum ERR_CODE {
@@ -37,6 +39,9 @@ enum ERR_CODE {
 
 struct _odla_device {
   void* vodh_hd = NULL;
+  // mark
+  u32 need_release = 0;
+  u32 pad = 0;
   struct vodh_dev* vodh_dev_list = NULL;
   struct vodh_dev_cap* vodh_dev_cap_list = NULL;
   struct vodh_total_cap vodh_total_cap;
@@ -228,22 +233,150 @@ odla_computation model_helper(const char* ccFile, const char* binFile) {
   return comp;
 }
 
-odla_status odla_AllocateDevice(const odla_vendor vendor,
-                                const odla_device_name device_name,
-                                odla_device* device) {
-  // Init, query and open vvodh devices
-#ifdef DEBUG
-  std::cout << "[vODLA] INFO: Start initializing vodh device.\n";
+odla_status odla_adaptiveRelease(odla_device dev) {
+  sleep(3);
+  std::cout << "[vODLA] Debug: starting odla_adaptiveRelease.\n";
+#ifdef TIMING
+  struct timeval t_s;
+  struct timeval t_e;
+  u64 time_used;
+  gettimeofday(&t_s, NULL);
 #endif
 
-  // create vODLA device
-  odla_device dev = new _odla_device();
-  if (dev == NULL) {
-    std::cout << "[vODLA] ERROR: create odla device failed.\n";
+  char* pkey = NULL;
+  u32 keylen = 0;
+  vodh_ret ret = vodh_sa_get_apply_key(dev->vodh_hd, (void**)(&pkey), &keylen);
+  if (ret) {
+    std::cout << "[vODLA] ERROR: vodh get apply key failed.\n";
+    return ODLA_FAILURE;
+  }
+
+#ifdef TIMING
+  gettimeofday(&t_e, NULL);
+  time_used = (t_e.tv_sec - t_s.tv_sec) * 1000000 + (t_e.tv_usec - t_s.tv_usec);
+  std::cout << "[vODLA] TIMING: VODH get apply key: " << time_used << "us.\n";
+  gettimeofday(&t_s, NULL);
+#endif
+  std::string pkey_valid = pkey;
+  pkey_valid = pkey_valid.substr(0, keylen);
+  std::string s("");
+  s += "{\"key\":";
+  s += "\"";
+  // s += pkey;
+  s += pkey_valid;
+  s += "\"";
+  s += "}";
+  int key_size = s.size();
+
+#ifdef DEBUG
+  std::cout << "[vODLA] INFO: resource release buffer:\n";
+  std::cout << s << "\n";
+#endif
+
+  ret = vodh_sa_res_release(dev->vodh_hd, s.c_str(), key_size);
+  if (ret) {
+    std::cout << "[vODLA] ERROR: vodh vodh_sa_res_release failed.\n";
     return ODLA_FAILURE;
   } else {
-    *device = dev;
-    g_dev = dev;
+    std::cout << "[vODLA] vodh vodh_sa_res_release succeeded.\n";
+  }
+
+#ifdef TIMING
+  gettimeofday(&t_e, NULL);
+  time_used = (t_e.tv_sec - t_s.tv_sec) * 1000000 + (t_e.tv_usec - t_s.tv_usec);
+  std::cout << "[vODLA] TIMING: VODH release resource: " << time_used
+            << "us.\n";
+#endif
+
+  if (pkey != NULL) {
+    vodh_sa_free_apply_key(dev->vodh_hd, (void*)pkey);
+  }
+
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_adaptiveAlloc(odla_device dev, const char* cfg) {
+// odla_adaptiveRelease(dev);
+#ifdef TIMING
+  struct timeval t_s;
+  struct timeval t_e;
+  u64 time_used;
+  gettimeofday(&t_s, NULL);
+#endif
+
+  char* pkey = NULL;
+  u32 keylen = 0;
+  vodh_ret ret = vodh_sa_get_apply_key(dev->vodh_hd, (void**)(&pkey), &keylen);
+
+  if (ret) {
+    std::cout << "[vODLA] ERROR: vodh get apply key failed.\n";
+    return ODLA_FAILURE;
+  }
+
+#ifdef TIMING
+  gettimeofday(&t_e, NULL);
+  time_used = (t_e.tv_sec - t_s.tv_sec) * 1000000 + (t_e.tv_usec - t_s.tv_usec);
+  std::cout << "[vODLA] TIMING: VODH get apply key: " << time_used << "us.\n";
+  gettimeofday(&t_s, NULL);
+#endif
+
+  std::string pkey_valid = pkey;
+  pkey_valid = pkey_valid.substr(0, keylen);
+  std::string s("");
+  s += "{\"key\":";
+  s += "\"";
+  // s += pkey;
+  s += pkey_valid;
+  s += "\"";
+  s += ",";
+  int key_size = s.size();
+  s += cfg;
+
+  // std::string s("");
+  // s += "{\"key\":";
+  // s +="\"";
+  // s += pkey;
+  // s +="\"";
+  // s += ",";
+  // int key_size = s.size();
+  // s += cfg;
+
+  int cfg_size = 0;
+  while (cfg[cfg_size] != '\0') {
+    cfg_size++;
+  }
+
+#ifdef DEBUG
+  std::cout << "[vODLA] INFO: resource application buffer:\n";
+  std::cout << s << "\n";
+#endif
+
+  ret = vodh_sa_res_apply(dev->vodh_hd, s.c_str(), key_size + cfg_size);
+  if (ret) {
+    std::cout << "[vODLA] ERROR: vodh sa resource application failed.\n";
+    return ODLA_FAILURE;
+  }
+
+#ifdef TIMING
+  gettimeofday(&t_e, NULL);
+  time_used = (t_e.tv_sec - t_s.tv_sec) * 1000000 + (t_e.tv_usec - t_s.tv_usec);
+  std::cout << "[vODLA] TIMING: VODH request resource: " << time_used
+            << "us.\n";
+#endif
+
+  if (pkey != NULL) {
+    vodh_sa_free_apply_key(dev->vodh_hd, (void*)pkey);
+  }
+
+  // mark
+  dev->need_release = 1;
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_OpenDevice(odla_device dev) {
+  if (dev == NULL || dev->vodh_hd == NULL) {
+    std::cout << "[vODLA] ERROR: vodh device is not initialized!\n";
+    return ODLA_FAILURE;
   }
 
 #ifdef TIMING
@@ -253,25 +386,9 @@ odla_status odla_AllocateDevice(const odla_vendor vendor,
   gettimeofday(&t_s, NULL);
 #endif
 
-  vodh_ret ret = VODH_OK;
-
-  /* Initialize vodla module */
-  dev->vodh_hd = vodh_init();
-  if (dev->vodh_hd == NULL) {
-    std::cout << "[vODLA] ERROR: vodh_init failed!\n";
-    return ODLA_FAILURE;
-  }
-
-#ifdef TIMING
-  gettimeofday(&t_e, NULL);
-  time_used = (t_e.tv_sec - t_s.tv_sec) * 1000000 + (t_e.tv_usec - t_s.tv_usec);
-  std::cout << "[vODLA] TIMING: Init VODH devices: " << time_used << "us.\n";
-  gettimeofday(&t_s, NULL);
-#endif
-
   /* Query total capability */
   memset(&(dev->vodh_total_cap), 0, sizeof(vodh_total_cap));
-  ret = vodh_get_total_cap(dev->vodh_hd, &(dev->vodh_total_cap));
+  vodh_ret ret = vodh_get_total_cap(dev->vodh_hd, &(dev->vodh_total_cap));
   if (ret) {
     std::cout << "[vODLA] ERROR: vodh_get_total_cap failed, ret=" << ret
               << "\n";
@@ -292,14 +409,11 @@ odla_status odla_AllocateDevice(const odla_vendor vendor,
   std::cout << "[vODLA] INFO: xpu_num: " << dev->vodh_total_cap.vxpu_num
             << "\n";
   std::cout << "[vODLA] INFO: support: " << dev->vodh_total_cap.support << "\n";
-  std::cout << "[vODLA] INFO: net_bw: " << dev->vodh_total_cap.net_bw
-            << "Mbps\n";
+  std::cout << "[vODLA] INFO: net_bw: " << dev->vodh_total_cap.net_bw << "\n";
   std::cout << "[vODLA] INFO: net_delay: " << dev->vodh_total_cap.net_delay
-            << "ns\n";
-  std::cout << "[vODLA] INFO: memory: " << dev->vodh_total_cap.memory
-            << "Kbytes\n";
-  std::cout << "[vODLA] INFO: compute: " << dev->vodh_total_cap.compute
-            << "FLOPS\n";
+            << "\n";
+  std::cout << "[vODLA] INFO: memory: " << dev->vodh_total_cap.memory << "\n";
+  std::cout << "[vODLA] INFO: compute: " << dev->vodh_total_cap.compute << "\n";
 #endif
 
   dev->vodh_dev_list =
@@ -352,18 +466,18 @@ odla_status odla_AllocateDevice(const odla_vendor vendor,
     std::cout << "[vODLA] INFO: type: " << dev->vodh_dev_cap_list[i].type
               << "\n";
     std::cout << "[vODLA] INFO: memory: " << dev->vodh_dev_cap_list[i].memory
-              << "Kbytes\n";
+              << "\n";
     // std::cout << "[vODLA] compute: " << vodh_dev_cap_list[i].comput <<
     // "eFLOPS\n";
 #endif
     /*
-            if ((vodh_dev_cap.compute < COMPUTE_NEED) ||
-                    (vodh_dev_cap.memory < (INPUT_DATA_SIZE + g_out_size))) {
+    if ((vodh_dev_cap.compute < COMPUTE_NEED) ||
+        (vodh_dev_cap.memory < (INPUT_DATA_SIZE + g_out_size))) {
         std::cout << "[vODLA] Warning: device capability does not match
-       requirements.\n"; std::cout << "[vODLA] Warning: Required: compute " <<
-       COMPUTE_NEED << "FLOPS, memory "
+    requirements.\n"; std::cout << "[vODLA] Warning: Required: compute " <<
+    COMPUTE_NEED << "FLOPS, memory "
             << (INPUT_DATA_SIZE + g_out_size) << "Kbytes.\n";
-            }
+    }
     */
   }
 
@@ -390,8 +504,62 @@ odla_status odla_AllocateDevice(const odla_vendor vendor,
   gettimeofday(&t_e, NULL);
   time_used = (t_e.tv_sec - t_s.tv_sec) * 1000000 + (t_e.tv_usec - t_s.tv_usec);
   std::cout << "[vODLA] TIMING: Open VODH devices " << time_used << "us.\n";
+#endif
+
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_AllocateDevice(const odla_vendor vendor,
+                                const odla_device_name device_name,
+                                odla_device* device, const char* config) {
+  // Init, query and open vvodh devices
+#ifdef DEBUG
+  std::cout << "[vODLA] INFO: Start initializing vodh device.\n";
+#endif
+
+  // create vODLA device
+  odla_device dev = new _odla_device();
+  if (dev == NULL) {
+    std::cout << "[vODLA] ERROR: create odla device failed.\n";
+    return ODLA_FAILURE;
+  } else {
+    *device = dev;
+    g_dev = dev;
+  }
+
+#ifdef TIMING
+  struct timeval t_s;
+  struct timeval t_e;
+  u64 time_used;
   gettimeofday(&t_s, NULL);
 #endif
+
+  vodh_ret ret = VODH_OK;
+
+  /* Initialize vodla module */
+  dev->vodh_hd = vodh_init();
+  if (dev->vodh_hd == NULL) {
+    std::cout << "[vODLA] ERROR: vodh_init failed!\n";
+    return ODLA_FAILURE;
+  }
+
+#ifdef TIMING
+  gettimeofday(&t_e, NULL);
+  time_used = (t_e.tv_sec - t_s.tv_sec) * 1000000 + (t_e.tv_usec - t_s.tv_usec);
+  std::cout << "[vODLA] TIMING: Init VODH devices: " << time_used << "us.\n";
+#endif
+
+  // adaptive resource application, analyze model first
+  if (config != NULL) {
+    if (odla_adaptiveAlloc(dev, config) == ODLA_FAILURE) {
+      std::cout << "[vODLA] ERROR: Failed to reuqest reources adaptively.\n";
+      return ODLA_FAILURE;
+    }
+  }
+
+  if (odla_OpenDevice(dev) == ODLA_FAILURE) {
+    return ODLA_FAILURE;
+  }
 
   return ODLA_SUCCESS;
 }
@@ -417,6 +585,11 @@ odla_status odla_DestroyDevice(odla_device device) {
 
   // close dev[0], TODO: use multiple devices
   vodh_ret rt = vodh_dev_close(device->vodh_hd, &(device->vodh_dev_list[0]));
+
+  // vodh_ret vodh_sa_res_release(device->vodh_hd, const char *releaseinfo, u32
+  // bufflen);
+  if (device->need_release) odla_adaptiveRelease(device);
+
   if (rt) {
     std::cout << "[vODLA] ERROR: failed close vodh device, ret=" << rt << "\n";
     ret = ODLA_FAILURE;
@@ -546,6 +719,7 @@ odla_status odla_CreateComputation(odla_computation* computation) {
   return ODLA_SUCCESS;
 }
 
+// ----------enable model release when required----------//
 odla_status odla_DestroyComputation(odla_computation comp) {
   // call model_fini at backend
   if (g_dev == NULL) {
@@ -554,21 +728,23 @@ odla_status odla_DestroyComputation(odla_computation comp) {
     if (g_dev->vodh_hd == NULL || g_dev->vodh_dev_list == NULL) {
       std::cout
           << "[vODLA] Error: device is not initiated before model switch.\n";
-    } else {
-      vodh_model_options mopt;
-      mopt.opcode = TYPE_RELEASE;
-      mopt.pad = 0;
-      mopt.model.use_file = 1;
-      mopt.model.model_id = g_dev->vodh_infer_opt.model.model_id;
-      mopt.model.weight_id = g_dev->vodh_infer_opt.model.weight_id;
-      strcpy(mopt.model.model_file, g_dev->vodh_infer_opt.model.model_file);
-      strcpy(mopt.model.weight_file, g_dev->vodh_infer_opt.model.weight_file);
-      vodh_model_op_result mret;
-      if (vodh_model(g_dev->vodh_hd, &(g_dev->vodh_dev_list[0]), &mopt,
-                     &mret)) {
-        std::cout << "[vODLA] Error: failed to call model_fini at backend.\n";
-      }
     }
+    // else{
+    // vodh_model_options mopt;
+    // mopt.opcode = TYPE_RELEASE;
+    // mopt.pad = 0;
+    // mopt.model.use_file = 1;
+    // mopt.model.model_id = g_dev->vodh_infer_opt.model.model_id;
+    // mopt.model.weight_id = g_dev->vodh_infer_opt.model.weight_id;
+    // strcpy(mopt.model.model_file, g_dev->vodh_infer_opt.model.model_file);
+    // strcpy(mopt.model.weight_file, g_dev->vodh_infer_opt.model.weight_file);
+    // vodh_model_op_result mret;
+    // hetong said this is for uc, not for zhaohang
+    // if(vodh_model(g_dev->vodh_hd, &(g_dev->vodh_dev_list[0]), &mopt, &mret)){
+    //     std::cout << "[vODLA] Error: failed to call model_fini at
+    //     backend.\n";
+    // }
+    // }
   }
 
   for (auto it = g_comps.begin(), e = g_comps.end(); it != e; ++it) {
@@ -583,6 +759,7 @@ odla_status odla_DestroyComputation(odla_computation comp) {
   assert(0);
   return ODLA_FAILURE;
 }
+//----------enable model release when required----------
 
 void deallocDMA(odla_device device, bool ip, bool op) {
   /*DeAllocate DMA for inputs*/
@@ -656,30 +833,6 @@ bool allocDMA(odla_device device, odla_context context) {
           device->vodh_infer_opt.input[i]->data =
               vodh_malloc(context->ipSizes[i]);
           if (device->vodh_infer_opt.input[i]->data && context->ipPtr[i]) {
-#ifdef PRINTMEM
-            std::cout << "vodh input " << i
-                      << " malloc: " << context->ipSizes[i] << " bytes.\n";
-            std::cout << "dst address: "
-                      << device->vodh_infer_opt.input[i]->data << ".\n";
-            std::cout << "src address: " << context->ipPtr[i] << ".\n";
-            std::cout << "loop on dst mem:" << std::endl;
-            for (int lp = 0; lp < context->ipSizes[i]; lp++) {
-              char* tmp = (char*)(device->vodh_infer_opt.input[i]->data) + lp;
-              if (lp == 0 || lp == (context->ipSizes[i] >> 1) ||
-                  lp == context->ipSizes[i] - 1) {
-                std::cout << "(" << lp << "," << (*tmp) << ")," << std::endl;
-              }
-            }
-            std::cout << "\nloop on src mem:" << std::endl;
-            for (int lp = 0; lp < context->ipSizes[i]; lp++) {
-              char* tmp = (char*)(context->ipPtr[i]) + lp;
-              if (lp == 0 || lp == (context->ipSizes[i] >> 1) ||
-                  lp == context->ipSizes[i] - 1) {
-                std::cout << "(" << lp << "," << (*tmp) << ")," << std::endl;
-              }
-            }
-            std::cout << " \nstart memcpy ...\n";
-#endif
 #ifdef TIMING
             gettimeofday(&t_s, NULL);
 #endif
@@ -691,10 +844,6 @@ bool allocDMA(odla_device device, odla_context context) {
                         (t_e.tv_usec - t_s.tv_usec);
             std::cout << "[vODLA] TIMING: CP DMA data for input " << i << ": "
                       << time_used << "us. (new)\n";
-#endif
-
-#ifdef PRINTMEM
-            std::cout << "finished memcpy.\n";
 #endif
           } else {
             std::cout << "[vODLA] ERROR: allocate infer input " << i
@@ -724,30 +873,6 @@ bool allocDMA(odla_device device, odla_context context) {
                 vodh_malloc(context->ipSizes[i]);
           }
           if (device->vodh_infer_opt.input[i]->data && context->ipPtr[i]) {
-#ifdef PRINTMEM
-            std::cout << "vodh input " << i
-                      << " malloc: " << context->ipSizes[i] << " bytes.\n";
-            std::cout << "dst address: "
-                      << device->vodh_infer_opt.input[i]->data << ".\n";
-            std::cout << "src address: " << context->ipPtr[i] << ".\n";
-            std::cout << "loop on dst mem:" << std::endl;
-            for (int lp = 0; lp < context->ipSizes[i]; lp++) {
-              char* tmp = (char*)(device->vodh_infer_opt.input[i]->data) + lp;
-              if (lp == 0 || lp == (context->ipSizes[i] >> 1) ||
-                  lp == context->ipSizes[i] - 1) {
-                std::cout << "(" << lp << "," << (*tmp) << ")," << std::endl;
-              }
-            }
-            std::cout << "\nloop on src mem:" << std::endl;
-            for (int lp = 0; lp < context->ipSizes[i]; lp++) {
-              char* tmp = (char*)(context->ipPtr[i]) + lp;
-              if (lp == 0 || lp == (context->ipSizes[i] >> 1) ||
-                  lp == context->ipSizes[i] - 1) {
-                std::cout << "(" << lp << "," << (*tmp) << ")," << std::endl;
-              }
-            }
-            std::cout << " \nstart memcpy ...\n";
-#endif
 #ifdef TIMING
             gettimeofday(&t_s, NULL);
 #endif
@@ -759,9 +884,6 @@ bool allocDMA(odla_device device, odla_context context) {
                         (t_e.tv_usec - t_s.tv_usec);
             std::cout << "[vODLA] TIMING: CP DMA data for input " << i << ": "
                       << time_used << "us. (reuse)\n";
-#endif
-#ifdef PRINTMEM
-            std::cout << "finished memcpy.\n";
 #endif
           } else {
             std::cout << "[vODLA] ERROR: copy infer input " << i
@@ -991,35 +1113,8 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     // cp back inference result
     for (u32 i = 0; i < context->opNum; i++) {
       if (context->opPtr[i]) {
-#ifdef PRINTMEM
-        std::cout << "vodh output " << i << " malloc: " << context->opSizes[i]
-                  << " bytes.\n";
-        std::cout << "src address: "
-                  << device->vodh_infer_result.output[i]->data << ".\n";
-        std::cout << "dst address: " << context->opPtr[i] << ".\n";
-        std::cout << "loop on src mem:" << std::endl;
-        for (int lp = 0; lp < context->opSizes[i]; lp++) {
-          char* tmp = (char*)(device->vodh_infer_result.output[i]->data) + lp;
-          if (lp == 0 || lp == (context->opSizes[i] >> 1) ||
-              lp == context->opSizes[i] - 1) {
-            std::cout << "(" << lp << "," << (*tmp) << ")," << std::endl;
-          }
-        }
-        std::cout << "\nloop on dst mem:" << std::endl;
-        for (int lp = 0; lp < context->opSizes[i]; lp++) {
-          char* tmp = (char*)(context->opPtr[i]) + lp;
-          if (lp == 0 || lp == (context->opSizes[i] >> 1) ||
-              lp == context->opSizes[i] - 1) {
-            std::cout << "(" << lp << "," << (*tmp) << ")," << std::endl;
-          }
-        }
-        std::cout << " \nstart memcpy ...\n";
-#endif
         memcpy(context->opPtr[i], device->vodh_infer_result.output[i]->data,
                context->opSizes[i]);
-#ifdef PRINTMEM
-        std::cout << "finished memcpy.\n";
-#endif
       } else {
         std::cout << "[vODLA] ERROR: copy output data failed, op#" << i << "\n";
         ret = ODLA_FAILURE;
@@ -1048,40 +1143,6 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
   context->dataChg = false;
 
   return ret;
-}
-
-odla_status ODLA_API_CALL odla_LoadExecutable(const odla_char* file_name,
-                                              odla_device device,
-                                              odla_executable* executable,
-                                              odla_context* context,
-                                              odla_computation* computation) {
-  // init vODLA device failed
-  if (file_name == NULL) {
-    std::cout << "[vODLA] ERROR: Cache file name is NULL.\n";
-    return ODLA_FAILURE;
-  }
-  if (device == NULL) {
-    std::cout << "[vODLA] ERROR: odla device is NULL.\n";
-    return ODLA_FAILURE;
-  }
-  if (device->vodh_dev_list == NULL) {
-    std::cout
-        << "[vODLA] ERROR: allocation of device failed, skip loading cache.\n";
-    return ODLA_FAILURE;
-  }
-
-  struct vodh_model_options moptions;
-  struct vodh_model_op_result mresult;
-  moptions.opcode = TYPE_LOAD;
-  strcpy(moptions.modelname, file_name);
-  vodh_ret ret = vodh_model(device->vodh_hd, &(device->vodh_dev_list[0]),
-                            &moptions, &mresult);
-  if (ret) {
-    std::cout << "[vODLA] ERROR: load model cache failed, ret=" << ret << "\n";
-    return ODLA_FAILURE;
-  }
-
-  return ODLA_SUCCESS;
 }
 
 } // extern "C"
