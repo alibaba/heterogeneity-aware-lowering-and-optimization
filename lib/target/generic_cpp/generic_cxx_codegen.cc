@@ -872,6 +872,17 @@ void GenericCXXCodeGen::RunOnConstant(Constant& constant, bool decl) {
   if (uses.empty()) {
     return;
   }
+
+  if (uses.size() == 1) {
+    const auto& u = uses.front();
+    auto resizeop = DynCast<Instruction>(u.GetUse());
+    if (resizeop->GetOpCode() == OpCode::RESIZE) {
+      if (!resizeop->GetOperand(0).GetType().IsDynamicShape()) {
+        return;
+      }
+    }
+  }
+
   for (const auto& u : uses) {
     if (!IsA<Instruction>(u.GetUse()) ||
         DynCast<Instruction>(u.GetUse())->GetOpCode() != OpCode::RESHAPE ||
