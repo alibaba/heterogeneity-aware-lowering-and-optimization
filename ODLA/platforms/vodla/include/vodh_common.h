@@ -177,7 +177,6 @@ struct vodh_infer_result {
 struct vodh_model_options {
   u32 opcode; // VODH_MODEL_OP_TYPE
   u32 pad;
-  /* cache load need fill modelname. opcode should TYPE_LOAD */
   char modelname[MAX_VODLA_MODEL_NAME_LEN + 1];
   struct vodh_model model;
 };
@@ -187,24 +186,99 @@ struct vodh_model_op_result {
   u32 pad;
 };
 
+#if 0
+struct vodh_model_op_result {
+	u32 odla_status;
+	u32 odla_computation;
+};
+
+struct vodh_context_op_result {
+	u32 odla_status;
+	u32 odla_context;
+};
+
+struct vodh_context_options{
+	u32 odla_computation;
+	u32 odla_context;
+};
+
+struct vodh_exec_comp_options {
+	u64 request_id;
+	u32 odla_computation;
+	u32 odla_context;
+	u16 input_num;
+	struct vodh_input **input;
+};
+
+struct vodh_exec_comp_result {
+	u64 request_id;  //will be return in the response
+	vodh_ret status; //inference result status returned
+	u16 output_num;
+	u16 pad;
+	u64 time_used;   //unit: us
+	struct vodh_output **output;
+};
+
+struct vodh_swap_odlaattr_options {
+	u64 request_id;
+	u32 odla_computation;
+	u32 odla_context;
+	u16 input_num;
+	u16 function_id;
+	struct vodh_input **input;
+};
+
+struct vodh_swap_odlaattr_result {
+	u64 request_id;  //will be return in the response
+	vodh_ret status; //inference result status returned
+	u16 output_num;
+	u16 function_id;
+	u16 function_type;
+	u16 pad1;
+	u32 pad2;
+	u64 time_used;   //unit: us
+	struct vodh_output **output;
+};
+#endif
+
 void* vodh_init(void);
+
 vodh_ret vodh_get_total_cap(void* vodh_handle, struct vodh_total_cap* cap);
+
 /* allvodh_dev num is vxpu_num in struct vodh_total_cap
  * vodh_handle is returned by vodh_init *     */
 vodh_ret vodh_get_all_dev_info(void* vodh_handle, struct vodh_dev* allvodh_dev);
+
 vodh_ret vodh_get_one_dev_cap(void* vodh_handle, struct vodh_dev* dev,
                               struct vodh_dev_cap* cap);
 
 void vodh_deinit(void* vodh_handle);
+
 vodh_ret vodh_dev_open(void* vodh_handle, struct vodh_dev* dev);
+
 vodh_ret vodh_infer(void* vodh_handle, struct vodh_dev* dev,
                     struct vodh_infer_options* options,
                     struct vodh_infer_result* result);
+
 vodh_ret vodh_model(void* vodh_handle, struct vodh_dev* dev,
                     struct vodh_model_options* moptions,
                     struct vodh_model_op_result* mresult);
+
 vodh_ret vodh_dev_close(void* vodh_handle, struct vodh_dev* dev);
+
 void* vodh_malloc(u32 size);
+
 void vodh_free(void* ptr);
+
+vodh_ret vodh_sa_get_apply_key(void* vodh_handle, void** outbuf,
+                               u32* outbufflen);
+
+void vodh_sa_free_apply_key(void* vodh_handle, void* keybuffer);
+
+vodh_ret vodh_sa_res_apply(void* vodh_handle, const char* applyinfo,
+                           u32 bufflen);
+
+vodh_ret vodh_sa_res_release(void* vodh_handle, const char* releaseinfo,
+                             u32 bufflen);
 
 #endif
