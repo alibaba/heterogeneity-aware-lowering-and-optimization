@@ -386,19 +386,19 @@ static std::vector<Def> ConvertPriorBox(const CAFFEExtensionInst* ext,
           float ar_s = sqrtf(ar);
           float box_width = min_size * ar_s;
           float box_height = min_size / ar_s;
-          data.push_back(((center_x - box_width) / 2) / image_w);  // xmin.
-          data.push_back(((center_y - box_height) / 2) / image_h); // ymin.
-          data.push_back(((center_x + box_width) / 2) / image_w);  // xmax
-          data.push_back(((center_y + box_height) / 2) / image_h); // ymax.
+          data.push_back((center_x - box_width / 2) / image_w);  // xmin.
+          data.push_back((center_y - box_height / 2) / image_h); // ymin.
+          data.push_back((center_x + box_width / 2) / image_w);  // xmax
+          data.push_back((center_y + box_height / 2) / image_h); // ymax.
 
           if (ar == 1.0F && !max_sizes.empty()) {
             float max_size = max_sizes[s];
             float box_width = sqrtf(min_size * max_size);
             float box_height = box_width;
-            data.push_back(((center_x - box_width) / 2) / image_w);  // xmin.
-            data.push_back(((center_y - box_height) / 2) / image_h); // ymin.
-            data.push_back(((center_x + box_width) / 2) / image_w);  // xmax
-            data.push_back(((center_y + box_height) / 2) / image_h); // ymax.
+            data.push_back((center_x - box_width / 2) / image_w);  // xmin.
+            data.push_back((center_y - box_height / 2) / image_h); // ymin.
+            data.push_back((center_x + box_width / 2) / image_w);  // xmax
+            data.push_back((center_y + box_height / 2) / image_h); // ymax.
           }
         }
       }
