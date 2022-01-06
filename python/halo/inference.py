@@ -64,7 +64,7 @@ class Inference:
 
     def Initialize(self):
         self.logger.info(f"Begin initialization;{self.model_file}")
-        self.so_file = "/usr/local/lib/libvodla.so"
+        self.so_file = "libvodla.so"
         self.model = odla.ODLAModel(self.so_file)
         self.model.Load(
             self.model_file,
