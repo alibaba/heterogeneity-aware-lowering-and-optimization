@@ -126,9 +126,9 @@ extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_GetVendorInfo(
 
   \return odla_status
 */
-extern ODLA_API_EXPORT odla_status ODLA_API_CALL
-odla_AllocateDevice(const odla_vendor vendor,
-                    const odla_device_name device_name, odla_device* device);
+extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_AllocateDevice(
+    const odla_vendor vendor, const odla_device_name device_name,
+    odla_device* device, const char* config);
 
 //! \brief Get the device info
 /*!
