@@ -985,7 +985,10 @@ static void RunOnInstruction(SliceInst* inst) {
   }
 
   std::unordered_set<int32_t> axes;
-  if (inst->GetNumOfOperands() > 4) {
+
+  bool specified_axes = inst->GetNumOfOperands() > 4;
+
+  if (specified_axes) {
     auto op_axes = inst->GetOperand(4);
     if (!IsA<Constant>(op_axes)) {
       return;
