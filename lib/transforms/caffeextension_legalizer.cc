@@ -773,8 +773,6 @@ static std::vector<Def> ConvertBatchNorm(const CAFFEExtensionInst* ext,
                                          IRBuilder* builder) {
   HLCHECK(ext->GetNumOfOperands() > 1);
   auto input = ext->GetOperand(0);
-  // const auto& input_type = input.GetType();
-
   bool has_use_global_stats =
       FindAttributeValue(*ext, "use_global_stats", false);
 
