@@ -575,8 +575,8 @@ static std::pair<Def, Def> EliminateTranspose(ReduceInstTy* inst, Build build) {
   Def orig_def{inst, 0};
   std::pair<Def, Def> ret{orig_def, orig_def};
 
-  // ReduceMean(tranpose(x, {t0, t1, t2, t3}, {a0, a1, a2...}) => ReduceMean(x,
-  // permed_axis)
+  // ReduceMean(tranpose(x, {t0, t1, t2, t3}, {a0, a1, a2...}) =>
+  // ReduceMean(x, permed_axis)
   Def op0 = inst->GetOperand(0);
   if (IsA<TransposeInst>(op0)) {
     IRBuilder builder(inst->GetParent());
