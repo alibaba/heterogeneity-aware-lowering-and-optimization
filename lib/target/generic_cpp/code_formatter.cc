@@ -94,7 +94,6 @@ bool CodeFormatter::RunOnModule(Module* m) {
   bool is_cxx = opts_.dialect == Dialect::CXX_11;
   FormatCode(os_code_, is_cxx);
   FormatCode(os_header_, is_cxx);
-
   return false;
 }
 

@@ -532,7 +532,6 @@ def ONNX_HgQuant : ONNXExtension<"HgQuant"> {
   ];
 }
 
-
 def ONNX_HgDequant : ONNXExtension<"HgDequant"> {
   let extension_attr_ = [
     ExtensionAttr<"in_scale", String, "\"1.0\"">,
