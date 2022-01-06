@@ -37,12 +37,21 @@ static std::unordered_map<std::string, halo::Type> ParseInputShapes(
     if (idx == std::string::npos || idx == 0) {
       idx = 0;
     } else {
-      name = str.substr(0, idx);
       // parse type.
-      auto type_idx = name.find_last_of(':');
-      if (type_idx != std::string::npos) {
-        type_name = name.substr(type_idx + 1);
-        name = name.substr(0, type_idx);
+      auto type_idx_start = str.find_first_of(':');
+      auto type_idx_end = idx;
+      auto substr_len = 0;
+      name = str.substr(0, type_idx_start);
+
+      if (type_idx_end != std::string::npos) {
+        if (type_idx_start == type_idx_end) {
+          // format: name[:type]
+          substr_len = str.length() - type_idx_start - 1;
+        } else {
+          // format: name[:type]:1x20x14
+          substr_len = type_idx_end - type_idx_start - 1;
+        }
+        type_name = str.substr(type_idx_start + 1, substr_len);
       }
       ++idx;
     }

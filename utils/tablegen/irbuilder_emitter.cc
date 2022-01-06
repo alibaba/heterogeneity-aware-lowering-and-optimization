@@ -100,11 +100,10 @@ void EmitIRBuilder(const llvm::RecordKeeper& records, llvm::raw_ostream& os,
         EmitFuncBody(os, inst_name, arg, true);
       }
     }
-    if (arg_max != 0) {
-      EmitFuncProto(os, prefix, inst_name, -1, true) << line_end;
-      if (!decl) {
-        EmitFuncBody(os, inst_name, -1, true);
-      }
+
+    EmitFuncProto(os, prefix, inst_name, -1, true) << line_end;
+    if (!decl) {
+      EmitFuncBody(os, inst_name, -1, true);
     }
   }
 }
