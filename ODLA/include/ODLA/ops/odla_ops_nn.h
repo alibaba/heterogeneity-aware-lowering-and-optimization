@@ -402,7 +402,7 @@ odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
           odla_value W, odla_value R, odla_value B, odla_value sequence_lens,
           odla_value initial_h, odla_value initial_c, odla_value P,
           odla_int32 hidden_size, odla_rnn_direction direction,
-          odla_rnn_outputs outputs, const odla_value_ids value_id);
+          odla_rnn_outputs outputs, const odla_value_ids value_ids);
 
 //! \brief Max Pooling
 /*!

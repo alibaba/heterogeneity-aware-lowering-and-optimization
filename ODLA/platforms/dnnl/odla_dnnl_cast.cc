@@ -22,7 +22,7 @@
 #include "ODLA/odla_common.h"
 #include "odla_dnnl.h"
 
-dnnl::memory cast_odla_mem(dnnl::memory src_mem, const odla_value_shape shape,
+dnnl::memory cast_odla_mem(dnnl::memory src_mem, const odla_value_shape& shape,
                            const dnnl::memory::data_type dt,
                            const bool is_const) {
   auto dst_md = dnnl::memory::desc(getDims(shape), dt, getFormatTag(shape));
