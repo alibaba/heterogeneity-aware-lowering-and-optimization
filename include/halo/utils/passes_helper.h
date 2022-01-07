@@ -142,10 +142,7 @@ static void PopulateOptPasses(PassManager* pm, const std::string& target,
   if (!inputs.empty()) {
     pm->AddInputRewriterPass(inputs);
   }
-  pm->AddInstSimplifyPass(
-      target.substr(0, 3) == "cxx", opts.disable_broadcasting,
-      opts.remove_input_transpose, opts.remove_output_transpose,
-      opts.disable_conv_bn, fusion_opts.ConvBias, opts.fuse_hardswish);
+  pm->AddInstSimplifyPass(opts);
   if (opts.channel_order != ChannelOrder::None) {
     pm->AddReorderChannelPass(opts.channel_order == ChannelOrder::ChannelFirst);
   }

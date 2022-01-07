@@ -1348,9 +1348,13 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(BatchNormInst* inst) {
 
   auto input = inst->GetOperand(0);
   // Not profitable if the mul cannot be fused.
-  bool is_profitable =
-      IsA<Conv2DInst>(input) || IsA<Conv2DTransposeInst>(input);
-  if (disable_conv_bn_ || !is_profitable || num_inputs <= 4 ||
+  auto input_op = IsA<Instruction>(input)
+                      ? DynCast<Instruction>(input)->GetOpCode()
+                      : OpCode::INVALID;
+  bool is_profitable = input_op == OpCode::CONV2D ||
+                       input_op == OpCode::CONV2DTRANSPOSE ||
+                       input_op == OpCode::CONCAT;
+  if (opts_.disable_conv_bn || !is_profitable || num_inputs <= 4 ||
       !input_type.IsValid() || input_type.GetNumOfDims() != 4 ||
       !IsA<Constant>(inst->GetOperand(3)) ||
       !IsA<Constant>(inst->GetOperand(4))) {
@@ -2073,7 +2077,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(TransposeInst* inst) {
     return ret;
   }
 
-  if (remove_input_transpose_ && input.GetUses().size() == 1) {
+  if (opts_.remove_input_transpose && input.GetUses().size() == 1) {
     if (IsA<Argument>(input)) {
       Argument* arg = DynCast<Argument>(input);
       const auto& orig_dims = input.GetType().GetDimSizes();
@@ -2191,7 +2195,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(TransposeInst* inst) {
 
 std::pair<Def, Def> InstSimplify::RunOnInstruction(ReturnInst* inst) {
   Def orig_def{inst, 0};
-  if (!remove_output_transpose_) {
+  if (!opts_.remove_output_transpose) {
     return {orig_def, orig_def};
   }
   for (int i = 0, e = inst->GetNumOfOperands(); i < e; ++i) {
@@ -2639,7 +2643,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SItoFPInst* inst) {
 std::pair<Def, Def> InstSimplify::RunOnInstruction(OneHotInst* inst) {
   Def orig_def{inst, 0};
   // work around on cxx target when backend doesn't support onehot.
-  if (!simplify_for_preprocess_) {
+  if (!opts_.simplify_for_preprocess) {
     return {orig_def, orig_def};
   }
   auto on_value = inst->GetOperand(2);
@@ -2744,7 +2748,7 @@ static bool FixUpLSTM(LSTMInst* inst) {
 
 std::pair<Def, Def> InstSimplify::RunOnInstruction(UniqueInst* inst) {
   Def orig_def{inst, 1};
-  if (!simplify_for_preprocess_) {
+  if (!opts_.simplify_for_preprocess) {
     return {orig_def, orig_def};
   }
   const auto& result_type0 = inst->GetResultsTypes()[0];

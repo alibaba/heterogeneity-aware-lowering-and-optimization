@@ -10,6 +10,9 @@
 // clang-format on
 
 #ifdef CG_TEST
+#include <fstream>
+
+#include "halo/halo.h"
 #include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/ir/values.h"
 #include "halo/lib/pass/pass_manager.h"
@@ -85,8 +88,11 @@ static void build() {
   of_constants.open(xstr(OUTPUT) + ".bin", std::ofstream::binary);
 
   PassManager pm(ctx);
+  CXXCodeGenOpts cg_opts;
   pm.AddTypeLegalizerPass(true);
-  pm.AddInstSimplifyPass(false, true, false, false, false, true, false);
+  cg_opts.disable_broadcasting = true;
+  cg_opts.disable_conv_bn = true;
+  pm.AddInstSimplifyPass(cg_opts);
   pm.AddDCEPass();
   auto cg = pm.AddGenericCXXCodeGenPass(os_code, os_header);
   pm.AddX86ConstantWriterPass(of_constants);
