@@ -91,11 +91,7 @@ class HL_API_EXPORT PassManager final {
                               const std::string& scale_str);
   Pass* AddInputRewriterPass(const std::vector<std::string>& inputs);
   Pass* AddInstSimplifyPass();
-  Pass* AddInstSimplifyPass(bool simplify_for_preprocess,
-                            bool disable_broadcasting,
-                            bool remove_input_transpose,
-                            bool remove_output_transpose, bool disable_conv_bn,
-                            bool fuse_conv_bias, bool fuse_hardswish);
+  Pass* AddInstSimplifyPass(const CXXCodeGenOpts& opts);
   Pass* AddLinkPass(const std::ostringstream& obj_code,
                     const std::ostringstream& obj_constants,
                     const std::string& output_file_name,

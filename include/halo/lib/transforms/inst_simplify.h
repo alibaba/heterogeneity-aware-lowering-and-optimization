@@ -18,6 +18,7 @@
 #ifndef HALO_LIB_TRANSFORMS_INST_SIMPLIFY_H_
 #define HALO_LIB_TRANSFORMS_INST_SIMPLIFY_H_
 
+#include "halo/halo.h"
 #include "halo/lib/ir/all_instructions.h"
 #include "halo/lib/pass/pass.h"
 
@@ -26,19 +27,9 @@ namespace halo {
 /// This pass simplififies instructions to reduce computation strength.
 class InstSimplify final : public BasicBlockPass {
  public:
-  InstSimplify()
-      : InstSimplify(false, false, false, false, false, false, false) {}
-  InstSimplify(bool simplify_for_preprocess, bool disable_broadcasting,
-               bool remove_input_transpose, bool remove_output_transpose,
-               bool disable_conv_bn, bool fuse_conv_bias, bool fuse_hardswish)
-      : BasicBlockPass("Instruction Simplification"),
-        simplify_for_preprocess_(simplify_for_preprocess),
-        disable_broadcasting_(disable_broadcasting),
-        remove_input_transpose_(remove_input_transpose),
-        remove_output_transpose_(remove_output_transpose),
-        disable_conv_bn_(disable_conv_bn),
-        fuse_conv_bias_(fuse_conv_bias),
-        fuse_hardswish_(fuse_hardswish) {}
+  InstSimplify() : BasicBlockPass("Instruction Simplification") {}
+  InstSimplify(const CXXCodeGenOpts& opts)
+      : BasicBlockPass("Instruction Simplification"), opts_(opts) {}
 
   bool RunOnBasicBlock(BasicBlock* bb) override;
 
@@ -77,17 +68,7 @@ class InstSimplify final : public BasicBlockPass {
 
   std::pair<Def, Def> RunOnInstruction(OneHotInst* inst);
   std::pair<Def, Def> RunOnInstruction(UniqueInst* inst);
-
-  bool simplify_for_preprocess_;
-  bool disable_broadcasting_;
-  bool remove_input_transpose_;
-  bool remove_output_transpose_;
-  bool disable_conv_bn_;
-  bool fuse_conv_bias_;
-  bool fuse_mul_matmul_ = true;
-  bool fuse_fc_add_ = true;
-  bool fuse_hardswish_;
-  bool fuse_to_swish_;
+  CXXCodeGenOpts opts_;
 };
 
 } // end namespace halo.

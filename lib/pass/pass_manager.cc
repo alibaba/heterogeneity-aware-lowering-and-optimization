@@ -353,13 +353,8 @@ Pass* PassManager::AddInputLegalizerPass(
 
 Pass* PassManager::AddInstSimplifyPass() { return AddPass<InstSimplify>(); }
 
-Pass* PassManager::AddInstSimplifyPass(
-    bool simplify_for_preprocess, bool disable_broadcasting,
-    bool remove_input_transpose, bool remove_output_transpose,
-    bool disable_conv_bn, bool fuse_conv_bias, bool fuse_hardswish) {
-  return AddPass<InstSimplify>(simplify_for_preprocess, disable_broadcasting,
-                               remove_input_transpose, remove_output_transpose,
-                               disable_conv_bn, fuse_conv_bias, fuse_hardswish);
+Pass* PassManager::AddInstSimplifyPass(const CXXCodeGenOpts& opts) {
+  return AddPass<InstSimplify>(opts);
 }
 
 Pass* PassManager::AddLinkPass(const std::ostringstream& obj_code,

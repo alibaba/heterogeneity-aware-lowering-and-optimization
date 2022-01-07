@@ -84,12 +84,16 @@ struct CXXCodeGenOpts {
   bool enable_ipu_device = false;
   bool use_ipu_model = false;
   bool separate_constants = false;
+  bool simplify_for_preprocess = false;
   bool disable_broadcasting = true;
   bool enable_type_cast = false;
   bool remove_input_transpose = false;
   bool remove_output_transpose = false;
   bool disable_conv_bn = false;
+  bool fuse_conv_bias = false;
+  bool fuse_matmul_mul = false;
   bool fuse_hardswish = false;
+  bool fuse_fully_connected = true;
   bool enable_anole_device = false;
   int64_t ipu_num = 1;
   int64_t batches_per_step = 1;
