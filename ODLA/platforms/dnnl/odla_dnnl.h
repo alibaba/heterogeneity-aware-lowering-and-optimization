@@ -60,7 +60,7 @@ struct _odla_value {
   }
 };
 
-dnnl::memory cast_odla_mem(dnnl::memory src_mem, const odla_value_shape shape,
+dnnl::memory cast_odla_mem(dnnl::memory src_mem, const odla_value_shape& shape,
                            dnnl::memory::data_type dt, bool is_const)
     __attribute__((visibility("hidden")));
 
