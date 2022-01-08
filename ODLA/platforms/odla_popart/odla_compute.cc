@@ -70,33 +70,26 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
           (std::string) reinterpret_cast<char*>(value));
       popart::logging::setLogLevel(popart::logging::Module::popart,
                                    popart::logging::Level::Info);
-      ///
-      std::string cache_path(reinterpret_cast<char*>(value));
-      popart::logging::info("The cache path is: {}", cache_path);
-      std::string file_suffix("/");
-      int file_prefix = cache_path.rfind(file_suffix);
-      if (file_prefix == std::string::npos)
-        popart::logging::err(
-            "Bad cache file name. File name should contain '/'");
-
-      std::string temp_error_injector =
-          cache_path.substr(0, file_prefix) +
-          std::string("/temp_error_injector.json");
-      popart::logging::err("The POPLAR_ENGINE_OPTIONS has been set by: {}",
-                           temp_error_injector);
-      auto injector = PopartConfig::instance()->temp_get_error_inject_env(
-          temp_error_injector);
-      if (injector.empty()) {
-        popart::logging::err("NO VALUE SET for error injector");
-      } else {
-        setenv("POPLAR_ENGINE_OPTIONS", injector.c_str(), 1);
-      }
-      if (nullptr != getenv("POPLAR_ENGINE_OPTIONS"))
-        popart::logging::info("The env POPLAR_ENGINE_OPTIONS value is: {}",
-                              getenv("POPLAR_ENGINE_OPTIONS"));
-      else
-        popart::logging::info("The env POPLAR_ENGINE_OPTIONS value is not set");
-      // popops__BroadcastVectorInnerInPlaceSupervisor___popops__expr__BinaryOpType__ADD_half
+      /////
+      // std::string temp_error_injector =
+      //    std::string("/tmp/temp_error_injector.json");
+      // popart::logging::err("The POPLAR_ENGINE_OPTIONS has been set by: {}",
+      //                     temp_error_injector);
+      // auto injector = PopartConfig::instance()->temp_get_error_inject_env(
+      //    temp_error_injector);
+      // if (injector.empty()) {
+      //  popart::logging::err("NO VALUE SET for error injector");
+      //} else {
+      //  setenv("POPLAR_ENGINE_OPTIONS", injector.c_str(), 1);
+      //}
+      // if (nullptr != getenv("POPLAR_ENGINE_OPTIONS"))
+      //  popart::logging::info("The env POPLAR_ENGINE_OPTIONS value is: {}",
+      //                        getenv("POPLAR_ENGINE_OPTIONS"));
+      // else
+      //  popart::logging::info("The env POPLAR_ENGINE_OPTIONS value is not
+      //  set");
+      ////
+      ///popops__BroadcastVectorInnerInPlaceSupervisor___popops__expr__BinaryOpType__ADD_half
     } break;
     case 1002:
       setenv("POPART_LOG_LEVEL", "INFO", 1);
@@ -147,6 +140,25 @@ odla_status odla_LoadExecutable(const odla_char* file_name,
 }
 
 odla_status odla_CreateComputation(odla_computation* comp) {
+  ///
+  popart::logging::err("Set the error injector in odla_CreateComputation");
+  std::string temp_error_injector =
+      std::string("/tmp/temp_error_injector.json");
+  popart::logging::err("The POPLAR_ENGINE_OPTIONS has been set by: {}",
+                       temp_error_injector);
+  auto injector =
+      PopartConfig::instance()->temp_get_error_inject_env(temp_error_injector);
+  if (injector.empty()) {
+    popart::logging::err("NO VALUE SET for error injector");
+  } else {
+    setenv("POPLAR_ENGINE_OPTIONS", injector.c_str(), 1);
+  }
+  if (nullptr != getenv("POPLAR_ENGINE_OPTIONS"))
+    popart::logging::info("The env POPLAR_ENGINE_OPTIONS value is: {}",
+                          getenv("POPLAR_ENGINE_OPTIONS"));
+  else
+    popart::logging::info("The env POPLAR_ENGINE_OPTIONS value is not set");
+  ///
   static void* custom_op_handle = nullptr;
   *comp = _odla_computation::instance();
   popart::logging::info("computation created");
