@@ -89,7 +89,7 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
       //  popart::logging::info("The env POPLAR_ENGINE_OPTIONS value is not
       //  set");
       ////
-      ///popops__BroadcastVectorInnerInPlaceSupervisor___popops__expr__BinaryOpType__ADD_half
+      /// popops__BroadcastVectorInnerInPlaceSupervisor___popops__expr__BinaryOpType__ADD_half
     } break;
     case 1002:
       setenv("POPART_LOG_LEVEL", "INFO", 1);
