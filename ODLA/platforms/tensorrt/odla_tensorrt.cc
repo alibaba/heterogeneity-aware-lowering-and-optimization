@@ -238,6 +238,15 @@ static nvinfer1::Dims GetNVDims(const odla_value_shape& dims) {
   return ret;
 }
 
+static odla_value_shape GetOdlaShape(const nvinfer1::Dims& dims) {
+  odla_value_shape ret;
+  ret.size = dims.nbDims;
+  for (int i = 0; i < ret.size; ++i) {
+    ret.dims[i] = dims.d[i];
+  }
+  return ret;
+}
+
 struct _odla_context {
   odla_computation comp = nullptr;
   std::shared_ptr<nvinfer1::ICudaEngine> engine = nullptr;
@@ -643,7 +652,15 @@ odla_status odla_SetRuntimeShape(odla_context context, odla_value value,
 
 odla_status odla_GetRuntimeShape(odla_context context, odla_value value,
                                  odla_value_shape* value_shape_ptr) {
-  *value_shape_ptr = context->real_shapes[value];
+  if (context->real_shapes.find(value) != context->real_shapes.end()) {
+    *value_shape_ptr = context->real_shapes[value];
+  } else {
+    int idx = context->engine->getBindingIndex(value->name);
+    nvinfer1::Dims dims = context->ctx->getBindingDimensions(idx);
+    auto value_shape = GetOdlaShape(dims);
+    context->real_shapes[value] = value_shape;
+    *value_shape_ptr = value_shape;
+  }
 }
 
 odla_status odla_SetContextItem(odla_context context, odla_item_type type,
@@ -760,6 +777,10 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
   if (g_comp && g_comp->is_dynamic_shape) {
     if (context->real_shapes.find(value) != context->real_shapes.end()) {
       real_shape = context->real_shapes[value];
+      int idx = context->engine->getBindingIndex(value->name);
+      nvinfer1::Dims nvdims = GetNVDims(real_shape);
+      // set runtime shape
+      context->ctx->setBindingDimensions(idx, nvdims);
     }
   }
   size_t bytes =
@@ -794,10 +815,14 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
   if ((g_comp && g_comp->is_dynamic_batch) || context->run_batch_size) {
     real_shape.dims[0] = context->run_batch_size;
   }
-
   if (g_comp && g_comp->is_dynamic_shape) {
     if (context->real_shapes.find(value) != context->real_shapes.end()) {
       real_shape = context->real_shapes[value];
+    } else {
+      int idx = context->engine->getBindingIndex(value->name);
+      nvinfer1::Dims dims = context->ctx->getBindingDimensions(idx);
+      real_shape = GetOdlaShape(dims);
+      context->real_shapes[value] = real_shape;
     }
   }
   size_t bytes =
@@ -1053,19 +1078,6 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
       nvinfer1::Dims dims = context->ctx->getBindingDimensions(idx);
       dims.d[0] = context->run_batch_size;
       context->ctx->setBindingDimensions(idx, dims);
-    }
-    CHECK(context->ctx->executeV2(buffers.data()));
-  } else if (comp->is_dynamic_shape) {
-    for (auto& input_ptr : context->input_ptrs) {
-      int idx = context->engine->getBindingIndex(input_ptr.first.c_str());
-      auto id = input_ptr.first;
-      odla_value value = context->comp->inputs[id];
-
-      if (context->real_shapes.find(value) != context->real_shapes.end()) {
-        odla_value_shape real_shape = context->real_shapes[value];
-        nvinfer1::Dims nvdims = GetNVDims(real_shape);
-        context->ctx->setBindingDimensions(idx, nvdims);
-      }
     }
     CHECK(context->ctx->executeV2(buffers.data()));
   } else {
