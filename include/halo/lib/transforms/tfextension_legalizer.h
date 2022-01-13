@@ -25,9 +25,14 @@ namespace halo {
 /// This pass converts TFExtension instruction to core Halo IRs.
 class TFExtensionLegalizer final : public BasicBlockPass {
  public:
-  TFExtensionLegalizer() : BasicBlockPass("TF Extension Legalizer") {}
+  TFExtensionLegalizer(bool convert_split_to_slice)
+      : BasicBlockPass("TF Extension Legalizer"),
+        convert_split_to_slice_(convert_split_to_slice) {}
 
   bool RunOnBasicBlock(BasicBlock* bb) override;
+
+ private:
+  bool convert_split_to_slice_;
 };
 
 } // end namespace halo.

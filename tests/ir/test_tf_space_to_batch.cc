@@ -83,7 +83,7 @@ static void build() {
   of_constants.open(xstr(OUTPUT) + ".bin", std::ofstream::binary);
 
   PassManager pm(ctx);
-  pm.AddTFExtensionLegalizerPass();
+  pm.AddTFExtensionLegalizerPass(false);
   pm.AddDCEPass();
   pm.AddTypeLegalizerPass(true);
   pm.AddInstSimplifyPass();

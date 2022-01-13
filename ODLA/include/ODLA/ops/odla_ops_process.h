@@ -324,6 +324,21 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_SliceDynamic(
     odla_value input, odla_value start, odla_value size, odla_value stride,
     odla_value_shape output_dims, const odla_value_id value_id);
 
+//! \brief Splits a tensor into num_split tensors along one dimension.
+/*!
+  Split extracts a slice from \p input.
+
+  \param input the input value
+  \param split_dim the dimension along which to split
+  \param num_split the number of ways to split
+  \param value_ids an array of values ids (can be NULL)
+
+  \return odla_values
+*/
+extern ODLA_API_EXPORT odla_values ODLA_API_CALL
+odla_Split(odla_value input, odla_value split_dim, odla_int32 num_split,
+           const odla_value_ids value_ids);
+
 //! \brief Remove dimensions of size 1
 /*!
   Squeeze removes dimensions of size 1 from the shape of \p input.

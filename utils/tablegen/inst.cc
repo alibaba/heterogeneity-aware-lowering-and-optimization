@@ -379,6 +379,7 @@ void Inst::EmitClone() {
          "std::vector<Def>(GetNumOfOperands(), "
          "Def::GetUndefined()));\n";
   os_ << "  inst->CopyAttrsFrom(*this);\n";
+  os_ << "  inst->SetNumOfResults(this->GetNumOfResults());\n";
   os_ << "    return std::move(inst);\n";
   os_ << "  }\n";
 }

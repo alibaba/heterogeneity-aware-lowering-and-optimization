@@ -312,6 +312,27 @@ static std::vector<Def> ConvertSplit(const TFExtensionInst* ext,
   return ret;
 }
 
+static std::vector<Def> ConvertSplitToSplit(const TFExtensionInst* ext,
+                                            IRBuilder* builder) {
+  auto input = ext->GetOperand(1);
+  auto split_dim = ext->GetOperand(0);
+  auto num_split = FindAttributeValue<int>(*ext, "num_split", 0);
+  const Type& input_type = input.GetType();
+  if (!input_type.IsValid()) {
+    return {};
+  }
+  builder->SetInsertAfter(ext);
+  auto split_inst = builder->CreateSplit(ext->GetName(), split_dim, input);
+  split_inst->SetNumSplit(num_split);
+  split_inst->SetNumOfResults(num_split);
+  std::vector<Def> ret;
+  ret.reserve(num_split);
+  for (int i = 0; i < num_split; ++i) {
+    ret.push_back(Def(split_inst, i));
+  }
+  return ret;
+}
+
 static std::vector<Def> ConvertSquaredDifference(const TFExtensionInst* ext,
                                                  IRBuilder* builder) {
   HLCHECK(ext->GetNumOfOperands() == 2);
@@ -1041,7 +1062,10 @@ bool FixUpOneHot(OneHotInst* inst, IRBuilder* builder) {
   inst->ReplaceAllUsesWith({*new_inst});
   return true;
 }
-
+static std::vector<Def> ConvertTFSplit(const TFExtensionInst* tf_inst,
+                                       IRBuilder* builder) {
+  return ConvertSplitToSplit(tf_inst, builder);
+}
 static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
                                            IRBuilder* builder) {
   switch (tf_inst->GetExtOpCode()) {
@@ -1138,7 +1162,13 @@ bool TFExtensionLegalizer::RunOnBasicBlock(BasicBlock* bb) {
       if (ext_inst->GetExtensionKind() ==
           ExtensionInst::ExtensionKind::kExtension_TENSORFLOW) {
         TFExtensionInst* tf_inst = Downcast<TFExtensionInst>(ext_inst);
-        auto new_defs = ConvertTFExtension(tf_inst, &builder);
+        std::vector<Def> new_defs;
+        if (tf_inst->GetExtOpCode() == TFExtOpCode::SPLIT &&
+            !convert_split_to_slice_) {
+          new_defs = ConvertTFSplit(tf_inst, &builder);
+        } else {
+          new_defs = ConvertTFExtension(tf_inst, &builder);
+        }
         if (!new_defs.empty()) {
           tf_inst->ReplaceAllUsesWith(new_defs);
         }
