@@ -60,6 +60,7 @@ set(SRCS
   softmax.cc
   softplus.cc
   softsign.cc
+  split.cc
   swish.cc
   templated_cxx_codegen.cc
   tfidf.cc

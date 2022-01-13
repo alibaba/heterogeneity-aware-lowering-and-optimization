@@ -409,8 +409,8 @@ Pass* PassManager::AddTemplatedCXXCodeGenPass(std::ostringstream& os,
   return AddPass<TemplatedCXXCodeGen>(os, header_os, opts);
 }
 
-Pass* PassManager::AddTFExtensionLegalizerPass() {
-  return AddPass<TFExtensionLegalizer>();
+Pass* PassManager::AddTFExtensionLegalizerPass(bool convert_split_to_slice) {
+  return AddPass<TFExtensionLegalizer>(convert_split_to_slice);
 }
 
 Pass* PassManager::AddTFLiteExtensionLegalizerPass() {

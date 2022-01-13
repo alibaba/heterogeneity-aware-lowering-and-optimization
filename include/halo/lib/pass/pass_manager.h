@@ -113,7 +113,7 @@ class HL_API_EXPORT PassManager final {
   Pass* AddTemplatedCXXCodeGenPass(std::ostringstream& os,
                                    std::ostringstream& header_os,
                                    const CXXCodeGenOpts& opts);
-  Pass* AddTFExtensionLegalizerPass();
+  Pass* AddTFExtensionLegalizerPass(bool convert_split_to_slice);
   Pass* AddTFLiteExtensionLegalizerPass();
   Pass* AddTritonConfigWriterPass(const std::string& filename,
                                   int max_batch_size);

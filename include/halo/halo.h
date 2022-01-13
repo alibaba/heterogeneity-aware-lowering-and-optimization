@@ -111,6 +111,7 @@ struct CXXCodeGenOpts {
   const char* template_file = nullptr;
   bool save_temps = false;
   bool constant_decombine = false;
+  bool convert_split_to_slice = true;
 };
 
 #define HALO_MODEL_INFO_MAX_OUTPUT_NR 64

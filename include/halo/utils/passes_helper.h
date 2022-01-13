@@ -129,7 +129,7 @@ static void PopulateOptPasses(PassManager* pm, const std::string& target,
   if (format == ModelFormat::CAFFE) {
     pm->AddCAFFEExtensionLegalizerPass();
   } else if (format == ModelFormat::TENSORFLOW) {
-    pm->AddTFExtensionLegalizerPass();
+    pm->AddTFExtensionLegalizerPass(opts.convert_split_to_slice);
   } else if (format == ModelFormat::TFLITE) {
     HLCHECK(format == ModelFormat::TFLITE);
     pm->AddTFLiteExtensionLegalizerPass();

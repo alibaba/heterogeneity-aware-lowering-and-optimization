@@ -123,6 +123,12 @@ let cat_ = cat_common in {
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
   }
 
+  def Split : Inst<"Splits a tensor into num_split tensors along one dimension."> {
+    let attrs_ = [Attr<"The number of ways to split. ", Integer, "num_split", "1">];
+    let ins_ = [Arg<"The dimension along which to split.", ArgType<[I32,I64]> >,
+                Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >];
+  }
+
   def Stack : Inst<"Join a list of NDArray inputs along a new axis"> {
     let attrs_ = [Attr<"The axis to stack on", Integer, "axis", "0">];
     let ins_ = [VarArg<"The list of inputs.", ArgType<[I8,I16,I32,F16,F32]> >];

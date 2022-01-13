@@ -137,6 +137,10 @@ static llvm::cl::opt<bool> EmitCodeOnly(
     "code-only", llvm::cl::desc("Generate the code only"),
     llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
+static llvm::cl::opt<bool> ConvertSplitToSlice(
+    "convert-split-to-slice", llvm::cl::desc("convert split to slice"),
+    llvm::cl::init(true), llvm::cl::cat(HaloOptCat));
+
 static llvm::cl::opt<bool> RISCVOpt(
     "riscv-opt", llvm::cl::desc("Enable optimizations for RISC-V only"),
     llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
@@ -425,6 +429,7 @@ int main(int argc, char** argv) {
   if (QuantWeights != Quantization::None) {
     cg_opts.quant_tbl = QuantTable;
   }
+  cg_opts.convert_split_to_slice = ConvertSplitToSlice;
 
   if (!TemplateFile.empty()) {
     auto path = FindTemplateFile(ctx.GetBasePath(), TemplateFile);

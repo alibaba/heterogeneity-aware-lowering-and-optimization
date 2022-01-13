@@ -37,7 +37,7 @@ void build() {
   ir_builder.CreateReturn("ret", *pad);
 
   PassManager pm(ctx);
-  pm.AddPass<halo::TFExtensionLegalizer>();
+  pm.AddPass<halo::TFExtensionLegalizer>(false);
   pm.AddPass<halo::DCE>();
   pm.Run(&m);
 

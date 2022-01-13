@@ -1018,6 +1018,40 @@ static void RunOnInstruction(SliceInst* inst) {
           inst->GetResultType().GetTotalNumOfElements() > 0);
 }
 
+static void RunOnInstruction(SplitInst* inst) {
+  auto input = inst->GetOperand(1);
+  auto split_dim = inst->GetOperand(0);
+  auto num_split = inst->GetNumSplit();
+
+  const Type& input_type = input.GetType();
+  if (!input_type.IsValid()) {
+    return;
+  }
+  auto dt = input_type.GetDataType();
+  auto const& input_shape = input_type.GetDimSizes();
+
+  int rank = input_type.GetNumOfDims();
+  const Constant* split_dim_c = DynCast<Constant>(split_dim);
+  HLCHECK(split_dim_c != nullptr && "split_dim is not a constant");
+  HLCHECK(split_dim_c->GetResultType().IsScalar() &&
+          "split_dim is not a scalar");
+
+  int axis = split_dim_c->GetDataAsInt64(0);
+  HLCHECK(axis >= 0 && axis < rank && "Invalid split dim");
+
+  auto orig_size = input_type.GetNumOfElementsInDim(axis);
+  HLCHECK(num_split > 0 && (orig_size % num_split == 0) && "Invalid num_split");
+  int len = static_cast<int>(orig_size / num_split);
+
+  std::vector<int64_t> ret_shape(input_shape);
+  ret_shape[axis] = static_cast<int64_t>(len);
+
+  inst->GetResultsTypes().resize(num_split);
+  for (size_t i = 0, e = num_split; i != e; ++i) {
+    inst->GetResultsTypes()[i] = Type{dt, ret_shape};
+  }
+}
+
 static void RunOnInstruction(StackInst* inst) {
   int axis = inst->GetAxis();
   int num_inputs = inst->GetNumOfOperands();
