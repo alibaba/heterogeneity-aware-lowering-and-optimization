@@ -54,6 +54,8 @@ enum \mbox{\hyperlink{odla__ops__process_8h_ae5784f32274737503651496765cc159c}{o
 \begin{DoxyCompactList}\small\item\em Extract a slice. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__process_8h_a1929c14aef69f22429a5d631787b4b54}{odla\+\_\+\+Slice\+Dynamic}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} start, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} size, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} stride, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+dims, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Extract a dynamic slice. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{structodla__values}{odla\+\_\+values}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__process_8h_a348203ffba9da9a163263314a99fc7c9}{odla\+\_\+\+Split}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} split\+\_\+dim, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} num\+\_\+split, const \mbox{\hyperlink{structodla__value__ids}{odla\+\_\+value\+\_\+ids}} value\+\_\+ids)
+\begin{DoxyCompactList}\small\item\em Splits a tensor into num\+\_\+split tensors along one dimension. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__process_8h_abc43876bd2ae7c8fd7c07f47a1d1a403}{odla\+\_\+\+Squeeze}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__common_8h_acac65b5a20353d7f068ca61c6ab7569c}{odla\+\_\+size\+\_\+t}} num\+\_\+of\+\_\+axes, const \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} $\ast$axes, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+dims, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Remove dimensions of size 1. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__process_8h_a3596aea0e72caabae7d3fd88c83d2256}{odla\+\_\+\+Stack}} (\mbox{\hyperlink{structodla__values}{odla\+\_\+values}} inputs, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} axis, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+shape, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
@@ -626,6 +628,32 @@ Slice\+Dynamic extracts a dynamic slice from {\ttfamily input}.
 \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 odla\+\_\+value 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__ops__process_8h_a348203ffba9da9a163263314a99fc7c9}\label{odla__ops__process_8h_a348203ffba9da9a163263314a99fc7c9}} 
+\index{odla\_ops\_process.h@{odla\_ops\_process.h}!odla\_Split@{odla\_Split}}
+\index{odla\_Split@{odla\_Split}!odla\_ops\_process.h@{odla\_ops\_process.h}}
+\doxysubsubsection{\texorpdfstring{odla\_Split()}{odla\_Split()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{structodla__values}{odla\+\_\+values}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Split (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{split\+\_\+dim,  }\item[{\mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}}}]{num\+\_\+split,  }\item[{const \mbox{\hyperlink{structodla__value__ids}{odla\+\_\+value\+\_\+ids}}}]{value\+\_\+ids }\end{DoxyParamCaption})}
+
+
+
+Splits a tensor into num\+\_\+split tensors along one dimension. 
+
+Split extracts a slice from {\ttfamily input}.
+
+
+\begin{DoxyParams}{Parameters}
+{\em input} & the input value \\
+\hline
+{\em split\+\_\+dim} & the dimension along which to split \\
+\hline
+{\em num\+\_\+split} & the number of ways to split \\
+\hline
+{\em value\+\_\+ids} & an array of values ids (can be NULL)\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\mbox{\hyperlink{structodla__values}{odla\+\_\+values}} 
 \end{DoxyReturn}
 \mbox{\Hypertarget{odla__ops__process_8h_abc43876bd2ae7c8fd7c07f47a1d1a403}\label{odla__ops__process_8h_abc43876bd2ae7c8fd7c07f47a1d1a403}} 
 \index{odla\_ops\_process.h@{odla\_ops\_process.h}!odla\_Squeeze@{odla\_Squeeze}}
