@@ -141,7 +141,7 @@ odla_status odla_LoadExecutable(const odla_char* file_name,
 
 odla_status odla_CreateComputation(odla_computation* comp) {
   ///
-  popart::logging::err("Set the error injector in odla_CreateComputation");
+  popart::logging::err("Set the error injector in odla_CreateComputation 2022-01-18");
   std::string temp_error_injector =
       std::string("/tmp/temp_error_injector.json");
   popart::logging::err("The POPLAR_ENGINE_OPTIONS has been set by: {}",
