@@ -90,7 +90,7 @@ static void build() {
   std::ostringstream os_code;
   std::ostringstream os_header;
   PassManager pm(ctx);
-  pm.AddTFExtensionLegalizerPass(false);
+  pm.AddTFExtensionLegalizerPass(true);
   pm.AddDCEPass();
   pm.AddTypeLegalizerPass(true);
   pm.AddInstSimplifyPass();
