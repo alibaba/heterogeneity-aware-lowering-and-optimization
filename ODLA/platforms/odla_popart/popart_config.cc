@@ -199,23 +199,22 @@ std::string PopartConfig::temp_get_error_inject_env(
     popart::logging::err("config file {} not found", temp_config_path);
     return std::string("");
   }
-  json jf = json::parse(ifs);
-  /*
   try {
-    jf = json::parse(temp_config_path);
+    json jf = json::parse(ifs);
+    if (jf.contains("POPLAR_ENGINE_OPTIONS")) {
+      auto poplar_engine_options =
+          jf["POPLAR_ENGINE_OPTIONS"].get<std::string>();
+      popart::logging::info(
+          "Read the POPLAR_ENGINE_OPTIONS from file:{} with value: {}.",
+          temp_config_path, poplar_engine_options);
+      return poplar_engine_options;
+    }
   } catch (std::exception& e) {
     popart::logging::err("parse config falied:{}", e.what());
     return std::string("");
   } catch (...) {
     popart::logging::err("parse config falied");
     return std::string("");
-  }*/
-  if (jf.contains("POPLAR_ENGINE_OPTIONS")) {
-    auto poplar_engine_options = jf["POPLAR_ENGINE_OPTIONS"].get<std::string>();
-    popart::logging::info(
-        "Read the POPLAR_ENGINE_OPTIONS from file:{} with value: {}.",
-        temp_config_path, poplar_engine_options);
-    return poplar_engine_options;
   }
   return std::string("");
 }
