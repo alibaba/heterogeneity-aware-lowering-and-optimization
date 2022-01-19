@@ -161,6 +161,12 @@ odla_status _odla_computation::compile_and_export() {
     std::string item_string = "\n\"sdk_version\":\"" + version_string + "\",";
     config_string.insert(1, item_string);
   }
+  // change all true to false
+  std::string src_replace("true");
+  std::string dest_replace("false");
+  std::string::size_type pos = 0;
+  while ((pos = config_string.find(src_replace)) != std::string::npos)
+    config_string.replace(pos, src_replace.length(), dest_replace);
   popart::logging::info("the config_string with sdk_version is: {}",
                         config_string);
   // added the sdk_version information to the file content
@@ -299,11 +305,11 @@ odla_status _odla_computation::set_opts() {
       return ODLA_FAILURE;
     }
     if (opts.batches_per_step != PopartConfig::instance()->batches_per_step()) {
-      popart::logging::err(
+      popart::logging::warn(
           "batches per step in pipeline configuration:" +
           std::to_string(PopartConfig::instance()->batches_per_step()) +
-          " must same with options: " + std::to_string(opts.batches_per_step));
-      return ODLA_FAILURE;
+          " not same with options: " + std::to_string(opts.batches_per_step));
+      opts.batches_per_step = PopartConfig::instance()->batches_per_step();
     }
   }
   return ODLA_SUCCESS;
