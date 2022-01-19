@@ -97,7 +97,7 @@ odla_status odla_CreateExecutable(odla_executable* executable,
                                                      // create executable
       if (ret != ODLA_SUCCESS) {
         popart::logging::err("Failed to init computation when compiling.");
-        return ODLA_FAILURE;
+        return ret;
       }
       _odla_computation::instance()->compile_and_export();
     }
@@ -186,7 +186,7 @@ odla_status odla_CreateContext(odla_context* context) {
   if (status != ODLA_SUCCESS &&
       _odla_computation::instance()->session == nullptr) {
     popart::logging::err("init computation item in CreateContext failed.");
-    return ODLA_FAILURE;
+    return status;
   }
   *context = new _odla_pipeline_context(_odla_computation::instance());
   return ODLA_SUCCESS;
