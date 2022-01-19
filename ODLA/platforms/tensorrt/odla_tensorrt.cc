@@ -2247,27 +2247,27 @@ odla_values odla_LSTM(odla_value input, odla_rnn_weight_format weight_format,
   }
 
   // TRT result layout transformation
-  // [0]: [seq, batch, dir, hidden]  --> [seq, dir, batch, hidden]
+  // [0]: [batch, seq, dir, hidden]  --> [seq, dir, batch, hidden]
   // [1] [2] : [batch, dir, hidden]  --> [dir, batch, hidden]
   nvinfer1::ITensor* transformed_rnn[3]{rnn_layer->getOutput(0),
                                         rnn_layer->getOutput(1),
                                         rnn_layer->getOutput(2)};
-  if (false && num_directions == 2) {
-    for (int i = 0; i < 3; ++i) {
-      auto transform_layer =
-          g_comp->network->addShuffle(*rnn_layer->getOutput(i));
-      if (i = 0) {
-        transform_layer->setReshapeDimensions(nvinfer1::Dims{
-            4, {seq_size, batch_size, num_directions, hidden_size}});
-        transform_layer->setSecondTranspose(nvinfer1::Permutation{0, 2, 1, 3});
-      } else {
-        transform_layer->setReshapeDimensions(
-            nvinfer1::Dims{3, {batch_size, num_directions, hidden_size}});
-        transform_layer->setSecondTranspose(nvinfer1::Permutation{1, 0, 2});
-      }
-      transformed_rnn[i] = transform_layer->getOutput(0);
+
+  for (int i = 0; i < 3; ++i) {
+    auto transform_layer =
+        g_comp->network->addShuffle(*rnn_layer->getOutput(i));
+    if (i == 0) {
+      transform_layer->setReshapeDimensions(nvinfer1::Dims{
+          4, {batch_size, seq_size, num_directions, hidden_size}});
+      transform_layer->setSecondTranspose(nvinfer1::Permutation{1, 2, 0, 3});
+    } else {
+      transform_layer->setReshapeDimensions(
+          nvinfer1::Dims{3, {batch_size, num_directions, hidden_size}});
+      transform_layer->setSecondTranspose(nvinfer1::Permutation{1, 0, 2});
     }
+    transformed_rnn[i] = transform_layer->getOutput(0);
   }
+
   odla_value_shape ret_shape{
       4, {seq_size, num_directions, batch_size, hidden_size}};
   odla_value_shape ret_iter_shape{3, {num_directions, batch_size, hidden_size}};
