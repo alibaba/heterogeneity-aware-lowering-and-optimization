@@ -63,15 +63,16 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
       comp->opts.cache_dir = (reinterpret_cast<char*>(value));
       break;
     case 1001: // load cache directly, need set path of cache file
+    {
       popart::logging::info("set load_or_save_cache");
       PopartConfig::instance()->set_load_or_save_cache(true);
       PopartConfig::instance()->set_cache_path(
           (std::string) reinterpret_cast<char*>(value));
-      break;
+    } break;
     case 1002:
       setenv("POPART_LOG_LEVEL", "INFO", 1);
     default:
-      std::cerr << "Unsupported property type: " << type << std::endl;
+      popart::logging::err("Unsupported property type: {}", type);
       return ODLA_UNSUPPORTED_DATATYPE;
   }
   return ODLA_SUCCESS;
@@ -96,7 +97,7 @@ odla_status odla_CreateExecutable(odla_executable* executable,
                                                      // create executable
       if (ret != ODLA_SUCCESS) {
         popart::logging::err("Failed to init computation when compiling.");
-        return ODLA_FAILURE;
+        return ret;
       }
       _odla_computation::instance()->compile_and_export();
     }
@@ -117,6 +118,28 @@ odla_status odla_LoadExecutable(const odla_char* file_name, odla_device device,
 }
 
 odla_status odla_CreateComputation(odla_computation* comp) {
+  auto injector = PopartConfig::instance()->temp_get_error_inject_env();
+  if (injector.empty()) {
+    popart::logging::warn("NO VALUE SET for error injector");
+    if (nullptr == getenv("POPART_LOG_LEVEL")) { // if POPART_LOG_LEVEL not set
+      popart::logging::warn("popart logging level set to warn.");
+      popart::logging::setLogLevel(popart::logging::Module::popart,
+                                   popart::logging::Level::Warn);
+    }
+  } else {
+    setenv("POPLAR_ENGINE_OPTIONS", injector.c_str(), 1);
+    if (nullptr == getenv("POPART_LOG_LEVEL")) { // if POPART_LOG_LEVEL not set
+      popart::logging::warn("popart logging level set to info.");
+      popart::logging::setLogLevel(popart::logging::Module::popart,
+                                   popart::logging::Level::Info);
+    }
+  }
+  if (nullptr != getenv("POPLAR_ENGINE_OPTIONS"))
+    popart::logging::info("The env POPLAR_ENGINE_OPTIONS value is: {}",
+                          getenv("POPLAR_ENGINE_OPTIONS"));
+  else
+    popart::logging::info("The env POPLAR_ENGINE_OPTIONS value is not set");
+
   static void* custom_op_handle = nullptr;
   *comp = _odla_computation::instance();
   popart::logging::info("computation created");
@@ -159,7 +182,7 @@ odla_status odla_CreateContext(odla_context* context) {
   if (status != ODLA_SUCCESS &&
       _odla_computation::instance()->session == nullptr) {
     popart::logging::err("init computation item in CreateContext failed.");
-    return ODLA_FAILURE;
+    return status;
   }
   *context = new _odla_pipeline_context(_odla_computation::instance());
   return ODLA_SUCCESS;
