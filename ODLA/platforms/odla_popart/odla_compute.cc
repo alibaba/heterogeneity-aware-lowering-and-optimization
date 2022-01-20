@@ -121,14 +121,18 @@ odla_status odla_CreateComputation(odla_computation* comp) {
   auto injector = PopartConfig::instance()->temp_get_error_inject_env();
   if (injector.empty()) {
     popart::logging::warn("NO VALUE SET for error injector");
-    popart::logging::warn("popart logging level set to warn.");
-    popart::logging::setLogLevel(popart::logging::Module::popart,
-                                 popart::logging::Level::Warn);
+    if (nullptr == getenv("POPART_LOG_LEVEL")) { // if POPART_LOG_LEVEL not set
+      popart::logging::warn("popart logging level set to warn.");
+      popart::logging::setLogLevel(popart::logging::Module::popart,
+                                   popart::logging::Level::Warn);
+    }
   } else {
     setenv("POPLAR_ENGINE_OPTIONS", injector.c_str(), 1);
-    popart::logging::warn("popart logging level set to info.");
-    popart::logging::setLogLevel(popart::logging::Module::popart,
-                                 popart::logging::Level::Info);
+    if (nullptr == getenv("POPART_LOG_LEVEL")) { // if POPART_LOG_LEVEL not set
+      popart::logging::warn("popart logging level set to info.");
+      popart::logging::setLogLevel(popart::logging::Module::popart,
+                                   popart::logging::Level::Info);
+    }
   }
   if (nullptr != getenv("POPLAR_ENGINE_OPTIONS"))
     popart::logging::info("The env POPLAR_ENGINE_OPTIONS value is: {}",
