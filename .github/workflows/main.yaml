@@ -105,7 +105,8 @@ jobs:
         with:
           path: halo
           clean: false
-
+      - name: Cleanup
+        run: rm -fr /tmp/download && mkdir -p /tmp/download
       - name: Download
         uses: actions/download-artifact@v2
         with:
@@ -115,7 +116,7 @@ jobs:
       - name: Prepare
         id: prepare
         run: |
-          echo "::set-output name=file::$(cd /tmp/download && ls HALO-*-ubuntu*.bz2)"
+          echo "::set-output name=file::$(cd /tmp/download && ls HALO*-ubuntu*.bz2)"
           echo "::set-output name=date::$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           tag=latest
           if [[ $GITHUB_REF == refs/tags/Release/* ]]; then

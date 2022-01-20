@@ -715,7 +715,7 @@ static odla_status odla_LoadEngine(odla_context context,
   return ODLA_SUCCESS;
 }
 
-odla_status odla_LoadExecutable(const odla_char* file_name,
+odla_status odla_LoadExecutable(const odla_char* file_name, odla_device device,
                                 odla_executable* executable,
                                 odla_context* context,
                                 odla_computation* computation) {
