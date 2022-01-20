@@ -153,15 +153,15 @@ class PopartConfig {
     cache_path_ = catch_path;
   }
 
-  bool sdk_version_match(std::string& sdk_version) {
-    return (sdk_version_.compare(sdk_version) == 0);
-  }
+  bool sdk_version_match(std::string& sdk_version);
   void parse_from_json(const json&);
   odla_status load_from_string(const std::string& config_string);
   odla_status load_config(const char* file_path);
   bool get_pipeline_setting(const std::string& node_name, int64_t& ipu_idx,
                             int64_t& pipeline_stage);
   odla_status extract_config_from_cache();
+  std::string temp_get_error_inject_env(
+      const std::string& temp_config_path = "/tmp/temp_error_injector.json");
 
  private:
   void set_pipeline_setting(const std::string& name_pattern, int ipu_idx,

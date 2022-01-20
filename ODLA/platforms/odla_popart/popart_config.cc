@@ -191,6 +191,37 @@ odla_status PopartConfig::load_from_string(const std::string& config_string) {
   return ODLA_SUCCESS;
 }
 
+std::string PopartConfig::temp_get_error_inject_env(
+    const std::string& temp_config_path) {
+  using json = nlohmann::json;
+  std::ifstream ifs(temp_config_path, std::ios_base::in);
+  popart::logging::warn("get injector info from config file: {}",
+                        temp_config_path);
+  if (!ifs.good()) {
+    popart::logging::warn("config file {} not found, no injector for this run",
+                          temp_config_path);
+    return std::string("");
+  }
+  try {
+    json jf = json::parse(ifs);
+    if (jf.contains("POPLAR_ENGINE_OPTIONS")) {
+      auto poplar_engine_options =
+          jf["POPLAR_ENGINE_OPTIONS"].get<std::string>();
+      popart::logging::info(
+          "Read the POPLAR_ENGINE_OPTIONS from file:{} with value: {}.",
+          temp_config_path, poplar_engine_options);
+      return poplar_engine_options;
+    }
+  } catch (std::exception& e) {
+    popart::logging::err("parse config falied:{}", e.what());
+    return std::string("");
+  } catch (...) {
+    popart::logging::err("parse config falied");
+    return std::string("");
+  }
+  return std::string("");
+}
+
 odla_status PopartConfig::load_from_file(const std::string& file_path) {
   if (inited_) {
     return ODLA_SUCCESS;
@@ -294,4 +325,11 @@ odla_status PopartConfig::extract_config_from_cache() {
     }
   }
   return ODLA_SUCCESS;
+}
+
+bool PopartConfig::sdk_version_match(std::string& sdk_version) {
+  popart::logging::warn(
+      "sdk version in the cache file is {}, and from sdk is {}", sdk_version_,
+      sdk_version);
+  return (sdk_version_.compare(sdk_version) == 0);
 }
