@@ -272,14 +272,15 @@ odla_CreateExecutable(odla_executable* executable, odla_context context,
 //! \brief Load an executable from the file system
 /*!
   \param file_name the file name
+  \param device the device object
   \param executable the pointer to the loaded executable object
   \param context the pointer to the loaded context object
   \param computation the pointer to the loaded computation object
   \return odla_status
 */
-extern ODLA_API_EXPORT odla_status ODLA_API_CALL
-odla_LoadExecutable(const odla_char* file_name, odla_executable* executable,
-                    odla_context* context, odla_computation* computation);
+extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_LoadExecutable(
+    const odla_char* file_name, odla_device device, odla_executable* executable,
+    odla_context* context, odla_computation* computation);
 
 //! \brief Store an executable object into the file system
 /*!
