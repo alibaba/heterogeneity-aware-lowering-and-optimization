@@ -195,8 +195,11 @@ std::string PopartConfig::temp_get_error_inject_env(
     const std::string& temp_config_path) {
   using json = nlohmann::json;
   std::ifstream ifs(temp_config_path, std::ios_base::in);
+  popart::logging::warn("get injector info from config file: {}",
+                        temp_config_path);
   if (!ifs.good()) {
-    popart::logging::err("config file {} not found", temp_config_path);
+    popart::logging::warn("config file {} not found, no injector for this run",
+                         temp_config_path);
     return std::string("");
   }
   try {

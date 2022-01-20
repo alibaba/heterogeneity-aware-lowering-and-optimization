@@ -118,15 +118,7 @@ odla_status odla_LoadExecutable(const odla_char* file_name,
 }
 
 odla_status odla_CreateComputation(odla_computation* comp) {
-  ///
-  popart::logging::warn(
-      "Set the error injector in odla_CreateComputation 2022-01-18");
-  std::string temp_error_injector =
-      std::string("/tmp/temp_error_injector.json");
-  popart::logging::warn("The POPLAR_ENGINE_OPTIONS has been set by: {}",
-                        temp_error_injector);
-  auto injector =
-      PopartConfig::instance()->temp_get_error_inject_env(temp_error_injector);
+  auto injector = PopartConfig::instance()->temp_get_error_inject_env();
   if (injector.empty()) {
     popart::logging::warn("NO VALUE SET for error injector");
     popart::logging::warn("popart logging level set to warn.");
@@ -143,7 +135,7 @@ odla_status odla_CreateComputation(odla_computation* comp) {
                           getenv("POPLAR_ENGINE_OPTIONS"));
   else
     popart::logging::info("The env POPLAR_ENGINE_OPTIONS value is not set");
-  ///
+
   static void* custom_op_handle = nullptr;
   *comp = _odla_computation::instance();
   popart::logging::info("computation created");

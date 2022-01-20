@@ -243,10 +243,14 @@ odla_status _odla_computation::init(bool is_compile) {
           std::string version_string(popart::core::packageHash());
           if (!PopartConfig::instance()->sdk_version_match(version_string)) {
             popart::logging::err(
-                "The sdk version of cache does not match popart hash {}, will "
-                "compile...",
+                "The sdk version of cache does not match popart hash {}",
                 version_string);
-            // return ODLA_FAILURE;
+            auto injector =
+                PopartConfig::instance()->temp_get_error_inject_env();
+            if (injector.empty())
+              return ODLA_FAILURE;
+            else
+              popart::logging::warn("Error injector set, will compile");
           } else {
             auto cache_fs = PopartConfig::instance()->get_cache_fs();
             if (cache_fs->is_open()) {
@@ -257,12 +261,11 @@ odla_status _odla_computation::init(bool is_compile) {
                 cache_fs->seekg(config_len + sizeof(config_len), std::ios::beg);
                 new_session->loadExecutableFromStream(*(cache_fs.get()));
               } catch (std::exception& e) {
-                popart::logging::err(
-                    "bad cache file, will compile the graph:{}", e.what());
-                // return ODLA_FAILURE;
+                popart::logging::err("bad cache file: {}", e.what());
+                return ODLA_FAILURE;
               } catch (...) {
-                popart::logging::err("bad cache file, will compile the graph");
-                // return ODLA_FAILURE;
+                popart::logging::err("bad cache file");
+                return ODLA_FAILURE;
               }
             }
           }

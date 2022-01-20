@@ -160,7 +160,8 @@ class PopartConfig {
   bool get_pipeline_setting(const std::string& node_name, int64_t& ipu_idx,
                             int64_t& pipeline_stage);
   odla_status extract_config_from_cache();
-  std::string temp_get_error_inject_env(const std::string& temp_config_path);
+  std::string temp_get_error_inject_env(
+      const std::string& temp_config_path = "/tmp/temp_error_injector.json");
 
  private:
   void set_pipeline_setting(const std::string& name_pattern, int ipu_idx,
