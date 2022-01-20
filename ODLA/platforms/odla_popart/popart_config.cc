@@ -199,7 +199,7 @@ std::string PopartConfig::temp_get_error_inject_env(
                         temp_config_path);
   if (!ifs.good()) {
     popart::logging::warn("config file {} not found, no injector for this run",
-                         temp_config_path);
+                          temp_config_path);
     return std::string("");
   }
   try {
