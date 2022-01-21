@@ -214,6 +214,51 @@ static std::vector<Def> ConvertFlatten(const CAFFEExtensionInst* ext,
   return {*new_inst};
 }
 
+static std::vector<Def> ConvertNormalize(const CAFFEExtensionInst* ext,
+                                         IRBuilder* builder) {
+  HLCHECK(ext->GetNumOfOperands() == 2);
+  const auto& input = ext->GetOperand(0);
+  const auto& input_ty = input.GetType();
+
+  auto scale = ext->GetOperand(1);
+  const auto& scale_ty = scale.GetType();
+  if (!input_ty.IsValid() || !scale_ty.IsValid()) {
+    return {};
+  }
+  bool accross_spatial = FindAttributeValue<bool>(*ext, "across_spatial");
+  bool channel_shared = FindAttributeValue<bool>(*ext, "channel_shared");
+  float epsilon = FindAttributeValue<float>(*ext, "eps");
+  std::vector<int> axes{1};
+  if (accross_spatial) {
+    for (int i = 2, e = input_ty.GetNumOfDims(); i < e; ++i) {
+      axes.push_back(i);
+    }
+  }
+
+  builder->SetInsertAfter(ext);
+
+  if (!scale_ty.IsScalar() && (!channel_shared)) {
+    HLCHECK(scale_ty.GetNumOfDims() == 1);
+    HLCHECK(scale_ty.GetTotalNumOfElements() ==
+            input_ty.GetNumOfElementsInDim(1));
+    std::vector<int64_t> new_shape{scale_ty.GetNumOfElementsInDim(0), 1, 1};
+    ConstantBuilder cb(ext->GetParent()->GetParent());
+    Constant* c = cb.CreateConstant(
+        ext->GetName() + "_shape",
+        Type{DataType::INT64, {static_cast<int64_t>(new_shape.size())}},
+        new_shape.data());
+    scale = *builder->CreateReshape(ext->GetName() + "_reshape", {scale, *c});
+  }
+
+  auto l2norm =
+      builder->CreateLpNormalize(ext->GetName() + "_L2Norm", input, scale);
+  l2norm->SetAxis(axes);
+  l2norm->SetP(2);
+  l2norm->SetEpsilon(epsilon);
+
+  return {*l2norm};
+}
+
 static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
                                     IRBuilder* builder) {
   HLCHECK(ext->GetNumOfOperands() == 1);
@@ -786,6 +831,9 @@ static std::vector<Def> ConvertCAFFEExtension(
     }
     case CAFFEExtOpCode::FLATTEN: {
       return ConvertFlatten(caffe_inst, builder);
+    }
+    case CAFFEExtOpCode::NORMALIZE: {
+      return ConvertNormalize(caffe_inst, builder);
     }
     case CAFFEExtOpCode::PRIORBOX: {
       return ConvertPriorBox(caffe_inst, builder);

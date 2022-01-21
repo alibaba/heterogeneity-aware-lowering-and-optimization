@@ -1,6 +1,6 @@
 //===- batchnorm.cc -------------------------------------------------------===//
 //
-// Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+// Copyright (C) 2019-2022 Alibaba Group Holding Limited.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ void GenericCXXCodeGen::RunOnInstruction(InstanceNormInst* inst) {
   ir_mapping_[*inst] = ret;
 }
 
-void GenericCXXCodeGen::RunOnInstruction(L2NormalizeInst* inst) {
+void GenericCXXCodeGen::RunOnInstruction(LpNormalizeInst* inst) {
   const Def& input = inst->GetOperand(0);
   const Def& scale = inst->GetOperand(1);
 
@@ -88,10 +88,11 @@ void GenericCXXCodeGen::RunOnInstruction(L2NormalizeInst* inst) {
   CXXValue op1 = ir_mapping_[scale];
 
   CXXValue ret(inst->GetName(), op0.type);
+  int p = inst->GetP();
+  HLCHECK(p > 0 && "Invalid exponent value in the norm formulation.");
+  EmitODLACall(ret, "odla_LpNormalize", op0, inst->GetP(),
+               inst->GetDataFormat(), inst->GetAxis(), inst->GetEpsilon(), op1);
 
-  EmitODLACall(ret, "odla_L2Normalize", op0, inst->GetDataFormat(), op1,
-               inst->GetAcrossSpatial(), inst->GetChannelShared(),
-               inst->GetEpsilon());
   ir_mapping_[*inst] = ret;
 }
 } // end namespace halo
