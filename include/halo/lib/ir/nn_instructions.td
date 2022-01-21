@@ -85,6 +85,21 @@ let cat_ = cat_nn in {
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
   }
 
+  def L2Normalize : Inst<"L2 Normalization."> {
+    let attrs_ = [Attr<"whether the normalization is cross-dimension.",
+                       Bool, "across_spatial", "true">,
+                  Attr<"whether or not scale parameters are shared across channels.",
+                       Bool, "channel_shared", "true">,
+                  Attr<"Use to avoid division by zero.",
+                       Float, "epsilon", "0.0000000001">,
+                  Attr<"Input data format.",
+                       EnumDataFormat, "data_format", "NCHW">];
+    let ins_ = [Arg<"The input image, shape is defined by data_format",
+                    ArgType<[F16,F32]> >,
+                OptionalArg<"The scale NDArray", MatchArgType<0> >];
+    let outs_ = [Arg<"The result.", MatchArgType<0> >];
+  }
+
   def TFIDFVectorize : Inst<"TF-IDF Text Vectorization."> {
     let attrs_ = [
       Attr<"Mininum n-gram length.", Integer, "min_gram_length", "1">,
