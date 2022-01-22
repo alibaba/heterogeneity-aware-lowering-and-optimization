@@ -76,3 +76,8 @@ if (ODLA_BUILD_Profiler)
   add_odla_library(odla_profiler SHARED odla_profiler.cc)
   target_link_libraries(odla_profiler ODLA dl)
 endif()
+
+option(ODLA_BUILD_TF_Wrapper "Build ODLA Tensorflow Wrapper" OFF)
+if (ODLA_BUILD_TF_Wrapper)
+  add_subdirectory(tensorflow)
+endif()
