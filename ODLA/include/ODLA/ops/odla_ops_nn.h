@@ -358,17 +358,18 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_InstanceNormalization(
   \param input the input value
   \param p the exponent value in the norm formulation
   \param input_layout the memory layout of input
+  \param axes_size nubmer of axes
   \param axes the axes along which to normalize
   \param epsilon the epsilon
-  \param scale scale value
+  \param scale optional scale value (can be NULL)
   \param value_id a unique value id (can be NULL)
 
   \return odla_value
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_LpNormalize(
     odla_value input, odla_int32 p, odla_memory_layout input_layout,
-    odla_int32* axes, odla_float32 epsilon, odla_value scale,
-    const odla_value_id value_id);
+    odla_size_t axes_size, odla_int32* axes, odla_float32 epsilon,
+    odla_value scale, const odla_value_id value_id);
 
 //! \brief LeakyRelu activation
 /*!
