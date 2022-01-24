@@ -91,7 +91,8 @@ void GenericCXXCodeGen::RunOnInstruction(LpNormalizeInst* inst) {
   int p = inst->GetP();
   HLCHECK(p > 0 && "Invalid exponent value in the norm formulation.");
   EmitODLACall(ret, "odla_LpNormalize", op0, inst->GetP(),
-               inst->GetDataFormat(), inst->GetAxis(), inst->GetEpsilon(), op1);
+               inst->GetDataFormat(), (inst->GetAxis()).size(), inst->GetAxis(),
+               inst->GetEpsilon(), op1);
 
   ir_mapping_[*inst] = ret;
 }
