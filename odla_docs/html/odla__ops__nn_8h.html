@@ -167,9 +167,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a5f7042cbc5391c1780df9482f08b0c5a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__nn_8h.html#a5f7042cbc5391c1780df9482f08b0c5a">odla_InstanceNormalization</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, <a class="el" href="odla__ops__nn_8h.html#a54eaa7020ac01fc2a354d4fef9313a62">odla_memory_layout</a> input_layout, <a class="el" href="odla__common_8h.html#aeaf2b4ed87e14f5bbf792ab782aa73f5">odla_float32</a> epsilon, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> scale, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> offset, <a class="el" href="odla__common_8h.html#aeaf2b4ed87e14f5bbf792ab782aa73f5">odla_float32</a> scalar_scale, <a class="el" href="odla__common_8h.html#aeaf2b4ed87e14f5bbf792ab782aa73f5">odla_float32</a> scalar_offset, const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
 <tr class="memdesc:a5f7042cbc5391c1780df9482f08b0c5a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Instance Normalization.  <a href="odla__ops__nn_8h.html#a5f7042cbc5391c1780df9482f08b0c5a">More...</a><br /></td></tr>
 <tr class="separator:a5f7042cbc5391c1780df9482f08b0c5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a41826f92228e8770d6c159c5d3f0427a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__nn_8h.html#a41826f92228e8770d6c159c5d3f0427a">odla_L2Normalize</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, <a class="el" href="odla__ops__nn_8h.html#a54eaa7020ac01fc2a354d4fef9313a62">odla_memory_layout</a> input_layout, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> scale, <a class="el" href="odla__common_8h.html#a86f265601c0773152f4e193a8614c0ac">odla_bool</a> across_spatial, <a class="el" href="odla__common_8h.html#a86f265601c0773152f4e193a8614c0ac">odla_bool</a> channel_shared, <a class="el" href="odla__common_8h.html#aeaf2b4ed87e14f5bbf792ab782aa73f5">odla_float32</a> epsilon, const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
-<tr class="memdesc:a41826f92228e8770d6c159c5d3f0427a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Normalize.  <a href="odla__ops__nn_8h.html#a41826f92228e8770d6c159c5d3f0427a">More...</a><br /></td></tr>
-<tr class="separator:a41826f92228e8770d6c159c5d3f0427a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5a1d0567fc58f4bc681ef1fee9781d60"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__nn_8h.html#a5a1d0567fc58f4bc681ef1fee9781d60">odla_LpNormalize</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, <a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a> p, <a class="el" href="odla__ops__nn_8h.html#a54eaa7020ac01fc2a354d4fef9313a62">odla_memory_layout</a> input_layout, <a class="el" href="odla__common_8h.html#acac65b5a20353d7f068ca61c6ab7569c">odla_size_t</a> axes_size, <a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a> *axes, <a class="el" href="odla__common_8h.html#aeaf2b4ed87e14f5bbf792ab782aa73f5">odla_float32</a> epsilon, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> scale, const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
+<tr class="memdesc:a5a1d0567fc58f4bc681ef1fee9781d60"><td class="mdescLeft">&#160;</td><td class="mdescRight">LpNormalize.  <a href="odla__ops__nn_8h.html#a5a1d0567fc58f4bc681ef1fee9781d60">More...</a><br /></td></tr>
+<tr class="separator:a5a1d0567fc58f4bc681ef1fee9781d60"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1fb9261fccb2ccd982d21ffb6487dcdf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__nn_8h.html#a1fb9261fccb2ccd982d21ffb6487dcdf">odla_LeakyRelu</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, <a class="el" href="odla__common_8h.html#aeaf2b4ed87e14f5bbf792ab782aa73f5">odla_float32</a> alpha, const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
 <tr class="memdesc:a1fb9261fccb2ccd982d21ffb6487dcdf"><td class="mdescLeft">&#160;</td><td class="mdescRight">LeakyRelu activation.  <a href="odla__ops__nn_8h.html#a1fb9261fccb2ccd982d21ffb6487dcdf">More...</a><br /></td></tr>
 <tr class="separator:a1fb9261fccb2ccd982d21ffb6487dcdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1353,82 +1353,6 @@ y = scale * (x - mean) / sqrt(variance + epsilon) + bias <br  />
 
 </div>
 </div>
-<a id="a41826f92228e8770d6c159c5d3f0427a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a41826f92228e8770d6c159c5d3f0427a">&#9670;&nbsp;</a></span>odla_L2Normalize()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL odla_L2Normalize </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
-          <td class="paramname"><em>input</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="odla__ops__nn_8h.html#a54eaa7020ac01fc2a354d4fef9313a62">odla_memory_layout</a>&#160;</td>
-          <td class="paramname"><em>input_layout</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
-          <td class="paramname"><em>scale</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="odla__common_8h.html#a86f265601c0773152f4e193a8614c0ac">odla_bool</a>&#160;</td>
-          <td class="paramname"><em>across_spatial</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="odla__common_8h.html#a86f265601c0773152f4e193a8614c0ac">odla_bool</a>&#160;</td>
-          <td class="paramname"><em>channel_shared</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="odla__common_8h.html#aeaf2b4ed87e14f5bbf792ab782aa73f5">odla_float32</a>&#160;</td>
-          <td class="paramname"><em>epsilon</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a>&#160;</td>
-          <td class="paramname"><em>value_id</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Normalize. </p>
-<p>Normalize computes the L2 normalization as <br  />
-yi = scale * ( xi / sqrt(sum(xi^2) + epsilon) ) <br  />
-.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">input</td><td>the input value </td></tr>
-    <tr><td class="paramname">input_layout</td><td>the memory layout of input. </td></tr>
-    <tr><td class="paramname">scale</td><td>scale value </td></tr>
-    <tr><td class="paramname">across_spatial</td><td>whether the normalization is cross-dimension </td></tr>
-    <tr><td class="paramname">channel_shared</td><td>whether or not scale parameters are shared across channels </td></tr>
-    <tr><td class="paramname">epsilon</td><td>the epsilon </td></tr>
-    <tr><td class="paramname">value_id</td><td>a unique value id (can be NULL)</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>odla_value </dd></dl>
-
-</div>
-</div>
 <a id="a1fb9261fccb2ccd982d21ffb6487dcdf"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1fb9261fccb2ccd982d21ffb6487dcdf">&#9670;&nbsp;</a></span>odla_LeakyRelu()</h2>
 
@@ -1513,6 +1437,91 @@ yi = scale * ( xi / sqrt(sum(xi^2) + epsilon) ) <br  />
   <table class="params">
     <tr><td class="paramname">input</td><td>the input value </td></tr>
     <tr><td class="paramname">axis</td><td>the dimension it will perform on </td></tr>
+    <tr><td class="paramname">value_id</td><td>a unique value id (can be NULL)</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>odla_value </dd></dl>
+
+</div>
+</div>
+<a id="a5a1d0567fc58f4bc681ef1fee9781d60"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5a1d0567fc58f4bc681ef1fee9781d60">&#9670;&nbsp;</a></span>odla_LpNormalize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL odla_LpNormalize </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
+          <td class="paramname"><em>input</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a>&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__ops__nn_8h.html#a54eaa7020ac01fc2a354d4fef9313a62">odla_memory_layout</a>&#160;</td>
+          <td class="paramname"><em>input_layout</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__common_8h.html#acac65b5a20353d7f068ca61c6ab7569c">odla_size_t</a>&#160;</td>
+          <td class="paramname"><em>axes_size</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a> *&#160;</td>
+          <td class="paramname"><em>axes</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__common_8h.html#aeaf2b4ed87e14f5bbf792ab782aa73f5">odla_float32</a>&#160;</td>
+          <td class="paramname"><em>epsilon</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
+          <td class="paramname"><em>scale</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a>&#160;</td>
+          <td class="paramname"><em>value_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>LpNormalize. </p>
+<p>LpNormalize currently supports L1Normalize and L2Normalize L1Normalize computes the L1 normalization as <br  />
+yi = scale * ( xi / sum(abs(xi) + epsilon) ) <br  />
+. L2Normalize computes the L2 normalization as <br  />
+yi = scale * ( xi / sqrt(sum(xi^2) + epsilon) ) <br  />
+.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">input</td><td>the input value </td></tr>
+    <tr><td class="paramname">p</td><td>the exponent value in the norm formulation </td></tr>
+    <tr><td class="paramname">input_layout</td><td>the memory layout of input </td></tr>
+    <tr><td class="paramname">axes_size</td><td>nubmer of axes </td></tr>
+    <tr><td class="paramname">axes</td><td>the axes along which to normalize </td></tr>
+    <tr><td class="paramname">epsilon</td><td>the epsilon </td></tr>
+    <tr><td class="paramname">scale</td><td>optional scale value (can be NULL) </td></tr>
     <tr><td class="paramname">value_id</td><td>a unique value id (can be NULL)</td></tr>
   </table>
   </dd>
