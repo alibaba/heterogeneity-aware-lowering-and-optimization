@@ -648,6 +648,7 @@ odla_status odla_SetValueShapeInfo(odla_value value, odla_item_type type,
 odla_status odla_SetRuntimeShape(odla_context context, odla_value value,
                                  odla_value_shape value_shape) {
   context->real_shapes[value] = value_shape;
+  return ODLA_SUCCESS;
 }
 
 odla_status odla_GetRuntimeShape(odla_context context, odla_value value,
@@ -661,6 +662,7 @@ odla_status odla_GetRuntimeShape(odla_context context, odla_value value,
     context->real_shapes[value] = value_shape;
     *value_shape_ptr = value_shape;
   }
+  return ODLA_SUCCESS;
 }
 
 odla_status odla_SetContextItem(odla_context context, odla_item_type type,
