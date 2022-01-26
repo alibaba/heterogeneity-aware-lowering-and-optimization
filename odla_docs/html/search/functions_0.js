@@ -112,7 +112,7 @@ var searchData=
   ['odla_5floadexecutable_464',['odla_LoadExecutable',['../odla__compute_8h.html#a39be52018b4e63c528b65f0ce87f2cee',1,'odla_compute.h']]],
   ['odla_5flog_465',['odla_Log',['../odla__ops__math_8h.html#ae75fe97c90c3bfae3710a1aaac8a8684',1,'odla_ops_math.h']]],
   ['odla_5flogsoftmax_466',['odla_LogSoftmax',['../odla__ops__nn_8h.html#a99191f8d0f64a8b430603ea6410622b3',1,'odla_ops_nn.h']]],
-  ['odla_5flpnormalize_467',['odla_LpNormalize',['../odla__ops__nn_8h.html#a5a1d0567fc58f4bc681ef1fee9781d60',1,'odla_ops_nn.h']]],
+  ['odla_5flpnormalize_467',['odla_LpNormalize',['../odla__ops__nn_8h.html#a6c115ad00d2a45e365d4e8441add2799',1,'odla_ops_nn.h']]],
   ['odla_5flrn_468',['odla_LRN',['../odla__ops__nn_8h.html#a6350f677ae9cff83686574788549ec92',1,'odla_ops_nn.h']]],
   ['odla_5flstm_469',['odla_LSTM',['../odla__ops__nn_8h.html#af2bb5b5e733b4391ebac9e0aeab140cc',1,'odla_ops_nn.h']]],
   ['odla_5fmax_470',['odla_Max',['../odla__ops__math_8h.html#a7fe76cccbe2bbf5301991d51088ec5f9',1,'odla_ops_math.h']]],
