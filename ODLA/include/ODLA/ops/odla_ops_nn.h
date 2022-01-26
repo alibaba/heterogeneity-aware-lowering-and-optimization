@@ -368,7 +368,7 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_InstanceNormalization(
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_LpNormalize(
     odla_value input, odla_int32 p, odla_memory_layout input_layout,
-    odla_size_t axes_size, odla_int32* axes, odla_float32 epsilon,
+    odla_size_t axes_size, const odla_int32* axes, odla_float32 epsilon,
     odla_value scale, const odla_value_id value_id);
 
 //! \brief LeakyRelu activation
