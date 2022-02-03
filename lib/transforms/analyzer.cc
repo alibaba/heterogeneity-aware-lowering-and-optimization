@@ -705,20 +705,25 @@ void Analyzer::GenerateRscInfo(std::ostream& os) {
   rsc_req_.append("[");
   // dev1
   rsc_req_.append("{");
-  rsc_req_.append("\"applyType\":\"bySize\",");
+  rsc_req_.append("\"applyId\":\"1\",");
+  rsc_req_.append("\"applyType\":\"byFlops\",");
   rsc_req_.append("\"type\":\"GPU\",");
-  rsc_req_.append("\"model\":\"T4\",");
+  rsc_req_.append("\"model\":\"Tesla T4\",");
   rsc_req_.append("\"size\":1,");
   rsc_req_.append("\"flops\":\"");
-  std::string s = std::to_string(total_flops * gflops);
-  rsc_req_.append(s.substr(0, s.find('.') + 3));
+  // std::string s = std::to_string(total_flops * gflops);
+  std::string s = std::to_string(ceil(total_flops));
+  rsc_req_.append(s.substr(0, s.find('.')));
   rsc_req_.append("\",");
-  rsc_req_.append("\"precision\":\"int32\",");
+  rsc_req_.append("\"precision\":\"Fp32\",");
   rsc_req_.append("\"memory\":\"");
-  s = std::to_string(trt_mem);
-  rsc_req_.append(s.substr(0, s.find('.') + 3));
+  // s = std::to_string(trt_mem);
+  s = std::to_string(ceil(trt_mem));
+  rsc_req_.append(s.substr(0, s.find('.')));
   rsc_req_.append("\",");
   rsc_req_.append("\"allowSplit\":false,");
+  rsc_req_.append("\"maxSplit\":2,");
+  rsc_req_.append("\"minSplitSize\":5");
   rsc_req_.append("}");
   // end dev1
   rsc_req_.append("]");

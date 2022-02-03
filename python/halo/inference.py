@@ -20,6 +20,7 @@ from pathlib import Path
 import sys
 import logging
 from logging import StreamHandler, Formatter
+import os
 
 
 class Inference:
@@ -31,6 +32,7 @@ class Inference:
         device,
         batch,
         format,
+        qps,
         debug,
         log_level,
     ):
@@ -53,34 +55,27 @@ class Inference:
         self.format = format
         self.device = device
         self.batch = batch
+        self.qps = qps
         self.model = None
         self.so_file = None
-        self.intermediate_files = []
-        self.save_temps = False
 
     def __del__(self):
-        self.logger.info(str(self.intermediate_files))
-        for file in self.intermediate_files:
-            if not self.save_temps:
-                Path(file).unlink()
         del self.model
 
     def Initialize(self):
-        self.logger.info("Begin initialization")
-        files = halo.CompileModel(
+        self.logger.info(f"Begin initialization;{self.model_file}")
+        self.so_file = "/usr/local/lib/libvodla.so"
+        self.model = odla.ODLAModel(self.so_file)
+        self.model.Load(
             self.model_file,
             self.input_shapes,
             self.output_names,
-            self.batch,
             self.format,
-        )
-        self.so_file = halo.CompileODLAModel(files, self.device, self.debug)
-        self.intermediate_files = [*files, self.so_file]
-        self.model = odla.ODLAModel(self.so_file)
-        self.model.Load()
+            self.batch,
+            self.qps)
         self.logger.info("Done initialization")
 
     def Run(self, data):
         if self.model is None:
             self.Initialize()
-        return self.model.Execute(data)
+        return self.model.Execute(data, self.model_file, self.batch)
