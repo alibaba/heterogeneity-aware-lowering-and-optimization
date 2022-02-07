@@ -1,0 +1,75 @@
+\hypertarget{odla__profiler_8h_source}{}\doxysection{odla\+\_\+profiler.\+h}
+\label{odla__profiler_8h_source}\index{ODLA/odla\_profiler.h@{ODLA/odla\_profiler.h}}
+\mbox{\hyperlink{odla__profiler_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00001}00001 \textcolor{comment}{//===-\/ odla\_profiler.h -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/===//}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00002}00002 \textcolor{comment}{//}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00003}00003 \textcolor{comment}{// Copyright (C) 2019-\/2020 Alibaba Group Holding Limited.}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00004}00004 \textcolor{comment}{//}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00005}00005 \textcolor{comment}{// Licensed under the Apache License, Version 2.0 (the "{}License"{});}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00006}00006 \textcolor{comment}{// you may not use this file except in compliance with the License.}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00007}00007 \textcolor{comment}{// You may obtain a copy of the License at}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00008}00008 \textcolor{comment}{//}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00009}00009 \textcolor{comment}{//   http://www.apache.org/licenses/LICENSE-\/2.0}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00010}00010 \textcolor{comment}{//}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00011}00011 \textcolor{comment}{// Unless required by applicable law or agreed to in writing, software}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00012}00012 \textcolor{comment}{// distributed under the License is distributed on an "{}AS IS"{} BASIS,}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00013}00013 \textcolor{comment}{// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00014}00014 \textcolor{comment}{// See the License for the specific language governing permissions and}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00015}00015 \textcolor{comment}{// limitations under the License.}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00016}00016 \textcolor{comment}{// =============================================================================}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00017}00017 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00018}00018 \textcolor{preprocessor}{\#ifndef \_ODLA\_PROFILER\_H\_}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00019}00019 \textcolor{preprocessor}{\#define \_ODLA\_PROFILER\_H\_}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00020}00020 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00021}00021 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{odla__common_8h}{ODLA/odla\_common.h}}>}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00022}00022 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{odla__device_8h}{ODLA/odla\_device.h}}>}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00023}00023 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00028}00028 \textcolor{preprocessor}{\#ifdef \_\_cplusplus}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00029}00029 \textcolor{keyword}{extern} \textcolor{stringliteral}{"{}C"{}} \{}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00030}00030 \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00031}00031 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00033}\mbox{\hyperlink{odla__profiler_8h_ae0551eef7b1a12d3d76888626bda2ae2}{00033}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_device\_trace* \mbox{\hyperlink{odla__profiler_8h_ae0551eef7b1a12d3d76888626bda2ae2}{odla\_device\_trace}};}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00034}00034 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00036}\mbox{\hyperlink{odla__profiler_8h_ada240fe8e20c1993d7072834f38e8205}{00036}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_device\_trace\_item* \mbox{\hyperlink{odla__profiler_8h_ada240fe8e20c1993d7072834f38e8205}{odla\_device\_trace\_item}};}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00037}00037 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00039}00039 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00044}00044 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00045}\mbox{\hyperlink{odla__profiler_8h_a4d621ac567115cba8707b4ae7b586c2d}{00045}} \mbox{\hyperlink{odla__profiler_8h_a4d621ac567115cba8707b4ae7b586c2d}{odla\_CreateDeviceTrace}}(\mbox{\hyperlink{odla__profiler_8h_ae0551eef7b1a12d3d76888626bda2ae2}{odla\_device\_trace}}* device\_trace);}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00046}00046 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00048}00048 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00055}00055 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00056}\mbox{\hyperlink{odla__profiler_8h_a21368e245565511adcb5147cacbb00b4}{00056}} \mbox{\hyperlink{odla__profiler_8h_a21368e245565511adcb5147cacbb00b4}{odla\_SetDeviceTraceItem}}(\mbox{\hyperlink{odla__profiler_8h_ae0551eef7b1a12d3d76888626bda2ae2}{odla\_device\_trace}} device\_trace,}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00057}00057                         \mbox{\hyperlink{odla__profiler_8h_ada240fe8e20c1993d7072834f38e8205}{odla\_device\_trace\_item}} device\_trace\_item, ...);}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00058}00058 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00060}00060 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00065}00065 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00066}\mbox{\hyperlink{odla__profiler_8h_a3e9d79ddfcf188d777197c7319a92f9a}{00066}} \mbox{\hyperlink{odla__profiler_8h_a3e9d79ddfcf188d777197c7319a92f9a}{odla\_ReleaseDeviceTrace}}(\mbox{\hyperlink{odla__profiler_8h_ae0551eef7b1a12d3d76888626bda2ae2}{odla\_device\_trace}} device\_trace);}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00067}00067 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00069}00069 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00074}00074 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00075}\mbox{\hyperlink{odla__profiler_8h_a9365576ddc52e21d41aff103d7c81ee3}{00075}} \mbox{\hyperlink{odla__profiler_8h_a9365576ddc52e21d41aff103d7c81ee3}{odla\_StartDeviceProfiler}}(\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device);}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00076}00076 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00078}00078 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00083}00083 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00084}\mbox{\hyperlink{odla__profiler_8h_a9b68990c4c914fab769b99252a7d5df8}{00084}} \mbox{\hyperlink{odla__profiler_8h_a9b68990c4c914fab769b99252a7d5df8}{odla\_AsyncStartDeviceProfiler}}(\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device);}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00085}00085 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00087}00087 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00092}00092 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00093}\mbox{\hyperlink{odla__profiler_8h_a69249733430515ad9195a5d3b035cae9}{00093}} \mbox{\hyperlink{odla__profiler_8h_a69249733430515ad9195a5d3b035cae9}{odla\_StopDeviceProfiler}}(\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device);}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00094}00094 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00096}00096 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00101}00101 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00102}\mbox{\hyperlink{odla__profiler_8h_a14498d3ccc1700a232df04cf4885a0e5}{00102}} \mbox{\hyperlink{odla__profiler_8h_a14498d3ccc1700a232df04cf4885a0e5}{odla\_AsyncStopDeviceProfiler}}(\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device);}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00103}00103 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00105}00105 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00111}00111 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00112}\mbox{\hyperlink{odla__profiler_8h_a857221d432f6a7b49235a21803513b32}{00112}} \mbox{\hyperlink{odla__profiler_8h_a857221d432f6a7b49235a21803513b32}{odla\_RetrieveDeviceTrace}}(\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device, \mbox{\hyperlink{odla__profiler_8h_ae0551eef7b1a12d3d76888626bda2ae2}{odla\_device\_trace}}* device\_trace);}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00113}00113 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00114}00114 \textcolor{preprocessor}{\#ifdef \_\_cplusplus}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00115}00115 \} \textcolor{comment}{// C extern}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00116}00116 \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00117}00117 }
+\DoxyCodeLine{\Hypertarget{odla__profiler_8h_source_l00118}00118 \textcolor{preprocessor}{\#endif }\textcolor{comment}{// \_ODLA\_PROFILER\_H\_}}
+
+\end{DoxyCode}

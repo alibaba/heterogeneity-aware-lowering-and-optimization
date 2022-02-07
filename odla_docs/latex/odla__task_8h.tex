@@ -8,14 +8,13 @@ struct \mbox{\hyperlink{structodla__task}{odla\+\_\+task}}
 \doxysubsection*{Typedefs}
 \begin{DoxyCompactItemize}
 \item 
-\mbox{\Hypertarget{odla__task_8h_adae89133dd25d38030140bf4a79778fc}\label{odla__task_8h_adae89133dd25d38030140bf4a79778fc}} 
 typedef \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}}($\ast$ \mbox{\hyperlink{odla__task_8h_adae89133dd25d38030140bf4a79778fc}{odla\+\_\+async\+\_\+executor}}) (\mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}}($\ast$) (\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}, \mbox{\hyperlink{structodla__task}{odla\+\_\+task}}), \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}, \mbox{\hyperlink{structodla__task}{odla\+\_\+task}})
 \begin{DoxyCompactList}\small\item\em odla task async executor \end{DoxyCompactList}\end{DoxyCompactItemize}
 \doxysubsection*{Functions}
 \begin{DoxyCompactItemize}
 \item 
 \mbox{\Hypertarget{odla__task_8h_a1e3f4664f64afb00aa43fffc5aa4cab3}\label{odla__task_8h_a1e3f4664f64afb00aa43fffc5aa4cab3}} 
-\mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} \mbox{\hyperlink{odla__task_8h_a1e3f4664f64afb00aa43fffc5aa4cab3}{odla\+\_\+\+Set\+Async\+Executor}} (\mbox{\hyperlink{odla__task_8h_adae89133dd25d38030140bf4a79778fc}{odla\+\_\+async\+\_\+executor}} executor)
+\mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} {\bfseries odla\+\_\+\+Set\+Async\+Executor} (\mbox{\hyperlink{odla__task_8h_adae89133dd25d38030140bf4a79778fc}{odla\+\_\+async\+\_\+executor}} executor)
 \begin{DoxyCompactList}\small\item\em \textbackslash{}biref set a customized async executor \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__task_8h_ae44cff8c829c8620b049074280116b9a}{odla\+\_\+\+Run\+Task}} (\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}} device, \mbox{\hyperlink{structodla__task}{odla\+\_\+task}} task)
 \begin{DoxyCompactList}\small\item\em Start a ODLA task in a synchronized manner. \end{DoxyCompactList}\item 
@@ -25,6 +24,27 @@ typedef \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla
 
 \doxysubsection{Detailed Description}
 This file defines the ODLA task related APIs. 
+
+Definition in file \mbox{\hyperlink{odla__task_8h_source}{odla\+\_\+task.\+h}}.
+
+
+
+\doxysubsection{Typedef Documentation}
+\mbox{\Hypertarget{odla__task_8h_adae89133dd25d38030140bf4a79778fc}\label{odla__task_8h_adae89133dd25d38030140bf4a79778fc}} 
+\index{odla\_task.h@{odla\_task.h}!odla\_async\_executor@{odla\_async\_executor}}
+\index{odla\_async\_executor@{odla\_async\_executor}!odla\_task.h@{odla\_task.h}}
+\doxysubsubsection{\texorpdfstring{odla\_async\_executor}{odla\_async\_executor}}
+{\footnotesize\ttfamily typedef \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}}($\ast$ odla\+\_\+async\+\_\+executor) (\mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}}($\ast$)(\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}, \mbox{\hyperlink{structodla__task}{odla\+\_\+task}}), \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}, \mbox{\hyperlink{structodla__task}{odla\+\_\+task}})}
+
+
+
+odla task async executor 
+
+
+
+Definition at line \mbox{\hyperlink{odla__task_8h_source_l00041}{41}} of file \mbox{\hyperlink{odla__task_8h_source}{odla\+\_\+task.\+h}}.
+
+
 
 \doxysubsection{Function Documentation}
 \mbox{\Hypertarget{odla__task_8h_ae44cff8c829c8620b049074280116b9a}\label{odla__task_8h_ae44cff8c829c8620b049074280116b9a}} 

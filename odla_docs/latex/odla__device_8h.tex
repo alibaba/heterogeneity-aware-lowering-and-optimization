@@ -3,22 +3,17 @@
 \doxysubsection*{Typedefs}
 \begin{DoxyCompactItemize}
 \item 
-\mbox{\Hypertarget{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}\label{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}} 
 typedef struct \+\_\+odla\+\_\+vendor $\ast$ \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\+\_\+vendor}}
 \begin{DoxyCompactList}\small\item\em Vendor object. \end{DoxyCompactList}\item 
-\mbox{\Hypertarget{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}\label{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}} 
 typedef struct \+\_\+odla\+\_\+device $\ast$ \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}
 \begin{DoxyCompactList}\small\item\em Device object. \end{DoxyCompactList}\item 
-\mbox{\Hypertarget{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}\label{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}} 
 typedef struct \+\_\+odla\+\_\+device\+\_\+config $\ast$ \mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\+\_\+device\+\_\+config}}
 \begin{DoxyCompactList}\small\item\em Device configuration object. \end{DoxyCompactList}\item 
-\mbox{\Hypertarget{odla__device_8h_a643162987c9d516257f0926bd5c6a1ba}\label{odla__device_8h_a643162987c9d516257f0926bd5c6a1ba}} 
 typedef struct \+\_\+odla\+\_\+device\+\_\+config\+\_\+item $\ast$ \mbox{\hyperlink{odla__device_8h_a643162987c9d516257f0926bd5c6a1ba}{odla\+\_\+device\+\_\+config\+\_\+item}}
 \begin{DoxyCompactList}\small\item\em Device configuration item object. \end{DoxyCompactList}\end{DoxyCompactItemize}
 \doxysubsection*{Enumerations}
 \begin{DoxyCompactItemize}
 \item 
-\mbox{\Hypertarget{odla__device_8h_acc70b5ac70bcbc281da55d04741cafe1}\label{odla__device_8h_acc70b5ac70bcbc281da55d04741cafe1}} 
 enum \mbox{\hyperlink{odla__device_8h_acc70b5ac70bcbc281da55d04741cafe1}{odla\+\_\+vendor\+\_\+name}} \{ \newline
 {\bfseries ODLA\+\_\+\+VENDOR\+\_\+\+DEFAULT}
 , {\bfseries ODLA\+\_\+\+VENDOR\+\_\+\+ALIBABA}
@@ -33,12 +28,10 @@ enum \mbox{\hyperlink{odla__device_8h_acc70b5ac70bcbc281da55d04741cafe1}{odla\+\
 {\bfseries ODLA\+\_\+\+VENDOR\+\_\+\+QUALCOMM}
  \}
 \begin{DoxyCompactList}\small\item\em Supported vendors. \end{DoxyCompactList}\item 
-\mbox{\Hypertarget{odla__device_8h_a5ee336a2ef2c35a0dcc57e64dbde0271}\label{odla__device_8h_a5ee336a2ef2c35a0dcc57e64dbde0271}} 
 enum \mbox{\hyperlink{odla__device_8h_a5ee336a2ef2c35a0dcc57e64dbde0271}{odla\+\_\+vendor\+\_\+info}} \{ {\bfseries OVI\+\_\+\+DESCRIPTION}
 , {\bfseries OVI\+\_\+\+FEATURE\+\_\+\+SET}
  \}
 \begin{DoxyCompactList}\small\item\em Vendor info. \end{DoxyCompactList}\item 
-\mbox{\Hypertarget{odla__device_8h_aa752c9d7d8ae4aca3037f9c6dccd68b2}\label{odla__device_8h_aa752c9d7d8ae4aca3037f9c6dccd68b2}} 
 enum \mbox{\hyperlink{odla__device_8h_aa752c9d7d8ae4aca3037f9c6dccd68b2}{odla\+\_\+device\+\_\+name}} \{ \newline
 {\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+DEFAULT}
 , {\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+ALIBABA\+\_\+\+HANGUANG}
@@ -58,7 +51,6 @@ enum \mbox{\hyperlink{odla__device_8h_aa752c9d7d8ae4aca3037f9c6dccd68b2}{odla\+\
 {\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+QUALCOMM\+\_\+\+AIC100}
  \}
 \begin{DoxyCompactList}\small\item\em Supported devices. \end{DoxyCompactList}\item 
-\mbox{\Hypertarget{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}\label{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}} 
 enum \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}{odla\+\_\+device\+\_\+info}} \{ \newline
 {\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+INFO\+\_\+\+DESCRIPTION}
 , {\bfseries ODLA\+\_\+\+DEVICE\+\_\+\+INFO\+\_\+\+ODLA\+\_\+\+VERSION}
@@ -95,6 +87,189 @@ enum \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}{odla\+\
 
 \doxysubsection{Detailed Description}
 This file defines the ODLA device related APIs. 
+
+Definition in file \mbox{\hyperlink{odla__device_8h_source}{odla\+\_\+device.\+h}}.
+
+
+
+\doxysubsection{Typedef Documentation}
+\mbox{\Hypertarget{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}\label{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}} 
+\index{odla\_device.h@{odla\_device.h}!odla\_device@{odla\_device}}
+\index{odla\_device@{odla\_device}!odla\_device.h@{odla\_device.h}}
+\doxysubsubsection{\texorpdfstring{odla\_device}{odla\_device}}
+{\footnotesize\ttfamily typedef struct \+\_\+odla\+\_\+device$\ast$ \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\+\_\+device}}}
+
+
+
+Device object. 
+
+
+
+Definition at line \mbox{\hyperlink{odla__device_8h_source_l00088}{88}} of file \mbox{\hyperlink{odla__device_8h_source}{odla\+\_\+device.\+h}}.
+
+\mbox{\Hypertarget{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}\label{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}} 
+\index{odla\_device.h@{odla\_device.h}!odla\_device\_config@{odla\_device\_config}}
+\index{odla\_device\_config@{odla\_device\_config}!odla\_device.h@{odla\_device.h}}
+\doxysubsubsection{\texorpdfstring{odla\_device\_config}{odla\_device\_config}}
+{\footnotesize\ttfamily typedef struct \+\_\+odla\+\_\+device\+\_\+config$\ast$ \mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\+\_\+device\+\_\+config}}}
+
+
+
+Device configuration object. 
+
+
+
+Definition at line \mbox{\hyperlink{odla__device_8h_source_l00091}{91}} of file \mbox{\hyperlink{odla__device_8h_source}{odla\+\_\+device.\+h}}.
+
+\mbox{\Hypertarget{odla__device_8h_a643162987c9d516257f0926bd5c6a1ba}\label{odla__device_8h_a643162987c9d516257f0926bd5c6a1ba}} 
+\index{odla\_device.h@{odla\_device.h}!odla\_device\_config\_item@{odla\_device\_config\_item}}
+\index{odla\_device\_config\_item@{odla\_device\_config\_item}!odla\_device.h@{odla\_device.h}}
+\doxysubsubsection{\texorpdfstring{odla\_device\_config\_item}{odla\_device\_config\_item}}
+{\footnotesize\ttfamily typedef struct \+\_\+odla\+\_\+device\+\_\+config\+\_\+item$\ast$ \mbox{\hyperlink{odla__device_8h_a643162987c9d516257f0926bd5c6a1ba}{odla\+\_\+device\+\_\+config\+\_\+item}}}
+
+
+
+Device configuration item object. 
+
+
+
+Definition at line \mbox{\hyperlink{odla__device_8h_source_l00094}{94}} of file \mbox{\hyperlink{odla__device_8h_source}{odla\+\_\+device.\+h}}.
+
+\mbox{\Hypertarget{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}\label{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}} 
+\index{odla\_device.h@{odla\_device.h}!odla\_vendor@{odla\_vendor}}
+\index{odla\_vendor@{odla\_vendor}!odla\_device.h@{odla\_device.h}}
+\doxysubsubsection{\texorpdfstring{odla\_vendor}{odla\_vendor}}
+{\footnotesize\ttfamily typedef struct \+\_\+odla\+\_\+vendor$\ast$ \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\+\_\+vendor}}}
+
+
+
+Vendor object. 
+
+
+
+Definition at line \mbox{\hyperlink{odla__device_8h_source_l00085}{85}} of file \mbox{\hyperlink{odla__device_8h_source}{odla\+\_\+device.\+h}}.
+
+
+
+\doxysubsection{Enumeration Type Documentation}
+\mbox{\Hypertarget{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}\label{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}} 
+\index{odla\_device.h@{odla\_device.h}!odla\_device\_info@{odla\_device\_info}}
+\index{odla\_device\_info@{odla\_device\_info}!odla\_device.h@{odla\_device.h}}
+\doxysubsubsection{\texorpdfstring{odla\_device\_info}{odla\_device\_info}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}{odla\+\_\+device\+\_\+info}}}
+
+
+
+Device info. 
+
+
+
+Definition at line \mbox{\hyperlink{odla__device_8h_source_l00076}{76}} of file \mbox{\hyperlink{odla__device_8h_source}{odla\+\_\+device.\+h}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00076              \{}
+\DoxyCodeLine{00077   ODLA\_DEVICE\_INFO\_DESCRIPTION,}
+\DoxyCodeLine{00078   ODLA\_DEVICE\_INFO\_ODLA\_VERSION,}
+\DoxyCodeLine{00079   ODLA\_DEVICE\_INFO\_NUM\_CORES,}
+\DoxyCodeLine{00080   ODLA\_DEVICE\_INFO\_TOTAL\_MEM\_SIZE,}
+\DoxyCodeLine{00081   ODLA\_DEVICE\_INFO\_CORE\_MEM\_SIZE,}
+\DoxyCodeLine{00082 \} \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}{odla\_device\_info}};}
+
+\end{DoxyCode}
+\mbox{\Hypertarget{odla__device_8h_aa752c9d7d8ae4aca3037f9c6dccd68b2}\label{odla__device_8h_aa752c9d7d8ae4aca3037f9c6dccd68b2}} 
+\index{odla\_device.h@{odla\_device.h}!odla\_device\_name@{odla\_device\_name}}
+\index{odla\_device\_name@{odla\_device\_name}!odla\_device.h@{odla\_device.h}}
+\doxysubsubsection{\texorpdfstring{odla\_device\_name}{odla\_device\_name}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{odla__device_8h_aa752c9d7d8ae4aca3037f9c6dccd68b2}{odla\+\_\+device\+\_\+name}}}
+
+
+
+Supported devices. 
+
+
+
+Definition at line \mbox{\hyperlink{odla__device_8h_source_l00051}{51}} of file \mbox{\hyperlink{odla__device_8h_source}{odla\+\_\+device.\+h}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00051              \{}
+\DoxyCodeLine{00052   ODLA\_DEVICE\_DEFAULT,}
+\DoxyCodeLine{00053   \textcolor{comment}{// Alibaba}}
+\DoxyCodeLine{00054   ODLA\_DEVICE\_ALIBABA\_HANGUANG,}
+\DoxyCodeLine{00055   \textcolor{comment}{// ARM}}
+\DoxyCodeLine{00056   ODLA\_DEVICE\_ARM\_CORTEX\_M,}
+\DoxyCodeLine{00057   \textcolor{comment}{// Cambricon}}
+\DoxyCodeLine{00058   ODLA\_DEVICE\_CAMBRICON\_MLU220,}
+\DoxyCodeLine{00059   ODLA\_DEVICE\_CAMBRICON\_MLU270,}
+\DoxyCodeLine{00060   \textcolor{comment}{// GraphCore}}
+\DoxyCodeLine{00061   ODLA\_DEVICE\_GRAPHCORE\_IPU,}
+\DoxyCodeLine{00062   \textcolor{comment}{// Intel Habana}}
+\DoxyCodeLine{00063   ODLA\_DEVICE\_HABANA\_GAUDI,}
+\DoxyCodeLine{00064   ODLA\_DEVICE\_HABANA\_GOYA,}
+\DoxyCodeLine{00065   \textcolor{comment}{// Intel CPU}}
+\DoxyCodeLine{00066   ODLA\_DEVICE\_INTEL\_X86,}
+\DoxyCodeLine{00067   ODLA\_DEVICE\_INTEL\_DNNL,}
+\DoxyCodeLine{00068   \textcolor{comment}{// NVidia}}
+\DoxyCodeLine{00069   ODLA\_DEVICE\_NVIDIA\_GPU,}
+\DoxyCodeLine{00070   ODLA\_DEVICE\_NVIDIA\_TENSORRT,}
+\DoxyCodeLine{00071   \textcolor{comment}{// Qualcomm}}
+\DoxyCodeLine{00072   ODLA\_DEVICE\_QUALCOMM\_AIC100,}
+\DoxyCodeLine{00073 \} \mbox{\hyperlink{odla__device_8h_aa752c9d7d8ae4aca3037f9c6dccd68b2}{odla\_device\_name}};}
+
+\end{DoxyCode}
+\mbox{\Hypertarget{odla__device_8h_a5ee336a2ef2c35a0dcc57e64dbde0271}\label{odla__device_8h_a5ee336a2ef2c35a0dcc57e64dbde0271}} 
+\index{odla\_device.h@{odla\_device.h}!odla\_vendor\_info@{odla\_vendor\_info}}
+\index{odla\_vendor\_info@{odla\_vendor\_info}!odla\_device.h@{odla\_device.h}}
+\doxysubsubsection{\texorpdfstring{odla\_vendor\_info}{odla\_vendor\_info}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{odla__device_8h_a5ee336a2ef2c35a0dcc57e64dbde0271}{odla\+\_\+vendor\+\_\+info}}}
+
+
+
+Vendor info. 
+
+
+
+Definition at line \mbox{\hyperlink{odla__device_8h_source_l00045}{45}} of file \mbox{\hyperlink{odla__device_8h_source}{odla\+\_\+device.\+h}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00045              \{}
+\DoxyCodeLine{00046   OVI\_DESCRIPTION,}
+\DoxyCodeLine{00047   OVI\_FEATURE\_SET,}
+\DoxyCodeLine{00048 \} \mbox{\hyperlink{odla__device_8h_a5ee336a2ef2c35a0dcc57e64dbde0271}{odla\_vendor\_info}};}
+
+\end{DoxyCode}
+\mbox{\Hypertarget{odla__device_8h_acc70b5ac70bcbc281da55d04741cafe1}\label{odla__device_8h_acc70b5ac70bcbc281da55d04741cafe1}} 
+\index{odla\_device.h@{odla\_device.h}!odla\_vendor\_name@{odla\_vendor\_name}}
+\index{odla\_vendor\_name@{odla\_vendor\_name}!odla\_device.h@{odla\_device.h}}
+\doxysubsubsection{\texorpdfstring{odla\_vendor\_name}{odla\_vendor\_name}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{odla__device_8h_acc70b5ac70bcbc281da55d04741cafe1}{odla\+\_\+vendor\+\_\+name}}}
+
+
+
+Supported vendors. 
+
+
+
+Definition at line \mbox{\hyperlink{odla__device_8h_source_l00032}{32}} of file \mbox{\hyperlink{odla__device_8h_source}{odla\+\_\+device.\+h}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00032              \{}
+\DoxyCodeLine{00033   ODLA\_VENDOR\_DEFAULT,}
+\DoxyCodeLine{00034   ODLA\_VENDOR\_ALIBABA,}
+\DoxyCodeLine{00035   ODLA\_VENDOR\_ARM,}
+\DoxyCodeLine{00036   ODLA\_VENDOR\_CAMBRICON,}
+\DoxyCodeLine{00037   ODLA\_VENDOR\_GRAPHCORE,}
+\DoxyCodeLine{00038   ODLA\_VENDOR\_HABANA,}
+\DoxyCodeLine{00039   ODLA\_VENDOR\_INTEL,}
+\DoxyCodeLine{00040   ODLA\_VENDOR\_NVIDIA,}
+\DoxyCodeLine{00041   ODLA\_VENDOR\_QUALCOMM,}
+\DoxyCodeLine{00042 \} \mbox{\hyperlink{odla__device_8h_acc70b5ac70bcbc281da55d04741cafe1}{odla\_vendor\_name}};}
+
+\end{DoxyCode}
+
 
 \doxysubsection{Function Documentation}
 \mbox{\Hypertarget{odla__device_8h_a58cd9237d9b856196a3866eddc0ef95d}\label{odla__device_8h_a58cd9237d9b856196a3866eddc0ef95d}} 
