@@ -62,7 +62,7 @@ class ODLAModel:
             self.h.odla_GetArgFromComputationByIdx(self.comp, idx, pointer(arg_v))
             vt = ValueType()
             self.h.odla_GetValueType(arg_v, pointer(vt))
-            self.in_vals.append((arg_v.value, vt))
+            self.in_vals.append((arg_v, vt))
 
         self.ctx = c_void_p(0)
         self.h.odla_CreateContext(pointer(self.ctx))
