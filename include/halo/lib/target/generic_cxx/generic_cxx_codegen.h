@@ -228,7 +228,7 @@ class GenericCXXCodeGen : public CodeGen {
                                          const std::vector<int32_t>& axis_attr,
                                          bool keep_dims,
                                          const std::string& odla_func_name,
-                                         float epsilon = 0);
+                                         float epsilon);
   virtual void RunOnUnaryInstruction(Instruction*);
   virtual void RunOnBranchBody(const IfInst& inst, bool is_taken);
 
