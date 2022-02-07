@@ -52,17 +52,17 @@ void GenericCXXCodeGen::RunOnReductionInstruction(
 
 void GenericCXXCodeGen::RunOnInstruction(ReduceMeanInst* inst) {
   RunOnReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims(),
-                            "odla_ReduceMean");
+                            "odla_ReduceMean", 0);
 }
 
 void GenericCXXCodeGen::RunOnInstruction(ReduceMinInst* inst) {
   RunOnReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims(),
-                            "odla_ReduceMin");
+                            "odla_ReduceMin", 0);
 }
 
 void GenericCXXCodeGen::RunOnInstruction(ReduceMaxInst* inst) {
   RunOnReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims(),
-                            "odla_ReduceMax");
+                            "odla_ReduceMax", 0);
 }
 
 void GenericCXXCodeGen::RunOnInstruction(ReduceL1Inst* inst) {
@@ -77,27 +77,27 @@ void GenericCXXCodeGen::RunOnInstruction(ReduceL2Inst* inst) {
 
 void GenericCXXCodeGen::RunOnInstruction(ReduceProductInst* inst) {
   RunOnReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims(),
-                            "odla_ReduceProd");
+                            "odla_ReduceProd", 0);
 }
 
 void GenericCXXCodeGen::RunOnInstruction(ReduceSumInst* inst) {
   RunOnReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims(),
-                            "odla_ReduceSum");
+                            "odla_ReduceSum", 0);
 }
 
 void GenericCXXCodeGen::RunOnInstruction(ReduceLogSumInst* inst) {
   RunOnReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims(),
-                            "odla_ReduceLogSum");
+                            "odla_ReduceLogSum", 0);
 }
 
 void GenericCXXCodeGen::RunOnInstruction(ReduceLogSumExpInst* inst) {
   RunOnReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims(),
-                            "odla_ReduceLogSumExp");
+                            "odla_ReduceLogSumExp", 0);
 }
 
 void GenericCXXCodeGen::RunOnInstruction(ReduceSumSquareInst* inst) {
   RunOnReductionInstruction(inst, inst->GetAxis(), inst->GetKeepDims(),
-                            "odla_ReduceSumSquare");
+                            "odla_ReduceSumSquare", 0);
 }
 
 void GenericCXXCodeGen::RunOnInstruction(CumSumInst* inst) {
