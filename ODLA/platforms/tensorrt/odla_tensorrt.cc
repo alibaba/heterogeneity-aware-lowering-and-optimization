@@ -1892,7 +1892,9 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
                      odla_value_shape output_dims, const odla_value_id id) {
   nvinfer1::ILayer* fc = nullptr;
   const auto& lhs_dims = lhs->type.shape;
-  if (!transpose_lhs && transpose_rhs && rhs->const_layer) {
+  const std::string kk((const char*)id);
+  if (!transpose_lhs && transpose_rhs && rhs->const_layer && alpha == 1.F &&
+      beta == 1.F && lhs_dims.size == 2) {
     auto input = lhs->tensor;
     if (lhs_dims.size == 2) {
       auto reshape = g_comp->network->addShuffle(*lhs);
@@ -1904,22 +1906,42 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
     auto const& kernel_weights = rhs->const_layer->getWeights();
     nvinfer1::Weights bias_weights{kernel_weights.type, nullptr, 0};
     if (bias) bias_weights = bias->const_layer->getWeights();
-    fc = g_comp->network->addFullyConnected(*input, output_dims.dims[1],
-                                            rhs->const_layer->getWeights(),
-                                            bias_weights);
+    fc = g_comp->network->addFullyConnected(
+        *input, output_dims.dims[output_dims.size - 1],
+        rhs->const_layer->getWeights(), bias_weights);
     auto reshape = g_comp->network->addShuffle(*fc->getOutput(0));
     reshape->setReshapeDimensions(GetNVDims(output_dims));
     fc = reshape;
   } else {
+    assert(alpha == 1.0F && beta == 1.0F);
     auto getOp = [](bool trans) {
       return trans ? nvinfer1::MatrixOperation::kTRANSPOSE
                    : nvinfer1::MatrixOperation::kNONE;
     };
-    fc = g_comp->network->addMatrixMultiply(*lhs, getOp(transpose_lhs), *rhs,
-                                            getOp(transpose_rhs));
+    const auto& rhs_dims = rhs->type.shape;
+
+    auto rhs_tensor = rhs->tensor;
+
+    if (lhs_dims.size == 3 && rhs_dims.size == 2) { // TODO
+      auto reshape = g_comp->network->addShuffle(*rhs);
+      odla_value_shape dim{.size = 3, {1, rhs_dims.dims[0], rhs_dims.dims[1]}};
+      reshape->setReshapeDimensions(GetNVDims(dim));
+      rhs_tensor = reshape->getOutput(0);
+    }
+    fc = g_comp->network->addMatrixMultiply(*lhs, getOp(transpose_lhs),
+                                            *rhs_tensor, getOp(transpose_rhs));
     if (bias) {
-      fc = g_comp->network->addElementWise(
-          *fc->getOutput(0), *bias, nvinfer1::ElementWiseOperation::kSUM);
+      auto bias_tensor = bias->tensor;
+      if (bias->type.shape.size < lhs_dims.size) {
+        auto reshape = g_comp->network->addShuffle(*bias);
+        odla_value_shape dim{.size = 3, // FIXME
+                             {1, 1, bias->type.shape.dims[0]}};
+        reshape->setReshapeDimensions(GetNVDims(dim));
+        bias_tensor = reshape->getOutput(0);
+      }
+      fc =
+          g_comp->network->addElementWise(*fc->getOutput(0), *bias_tensor,
+                                          nvinfer1::ElementWiseOperation::kSUM);
     }
   }
   return CreateValue(fc, odla_value_type{lhs->type.element_type, output_dims},
