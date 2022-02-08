@@ -334,7 +334,7 @@ odla_context LockFreeQueue::get_ctx_by_tensor(const popart::TensorId& id) {
 /*======================================== step io callbacks
  * =========================================*/
 popart::StepIOCallback::InputCallback input_callback =
-    [&](popart::TensorId id, bool prefetch) -> popart::ConstVoidData {
+    [](popart::TensorId id, bool prefetch) -> popart::ConstVoidData {
   odla_context ctx = QManager::instance()->getQ()->get_ctx_by_tensor(
       id); // get_input_context();
   popart::ConstVoidData data;
@@ -353,10 +353,10 @@ popart::StepIOCallback::InputCallback input_callback =
 };
 
 popart::StepIOCallback::InputCompleteCallback input_complete_callback =
-    [&](popart::TensorId id) -> void {};
+    [](popart::TensorId id) -> void {};
 
 popart::StepIOCallback::OutputCallback output_callback =
-    [&](popart::TensorId id) -> popart::MutableVoidData {
+    [](popart::TensorId id) -> popart::MutableVoidData {
   odla_context ctx = QManager::instance()->getQ()->get_output_context();
   popart::logging::info("OutputCallback called with id: {} ctx: {}", id, ctx);
   popart::IArray* p_array = ctx->write_data_by_tensor_id(id);
@@ -368,7 +368,7 @@ popart::StepIOCallback::OutputCallback output_callback =
 };
 
 popart::StepIOCallback::OutputCompleteCallback output_complete_callback =
-    [&](popart::TensorId id) -> void {
+    [](popart::TensorId id) -> void {
   odla_context ctx = QManager::instance()->getQ()->get_output_context();
   popart::logging::info("OutputCompleteCallback called with id: {}, ctx: {}",
                         id, ctx);
