@@ -41,7 +41,7 @@ extra_mnt="$extra_mnt -v /tmp/ubuntu.cache:/cache"
 rm -fr $MOUNT_DIR/output_ubuntu && mkdir -p $MOUNT_DIR/output_ubuntu
 extra_cmd="source /opt/poplar_sdk/poplar/enable.sh" # dummy command
 cmd="cd /build && cmake -G Ninja $cmake_flags /host/halo "
-cmd="$cmd && ninja && $extra_cmd && $check_cmds && ninja package "
+cmd="$cmd && ninja && $extra_cmd && ninja package "
 cmd="$cmd && cp /build/*.bz2 /host/output_ubuntu"
 docker run -e CCACHE_DIR=/cache $docker_run_flag -v $MOUNT_DIR:/host \
   --tmpfs /build:exec --tmpfs /tmp:exec --entrypoint="" \
