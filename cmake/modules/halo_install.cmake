@@ -16,7 +16,7 @@
 
 # Install halo
 
-install(TARGETS halo halolib
+install(TARGETS halo halolib analyzer
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         INCLUDES DESTINATION include/halo
