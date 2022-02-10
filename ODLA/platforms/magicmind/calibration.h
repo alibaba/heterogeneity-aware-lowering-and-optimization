@@ -1,8 +1,8 @@
 #ifndef CALIBRATION_H
 #define CALIBRATION_H
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <vector>
 #include "interface_calibrator.h"
@@ -10,11 +10,9 @@
 #define LOGINFO(fmt, args...) fprintf(stdout, "[MMINFO]  " fmt "\n", ##args)
 
 template <typename T>
-void getDataFromFile(const std::string path,
-                     std::vector<std::string> files,
-                     T *data_ptr,
-                     int datasize) {
-  char *temp_data = (char *)data_ptr;
+void getDataFromFile(const std::string path, std::vector<std::string> files,
+                     T* data_ptr, int datasize) {
+  char* temp_data = (char*)data_ptr;
   for (auto file : files) {
     std::string temp_path = path + file;
     std::ifstream inFile(temp_path, std::ios::in | std::ios::binary);
@@ -30,10 +28,9 @@ void getDataFromFile(const std::string path,
 
 class FixedCalibData : public magicmind::CalibDataInterface {
  public:
-  FixedCalibData(const magicmind::Dims &shape,
-                 const magicmind::DataType &data_type,
-                 int max_samples,
-                 std::vector<std::string> &data_paths){
+  FixedCalibData(const magicmind::Dims& shape,
+                 const magicmind::DataType& data_type, int max_samples,
+                 std::vector<std::string>& data_paths) {
     shape_ = shape;
     data_type_ = data_type;
     batch_size_ = shape.GetDimValue(0);
@@ -43,9 +40,9 @@ class FixedCalibData : public magicmind::CalibDataInterface {
     buffer_.resize(shape.GetElementCount());
   }
 
-  magicmind::Dims GetShape() const { return shape_;}
-  magicmind::DataType GetDataType() const {return data_type_;}
-  void *GetSample() { return buffer_.data();}
+  magicmind::Dims GetShape() const { return shape_; }
+  magicmind::DataType GetDataType() const { return data_type_; }
+  void* GetSample() { return buffer_.data(); }
 
   magicmind::Status Next() {
     if (current_sample_ + batch_size_ > max_samples_) {
@@ -55,9 +52,10 @@ class FixedCalibData : public magicmind::CalibDataInterface {
     }
 
     auto data_size = sizeof(float) * shape_.GetElementCount();
-    std::vector<std::string> temp_paths(data_paths_.begin() + current_sample_,
-                                        data_paths_.begin() + current_sample_ + batch_size_);
-    getDataFromFile("",temp_paths,  buffer_.data(),data_size);
+    std::vector<std::string> temp_paths(
+        data_paths_.begin() + current_sample_,
+        data_paths_.begin() + current_sample_ + batch_size_);
+    getDataFromFile("", temp_paths, buffer_.data(), data_size);
 
     current_sample_ += batch_size_;
     return magicmind::Status::OK();
