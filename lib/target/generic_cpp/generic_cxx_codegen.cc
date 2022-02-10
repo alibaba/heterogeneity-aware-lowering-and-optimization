@@ -107,9 +107,9 @@ static void EmitBanner(std::ostream* os, std::ostream* header_os, API api) {
   *os << "#include " << GetIncludeFile(api) << "\n\n";
 }
 
-static void EmitQuantInfos(std::ostream* os, const std::string& q_tbl_name) {
+static void EmitQuantInfos(std::ostream* os, const char* q_tbl_name) {
   static const std::string quant_tbl(q_tbl_name);
-  static const std::string quant_tbl_size(q_tbl_name + "_size");
+  static const std::string quant_tbl_size(quant_tbl + "_size");
 
   *os << "extern const odla_value_quant_info " + quant_tbl + "[];\n";
   *os << "extern const int " + quant_tbl_size + ";\n\n";
@@ -139,7 +139,7 @@ bool GenericCXXCodeGen::RunOnModule(Module* module) {
     EmitBanner(&os_, &header_os_, GetAPI());
   }
 
-  if (!opts_.quant_tbl.empty()) {
+  if (opts_.quant_tbl != nullptr && *opts_.quant_tbl != '\0') {
     EmitQuantInfos(&os_, opts_.quant_tbl);
   }
 
