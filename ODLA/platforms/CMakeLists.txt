@@ -57,6 +57,11 @@ if (ODLA_BUILD_VODLA)
   add_subdirectory(vodla)
 endif()
 
+option(ODLA_BUILD_MAGICMIND "Build ODLA Runtime Library for Magicmind" ON)
+if (ODLA_BUILD_MAGICMIND)
+  add_subdirectory(magicmind)
+endif()
+
 option(ODLA_BUILD_XNNPACK "Build ODLA Runtime Library for XNNPACK" ON)
 if (ODLA_BUILD_XNNPACK)
   set(XNNPACK_ROOT "/opt/XNNPACK" CACHE STRING "Path of XNNPACK package")
