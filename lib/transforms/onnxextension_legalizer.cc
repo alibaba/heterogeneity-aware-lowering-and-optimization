@@ -901,6 +901,7 @@ static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
     }
     for (int32_t i = 0; i < num_outputs; ++i) {
       sizes_v.push_back(sizes);
+      sizes.clear();
     }
   } else {
     for (size_t idx = 0; idx < splits.size(); ++idx) {
@@ -913,6 +914,7 @@ static std::vector<Def> ConvertSplit(const ONNXExtensionInst* ext,
         sizes.push_back(dim);
       }
       sizes_v.push_back(sizes);
+      sizes.clear();
     }
   }
 
