@@ -32,9 +32,11 @@ class Inference:
         batch,
         format,
         debug,
+        dynamic_shape,
         log_level,
     ):
         self.debug = debug
+        self.dynamic_shape = dynamic_shape
         logging.getLogger("halo").setLevel(log_level)
         self.logger = logging.getLogger(__name__)
         self.model_file = model_file
@@ -77,10 +79,13 @@ class Inference:
         self.so_file = halo.CompileODLAModel(files, self.device, self.debug)
         self.intermediate_files = [*files, self.so_file]
         self.model = odla.ODLAModel(self.so_file)
-        self.model.Load()
+        self.model.Load(self.dynamic_shape)
         self.logger.info("Done initialization")
 
-    def Run(self, data):
+
+    def Run(self, data, runtime_shape):
         if self.model is None:
             self.Initialize()
+        
+        self.model.SetContext(runtime_shape)
         return self.model.Execute(data)
