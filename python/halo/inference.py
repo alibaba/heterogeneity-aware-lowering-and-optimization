@@ -86,6 +86,4 @@ class Inference:
     def Run(self, data, runtime_shape):
         if self.model is None:
             self.Initialize()
-        
-        self.model.SetContext(runtime_shape)
-        return self.model.Execute(data)
+        return self.model.Execute(data, runtime_shape)
