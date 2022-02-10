@@ -122,10 +122,10 @@ class ODLAModel:
                 self.h.odla_SetValueShapeInfo(arg_v, ODLA_MAX_SHAPE, arg_max_shape)
                 self.h.odla_SetValueShapeInfo(arg_v, ODLA_OPT_SHAPE, arg_opt_shape)
 
-    def SetContext(self, runtime_shape):
-
         self.ctx = c_void_p(0)
         self.h.odla_CreateContext(pointer(self.ctx))
+
+    def Execute(self, data, runtime_shape):
 
         if runtime_shape:
             for (value_id, shape_info) in runtime_shape.items():
@@ -138,9 +138,6 @@ class ODLAModel:
                 dims_array = c_int64 * 10
                 input0_real_shape = ValueShape(c_int32(len(real_shape)), dims_array(*real_shape))
                 self.h.odla_SetRuntimeShape(self.ctx, arg_v, input0_real_shape)
-
-
-    def Execute(self, data):
 
         self.in_vals = []
         for idx in range(0, self.nr_args):
@@ -155,6 +152,7 @@ class ODLAModel:
             )
 
         self.out_vals = []
+        self.buffers = []
         for idx in range(0, self.nr_outputs):
             out = c_void_p(0)
             self.h.odla_GetOutputFromComputationByIdx(self.comp, idx, pointer(out))
