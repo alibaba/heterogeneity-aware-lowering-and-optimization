@@ -317,7 +317,7 @@ class GenericCXXCodeGen : public CodeGen {
     os_ << ", ";
 
     EmitODLAArgs(func_name);
-    os_ << ", {.size = " << lhs.size() << ", .value_ids = {";
+    os_ << ",  (odla_value_ids){.size = " << lhs.size() << ", .value_ids = {";
     unsigned int id = 0;
     for (auto& one : lhs) {
       os_ << "(const odla_value_id)";
@@ -358,7 +358,7 @@ class GenericCXXCodeGen : public CodeGen {
       if (n > 0) {
         os_ << ", ";
       }
-      os_ << "{.size = " << lhs.size() << ", .value_ids = {";
+      os_ << " (odla_value_ids){.size = " << lhs.size() << ", .value_ids = {";
       for (auto& one : lhs) {
         os_ << "(const odla_value_id)";
         EmitODLAVauleId(one, os_);
