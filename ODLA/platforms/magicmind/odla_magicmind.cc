@@ -18,6 +18,7 @@
 #include <ODLA/odla.h>
 #include <stdarg.h>
 #include <stdio.h>
+
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -26,12 +27,12 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
-#include <memory>
 #include <numeric>
 #include <stack>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
 #include "calibration.h"
 #include "cnrt.h"
 #include "interface_builder.h"
