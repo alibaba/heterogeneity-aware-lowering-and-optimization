@@ -665,7 +665,7 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
     return;
   }
 
-  Instruction* return_inst = function.GetReturnInst();
+  ReturnInst* return_inst = function.GetReturnInst();
   HLCHECK(return_inst && "No Return Instruction found");
 
   auto& ctx = function.GetGlobalContext();
