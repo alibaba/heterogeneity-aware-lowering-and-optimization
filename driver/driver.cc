@@ -425,9 +425,9 @@ int main(int argc, char** argv) {
   cg_opts.linked_odla_lib = LinkODLALib.c_str();
   cg_opts.save_temps = SaveTemps;
   cg_opts.constant_decombine = ConstantDecombine;
-  cg_opts.quant_tbl = "";
+  cg_opts.quant_tbl = nullptr;
   if (QuantWeights != Quantization::None) {
-    cg_opts.quant_tbl = QuantTable;
+    cg_opts.quant_tbl = QuantTable.c_str();
   }
   cg_opts.convert_split_to_slice = ConvertSplitToSlice;
 
