@@ -1,5 +1,6 @@
 # ==============================================================================
 # Copyright (C) 2020-2021 Alibaba Group Holding Limited.
+# Copyright (C) [2022] by Cambricon, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +15,13 @@
 # limitations under the License
 # ==============================================================================
 
-set(NEUWARE_HOME /usr/local/neuware/)
-set(DEFAULT_COMPILER ${CMAKE_CXX_COMPILER})
+if (NOT NEUWARE_HOME)
+  set(NEUWARE_HOME "/usr/local/neuware/" CACHE PATH "Path for magicmind SDK")
+endif()
+
 find_library(MAGICMIND_LIB NAMES magicmind PATHS ${NEUWARE_HOME} PATH_SUFFIXES lib64 NO_DEFAULT_PATH)
 if(NOT MAGICMIND_LIB)
-  message(STATUS "not find MagicMind")
+  message(FATAL_ERROR "not find MagicMind")
   return()
 else()
   message(STATUS "find MagicMind")
@@ -29,4 +32,3 @@ add_library(odla_magicmind SHARED odla_magicmind.cc)
 target_include_directories(odla_magicmind PRIVATE ${NEUWARE_HOME}/include)
 target_link_libraries(odla_magicmind ODLA ${MAGICMIND_LIB})
 target_compile_options(odla_magicmind PRIVATE "")
-set(CMAKE_CXX_COMPILER_LAUNCHER ${DEFAULT_COMPILER})

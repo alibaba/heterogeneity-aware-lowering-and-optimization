@@ -57,7 +57,7 @@ if (ODLA_BUILD_VODLA)
   add_subdirectory(vodla)
 endif()
 
-option(ODLA_BUILD_MAGICMIND "Build ODLA Runtime Library for Magicmind" ON)
+option(ODLA_BUILD_MAGICMIND "Build ODLA Runtime Library for Magicmind" OFF)
 if (ODLA_BUILD_MAGICMIND)
   add_subdirectory(magicmind)
 endif()
