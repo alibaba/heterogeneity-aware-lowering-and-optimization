@@ -118,6 +118,7 @@ Analyze.argtypes = [
     c_void_p,  # cg_opts
     c_char_p,  # filename
     c_void_p,  # model_info
+    c_int,  # model_type
 ]
 
 
@@ -228,7 +229,16 @@ def AnalyzeModel(model_file, input_shapes, batch, format, model_info):
 
     target = "cxx".encode("utf-8")
     output_filename = output_file.encode("utf-8")
-    
+    if("resnet50" in model_file):
+        model_type = 1
+    elif("dbnet" in model_file):
+        model_type = 2
+    elif("crnn" in model_file):
+        model_type = 3
+    elif("bert" in model_file):
+        model_type = 4
+    else:
+        model_type = 0
     Analyze(
         format_val,
         model_num,
@@ -245,6 +255,7 @@ def AnalyzeModel(model_file, input_shapes, batch, format, model_info):
         pointer(opts),
         output_filename,
         pointer(model_info),
+        model_type,
     )
 
 def CompileODLAModel(files, device, debug=False):
