@@ -1,4 +1,4 @@
-//===- calibration.h -----------------____---------------------------------===//
+//===- calibration.h ------------------------------------------------------===//
 //
 // Copyright (C) 2019-2021 Alibaba Group Holding Limited.
 // Copyright (C) [2022] by Cambricon, Inc. All rights reserved.
