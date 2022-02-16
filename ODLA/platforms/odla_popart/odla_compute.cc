@@ -218,8 +218,17 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
         "another computation for computing");
     return ODLA_FAILURE;
   }
-  if (!context->hold("odla_ExecuteComputation")) return ODLA_FAILURE;
+  if (!context->hold("odla_ExecuteComputation")) {
+    return ODLA_FAILURE;
+  }
   return comp->executor()->compute(comp, context, mode, device);
+}
+
+odla_status odla_AsyncExecuteComputation(odla_computation comp,
+                                         odla_context context,
+                                         odla_compute_mode mode,
+                                         odla_device device) {
+  return odla_ExecuteComputation(comp, context, mode, device);
 }
 
 odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
