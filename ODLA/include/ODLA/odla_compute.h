@@ -53,6 +53,8 @@ typedef enum {
   ODLA_LOAD_ENGINE_MODE,
   ODLA_ENABLE_ENGINE_CACHE,
   ODLA_CACHE_DIR,
+  ODLA_ASYNC_CALLBACK_FUNC,
+  ODLA_ASYNC_CALLBACK_ARG,
 } odla_item_type;
 
 //! \brief BF16 mode
