@@ -268,6 +268,11 @@ static llvm::cl::opt<bool> ConstantDecombine(
     "constant-decombine", llvm::cl::desc("Constant Decombine"),
     llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
 
+static llvm::cl::opt<bool> EmitCodeForAsyncExec(
+    "emit-code-for-async-exec",
+    llvm::cl::desc("Emit ODLA code for async execution"), llvm::cl::init(false),
+    llvm::cl::cat(HaloOptCat));
+
 #undef HALO_FUSION_OPTIONS
 #define HALO_FUSION_CMD_OPTIONS_DECL
 #include "halo/lib/ir/fusion.cc.inc"
@@ -378,6 +383,7 @@ int main(int argc, char** argv) {
   cg_opts.linked_odla_lib = LinkODLALib.c_str();
   cg_opts.save_temps = SaveTemps;
   cg_opts.constant_decombine = ConstantDecombine;
+  cg_opts.emit_code_for_async = EmitCodeForAsyncExec;
 
   if (is_c_or_cxx_output) {
     ctx.SetTargetTriple("x86_64"); // For binary constant writer.

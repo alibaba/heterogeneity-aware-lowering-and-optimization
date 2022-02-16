@@ -213,9 +213,14 @@ std::string GenericCXXCodeGen::GetFunctionDecl(const Function& func,
   const static std::string inference_func_decl =
       "int model_run(int num_inputs, const void* inputs[],"
       "int num_outputs, void* outputs[], int batch_size)";
+  const static std::string inference_func_async_decl =
+      "int model_run(int num_inputs, const void* inputs[],"
+      "int num_outputs, void* outputs[], int batch_size, void* cb_arg, "
+      "odla_context Ctx, model_run_callback cb_func)";
   if (opts_.emit_inference_func_sig && func.IsEntryFunction() &&
       public_function) {
-    return inference_func_decl;
+    return opts_.emit_code_for_async ? inference_func_async_decl
+                                     : inference_func_decl;
   }
 
   std::ostringstream ss;
@@ -620,6 +625,9 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
     if (opts_.dialect == Dialect::CXX_11) {
       oss << "extern \"C\" {\n";
     }
+    if (opts_.emit_code_for_async) {
+      oss << "  typedef int (*model_run_callback)(void *);\n";
+    }
     oss << "  " << func_decl << ";\n";
     oss << "int " << init_func_name << "();\n";
     oss << "int " << fini_func_name << "();\n";
@@ -757,11 +765,22 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
   }
 
   if (opts_.exec_mode == ExecMode::Compile) {
-    os_ << "  static odla_context Ctx;\n";
-    os_ << "  if (Ctx == " << EmitNull() << ") {";
-    os_ << "    status = odla_CreateContext(&Ctx);\n";
-    os_ << "  " << status_check << "\n";
-    os_ << "  }\n";
+    if (opts_.emit_code_for_async) {
+      const char* status_check =
+          "  if (status != ODLA_SUCCESS) {return status;}\n";
+      os_ << " status = odla_SetContextItem(Ctx, ODLA_ASYNC_CALLBACK_FUNC, "
+             "(odla_item_value)cb_func);\n";
+      os_ << status_check;
+      os_ << " status = odla_SetContextItem(Ctx, ODLA_ASYNC_CALLBACK_ARG, "
+             "(odla_item_value)cb_arg);\n";
+      os_ << status_check;
+    } else {
+      os_ << "  static odla_context Ctx;\n";
+      os_ << "  if (Ctx == " << EmitNull() << ") {";
+      os_ << "    status = odla_CreateContext(&Ctx);\n";
+      os_ << "  " << status_check << "\n";
+      os_ << "  }\n";
+    }
     if (opts_.emit_dynamic_batch) {
       os_ << "  status = odla_SetContextItem(Ctx, ODLA_RUN_BATCH_SIZE, "
              "(odla_item_value) &batch_size);\n";
@@ -798,8 +817,10 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
     os_ << "  " << status_check << "\n";
   }
   if (opts_.exec_mode == ExecMode::Compile) {
-    os_ << "  return odla_ExecuteComputation(Comp, Ctx, "
-           "ODLA_COMPUTE_INFERENCE, "
+    const std::string exec_func_name{opts_.emit_code_for_async
+                                         ? "odla_AsyncExecuteComputation"
+                                         : "odla_ExecuteComputation"};
+    os_ << "  return " + exec_func_name + "(Comp, Ctx, ODLA_COMPUTE_INFERENCE, "
         << EmitNull() << ");\n";
   }
   os_ << "}\n";
