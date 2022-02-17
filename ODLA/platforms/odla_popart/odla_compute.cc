@@ -78,6 +78,25 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
   return ODLA_SUCCESS;
 }
 
+odla_status odla_SetContextItem(odla_context context, odla_item_type type,
+                                odla_item_value value) {
+  if (context == nullptr) {
+    return ODLA_INVALID_PARAM;
+  }
+  switch (type) {
+    case ODLA_ASYNC_CALLBACK_FUNC:
+      // TODO: context->ops.callback = reinterpret_cast<void*>(value);
+      break;
+    case ODLA_ASYNC_CALLBACK_ARG:
+      // TODO: context->ops.callback_arg = reinterpret_cast<void*>(value);
+      break;
+    default:
+      popart::logging::err("Unsupported context property type: {}", type);
+      return ODLA_UNSUPPORTED_DATATYPE;
+  }
+  return ODLA_SUCCESS;
+}
+
 odla_status odla_CreateExecutable(odla_executable* executable,
                                   odla_context context, odla_computation comp) {
   popart::logging::info("Start to create Executable...");
