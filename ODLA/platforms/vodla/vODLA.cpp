@@ -444,6 +444,11 @@ odla_status odla_GetNumOfOutputsFromComputation(
   return ODLA_SUCCESS;
 }
 
+odla_status odla_GetValueType(const odla_value value,
+                              odla_value_type* value_type) {
+  return ODLA_SUCCESS;
+}
+
 odla_status odla_GetArgFromComputationByIdx(const odla_computation computation,
                                             const odla_uint32 arg_idx,
                                             odla_value* arg_value) {
