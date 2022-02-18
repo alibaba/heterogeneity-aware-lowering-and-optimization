@@ -52,21 +52,20 @@
  *   "save_model_path":"pipeline_test.onnx"
  * }
  */
-enum ExecutionMode { UNKNOWN, PIPELINE, PARALLEL, SEQUENCE };
+enum ExecutionMode { UNKNOWN, PIPELINE, PARALLEL, SEQUENCE, PIPELINE_ASYNC };
 using json = nlohmann::json;
 
 class PopartConfig {
  private:
   float amp_;
-  std::string version_;     // Version of the configuration file
-  std::string sdk_version_; // version of the sdk
-  int batches_per_step_;    // Batch per step for PIPELINE & PARALLEL execution
-                            // mode
+  std::string version_;                 // Version of the configuration file
+  std::string sdk_version_;             // version of the sdk
+  int batches_per_step_;                // Batch per step
   static std::vector<std::string> mode; // string value of execution mode
-  ExecutionMode
-      execution_mode_; // The execution mode {PIPELINE, PARALLEL, SEQUENCE}
-  bool load_onnx_;     // Whether load onnx model to run instead of the model
-                       // constructed. Use for test
+  ExecutionMode execution_mode_; // The execution mode {PIPELINE, PARALLEL,
+                                 // SEQUENCE, PIPELINE_ASYNC}
+  bool load_onnx_; // Whether load onnx model to run instead of the model
+                   // constructed. Use for test
   bool load_or_save_cache_; // If the session will load graph from cache
   std::string cache_path_;  // the path of cache file, for load cache
                             // directly
@@ -75,7 +74,7 @@ class PopartConfig {
                                // load_onnx set to be true
   std::map<std::string, std::vector<int>>
       pipeline_setting_; // The pipeline settings if execution_mode was set as
-                         // PIPELINE
+                         // PIPELINE or PIPELINE_ASYNC
   bool save_model_;      // Whether save the mode constructed by model.cc
   std::string save_model_path_; // The path where to save the model if
                                 // save_model was set as true

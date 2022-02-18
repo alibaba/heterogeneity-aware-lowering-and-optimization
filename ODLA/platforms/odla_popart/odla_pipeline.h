@@ -196,6 +196,31 @@ struct _odla_pipeline_context : public _odla_context {
   }
 };
 
+struct _odla_pipeline_async_context : public _odla_pipeline_context {
+  _odla_pipeline_async_context(odla_computation c)
+      : _odla_pipeline_context(c) {}
+  inline void wait() override {}  // for async, never wait
+  inline void notify() override { // for notify, will call the callback to
+                                  // notify
+    if (nullptr == async_callback_func) {
+      popart::logging::err(
+          "async_callback_func is null when try to notify inference result for "
+          "context: {}",
+          this);
+      throw std::invalid_argument("async_callback_func is null");
+    }
+    if (nullptr == async_callback_arg) {
+      popart::logging::err(
+          "async_callback_arg is null when try to notify inference result for "
+          "context: {}",
+          this);
+      throw std::invalid_argument("async_callback_arg is null");
+    }
+    async_callback_func(async_callback_arg);
+  }
+  bool hold(const std::string& function_name) override { return true; }
+};
+
 struct _odla_pipeline_empty_context : public _odla_pipeline_context {
   odla_context shared_data = nullptr;
   _odla_pipeline_empty_context(odla_computation c)

@@ -85,10 +85,10 @@ odla_status odla_SetContextItem(odla_context context, odla_item_type type,
   }
   switch (type) {
     case ODLA_ASYNC_CALLBACK_FUNC:
-      // TODO: context->ops.callback = reinterpret_cast<void*>(value);
+      context->async_callback_func = reinterpret_cast<void (*)(void*)>(value);
       break;
     case ODLA_ASYNC_CALLBACK_ARG:
-      // TODO: context->ops.callback_arg = reinterpret_cast<void*>(value);
+      context->async_callback_arg = reinterpret_cast<void*>(value);
       break;
     default:
       popart::logging::err("Unsupported context property type: {}", type);
@@ -185,7 +185,8 @@ odla_status odla_CreateComputation(odla_computation* comp) {
     return ODLA_FAILURE;
   }
   if (PopartConfig::instance()->execution_mode() == PARALLEL ||
-      PopartConfig::instance()->execution_mode() == PIPELINE) {
+      PopartConfig::instance()->execution_mode() == PIPELINE ||
+      PopartConfig::instance()->execution_mode() == PIPELINE_ASYNC) {
     QManager::instance()->createQ(PopartConfig::instance()->queue_type());
     QManager::instance()->getQ()->init(
         PopartConfig::instance()->queue_capacity());
@@ -203,7 +204,10 @@ odla_status odla_CreateContext(odla_context* context) {
     popart::logging::err("init computation item in CreateContext failed.");
     return status;
   }
-  *context = new _odla_pipeline_context(_odla_computation::instance());
+  if (PopartConfig::instance()->execution_mode() == PIPELINE_ASYNC)
+    *context = new _odla_pipeline_async_context(_odla_computation::instance());
+  else
+    *context = new _odla_pipeline_context(_odla_computation::instance());
   return ODLA_SUCCESS;
 }
 
