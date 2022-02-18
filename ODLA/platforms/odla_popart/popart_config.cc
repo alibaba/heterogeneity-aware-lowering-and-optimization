@@ -148,6 +148,8 @@ void PopartConfig::parse_from_json(const json& jf) {
       execution_mode_ = PIPELINE;
     else if ("parallel" == execution_mode)
       execution_mode_ = PARALLEL;
+    else if ("pipeline_async" == execution_mode)
+      execution_mode_ = PIPELINE_ASYNC;
     else
       execution_mode_ = SEQUENCE;
   }
