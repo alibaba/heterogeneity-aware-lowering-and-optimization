@@ -65,8 +65,6 @@ struct AnalyzerOpts {
 };
 
 struct CXXCodeGenOpts {
-  CXXCodeGenOpts(const BF16Mode& mode) : bf16_mode(mode) {}
-  CXXCodeGenOpts() = default;
   Dialect dialect = Dialect::CXX_11;
   bool print_mem_stats = false;
   bool emit_value_reset = false;
