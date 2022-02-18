@@ -276,7 +276,7 @@ odla_status _odla_computation::init(bool is_compile) {
         new_session->weightsFromHost(); // Copy weights from host to IPU
         // If in parallel mode, start the thread
         ExecutionMode mode = PopartConfig::instance()->execution_mode();
-        if (PIPELINE == mode || PARALLEL == mode) {
+        if (PIPELINE == mode || PARALLEL == mode || PIPELINE_ASYNC == mode) {
           std::thread parallel_thread(compute_loop, this);
           thread_state_ = RUNNING;
           popart::logging::warn("Parallel loop has been started");
@@ -321,7 +321,7 @@ odla_status _odla_computation::set_opts() {
 odla_status _odla_computation::set_executor() {
   odla_status ret_value = ODLA_SUCCESS;
   ExecutionMode mode = PopartConfig::instance()->execution_mode();
-  if (PIPELINE == mode || PARALLEL == mode) {
+  if (PIPELINE == mode || PARALLEL == mode || PIPELINE_ASYNC == mode) {
     popart::logging::info("set the executor as parallel");
     executor_ = new Parallel();
   } else if (SEQUENCE == mode) {

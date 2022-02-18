@@ -33,7 +33,6 @@
 #include <vector>
 
 #define g_comp _odla_computation::instance()
-// enum ExecutionMode {PIPELINE, PARALLEL, SEQUENCE};
 
 class Execution {
  public:
@@ -177,6 +176,8 @@ struct _odla_context {
   odla_computation comp;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> inputs;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> outputs;
+  void (*async_callback_func)(void*) = nullptr;
+  void* async_callback_arg = nullptr;
   _odla_context(odla_computation c) : comp(c) {}
   std::thread::id thread_id_of_holder;
   inline virtual void wait() {}
@@ -193,6 +194,6 @@ struct _odla_context {
   inline virtual bool all_tensors_written() { return true; }
   inline virtual void clear_visited_and_written() {}
   inline virtual bool deletable() { return false; }
-  bool hold(const std::string& function_name);
+  virtual bool hold(const std::string& function_name);
 };
 #endif
