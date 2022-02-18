@@ -2,7 +2,7 @@
 
 HALO generated ODLA function can also be used inside Python.
 
-Here we use [CaffeNet](https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf) as an example.
+<!-- Here we use [CaffeNet](https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf) as an example. -->
 
 First, we compile the Caffe model into ODLA:
 ```bash
