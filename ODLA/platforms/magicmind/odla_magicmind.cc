@@ -454,14 +454,12 @@ odla_status odla_SetActiveComputation(odla_computation computation) {
 }
 
 odla_status odla_DestroyComputation(odla_computation comp) {
-  delete g_ctx;
-  //  for (auto& c : g_comps) {
-  //    if (c.get() == comp) {
-  //      c.reset();
-  //      return ODLA_SUCCESS;
-  //    }
-  //  }
-  //  assert(0);
+  for (auto& c : g_comps) {
+    if (c.get() == comp) {
+      c.reset();
+      return ODLA_SUCCESS;
+    }
+  }
   return ODLA_FAILURE;
 }
 
@@ -525,8 +523,8 @@ odla_status odla_CreateContext(odla_context* context) {
 }
 
 odla_status odla_DestroyContext(odla_context context) {
-  assert(0);
-  return ODLA_FAILURE;
+  delete g_ctx;
+  return ODLA_SUCCESS;
 }
 
 odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
