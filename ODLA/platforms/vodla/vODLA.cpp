@@ -10,6 +10,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 #define MAX_INPUT_TENSOR 256
@@ -86,6 +87,9 @@ static u32 g_ctxId = 0;
 thread_local odla_computation g_comp;
 static std::vector<std::unique_ptr<_odla_computation>> g_comps;
 odla_device g_dev;
+
+std::mutex cnt_mu_;
+std::mutex dev_mu_;
 
 // read cc/bin files
 u32 readFile(std::string fname, bool isBin, char*& ret) {
@@ -524,21 +528,35 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
 }
 
 odla_status odla_CreateContext(odla_context* context) {
-  *context = new _odla_context();
+  VLOG(0) << "odla_CreateContext handler " << g_dev->vodh_hd << " dev_list ptr "
+          << g_dev->vodh_dev_list << " ctx " << context << ", *ctx "
+          << *context;
 
-  if (context == NULL) {
-    std::cout << "[vODLA] ERROR: failed to create odla context.\n";
+  vodh_ret ret =
+      vodh_create_context(g_dev->vodh_hd, g_dev->vodh_dev_list, context);
+
+  if (context == NULL || ret) {
+    std::cout << "[vODLA] ERROR: failed to create odla context. context "
+              << context << " ret " << ret << "\n";
     return ODLA_FAILURE;
   }
 
-  (*context)->Id = g_ctxId++;
+  {
+    std::lock_guard<std::mutex> lck(cnt_mu_);
+    (*context)->Id = g_ctxId++;
+  }
   return ODLA_SUCCESS;
 }
 
 odla_status odla_DestroyContext(odla_context context) {
-  if (context) {
-    delete context;
-    context = NULL;
+  // vodh_ret ret vodh_destroy_context(void *vodh_handle, struct vodh_dev* dev,
+  // vodla_context context);
+  VLOG(0) << "odla_DestroyContext context " << context;
+  vodh_ret ret vodh_destroy_context(g_dev->vodh_hd, g_dev->vodh_dev_list,
+                                    context);
+  if (ret) {
+    VLOG(0) << "[vODLA] ERROR: failed to call vodh_destroy_context";
+    return ODLA_FAILURE;
   }
   return ODLA_SUCCESS;
 }
