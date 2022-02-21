@@ -552,8 +552,8 @@ odla_status odla_DestroyContext(odla_context context) {
   // vodh_ret ret vodh_destroy_context(void *vodh_handle, struct vodh_dev* dev,
   // vodla_context context);
   VLOG(0) << "odla_DestroyContext context " << context;
-  vodh_ret ret vodh_destroy_context(g_dev->vodh_hd, g_dev->vodh_dev_list,
-                                    context);
+  vodh_ret ret =
+      vodh_destroy_context(g_dev->vodh_hd, g_dev->vodh_dev_list, context);
   if (ret) {
     VLOG(0) << "[vODLA] ERROR: failed to call vodh_destroy_context";
     return ODLA_FAILURE;
