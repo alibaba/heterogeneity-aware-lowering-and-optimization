@@ -204,6 +204,10 @@ vodh_ret vodh_model(void* vodh_handle, struct vodh_dev* dev,
                     struct vodh_model_options* moptions,
                     struct vodh_model_op_result* mresult);
 vodh_ret vodh_dev_close(void* vodh_handle, struct vodh_dev* dev);
+vodh_ret vodh_create_context(void* vodh_handle, struct vodh_dev* dev,
+                             vodla_context* context);
+vodh_ret vodh_destroy_context(void* vodh_handle, struct vodh_dev* dev,
+                              vodla_context context);
 void* vodh_malloc(u32 size);
 void vodh_free(void* ptr);
 
