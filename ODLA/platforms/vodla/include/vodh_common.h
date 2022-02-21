@@ -9,6 +9,9 @@ typedef unsigned long long u64;
 
 typedef unsigned short bufhd_t;
 
+// typedef odla_context vodla_context;
+typedef struct _odla_context* vodla_context;
+
 enum VODH_RET_ {
   VODH_OK = 0,
   VODH_EPERM = 1,    /* Operation not permitted */

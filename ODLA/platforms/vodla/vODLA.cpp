@@ -528,9 +528,9 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
 }
 
 odla_status odla_CreateContext(odla_context* context) {
-  VLOG(0) << "odla_CreateContext handler " << g_dev->vodh_hd << " dev_list ptr "
-          << g_dev->vodh_dev_list << " ctx " << context << ", *ctx "
-          << *context;
+  std::cout << "odla_CreateContext handler " << g_dev->vodh_hd
+            << " dev_list ptr " << g_dev->vodh_dev_list << " ctx " << context
+            << ", *ctx " << *context << std::endl;
 
   vodh_ret ret =
       vodh_create_context(g_dev->vodh_hd, g_dev->vodh_dev_list, context);
@@ -551,11 +551,12 @@ odla_status odla_CreateContext(odla_context* context) {
 odla_status odla_DestroyContext(odla_context context) {
   // vodh_ret ret vodh_destroy_context(void *vodh_handle, struct vodh_dev* dev,
   // vodla_context context);
-  VLOG(0) << "odla_DestroyContext context " << context;
+  std::cout << "odla_DestroyContext context " << context << std::endl;
   vodh_ret ret =
       vodh_destroy_context(g_dev->vodh_hd, g_dev->vodh_dev_list, context);
   if (ret) {
-    VLOG(0) << "[vODLA] ERROR: failed to call vodh_destroy_context";
+    std::cout << "[vODLA] ERROR: failed to call vodh_destroy_context"
+              << std::endl;
     return ODLA_FAILURE;
   }
   return ODLA_SUCCESS;
