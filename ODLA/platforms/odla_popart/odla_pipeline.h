@@ -216,7 +216,8 @@ struct _odla_pipeline_async_context : public _odla_pipeline_context {
           this);
       throw std::invalid_argument("async_callback_arg is null");
     }
-    async_callback_func(async_callback_arg);
+    async_callback_func(async_callback_arg,
+                        ODLA_SUCCESS); // FIXME: notify the status
   }
   bool hold(const std::string& function_name) override { return true; }
 };
