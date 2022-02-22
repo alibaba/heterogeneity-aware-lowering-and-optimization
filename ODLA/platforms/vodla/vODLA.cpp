@@ -120,26 +120,6 @@ u32 readFile(std::string fname, bool isBin, char*& ret) {
 void freeAllocs(odla_device dev, ERR_CODE cd) {
   switch (cd) {
     case ERR_CLEAN:
-      if (dev->vodh_infer_opt.input) {
-        for (u32 i = 0; i < dev->vodh_infer_opt.input_num; i++) {
-          vodh_free(dev->vodh_infer_opt.input[i]->data);
-          dev->vodh_infer_opt.input[i]->data = NULL;
-          delete dev->vodh_infer_opt.input[i];
-          dev->vodh_infer_opt.input[i] = NULL;
-        }
-        delete[] dev->vodh_infer_opt.input;
-        dev->vodh_infer_opt.input = NULL;
-      }
-      if (dev->vodh_infer_result.output) {
-        for (u32 i = 0; i < dev->vodh_infer_result.output_num; i++) {
-          vodh_free(dev->vodh_infer_result.output[i]->data);
-          dev->vodh_infer_result.output[i]->data = NULL;
-          delete dev->vodh_infer_result.output[i];
-          dev->vodh_infer_result.output[i] = NULL;
-        }
-        delete[] dev->vodh_infer_result.output;
-        dev->vodh_infer_result.output = NULL;
-      }
     case ERR_DEV_OPEN:
     case ERR_ONE_CAP:
     case ERR_DEV_INFO:
