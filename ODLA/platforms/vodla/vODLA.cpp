@@ -608,49 +608,49 @@ odla_status odla_DestroyComputation(odla_computation comp) {
   return ODLA_FAILURE;
 }
 
-void deallocDMA(odla_device device, bool ip, bool op) {
+void deallocDMA(struct vodh_infer_options& vodh_infer_opt,
+                struct vodh_infer_result& vodh_infer_res, bool ip, bool op) {
   /*DeAllocate DMA for inputs*/
-  if (device->vodh_infer_opt.input && ip) {
-    for (u32 i = 0; i < device->vodh_infer_opt.input_num; i++) {
+  if (vodh_infer_opt.input && ip) {
+    for (u32 i = 0; i < vodh_infer_opt.input_num; i++) {
 #ifdef DEBUG
-      printf("input %d data at %p\n", i, device->vodh_infer_opt.input[i]->data);
+      printf("input %d data at %p\n", i, vodh_infer_opt.input[i]->data);
 #endif
 
-      vodh_free(device->vodh_infer_opt.input[i]->data);
-      device->vodh_infer_opt.input[i]->data = NULL;
-      delete device->vodh_infer_opt.input[i];
-      device->vodh_infer_opt.input[i] = NULL;
+      vodh_free(vodh_infer_opt.input[i]->data);
+      vodh_infer_opt.input[i]->data = NULL;
+      delete vodh_infer_opt.input[i];
+      vodh_infer_opt.input[i] = NULL;
 
 #ifdef DEBUG
       std::cout << "[vODLA] DEBUG: released vodh input: " << i << "\n";
 #endif
     }
-    delete[] device->vodh_infer_opt.input;
-    device->vodh_infer_opt.input = NULL;
+    delete[] vodh_infer_opt.input;
+    vodh_infer_opt.input = NULL;
 
 #ifdef DEBUG
     std::cout << "[vODLA] DEBUG: released input pointer\n";
 #endif
   }
   /*DeAllocate DMA for outputs*/
-  if (device->vodh_infer_result.output && op) {
-    for (u32 i = 0; i < device->vodh_infer_result.output_num; i++) {
+  if (vodh_infer_res.output && op) {
+    for (u32 i = 0; i < vodh_infer_res.output_num; i++) {
 #ifdef DEBUG
-      printf("output %d data at %p\n", i,
-             device->vodh_infer_result.output[i]->data);
+      printf("output %d data at %p\n", i, vodh_infer_result.output[i]->data);
 #endif
 
-      vodh_free(device->vodh_infer_result.output[i]->data);
-      device->vodh_infer_result.output[i]->data = NULL;
-      delete device->vodh_infer_result.output[i];
-      device->vodh_infer_result.output[i] = NULL;
+      vodh_free(vodh_infer_res.output[i]->data);
+      vodh_infer_res.output[i]->data = NULL;
+      delete vodh_infer_res.output[i];
+      vodh_infer_res.output[i] = NULL;
 
 #ifdef DEBUG
       std::cout << "[vODLA] DEBUG: released vodh output: " << i << "\n";
 #endif
     }
-    delete[] device->vodh_infer_result.output;
-    device->vodh_infer_result.output = NULL;
+    delete[] vodh_infer_res.output;
+    vodh_infer_res.output = NULL;
 
 #ifdef DEBUG
     std::cout << "[vODLA] DEBUG: released output pointer\n";
@@ -658,7 +658,8 @@ void deallocDMA(odla_device device, bool ip, bool op) {
   }
 }
 
-bool allocDMA(odla_device device, odla_context context) {
+bool allocDMA(struct vodh_infer_options& vodh_infer_opt,
+              struct vodh_infer_result& vodh_infer_res, odla_context context) {
   bool ret = true;
 
 #ifdef TIMING
@@ -669,26 +670,25 @@ bool allocDMA(odla_device device, odla_context context) {
 
   /* Alloc DMA memory for input data */
   u32 ip_mem_cap = 0;
-  if (device->vodh_infer_opt.input_num != context->ipNum) {
-    deallocDMA(device, true, false);
-    device->vodh_infer_opt.input_num = context->ipNum;
-    device->vodh_infer_opt.input = new vodh_input*[context->ipNum];
-    if (device->vodh_infer_opt.input) {
+  if (vodh_infer_opt.input_num != context->ipNum) {
+    deallocDMA(vodh_infer_opt, vodh_infer_res, true, false);
+    vodh_infer_opt.input_num = context->ipNum;
+    vodh_infer_opt.input = new vodh_input*[context->ipNum];
+    if (vodh_infer_opt.input) {
       for (u32 i = 0; i < context->ipNum; i++) {
-        device->vodh_infer_opt.input[i] = new vodh_input();
-        if (device->vodh_infer_opt.input[i]) {
-          device->vodh_infer_opt.input[i]->data =
-              vodh_malloc(context->ipSizes[i]);
-          if (device->vodh_infer_opt.input[i]->data && context->ipPtr[i]) {
+        vodh_infer_opt.input[i] = new vodh_input();
+        if (vodh_infer_opt.input[i]) {
+          vodh_infer_opt.input[i]->data = vodh_malloc(context->ipSizes[i]);
+          if (vodh_infer_opt.input[i]->data && context->ipPtr[i]) {
 #ifdef PRINTMEM
             std::cout << "vodh input " << i
                       << " malloc: " << context->ipSizes[i] << " bytes.\n";
-            std::cout << "dst address: "
-                      << device->vodh_infer_opt.input[i]->data << ".\n";
+            std::cout << "dst address: " << vodh_infer_opt.input[i]->data
+                      << ".\n";
             std::cout << "src address: " << context->ipPtr[i] << ".\n";
             std::cout << "loop on dst mem:" << std::endl;
             for (int lp = 0; lp < context->ipSizes[i]; lp++) {
-              char* tmp = (char*)(device->vodh_infer_opt.input[i]->data) + lp;
+              char* tmp = (char*)(vodh_infer_opt.input[i]->data) + lp;
               if (lp == 0 || lp == (context->ipSizes[i] >> 1) ||
                   lp == context->ipSizes[i] - 1) {
                 std::cout << "(" << lp << "," << (*tmp) << ")," << std::endl;
@@ -707,7 +707,7 @@ bool allocDMA(odla_device device, odla_context context) {
 #ifdef TIMING
             gettimeofday(&t_s, NULL);
 #endif
-            memcpy(device->vodh_infer_opt.input[i]->data, context->ipPtr[i],
+            memcpy(vodh_infer_opt.input[i]->data, context->ipPtr[i],
                    context->ipSizes[i]);
 #ifdef TIMING
             gettimeofday(&t_e, NULL);
@@ -730,33 +730,32 @@ bool allocDMA(odla_device device, odla_context context) {
                     << " failed.\n";
           ret = false;
         }
-        device->vodh_infer_opt.input[i]->size = context->ipSizes[i];
-        ip_mem_cap += device->vodh_infer_opt.input[i]->size;
+        vodh_infer_opt.input[i]->size = context->ipSizes[i];
+        ip_mem_cap += vodh_infer_opt.input[i]->size;
       }
     } else {
       std::cout << "[vODLA] ERROR: allocate infer input failed.\n";
       ret = false;
     }
   } else {
-    if (device->vodh_infer_opt.input) {
+    if (vodh_infer_opt.input) {
       for (u32 i = 0; i < context->ipNum; i++) {
-        if (device->vodh_infer_opt.input[i]) {
-          if (device->vodh_infer_opt.input[i]->size != context->ipSizes[i]) {
-            vodh_free(device->vodh_infer_opt.input[i]->data);
-            device->vodh_infer_opt.input[i]->data = NULL;
-            device->vodh_infer_opt.input[i]->data =
-                vodh_malloc(context->ipSizes[i]);
+        if (vodh_infer_opt.input[i]) {
+          if (vodh_infer_opt.input[i]->size != context->ipSizes[i]) {
+            vodh_free(vodh_infer_opt.input[i]->data);
+            vodh_infer_opt.input[i]->data = NULL;
+            vodh_infer_opt.input[i]->data = vodh_malloc(context->ipSizes[i]);
           }
-          if (device->vodh_infer_opt.input[i]->data && context->ipPtr[i]) {
+          if (vodh_infer_opt.input[i]->data && context->ipPtr[i]) {
 #ifdef PRINTMEM
             std::cout << "vodh input " << i
                       << " malloc: " << context->ipSizes[i] << " bytes.\n";
-            std::cout << "dst address: "
-                      << device->vodh_infer_opt.input[i]->data << ".\n";
+            std::cout << "dst address: " << vodh_infer_opt.input[i]->data
+                      << ".\n";
             std::cout << "src address: " << context->ipPtr[i] << ".\n";
             std::cout << "loop on dst mem:" << std::endl;
             for (int lp = 0; lp < context->ipSizes[i]; lp++) {
-              char* tmp = (char*)(device->vodh_infer_opt.input[i]->data) + lp;
+              char* tmp = (char*)(vodh_infer_opt.input[i]->data) + lp;
               if (lp == 0 || lp == (context->ipSizes[i] >> 1) ||
                   lp == context->ipSizes[i] - 1) {
                 std::cout << "(" << lp << "," << (*tmp) << ")," << std::endl;
@@ -775,7 +774,7 @@ bool allocDMA(odla_device device, odla_context context) {
 #ifdef TIMING
             gettimeofday(&t_s, NULL);
 #endif
-            memcpy(device->vodh_infer_opt.input[i]->data, context->ipPtr[i],
+            memcpy(vodh_infer_opt.input[i]->data, context->ipPtr[i],
                    context->ipSizes[i]);
 #ifdef TIMING
             gettimeofday(&t_e, NULL);
@@ -797,8 +796,8 @@ bool allocDMA(odla_device device, odla_context context) {
                     << " failed.\n";
           ret = false;
         }
-        device->vodh_infer_opt.input[i]->size = context->ipSizes[i];
-        ip_mem_cap += device->vodh_infer_opt.input[i]->size;
+        vodh_infer_opt.input[i]->size = context->ipSizes[i];
+        ip_mem_cap += vodh_infer_opt.input[i]->size;
       }
     } else {
       std::cout << "[vODLA] ERROR: reuse infer input failed.\n";
@@ -808,17 +807,16 @@ bool allocDMA(odla_device device, odla_context context) {
 
   /* Alloc DMA memory for output data */
   u32 op_mem_cap = 0;
-  if (device->vodh_infer_result.output_num != context->opNum) {
-    deallocDMA(device, false, true);
-    device->vodh_infer_result.output_num = context->opNum;
-    device->vodh_infer_result.output = new vodh_output*[context->opNum];
-    if (device->vodh_infer_result.output) {
+  if (vodh_infer_res.output_num != context->opNum) {
+    deallocDMA(vodh_infer_opt, vodh_infer_res, false, true);
+    vodh_infer_res.output_num = context->opNum;
+    vodh_infer_res.output = new vodh_output*[context->opNum];
+    if (vodh_infer_res.output) {
       for (u32 i = 0; i < context->opNum; i++) {
-        device->vodh_infer_result.output[i] = new vodh_output();
-        if (device->vodh_infer_result.output[i]) {
-          device->vodh_infer_result.output[i]->data =
-              vodh_malloc(context->opSizes[i]);
-          if (device->vodh_infer_result.output[i]->data == NULL) {
+        vodh_infer_res.output[i] = new vodh_output();
+        if (vodh_infer_res.output[i]) {
+          vodh_infer_res.output[i]->data = vodh_malloc(context->opSizes[i]);
+          if (vodh_infer_res.output[i]->data == NULL) {
             std::cout << "[vODLA] ERROR: allocate infer output " << i
                       << " data failed.\n";
             ret = false;
@@ -828,25 +826,23 @@ bool allocDMA(odla_device device, odla_context context) {
                     << " failed.\n";
           ret = false;
         }
-        device->vodh_infer_result.output[i]->size = context->opSizes[i];
-        op_mem_cap += device->vodh_infer_result.output[i]->size;
+        vodh_infer_res.output[i]->size = context->opSizes[i];
+        op_mem_cap += vodh_infer_res.output[i]->size;
       }
     } else {
       std::cout << "[vODLA] ERROR: allocate infer output failed.\n";
       ret = false;
     }
   } else {
-    if (device->vodh_infer_result.output) {
+    if (vodh_infer_res.output) {
       for (u32 i = 0; i < context->opNum; i++) {
-        if (device->vodh_infer_result.output[i]) {
-          if (device->vodh_infer_result.output[i]->size !=
-              context->opSizes[i]) {
-            vodh_free(device->vodh_infer_result.output[i]->data);
-            device->vodh_infer_result.output[i]->data = NULL;
-            device->vodh_infer_result.output[i]->data =
-                vodh_malloc(context->opSizes[i]);
+        if (vodh_infer_res.output[i]) {
+          if (vodh_infer_res.output[i]->size != context->opSizes[i]) {
+            vodh_free(vodh_infer_res.output[i]->data);
+            vodh_infer_res.output[i]->data = NULL;
+            vodh_infer_res.output[i]->data = vodh_malloc(context->opSizes[i]);
           }
-          if (device->vodh_infer_result.output[i]->data == NULL) {
+          if (vodh_infer_res.output[i]->data == NULL) {
             std::cout << "[vODLA] ERROR: allocate infer output " << i
                       << " data failed (reuse).\n";
             ret = false;
@@ -856,8 +852,8 @@ bool allocDMA(odla_device device, odla_context context) {
                     << " failed.\n";
           ret = false;
         }
-        device->vodh_infer_result.output[i]->size = context->opSizes[i];
-        op_mem_cap += device->vodh_infer_result.output[i]->size;
+        vodh_infer_res.output[i]->size = context->opSizes[i];
+        op_mem_cap += vodh_infer_res.output[i]->size;
       }
     } else {
       std::cout << "[vODLA] ERROR: reuse infer output failed.\n";
@@ -865,8 +861,8 @@ bool allocDMA(odla_device device, odla_context context) {
     }
   }
 
-  device->vodh_infer_opt.request_cap.input_memory = ip_mem_cap;
-  device->vodh_infer_opt.request_cap.output_memory = op_mem_cap;
+  vodh_infer_opt.request_cap.input_memory = ip_mem_cap;
+  vodh_infer_opt.request_cap.output_memory = op_mem_cap;
 
   return ret;
 }
@@ -909,13 +905,17 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
 #endif
 
   bool allocSuccess = true;
+  thread_local static struct vodh_infer_options vodh_infer_opt;
+  thread_local static struct vodh_infer_result vodh_infer_res;
+
   u64 rid = ((context->Id) << 16) + context->dataId;
   // context changed, new data mem to be allocated
-  if (rid != device->vodh_infer_result.request_id) {
+  if (rid != vodh_infer_res.request_id) {
 #ifdef DEBUG
     std::cout << "[vODLA] DEBUG: infer input data changed.\n";
 #endif
-    allocSuccess = allocDMA(device, context);
+
+    allocSuccess = allocDMA(vodh_infer_opt, vodh_infer_res, context);
 
 #ifdef TIMING
     gettimeofday(&t_e, NULL);
@@ -928,35 +928,35 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
 
   // input/output allocation is successfull
   if (allocSuccess) {
-    device->vodh_infer_result.request_id = rid;
+    vodh_infer_res.request_id = rid;
+    vodh_infer_opt.request_id = rid;
+
 #ifdef DEBUG
     std::cout << "[vODLA] DEBUG: infer request ID is "
-              << device->vodh_infer_result.request_id << "\n";
+              << vodh_infer_res.request_id << "\n";
 #endif
 
     vodh_ret rt;
 
     /* Additional inference info */
-    device->vodh_infer_opt.batch_size = context->batchSize;
-    device->vodh_infer_opt.request_id = device->vodh_infer_result.request_id;
-    device->vodh_infer_opt.request_cap.type = device->vodh_dev_cap_list[0].type;
-    device->vodh_infer_opt.request_cap.net_bw = device->vodh_total_cap.net_bw;
-    device->vodh_infer_opt.request_cap.net_delay =
-        device->vodh_total_cap.net_delay;
-    device->vodh_infer_opt.request_cap.use_direct_rdma = true;
-    device->vodh_infer_opt.request_cap.compute =
+    vodh_infer_opt.batch_size = context->batchSize;
+    vodh_infer_opt.request_cap.type = device->vodh_dev_cap_list[0].type;
+    vodh_infer_opt.request_cap.net_bw = device->vodh_total_cap.net_bw;
+    vodh_infer_opt.request_cap.net_delay = device->vodh_total_cap.net_delay;
+    vodh_infer_opt.request_cap.use_direct_rdma = true;
+    vodh_infer_opt.request_cap.compute =
         0; // TODO: compute power required from cost model.
     /* Alloc DMA memory for model file */
-    device->vodh_infer_opt.model.model_data = comp->ccPtr;
-    device->vodh_infer_opt.model.model_size = comp->ccFileSz;
-    device->vodh_infer_opt.model.model_id = comp->Id;
-    strcpy(device->vodh_infer_opt.model.model_file, comp->ccFile.c_str());
+    vodh_infer_opt.model.model_data = comp->ccPtr;
+    vodh_infer_opt.model.model_size = comp->ccFileSz;
+    vodh_infer_opt.model.model_id = comp->Id;
+    strcpy(vodh_infer_opt.model.model_file, comp->ccFile.c_str());
     /* Alloc DMA memory for weight file */
-    device->vodh_infer_opt.model.weight_data = comp->wtPtr;
-    device->vodh_infer_opt.model.weight_size = comp->wtFileSz;
-    device->vodh_infer_opt.model.weight_id = comp->Id;
-    device->vodh_infer_opt.model.use_file = 1; // use file path instead of DMA
-    strcpy(device->vodh_infer_opt.model.weight_file, comp->wtFile.c_str());
+    vodh_infer_opt.model.weight_data = comp->wtPtr;
+    vodh_infer_opt.model.weight_size = comp->wtFileSz;
+    vodh_infer_opt.model.weight_id = comp->Id;
+    vodh_infer_opt.model.use_file = 1; // use file path instead of DMA
+    strcpy(vodh_infer_opt.model.weight_file, comp->wtFile.c_str());
 
 #ifdef DEBUG
     std::cout << "[vODLA] INFO: start remote inference...\n";
@@ -972,7 +972,7 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     for (u32 lp = 0; lp < LOOP_CNT; lp++) {
       /* Remote infer */
       rt = vodh_infer(device->vodh_hd, &(device->vodh_dev_list[0]),
-                      &(device->vodh_infer_opt), &(device->vodh_infer_result));
+                      &vodh_infer_opt, &vodh_infer_res);
       if (rt) {
         break;
       }
@@ -986,11 +986,9 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
       time_avg += time_used;
       gettimeofday(&t_s, NULL);
 
-      xpu_time_max =
-          std::max(xpu_time_max, device->vodh_infer_result.time_used);
-      xpu_time_min =
-          std::min(xpu_time_min, device->vodh_infer_result.time_used);
-      xpu_time_avg += device->vodh_infer_result.time_used;
+      xpu_time_max = std::max(xpu_time_max, vodh_infer_res.time_used);
+      xpu_time_min = std::min(xpu_time_min, vodh_infer_res.time_used);
+      xpu_time_avg += vodh_infer_res.time_used;
     }
     xpu_time_avg /= LOOP_CNT;
     std::cout << "[vODLA] TIMING: Remote xPU inference avg time: "
@@ -1009,7 +1007,7 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
 #else
     /* Remote infer */
     rt = vodh_infer(device->vodh_hd, &(device->vodh_dev_list[0]),
-                    &(device->vodh_infer_opt), &(device->vodh_infer_result));
+                    &vodh_infer_opt, &vodh_infer_res);
 #endif
 
     // cp back inference result
@@ -1018,12 +1016,11 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
 #ifdef PRINTMEM
         std::cout << "vodh output " << i << " malloc: " << context->opSizes[i]
                   << " bytes.\n";
-        std::cout << "src address: "
-                  << device->vodh_infer_result.output[i]->data << ".\n";
+        std::cout << "src address: " << vodh_infer_res.output[i]->data << ".\n";
         std::cout << "dst address: " << context->opPtr[i] << ".\n";
         std::cout << "loop on src mem:" << std::endl;
         for (int lp = 0; lp < context->opSizes[i]; lp++) {
-          char* tmp = (char*)(device->vodh_infer_result.output[i]->data) + lp;
+          char* tmp = (char*)(vodh_infer_res.output[i]->data) + lp;
           if (lp == 0 || lp == (context->opSizes[i] >> 1) ||
               lp == context->opSizes[i] - 1) {
             std::cout << "(" << lp << "," << (*tmp) << ")," << std::endl;
@@ -1039,7 +1036,7 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
         }
         std::cout << " \nstart memcpy ...\n";
 #endif
-        memcpy(context->opPtr[i], device->vodh_infer_result.output[i]->data,
+        memcpy(context->opPtr[i], vodh_infer_res.output[i]->data,
                context->opSizes[i]);
 #ifdef PRINTMEM
         std::cout << "finished memcpy.\n";
@@ -1057,7 +1054,7 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
 #ifdef DEBUG
       std::cout << "[vODLA] INFO: Run inference finished!\n";
 #endif
-      ret = static_cast<odla_status>(device->vodh_infer_result.status);
+      ret = static_cast<odla_status>(vodh_infer_res.status);
 #ifdef DEBUG
       if (ret == ODLA_FAILURE) {
         std::cout << "[vODLA] INFO: Remote inference failed!\n";
