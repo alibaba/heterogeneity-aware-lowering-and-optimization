@@ -1620,4 +1620,16 @@ odla_value odla_LpNormalize(odla_value input, odla_int32 p,
   return CreateValue(normalize, input->type, value_id);
 }
 
+odla_status odla_GetValueId(const odla_value value, odla_value_id* value_id) {
+  *value_id = reinterpret_cast<odla_value_id>(
+      const_cast<char*>(value->real_name.c_str()));
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_GetValueType(const odla_value value,
+                              odla_value_type* value_type) {
+  *value_type = value->type;
+  return ODLA_SUCCESS;
+}
+
 } // C extern
