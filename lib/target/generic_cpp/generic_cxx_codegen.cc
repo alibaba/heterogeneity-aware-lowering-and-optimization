@@ -626,7 +626,7 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
       oss << "extern \"C\" {\n";
     }
     if (opts_.emit_code_for_async) {
-      oss << "  typedef int (*model_run_callback)(void *);\n";
+      oss << "  typedef int (*model_run_callback)(void *, odla_status);\n";
     }
     oss << "  " << func_decl << ";\n";
     oss << "int " << init_func_name << "();\n";
