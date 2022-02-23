@@ -4,6 +4,7 @@
 #include <sys/time.h>
 #include <vodh_common.h>
 
+#include <atomic>
 #include <cassert>
 #include <cstdint>
 #include <fstream>
@@ -72,14 +73,13 @@ struct _odla_value {
   u32 val;
 };
 
-static u32 g_ctxId = 0;
+static std::atomic<u32> g_ctxId = std::atomic<u32>(0);
 
 thread_local odla_computation g_comp;
 static std::vector<std::unique_ptr<_odla_computation>> g_comps;
 odla_device g_dev;
 
-std::mutex cnt_mu_;
-std::mutex dev_mu_;
+static std::mutex cnt_mu_;
 
 // read cc/bin files
 u32 readFile(std::string fname, bool isBin, char*& ret) {
@@ -498,30 +498,32 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
 }
 
 odla_status odla_CreateContext(odla_context* context) {
+#ifdef DEBUG
   std::cout << "odla_CreateContext handler " << g_dev->vodh_hd
             << " dev_list ptr " << g_dev->vodh_dev_list << " ctx " << context
             << ", *ctx " << *context << std::endl;
+#endif
 
   vodh_ret ret =
       vodh_create_context(g_dev->vodh_hd, g_dev->vodh_dev_list, context);
 
-  if (context == NULL || ret) {
+  if (*context == nullptr || ret) {
+#ifdef DEBUG
     std::cout << "[vODLA] ERROR: failed to create odla context. context "
               << context << " ret " << ret << "\n";
+#endif
     return ODLA_FAILURE;
   }
 
-  {
-    std::lock_guard<std::mutex> lck(cnt_mu_);
-    (*context)->Id = g_ctxId++;
-  }
+  (*context)->Id = g_ctxId++;
+
   return ODLA_SUCCESS;
 }
 
 odla_status odla_DestroyContext(odla_context context) {
-  // vodh_ret ret vodh_destroy_context(void *vodh_handle, struct vodh_dev* dev,
-  // vodla_context context);
+#ifdef DEBUG
   std::cout << "odla_DestroyContext context " << context << std::endl;
+#endif
   vodh_ret ret =
       vodh_destroy_context(g_dev->vodh_hd, g_dev->vodh_dev_list, context);
   if (ret) {
