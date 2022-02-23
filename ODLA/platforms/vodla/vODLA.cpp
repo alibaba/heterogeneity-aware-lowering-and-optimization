@@ -553,7 +553,7 @@ odla_status odla_DestroyComputation(odla_computation comp) {
       mopt.opcode = TYPE_RELEASE;
       mopt.pad = 0;
       mopt.model.use_file = 1;
-      mopt.model.model_id = comp->Id;;
+      mopt.model.model_id = comp->Id;
       mopt.model.weight_id = comp->Id;
       strcpy(mopt.model.model_file, comp->ccFile.c_str());
       strcpy(mopt.model.weight_file, comp->wtFile.c_str());
@@ -875,8 +875,21 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
 #endif
 
   bool allocSuccess = true;
-  thread_local static struct vodh_infer_options vodh_infer_opt;
-  thread_local static struct vodh_infer_result vodh_infer_res;
+  thread_local static struct vodh_infer_options vodh_infer_opt = {
+      .request_id = 0xDEADBEEF,
+      .batch_size = 0,
+      .input_num = 0,
+      .pad = 0,
+      .request_cap = {},
+      .model = {},
+      .input = NULL};
+  thread_local static struct vodh_infer_result vodh_infer_res = {
+      .request_id = 0xDEADBEEF,
+      .status = 0,
+      .output_num = 0,
+      .pad = 0,
+      .time_used = 0,
+      .output = NULL};
 
   u64 rid = ((context->Id) << 16) + context->dataId;
   // context changed, new data mem to be allocated
