@@ -41,16 +41,6 @@ struct _odla_device {
   struct vodh_dev* vodh_dev_list = NULL;
   struct vodh_dev_cap* vodh_dev_cap_list = NULL;
   struct vodh_total_cap vodh_total_cap;
-  struct vodh_infer_options vodh_infer_opt;
-  struct vodh_infer_result vodh_infer_result;
-  _odla_device() {
-    vodh_infer_opt.request_id = 0xDEADBEEF;
-    vodh_infer_opt.input = NULL;
-    vodh_infer_opt.input_num = 0;
-    vodh_infer_result.request_id = 0xDEADBEEF;
-    vodh_infer_result.output = NULL;
-    vodh_infer_result.output_num = 0;
-  }
 };
 
 // input/output for a certain ctx
@@ -563,10 +553,10 @@ odla_status odla_DestroyComputation(odla_computation comp) {
       mopt.opcode = TYPE_RELEASE;
       mopt.pad = 0;
       mopt.model.use_file = 1;
-      mopt.model.model_id = g_dev->vodh_infer_opt.model.model_id;
-      mopt.model.weight_id = g_dev->vodh_infer_opt.model.weight_id;
-      strcpy(mopt.model.model_file, g_dev->vodh_infer_opt.model.model_file);
-      strcpy(mopt.model.weight_file, g_dev->vodh_infer_opt.model.weight_file);
+      mopt.model.model_id = comp->Id;;
+      mopt.model.weight_id = comp->Id;
+      strcpy(mopt.model.model_file, comp->ccFile.c_str());
+      strcpy(mopt.model.weight_file, comp->wtFile.c_str());
       vodh_model_op_result mret;
       if (vodh_model(g_dev->vodh_hd, &(g_dev->vodh_dev_list[0]), &mopt,
                      &mret)) {
