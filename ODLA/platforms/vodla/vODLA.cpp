@@ -11,7 +11,6 @@
 #include <iostream>
 #include <limits>
 #include <memory>
-#include <mutex>
 #include <vector>
 
 #define MAX_INPUT_TENSOR 256
@@ -78,8 +77,6 @@ static std::atomic<u32> g_ctxId = std::atomic<u32>(0);
 thread_local odla_computation g_comp;
 static std::vector<std::unique_ptr<_odla_computation>> g_comps;
 odla_device g_dev;
-
-static std::mutex cnt_mu_;
 
 // read cc/bin files
 u32 readFile(std::string fname, bool isBin, char*& ret) {
