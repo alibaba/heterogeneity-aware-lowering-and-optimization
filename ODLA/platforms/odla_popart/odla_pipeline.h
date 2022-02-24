@@ -45,6 +45,7 @@ class Queue {
   virtual void pop_input(odla_context ctx) = 0;
   virtual void pop_output(odla_context ctx) = 0;
   virtual std::size_t size() = 0;
+  virtual void handle_error() = 0;
 };
 
 class ContextQueues : public Queue {
@@ -72,6 +73,7 @@ class ContextQueues : public Queue {
   void pop_input(odla_context ctx) final;
   void pop_output(odla_context ctx) final;
   std::size_t size() final { return (tail_ - wait_ + capacity_) % capacity_; }
+  void handle_error() final;
 };
 
 class LockFreeQueue : public Queue {
@@ -100,6 +102,7 @@ class LockFreeQueue : public Queue {
   std::size_t size() final {
     return (tail_.load() - wait_ + capacity_) % capacity_;
   }
+  void handle_error() final;
 };
 
 class QManager {
@@ -115,7 +118,10 @@ class QManager {
   void createQ(std::string queueType);
   void deleteQ();
   inline Queue* getQ() { return queue_; }
-  inline void set_status(odla_status status) { status_ = status; }
+  inline void set_status(odla_status status) {
+    status_ = status;
+    if (ODLA_SUCCESS != status_ && queue_) queue_->handle_error();
+  }
   inline odla_status get_status() { return status_; }
   static inline QManager* instance() { return instance_; }
 };
@@ -216,8 +222,7 @@ struct _odla_pipeline_async_context : public _odla_pipeline_context {
           this);
       throw std::invalid_argument("async_callback_arg is null");
     }
-    async_callback_func(async_callback_arg,
-                        ODLA_SUCCESS); // FIXME: notify the status
+    async_callback_func(async_callback_arg, QManager::instance()->get_status());
   }
   bool hold(const std::string& function_name) override { return true; }
 };
