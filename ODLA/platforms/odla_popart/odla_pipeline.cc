@@ -195,6 +195,16 @@ odla_context ContextQueues::get_ctx_by_tensor(const popart::TensorId& id) {
   tensor_to_idx_[id] = (idx + 1) % capacity_;
   return ctx;
 }
+
+void ContextQueues::handle_error() {
+  auto idx = wait_;
+  while (idx != tail_) {
+    odla_context ctx = buffer_[idx];
+    if (ctx != nullptr) ctx->notify();
+    idx = (idx + 1) % capacity_;
+  }
+}
+
 /*------------------------------------------------------------------------*/
 LockFreeQueue::LockFreeQueue() : head_(0), tail_(0), wait_(0) {}
 
@@ -342,6 +352,15 @@ odla_context LockFreeQueue::get_ctx_by_tensor(const popart::TensorId& id) {
   // Update the index of the tensor to next
   tensor_to_idx_[id] = (idx + 1) % capacity_;
   return ctx;
+}
+
+void LockFreeQueue::handle_error() {
+  auto idx = wait_;
+  while (idx != tail_.load()) {
+    odla_context ctx = buffer_[idx].load();
+    if (ctx != nullptr) ctx->notify();
+    idx = (idx + 1) % capacity_;
+  }
 }
 
 /*======================================== step io callbacks

@@ -176,7 +176,7 @@ struct _odla_context {
   odla_computation comp;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> inputs;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> outputs;
-  void (*async_callback_func)(void*, odla_status) = nullptr;
+  int (*async_callback_func)(void*, odla_status) = nullptr;
   void* async_callback_arg = nullptr;
   _odla_context(odla_computation c) : comp(c) {}
   std::thread::id thread_id_of_holder;
