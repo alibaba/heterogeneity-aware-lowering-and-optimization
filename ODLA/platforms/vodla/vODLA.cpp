@@ -11,6 +11,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <thread>
 #include <vector>
 
 #define MAX_INPUT_TENSOR 256
@@ -496,7 +497,8 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
 
 odla_status odla_CreateContext(odla_context* context) {
 #ifdef DEBUG
-  std::cout << "odla_CreateContext handler " << g_dev->vodh_hd
+  std::cout << "[vODLA] DEBUG: odla_CreateContext thread "
+            << std::this_thread::get_id() << " handler " << g_dev->vodh_hd
             << " dev_list ptr " << g_dev->vodh_dev_list << " ctx " << context
             << ", *ctx " << *context << std::endl;
 #endif
@@ -519,7 +521,9 @@ odla_status odla_CreateContext(odla_context* context) {
 
 odla_status odla_DestroyContext(odla_context context) {
 #ifdef DEBUG
-  std::cout << "odla_DestroyContext context " << context << std::endl;
+  std::cout << "[vODLA] DEBUG: odla_DestroyContext thread "
+            << std::this_thread::get_id() << " context " << context
+            << std::endl;
 #endif
   vodh_ret ret =
       vodh_destroy_context(g_dev->vodh_hd, g_dev->vodh_dev_list, context);
@@ -889,6 +893,12 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
       .pad = 0,
       .time_used = 0,
       .output = NULL};
+
+#ifdef DEBUG
+  std::cout << "[vODLA] DEBUG: odla_ExecuteComputation thread "
+            << std::this_thread::get_id() << " use opt addr " << &vodh_infer_opt
+            << "\nres addr " << &vodh_infer_res << std::endl;
+#endif
 
   u64 rid = ((context->Id) << 16) + context->dataId;
   // context changed, new data mem to be allocated
