@@ -86,7 +86,7 @@ odla_status odla_SetContextItem(odla_context context, odla_item_type type,
   switch (type) {
     case ODLA_ASYNC_CALLBACK_FUNC:
       context->async_callback_func =
-          reinterpret_cast<void (*)(void*, odla_status)>(value);
+          reinterpret_cast<int (*)(void*, odla_status)>(value);
       break;
     case ODLA_ASYNC_CALLBACK_ARG:
       context->async_callback_arg = reinterpret_cast<void*>(value);
