@@ -9,6 +9,9 @@ typedef unsigned long long u64;
 
 typedef unsigned short bufhd_t;
 
+// typedef struct _vodla_context* vodla_context;
+typedef _odla_context* vodla_context;
+
 enum VODH_RET_ {
   VODH_OK = 0,
   VODH_EPERM = 1,    /* Operation not permitted */
@@ -162,7 +165,7 @@ struct vodh_infer_options {
   struct vodh_request_cap request_cap;
   struct vodh_model model;
   struct vodh_input** input;
-  // struct vodh_output *output[VODLA_MAX_INOUTPUT_NUM];
+  vodla_context context;
 };
 
 struct vodh_infer_result {
@@ -188,23 +191,43 @@ struct vodh_model_op_result {
 };
 
 void* vodh_init(void);
+
 vodh_ret vodh_get_total_cap(void* vodh_handle, struct vodh_total_cap* cap);
+
 /* allvodh_dev num is vxpu_num in struct vodh_total_cap
  * vodh_handle is returned by vodh_init *     */
 vodh_ret vodh_get_all_dev_info(void* vodh_handle, struct vodh_dev* allvodh_dev);
+
 vodh_ret vodh_get_one_dev_cap(void* vodh_handle, struct vodh_dev* dev,
                               struct vodh_dev_cap* cap);
 
 void vodh_deinit(void* vodh_handle);
+
 vodh_ret vodh_dev_open(void* vodh_handle, struct vodh_dev* dev);
+
+/* support multithreading */
+vodh_ret vodh_create_context(void* vodh_handle, struct vodh_dev* dev,
+                             vodla_context* context);
+
+/* support multithreading */
+vodh_ret vodh_destroy_context(void* vodh_handle, struct vodh_dev* dev,
+                              vodla_context context);
+
+/* support multithreading */
 vodh_ret vodh_infer(void* vodh_handle, struct vodh_dev* dev,
                     struct vodh_infer_options* options,
                     struct vodh_infer_result* result);
+
 vodh_ret vodh_model(void* vodh_handle, struct vodh_dev* dev,
                     struct vodh_model_options* moptions,
                     struct vodh_model_op_result* mresult);
+
 vodh_ret vodh_dev_close(void* vodh_handle, struct vodh_dev* dev);
+
+/* support multithreading */
 void* vodh_malloc(u32 size);
+
+/* support multithreading */
 void vodh_free(void* ptr);
 
 #endif
