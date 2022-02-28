@@ -1,18 +1,18 @@
-#include <ODLA/odla.h>
+#include <iostream>
+#include <fstream>
+#include <memory>
+#include <vector>
+#include <cstdint>
+#include <cassert>
+#include <limits>
+#include <atomic>
+
+#include <sys/time.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
-#include <vodh_common.h>
 
-#include <atomic>
-#include <cassert>
-#include <cstdint>
-#include <fstream>
-#include <iostream>
-#include <limits>
-#include <memory>
-#include <thread>
-#include <vector>
+#include <ODLA/odla.h>
+#include <vodh_common.h>
 
 #define MAX_INPUT_TENSOR 256
 #define MAX_OUTPUT_TENSOR 256
@@ -73,7 +73,7 @@ struct _odla_value {
   u32 val;
 };
 
-static std::atomic<u32> g_ctxId = std::atomic<u32>(0);
+static std::atomic<u32> g_ctxId(0);
 
 thread_local odla_computation g_comp;
 static std::vector<std::unique_ptr<_odla_computation>> g_comps;
