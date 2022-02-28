@@ -1,17 +1,18 @@
-#include <ODLA/odla.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/time.h>
-#include <vodh_common.h>
-
-#include <atomic>
-#include <cassert>
-#include <cstdint>
-#include <fstream>
 #include <iostream>
-#include <limits>
+#include <fstream>
 #include <memory>
 #include <vector>
+#include <cstdint>
+#include <cassert>
+#include <limits>
+#include <atomic>
+
+#include <sys/time.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <ODLA/odla.h>
+#include <vodh_common.h>
 
 #define MAX_INPUT_TENSOR 256
 #define MAX_OUTPUT_TENSOR 256
