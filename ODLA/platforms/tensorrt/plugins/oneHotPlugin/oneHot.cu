@@ -21,12 +21,15 @@
 template <int TPB, typename T>
 __global__ void onehot_kernel(T* output, int64_t output_elems,
                               const int32_t* indices, int64_t input_elems,
-                              int32_t depth, int64_t dims_post, T on, T off) {
+                              int32_t depth, int64_t dims_post,
+                              const T* on_off) {
+  T off = on_off[1];
   for (int64_t i = blockIdx.x * TPB + threadIdx.x; i < output_elems;
        i += gridDim.x * TPB) {
     output[i] = off;
   }
 
+  T on = on_off[0];
   int64_t extend_a = depth * dims_post;
   for (int64_t i = blockIdx.x * TPB + threadIdx.x; i < input_elems;
        i += gridDim.x * TPB) {
@@ -48,37 +51,32 @@ pluginStatus_t oneHotEncoding(cudaStream_t stream, int64_t pre_axis_elems,
   constexpr int BS = 512;
   const int GS = (input_elems + BS - 1) / BS;
   if (data_type == nvinfer1::DataType::kFLOAT) {
-    const float* ptr = reinterpret_cast<const float*>(on_off);
-    float on = ptr[0];
-    float off = ptr[1];
-    onehot_kernel<BS, float>
-        <<<GS, BS, 0, stream>>>((float*)output, output_elems, indices,
-                                input_elems, depth, post_axis_elems, on, off);
-  } else if (data_type == nvinfer1::DataType::kINT32) {
-    const int32_t* ptr = reinterpret_cast<const int32_t*>(on_off);
-    int32_t on = ptr[0];
-    int32_t off = ptr[1];
-    onehot_kernel<BS, int32_t>
-        <<<GS, BS, 0, stream>>>((int32_t*)output, output_elems, indices,
-                                input_elems, depth, post_axis_elems, on, off);
+    onehot_kernel<BS, float><<<GS, BS, 0, stream>>>(
+        (float*)output, output_elems, indices, input_elems, depth,
+        post_axis_elems, (const float*)on_off);
+    return STATUS_SUCCESS;
+  }
 
-  } else if (data_type == nvinfer1::DataType::kHALF) {
-    const half* ptr = reinterpret_cast<const half*>(on_off);
-    half on = ptr[0];
-    half off = ptr[1];
-    onehot_kernel<BS, half><<<GS, BS, 0, stream>>>((half*)output, output_elems,
-                                                   indices, input_elems, depth,
-                                                   post_axis_elems, on, off);
+  if (data_type == nvinfer1::DataType::kINT32) {
+    onehot_kernel<BS, int32_t><<<GS, BS, 0, stream>>>(
+        (int32_t*)output, output_elems, indices, input_elems, depth,
+        post_axis_elems, (const int32_t*)on_off);
+    return STATUS_SUCCESS;
+  }
 
-  } else {
-    ASSERT(data_type == nvinfer1::DataType::kBOOL ||
-           data_type == nvinfer1::DataType::kINT8);
-    const int8_t* ptr = reinterpret_cast<const int8_t*>(on_off);
-    int8_t on = ptr[0];
-    int8_t off = ptr[1];
-    onehot_kernel<BS, int8_t>
-        <<<GS, BS, 0, stream>>>((int8_t*)output, output_elems, indices,
-                                input_elems, depth, post_axis_elems, on, off);
+  if (data_type == nvinfer1::DataType::kHALF) {
+    onehot_kernel<BS, half><<<GS, BS, 0, stream>>>(
+        (half*)output, output_elems, indices, input_elems, depth,
+        post_axis_elems, (const half*)on_off);
+    return STATUS_SUCCESS;
+  }
+
+  if (data_type == nvinfer1::DataType::kBOOL ||
+      data_type == nvinfer1::DataType::kINT8) {
+    onehot_kernel<BS, int8_t><<<GS, BS, 0, stream>>>(
+        (int8_t*)output, output_elems, indices, input_elems, depth,
+        post_axis_elems, (const int8_t*)on_off);
+    return STATUS_SUCCESS;
   }
   return STATUS_NOT_SUPPORTED;
 }
