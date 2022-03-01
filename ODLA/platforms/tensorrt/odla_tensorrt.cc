@@ -2111,6 +2111,31 @@ odla_value odla_NMS(odla_value boxes, odla_value scores,
   return CreateValue(nms->getOutput(4), output_value_type, value_id);
 }
 
+#if NV_TENSORRT_MAJOR >= 7
+odla_value odla_OneHot(odla_value indices, odla_int32 depth, odla_value values,
+                       odla_int32 axis, odla_value_shape output_dims,
+                       const odla_value_id value_id) {
+  const static char* plugin_name = "OneHot_TRT";
+  const static char* plugin_ver = "1";
+  auto creator = getPluginRegistry()->getPluginCreator(plugin_name, plugin_ver);
+  assert(creator != nullptr);
+  std::vector<nvinfer1::PluginField> f;
+  f.emplace_back("depth", &depth, nvinfer1::PluginFieldType::kINT32, 1);
+  f.emplace_back("axis", &axis, nvinfer1::PluginFieldType::kINT32, 1);
+  nvinfer1::PluginFieldCollection plugin_data;
+  plugin_data.nbFields = f.size();
+  plugin_data.fields = f.data();
+  auto plugin = creator->createPlugin(reinterpret_cast<const char*>(value_id),
+                                      &plugin_data);
+
+  std::array<nvinfer1::ITensor*, 2> inputs = {indices->tensor, values->tensor};
+
+  auto onehot = g_comp->network->addPluginV2(
+      &inputs[0], static_cast<int>(inputs.size()), *plugin);
+  return CreateValue(onehot->getOutput(0), values->type, value_id);
+}
+#endif
+
 odla_value odla_Tile(odla_value input, const odla_uint32* repeat,
                      odla_value_shape output_dims,
                      const odla_value_id value_id) {

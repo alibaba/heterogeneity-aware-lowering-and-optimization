@@ -60,6 +60,7 @@ set(PLUGIN_CU_SOURCES)
 
 set(PLUGIN_LISTS
     batchedNMSPlugin
+    oneHotPlugin
 )
 
 include_directories(${COMMON_UTILS_DIR} ${COMMON_UTILS_DIR}/kernels)# ../samples/common)
