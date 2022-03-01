@@ -55,7 +55,6 @@ class OneHotPlugin : public nvinfer1::IPluginV2Ext {
   size_t getSerializationSize() const NOEXCEPT override;
 
   void serialize(void* buffer) const NOEXCEPT override;
-
   void configurePlugin(const Dims* inputDims, int nbInputs,
                        const Dims* outputDims, int nbOutputs,
                        const DataType* inputTypes, const DataType* outputTypes,

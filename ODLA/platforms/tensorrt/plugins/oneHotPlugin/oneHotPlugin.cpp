@@ -138,13 +138,14 @@ void OneHotPlugin::configurePlugin(
   ASSERT(nbInputs == 2);
   ASSERT(nbOutputs == 1);
   ASSERT(inputTypes[0] == DataType::kINT32);
-  ASSERT(mType == inputTypes[1]);
-  ASSERT(outputTypes[0] == mType);
   ASSERT(inputDims[1].nbDims == 1 && inputDims[1].d[0] == 2);
-  ASSERT(std::none_of(inputIsBroadcast, inputIsBroadcast + nbInputs,
+  // ASSERT(std::none_of(inputIsBroadcast, inputIsBroadcast + nbInputs,
+  //                    [](bool b) { return b; }));
+  ASSERT(std::none_of(outputIsBroadcast, outputIsBroadcast + nbOutputs,
                       [](bool b) { return b; }));
-  ASSERT(std::none_of(outputIsBroadcast, outputIsBroadcast + nbInputs,
-                      [](bool b) { return b; }));
+
+  mType = inputTypes[1];
+  ASSERT(outputTypes[0] == mType);
   // Normalize axis.
   const auto& index_dim = inputDims[0];
   mAxis = mAxis < 0 ? mAxis + index_dim.nbDims + 1 : mAxis;
