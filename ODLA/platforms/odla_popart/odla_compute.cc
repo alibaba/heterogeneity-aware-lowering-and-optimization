@@ -197,14 +197,6 @@ odla_status odla_CreateComputation(odla_computation* comp) {
 }
 
 odla_status odla_CreateContext(odla_context* context) {
-  odla_status status =
-      _odla_computation::instance(false)
-          ->init(); // Place the init here to avoid long execution problem
-  if (status != ODLA_SUCCESS &&
-      _odla_computation::instance()->session == nullptr) {
-    popart::logging::err("init computation item in CreateContext failed.");
-    return status;
-  }
   if (PopartConfig::instance()->execution_mode() == PIPELINE_ASYNC)
     *context = new _odla_pipeline_async_context(_odla_computation::instance());
   else
@@ -299,6 +291,14 @@ odla_value odla_CreateConstant(odla_value_type type, const void* data_ptr,
 
 odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                 odla_context context) {
+  odla_status status =
+      _odla_computation::instance(false)
+          ->init(); // to avoid long execution and async context problem
+  if (status != ODLA_SUCCESS &&
+      _odla_computation::instance()->session == nullptr) {
+    popart::logging::err("init computation item in CreateContext failed.");
+    return status;
+  }
   if (!context->hold("odla_BindToArgument")) return ODLA_FAILURE;
   std::vector<int64_t> shape =
       context->comp->builder->getTensorShape(value->tensor_id);
