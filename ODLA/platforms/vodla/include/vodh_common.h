@@ -9,8 +9,7 @@ typedef unsigned long long u64;
 
 typedef unsigned short bufhd_t;
 
-// typedef struct _vodla_context* vodla_context;
-typedef _odla_context* vodla_context;
+typedef struct _vodla_context* vodla_context;
 
 enum VODH_RET_ {
   VODH_OK = 0,
