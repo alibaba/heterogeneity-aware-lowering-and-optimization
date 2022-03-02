@@ -27,8 +27,8 @@
 #include "json.hpp"
 
 PopartConfig* PopartConfig::instance_ = new PopartConfig();
-std::vector<std::string> PopartConfig::mode = {"unknown", "pipeline",
-                                               "parallel", "sequence"};
+std::vector<std::string> PopartConfig::mode = {
+    "unknown", "pipeline", "parallel", "sequence", "pipeline_async"};
 
 const char* bool_to_str(const bool& value) { return value ? "true" : "false"; }
 
