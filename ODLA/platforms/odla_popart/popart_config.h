@@ -52,6 +52,7 @@
  *   "save_model_path":"pipeline_test.onnx"
  * }
  */
+// When change ExecutionMode, must check PopartConfig::mode in popart_config.cc
 enum ExecutionMode { UNKNOWN, PIPELINE, PARALLEL, SEQUENCE, PIPELINE_ASYNC };
 using json = nlohmann::json;
 
