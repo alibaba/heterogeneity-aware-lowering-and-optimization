@@ -46,7 +46,7 @@ pluginStatus_t oneHotEncoding(cudaStream_t stream, int64_t pre_axis_elems,
                               nvinfer1::DataType data_type,
                               const int32_t* indices, const void* on_off,
                               void* output) {
-  int64_t input_elems = pre_axis_elems * depth * post_axis_elems;
+  int64_t input_elems = pre_axis_elems * post_axis_elems;
   int64_t output_elems = depth * input_elems;
   constexpr int BS = 512;
   const int GS = (input_elems + BS - 1) / BS;

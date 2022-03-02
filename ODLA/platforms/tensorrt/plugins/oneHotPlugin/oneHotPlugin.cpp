@@ -31,8 +31,10 @@ extern pluginStatus_t oneHotEncoding(cudaStream_t stream,
                                      const int32_t* indices, const void* on_off,
                                      void* output);
 
-OneHotPlugin::OneHotPlugin(const char* name, int depth, int axis)
+OneHotPlugin::OneHotPlugin(const char* name, bool explicit_batch, int depth,
+                           int axis)
     : mLayerName(name),
+      mExplicitBatch(explicit_batch),
       mDepth(depth),
       mAxis(axis),
       mType(DataType::kFLOAT),
@@ -44,6 +46,7 @@ OneHotPlugin::OneHotPlugin(const char* name, const void* data, size_t length)
     : mLayerName(name) {
   const char* begin = reinterpret_cast<const char*>(data);
   const char* d = begin;
+  mExplicitBatch = read<bool>(d);
   mDepth = read<int>(d);
   mAxis = read<int>(d);
   mType = read<DataType>(d);
@@ -53,13 +56,14 @@ OneHotPlugin::OneHotPlugin(const char* name, const void* data, size_t length)
 }
 
 size_t OneHotPlugin::getSerializationSize() const NOEXCEPT {
-  return sizeof(mDepth) + sizeof(mAxis) + sizeof(mType) +
-         sizeof(mPreAxisElems) + sizeof(mPostAxisElems);
+  return sizeof(mExplicitBatch) + sizeof(mDepth) + sizeof(mAxis) +
+         sizeof(mType) + sizeof(mPreAxisElems) + sizeof(mPostAxisElems);
 }
 
 void OneHotPlugin::serialize(void* buffer) const NOEXCEPT {
   char* begin = reinterpret_cast<char*>(buffer);
   char* d = begin;
+  write(d, mExplicitBatch);
   write(d, mDepth);
   write(d, mAxis);
   write(d, mType);
@@ -68,21 +72,32 @@ void OneHotPlugin::serialize(void* buffer) const NOEXCEPT {
   ASSERT(d == begin + getSerializationSize());
 }
 
+int OneHotPlugin::normalizeAxis(const Dims& index_dim) {
+  auto input_rank = mExplicitBatch ? index_dim.nbDims + 1 : index_dim.nbDims;
+  mAxis = mAxis < 0 ? mAxis + input_rank + 1 : mAxis;
+  if (mExplicitBatch) {
+    ASSERT(mAxis != 0); // dim 0 is always batch dim.
+  }
+  ASSERT(mAxis >= 0 && mAxis <= input_rank);
+  return mExplicitBatch ? mAxis - 1 : mAxis;
+}
+
 Dims OneHotPlugin::getOutputDimensions(int index, const Dims* inputs,
                                        int nbInputDims) NOEXCEPT {
   ASSERT(nbInputDims == 2);
   ASSERT(index >= 0 && index < this->getNbOutputs());
   const auto& index_dim = inputs[0];
-  ASSERT(inputs[1].nbDims == 1); // on_off value
+  if (!mExplicitBatch) {
+    ASSERT(inputs[1].nbDims == 1 && inputs[1].d[0] == 2);
+  }
   Dims dim;
   dim.nbDims = index_dim.nbDims + 1;
-  mAxis = mAxis < 0 ? mAxis + index_dim.nbDims + 1 : mAxis;
-  ASSERT(mAxis >= 0 && mAxis <= index_dim.nbDims);
 
+  auto axis = normalizeAxis(index_dim);
   for (int i = 0; i < dim.nbDims; ++i) {
-    if (i < mAxis) {
+    if (i < axis) {
       dim.d[i] = index_dim.d[i];
-    } else if (i == mAxis) {
+    } else if (i == axis) {
       dim.d[i] = mDepth;
     } else {
       dim.d[i] = index_dim.d[i - 1];
@@ -99,9 +114,9 @@ int OneHotPlugin::enqueue(int batchSize, const void* const* inputs,
 
   void* output = outputs[0];
 
-  pluginStatus_t status =
-      oneHotEncoding(stream, mPreAxisElems, mDepth, mPostAxisElems, mAxis,
-                     mType, indices, on_off_vals, output);
+  pluginStatus_t status = oneHotEncoding(
+      stream, (mExplicitBatch ? batchSize : 1) * mPreAxisElems, mDepth,
+      mPostAxisElems, mAxis, mType, indices, on_off_vals, output);
   ASSERT(status == STATUS_SUCCESS);
   return 0;
 }
@@ -138,7 +153,6 @@ void OneHotPlugin::configurePlugin(
   ASSERT(nbInputs == 2);
   ASSERT(nbOutputs == 1);
   ASSERT(inputTypes[0] == DataType::kINT32);
-  ASSERT(inputDims[1].nbDims == 1 && inputDims[1].d[0] == 2);
   // ASSERT(std::none_of(inputIsBroadcast, inputIsBroadcast + nbInputs,
   //                    [](bool b) { return b; }));
   ASSERT(std::none_of(outputIsBroadcast, outputIsBroadcast + nbOutputs,
@@ -146,14 +160,12 @@ void OneHotPlugin::configurePlugin(
 
   mType = inputTypes[1];
   ASSERT(outputTypes[0] == mType);
-  // Normalize axis.
   const auto& index_dim = inputDims[0];
-  mAxis = mAxis < 0 ? mAxis + index_dim.nbDims + 1 : mAxis;
-  ASSERT(mAxis >= 0 && mAxis <= index_dim.nbDims);
+  auto axis = normalizeAxis(index_dim);
   mPreAxisElems = 1;
   mPostAxisElems = 1;
   for (int i = 0; i < index_dim.nbDims; ++i) {
-    if (i < mAxis) {
+    if (i < axis) {
       mPreAxisElems *= index_dim.d[i];
     } else {
       mPostAxisElems *= index_dim.d[i];
@@ -177,7 +189,8 @@ const char* OneHotPlugin::getPluginVersion() const NOEXCEPT {
 void OneHotPlugin::destroy() NOEXCEPT { delete this; }
 
 IPluginV2Ext* OneHotPlugin::clone() const NOEXCEPT {
-  auto* plugin = new OneHotPlugin(mLayerName.c_str(), mDepth, mAxis);
+  auto* plugin =
+      new OneHotPlugin(mLayerName.c_str(), mExplicitBatch, mDepth, mAxis);
   plugin->mType = mType;
   plugin->mPreAxisElems = mPreAxisElems;
   plugin->mPostAxisElems = mPostAxisElems;
@@ -211,9 +224,10 @@ static unsigned int getElementSize(nvinfer1::DataType t) {
 IPluginV2Ext* OneHotPluginCreator::createPlugin(
     const char* name, const PluginFieldCollection* fc) NOEXCEPT {
   const PluginField* fields = fc->fields;
-
   int depth = -1;
   int axis = -1;
+  int8_t explicit_batch = 1;
+
   for (int i = 0; i < fc->nbFields; ++i) {
     std::string field_name(fc->fields[i].name);
     if (field_name.compare("depth") == 0) {
@@ -222,10 +236,14 @@ IPluginV2Ext* OneHotPluginCreator::createPlugin(
     } else if (field_name.compare("axis") == 0) {
       ASSERT(fields[i].type == PluginFieldType::kINT32);
       axis = *(static_cast<const int32_t*>(fields[i].data));
+    } else if (field_name.compare("explicit_batch_dimension") == 0) {
+      ASSERT(fields[i].type == PluginFieldType::kINT8);
+      explicit_batch = *(static_cast<const int8_t*>(fields[i].data));
     }
   }
 
-  OneHotPlugin* plugin = new OneHotPlugin(name, depth, axis);
+  OneHotPlugin* plugin =
+      new OneHotPlugin(name, explicit_batch != 0, depth, axis);
   plugin->setPluginNamespace(mNamespace.c_str());
   return plugin;
 }

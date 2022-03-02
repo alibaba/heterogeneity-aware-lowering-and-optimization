@@ -27,7 +27,7 @@
 
 class OneHotPlugin : public nvinfer1::IPluginV2Ext {
  public:
-  OneHotPlugin(const char* name, int depth, int axis);
+  OneHotPlugin(const char* name, bool explicit_batch, int depth, int axis);
 
   OneHotPlugin(const char* name, const void* data, size_t length);
 
@@ -96,7 +96,9 @@ class OneHotPlugin : public nvinfer1::IPluginV2Ext {
   };
 
  private:
+  int normalizeAxis(const nvinfer1::Dims& index_dim);
   const std::string mLayerName;
+  bool mExplicitBatch;
   int mDepth;
   int mAxis;
   DataType mType{nvinfer1::DataType::kFLOAT};

@@ -1151,6 +1151,7 @@ static odla_value binary_op(nvinfer1::ElementWiseOperation op, odla_value lhs,
   if (op == nvinfer1::ElementWiseOperation::kEQUAL ||
       op == nvinfer1::ElementWiseOperation::kGREATER ||
       op == nvinfer1::ElementWiseOperation::kLESS) {
+    sub->getOutput(0)->setType(DataType::kBOOL);
     ret_type = ODLA_BOOL;
   }
   return CreateValue(sub, {ret_type, out_dim}, id);
@@ -2117,11 +2118,14 @@ odla_value odla_OneHot(odla_value indices, odla_int32 depth, odla_value values,
                        const odla_value_id value_id) {
   const static char* plugin_name = "OneHot_TRT";
   const static char* plugin_ver = "1";
+  int8_t explicit_batch = g_comp->network->hasImplicitBatchDimension() ? 0 : 1;
   auto creator = getPluginRegistry()->getPluginCreator(plugin_name, plugin_ver);
   assert(creator != nullptr);
   std::vector<nvinfer1::PluginField> f;
   f.emplace_back("depth", &depth, nvinfer1::PluginFieldType::kINT32, 1);
   f.emplace_back("axis", &axis, nvinfer1::PluginFieldType::kINT32, 1);
+  f.emplace_back("explicit_batch_dimension", &explicit_batch,
+                 nvinfer1::PluginFieldType::kINT8, 1);
   nvinfer1::PluginFieldCollection plugin_data;
   plugin_data.nbFields = f.size();
   plugin_data.fields = f.data();
