@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -fPIC -shared -std=c++14
+CFLAGS = -fPIC -shared -std=c++14 -Wall
 INCLUDES = -I./include
 #LIBS = -lvodh_sdk -L/usr/local/lib
 LIBS = -lvodh_sdk -L.
