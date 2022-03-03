@@ -450,35 +450,27 @@ static ResizeMode ParseResizeMode(const std::string& str) {
   return ResizeMode::INVALID;
 }
 
-enum {
-  ONNX_RESIZE_ARG_INPUT_IDX = 0,
-  ONNX_RESIZE_ARG_ROI_IDX = 1,
-  ONNX_RESIZE_ARG_SCALES_IDX = 2,
-  ONNX_RESIZE_ARG_SIZES_IDX = 1
-};
-
 static std::vector<Def> ConvertResize(const ONNXExtensionInst* ext,
                                       IRBuilder* builder) {
-  Def input = ext->GetOperand(ONNX_RESIZE_ARG_INPUT_IDX);
+  Def input = ext->GetOperand(0);
   if (!input.GetType().IsValid()) {
     return {};
   }
 
-  Def shape = Def::GetUndefined();
   bool explicit_shape = true;
-
-  // roi and scales specified
-  if (ext->GetNumOfOperands() > ONNX_RESIZE_ARG_SCALES_IDX) {
-    shape = ext->GetOperand(ONNX_RESIZE_ARG_SCALES_IDX);
-  } else { // sizes specified
-    shape = ext->GetOperand(ONNX_RESIZE_ARG_SIZES_IDX);
+  auto args = ext->GetNumOfOperands();
+  // Scale / Size are the last operand.
+  Def scale_size = ext->GetOperand(args - 1);
+  if (args >= 3 && IsA<Constant>(scale_size) &&
+      scale_size.GetType().GetTotalNumOfElements() == 0) {
+    scale_size = ext->GetOperand(args - 2);
   }
 
-  if (Type::IsFloatingPointType(shape.GetType().GetDataType())) {
+  if (Type::IsFloatingPointType(scale_size.GetType().GetDataType())) {
     explicit_shape = false;
   }
 
-  std::vector<Def> ir_operands{input, shape};
+  std::vector<Def> ir_operands{input, scale_size};
 
   std::string co_trs_mode("half_pixel");
   co_trs_mode =
