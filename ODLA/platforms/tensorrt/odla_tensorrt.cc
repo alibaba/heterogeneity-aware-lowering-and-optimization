@@ -467,6 +467,14 @@ static unsigned GetElementSize(odla_element_type type) {
   }
 }
 
+static std::string GetName(odla_value_id id, const char* suffix = nullptr) {
+  return std::string(reinterpret_cast<const char*>(id)) + suffix;
+}
+
+static std::string GetName(const odla_value& value, const char* suffix) {
+  return GetName((odla_value_id)(value->name), suffix);
+}
+
 static odla_value_type ValidateValueType(const odla_value_type& type) {
   // Trt doesn't support INT64, convert value_type of ODLA_INT64 to ODLA_INT32
   if (type.element_type == ODLA_INT64) {
@@ -1187,7 +1195,8 @@ odla_value odla_Or(odla_value lhs, odla_value rhs, const odla_value_id id) {
 
 odla_value odla_NotEqual(odla_value lhs, odla_value rhs,
                          const odla_value_id id) {
-  auto eq = odla_Equal(lhs, rhs, nullptr);
+  std::string name = GetName(id, "_eq");
+  auto eq = odla_Equal(lhs, rhs, (odla_value_id)name.c_str());
   return odla_Not(eq, id);
 }
 
@@ -1270,6 +1279,8 @@ odla_value odla_Sqrt(odla_value input, const odla_value_id id) {
 
 odla_value odla_Rsqrt(odla_value input, const odla_value_id id) {
   auto op = g_comp->network->addUnary(*input, nvinfer1::UnaryOperation::kSQRT);
+  const std::string& name = GetName(id, "_sqrt");
+  op->setName(name.c_str());
   op = g_comp->network->addUnary(*(op->getOutput(0)),
                                  nvinfer1::UnaryOperation::kRECIP);
   return CreateValue(op, input->type, id);
@@ -1998,19 +2009,18 @@ odla_value odla_Gather(odla_value input, const odla_value indices,
          indices->type.element_type == ODLA_INT64);
   auto input_t = input->tensor;
   if (input->type.element_type == ODLA_BOOL) {
-    const auto& name = std::string(input->name) + "_cast";
-    input_t =
-        odla_Cast(input, ODLA_INT32, (const odla_value_id)name.c_str())->tensor;
+    input_t = odla_Cast(input, ODLA_INT32,
+                        (const odla_value_id)GetName(input, "_cast").c_str())
+                  ->tensor;
   }
   auto gather = g_comp->network->addGather(*input_t, *indices, axis);
   if (input->type.element_type == ODLA_BOOL) {
-    const auto& gather_name =
-        std::string(reinterpret_cast<const char*>(id)) + "_extra";
+    const auto& gather_name = GetName(id, "_extra");
     auto gather_v =
         CreateValue(gather, odla_value_type{ODLA_INT32, output_dims},
                     (const odla_value_id)gather_name.c_str());
     g_comp->buffers.push_back(std::vector<float>(1, 0.0));
-    const auto& zero_name = std::string(gather_name) + "_comp_zero";
+    const auto& zero_name = gather_name + "_comp_zero";
     auto zero_v = odla_CreateConstant(
         odla_value_type{ODLA_INT32, odla_value_shape{0, {}}},
         g_comp->buffers.back().data(), (const odla_value_id)zero_name.c_str());
@@ -2136,7 +2146,7 @@ odla_value odla_OneHot(odla_value indices, odla_int32 depth, odla_value values,
 
   auto onehot = g_comp->network->addPluginV2(
       &inputs[0], static_cast<int>(inputs.size()), *plugin);
-  return CreateValue(onehot->getOutput(0), values->type, value_id);
+  return CreateValue(onehot, values->type, value_id);
 }
 #endif
 
