@@ -11,7 +11,6 @@
 #include <iostream>
 #include <limits>
 #include <memory>
-#include <thread>
 #include <vector>
 
 #define MAX_INPUT_TENSOR 256
@@ -56,6 +55,7 @@ struct _odla_context {
   u32 Id;
   u32 dataId = 0;
   bool dataChg = false; // indicate if ip data changed to increase dataId.
+  vodla_context vodla_context_;
 };
 
 // model computation graph defined in ODLA files
@@ -73,7 +73,7 @@ struct _odla_value {
   u32 val;
 };
 
-static std::atomic<u32> g_ctxId = std::atomic<u32>(0);
+static std::atomic<u32> g_ctxId(0);
 
 thread_local odla_computation g_comp;
 static std::vector<std::unique_ptr<_odla_computation>> g_comps;
@@ -499,12 +499,12 @@ odla_status odla_CreateContext(odla_context* context) {
 #ifdef DEBUG
   std::cout << "[vODLA] DEBUG: odla_CreateContext thread "
             << std::this_thread::get_id() << " handler " << g_dev->vodh_hd
-            << " dev_list ptr " << g_dev->vodh_dev_list << " ctx " << context
-            << ", *ctx " << *context << std::endl;
+            << " dev_list ptr " << &(g_dev->vodh_dev_list[0]) << " ctx "
+            << context << ", *ctx " << *context << std::endl;
 #endif
-
-  vodh_ret ret =
-      vodh_create_context(g_dev->vodh_hd, g_dev->vodh_dev_list, context);
+  *context = new _odla_context();
+  vodh_ret ret = vodh_create_context(g_dev->vodh_hd, &(g_dev->vodh_dev_list[0]),
+                                     &((*context)->vodla_context_));
 
   if (*context == nullptr || ret) {
 #ifdef DEBUG
@@ -525,12 +525,16 @@ odla_status odla_DestroyContext(odla_context context) {
             << std::this_thread::get_id() << " context " << context
             << std::endl;
 #endif
-  vodh_ret ret =
-      vodh_destroy_context(g_dev->vodh_hd, g_dev->vodh_dev_list, context);
+  vodh_ret ret = vodh_destroy_context(
+      g_dev->vodh_hd, &(g_dev->vodh_dev_list[0]), context->vodla_context_);
   if (ret) {
     std::cout << "[vODLA] ERROR: failed to call vodh_destroy_context"
               << std::endl;
     return ODLA_FAILURE;
+  }
+  if (context) {
+    delete context;
+    context = NULL;
   }
   return ODLA_SUCCESS;
 }
@@ -948,8 +952,8 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     vodh_infer_opt.model.weight_size = comp->wtFileSz;
     vodh_infer_opt.model.weight_id = comp->Id;
     vodh_infer_opt.model.use_file = 1; // use file path instead of DMA
+    vodh_infer_opt.context = context->vodla_context_;
     strcpy(vodh_infer_opt.model.weight_file, comp->wtFile.c_str());
-
 #ifdef DEBUG
     std::cout << "[vODLA] INFO: start remote inference...\n";
 #endif
