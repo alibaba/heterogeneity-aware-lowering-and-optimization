@@ -23,8 +23,8 @@
 // RUN: %halo_compiler -target cxx -batch-size 1 %halo_compile_flags %data_path/test_greater_equal_bcast_expanded/model.onnx -o %t.cc
 // RUN: %cxx -c -fPIC -o %t.o %t.cc -I%odla_path/include
 // RUN: %cxx -g %s %t.o %t.bin -I%T -I%odla_path/include -I%unittests_path -I%data_path/test_greater_equal_bcast_expanded/test_data_set_0 %odla_link %device_link -lodla_tensorrt -o %t_tensorrt.exe -Wno-deprecated-declarations
-// RUN: %t_tensorrt.exe 0.0001 0 tensorrt %data_path/test_greater_equal_bcast_expanded | FileCheck %s
+// RUN: ODLA_TRT_USE_EXPLICIT_BATCH=1 %t_tensorrt.exe 0.0001 0 tensorrt %data_path/test_greater_equal_bcast_expanded | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_greater_equal_bcast_expanded_tensorrt.cc.tmp.main.cc.in"
