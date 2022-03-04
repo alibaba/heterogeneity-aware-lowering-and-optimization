@@ -22,14 +22,14 @@ template <int TPB, typename T>
 __global__ void onehot_kernel(T* output, int64_t output_elems,
                               const int32_t* indices, int64_t input_elems,
                               int32_t depth, int64_t dims_post,
-                              const T* on_off) {
-  T off = on_off[1];
+                              const T* off_on) {
+  T off = off_on[0];
   for (int64_t i = blockIdx.x * TPB + threadIdx.x; i < output_elems;
        i += gridDim.x * TPB) {
     output[i] = off;
   }
 
-  T on = on_off[0];
+  T on = off_on[1];
   int64_t extend_a = depth * dims_post;
   for (int64_t i = blockIdx.x * TPB + threadIdx.x; i < input_elems;
        i += gridDim.x * TPB) {
@@ -44,7 +44,7 @@ __global__ void onehot_kernel(T* output, int64_t output_elems,
 pluginStatus_t oneHotEncoding(cudaStream_t stream, int64_t pre_axis_elems,
                               int depth, int64_t post_axis_elems, int axis,
                               nvinfer1::DataType data_type,
-                              const int32_t* indices, const void* on_off,
+                              const int32_t* indices, const void* off_on,
                               void* output) {
   int64_t input_elems = pre_axis_elems * post_axis_elems;
   int64_t output_elems = depth * input_elems;
@@ -53,21 +53,21 @@ pluginStatus_t oneHotEncoding(cudaStream_t stream, int64_t pre_axis_elems,
   if (data_type == nvinfer1::DataType::kFLOAT) {
     onehot_kernel<BS, float><<<GS, BS, 0, stream>>>(
         (float*)output, output_elems, indices, input_elems, depth,
-        post_axis_elems, (const float*)on_off);
+        post_axis_elems, (const float*)off_on);
     return STATUS_SUCCESS;
   }
 
   if (data_type == nvinfer1::DataType::kINT32) {
     onehot_kernel<BS, int32_t><<<GS, BS, 0, stream>>>(
         (int32_t*)output, output_elems, indices, input_elems, depth,
-        post_axis_elems, (const int32_t*)on_off);
+        post_axis_elems, (const int32_t*)off_on);
     return STATUS_SUCCESS;
   }
 
   if (data_type == nvinfer1::DataType::kHALF) {
     onehot_kernel<BS, half><<<GS, BS, 0, stream>>>(
         (half*)output, output_elems, indices, input_elems, depth,
-        post_axis_elems, (const half*)on_off);
+        post_axis_elems, (const half*)off_on);
     return STATUS_SUCCESS;
   }
 
@@ -75,7 +75,7 @@ pluginStatus_t oneHotEncoding(cudaStream_t stream, int64_t pre_axis_elems,
       data_type == nvinfer1::DataType::kINT8) {
     onehot_kernel<BS, int8_t><<<GS, BS, 0, stream>>>(
         (int8_t*)output, output_elems, indices, input_elems, depth,
-        post_axis_elems, (const int8_t*)on_off);
+        post_axis_elems, (const int8_t*)off_on);
     return STATUS_SUCCESS;
   }
   return STATUS_NOT_SUPPORTED;

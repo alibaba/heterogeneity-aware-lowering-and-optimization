@@ -230,15 +230,16 @@ IPluginV2Ext* OneHotPluginCreator::createPlugin(
 
   for (int i = 0; i < fc->nbFields; ++i) {
     std::string field_name(fc->fields[i].name);
-    if (field_name.compare("depth") == 0) {
+    const void* data = fields[i].data;
+    if (field_name == "depth") {
       ASSERT(fields[i].type == PluginFieldType::kINT32);
-      depth = *(static_cast<const int32_t*>(fields[i].data));
-    } else if (field_name.compare("axis") == 0) {
+      depth = *(static_cast<const int32_t*>(data));
+    } else if (field_name == "axis") {
       ASSERT(fields[i].type == PluginFieldType::kINT32);
-      axis = *(static_cast<const int32_t*>(fields[i].data));
-    } else if (field_name.compare("explicit_batch_dimension") == 0) {
+      axis = *(static_cast<const int32_t*>(data));
+    } else if (field_name == "explicit_batch_dimension") {
       ASSERT(fields[i].type == PluginFieldType::kINT8);
-      explicit_batch = *(static_cast<const int8_t*>(fields[i].data));
+      explicit_batch = *(static_cast<const int8_t*>(data));
     }
   }
 
