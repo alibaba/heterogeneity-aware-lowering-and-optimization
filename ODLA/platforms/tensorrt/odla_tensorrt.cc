@@ -2146,7 +2146,8 @@ odla_value odla_OneHot(odla_value indices, odla_int32 depth, odla_value values,
 
   auto onehot = g_comp->network->addPluginV2(
       &inputs[0], static_cast<int>(inputs.size()), *plugin);
-  return CreateValue(onehot, values->type, value_id);
+  return CreateValue(onehot, {values->type.element_type, output_dims},
+                     value_id);
 }
 #endif
 

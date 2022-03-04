@@ -191,7 +191,7 @@ odla_GatherElements(odla_value input, odla_value indices, odla_int32 axis,
 
   \param indices the indices of "on value"
   \param depth the size of the new dimension
-  \param values the pair of on and off values
+  \param values the pair of off and on values
   \param axis the axis of new dimension on
   \param output_dims the optional output shape (can be undefined)
   \param value_id a unique value id (can be NULL)
