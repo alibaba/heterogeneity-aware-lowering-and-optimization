@@ -199,13 +199,19 @@ odla_status odla_CreateComputation(odla_computation* comp) {
 odla_status odla_CreateContext(odla_context* context) {
   if (PopartConfig::instance()->execution_mode() == PIPELINE_ASYNC)
     *context = new _odla_pipeline_async_context(_odla_computation::instance());
-  else {
+  else if (PopartConfig::instance()->execution_mode() == UNKNOWN) {
     popart::logging::info(
-        "[VODLA DEBUG] Got not PIPELIINE_ASYNC execution mode: {},  when "
-        "create context, use async always",
+        "[VODLA DEBUG] Got UNKNOWN execution mode: {},  when "
+        "create context, use async as it created before set execution mode",
         PopartConfig::instance()->execution_mode());
     *context = new _odla_pipeline_async_context(_odla_computation::instance());
-    //*context = new _odla_pipeline_context(_odla_computation::instance());
+  } else {
+    popart::logging::info(
+        "[VODLA DEBUG] Got not PIPELIINE_ASYNC or UNKNOWN execution mode: {},  "
+        "when "
+        "create context, use pipeline context",
+        PopartConfig::instance()->execution_mode());
+    *context = new _odla_pipeline_context(_odla_computation::instance());
   }
   return ODLA_SUCCESS;
 }
