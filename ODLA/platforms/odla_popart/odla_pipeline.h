@@ -203,11 +203,19 @@ struct _odla_pipeline_context : public _odla_context {
 };
 
 struct _odla_pipeline_async_context : public _odla_pipeline_context {
-  _odla_pipeline_async_context(odla_computation c)
-      : _odla_pipeline_context(c) {}
-  inline void wait() override {}  // for async, never wait
+  _odla_pipeline_async_context(odla_computation c) : _odla_pipeline_context(c) {
+    popart::logging::info(
+        "[VODLA DEBUG] _odla_pipeline_async_context created: {}", this);
+  }
+  inline void wait() override { // for async, never wait
+    popart::logging::info(
+        "[VODLA DEBUG] never wait(), only write a log to return, ctx: {}",
+        this);
+  }
   inline void notify() override { // for notify, will call the callback to
                                   // notify
+    popart::logging::info(
+        "[VODLA DEBUG] will call the callback in the notify(), ctx: {}", this);
     if (nullptr == async_callback_func) {
       popart::logging::err(
           "async_callback_func is null when try to notify inference result for "
@@ -223,6 +231,7 @@ struct _odla_pipeline_async_context : public _odla_pipeline_context {
       throw std::invalid_argument("async_callback_arg is null");
     }
     async_callback_func(async_callback_arg, QManager::instance()->get_status());
+    popart::logging::info("[VODLA DEBUG] callback called, ctx: {}", this);
   }
   bool hold(const std::string& function_name) override { return true; }
 };
