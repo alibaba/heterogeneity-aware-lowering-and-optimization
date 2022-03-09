@@ -50,4 +50,23 @@ void GenericCXXCodeGen::RunOnInstruction(TileInst* inst) {
   ir_mapping_[*inst] = ret;
 }
 
+void GenericCXXCodeGen::RunOnInstruction(TileDynamicInst* inst) {
+  const Def& input = inst->GetOperand(0);
+  const Def& repeat = inst->GetOperand(1);
+  const auto& input_type = input.GetType();
+  size_t dims = repeat.GetType().GetTotalNumOfElements();
+  HLCHECK(dims == input_type.GetNumOfDims());
+
+  HLCHECK(!IsA<Constant>(repeat)); // repeat shape is dynamic
+  CXXValue op0 = ir_mapping_[input];
+  CXXValue op1 = ir_mapping_[repeat];
+
+  CXXValue ret(inst->GetName(), op0.type);
+  const auto& ret_type = inst->GetResultType();
+
+  EmitODLACall(ret, "odla_TileDynamic", op0, op1, EmitShape(ret_type));
+
+  ir_mapping_[*inst] = ret;
+}
+
 } // namespace halo

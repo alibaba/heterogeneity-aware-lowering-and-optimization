@@ -2458,6 +2458,46 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
   Def orig_def{inst, 0};
   auto op_len = inst->GetOperand(2);
   const auto& dst_type = inst->GetResultsTypes()[0];
+  if (dst_type.IsValid() && !dst_type.IsStaticShape()) {
+    IRBuilder builder(inst->GetParent());
+    builder.SetInsertAfter(inst);
+    ConstantBuilder cb(inst->GetParent()->GetParent());
+
+    auto input = inst->GetOperand(0);
+    ShapeInst* shape_input =
+        builder.CreateShape(inst->GetName() + "_inputshape", input);
+
+    std::vector<Def> concat_operands;
+    const halo::Type size_i_type{DataType::INT64, {1}};
+    int64_t size_len = 1;
+    Constant* c_len = cb.CreateConstant(inst->GetName() + "_size_len",
+                                        size_i_type, &size_len);
+    int dim = dst_type.GetNumOfDims(); // 3
+    for (int i = 0; i != dim; ++i) {
+      int64_t dim_i = dst_type.GetNumOfElementsInDim(i);
+      if (dim_i == -1) {
+        int64_t start = i;
+        Constant* shape_slice_start = cb.CreateConstant(
+            inst->GetName() + "_size_" + std::to_string(i) + "_start",
+            size_i_type, &start);
+        auto slice_i =
+            builder.CreateSlice(inst->GetName() + "_size_" + std::to_string(i),
+                                {*shape_input, *shape_slice_start, *c_len});
+        concat_operands.push_back(*slice_i);
+      } else {
+        Constant* c_i =
+            cb.CreateConstant(inst->GetName() + "_size_" + std::to_string(i),
+                              size_i_type, &dim_i);
+        concat_operands.push_back(*c_i);
+      }
+    }
+    auto dynamic_size = builder.CreateConcat(inst->GetName() + "_dynamic_size",
+                                             concat_operands);
+    auto new_slice = builder.CreateSliceDynamic(
+        inst->GetName(),
+        {inst->GetOperand(0), inst->GetOperand(1), *dynamic_size});
+    return {orig_def, *new_slice};
+  }
   if (dst_type.IsValid() && IsA<Constant>(op_len)) {
     Constant* c_size = DynCast<Constant>(op_len);
     int dim = op_len.GetType().GetTotalNumOfElements();

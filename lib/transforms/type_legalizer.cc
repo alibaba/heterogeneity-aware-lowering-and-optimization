@@ -1018,6 +1018,28 @@ static void RunOnInstruction(SliceInst* inst) {
           inst->GetResultType().GetTotalNumOfElements() > 0);
 }
 
+static void RunOnInstruction(SliceDynamicInst* inst) {
+  auto& input_type = inst->GetOperand(0).GetType();
+  auto slice_size = inst->GetOperand(2);
+
+  auto dims = input_type.GetNumOfDims();
+  if (!input_type.IsStaticShape() && !IsA<Constant>(slice_size)) {
+    auto ret_shape = input_type.GetDimSizes();
+    for (unsigned i = 0; i < dims; ++i) {
+      if (ret_shape[i] == kDynamicBatchSize ||
+          ret_shape[i] == kDynamicShapeSize) {
+        continue;
+      }
+      const auto& c = GetAvailIntegerResult(slice_size, i);
+      ret_shape[i] = c.second;
+    }
+
+    inst->GetResultsTypes()[0] =
+        halo::Type{input_type.GetDataType(), ret_shape};
+    return;
+  }
+}
+
 static void RunOnInstruction(SplitInst* inst) {
   auto input = inst->GetOperand(1);
   auto split_dim = inst->GetOperand(0);
@@ -1408,6 +1430,35 @@ static void RunOnInstruction(TileInst* inst) {
 
   halo::Type new_type{op0_type.GetDataType(), new_shape};
   inst->GetResultsTypes()[0] = new_type;
+}
+
+static void RunOnInstruction(TileDynamicInst* inst) {
+  auto op0 = inst->GetOperand(0);
+  auto& op0_type = op0.GetType();
+
+  if (!op0_type.IsValid() && !op0_type.IsStaticShape()) {
+    return;
+  }
+
+  auto repeats = inst->GetOperand(1);
+  auto& repeats_type = repeats.GetType();
+
+  if (!IsA<Constant>(repeats) && repeats_type.IsValid()) { // shape is dynamic
+    auto ret_shape = op0_type.GetDimSizes();
+    auto rank = op0_type.GetNumOfDims();
+    for (size_t i = 0; i < rank; ++i) {
+      const auto& c = GetAvailIntegerResult(repeats, i);
+      auto repeats_i = c.second;
+      if (repeats_i == -1) {
+        ret_shape[i] = -1;
+        continue;
+      }
+      int64_t dim_i = op0_type.GetNumOfElementsInDim(i) * repeats_i;
+      ret_shape[i] = dim_i;
+    }
+    halo::Type ret_type{op0_type.GetDataType(), ret_shape};
+    inst->GetResultsTypes()[0] = ret_type;
+  }
 }
 
 static void RunOnInstruction(HgEngineInst* inst) {

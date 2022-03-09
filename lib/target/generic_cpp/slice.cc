@@ -143,4 +143,27 @@ void GenericCXXCodeGen::RunOnInstruction(SliceInst* inst) {
                EmitShape(inst->GetResultType()));
 }
 
+void GenericCXXCodeGen::RunOnInstruction(SliceDynamicInst* inst) {
+  const Def& input = inst->GetOperand(0);
+  const Def& start = inst->GetOperand(1);
+  const Def& size = inst->GetOperand(2);
+  const Def& strides =
+      inst->GetNumOfOperands() > 3 ? inst->GetOperand(3) : Def::GetUndefined();
+
+  CXXValue op0 = ir_mapping_[input];
+  CXXValue ret(inst->GetName(), op0.type);
+  ir_mapping_[*inst] = ret;
+
+  if (!IsA<Constant>(start) || !IsA<Constant>(size) ||
+      ((inst->GetNumOfOperands() > 3) && !IsA<Constant>(strides))) {
+    auto op1 = ir_mapping_[start];
+    auto op2 = ir_mapping_[size];
+    auto op3 = ir_mapping_[strides];
+    EmitODLACall(ret, "odla_SliceDynamic", op0, op1, op2, op3,
+                 EmitShape(inst->GetResultType()));
+
+    return;
+  }
+}
+
 } // namespace halo

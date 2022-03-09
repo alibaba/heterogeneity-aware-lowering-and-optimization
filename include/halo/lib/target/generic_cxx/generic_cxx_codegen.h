@@ -193,6 +193,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(SigmoidInst*) override;
   virtual void RunOnInstruction(SItoFPInst*) override;
   virtual void RunOnInstruction(SliceInst*) override;
+  virtual void RunOnInstruction(SliceDynamicInst*) override;
   virtual void RunOnInstruction(SoftmaxInst*) override;
   virtual void RunOnInstruction(SoftplusInst*) override;
   virtual void RunOnInstruction(SoftsignInst*) override;
@@ -211,6 +212,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(TransposeInst*) override;
   virtual void RunOnInstruction(TFIDFVectorizeInst*) override;
   virtual void RunOnInstruction(TileInst*) override;
+  virtual void RunOnInstruction(TileDynamicInst*) override;
   virtual void RunOnInstruction(ZExtInst*) override;
   virtual void RunOnInstruction(HgEngineInst*) override;
   virtual void RunOnInstruction(HgQuantInst*) override;
