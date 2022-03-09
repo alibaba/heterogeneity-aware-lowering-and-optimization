@@ -2053,6 +2053,30 @@ odla_value odla_Slice(odla_value input, const odla_int32* start,
   return CreateValue(slice, {input->type.element_type, output_dims}, id);
 }
 
+odla_value odla_SliceDynamic(odla_value input, odla_value start,
+                             odla_value size, odla_value stride,
+                             odla_value_shape output_dims,
+                             const odla_value_id value_id) {
+  const auto& input_dims = input->type.shape;
+  odla_value_shape init_stride_dims;
+  init_stride_dims.size = input_dims.size;
+  for (int i = 0; i < init_stride_dims.size; ++i) {
+    init_stride_dims.dims[i] = 1;
+  }
+
+  nvinfer1::Dims start_dims{.nbDims = 0};
+  nvinfer1::Dims size_dims{.nbDims = 0};
+  nvinfer1::Dims stride_dims(GetNVDims(init_stride_dims));
+  auto slice =
+      g_comp->network->addSlice(*input, start_dims, size_dims, stride_dims);
+  slice->setInput(1, *start);
+  slice->setInput(2, *size);
+  if (stride) {
+    slice->setInput(3, *stride);
+  }
+  return CreateValue(slice, {input->type.element_type, output_dims}, value_id);
+}
+
 odla_value odla_NMS(odla_value boxes, odla_value scores,
                     odla_uint32 max_num_outputs, odla_float32 iou_threshold,
                     odla_float32 score_threshold,
@@ -2173,6 +2197,24 @@ odla_value odla_Tile(odla_value input, const odla_uint32* repeat,
   auto op = g_comp->network->addSlice(*input, start, size, stride);
   op->setMode(nvinfer1::SliceMode::kWRAP);
   return CreateValue(op, {input->type.element_type, output_dims}, value_id);
+}
+
+odla_value odla_TileDynamic(odla_value input, odla_value repeat,
+                            odla_value_shape output_dims,
+                            const odla_value_id value_id) {
+  auto dims = input->type.shape.size;
+  nvinfer1::Dims start{.nbDims = dims};
+  nvinfer1::Dims stride{.nbDims = dims};
+  nvinfer1::Dims size{.nbDims = dims};
+  for (int i = 0; i != dims; ++i) {
+    start.d[i] = 0;
+    stride.d[i] = 1;
+    // size.d[i] = repeat[i] * input->type.shape.dims[i];
+  }
+  auto slice = g_comp->network->addSlice(*input, start, size, stride);
+  slice->setInput(2, *repeat); // todo:fix size
+  slice->setMode(nvinfer1::SliceMode::kWRAP);
+  return CreateValue(slice, {input->type.element_type, output_dims}, value_id);
 }
 
 odla_values odla_TopK(odla_value input, odla_uint32 K, odla_bool largest,

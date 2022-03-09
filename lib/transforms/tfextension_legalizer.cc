@@ -214,7 +214,55 @@ static std::vector<Def> ConvertFill(const TFExtensionInst* ext,
   HLCHECK(ext->GetNumOfOperands() == 2);
   auto dims = ext->GetOperand(0);
   auto value = ext->GetOperand(1);
-  if (!IsA<Constant>(dims) || !IsA<Constant>(value)) {
+  if (!IsA<Constant>(value)) {
+    return {};
+  }
+  if (!IsA<Constant>(dims)) {
+    auto& dims_type = dims.GetType();
+    auto& value_type = value.GetType();
+    if (dims_type.IsValid()) {
+      builder->SetInsertAfter(ext);
+      ConstantBuilder cb(ext->GetParent()->GetParent());
+
+      Constant* value_c = DynCast<Constant>(value.GetOwner());
+      DataType value_dt =
+          FindAttributeValue<DataType>(*ext, "dtype", DataType::INVALID);
+      value_dt =
+          (value_dt == DataType::INVALID) ? value_type.GetDataType() : value_dt;
+
+      auto rank = dims_type.GetTotalNumOfElements();
+      std::vector<int64_t> constant_dims(rank, 1);
+
+      Type new_type(value_dt, constant_dims);
+      Constant* new_value_c = nullptr;
+
+      switch (value_dt) {
+        case DataType::INT32: {
+          std::vector<int32_t> data(1, value_c->GetData<int32_t>(0));
+          new_value_c = cb.CreateConstant(ext->GetName() + "_value_constant",
+                                          new_type, data.data());
+          break;
+        }
+        case DataType::FLOAT32: {
+          std::vector<float> data(1, value_c->GetData<float>(0));
+          new_value_c = cb.CreateConstant(ext->GetName() + "_value_constant",
+                                          new_type, data.data());
+          break;
+        }
+        case DataType::INT64: {
+          std::vector<int64_t> data(1, value_c->GetData<int64_t>(0));
+          new_value_c = cb.CreateConstant(ext->GetName() + "_value_constant",
+                                          new_type, data.data());
+          break;
+        }
+        default:
+          HLCHECK(0 && "Unimplemented data type.");
+      }
+
+      auto new_inst =
+          builder->CreateTileDynamic(ext->GetName(), *new_value_c, dims);
+      return {*new_inst};
+    }
     return {};
   }
   std::vector<int64_t> shape;
@@ -414,6 +462,8 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
     int32_t strides_i = strides_c->GetData<int32_t>(i);
     int32_t dims_i = input.GetType().GetNumOfElementsInDim(i);
     auto index = 1 << i;
+    bool dynamic_stridedslice_i = false;
+
     if (end_i < 0) {
       end_i += dims_i;
     }
@@ -430,6 +480,9 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
     if ((shrink_mask & index) != 0) {
       new_size.push_back(1);
     } else if ((end_mask & index) != 0 || ellipsis_cnt != 0) {
+      if ((dims_i == -1) && (new_begin.back() == 0) && (strides_i == 1)) {
+        dynamic_stridedslice_i = true;
+      }
       new_size.push_back((dims_i - new_begin.back()) / strides_i);
     } else {
       new_size.push_back((end_i - new_begin.back()) / strides_i);
@@ -437,7 +490,8 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
     if (ellipsis_cnt > 0) {
       --ellipsis_cnt;
     }
-    HLCHECK(new_size.back() >= 0); // TF allows empty tensor
+    HLCHECK(new_size.back() >= 0 ||
+            dynamic_stridedslice_i); // TF allows empty tensor
     if (new_size.back() == 0) {
       empty_slice = true;
     }
@@ -555,9 +609,51 @@ static std::vector<Def> ConvertMerge(const TFExtensionInst* ext,
 
 static std::vector<Def> ConvertZerosLike(const TFExtensionInst* ext,
                                          IRBuilder* builder) {
-  const auto& op0_type = ext->GetOperand(0).GetType();
+  const auto& op0 = ext->GetOperand(0); // op0 dims(shape)
+  const auto& op0_type = op0.GetType();
   if (!op0_type.IsValid()) {
     return {};
+  }
+  if (!op0_type.IsStaticShape()) {
+    ConstantBuilder cb(ext->GetParent()->GetParent());
+    builder->SetInsertAfter(ext);
+    auto zeroslike_shape_inst =
+        builder->CreateShape(ext->GetName() + "_shape", op0);
+
+    DataType value_dt =
+        FindAttributeValue<DataType>(*ext, "dtype", DataType::INVALID);
+    value_dt =
+        (value_dt == DataType::INVALID) ? op0_type.GetDataType() : value_dt;
+    auto zeros_rank = op0_type.GetNumOfDims();
+    std::vector<int64_t> zeros_constant_dims(zeros_rank, 1);
+    Type new_type(value_dt, zeros_constant_dims);
+    Constant* zeros_constant = nullptr;
+    switch (value_dt) {
+      case DataType::INT32: {
+        std::vector<int32_t> data(1);
+        zeros_constant = cb.CreateConstant(ext->GetName() + "_zero_constant",
+                                           new_type, data.data());
+        break;
+      }
+      case DataType::FLOAT32: {
+        std::vector<float> data(1);
+        zeros_constant = cb.CreateConstant(ext->GetName() + "_zero_constant",
+                                           new_type, data.data());
+        break;
+      }
+      case DataType::INT64: {
+        std::vector<int64_t> data(1);
+        zeros_constant = cb.CreateConstant(ext->GetName() + "_zero_constant",
+                                           new_type, data.data());
+        break;
+      }
+      default:
+        HLCHECK(0 && "Unimplemented data type.");
+    }
+
+    auto zeros_like_inst = builder->CreateTileDynamic(
+        ext->GetName(), *zeros_constant, *zeroslike_shape_inst);
+    return {*zeros_like_inst};
   }
   DataType vt = FindAttributeValue<DataType>(*ext, "dtype", DataType::INVALID);
   vt = (vt == DataType::INVALID) ? op0_type.GetDataType() : vt;

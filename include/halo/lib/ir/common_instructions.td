@@ -123,6 +123,19 @@ let cat_ = cat_common in {
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
   }
 
+  def SliceDynamic : Inst<"Extract a dynamic slice from the input."> {
+    let ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >,
+                Arg<"The starting indices, inclusive, along the specified"
+                    " axes.",
+                    ArgType<[I32]>, 1D>,
+                Arg<"The size of the slice, along the specified axes.",
+                    ArgType<[I32]>, 1D>,
+                OptionalArg<"The slice steps along the specified axes.",
+                    ArgType<[I32]>, 1D>,
+                OptionalArg<"The axes", ArgType<[I32]>, 1D>];
+    let outs_ = [Arg<"The result.", MatchArgType<0> >];
+  }
+
   def Split : Inst<"Splits a tensor into num_split tensors along one dimension."> {
     let attrs_ = [Attr<"The number of ways to split. ", Integer, "num_split", "1">];
     let ins_ = [Arg<"The dimension along which to split.", ArgType<[I32,I64]> >,
@@ -136,6 +149,12 @@ let cat_ = cat_common in {
   }
 
   def Tile : Inst<"Replicate input multiples times."> {
+    let ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >,
+                Arg<"The multiples.", ArgType<[I32,I64]>, 1D>];
+    let outs_ = [Arg<"The result.", MatchArgType<0> >];
+  }
+
+  def TileDynamic : Inst<"Replicate input multiples times dynamically."> {
     let ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >,
                 Arg<"The multiples.", ArgType<[I32,I64]>, 1D>];
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
