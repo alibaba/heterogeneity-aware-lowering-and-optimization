@@ -278,9 +278,21 @@ static void RunOnInstruction(ReshapeInst* inst) {
       op1_type.IsValid()) {
     int rank = op1_type.GetTotalNumOfElements();
     std::vector<int64_t> new_shape(rank);
+    int neg_dim_cnt = 0;
     for (int i = 0; i < rank; ++i) {
       const auto& r = GetAvailIntegerResult(op1, i);
       new_shape[i] = r.second;
+      if (r.second == -1) {
+        neg_dim_cnt += 1;
+      }
+    }
+    if ((neg_dim_cnt == 2) && (rank == 2) &&
+        (op0_type.GetNumOfElementsInDim(0) == -1)) {
+      auto new_shape_dim1 = std::accumulate(op0_type.GetDimSizes().begin() + 1,
+                                            op0_type.GetDimSizes().end(), 1,
+                                            std::multiplies<int64_t>());
+      HLCHECK((new_shape_dim1 > 0) && "Invalid reshape");
+      new_shape[1] = new_shape_dim1;
     }
     inst->GetResultsTypes()[0] = halo::Type{op0_type.GetDataType(), new_shape};
     return;
@@ -1019,8 +1031,8 @@ static void RunOnInstruction(SliceInst* inst) {
 }
 
 static void RunOnInstruction(SliceDynamicInst* inst) {
-  auto& input_type = inst->GetOperand(0).GetType();
-  auto slice_size = inst->GetOperand(2);
+  auto const& input_type = inst->GetOperand(0).GetType();
+  auto const& slice_size = inst->GetOperand(2);
 
   auto dims = input_type.GetNumOfDims();
   if (!input_type.IsStaticShape() && !IsA<Constant>(slice_size)) {
