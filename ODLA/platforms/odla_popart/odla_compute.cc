@@ -199,8 +199,20 @@ odla_status odla_CreateComputation(odla_computation* comp) {
 odla_status odla_CreateContext(odla_context* context) {
   if (PopartConfig::instance()->execution_mode() == PIPELINE_ASYNC)
     *context = new _odla_pipeline_async_context(_odla_computation::instance());
-  else
+  else if (PopartConfig::instance()->execution_mode() == UNKNOWN) {
+    popart::logging::info(
+        "[VODLA DEBUG] Got UNKNOWN execution mode: {},  when "
+        "create context, use async as it created before set execution mode",
+        PopartConfig::instance()->execution_mode());
+    *context = new _odla_pipeline_async_context(_odla_computation::instance());
+  } else {
+    popart::logging::info(
+        "[VODLA DEBUG] Got not PIPELIINE_ASYNC or UNKNOWN execution mode: {},  "
+        "when "
+        "create context, use pipeline context",
+        PopartConfig::instance()->execution_mode());
     *context = new _odla_pipeline_context(_odla_computation::instance());
+  }
   return ODLA_SUCCESS;
 }
 
@@ -244,7 +256,16 @@ odla_status odla_AsyncExecuteComputation(odla_computation comp,
                                          odla_context context,
                                          odla_compute_mode mode,
                                          odla_device device) {
-  return odla_ExecuteComputation(comp, context, mode, device);
+  odla_status s = odla_ExecuteComputation(comp, context, mode, device);
+  if (ODLA_SUCCESS != s && nullptr != context) {
+    popart::logging::err("odla_ExecuteComputation in async: {}, {}", context,
+                         s);
+    if (context->async_callback_func && context->async_callback_arg) {
+      popart::logging::err("callback to notify the error for ctx: {}", context);
+      context->async_callback_func(context->async_callback_arg, s);
+    }
+  }
+  return s;
 }
 
 odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
