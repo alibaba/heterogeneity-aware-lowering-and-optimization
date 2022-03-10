@@ -17,7 +17,7 @@
 cmake_minimum_required(VERSION 3.14.5)
 
 set(PROJECT_NAME "HALO_STABLE_SDK_2.3.1" HOMEPAGE_URL "https://github.com/alibaba/heterogeneity-aware-lowering-and-optimization")
-set(PROJECT_VERSION "0.7.5")
+set(PROJECT_VERSION "0.7.6")
 
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES C CXX ASM)
 
