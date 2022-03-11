@@ -11,6 +11,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <thread>
 #include <vector>
 
 #define MAX_INPUT_TENSOR 256
