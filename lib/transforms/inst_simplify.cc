@@ -2472,7 +2472,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
     int64_t size_len = 1;
     Constant* c_len = cb.CreateConstant(inst->GetName() + "_size_len",
                                         size_i_type, &size_len);
-    int dim = dst_type.GetNumOfDims(); // 3
+    int dim = dst_type.GetNumOfDims();
     for (int i = 0; i != dim; ++i) {
       int64_t dim_i = dst_type.GetNumOfElementsInDim(i);
       if (dim_i == -1) {

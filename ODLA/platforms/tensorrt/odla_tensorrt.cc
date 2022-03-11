@@ -782,10 +782,11 @@ odla_status odla_GetOutputFromComputationByIdx(
 odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                 odla_context context) {
   odla_value_shape real_shape = value->type.shape;
-  if ((g_comp && g_comp->is_dynamic_batch) || context->run_batch_size) {
+  auto comp = context->comp;
+  if (comp->is_dynamic_batch || context->run_batch_size) {
     real_shape.dims[0] = context->run_batch_size;
   }
-  if (g_comp && g_comp->is_dynamic_shape) {
+  if (comp->is_dynamic_shape) {
     if (context->real_shapes.find(value) != context->real_shapes.end()) {
       real_shape = context->real_shapes[value];
       int idx = context->engine->getBindingIndex(value->name);
@@ -1795,7 +1796,14 @@ odla_value odla_Concat(odla_values inputs, odla_int32 axis,
   int num = inputs.size;
   std::vector<nvinfer1::ITensor*> input_tensors(num);
   for (int i = 0; i < num; ++i) {
-    input_tensors[i] = inputs.values[i]->tensor;
+    auto input_t = inputs.values[i]->tensor;
+    auto input_i_shape = inputs.values[i]->type.shape;
+    if (input_i_shape.size == 0 && input_i_shape.dims[0] == 0) {
+      auto shuffle = g_comp->network->addShuffle(*input_t);
+      shuffle->setReshapeDimensions(GetNVDims({.size = 1, .dims = {1}}));
+      input_t = shuffle->getOutput(0);
+    }
+    input_tensors[i] = input_t;
   }
 
   auto concat = g_comp->network->addConcatenation(input_tensors.data(), num);
@@ -2202,10 +2210,10 @@ odla_value odla_TileDynamic(odla_value input, odla_value repeat,
   for (int i = 0; i != dims; ++i) {
     start.d[i] = 0;
     stride.d[i] = 1;
-    // size.d[i] = repeat[i] * input->type.shape.dims[i];
   }
   auto slice = g_comp->network->addSlice(*input, start, size, stride);
-  slice->setInput(2, *repeat); // todo:fix size
+  // TODO:fix size
+  slice->setInput(2, *repeat);
   slice->setMode(nvinfer1::SliceMode::kWRAP);
   return CreateValue(slice, {input->type.element_type, output_dims}, value_id);
 }
