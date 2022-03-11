@@ -148,7 +148,7 @@ static void PopulateOptPasses(PassManager* pm, const std::string& target,
     pm->AddInputRewriterPass(inputs);
   }
   pm->AddInstSimplifyPass(
-      target.substr(0, 3) == "cxx", opts.disable_broadcasting,
+      opts.simplify_for_preprocess, opts.disable_broadcasting,
       opts.remove_input_transpose, opts.remove_output_transpose,
       opts.disable_conv_bn, fusion_opts.ConvBias);
   if (opts.channel_order != ChannelOrder::None) {
