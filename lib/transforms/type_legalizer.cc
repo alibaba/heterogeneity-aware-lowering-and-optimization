@@ -1445,14 +1445,14 @@ static void RunOnInstruction(TileInst* inst) {
 }
 
 static void RunOnInstruction(TileDynamicInst* inst) {
-  auto op0 = inst->GetOperand(0);
+  auto const& op0 = inst->GetOperand(0);
   auto& op0_type = op0.GetType();
 
   if (!op0_type.IsValid() && !op0_type.IsStaticShape()) {
     return;
   }
 
-  auto repeats = inst->GetOperand(1);
+  auto const& repeats = inst->GetOperand(1);
   auto& repeats_type = repeats.GetType();
 
   if (!IsA<Constant>(repeats) && repeats_type.IsValid()) { // shape is dynamic

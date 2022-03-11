@@ -609,7 +609,7 @@ static std::vector<Def> ConvertMerge(const TFExtensionInst* ext,
 
 static std::vector<Def> ConvertZerosLike(const TFExtensionInst* ext,
                                          IRBuilder* builder) {
-  const auto& op0 = ext->GetOperand(0); // op0 dims(shape)
+  const auto& op0 = ext->GetOperand(0);
   const auto& op0_type = op0.GetType();
   if (!op0_type.IsValid()) {
     return {};
