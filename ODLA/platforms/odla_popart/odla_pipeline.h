@@ -151,9 +151,9 @@ struct _odla_pipeline_context : public _odla_context {
     got_output = false; // reset the flag incase context reused.
   }
   inline void notify() override {
-	//dump all inputs and outputs to check the correct mapping
-	print(inputs);
-	print(outputs);
+    // dump all inputs and outputs to check the correct mapping
+    print(inputs);
+    print(outputs);
     std::unique_lock<std::mutex> lock(context_mutex);
     got_output = true;
     context_cv.notify_one();
@@ -203,30 +203,31 @@ struct _odla_pipeline_context : public _odla_context {
     visited = 0;
     written = 0;
   }
-  void print(std::map<popart::TensorId, std::unique_ptr<popart::IArray>> const& inputs){
-	for(auto const& input : inputs) {
-		popart::logging::info("input {} with values: ", input.first);
-		auto dtype = input.second->dataType();
-        if(dtype == popart::DataType::INT32)
-			print<int32_t>(input.second->data(), input.second->nelms());
-        if(dtype == popart::DataType::INT64)
-			print<int64_t>(input.second->data(), input.second->nelms());
-        if(dtype == popart::DataType::FLOAT)
-			print<float>(input.second->data(), input.second->nelms());
-		else
-			popart::logging::info("Not support type {}, will not print.", dtype);
-	}
+  void print(std::map<popart::TensorId, std::unique_ptr<popart::IArray>> const&
+                 inputs) {
+    for (auto const& input : inputs) {
+      popart::logging::info("input {} with values: ", input.first);
+      auto dtype = input.second->dataType();
+      if (dtype == popart::DataType::INT32)
+        print<int32_t>(input.second->data(), input.second->nelms());
+      if (dtype == popart::DataType::INT64)
+        print<int64_t>(input.second->data(), input.second->nelms());
+      if (dtype == popart::DataType::FLOAT)
+        print<float>(input.second->data(), input.second->nelms());
+      else
+        popart::logging::info("Not support type {}, will not print.", dtype);
+    }
   }
 
   template <typename T>
   void print(void* data, std::size_t nelem) {
-	T* ptr = static_cast<T*>(data);
-	std::stringstream buffer;
-	for(int i=0; i<nelem; i++) {
-	  buffer << ptr[i] << ", ";
-	}
-	buffer << std::endl << std::endl;
-	popart::logging::info("{}", buffer.str());
+    T* ptr = static_cast<T*>(data);
+    std::stringstream buffer;
+    for (int i = 0; i < nelem; i++) {
+      buffer << ptr[i] << ", ";
+    }
+    buffer << std::endl << std::endl;
+    popart::logging::info("{}", buffer.str());
   }
 };
 
@@ -258,14 +259,13 @@ struct _odla_pipeline_async_context : public _odla_pipeline_context {
           this);
       throw std::invalid_argument("async_callback_arg is null");
     }
-	//dump all inputs and outputs to check the correct mapping
-	print(inputs);
-	print(outputs);
+    // dump all inputs and outputs to check the correct mapping
+    print(inputs);
+    print(outputs);
     async_callback_func(async_callback_arg, QManager::instance()->get_status());
     popart::logging::info("[VODLA DEBUG] callback called, ctx: {}", this);
   }
   bool hold(const std::string& function_name) override { return true; }
-
 };
 
 struct _odla_pipeline_empty_context : public _odla_pipeline_context {
