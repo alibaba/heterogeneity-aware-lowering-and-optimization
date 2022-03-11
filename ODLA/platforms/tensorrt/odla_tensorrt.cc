@@ -309,18 +309,16 @@ struct _odla_context {
         for (auto& input : comp->inputs) {
           const char* input_name = input.first.c_str();
           odla_value value = input.second;
-          int d1 = value->type.shape.dims[1];
-          int d2 = value->type.shape.dims[2];
-          int d3 = value->type.shape.dims[3];
-          builder_profile->setDimensions(
-              input_name, OptProfileSelector::kMIN,
-              Dims{4, {comp->min_batch_size, d1, d2, d3}});
-          builder_profile->setDimensions(
-              input_name, OptProfileSelector::kOPT,
-              Dims{4, {comp->opt_batch_size, d1, d2, d3}});
-          builder_profile->setDimensions(
-              input_name, OptProfileSelector::kMAX,
-              Dims{4, {comp->max_batch_size, d1, d2, d3}});
+          auto shape = GetNVDims(value->type.shape);
+          shape.d[0] = comp->min_batch_size;
+          builder_profile->setDimensions(input_name, OptProfileSelector::kMIN,
+                                         shape);
+          shape.d[0] = comp->opt_batch_size;
+          builder_profile->setDimensions(input_name, OptProfileSelector::kOPT,
+                                         shape);
+          shape.d[0] = comp->max_batch_size;
+          builder_profile->setDimensions(input_name, OptProfileSelector::kMAX,
+                                         shape);
         }
         builder_cfg->addOptimizationProfile(builder_profile);
       }
