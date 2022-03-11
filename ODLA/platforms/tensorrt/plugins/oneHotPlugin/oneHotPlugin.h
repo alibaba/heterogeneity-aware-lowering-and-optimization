@@ -25,19 +25,57 @@
 #include "kernel.h"
 #include "plugin.h"
 
-class OneHotPlugin : public nvinfer1::IPluginV2Ext {
+template <typename Base>
+class OneHotBase : public Base {
+ protected:
+  struct Config {
+    bool explicitBatch;
+    int depth;
+    int axis;
+    DataType type;
+    int64_t preAxisElems;
+    int64_t postAxisElems;
+  };
+
  public:
-  OneHotPlugin(const char* name, bool explicit_batch, int depth, int axis);
+  OneHotBase(const char* name, const Config& config)
+      : mNamespace(""), mLayerName(name), mConfig(config) {}
+  OneHotBase(const char* name)
+      : OneHotBase(name, {false, 0, -1, nvinfer1::DataType::kFLOAT, 1, 1}) {}
+
+  int getNbOutputs() const NOEXCEPT override;
+  int initialize() NOEXCEPT override;
+  void terminate() NOEXCEPT override;
+  void destroy() NOEXCEPT override;
+  void setPluginNamespace(const char* ns) NOEXCEPT override;
+  const char* getPluginNamespace() const NOEXCEPT override;
+  nvinfer1::DataType getOutputDataType(int index,
+                                       const nvinfer1::DataType* inputTypes,
+                                       int nbInputs) const NOEXCEPT override;
+  const char* getPluginVersion() const NOEXCEPT override;
+  const char* getPluginType() const NOEXCEPT override;
+
+  void serialize(void* buffer) const NOEXCEPT override;
+  size_t getSerializationSize() const NOEXCEPT override;
+  virtual ~OneHotBase() = default;
+
+ protected:
+  int normalizeAxis(int input_rank);
+  std::string mNamespace;
+  const std::string mLayerName;
+  struct Config mConfig;
+};
+
+class OneHotPlugin : public OneHotBase<nvinfer1::IPluginV2Ext> {
+ public:
+  OneHotPlugin(const OneHotPlugin& plugin);
+
+  OneHotPlugin(const char* name, const Config& config);
 
   OneHotPlugin(const char* name, const void* data, size_t length);
 
-  int getNbOutputs() const NOEXCEPT override { return 1; };
-
   Dims getOutputDimensions(int index, const Dims* inputs,
                            int nbInputDims) NOEXCEPT override;
-
-  int initialize() NOEXCEPT override { return STATUS_SUCCESS; };
-  void terminate() NOEXCEPT override{};
 
   size_t getWorkspaceSize(int maxBatchSize) const NOEXCEPT override {
     return 0;
@@ -52,9 +90,6 @@ class OneHotPlugin : public nvinfer1::IPluginV2Ext {
               enqueue_output_ty outputs, void* workspace,
               cudaStream_t stream) NOEXCEPT override;
 
-  size_t getSerializationSize() const NOEXCEPT override;
-
-  void serialize(void* buffer) const NOEXCEPT override;
   void configurePlugin(const Dims* inputDims, int nbInputs,
                        const Dims* outputDims, int nbOutputs,
                        const DataType* inputTypes, const DataType* outputTypes,
@@ -65,25 +100,7 @@ class OneHotPlugin : public nvinfer1::IPluginV2Ext {
   bool supportsFormat(DataType type,
                       PluginFormat format) const NOEXCEPT override;
 
-  const char* getPluginType() const NOEXCEPT override;
-
-  const char* getPluginVersion() const NOEXCEPT override;
-
-  void destroy() NOEXCEPT override;
-
   IPluginV2Ext* clone() const NOEXCEPT override;
-
-  nvinfer1::DataType getOutputDataType(int index,
-                                       const nvinfer1::DataType* inputType,
-                                       int nbInputs) const NOEXCEPT override;
-
-  void setPluginNamespace(const char* ns) NOEXCEPT override {
-    mNamespace = ns;
-  };
-
-  const char* getPluginNamespace() const NOEXCEPT override {
-    return mNamespace.c_str();
-  };
 
   bool isOutputBroadcastAcrossBatch(int outputIndex,
                                     const bool* inputIsBroadcasted,
@@ -94,17 +111,43 @@ class OneHotPlugin : public nvinfer1::IPluginV2Ext {
   bool canBroadcastInputAcrossBatch(int inputIndex) const NOEXCEPT override {
     return false;
   };
+};
 
- private:
-  int normalizeAxis(const nvinfer1::Dims& index_dim);
-  const std::string mLayerName;
-  bool mExplicitBatch;
-  int mDepth;
-  int mAxis;
-  DataType mType{nvinfer1::DataType::kFLOAT};
-  int64_t mPreAxisElems;
-  int64_t mPostAxisElems;
-  std::string mNamespace;
+class OneHotPluginDynamic : public OneHotBase<nvinfer1::IPluginV2DynamicExt> {
+ public:
+  OneHotPluginDynamic(const char* name, const Config& config)
+      : OneHotBase<nvinfer1::IPluginV2DynamicExt>(name, config){};
+
+  OneHotPluginDynamic(const char* name, const void* data, size_t length)
+      : OneHotBase<nvinfer1::IPluginV2DynamicExt>(name){};
+
+  nvinfer1::IPluginV2DynamicExt* clone() const NOEXCEPT override;
+
+  nvinfer1::DimsExprs getOutputDimensions(
+      int outputIndex, const nvinfer1::DimsExprs* inputs, int nbInputs,
+      nvinfer1::IExprBuilder& exprBuilder) NOEXCEPT override;
+
+  bool supportsFormatCombination(int32_t, const nvinfer1::PluginTensorDesc*,
+                                 int32_t, int32_t) NOEXCEPT override {
+    return true;
+  }
+
+  size_t getWorkspaceSize(const nvinfer1::PluginTensorDesc* inputs,
+                          int nbInputs,
+                          const nvinfer1::PluginTensorDesc* outputs,
+                          int nbOutputs) const NOEXCEPT override {
+    return 0;
+  }
+
+  int enqueue(const nvinfer1::PluginTensorDesc* inputDesc,
+              const nvinfer1::PluginTensorDesc* outputDesc,
+              const void* const* inputs, void* const* outputs, void* workspace,
+              cudaStream_t stream) NOEXCEPT override;
+
+  void configurePlugin(const nvinfer1::DynamicPluginTensorDesc* in,
+                       int nbInputs,
+                       const nvinfer1::DynamicPluginTensorDesc* out,
+                       int nbOutputs) NOEXCEPT override;
 };
 
 class OneHotPluginCreator : public IPluginCreator {
