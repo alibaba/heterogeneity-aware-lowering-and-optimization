@@ -51,8 +51,8 @@ using namespace nvinfer1;
 // of "driver shutting down".
 static auto Dummy = cudaFree(0);
 
+template <typename T>
 struct TrtDestroyer {
-  template <typename T>
   void operator()(T* t) {
     if (t) {
       t->destroy();
@@ -61,8 +61,11 @@ struct TrtDestroyer {
 };
 
 template <typename T>
+using TrtUniquePtr = std::unique_ptr<T, TrtDestroyer<T>>;
+
+template <typename T>
 std::shared_ptr<T> trt_shared_obj(T* obj) {
-  return std::shared_ptr<T>(obj, TrtDestroyer());
+  return std::shared_ptr<T>(obj, TrtDestroyer<T>());
 }
 
 inline bool check(cudaError_t e, int line, const char* file_name) {
@@ -108,7 +111,6 @@ class Logger : public nvinfer1::ILogger {
       default:
         log_level = 5;
     }
-
     if (log_level <= 1) {
       std::cerr << "[" << log_level << "]: " << msg << "\n";
     }
@@ -206,7 +208,8 @@ struct _odla_computation {
     }
 
     if (!load_engine_mode) {
-      builder = trt_shared_obj(nvinfer1::createInferBuilder(Logger));
+      builder = TrtUniquePtr<nvinfer1::IBuilder>(
+          nvinfer1::createInferBuilder(Logger));
       initODLAPlugin(&Logger, "");
       nvinfer1::NetworkDefinitionCreationFlags flags = 0;
       if (const char* env_p = std::getenv("ODLA_TRT_USE_EXPLICIT_BATCH")) {
@@ -215,7 +218,9 @@ struct _odla_computation {
                       nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
         }
       }
-      network = trt_shared_obj(builder->createNetworkV2(flags));
+      network = TrtUniquePtr<nvinfer1::INetworkDefinition>(
+          builder->createNetworkV2(flags));
+      assert(network != nullptr);
     }
   }
 
@@ -249,8 +254,8 @@ static odla_value_shape GetOdlaShape(const nvinfer1::Dims& dims) {
 
 struct _odla_context {
   odla_computation comp = nullptr;
-  std::shared_ptr<nvinfer1::ICudaEngine> engine = nullptr;
-  std::shared_ptr<nvinfer1::IExecutionContext> ctx = nullptr;
+  TrtUniquePtr<nvinfer1::ICudaEngine> engine{nullptr};
+  TrtUniquePtr<nvinfer1::IExecutionContext> ctx{nullptr};
   std::shared_ptr<nvinfer1::IBuilderConfig> builder_cfg = nullptr;
   nvinfer1::IOptimizationProfile* builder_profile = nullptr;
 
@@ -274,7 +279,8 @@ struct _odla_context {
 
   _odla_context(odla_computation comp) : comp(comp) {
     if (!comp->load_engine_mode) {
-      builder_cfg = trt_shared_obj(comp->builder->createBuilderConfig());
+      builder_cfg = TrtUniquePtr<nvinfer1::IBuilderConfig>(
+          comp->builder->createBuilderConfig());
 
       if (comp->is_dynamic_shape) {
         builder_profile = comp->builder->createOptimizationProfile();
@@ -303,18 +309,16 @@ struct _odla_context {
         for (auto& input : comp->inputs) {
           const char* input_name = input.first.c_str();
           odla_value value = input.second;
-          int d1 = value->type.shape.dims[1];
-          int d2 = value->type.shape.dims[2];
-          int d3 = value->type.shape.dims[3];
-          builder_profile->setDimensions(
-              input_name, OptProfileSelector::kMIN,
-              Dims{4, {comp->min_batch_size, d1, d2, d3}});
-          builder_profile->setDimensions(
-              input_name, OptProfileSelector::kOPT,
-              Dims{4, {comp->opt_batch_size, d1, d2, d3}});
-          builder_profile->setDimensions(
-              input_name, OptProfileSelector::kMAX,
-              Dims{4, {comp->max_batch_size, d1, d2, d3}});
+          auto shape = GetNVDims(value->type.shape);
+          shape.d[0] = comp->min_batch_size;
+          builder_profile->setDimensions(input_name, OptProfileSelector::kMIN,
+                                         shape);
+          shape.d[0] = comp->opt_batch_size;
+          builder_profile->setDimensions(input_name, OptProfileSelector::kOPT,
+                                         shape);
+          shape.d[0] = comp->max_batch_size;
+          builder_profile->setDimensions(input_name, OptProfileSelector::kMAX,
+                                         shape);
         }
         builder_cfg->addOptimizationProfile(builder_profile);
       }
@@ -324,10 +328,11 @@ struct _odla_context {
         builder_cfg->setFlag(BuilderFlag::kFP16);
         builder_cfg->setFlag(BuilderFlag::kSTRICT_TYPES);
       }
-      engine = trt_shared_obj(comp->builder->buildEngineWithConfig(
+      engine = TrtUniquePtr<ICudaEngine>(comp->builder->buildEngineWithConfig(
           *comp->network.get(), *builder_cfg.get()));
-
-      ctx = trt_shared_obj(engine->createExecutionContext());
+      assert(engine != nullptr);
+      ctx = TrtUniquePtr<IExecutionContext>(engine->createExecutionContext());
+      assert(ctx != nullptr);
     }
   }
   ~_odla_context() {
@@ -586,8 +591,8 @@ odla_status odla_SetComputationItem(odla_computation computation,
           nvinfer1::NetworkDefinitionCreationFlags flags =
               1U << static_cast<uint32_t>(
                   nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
-          computation->network =
-              trt_shared_obj(computation->builder->createNetworkV2(flags));
+          computation->network = TrtUniquePtr<nvinfer1::INetworkDefinition>(
+              computation->builder->createNetworkV2(flags));
         }
       }
       break;
@@ -873,7 +878,8 @@ static odla_status odla_StoreEngine(odla_context context,
     return ODLA_FAILURE;
   }
 
-  std::shared_ptr<IHostMemory> serializedEngine{context->engine->serialize()};
+  TrtUniquePtr<IHostMemory> serializedEngine{context->engine->serialize()};
+
   if (serializedEngine == nullptr) {
     std::cerr << "Engine serialization failed" << std::endl;
     return ODLA_FAILURE;
@@ -914,14 +920,15 @@ static odla_status odla_LoadEngine(odla_context context,
     return ODLA_FAILURE;
   }
 
-  std::shared_ptr<IRuntime> runtime{createInferRuntime(Logger)};
+  TrtUniquePtr<IRuntime> runtime{createInferRuntime(Logger)};
   if (DLACore != -1) {
     runtime->setDLACore(DLACore);
   }
 
-  context->engine = trt_shared_obj(
+  context->engine = TrtUniquePtr<nvinfer1::ICudaEngine>(
       runtime->deserializeCudaEngine(engineData.data(), fsize, nullptr));
-  context->ctx = trt_shared_obj(context->engine->createExecutionContext());
+  context->ctx = TrtUniquePtr<nvinfer1::IExecutionContext>(
+      context->engine->createExecutionContext());
 
   return ODLA_SUCCESS;
 }

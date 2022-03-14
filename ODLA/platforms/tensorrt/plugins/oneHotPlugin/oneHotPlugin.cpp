@@ -24,6 +24,77 @@ using namespace nvinfer1;
 static const char* ONE_HOT_PLUGIN_VERSION{"1"};
 static const char* ONE_HOT_PLUGIN_NAME{"OneHot_TRT"};
 
+template <typename Base>
+const char* OneHotBase<Base>::getPluginType() const NOEXCEPT {
+  return ONE_HOT_PLUGIN_NAME;
+}
+
+template <typename Base>
+const char* OneHotBase<Base>::getPluginVersion() const NOEXCEPT {
+  return ONE_HOT_PLUGIN_VERSION;
+}
+
+template <typename Base>
+nvinfer1::DataType OneHotBase<Base>::getOutputDataType(
+    int index, const nvinfer1::DataType* inputTypes,
+    int nbInputs) const NOEXCEPT {
+  ASSERT(index == 0 && nbInputs > 1);
+  return inputTypes[1];
+}
+
+template <typename Base>
+int OneHotBase<Base>::getNbOutputs() const NOEXCEPT {
+  return 1;
+}
+
+template <typename Base>
+int OneHotBase<Base>::initialize() NOEXCEPT {
+  return STATUS_SUCCESS;
+}
+
+template <typename Base>
+void OneHotBase<Base>::terminate() NOEXCEPT {}
+
+template <typename Base>
+void OneHotBase<Base>::destroy() NOEXCEPT {
+  delete this;
+}
+
+template <typename Base>
+void OneHotBase<Base>::setPluginNamespace(const char* ns) NOEXCEPT {
+  mNamespace = ns;
+}
+
+template <typename Base>
+const char* OneHotBase<Base>::getPluginNamespace() const NOEXCEPT {
+  return mNamespace.c_str();
+}
+
+template <typename Base>
+size_t OneHotBase<Base>::getSerializationSize() const NOEXCEPT {
+  return sizeof(mConfig);
+}
+
+template <typename Base>
+void OneHotBase<Base>::serialize(void* buffer) const NOEXCEPT {
+  char* begin = reinterpret_cast<char*>(buffer);
+  char* d = begin;
+  write(d, mConfig);
+  ASSERT(d == begin + getSerializationSize());
+}
+
+template <typename Base>
+int OneHotBase<Base>::normalizeAxis(int input_rank) {
+  input_rank = mConfig.explicitBatch ? input_rank + 1 : input_rank;
+  mConfig.axis =
+      mConfig.axis < 0 ? mConfig.axis + input_rank + 1 : mConfig.axis;
+  if (mConfig.explicitBatch) {
+    ASSERT(mConfig.axis != 0); // dim 0 is always batch dim.
+  }
+  ASSERT(mConfig.axis >= 0 && mConfig.axis <= input_rank);
+  return mConfig.explicitBatch ? mConfig.axis - 1 : mConfig.axis;
+}
+
 extern pluginStatus_t oneHotEncoding(cudaStream_t stream,
                                      int64_t pre_axis_elems, int depth,
                                      int64_t post_axis_elems, int axis,
@@ -31,55 +102,21 @@ extern pluginStatus_t oneHotEncoding(cudaStream_t stream,
                                      const int32_t* indices, const void* on_off,
                                      void* output);
 
-OneHotPlugin::OneHotPlugin(const char* name, bool explicit_batch, int depth,
-                           int axis)
-    : mLayerName(name),
-      mExplicitBatch(explicit_batch),
-      mDepth(depth),
-      mAxis(axis),
-      mType(DataType::kFLOAT),
-      mPreAxisElems(1),
-      mPostAxisElems(1),
-      mNamespace("") {}
+OneHotPlugin::OneHotPlugin(const char* name, const Config& config)
+    : OneHotBase<nvinfer1::IPluginV2Ext>(name, config) {}
 
 OneHotPlugin::OneHotPlugin(const char* name, const void* data, size_t length)
-    : mLayerName(name) {
+    : OneHotBase<nvinfer1::IPluginV2Ext>(name) {
   const char* begin = reinterpret_cast<const char*>(data);
   const char* d = begin;
-  mExplicitBatch = read<bool>(d);
-  mDepth = read<int>(d);
-  mAxis = read<int>(d);
-  mType = read<DataType>(d);
-  mPreAxisElems = read<int64_t>(d);
-  mPostAxisElems = read<int64_t>(d);
+  mConfig = read<Config>(d);
   ASSERT(d == begin + length);
 }
 
-size_t OneHotPlugin::getSerializationSize() const NOEXCEPT {
-  return sizeof(mExplicitBatch) + sizeof(mDepth) + sizeof(mAxis) +
-         sizeof(mType) + sizeof(mPreAxisElems) + sizeof(mPostAxisElems);
-}
-
-void OneHotPlugin::serialize(void* buffer) const NOEXCEPT {
-  char* begin = reinterpret_cast<char*>(buffer);
-  char* d = begin;
-  write(d, mExplicitBatch);
-  write(d, mDepth);
-  write(d, mAxis);
-  write(d, mType);
-  write(d, mPreAxisElems);
-  write(d, mPostAxisElems);
-  ASSERT(d == begin + getSerializationSize());
-}
-
-int OneHotPlugin::normalizeAxis(const Dims& index_dim) {
-  auto input_rank = mExplicitBatch ? index_dim.nbDims + 1 : index_dim.nbDims;
-  mAxis = mAxis < 0 ? mAxis + input_rank + 1 : mAxis;
-  if (mExplicitBatch) {
-    ASSERT(mAxis != 0); // dim 0 is always batch dim.
-  }
-  ASSERT(mAxis >= 0 && mAxis <= input_rank);
-  return mExplicitBatch ? mAxis - 1 : mAxis;
+OneHotPlugin::OneHotPlugin(const OneHotPlugin& plugin)
+    : OneHotBase<nvinfer1::IPluginV2Ext>(plugin.mLayerName.c_str(),
+                                         plugin.mConfig) {
+  setPluginNamespace(plugin.getPluginNamespace());
 }
 
 Dims OneHotPlugin::getOutputDimensions(int index, const Dims* inputs,
@@ -87,18 +124,18 @@ Dims OneHotPlugin::getOutputDimensions(int index, const Dims* inputs,
   ASSERT(nbInputDims == 2);
   ASSERT(index >= 0 && index < this->getNbOutputs());
   const auto& index_dim = inputs[0];
-  if (!mExplicitBatch) {
+  if (!mConfig.explicitBatch) {
     ASSERT(inputs[1].nbDims == 1 && inputs[1].d[0] == 2);
   }
   Dims dim;
   dim.nbDims = index_dim.nbDims + 1;
 
-  auto axis = normalizeAxis(index_dim);
+  auto axis = normalizeAxis(index_dim.nbDims);
   for (int i = 0; i < dim.nbDims; ++i) {
     if (i < axis) {
       dim.d[i] = index_dim.d[i];
     } else if (i == axis) {
-      dim.d[i] = mDepth;
+      dim.d[i] = mConfig.depth;
     } else {
       dim.d[i] = index_dim.d[i - 1];
     }
@@ -115,10 +152,11 @@ int OneHotPlugin::enqueue(int batchSize, const void* const* inputs,
   void* output = outputs[0];
 
   pluginStatus_t status = oneHotEncoding(
-      stream, (mExplicitBatch ? batchSize : 1) * mPreAxisElems, mDepth,
-      mPostAxisElems, mAxis, mType, indices, on_off_vals, output);
+      stream, (mConfig.explicitBatch ? batchSize : 1) * mConfig.preAxisElems,
+      mConfig.depth, mConfig.postAxisElems, mConfig.axis, mConfig.type, indices,
+      on_off_vals, output);
   ASSERT(status == STATUS_SUCCESS);
-  return 0;
+  return status;
 }
 
 PluginFieldCollection OneHotPluginCreator::mFC{};
@@ -158,17 +196,17 @@ void OneHotPlugin::configurePlugin(
   ASSERT(std::none_of(outputIsBroadcast, outputIsBroadcast + nbOutputs,
                       [](bool b) { return b; }));
 
-  mType = inputTypes[1];
-  ASSERT(outputTypes[0] == mType);
+  mConfig.type = inputTypes[1];
+  ASSERT(outputTypes[0] == mConfig.type);
   const auto& index_dim = inputDims[0];
-  auto axis = normalizeAxis(index_dim);
-  mPreAxisElems = 1;
-  mPostAxisElems = 1;
+  auto axis = normalizeAxis(index_dim.nbDims);
+  mConfig.preAxisElems = 1;
+  mConfig.postAxisElems = 1;
   for (int i = 0; i < index_dim.nbDims; ++i) {
     if (i < axis) {
-      mPreAxisElems *= index_dim.d[i];
+      mConfig.preAxisElems *= index_dim.d[i];
     } else {
-      mPostAxisElems *= index_dim.d[i];
+      mConfig.postAxisElems *= index_dim.d[i];
     }
   }
 }
@@ -178,31 +216,8 @@ bool OneHotPlugin::supportsFormat(DataType type,
   return true;
 }
 
-const char* OneHotPlugin::getPluginType() const NOEXCEPT {
-  return ONE_HOT_PLUGIN_NAME;
-}
-
-const char* OneHotPlugin::getPluginVersion() const NOEXCEPT {
-  return ONE_HOT_PLUGIN_VERSION;
-}
-
-void OneHotPlugin::destroy() NOEXCEPT { delete this; }
-
 IPluginV2Ext* OneHotPlugin::clone() const NOEXCEPT {
-  auto* plugin =
-      new OneHotPlugin(mLayerName.c_str(), mExplicitBatch, mDepth, mAxis);
-  plugin->mType = mType;
-  plugin->mPreAxisElems = mPreAxisElems;
-  plugin->mPostAxisElems = mPostAxisElems;
-  plugin->setPluginNamespace(mNamespace.c_str());
-  return plugin;
-}
-
-nvinfer1::DataType OneHotPlugin::getOutputDataType(
-    int index, const nvinfer1::DataType* inputTypes,
-    int nbInputs) const NOEXCEPT {
-  ASSERT(index == 0 && nbInputs > 1);
-  return inputTypes[1];
+  return new OneHotPlugin(*this);
 }
 
 static unsigned int getElementSize(nvinfer1::DataType t) {
@@ -219,6 +234,71 @@ static unsigned int getElementSize(nvinfer1::DataType t) {
   }
   throw std::runtime_error("Invalid DataType.");
   return 0;
+}
+
+nvinfer1::IPluginV2DynamicExt* OneHotPluginDynamic::clone() const NOEXCEPT {
+  return new OneHotPluginDynamic(*this);
+}
+
+nvinfer1::DimsExprs OneHotPluginDynamic::getOutputDimensions(
+    int outputIndex, const nvinfer1::DimsExprs* inputs, int nbInputs,
+    nvinfer1::IExprBuilder& exprBuilder) NOEXCEPT {
+  assert(outputIndex == 0);
+  assert(nbInputs == 2); // indices, on/off
+  DimsExprs ret;
+
+  const auto& index_dim = inputs[0];
+  ret.nbDims = index_dim.nbDims + 1;
+  auto axis = normalizeAxis(index_dim.nbDims);
+  for (int i = 0; i < ret.nbDims; ++i) {
+    if (i < axis) {
+      ret.d[i] = index_dim.d[i];
+    } else if (i == axis) {
+      ret.d[i] = exprBuilder.constant(mConfig.depth);
+    } else {
+      ret.d[i] = index_dim.d[i - 1];
+    }
+  }
+  return {ret};
+}
+
+int OneHotPluginDynamic::enqueue(const nvinfer1::PluginTensorDesc* inputDesc,
+                                 const nvinfer1::PluginTensorDesc* outputDesc,
+                                 const void* const* inputs,
+                                 void* const* outputs, void* workspace,
+                                 cudaStream_t stream) NOEXCEPT {
+  const int32_t* indices = reinterpret_cast<const int32_t*>(inputs[0]);
+  const void* on_off_vals = inputs[1];
+
+  void* output = outputs[0];
+
+  pluginStatus_t status = oneHotEncoding(
+      stream, mConfig.preAxisElems, mConfig.depth, mConfig.postAxisElems,
+      mConfig.axis, mConfig.type, indices, on_off_vals, output);
+  ASSERT(status == STATUS_SUCCESS);
+  return status;
+}
+
+void OneHotPluginDynamic::configurePlugin(
+    const nvinfer1::DynamicPluginTensorDesc* in, int nbInputs,
+    const nvinfer1::DynamicPluginTensorDesc* out, int nbOutputs) NOEXCEPT {
+  ASSERT(nbInputs == 2);
+  ASSERT(nbOutputs == 1);
+  ASSERT(in[0].desc.type == DataType::kINT32);
+
+  mConfig.type = in[1].desc.type;
+  ASSERT(out[0].desc.type == mConfig.type);
+  const auto& index_dim = in[0].desc.dims;
+  auto axis = normalizeAxis(index_dim.nbDims);
+  mConfig.preAxisElems = 1;
+  mConfig.postAxisElems = 1;
+  for (int i = 0; i < index_dim.nbDims; ++i) {
+    if (i < axis) {
+      mConfig.preAxisElems *= index_dim.d[i];
+    } else {
+      mConfig.postAxisElems *= index_dim.d[i];
+    }
+  }
 }
 
 IPluginV2Ext* OneHotPluginCreator::createPlugin(
@@ -242,16 +322,22 @@ IPluginV2Ext* OneHotPluginCreator::createPlugin(
       explicit_batch = *(static_cast<const int8_t*>(data));
     }
   }
+  nvinfer1::IPluginV2Ext* plugin = nullptr;
 
-  OneHotPlugin* plugin =
-      new OneHotPlugin(name, explicit_batch != 0, depth, axis);
+  // plugin = new OneHotPlugin(
+  //    name, {explicit_batch != 0, depth, axis, DataType::kFLOAT, 1, 1});
+
+  plugin = new OneHotPluginDynamic(
+      name, {false, depth, axis, DataType::kFLOAT, 1, 1});
   plugin->setPluginNamespace(mNamespace.c_str());
   return plugin;
 }
 
 IPluginV2Ext* OneHotPluginCreator::deserializePlugin(
     const char* name, const void* serialData, size_t serialLength) NOEXCEPT {
-  OneHotPlugin* plugin = new OneHotPlugin(name, serialData, serialLength);
+  // OneHotPlugin* plugin = new OneHotPlugin(name, serialData, serialLength);
+  IPluginV2Ext* plugin =
+      new OneHotPluginDynamic(name, serialData, serialLength);
   plugin->setPluginNamespace(mNamespace.c_str());
   return plugin;
 }
