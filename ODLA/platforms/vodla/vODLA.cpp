@@ -454,14 +454,8 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
     std::cout << "[vODLA] ERROR: input data " << idx << " pointer is NULL.\n";
     return ODLA_FAILURE;
   }
-  if (context->ipPtr[idx] != data_ptr) {
-    context->ipPtr[idx] = data_ptr;
-    context->dataChg = true;
-#ifdef DEBUG
-    std::cout << "[vODLA] DEBUG: input " << idx << " address changed to "
-              << data_ptr << "\n";
-#endif
-  }
+  context->ipPtr[idx] = data_ptr;
+  context->dataChg = true;
   context->ipNum++;
   return ODLA_SUCCESS;
 }
@@ -484,14 +478,8 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
     std::cout << "[vODLA] ERROR: output data " << idx << " pointer is NULL.\n";
     return ODLA_FAILURE;
   }
-  if (context->opPtr[idx] != data_ptr) {
-    context->opPtr[idx] = data_ptr;
-    context->dataChg = true;
-#ifdef DEBUG
-    std::cout << "[vODLA] DEBUG: output " << idx << " address changed to "
-              << data_ptr << "\n";
-#endif
-  }
+  context->opPtr[idx] = data_ptr;
+  context->dataChg = true;
   context->opNum++;
   return ODLA_SUCCESS;
 }
@@ -614,10 +602,6 @@ void deallocDMA(struct vodh_infer_options& vodh_infer_opt,
   /*DeAllocate DMA for outputs*/
   if (vodh_infer_res.output && op) {
     for (u32 i = 0; i < vodh_infer_res.output_num; i++) {
-#ifdef DEBUG
-      printf("output %d data at %p\n", i, vodh_infer_result.output[i]->data);
-#endif
-
       vodh_free(vodh_infer_res.output[i]->data);
       vodh_infer_res.output[i]->data = NULL;
       delete vodh_infer_res.output[i];
@@ -648,6 +632,11 @@ bool allocDMA(struct vodh_infer_options& vodh_infer_opt,
 
   /* Alloc DMA memory for input data */
   u32 ip_mem_cap = 0;
+#ifdef DEBUG
+  std::cout << "[vODLA] DEBUG: vodh_infer_opt.input_num "
+            << vodh_infer_opt.input_num << " context->ipNum " << context->ipNum
+            << std::endl;
+#endif
   if (vodh_infer_opt.input_num != context->ipNum) {
     deallocDMA(vodh_infer_opt, vodh_infer_res, true, false);
     vodh_infer_opt.input_num = context->ipNum;
@@ -955,9 +944,7 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     vodh_infer_opt.model.use_file = 1; // use file path instead of DMA
     vodh_infer_opt.context = context->vodla_context_;
     strcpy(vodh_infer_opt.model.weight_file, comp->wtFile.c_str());
-#ifdef DEBUG
     std::cout << "[vODLA] INFO: start remote inference...\n";
-#endif
 
 #ifdef TIMING
     std::cout << "[vODLA] INFO: loop " << LOOP_CNT << " times.\n";
