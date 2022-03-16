@@ -41,6 +41,8 @@ let cat_ = cat_math_binary,
   def Pow : Inst<"Power operation, element-wise, return X1 ^ X2, support"
                  " broadcast.">;
 
+  def SquaredDifference : Inst<"Returns conj(x - y)(x - y) element-wise.">;
+
   def Sub : Inst<"Binary subtraction operation, element-wise,"
                  " return X1 - X2, support broadcast.">;
 

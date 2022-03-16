@@ -110,6 +110,7 @@ struct CXXCodeGenOpts {
   bool save_temps = false;
   bool constant_decombine = false;
   bool convert_split_to_slice = true;
+  bool convert_squared_diff = true;
 };
 
 #define HALO_MODEL_INFO_MAX_OUTPUT_NR 64

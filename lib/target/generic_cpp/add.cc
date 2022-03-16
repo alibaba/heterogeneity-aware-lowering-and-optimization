@@ -54,11 +54,17 @@ void GenericCXXCodeGen::RunOnUnaryInstruction(Instruction* inst) {
 
 void GenericCXXCodeGen::RunOnBinaryInstruction(Instruction* inst) {
   static const std::unordered_map<OpCode, const char*> names{
-      {OpCode::ADD, "odla_Add"},     {OpCode::AND, "odla_And"},
-      {OpCode::DIV, "odla_Div"},     {OpCode::MAXIMUM, "odla_Max"},
-      {OpCode::MINIMUM, "odla_Min"}, {OpCode::MUL, "odla_Mul"},
-      {OpCode::SUB, "odla_Sub"},     {OpCode::POW, "odla_Pow"},
-      {OpCode::OR, "odla_Or"},       {OpCode::XOR, "odla_Xor"}};
+      {OpCode::ADD, "odla_Add"},
+      {OpCode::AND, "odla_And"},
+      {OpCode::DIV, "odla_Div"},
+      {OpCode::MAXIMUM, "odla_Max"},
+      {OpCode::MINIMUM, "odla_Min"},
+      {OpCode::MUL, "odla_Mul"},
+      {OpCode::SUB, "odla_Sub"},
+      {OpCode::POW, "odla_Pow"},
+      {OpCode::OR, "odla_Or"},
+      {OpCode::XOR, "odla_Xor"},
+      {OpCode::SQUAREDDIFFERENCE, "odla_SquaredDifference"}};
   auto it = names.find(inst->GetOpCode());
   HLCHECK(it != names.end());
   const Def& lhs = inst->GetOperand(0);
@@ -105,6 +111,10 @@ void GenericCXXCodeGen::RunOnInstruction(OrInst* inst) {
 }
 
 void GenericCXXCodeGen::RunOnInstruction(XorInst* inst) {
+  RunOnBinaryInstruction(inst);
+}
+
+void GenericCXXCodeGen::RunOnInstruction(SquaredDifferenceInst* inst) {
   RunOnBinaryInstruction(inst);
 }
 

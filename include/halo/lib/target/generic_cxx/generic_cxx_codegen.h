@@ -134,6 +134,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(CeluInst*) override;
   virtual void RunOnInstruction(ThresholdedReluInst*) override;
   virtual void RunOnInstruction(SqrtInst*) override;
+  virtual void RunOnInstruction(SquaredDifferenceInst*) override;
   virtual void RunOnInstruction(RsqrtInst*) override;
   virtual void RunOnInstruction(BatchNormInst*) override;
   virtual void RunOnInstruction(InstanceNormInst*) override;

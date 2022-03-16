@@ -183,6 +183,7 @@ static void RunOnInstruction(Instruction* inst) {
     case OpCode::SUB:
     case OpCode::SHIFTL:
     case OpCode::SHIFTR:
+    case OpCode::SQUAREDDIFFERENCE:
     case OpCode::AND:
     case OpCode::OR:
     case OpCode::XOR:
