@@ -193,7 +193,7 @@ def CompileModel(model_file, input_shapes, output_names, batch, format):
     return [output_file, output_bin]
 
 
-def AnalyzeModel(model_file, input_shapes, batch, format, model_info):
+def AnalyzeModel(model_file, input_shapes, batch, format, model_info, model_type=""):
     output_file = ""
     odla_lib = cast(create_string_buffer(b""), c_char_p)
     opts = CXXCodeGenOpts()
@@ -229,13 +229,13 @@ def AnalyzeModel(model_file, input_shapes, batch, format, model_info):
 
     target = "cxx".encode("utf-8")
     output_filename = output_file.encode("utf-8")
-    if("resnet50" in model_file):
+    if("resnet50" in model_type):
         model_type = 1
-    elif("dbnet" in model_file):
+    elif("dbnet" in model_type):
         model_type = 2
-    elif("crnn" in model_file):
+    elif("crnn" in model_type):
         model_type = 3
-    elif("bert" in model_file):
+    elif("bert" in model_type):
         model_type = 4
     else:
         model_type = 0
