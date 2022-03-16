@@ -166,7 +166,6 @@ static constexpr size_t MAX_WORKSPACE_SIZE_BYTES =
 static constexpr size_t MAX_WORKSPACE_SIZE_BYTES = 1ul * 1024 * 1024 * 1024;
 #endif
 static const int MAX_INT64_CONVERTION_NUM = 65536ul;
-static bool g_load_engine_mode = false;
 
 typedef struct {
   IIfConditional* branch;
@@ -200,17 +199,16 @@ struct _odla_computation {
   std::unordered_map<odla_value, odla_value_shape> inputs_opt_shapes;
 
   _odla_computation() {
-    load_engine_mode = g_load_engine_mode;
     if (const char* env_p = std::getenv("ODLA_TRT_MAX_WS_MB")) {
       if (int mb = std::stoi(env_p); mb != 0) {
         max_workspace_size = mb << 20;
       }
     }
 
+    initODLAPlugin(&Logger, "");
     if (!load_engine_mode) {
       builder = TrtUniquePtr<nvinfer1::IBuilder>(
           nvinfer1::createInferBuilder(Logger));
-      initODLAPlugin(&Logger, "");
       nvinfer1::NetworkDefinitionCreationFlags flags = 0;
       if (const char* env_p = std::getenv("ODLA_TRT_USE_EXPLICIT_BATCH")) {
         if (*env_p != '0') {
@@ -622,7 +620,7 @@ odla_status odla_SetComputationItem(odla_computation computation,
       break;
 
     case ODLA_LOAD_ENGINE_MODE:
-      g_load_engine_mode = *(reinterpret_cast<bool*>(value));
+      computation->load_engine_mode = *(reinterpret_cast<bool*>(value));
       break;
 
     case ODLA_BF16_MODE:
@@ -940,14 +938,15 @@ odla_status odla_LoadExecutable(const odla_char* file_name, odla_device device,
   int DLACore = (*executable)->DLACore;
 
   if (*computation == nullptr) {
-    int load_engine_mode = 1;
-    odla_SetComputationItem(nullptr, ODLA_LOAD_ENGINE_MODE,
-                            (odla_item_value)&load_engine_mode);
     odla_CreateComputation(computation);
-    bool is_dynamic_batch = true;
-    odla_SetComputationItem(*computation, ODLA_DYNAMIC_BATCH,
-                            (odla_item_value)&is_dynamic_batch);
   }
+  int load_engine_mode = 1;
+  odla_SetComputationItem(*computation, ODLA_LOAD_ENGINE_MODE,
+                          (odla_item_value)&load_engine_mode);
+  bool is_dynamic_batch = true;
+  odla_SetComputationItem(*computation, ODLA_DYNAMIC_BATCH,
+                          (odla_item_value)&is_dynamic_batch);
+
   if (*context == nullptr) {
     odla_CreateContext(context);
   };
