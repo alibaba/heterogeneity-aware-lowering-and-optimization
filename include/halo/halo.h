@@ -54,6 +54,7 @@ struct AnalyzerOpts {
   bool print_details = false;
   int batch_size = 1;
   int qps = 0; // image per second
+  int model_type = 0;
 };
 
 struct CXXCodeGenOpts {
@@ -150,7 +151,8 @@ int halo_Analyze(halo::ModelFormat model_format, unsigned num_models,
                  const char* const input_shapes[], unsigned num_inputs,
                  const char* const inputs[], unsigned num_outputs,
                  const char* const outputs[], const HaloCodeGenOpts* cg_opts,
-                 const char* main_output_file, HaloModelInfo* model_info);
+                 const char* main_output_file, HaloModelInfo* model_info,
+                 const int model_type);
 }
 
 #endif // HALO_HALO_H_

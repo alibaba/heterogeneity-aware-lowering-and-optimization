@@ -52,7 +52,7 @@ class ODLAModel:
             self.h.odla_DestroyComputation(self.comp)
             self.h.odla_DestroyDevice(self.device)
 
-    def Load(self,model,input_shapes,output_names,format,batch,qps):
+    def Load(self,model,input_shapes,output_names,format,batch,qps,model_type=""):
         if self.h is None:
             self.h = CDLL(self.so_file)
         self.comp = c_void_p(0)
@@ -62,7 +62,7 @@ class ODLAModel:
         model_info.adaptive_bsz = batch
         rsc_est = c_void_p(0)
         if qps>0:
-            halo.AnalyzeModel(model,input_shapes,batch,format,model_info)
+            halo.AnalyzeModel(model, input_shapes, batch, format, model_info,model_type)
             rsc_est = (c_char_p)(model_info.output_rsc_est)
         self.h.odla_AllocateDevice(c_void_p(0), 0, pointer(self.device), rsc_est)
         self.files = halo.CompileModel(

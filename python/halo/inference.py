@@ -35,6 +35,7 @@ class Inference:
         qps,
         debug,
         log_level,
+        model_type=""
     ):
         self.debug = debug
         logging.getLogger("halo").setLevel(log_level)
@@ -56,6 +57,7 @@ class Inference:
         self.device = device
         self.batch = batch
         self.qps = qps
+        self.model_type = model_type
         self.model = None
         self.so_file = None
 
@@ -64,7 +66,7 @@ class Inference:
 
     def Initialize(self):
         self.logger.info(f"Begin initialization;{self.model_file}")
-        self.so_file = "libvodla.so"
+        self.so_file = "/usr/local/lib/libvodla.so"
         self.model = odla.ODLAModel(self.so_file)
         self.model.Load(
             self.model_file,
@@ -72,7 +74,8 @@ class Inference:
             self.output_names,
             self.format,
             self.batch,
-            self.qps)
+            self.qps,
+            self.model_type)
         self.logger.info("Done initialization")
 
     def Run(self, data):

@@ -565,6 +565,66 @@ bool Analyzer::RunOnModule(Module* m) {
 //   return l;
 // }
 
+// This is a solver for function such as y=a*x^3+b*x^2+c*x+d
+static float NewtonSolver(const std::array<double, 4> func, int iteration,
+                          float error) {
+  const std::array<double, 3> func_de{func[1], func[2] * 2, func[3] * 3};
+  const float init = 5;
+  const float max_per = 100;
+  const float min_per = 5;
+  float per = init;
+
+  for (int i = 0; i < iteration; i++) {
+    if (fabs(func[0] + func[1] * per + func[2] * per * per +
+             func[3] * per * per * per) < error) {
+      break;
+    }
+    per = per - (func[0] + func[1] * per + func[2] * per * per +
+                 func[3] * per * per * per) /
+                    (func_de[0] + func_de[1] * per + func_de[2] * per * per);
+  }
+  if (per > max_per) {
+    per = max_per;
+  } else if (per < min_per) {
+    per = min_per;
+  }
+
+  return per;
+}
+
+// This is a solver for function such as y=b/x^2+c/x+d
+static float NewtonSolverV2(const std::array<double, 3> func, int iteration,
+                            float error) {
+  const std::array<double, 2> func_de{
+      func[1] * (-1),
+      func[2] * (-2),
+  };
+  const float init = 50;
+  const float max_per = 100;
+  const float min_per = 5;
+  float per = init;
+
+  for (int i = 0; i < iteration; i++) {
+    if (fabs(func[0] + func[1] / per + func[2] / (per * per)) < error) {
+      break;
+    }
+    per = per - (func[0] + func[1] / per + func[2] / (per * per)) /
+                    (func_de[0] / (per * per) + func_de[1] / (per * per * per));
+    if (per > max_per) {
+      per = max_per;
+    } else if (per < min_per) {
+      per = min_per;
+    }
+  }
+  if (per > max_per) {
+    per = max_per;
+  } else if (per < min_per) {
+    per = min_per;
+  }
+
+  return per;
+}
+
 void Analyzer::GenerateRscInfo(std::ostream& os) {
   static constexpr float mflops = 1000000.0F;
   static constexpr float gflops = 1000 * mflops;
@@ -688,8 +748,8 @@ void Analyzer::GenerateRscInfo(std::ostream& os) {
         hw_paras_step["GPU_t4"].other_time *
         (total_flops - conv_flops - conv_act_flops - matmul_flops);
     // knl_latency_temp *= static_cast<float>(adaptive_bsz_);
-    cur_qps = opts_.batch_size * ms2s * 4 /
-              (init_latency + knl_latency_temp * opts_.batch_size);
+    cur_qps = float(opts_.batch_size) * ms2s * 4 /
+              (init_latency + knl_latency_temp * float(opts_.batch_size));
     // os << "step:" << step << " ,cur_qps:" << cur_qps << "\n";
     // os << "hw_paras_step[GPU_t4].conv_time" <<
     // hw_paras_step["GPU_t4"].conv_time
@@ -742,11 +802,116 @@ void Analyzer::GenerateRscInfo(std::ostream& os) {
 
   float est_latency = init_latency + knl_latency;
   const float t4 = t4_flops / 100;
+  const double u_sec = 1e+6;
+  const int iteration = 10;
+  const float error_rate = 0.001;
+  const float max_percent = 100;
+  const float fixed_latency = 0;
+  if (opts_.model_type == 1) {
+    // const std::array<double, 10> model{64073.283167584894, -88.91731411,
+    //                                    12.78189374,        26.05789414,
+    //                                    8533.30914793,      -2900.88985761};
+    // const std::array<double, 4> func{
+    //     model[0] +
+    //         model[2] * float(opts_.batch_size) * float(opts_.batch_size) +
+    //         model[4] * float(opts_.batch_size) -
+    //         u_sec * float(opts_.batch_size) / opts_.qps,
+    //     model[1] * float(opts_.batch_size) + model[5], model[3]};
+    const int resnet_max_batch = 64;
+    if (opts_.batch_size > resnet_max_batch) {
+      opts_.batch_size = resnet_max_batch;
+    }
+    const std::array<double, 9> model{
+        3178.584323243631, 1.04834476e+03, -1.79959003e-01,
+        4.22275381e+05,    4.01474040e+04, 1.03502481e+03,
+        -3.83377305e+06,   6.07300852e+05, -1.00743898e+04};
+    const std::array<double, 3> func{
+        model[0] + model[1] * float(opts_.batch_size) +
+            model[2] * float(opts_.batch_size) * float(opts_.batch_size) -
+            fixed_latency - u_sec * float(opts_.batch_size) / opts_.qps,
+        model[3] + model[4] * float(opts_.batch_size) +
+            model[5] * float(opts_.batch_size) * float(opts_.batch_size),
+        model[6] + model[7] * float(opts_.batch_size) +
+            model[8] * float(opts_.batch_size) * float(opts_.batch_size)};
+    float per = NewtonSolverV2(
+        func, iteration,
+        error_rate * u_sec * float(opts_.batch_size) / opts_.qps);
+    floatsrate = per * t4_flops / max_percent;
+    os << "Model: resnet50"
+       << "\n";
+    os << "est latency: "
+       << func[0] + func[1] / per + func[2] / (per * per) + fixed_latency +
+              u_sec * float(opts_.batch_size) / opts_.qps
+       << "\n";
+  } else if (opts_.model_type == 2) {
+    const std::array<double, 3> func{
+        15172.983994027589 - u_sec * float(opts_.batch_size) / opts_.qps -
+            fixed_latency,
+        632927.68536315, -1369248.3065591};
+    float per = NewtonSolverV2(
+        func, iteration,
+        error_rate * u_sec * float(opts_.batch_size) / opts_.qps);
+    floatsrate = per * t4_flops / max_percent;
+    os << "Model: dbnet"
+       << "\n";
+    os << "est latency: "
+       << func[0] + func[1] / per + func[2] / (per * per) + fixed_latency +
+              u_sec * float(opts_.batch_size) / opts_.qps
+       << "\n";
+  } else if (opts_.model_type == 3) {
+    const std::array<double, 4> func{
+        31525.584310580438 - u_sec * float(opts_.batch_size) / opts_.qps -
+            fixed_latency,
+        -475.78524037, 2.58107976, 0.0};
+    float per =
+        NewtonSolver(func, iteration,
+                     error_rate * u_sec * float(opts_.batch_size) / opts_.qps);
+    floatsrate = per * t4_flops / max_percent;
+    os << "Model: crnn"
+       << "\n";
+    os << "est latency: "
+       << func[0] + func[1] * per + func[2] * per * per +
+              func[3] * per * per * per + fixed_latency +
+              u_sec * float(opts_.batch_size) / opts_.qps
+       << "\n";
+  } else if (opts_.model_type == 4) {
+    const int bert_max_batch = 64;
+    if (opts_.batch_size > bert_max_batch) {
+      opts_.batch_size = bert_max_batch;
+    }
+    const std::array<double, 9> model{
+        393.0349355327198, 8.03122552e+03, 2.68919145e+01,
+        -2.54569898e+05,   4.60746406e+05, 1.46693913e+02,
+        2.42762903e+06,    1.65355925e+06, -5.13532294e+03};
+    const std::array<double, 3> func{
+        model[0] + model[1] * float(opts_.batch_size) +
+            model[2] * float(opts_.batch_size) * float(opts_.batch_size) -
+            fixed_latency - u_sec * float(opts_.batch_size) / opts_.qps,
+        model[3] + model[4] * float(opts_.batch_size) +
+            model[5] * float(opts_.batch_size) * float(opts_.batch_size),
+        model[6] + model[7] * float(opts_.batch_size) +
+            model[8] * float(opts_.batch_size) * float(opts_.batch_size)};
+    float per = NewtonSolverV2(
+        func, iteration,
+        error_rate * u_sec * float(opts_.batch_size) / opts_.qps);
+    floatsrate = per * t4_flops / max_percent;
+    os << "Model: bert"
+       << "\n";
+    os << "est latency: "
+       << func[0] + func[1] / per + func[2] / (per * per) + fixed_latency +
+              u_sec * float(opts_.batch_size) / opts_.qps
+       << "\n";
+  } else {
+    os << "Model: other"
+       << "\n";
+  }
+
   os << "Device: GPU T4"
      << "\n";
   os << "batch size: " << adaptive_bsz_ << "\n";
   os << "est FLOPs: " << floatsrate << " gFlops\n";
   os << "est split: " << floatsrate / t4 << "% T4\n";
+  os << "model FLOPs: " << floatsrate / t4 << "% T4\n";
   os << "est latency: " << est_latency << " ms\n";
   os << "est mem: " << trt_mem << " MB\n";
   /*-----Generated T4 parameters-----------------*/
@@ -768,7 +933,7 @@ void Analyzer::GenerateRscInfo(std::ostream& os) {
   rsc_req_.append("\"size\":1,");
   rsc_req_.append("\"flops\":\"");
   // std::string s = std::to_string(total_flops * gflops);
-  std::string s = std::to_string(ceil(floatsrate));
+  std::string s = std::to_string(ceil(int(floatsrate)));
   rsc_req_.append(s.substr(0, s.find('.')));
   rsc_req_.append("\",");
   rsc_req_.append("\"precision\":\"Fp32\",");

@@ -53,7 +53,8 @@ static int InvokeCompiler(Module* m, const std::string& target, int batch,
                           ModelFormat model_format,
                           const CXXCodeGenOpts& cg_opts,
                           const std::string& main_output_file_name,
-                          ModelInfo* model_info, bool is_compile_model = true) {
+                          ModelInfo* model_info, bool is_compile_model = true,
+                          const int model_type = 0) {
   auto& ctx = m->GetGlobalContext();
   ctx.SetVerbosity(1);
   ctx.SetBasePath(GetBaseDir());
@@ -107,6 +108,7 @@ static int InvokeCompiler(Module* m, const std::string& target, int batch,
     alz_opts.batch_size = model_info->adaptive_bsz;
     alz_opts.print_details = false;
     alz_opts.qps = model_info->input_qps;
+    alz_opts.model_type = model_type;
     Analyzer* analyzer =
         static_cast<Analyzer*>(pm.AddAnalyzerPass(&std::cout, alz_opts));
     pm.Run(m);
@@ -147,6 +149,29 @@ int Compile(ModelFormat format, const std::vector<const void*>& model_defs,
 
   return InvokeCompiler(m.get(), target, batch, input_shapes, inputs, outputs,
                         format, cg_opts, main_output_file_name, model_info);
+}
+
+HL_API_EXPORT
+int Compile(halo::ModelFormat format, const std::vector<const char*>& models,
+            const std::vector<size_t>& model_sizes, const std::string& target,
+            int batch, const std::vector<std::string>& input_shapes,
+            const std::vector<std::string>& inputs,
+            const std::vector<std::string>& outputs,
+            const CXXCodeGenOpts& cg_opts,
+            const std::string& main_output_file_name, ModelInfo* model_info,
+            bool is_compile_model, const int model_type) {
+  GlobalContext ctx;
+  Function* func;
+  std::unique_ptr<Module> m;
+  std::tie(m, func) = CreateModule(&ctx, target);
+  if (auto status = Parser::Parse(func, models, model_sizes, format);
+      status != Status::SUCCESS) {
+    return 1;
+  }
+
+  return InvokeCompiler(m.get(), target, batch, input_shapes, inputs, outputs,
+                        format, cg_opts, main_output_file_name, model_info,
+                        is_compile_model, model_type);
 }
 
 HL_API_EXPORT
@@ -250,7 +275,8 @@ int halo_Analyze(halo::ModelFormat model_format, unsigned num_models,
                  const char* const input_shapes[], unsigned num_inputs,
                  const char* const inputs[], unsigned num_outputs,
                  const char* const outputs[], const HaloCodeGenOpts* cg_opts,
-                 const char* main_output_file, HaloModelInfo* model_info) {
+                 const char* main_output_file, HaloModelInfo* model_info,
+                 const int model_type) {
   const halo::CXXCodeGenOpts& opts =
       *reinterpret_cast<const halo::CXXCodeGenOpts*>(cg_opts);
   std::vector<const char*> models_data(num_models);
@@ -263,5 +289,5 @@ int halo_Analyze(halo::ModelFormat model_format, unsigned num_models,
       model_format, models_data, models_sizes, std::string(target), batch,
       ToStrings(num_input_shapes, input_shapes), ToStrings(num_inputs, inputs),
       ToStrings(num_outputs, outputs), opts, std::string(main_output_file),
-      model_info, false);
+      model_info, false, model_type);
 }
