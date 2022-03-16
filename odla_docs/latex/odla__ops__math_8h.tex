@@ -122,6 +122,8 @@
 \begin{DoxyCompactList}\small\item\em Sign of input. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__math_8h_a29e525904b25bb925f7644f4fa43bb9a}{odla\+\_\+\+Sqrt}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Square root. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__math_8h_a4d418927dd29195b9edd5ce1508ef832}{odla\+\_\+\+Squared\+Difference}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} lhs, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} rhs, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
+\begin{DoxyCompactList}\small\item\em Squared Difference. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__math_8h_aef5bd943a5e2861e38b74c5c76e0a1c4}{odla\+\_\+\+Sub}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} lhs, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} rhs, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Subtraction. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__math_8h_a038eeea71fcc5ef6ac6ae952939085fa}{odla\+\_\+\+Cos}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} x, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
@@ -1708,6 +1710,30 @@ Sqrt returns the element-\/wise square root of {\ttfamily input}.
 \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 odla\+\_\+val 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__ops__math_8h_a4d418927dd29195b9edd5ce1508ef832}\label{odla__ops__math_8h_a4d418927dd29195b9edd5ce1508ef832}} 
+\index{odla\_ops\_math.h@{odla\_ops\_math.h}!odla\_SquaredDifference@{odla\_SquaredDifference}}
+\index{odla\_SquaredDifference@{odla\_SquaredDifference}!odla\_ops\_math.h@{odla\_ops\_math.h}}
+\doxysubsubsection{\texorpdfstring{odla\_SquaredDifference()}{odla\_SquaredDifference()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Squared\+Difference (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{lhs,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{rhs,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
+
+
+
+Squared Difference. 
+
+Squared\+Difference returns ( {\ttfamily lhs} -\/ {\ttfamily rhs} )( {\ttfamily lhs} -\/ {\ttfamily rhs} ) element-\/wise. It supports broadcasting to the same dimension as {\ttfamily lhs}.
+
+
+\begin{DoxyParams}{Parameters}
+{\em lhs} & the first value \\
+\hline
+{\em rhs} & the second value \\
+\hline
+{\em value\+\_\+id} & a unique value id (can be NULL)\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+value 
 \end{DoxyReturn}
 \mbox{\Hypertarget{odla__ops__math_8h_aef5bd943a5e2861e38b74c5c76e0a1c4}\label{odla__ops__math_8h_aef5bd943a5e2861e38b74c5c76e0a1c4}} 
 \index{odla\_ops\_math.h@{odla\_ops\_math.h}!odla\_Sub@{odla\_Sub}}
