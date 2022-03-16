@@ -49,8 +49,6 @@ def TF_Shape: OpMapping<"Shape", Shape> {
     AttributeMapping<"", "data_type", "INT32">];
 }
 
-def TF_SquaredDifference : TFExtension<"SquaredDifference">;
-
 def TF_Squeeze : TFExtension<"Squeeze"> {
   let extension_attr_ = [ ExtensionAttr<"squeeze_dims", IntegerList, "{}"> ];
 }
@@ -357,6 +355,8 @@ def TF_TopK  : OpMapping<"TopKV2", TopK>;
 def TF_Range : OpMapping<"Range", Range>;
 
 def TF_Sigmoid : OpMapping<"Sigmoid", Sigmoid>;
+
+def TF_SquaredDifference : OpMapping<"SquaredDifference", SquaredDifference>;
 
 def TF_Switch : TFExtension<"Switch"> { let num_outputs_ = 2; }
 

@@ -381,18 +381,6 @@ static std::vector<Def> ConvertSplitToSplit(const TFExtensionInst* ext,
   return ret;
 }
 
-static std::vector<Def> ConvertSquaredDifference(const TFExtensionInst* ext,
-                                                 IRBuilder* builder) {
-  HLCHECK(ext->GetNumOfOperands() == 2);
-  auto lhs = ext->GetOperand(0);
-  auto rhs = ext->GetOperand(1);
-  builder->SetInsertAfter(ext);
-  IRObject* new_inst = builder->CreateSub(ext->GetName() + "_sub", lhs, rhs);
-  new_inst =
-      builder->CreateMul(ext->GetName() + "_square", *new_inst, *new_inst);
-  return {*new_inst};
-}
-
 static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
                                             IRBuilder* builder) {
   HLCHECK(ext->GetNumOfOperands() >= 4);
@@ -1199,9 +1187,6 @@ static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
     }
     case TFExtOpCode::SQUARE: {
       return ConvertSquare(tf_inst, builder);
-    }
-    case TFExtOpCode::SQUAREDDIFFERENCE: {
-      return ConvertSquaredDifference(tf_inst, builder);
     }
     case TFExtOpCode::SQUEEZE: {
       return ConvertSqueeze(tf_inst, builder);

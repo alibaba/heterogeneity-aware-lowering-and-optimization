@@ -68,6 +68,8 @@ class InstSimplify final : public BasicBlockPass {
 
   std::pair<Def, Def> RunOnInstruction(OneHotInst* inst);
   std::pair<Def, Def> RunOnInstruction(UniqueInst* inst);
+  std::pair<Def, Def> RunOnInstruction(SquaredDifferenceInst* inst);
+
   CXXCodeGenOpts opts_;
 };
 

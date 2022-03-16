@@ -900,6 +900,20 @@ odla_Sign(odla_value input, const odla_value_id value_id);
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Sqrt(odla_value input, const odla_value_id value_id);
 
+//! \brief Squared Difference
+/*!
+  SquaredDifference returns ( \p lhs - \p rhs )( \p lhs - \p rhs ) element-wise.
+  It supports broadcasting to the same dimension as \p lhs.
+
+  \param lhs the first value
+  \param rhs the second value
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_SquaredDifference(
+    odla_value lhs, odla_value rhs, const odla_value_id value_id);
+
 //! \brief Subtraction
 /*!
   Sub returns the element-wise binary subtraction of \p lhs and \p rhs.

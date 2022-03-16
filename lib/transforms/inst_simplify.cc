@@ -1485,6 +1485,22 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(StackInst* inst) {
   return {orig_def, *new_def};
 }
 
+std::pair<Def, Def> InstSimplify::RunOnInstruction(
+    SquaredDifferenceInst* inst) {
+  Def orig_def{inst, 0};
+  if (!opts_.convert_squared_diff) {
+    return {orig_def, orig_def};
+  }
+  IRBuilder builder(inst->GetParent());
+  builder.SetInsertAfter(inst);
+  const auto& lhs = inst->GetOperand(0);
+  const auto& rhs = inst->GetOperand(1);
+  auto sub_inst = builder.CreateSub(inst->GetName() + "_sub", lhs, rhs);
+  auto mul_inst =
+      builder.CreateMul(inst->GetName() + "_square", *sub_inst, *sub_inst);
+  return {orig_def, *mul_inst};
+}
+
 std::pair<Def, Def> InstSimplify::RunOnInstruction(ZExtInst* inst) {
   Def orig_def{inst, 0};
   DataType ret_dt = inst->GetDataType();

@@ -141,6 +141,11 @@ static llvm::cl::opt<bool> ConvertSplitToSlice(
     "convert-split-to-slice", llvm::cl::desc("convert split to slice"),
     llvm::cl::init(true), llvm::cl::cat(HaloOptCat));
 
+static llvm::cl::opt<bool> ConvertSquaredDifference(
+    "convert-squared-diff",
+    llvm::cl::desc("convert squaredDifference to sub/mul"),
+    llvm::cl::init(true), llvm::cl::cat(HaloOptCat));
+
 static llvm::cl::opt<bool> RISCVOpt(
     "riscv-opt", llvm::cl::desc("Enable optimizations for RISC-V only"),
     llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
@@ -430,6 +435,7 @@ int main(int argc, char** argv) {
     cg_opts.quant_tbl = QuantTable.c_str();
   }
   cg_opts.convert_split_to_slice = ConvertSplitToSlice;
+  cg_opts.convert_squared_diff = ConvertSquaredDifference;
 
   if (!TemplateFile.empty()) {
     auto path = FindTemplateFile(ctx.GetBasePath(), TemplateFile);
