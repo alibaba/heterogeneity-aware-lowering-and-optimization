@@ -25,6 +25,15 @@ static const char* ONE_HOT_PLUGIN_VERSION{"1"};
 static const char* ONE_HOT_PLUGIN_NAME{"OneHot_TRT"};
 
 template <typename Base>
+OneHotBase<Base>::OneHotBase(const char* name, const void* data, size_t length)
+    : mLayerName(name) {
+  const char* begin = reinterpret_cast<const char*>(data);
+  const char* d = begin;
+  mConfig = read<Config>(d);
+  ASSERT(d == begin + length);
+}
+
+template <typename Base>
 const char* OneHotBase<Base>::getPluginType() const NOEXCEPT {
   return ONE_HOT_PLUGIN_NAME;
 }
@@ -101,17 +110,6 @@ extern pluginStatus_t oneHotEncoding(cudaStream_t stream,
                                      nvinfer1::DataType data_type,
                                      const int32_t* indices, const void* on_off,
                                      void* output);
-
-OneHotPlugin::OneHotPlugin(const char* name, const Config& config)
-    : OneHotBase<nvinfer1::IPluginV2Ext>(name, config) {}
-
-OneHotPlugin::OneHotPlugin(const char* name, const void* data, size_t length)
-    : OneHotBase<nvinfer1::IPluginV2Ext>(name) {
-  const char* begin = reinterpret_cast<const char*>(data);
-  const char* d = begin;
-  mConfig = read<Config>(d);
-  ASSERT(d == begin + length);
-}
 
 OneHotPlugin::OneHotPlugin(const OneHotPlugin& plugin)
     : OneHotBase<nvinfer1::IPluginV2Ext>(plugin.mLayerName.c_str(),

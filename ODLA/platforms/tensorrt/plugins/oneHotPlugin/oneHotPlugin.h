@@ -40,7 +40,8 @@ class OneHotBase : public Base {
  public:
   OneHotBase(const char* name, const Config& config)
       : mNamespace(""), mLayerName(name), mConfig(config) {}
-  OneHotBase(const char* name)
+  OneHotBase(const char* name, const void* data, size_t length);
+  explicit OneHotBase(const char* name)
       : OneHotBase(name, {false, 0, -1, nvinfer1::DataType::kFLOAT, 1, 1}) {}
 
   int getNbOutputs() const NOEXCEPT override;
@@ -70,9 +71,11 @@ class OneHotPlugin : public OneHotBase<nvinfer1::IPluginV2Ext> {
  public:
   OneHotPlugin(const OneHotPlugin& plugin);
 
-  OneHotPlugin(const char* name, const Config& config);
+  OneHotPlugin(const char* name, const Config& config)
+      : OneHotBase<nvinfer1::IPluginV2Ext>(name, config) {}
 
-  OneHotPlugin(const char* name, const void* data, size_t length);
+  OneHotPlugin(const char* name, const void* data, size_t length)
+      : OneHotBase<nvinfer1::IPluginV2Ext>(name, data, length) {}
 
   Dims getOutputDimensions(int index, const Dims* inputs,
                            int nbInputDims) NOEXCEPT override;
@@ -116,10 +119,10 @@ class OneHotPlugin : public OneHotBase<nvinfer1::IPluginV2Ext> {
 class OneHotPluginDynamic : public OneHotBase<nvinfer1::IPluginV2DynamicExt> {
  public:
   OneHotPluginDynamic(const char* name, const Config& config)
-      : OneHotBase<nvinfer1::IPluginV2DynamicExt>(name, config){};
+      : OneHotBase<nvinfer1::IPluginV2DynamicExt>(name, config) {}
 
   OneHotPluginDynamic(const char* name, const void* data, size_t length)
-      : OneHotBase<nvinfer1::IPluginV2DynamicExt>(name){};
+      : OneHotBase<nvinfer1::IPluginV2DynamicExt>(name, data, length) {}
 
   nvinfer1::IPluginV2DynamicExt* clone() const NOEXCEPT override;
 
