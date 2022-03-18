@@ -256,6 +256,7 @@ struct _odla_context {
   TrtUniquePtr<nvinfer1::IExecutionContext> ctx{nullptr};
   std::shared_ptr<nvinfer1::IBuilderConfig> builder_cfg = nullptr;
   nvinfer1::IOptimizationProfile* builder_profile = nullptr;
+  cudaStream_t stream = nullptr;
 
   typedef struct {
     void* host_ptr = nullptr;
@@ -331,9 +332,13 @@ struct _odla_context {
       assert(engine != nullptr);
       ctx = TrtUniquePtr<IExecutionContext>(engine->createExecutionContext());
       assert(ctx != nullptr);
+
+      CHECK(cudaStreamCreate(&stream));
     }
   }
   ~_odla_context() {
+    CHECK(cudaStreamDestroy(stream));
+    stream = nullptr;
     comp = nullptr;
     ctx.reset();
     engine.reset();
@@ -761,8 +766,8 @@ odla_status odla_SetValueAsOutput(const odla_value val) {
   g_comp->outputs[name] = val;
   g_comp->output_vals.push_back(val);
   val->tensor->setName(name);
-  val->tensor->setType(GetNVDataType(val->type.element_type));
   g_comp->network->markOutput(*val->tensor);
+  val->tensor->setType(GetNVDataType(val->type.element_type));
   return ODLA_SUCCESS;
 }
 odla_status odla_GetNumOfOutputsFromComputation(
@@ -809,9 +814,10 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
   if (dev_ptr == nullptr) {
     CHECK(cudaMalloc(&dev_ptr, bytes));
   }
-  context->input_ptrs[value->name] = {.host_ptr = data_ptr, .dev_ptr = dev_ptr};
 
-  CHECK(cudaMemcpy(dev_ptr, validated_data_ptr, bytes, cudaMemcpyHostToDevice));
+  CHECK(cudaMemcpyAsync(dev_ptr, validated_data_ptr, bytes,
+                        cudaMemcpyHostToDevice, context->stream));
+  context->input_ptrs[value->name] = {.host_ptr = data_ptr, .dev_ptr = dev_ptr};
 
   return ODLA_SUCCESS;
 }
@@ -1097,25 +1103,31 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
       dims.d[0] = context->run_batch_size;
       context->ctx->setBindingDimensions(idx, dims);
     }
-    CHECK(context->ctx->executeV2(buffers.data()));
+    CHECK(context->ctx->enqueueV2(buffers.data(), context->stream, nullptr));
   } else {
     int batch = 1;
-    CHECK(context->ctx->execute(batch, buffers.data()));
+    CHECK(
+        context->ctx->enqueue(batch, buffers.data(), context->stream, nullptr));
   }
   for (auto& kv : context->output_ptrs) {
     if (kv.second.vt.element_type == ODLA_INT64) {
       std::vector<int> host_tmp(GetTotalElements(kv.second.vt.shape));
-      CHECK(cudaMemcpy(host_tmp.data(), kv.second.dev_ptr, kv.second.len,
-                       cudaMemcpyDeviceToHost));
+      CHECK(cudaMemcpyAsync(host_tmp.data(), kv.second.dev_ptr, kv.second.len,
+                            cudaMemcpyDeviceToHost, context->stream));
       int64_t* ptr = static_cast<int64_t*>(kv.second.host_ptr);
       for (int d : host_tmp) {
         *ptr++ = static_cast<int64_t>(d);
       }
     } else {
-      CHECK(cudaMemcpy(kv.second.host_ptr, kv.second.dev_ptr, kv.second.len,
-                       cudaMemcpyDeviceToHost));
+      CHECK(cudaMemcpyAsync(kv.second.host_ptr, kv.second.dev_ptr,
+                            kv.second.len, cudaMemcpyDeviceToHost,
+                            context->stream));
     }
   }
+
+  // stream sync
+  CHECK(cudaStreamSynchronize(context->stream));
+
   if (!comp->is_dynamic_batch) {
     return ODLA_SUCCESS;
   }
@@ -1158,6 +1170,7 @@ static odla_value binary_op(nvinfer1::ElementWiseOperation op, odla_value lhs,
   auto out_dim =
       broadcastTensor(g_comp, lhs_tensor, rhs_tensor, dims_lhs, dims_rhs);
   auto sub = g_comp->network->addElementWise(*lhs_tensor, *rhs_tensor, op);
+
   for (int i = 0; i < out_dim.size; ++i) {
     out_dim.dims[i] = std::max(lhs_tensor->getDimensions().d[i],
                                rhs_tensor->getDimensions().d[i]);
