@@ -256,7 +256,13 @@ struct _odla_context {
   TrtUniquePtr<nvinfer1::IExecutionContext> ctx{nullptr};
   std::shared_ptr<nvinfer1::IBuilderConfig> builder_cfg = nullptr;
   nvinfer1::IOptimizationProfile* builder_profile = nullptr;
+  std::vector<void*> bindings;
+
   cudaStream_t stream = nullptr;
+  cudaGraph_t graph;
+  cudaGraphExec_t instance;
+  bool enable_cuda_graph = false;
+  bool is_captured = false;
 
   typedef struct {
     void* host_ptr = nullptr;
@@ -688,6 +694,15 @@ odla_status odla_SetContextItem(odla_context context, odla_item_type type,
     case ODLA_RUN_BATCH_SIZE:
       context->run_batch_size = *(reinterpret_cast<int*>(value));
       break;
+    case ODLA_AGGREGATE_OPS:
+      context->enable_cuda_graph = *(reinterpret_cast<bool*>(value));
+      if (context->enable_cuda_graph && (context->comp->is_dynamic_batch ||
+                                         context->comp->is_dynamic_shape)) {
+        Logger.log(ILogger::Severity::kWARNING,
+                   "ODLA aggregating ops only work with static input shape\n");
+        context->enable_cuda_graph = false;
+      }
+      break;
 
     default:
       std::cerr << "Unsupported property type: " << type << std::endl;
@@ -1080,14 +1095,13 @@ odla_status odla_GetValueType(const odla_value value,
 odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
-  std::vector<void*> buffers;
   auto add_to_buffer = [&](const std::string& name, void* ptr) {
     int idx = context->engine->getBindingIndex(name.c_str());
     if (idx >= 0) {
-      if (buffers.size() <= idx) {
-        buffers.resize(idx + 1);
+      if (context->bindings.size() <= idx) {
+        context->bindings.resize(idx + 1);
       }
-      buffers[idx] = ptr;
+      context->bindings[idx] = ptr;
     }
   };
   for (auto& kv : context->input_ptrs) {
@@ -1096,19 +1110,46 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
   for (auto& kv : context->output_ptrs) {
     add_to_buffer(kv.first, kv.second.dev_ptr);
   }
-  if (comp->is_dynamic_batch) {
-    for (auto& input_ptr : context->input_ptrs) {
-      int idx = context->engine->getBindingIndex(input_ptr.first.c_str());
-      nvinfer1::Dims dims = context->ctx->getBindingDimensions(idx);
-      dims.d[0] = context->run_batch_size;
-      context->ctx->setBindingDimensions(idx, dims);
+
+  if (context->enable_cuda_graph) {
+    assert(!comp->is_dynamic_batch && !comp->is_dynamic_shape);
+    // cuda graph on
+    if (!context->is_captured) {
+      // capture cuda graph start
+      CHECK(
+          cudaStreamBeginCapture(context->stream, cudaStreamCaptureModeGlobal));
+      int batch = 1;
+      CHECK(context->ctx->enqueue(batch, context->bindings.data(),
+                                  context->stream, nullptr));
+
+      // capture cuda graph end
+      CHECK(cudaStreamEndCapture(context->stream, &context->graph));
+      CHECK(cudaStreamSynchronize(context->stream));
+      CHECK(cudaGraphInstantiate(&context->instance, context->graph, nullptr,
+                                 nullptr, 0));
+      context->is_captured = true;
     }
-    CHECK(context->ctx->enqueueV2(buffers.data(), context->stream, nullptr));
+
+    // launch cuda graph
+    cudaGraphLaunch(context->instance, context->stream);
   } else {
-    int batch = 1;
-    CHECK(
-        context->ctx->enqueue(batch, buffers.data(), context->stream, nullptr));
+    // cuda graph off
+    if (comp->is_dynamic_batch) {
+      for (auto& input_ptr : context->input_ptrs) {
+        int idx = context->engine->getBindingIndex(input_ptr.first.c_str());
+        nvinfer1::Dims dims = context->ctx->getBindingDimensions(idx);
+        dims.d[0] = context->run_batch_size;
+        context->ctx->setBindingDimensions(idx, dims);
+      }
+      CHECK(context->ctx->enqueueV2(context->bindings.data(), context->stream,
+                                    nullptr));
+    } else {
+      int batch = 1;
+      CHECK(context->ctx->enqueue(batch, context->bindings.data(),
+                                  context->stream, nullptr));
+    }
   }
+
   for (auto& kv : context->output_ptrs) {
     if (kv.second.vt.element_type == ODLA_INT64) {
       std::vector<int> host_tmp(GetTotalElements(kv.second.vt.shape));
@@ -1132,9 +1173,10 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     return ODLA_SUCCESS;
   }
   // copy results and free temp buffers.
-  for (auto& ptr : buffers) {
+  for (auto& ptr : context->bindings) {
     CHECK(cudaFree(ptr));
   }
+  context->bindings.clear();
 
   context->input_ptrs.clear();
   context->output_ptrs.clear();
