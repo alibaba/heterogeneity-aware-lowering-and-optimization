@@ -21,6 +21,7 @@
 #include <ODLA/odla_common.h>
 #include <ODLA/odla_compute.h>
 #include <ODLA/odla_device.h>
+#include <ODLA/odla_memory.h>
 #include <ODLA/odla_ops.h>
 #include <ODLA/odla_profiler.h>
 #include <ODLA/odla_task.h>

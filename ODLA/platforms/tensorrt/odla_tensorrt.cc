@@ -2766,4 +2766,55 @@ odla_values odla_EndIf(odla_value_ids value_ids) {
   return ret;
 }
 
+odla_status odla_AllocateDeviceMemory(odla_void** devPtr, odla_size_t size) {
+  cudaError_t code = cudaMalloc(devPtr, size);
+  CHECK(code);
+  return (code == cudaSuccess) ? ODLA_SUCCESS : ODLA_MEM_ERROR;
+}
+
+odla_status odla_FreeDeviceMemory(odla_void* devPtr) {
+  cudaError_t code = cudaFree(devPtr);
+  CHECK(code);
+  return (code == cudaSuccess) ? ODLA_SUCCESS : ODLA_MEM_ERROR;
+}
+
+odla_status odla_AllocateHostMemory(odla_void** ptr, odla_size_t size) {
+  cudaError_t code = cudaMallocHost(ptr, size);
+  CHECK(code);
+  return (code == cudaSuccess) ? ODLA_SUCCESS : ODLA_MEM_ERROR;
+}
+
+odla_status odla_FreeHostMemory(odla_void* ptr) {
+  cudaError_t code = cudaFreeHost(ptr);
+  CHECK(code);
+  return (code == cudaSuccess) ? ODLA_SUCCESS : ODLA_MEM_ERROR;
+}
+
+odla_status odla_CopyMemory(odla_void* dst, odla_void* src, odla_size_t size,
+                            odla_memcpy_type type) {
+  cudaMemcpyKind kind = cudaMemcpyDefault;
+  switch (type) {
+    case ODLA_MEMCPY_H2H:
+      kind = cudaMemcpyHostToHost;
+      break;
+    case ODLA_MEMCPY_H2D:
+      kind = cudaMemcpyHostToDevice;
+      break;
+    case ODLA_MEMCPY_D2H:
+      kind = cudaMemcpyDeviceToHost;
+      break;
+    case ODLA_MEMCPY_D2D:
+      kind = cudaMemcpyDeviceToDevice;
+      break;
+
+    default:
+      kind = cudaMemcpyDefault;
+      break;
+  }
+
+  cudaError_t code = cudaMemcpy(dst, src, size, kind);
+  CHECK(code);
+  return (code == cudaSuccess) ? ODLA_SUCCESS : ODLA_MEM_ERROR;
+}
+
 } // C extern
