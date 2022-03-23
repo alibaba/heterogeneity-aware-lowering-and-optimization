@@ -54,9 +54,11 @@ static auto Dummy = cudaFree(0);
 template <typename T>
 struct TrtDestroyer {
   void operator()(T* t) {
-    if (t) {
-      t->destroy();
-    }
+#if NV_TENSORRT_MAJOR < 8
+    t->destroy();
+#else
+    delete (t);
+#endif
   }
 };
 
@@ -175,8 +177,8 @@ typedef struct {
 } branch_info;
 
 struct _odla_computation {
-  std::shared_ptr<nvinfer1::IBuilder> builder = nullptr;
-  std::shared_ptr<nvinfer1::INetworkDefinition> network = nullptr;
+  TrtUniquePtr<nvinfer1::IBuilder> builder;
+  TrtUniquePtr<nvinfer1::INetworkDefinition> network;
   std::unordered_map<std::string, odla_value> inputs;
   std::unordered_map<std::string, odla_value> outputs;
   std::vector<std::vector<float>> buffers;
@@ -254,7 +256,7 @@ struct _odla_context {
   odla_computation comp = nullptr;
   TrtUniquePtr<nvinfer1::ICudaEngine> engine{nullptr};
   TrtUniquePtr<nvinfer1::IExecutionContext> ctx{nullptr};
-  std::shared_ptr<nvinfer1::IBuilderConfig> builder_cfg = nullptr;
+  TrtUniquePtr<nvinfer1::IBuilderConfig> builder_cfg{nullptr};
   nvinfer1::IOptimizationProfile* builder_profile = nullptr;
   std::vector<void*> bindings;
 
