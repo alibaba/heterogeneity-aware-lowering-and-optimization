@@ -22,6 +22,7 @@
 
 #include <cstdlib>
 #include <fstream>
+#include <mutex>
 #include <popart/builder.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/ndarraywrapper.hpp>
@@ -43,6 +44,9 @@
 #if !defined(ODLA_VERSION_NUMBER) || (ODLA_VERSION_NUMBER < 50)
 #error This library requires minimum ODLA version 0.5
 #endif
+
+static std::mutex
+    g_computation_mutex; // to lock the create & destroy computation
 
 odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
                                     odla_item_value value) {
@@ -138,6 +142,7 @@ odla_status odla_LoadExecutable(const odla_char* file_name, odla_device device,
 }
 
 odla_status odla_CreateComputation(odla_computation* comp) {
+  std::lock_guard<std::mutex> guard(g_computation_mutex);
   auto injector = PopartConfig::instance()->temp_get_error_inject_env();
   if (injector.empty()) {
     popart::logging::warn("NO VALUE SET for error injector");
@@ -222,6 +227,7 @@ odla_status odla_DestroyContext(odla_context ctx) {
 }
 
 odla_status odla_DestroyComputation(odla_computation comp) {
+  std::lock_guard<std::mutex> guard(g_computation_mutex);
   popart::logging::info("call odla_destroyComputation");
   if (comp != nullptr) {
     if (!comp->is_compile_only()) {
@@ -268,7 +274,7 @@ odla_status odla_AsyncExecuteComputation(odla_computation comp,
     s = odla_ExecuteComputation(comp, context, mode, device);
   if (ODLA_SUCCESS != s && nullptr != context) {
     popart::logging::err(
-        "odla_ExecuteComputation in async with context: {} got return startus: "
+        "odla_ExecuteComputation in async with context: {} got return status: "
         "{}",
         context, s);
     if (context->async_callback_func && context->async_callback_arg) {
@@ -333,6 +339,22 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
   if (status != ODLA_SUCCESS &&
       _odla_computation::instance()->session == nullptr) {
     popart::logging::err("init computation item in CreateContext failed.");
+    if (PopartConfig::instance()->execution_mode() == PIPELINE_ASYNC &&
+        nullptr != context) {
+      popart::logging::err(
+          "odla_ExecuteComputation in async with context: {} got return "
+          "status: {}",
+          context, status);
+      if (context->async_callback_func && context->async_callback_arg) {
+        popart::logging::err("callback to notify the error for ctx: {}",
+                             context);
+        context->async_callback_func(context->async_callback_arg, status);
+      } else
+        popart::logging::err(
+            "Can't notify the failure status: {} as null callback func:{} or "
+            "arg:{}",
+            status, context->async_callback_func, context->async_callback_arg);
+    }
     return status;
   }
   if (!context->hold("odla_BindToArgument")) return ODLA_FAILURE;
