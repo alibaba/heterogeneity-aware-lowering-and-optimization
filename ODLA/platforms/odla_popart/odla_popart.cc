@@ -212,6 +212,13 @@ odla_status _odla_computation::init(bool is_compile) {
             popart::DeviceManager::createDeviceManager().acquireAvailableDevice(
                 opts.ipu_num);
 
+      if (nullptr == device) {
+        popart::logging::err(
+            "Failed to get a device when initializing odla_computation");
+        throw std::runtime_error(
+            "Failed to get a device when initializing odla_computation");
+      }
+
       // Create and config SessionOptions
       set_session_opts();
       if (use_pipeline()) {
