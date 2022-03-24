@@ -256,14 +256,29 @@ odla_status odla_AsyncExecuteComputation(odla_computation comp,
                                          odla_context context,
                                          odla_compute_mode mode,
                                          odla_device device) {
-  odla_status s = odla_ExecuteComputation(comp, context, mode, device);
+  odla_status s = ODLA_FAILURE;
+  // check the execution mode is PIPELINE_ASYNC or not
+  if (PIPELINE_ASYNC != PopartConfig::instance()->execution_mode()) {
+    popart::logging::err(
+        "execution mode: was {} mismatched when try to run "
+        "odla_AsyncExecuteComputation, please set execution_mode to "
+        "pipeline_async in ODLA_POPART_CONFIG",
+        PopartConfig::instance()->execution_mode());
+  } else
+    s = odla_ExecuteComputation(comp, context, mode, device);
   if (ODLA_SUCCESS != s && nullptr != context) {
-    popart::logging::err("odla_ExecuteComputation in async: {}, {}", context,
-                         s);
+    popart::logging::err(
+        "odla_ExecuteComputation in async with context: {} got return startus: "
+        "{}",
+        context, s);
     if (context->async_callback_func && context->async_callback_arg) {
       popart::logging::err("callback to notify the error for ctx: {}", context);
       context->async_callback_func(context->async_callback_arg, s);
-    }
+    } else
+      popart::logging::err(
+          "Can't notify the failure status: {} as null callback func:{} or "
+          "arg:{}",
+          s, context->async_callback_func, context->async_callback_arg);
   }
   return s;
 }
