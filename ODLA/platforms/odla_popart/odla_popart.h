@@ -158,8 +158,11 @@ struct _odla_computation {
   inline void mark_done() {
     while (thread_state_ != DONE) {
       std::unique_lock<std::mutex> lock(thread_done_mutex_);
-      thread_state_ = MARK_DONE;
-      thread_done_cv_.wait_for(lock, std::chrono::milliseconds(1000));
+      if (thread_state_ != DONE) {
+        thread_state_ = MARK_DONE;
+        thread_done_cv_.wait_for(lock, std::chrono::milliseconds(5));
+      } else
+        popart::logging::warn("Alread DONE when try to mark_done");
     }
     // Once get notified, only detach the device once
     std::lock_guard<std::mutex> guard(init_mutex_);
