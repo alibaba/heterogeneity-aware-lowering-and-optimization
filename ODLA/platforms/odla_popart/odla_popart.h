@@ -162,7 +162,10 @@ struct _odla_computation {
       popart::logging::warn("The computation:{} session has been reset", this);
     }
   }
-
+  inline void set_thread_run() {
+    std::unique_lock<std::mutex> lock(thread_done_mutex_);
+    thread_state_ = RUNNING;
+  }
   inline void mark_done() {
     while (thread_state_ != DONE) {
       std::unique_lock<std::mutex> lock(thread_done_mutex_);
