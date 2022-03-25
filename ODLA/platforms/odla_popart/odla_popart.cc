@@ -81,18 +81,20 @@ void compute_loop(odla_computation comp) {
   popart::StepIOCallback stepio(input_callback, input_complete_callback,
                                 output_callback, output_complete_callback);
   int i = 0;
+  bool info_printed = false;
   POPLAR_TRY
   while (!comp->is_done()) {
     auto start = std::chrono::steady_clock::now();
     popart::logging::info("This is the {} time for the inference", i++);
     if (i == INT_MAX) i = 0;
-    if (i == 0) {
+    if (!info_printed) {
       popart::logging::warn("Start to run the stepio with comp:{}", comp);
       popart::logging::warn("Start to run the stepio with comp:{}, session:{}",
                             comp, comp->session.get());
       popart::logging::warn(
           "Start to run the stepio with comp:{}, session:{}, device:{}", comp,
           comp->session.get(), comp->session->getDevice().getDeviceInfo());
+      info_printed = true;
     }
     comp->session->run(stepio);
     auto end = std::chrono::steady_clock::now();
