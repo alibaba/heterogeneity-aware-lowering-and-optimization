@@ -81,15 +81,23 @@ void compute_loop(odla_computation comp) {
   popart::StepIOCallback stepio(input_callback, input_complete_callback,
                                 output_callback, output_complete_callback);
   int i = 0;
+  bool info_printed = false;
   POPLAR_TRY
+  comp->set_thread_run(); // set the state to RUNNING
   while (!comp->is_done()) {
     auto start = std::chrono::steady_clock::now();
     popart::logging::info("This is the {} time for the inference", i++);
     if (i == INT_MAX) i = 0;
+    if (!info_printed) {
+      popart::logging::warn(
+          "Start to run the stepio with comp:{}, session:{}, device:{}", comp,
+          comp->session.get(), comp->session->getDevice().getDeviceInfo());
+      info_printed = true;
+    }
     comp->session->run(stepio);
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed_seconds = end - start;
-    popart::logging::warn(
+    popart::logging::info(
         "[ {} ] ONE_STEP takes {} s. Check whether more inference tasks "
         "wating.",
         i, elapsed_seconds.count());
@@ -99,11 +107,12 @@ void compute_loop(odla_computation comp) {
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
     end = std::chrono::steady_clock::now();
     std::chrono::duration<double, std::milli> elapsed_ms = end - start;
-    popart::logging::warn("Found new tasks in {} ms.", elapsed_ms.count());
+    popart::logging::info("Found new tasks in {} ms.", elapsed_ms.count());
   }
   POPLAR_CATCH
 
-  popart::logging::info("The pipeline loop finished");
+  popart::logging::warn(
+      "The computation: {} pipeline loop finished after {} steps run", comp, i);
   comp->thread_done();
 }
 
@@ -184,6 +193,7 @@ odla_status _odla_computation::compile_and_export() {
 
 odla_status _odla_computation::init(bool is_compile) {
   if (!session) {
+    popart::logging::warn("The computation:{} start to init", this);
     std::lock_guard<std::mutex> guard(init_mutex_);
     if (!session) {
       POPLAR_TRY
@@ -281,22 +291,26 @@ odla_status _odla_computation::init(bool is_compile) {
         new_session->prepareDevice();
         new_session->setRandomSeed(0);  // Init seed
         new_session->weightsFromHost(); // Copy weights from host to IPU
-        // If in parallel mode, start the thread
-        ExecutionMode mode = PopartConfig::instance()->execution_mode();
-        if (PIPELINE == mode || PARALLEL == mode || PIPELINE_ASYNC == mode) {
-          std::thread parallel_thread(compute_loop, this);
-          thread_state_ = RUNNING;
-          popart::logging::warn("Parallel loop has been started");
-          parallel_thread.detach();
-        }
       } else {
         is_compile_only_ = true;
       }
-
-      session =
-          std::move(new_session); // set session after all initialization done.
+      // set session after all initialization done.
+      session = std::move(new_session);
+      // Thread must be started after all initialization done
+      if (!is_compile) {
+        ExecutionMode mode = PopartConfig::instance()->execution_mode();
+        if (PIPELINE == mode || PARALLEL == mode || PIPELINE_ASYNC == mode) {
+          std::thread parallel_thread(compute_loop, this);
+          popart::logging::warn(
+              "The computation: {}, parallel loop has been started", this);
+          parallel_thread.detach();
+        }
+      }
       POPLAR_CATCH
     }
+    popart::logging::warn(
+        "The computation:{} has been initialised with session:{}", this,
+        session.get());
   }
   return ODLA_SUCCESS;
 }
