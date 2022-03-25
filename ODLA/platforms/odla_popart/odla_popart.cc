@@ -86,6 +86,14 @@ void compute_loop(odla_computation comp) {
     auto start = std::chrono::steady_clock::now();
     popart::logging::info("This is the {} time for the inference", i++);
     if (i == INT_MAX) i = 0;
+    if (i == 0) {
+      popart::logging::warn("Start to run the stepio with comp:{}", comp);
+      popart::logging::warn("Start to run the stepio with comp:{}, session:{}",
+                            comp, comp->session.get());
+      popart::logging::warn(
+          "Start to run the stepio with comp:{}, session:{}, device:{}", comp,
+          comp->session.get(), comp->session->getDevice().getDeviceInfo());
+    }
     comp->session->run(stepio);
     auto end = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed_seconds = end - start;
@@ -103,7 +111,7 @@ void compute_loop(odla_computation comp) {
   }
   POPLAR_CATCH
 
-  popart::logging::info("The pipeline loop finished");
+  popart::logging::warn("The computation: {} pipeline loop finished", comp);
   comp->thread_done();
 }
 
@@ -184,6 +192,7 @@ odla_status _odla_computation::compile_and_export() {
 
 odla_status _odla_computation::init(bool is_compile) {
   if (!session) {
+    popart::logging::warn("The computation:{} start to init", this);
     std::lock_guard<std::mutex> guard(init_mutex_);
     if (!session) {
       POPLAR_TRY
@@ -286,7 +295,8 @@ odla_status _odla_computation::init(bool is_compile) {
         if (PIPELINE == mode || PARALLEL == mode || PIPELINE_ASYNC == mode) {
           std::thread parallel_thread(compute_loop, this);
           thread_state_ = RUNNING;
-          popart::logging::warn("Parallel loop has been started");
+          popart::logging::warn(
+              "The computation: {}, parallel loop has been started", this);
           parallel_thread.detach();
         }
       } else {
@@ -297,6 +307,9 @@ odla_status _odla_computation::init(bool is_compile) {
           std::move(new_session); // set session after all initialization done.
       POPLAR_CATCH
     }
+    popart::logging::warn(
+        "The computation:{} has been initialised with session:{}", this,
+        session.get());
   }
   return ODLA_SUCCESS;
 }

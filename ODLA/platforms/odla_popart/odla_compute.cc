@@ -167,7 +167,8 @@ odla_status odla_CreateComputation(odla_computation* comp) {
 
   static void* custom_op_handle = nullptr;
   *comp = _odla_computation::instance();
-  popart::logging::info("computation created");
+  popart::logging::warn("computation created: {}",
+                        _odla_computation::instance());
   if (custom_op_handle == nullptr) {
     custom_op_handle = dlopen("libcustom_ops.so", RTLD_NOW | RTLD_GLOBAL);
     if (custom_op_handle == nullptr) {
@@ -228,7 +229,7 @@ odla_status odla_DestroyContext(odla_context ctx) {
 
 odla_status odla_DestroyComputation(odla_computation comp) {
   std::lock_guard<std::mutex> guard(g_computation_mutex);
-  popart::logging::info("call odla_destroyComputation");
+  popart::logging::warn("call odla_destroyComputation comp: {}", comp);
   if (comp != nullptr) {
     if (!comp->is_compile_only()) {
       comp->mark_done();
@@ -237,7 +238,7 @@ odla_status odla_DestroyComputation(odla_computation comp) {
     comp->release_session();
     _odla_computation::destruct(); // release the real computation
   }
-  popart::logging::info("reset config state");
+  popart::logging::warn("reset config state, comp: {}", comp);
   PopartConfig::instance()->reset_init_state();
 
   return ODLA_SUCCESS;
