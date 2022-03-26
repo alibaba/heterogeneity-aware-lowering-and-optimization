@@ -340,9 +340,8 @@ struct _odla_context {
       assert(engine != nullptr);
       ctx = TrtUniquePtr<IExecutionContext>(engine->createExecutionContext());
       assert(ctx != nullptr);
-
-      CHECK(cudaStreamCreate(&stream));
     }
+    CHECK(cudaStreamCreate(&stream));
   }
   ~_odla_context() {
     CHECK(cudaStreamDestroy(stream));
