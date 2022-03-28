@@ -1,5 +1,6 @@
 # Halo IR  
 ---
+<!-- markdown-link-check-disable -->
 ## 1. [common](#common)  
 * [Call](#Call)  
 * [Concat](#Concat)  
