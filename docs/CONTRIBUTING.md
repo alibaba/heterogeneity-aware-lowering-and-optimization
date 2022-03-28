@@ -7,7 +7,7 @@ or log it on [Github issues](https://github.com/alibaba/heterogeneity-aware-lowe
 
 ## Pull Request Process
 
-* Ensure that the changes are consistent with the [coding style](#Coding_Style_Guide).
+* Ensure that the changes are consistent with the coding style guide.
 * In case of a larger feature, provide relevant unit tests and sample.
 
 ## Coding Style Guide
