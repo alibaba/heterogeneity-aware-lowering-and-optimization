@@ -1,7 +1,9 @@
 #include <ODLA/odla.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/syscall.h>
 #include <sys/time.h>
+#include <unistd.h>
 #include <vodh_common.h>
 
 #include <atomic>
@@ -14,6 +16,7 @@
 #include <thread>
 #include <vector>
 
+#define gettid() syscall(SYS_gettid)
 #define MAX_INPUT_TENSOR 256
 #define MAX_OUTPUT_TENSOR 256
 
@@ -206,9 +209,9 @@ odla_status odla_AllocateDevice(const odla_vendor vendor,
                                 odla_device* device) {
   // Init, query and open vvodh devices
 #ifdef DEBUG
-  std::cout << "[vODLA] INFO: Start initializing vodh device.\n";
+  pid_t tid = gettid();
+  std::cout << "[vODLA] INFO: thread " << tid << " allocate device\n";
 #endif
-
   // create vODLA device
   odla_device dev = new _odla_device();
   if (dev == NULL) {
@@ -371,6 +374,10 @@ odla_status odla_AllocateDevice(const odla_vendor vendor,
 
 odla_status odla_DestroyDevice(odla_device device) {
   // allocate device failed
+#ifdef DEBUG
+  pid_t tid = gettid();
+  std::cout << "[vODLA] INFO: thread " << tid << " destroy device\n";
+#endif
   if (device == NULL) {
     std::cout << "[vODLA] ERROR: NULL device, nothing to destroy.\n";
     return ODLA_FAILURE;
@@ -445,6 +452,8 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
 
   auto idx = reinterpret_cast<std::uintptr_t>(value);
 #ifdef DEBUG
+  pid_t tid = gettid();
+  std::cout << "[vODLA] DEBUG: thread " << tid << " bind argument\n";
   std::cout << "[vODLA] DEBUG: Binding input idx: " << idx << "\n";
 #endif
   if (idx >= MAX_INPUT_TENSOR) {
@@ -469,6 +478,8 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
 
   auto idx = reinterpret_cast<std::uintptr_t>(value);
 #ifdef DEBUG
+  pid_t tid = gettid();
+  std::cout << "[vODLA] DEBUG: thread " << tid << " bind output\n";
   std::cout << "[vODLA] DEBUG: Binding output idx: " << idx << "\n";
 #endif
   if (idx >= MAX_OUTPUT_TENSOR) {
@@ -486,8 +497,9 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
 
 odla_status odla_CreateContext(odla_context* context) {
 #ifdef DEBUG
-  std::cout << "[vODLA] DEBUG: odla_CreateContext thread "
-            << std::this_thread::get_id() << " handler " << g_dev->vodh_hd
+  pid_t tid = gettid();
+  std::cout << "[vODLA] DEBUG: thread " << tid << " create context\n";
+  std::cout << "[vODLA] DEBUG: odla_CreateContext handler " << g_dev->vodh_hd
             << " dev_list ptr " << &(g_dev->vodh_dev_list[0]) << " ctx "
             << context << ", *ctx " << *context << std::endl;
 #endif
@@ -510,9 +522,9 @@ odla_status odla_CreateContext(odla_context* context) {
 
 odla_status odla_DestroyContext(odla_context context) {
 #ifdef DEBUG
-  std::cout << "[vODLA] DEBUG: odla_DestroyContext thread "
-            << std::this_thread::get_id() << " context " << context
-            << std::endl;
+  pid_t tid = gettid();
+  std::cout << "[vODLA] DEBUG: odla_DestroyContext thread " << tid
+            << " context " << context << std::endl;
 #endif
   vodh_ret ret = vodh_destroy_context(
       g_dev->vodh_hd, &(g_dev->vodh_dev_list[0]), context->vodla_context_);
@@ -889,8 +901,9 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
       .output = NULL};
 
 #ifdef DEBUG
-  std::cout << "[vODLA] DEBUG: odla_ExecuteComputation thread "
-            << std::this_thread::get_id() << " use opt addr " << &vodh_infer_opt
+  pid_t tid = gettid();
+  std::cout << "[vODLA] DEBUG: tid " << tid
+            << " odla_ExecuteComputation use opt addr " << &vodh_infer_opt
             << "\nres addr " << &vodh_infer_res << std::endl;
 #endif
 
@@ -944,8 +957,10 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     vodh_infer_opt.model.use_file = 1; // use file path instead of DMA
     vodh_infer_opt.context = context->vodla_context_;
     strcpy(vodh_infer_opt.model.weight_file, comp->wtFile.c_str());
-    std::cout << "[vODLA] INFO: start remote inference...\n";
-
+#ifdef DEBUG
+    std::cout << "[vODLA] INFO: thread " << tid
+              << " start remote inference...\n";
+#endif
 #ifdef TIMING
     std::cout << "[vODLA] INFO: loop " << LOOP_CNT << " times.\n";
 
