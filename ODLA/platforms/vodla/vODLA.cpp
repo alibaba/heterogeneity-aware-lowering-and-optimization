@@ -209,10 +209,9 @@ odla_status odla_AllocateDevice(const odla_vendor vendor,
                                 odla_device* device) {
   // Init, query and open vvodh devices
 #ifdef DEBUG
-  std::cout << "[vODLA] INFO: Start initializing vodh device.\n";
-#endif
   pid_t tid = gettid();
   std::cout << "[vODLA] INFO: thread " << tid << " allocate device\n";
+#endif
   // create vODLA device
   odla_device dev = new _odla_device();
   if (dev == NULL) {
@@ -375,8 +374,10 @@ odla_status odla_AllocateDevice(const odla_vendor vendor,
 
 odla_status odla_DestroyDevice(odla_device device) {
   // allocate device failed
+#ifdef DEBUG
   pid_t tid = gettid();
   std::cout << "[vODLA] INFO: thread " << tid << " destroy device\n";
+#endif
   if (device == NULL) {
     std::cout << "[vODLA] ERROR: NULL device, nothing to destroy.\n";
     return ODLA_FAILURE;
@@ -848,7 +849,6 @@ bool allocDMA(struct vodh_infer_options& vodh_infer_opt,
 odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
-  pid_t tid = gettid();
   // init vODLA device failed
   if (context == NULL) {
     std::cout << "[vODLA] ERROR: odla device is NULL.\n";
@@ -901,6 +901,7 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
       .output = NULL};
 
 #ifdef DEBUG
+  pid_t tid = gettid();
   std::cout << "[vODLA] DEBUG: tid " << tid
             << " odla_ExecuteComputation use opt addr " << &vodh_infer_opt
             << "\nres addr " << &vodh_infer_res << std::endl;
@@ -956,9 +957,10 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     vodh_infer_opt.model.use_file = 1; // use file path instead of DMA
     vodh_infer_opt.context = context->vodla_context_;
     strcpy(vodh_infer_opt.model.weight_file, comp->wtFile.c_str());
+#ifdef DEBUG
     std::cout << "[vODLA] INFO: thread " << tid
               << " start remote inference...\n";
-
+#endif
 #ifdef TIMING
     std::cout << "[vODLA] INFO: loop " << LOOP_CNT << " times.\n";
 
