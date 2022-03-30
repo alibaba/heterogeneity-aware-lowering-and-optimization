@@ -39,6 +39,8 @@ enum \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\+
 , \newline
 {\bfseries ODLA\+\_\+\+ENABLE\+\_\+\+ENGINE\+\_\+\+CACHE}
 , {\bfseries ODLA\+\_\+\+CACHE\+\_\+\+DIR}
+, {\bfseries ODLA\+\_\+\+ASYNC\+\_\+\+CALLBACK\+\_\+\+FUNC}
+, {\bfseries ODLA\+\_\+\+ASYNC\+\_\+\+CALLBACK\+\_\+\+ARG}
  \}
 \begin{DoxyCompactList}\small\item\em Property item type. \end{DoxyCompactList}\item 
 enum \mbox{\hyperlink{odla__compute_8h_acdd4e76bab81ce3f41e2dc909c0051bd}{odla\+\_\+bf16\+\_\+mode}} \{ {\bfseries BF16\+\_\+\+DISABLE}
@@ -146,7 +148,7 @@ Computation object.
 
 
 
-Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00067}{67}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
+Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00069}{69}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
 
 \mbox{\Hypertarget{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}\label{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}} 
 \index{odla\_compute.h@{odla\_compute.h}!odla\_constants\_array@{odla\_constants\_array}}
@@ -160,7 +162,7 @@ Constants array object.
 
 
 
-Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00079}{79}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
+Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00081}{81}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
 
 \mbox{\Hypertarget{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}\label{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}} 
 \index{odla\_compute.h@{odla\_compute.h}!odla\_context@{odla\_context}}
@@ -174,7 +176,7 @@ Context object.
 
 
 
-Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00073}{73}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
+Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00075}{75}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
 
 \mbox{\Hypertarget{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}\label{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}} 
 \index{odla\_compute.h@{odla\_compute.h}!odla\_executable@{odla\_executable}}
@@ -188,7 +190,7 @@ Executable object.
 
 
 
-Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00070}{70}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
+Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00072}{72}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
 
 \mbox{\Hypertarget{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}\label{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}} 
 \index{odla\_compute.h@{odla\_compute.h}!odla\_item\_value@{odla\_item\_value}}
@@ -202,7 +204,7 @@ Property item value object.
 
 
 
-Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00076}{76}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
+Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00078}{78}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
 
 
 
@@ -219,16 +221,16 @@ BF16 mode.
 
 
 
-Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00059}{59}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
+Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00061}{61}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
 
 
 \begin{DoxyCode}{0}
-\DoxyCodeLine{00059              \{}
-\DoxyCodeLine{00060   BF16\_DISABLE,}
-\DoxyCodeLine{00061   BF16\_ACCURACY\_MODE,}
-\DoxyCodeLine{00062   BF16\_PERFORMACE\_MODE,}
-\DoxyCodeLine{00063   BF16\_AUTO\_MODE,}
-\DoxyCodeLine{00064 \} \mbox{\hyperlink{odla__compute_8h_acdd4e76bab81ce3f41e2dc909c0051bd}{odla\_bf16\_mode}};}
+\DoxyCodeLine{00061              \{}
+\DoxyCodeLine{00062   BF16\_DISABLE,}
+\DoxyCodeLine{00063   BF16\_ACCURACY\_MODE,}
+\DoxyCodeLine{00064   BF16\_PERFORMACE\_MODE,}
+\DoxyCodeLine{00065   BF16\_AUTO\_MODE,}
+\DoxyCodeLine{00066 \} \mbox{\hyperlink{odla__compute_8h_acdd4e76bab81ce3f41e2dc909c0051bd}{odla\_bf16\_mode}};}
 
 \end{DoxyCode}
 \mbox{\Hypertarget{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}\label{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}} 
@@ -285,7 +287,9 @@ Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00041}{41}} of file
 \DoxyCodeLine{00053   ODLA\_LOAD\_ENGINE\_MODE,}
 \DoxyCodeLine{00054   ODLA\_ENABLE\_ENGINE\_CACHE,}
 \DoxyCodeLine{00055   ODLA\_CACHE\_DIR,}
-\DoxyCodeLine{00056 \} \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\_item\_type}};}
+\DoxyCodeLine{00056   ODLA\_ASYNC\_CALLBACK\_FUNC,}
+\DoxyCodeLine{00057   ODLA\_ASYNC\_CALLBACK\_ARG,}
+\DoxyCodeLine{00058 \} \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\_item\_type}};}
 
 \end{DoxyCode}
 
