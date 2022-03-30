@@ -1,7 +1,9 @@
 #include <ODLA/odla.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/syscall.h>
 #include <sys/time.h>
+#include <unistd.h>
 #include <vodh_common.h>
 
 #include <cassert>
@@ -12,6 +14,7 @@
 #include <memory>
 #include <vector>
 
+#define gettid() syscall(SYS_gettid)
 #define MAX_INPUT_TENSOR 256
 #define MAX_OUTPUT_TENSOR 256
 
@@ -850,6 +853,7 @@ bool allocDMA(odla_device device, odla_context context) {
 odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
+  pid_t tid = gettid();
   // init vODLA device failed
   if (context == NULL) {
     std::cout << "[vODLA] ERROR: odla device is NULL.\n";
@@ -934,9 +938,8 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     device->vodh_infer_opt.model.use_file = 1; // use file path instead of DMA
     strcpy(device->vodh_infer_opt.model.weight_file, comp->wtFile.c_str());
 
-#ifdef DEBUG
-    std::cout << "[vODLA] INFO: start remote inference...\n";
-#endif
+    std::cout << "[vODLA] INFO: thread " << tid
+              << " start remote inference...\n";
 
 #ifdef TIMING
     std::cout << "[vODLA] INFO: loop " << LOOP_CNT << " times.\n";
