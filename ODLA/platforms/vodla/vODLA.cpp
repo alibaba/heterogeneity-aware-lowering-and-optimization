@@ -849,7 +849,6 @@ bool allocDMA(struct vodh_infer_options& vodh_infer_opt,
 odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
-  pid_t tid = gettid();
   // init vODLA device failed
   if (context == NULL) {
     std::cout << "[vODLA] ERROR: odla device is NULL.\n";
