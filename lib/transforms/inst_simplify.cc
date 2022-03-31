@@ -255,7 +255,8 @@ static std::pair<Def, Def> RunOnMathUnaryInstruction(Instruction* inst) {
 
 static std::pair<Def, Def> RunOnMathBinaryInstruction(
     Instruction* binary_inst, bool disable_broadcasting, bool fuse_conv_bias,
-    bool fuse_hardswish, bool fuse_matmul_mul, bool fuse_fully_connected) {
+    bool fuse_hardswish, bool fuse_matmul_mul, bool fuse_fully_connected,
+    bool fuse_layernorm) {
   Def orig_def{binary_inst, 0};
   auto op0 = binary_inst->GetOperand(0);
   auto op1 = binary_inst->GetOperand(1);
@@ -441,6 +442,56 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
               new_inst = builder.CreateHardSwish(
                   binary_inst->GetName() + "_fused", op_add0);
               return {orig_def, *new_inst};
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (opc == OpCode::ADD && fuse_layernorm) {
+    const Def& op_mul0 = op0;
+    const Def& op_sub = op1;
+    if (IsA<MulInst>(op_mul0) && IsA<SubInst>(op_sub)) {
+      auto op_input = DynCast<MulInst>(op_mul0)->GetOperand(0);
+      auto op_mul_gamma = DynCast<MulInst>(op_mul0)->GetOperand(1);
+      if (IsA<MulInst>(op_mul_gamma)) {
+        auto op_rsqrt = DynCast<MulInst>(op_mul_gamma)->GetOperand(0);
+        auto op_gamma = DynCast<MulInst>(op_mul_gamma)->GetOperand(1);
+        if (IsA<RsqrtInst>(op_rsqrt) && IsA<Constant>(op_gamma)) {
+          auto op_add = DynCast<RsqrtInst>(op_rsqrt)->GetOperand(0);
+          if (IsA<AddInst>(op_add)) {
+            auto op_mean0 = DynCast<AddInst>(op_add)->GetOperand(0);
+            auto op_epsilon = DynCast<AddInst>(op_add)->GetOperand(1);
+            if (IsA<ReduceMeanInst>(op_mean0) && IsA<Constant>(op_epsilon)) {
+              auto op_squareddiff =
+                  DynCast<ReduceMeanInst>(op_mean0)->GetOperand(0);
+              if (IsA<SquaredDifferenceInst>(op_squareddiff)) {
+                if (op_input == DynCast<SquaredDifferenceInst>(op_squareddiff)
+                                    ->GetOperand(0)) {
+                  auto op_mean1 = DynCast<SquaredDifferenceInst>(op_squareddiff)
+                                      ->GetOperand(1);
+                  if (IsA<ReduceMeanInst>(op_mean1) &&
+                      DynCast<ReduceMeanInst>(op_mean1)->GetOperand(0) ==
+                          op_input) {
+                    auto op_beta = DynCast<SubInst>(op_sub)->GetOperand(0);
+                    auto op_mul1 = DynCast<SubInst>(op_sub)->GetOperand(1);
+                    if (IsA<MulInst>(op_mul1) && IsA<Constant>(op_beta)) {
+                      if (DynCast<MulInst>(op_mul1)->GetOperand(0) ==
+                              op_mean1 &&
+                          DynCast<MulInst>(op_mul1)->GetOperand(1) ==
+                              op_mul_gamma) {
+                        IRBuilder builder(binary_inst->GetParent());
+                        builder.SetInsertAfter(binary_inst);
+                        auto new_inst = builder.CreateLayerNorm(
+                            op_input.GetOwner()->GetName() + "_layernorm",
+                            op_input, op_gamma, op_beta);
+                        return {orig_def, *new_inst};
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -793,7 +844,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Instruction* inst) {
       return RunOnMathBinaryInstruction(
           inst, opts_.disable_broadcasting, opts_.fuse_conv_bias,
           opts_.fuse_hardswish, opts_.fuse_matmul_mul,
-          opts_.fuse_fully_connected);
+          opts_.fuse_fully_connected, opts_.fuse_layernorm);
     }
     case OpCode::REDUCEMAX:
     case OpCode::REDUCEMIN:

@@ -133,6 +133,10 @@ static llvm::cl::opt<bool> FuseMultoConv("fuse-mul-to-conv",
                                          llvm::cl::desc("fuse mul to conv"),
                                          llvm::cl::init(true),
                                          llvm::cl::cat(HaloOptCat));
+static llvm::cl::opt<bool> FuseLayernorm("fuse-layernorm",
+                                         llvm::cl::desc("fuse layernorm"),
+                                         llvm::cl::init(false),
+                                         llvm::cl::cat(HaloOptCat));
 static llvm::cl::opt<bool> EmitCodeOnly(
     "code-only", llvm::cl::desc("Generate the code only"),
     llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
@@ -420,6 +424,7 @@ int main(int argc, char** argv) {
   cg_opts.fuse_conv_relu = FuseRelu;
   cg_opts.fuse_fully_connected = FuseFC;
   cg_opts.fuse_mul_to_conv = FuseMultoConv;
+  cg_opts.fuse_layernorm = FuseLayernorm;
   cg_opts.remove_input_transpose = RemoveInputTranspose;
   cg_opts.remove_output_transpose = RemoveOutputTranspose;
   cg_opts.format_code =
