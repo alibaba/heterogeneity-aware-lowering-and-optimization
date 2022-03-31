@@ -91,9 +91,11 @@ odla_status odla_SetContextItem(odla_context context, odla_item_type type,
     case ODLA_ASYNC_CALLBACK_FUNC:
       context->async_callback_func =
           reinterpret_cast<int (*)(void*, odla_status)>(value);
+      popart::logging::info("set async callback function. {}", value);
       break;
     case ODLA_ASYNC_CALLBACK_ARG:
       context->async_callback_arg = reinterpret_cast<void*>(value);
+      popart::logging::info("set async callback argument. {}", value);
       break;
     default:
       popart::logging::err("Unsupported context property type: {}", type);

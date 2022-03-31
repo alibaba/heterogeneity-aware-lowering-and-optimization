@@ -230,6 +230,9 @@ struct _odla_pipeline_async_context : public _odla_pipeline_context {
           this);
       throw std::invalid_argument("async_callback_arg is null");
     }
+    popart::logging::info("use async callback function {}",
+                          async_callback_func);
+    popart::logging::info("use async callback argument {}", async_callback_arg);
     async_callback_func(async_callback_arg, QManager::instance()->get_status());
     popart::logging::info("[VODLA DEBUG] callback called, ctx: {}", this);
   }
