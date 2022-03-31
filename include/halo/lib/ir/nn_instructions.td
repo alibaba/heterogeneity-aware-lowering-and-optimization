@@ -100,6 +100,18 @@ let cat_ = cat_nn in {
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
   }
 
+  def LayerNorm : Inst<"Layer Normalization."> {
+    let attrs_ = [Attr<"Axis along which to normalize.",
+                   IntegerList, "axis", "{-1}">,
+                  Attr<"Use to avoid division by zero.",
+                       Float, "epsilon", "1e-12">];
+    let ins_ = [Arg<"The input tensor, shape is usually (batch, sentence_length, embedding_dim).",
+                    ArgType<[F16,F32]> >,
+                Arg<"The scale Tensor(gamma)", ArgType<[F16, F32]>>,
+                Arg<"The offset Tensor(beta)", ArgType<[F16, F32]>>];
+    let outs_ = [Arg<"The result.", MatchArgType<0> >];
+  }
+
   def TFIDFVectorize : Inst<"TF-IDF Text Vectorization."> {
     let attrs_ = [
       Attr<"Mininum n-gram length.", Integer, "min_gram_length", "1">,

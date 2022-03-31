@@ -253,9 +253,244 @@ static std::pair<Def, Def> RunOnMathUnaryInstruction(Instruction* inst) {
   return {orig_def, *c};
 }
 
+// weiming
+static Def MatchMeanDiff(const Def& op0, const Def& op1,
+                         const std::vector<int>& dims) {
+  // Check if op1 == mean(op0)
+  auto mean_inst = DynCast<ReduceMeanInst>(op1);
+  if (mean_inst != nullptr && mean_inst->GetOperand(0) == op0) {
+    // Check if the mean is over the same dimensions
+    const auto& axis = mean_inst->GetAxis();
+    if (axis.size() == dims.size() &&
+        std::equal(axis.begin(), axis.end(), dims.begin())) {
+      return op0;
+    }
+  }
+  return Def::GetUndefined();
+}
+
+static Def MatchMeanDiff(const SubInst& inst, const std::vector<int>& dims) {
+  auto op0 = inst.GetOperand(0);
+  auto op1 = inst.GetOperand(1);
+  return MatchMeanDiff(op0, op1, dims);
+}
+
+static Def MatchMeanDiff(const SquaredDifferenceInst& inst,
+                         const std::vector<int>& dims) {
+  auto op0 = inst.GetOperand(0);
+  auto op1 = inst.GetOperand(1);
+  return MatchMeanDiff(op0, op1, dims);
+}
+
+static std::tuple<Def, std::vector<int>> MatchVariance(const Def& def) {
+  // Match for variance = mean(squared_difference(op0, mean(op0)))
+  Def input = Def::GetUndefined();
+  std::vector<int> dims;
+  const ReduceMeanInst* mean = DynCast<ReduceMeanInst>(def);
+  if (mean == nullptr) {
+    return {input, dims};
+  }
+  dims = mean->GetAxis();
+  // check for square_diff(x, mean(x))
+  auto op0 = mean->GetOperand(0);
+  if (const SquaredDifferenceInst* s = DynCast<SquaredDifferenceInst>(op0);
+      s != nullptr) {
+    input = MatchMeanDiff(*s, dims);
+  } else if (const MulInst* mul = DynCast<MulInst>(op0); mul != nullptr) {
+    // check for (x - mean(x))^2
+    auto mul_op = mul->GetOperand(0);
+    if (const SubInst* sub = DynCast<SubInst>(mul_op);
+        sub != nullptr && mul_op == mul->GetOperand(1)) {
+      input = MatchMeanDiff(*sub, dims);
+    }
+  }
+  return {input, dims};
+}
+
+static std::tuple<Def, float, std::vector<int>> MatchVarRsqrt(
+    const Instruction& inst) {
+  float epsilon = .0F;
+  Def input = Def::GetUndefined();
+  std::vector<int> dims;
+  if (inst.GetOpCode() != OpCode::RSQRT) {
+    return {input, epsilon, dims};
+  }
+  const auto& op0 = inst.GetOperand(0);
+  if (const AddInst* add = DynCast<AddInst>(op0); add != nullptr) {
+    auto get_epsilon = [](const Def& def) {
+      if (const Constant* c = DynCast<Constant>(def)) {
+        if (c->GetResultType().GetTotalNumOfElements() == 1) {
+          return std::make_pair(true, c->GetDataAsFloat32(0));
+        }
+      }
+      return std::make_pair(false, 0.0f);
+    };
+    const auto& lhs = add->GetOperand(0);
+    const auto& rhs = add->GetOperand(1);
+    auto ret = get_epsilon(lhs);
+    std::tie(input, dims) = MatchVariance(rhs);
+    if (ret.first && !input.IsNull()) {
+      return {input, ret.second, dims};
+    }
+    ret = get_epsilon(rhs);
+    std::tie(input, dims) = MatchVariance(lhs);
+    if (ret.first && !input.IsNull()) {
+      return {input, ret.second, dims};
+    }
+    return {Def::GetUndefined(), epsilon, dims};
+  }
+  // No epsilon.
+  std::tie(input, dims) = MatchVariance(op0);
+  return {input, epsilon, dims};
+}
+
+// mry
+static std::tuple<Def, float, std::vector<int>> MatchVarRsqrt(const Def& op) {
+  auto inst = DynCast<Instruction>(op);
+  return MatchVarRsqrt(*inst);
+}
+
+static bool MatchMean(const Def& op0, const Def& op1) {
+  // Check if op1 == mean(op0)
+  auto mean_inst = DynCast<ReduceMeanInst>(op1);
+  return (mean_inst != nullptr && mean_inst->GetOperand(0) == op0);
+}
+
+std::tuple<Def, Def, Def, float, std::vector<int>> MatchGammaDivStd(
+    const Def& op) {
+  Def input = Def::GetUndefined();
+  Def gamma = Def::GetUndefined();
+  Def gamma_div_std = Def::GetUndefined();
+  float epsilon = 0.0F;
+  std::vector<int> dims;
+  if (!IsA<MulInst>(op)) {
+    return {input, gamma, gamma_div_std, epsilon, dims};
+  }
+  auto mul_inst = DynCast<MulInst>(op);
+  auto lhs = mul_inst->GetOperand(0);
+  auto rhs = mul_inst->GetOperand(1);
+  if (IsA<Constant>(lhs)) {
+    std::tie(input, epsilon, dims) = MatchVarRsqrt(rhs);
+    if (!input.IsNull()) {
+      gamma = lhs;
+      gamma_div_std = op;
+    }
+  } else if (IsA<Constant>(rhs)) {
+    std::tie(input, epsilon, dims) = MatchVarRsqrt(lhs);
+    if (!input.IsNull()) {
+      gamma = rhs;
+      gamma_div_std = op;
+    }
+  }
+  return {input, gamma, gamma_div_std, epsilon, dims};
+}
+
+static std::tuple<Def, Def, Def, float, std::vector<int>> MatchGammaXDivStd(
+    const Def& op) {
+  Def input = Def::GetUndefined();
+  Def gamma = Def::GetUndefined();
+  Def gamma_div_std = Def::GetUndefined();
+  float epsilon = 0.0F;
+  std::vector<int> dims;
+
+  if (!IsA<MulInst>(op)) {
+    return {input, gamma, gamma_div_std, epsilon, dims};
+  }
+  auto mul_inst = DynCast<MulInst>(op);
+  const auto& lhs = mul_inst->GetOperand(0);
+  const auto& rhs = mul_inst->GetOperand(1);
+  std::tie(input, gamma, gamma_div_std, epsilon, dims) = MatchGammaDivStd(lhs);
+  if (input != rhs) {
+    std::tie(input, gamma, gamma_div_std, epsilon, dims) =
+        MatchGammaDivStd(rhs);
+    if (input != lhs) {
+      return std::make_tuple(Def::GetUndefined(), Def::GetUndefined(),
+                             Def::GetUndefined(), 0.0F, std::vector<int>());
+    }
+  }
+  return std::make_tuple(input, gamma, gamma_div_std, epsilon, dims);
+}
+
+static bool MatchGammaMeanDivStd(const Def& op, const Def& input,
+                                 const Def& gamma_div_std) {
+  if (!IsA<MulInst>(op)) {
+    return false;
+  }
+  auto mul_inst = DynCast<MulInst>(op);
+  const auto& lhs = mul_inst->GetOperand(0);
+  const auto& rhs = mul_inst->GetOperand(1);
+
+  if (lhs == gamma_div_std) {
+    return MatchMean(input, rhs);
+  }
+  if (rhs == gamma_div_std) {
+    return MatchMean(input, lhs);
+  }
+  return false;
+}
+
+static Def MatchBetaSubGammaMeanDivStd(const Def& op, const Def& input,
+                                       const Def& gamma_div_std) {
+  Def beta = Def::GetUndefined();
+  if (!IsA<SubInst>(op)) {
+    return beta;
+  }
+  auto sub_inst = DynCast<SubInst>(op);
+  const auto& lhs = sub_inst->GetOperand(0);
+  const auto& rhs = sub_inst->GetOperand(1);
+  if (!IsA<Constant>(lhs)) {
+    return beta;
+  }
+
+  if (MatchGammaMeanDivStd(rhs, input, gamma_div_std)) {
+    beta = lhs;
+  }
+  return beta;
+}
+
+static std::tuple<Def, Def, Def, float, std::vector<int>> MatchLayerNorm(
+    const Instruction* inst) {
+  Def input = Def::GetUndefined();
+  Def gamma = Def::GetUndefined();
+  Def beta = Def::GetUndefined();
+  Def gamma_div_std = Def::GetUndefined();
+  float epsilon = 0.0F;
+  std::vector<int> dims;
+
+  if (inst->GetOpCode() == OpCode::ADD) {
+    const auto& op0 = inst->GetOperand(0);
+    const auto& op1 = inst->GetOperand(1);
+    // match  (x * gamma / sqrt(var + epsilon)) + (beta - mean(x)*
+    // gamma/sqrt(var + epsilon))
+    std::tie(input, gamma, gamma_div_std, epsilon, dims) =
+        MatchGammaXDivStd(op0);
+    if (!input.IsNull()) {
+      beta = MatchBetaSubGammaMeanDivStd(op1, input, gamma_div_std);
+    }
+
+    if (beta.IsNull()) {
+      std::tie(input, gamma, gamma_div_std, epsilon, dims) =
+          MatchGammaXDivStd(op1);
+      if (!input.IsNull()) {
+        beta = MatchBetaSubGammaMeanDivStd(op0, input, gamma_div_std);
+      }
+    }
+
+    if (beta.IsNull()) {
+      return std::make_tuple(Def::GetUndefined(), Def::GetUndefined(),
+                             Def::GetUndefined(), 0.0F, std::vector<int>());
+    }
+    return std::make_tuple(input, gamma, beta, epsilon, dims);
+  }
+  return std::make_tuple(Def::GetUndefined(), Def::GetUndefined(),
+                         Def::GetUndefined(), 0.0F, std::vector<int>());
+}
+// mry
+
 static std::pair<Def, Def> RunOnMathBinaryInstruction(
     Instruction* binary_inst, bool disable_broadcasting, bool fuse_conv_bias,
-    bool fuse_hardswish, bool fuse_matmul_mul, bool fuse_fully_connected) {
+    bool fuse_hardswish, bool fuse_matmul_mul, bool fuse_fully_connected,
+    bool fuse_layernorm) {
   Def orig_def{binary_inst, 0};
   auto op0 = binary_inst->GetOperand(0);
   auto op1 = binary_inst->GetOperand(1);
@@ -447,6 +682,19 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
       }
     }
   }
+  if (fuse_layernorm) {
+    const auto& [input, gamma, beta, epsilon, dims] =
+        MatchLayerNorm(binary_inst);
+    if (input != Def::GetUndefined()) {
+      IRBuilder builder(binary_inst->GetParent());
+      builder.SetInsertAfter(binary_inst);
+      auto new_inst = builder.CreateLayerNorm(
+          input.GetOwner()->GetName() + "_layernorm", input, gamma, beta);
+      new_inst->SetAxis(dims);
+      new_inst->SetEpsilon(epsilon);
+      return {orig_def, *new_inst};
+    };
+  }
 
   const auto& op0_type = op0.GetType();
   const auto& op1_type = op1.GetType();
@@ -529,9 +777,9 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
     Instruction* op0_inst = DynCast<Instruction>(op0);
     if (!IsA<Argument>(op0_inst->GetOperand(0))) {
       // Add(transpose(op0), op1) ==> transpose(add(op0, transpose'(op1))
-      // if rank_1 < rank_0, we first unsqueeze(reshape) op1 to the same rank as
-      // op0. Then we do the reverse transpose on op1.
-      // For example: given add(To_NCHW(op0<n, h, w, c>), op1<c, 1, 1,>), we do
+      // if rank_1 < rank_0, we first unsqueeze(reshape) op1 to the same rank
+      // as op0. Then we do the reverse transpose on op1. For example: given
+      // add(To_NCHW(op0<n, h, w, c>), op1<c, 1, 1,>), we do
       //  To_NCHW(add op0<n, h, w, c>, To_NHWC(op1<1, c, 1, 1>))
       TransposeInst* orig_transpose = DynCast<TransposeInst>(op0_inst);
       IRBuilder builder(binary_inst->GetParent());
@@ -793,7 +1041,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Instruction* inst) {
       return RunOnMathBinaryInstruction(
           inst, opts_.disable_broadcasting, opts_.fuse_conv_bias,
           opts_.fuse_hardswish, opts_.fuse_matmul_mul,
-          opts_.fuse_fully_connected);
+          opts_.fuse_fully_connected, opts_.fuse_layernorm);
     }
     case OpCode::REDUCEMAX:
     case OpCode::REDUCEMIN:
@@ -2905,6 +3153,17 @@ bool InstSimplify::RunOnBasicBlock(BasicBlock* bb) {
     if (auto lstm = DynCast<LSTMInst>(inst)) {
       changed |= FixUpLSTM(lstm);
     }
+    // {
+    //   const auto& [input, gamma, beta, epsilon, dims] = MatchLayerNorm(inst);
+    //   if (input != Def::GetUndefined()) {
+    //     std::cout << "Find LayerNorm: " << inst->GetName() << " eps:" <<
+    //     epsilon
+    //               << std::endl;
+    //     std::cout << gamma.GetOwner()->GetName() << std::endl;
+    //     std::cout << beta.GetOwner()->GetName() << std::endl;
+    //     std::cout << dims.size() << "\n";
+    //   }
+    // }
   }
   return changed;
 }

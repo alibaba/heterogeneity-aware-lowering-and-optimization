@@ -96,4 +96,20 @@ void GenericCXXCodeGen::RunOnInstruction(LpNormalizeInst* inst) {
 
   ir_mapping_[*inst] = ret;
 }
+
+void GenericCXXCodeGen::RunOnInstruction(LayerNormInst* inst) {
+  const Def& input = inst->GetOperand(0);
+  const Def& scale = inst->GetOperand(1);
+  const Def& offset = inst->GetOperand(2);
+
+  CXXValue op0 = ir_mapping_[input];
+  CXXValue op1 = ir_mapping_[scale];
+  CXXValue op2 = ir_mapping_[offset];
+
+  CXXValue ret(inst->GetName(), op0.type);
+  EmitODLACall(ret, "odla_LayerNorm", op0, (inst->GetAxis()).size(),
+               inst->GetAxis(), inst->GetEpsilon(), op1, op2);
+  ir_mapping_[*inst] = ret;
+}
+
 } // end namespace halo
