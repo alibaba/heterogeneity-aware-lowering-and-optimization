@@ -86,7 +86,7 @@ We appreciate the support of ODLA runtimes from the following partners:
 
 ## How to Use HALO
 
-To build HALO, please follow the instructions [here](docs/how_to_build.md).
+To build HALO, please follow the instructions [here](docs/how_to_build.md) ([查看中文](docs/README_CN.md)).
 
 The workflow of deploying models using HALO includes:
 1. Use HALO to compile the model file(s) into an ODLA-based C/C++ source file.

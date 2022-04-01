@@ -427,6 +427,7 @@ int main(int argc, char** argv) {
   cg_opts.fuse_layernorm = FuseLayernorm;
   cg_opts.remove_input_transpose = RemoveInputTranspose;
   cg_opts.remove_output_transpose = RemoveOutputTranspose;
+  cg_opts.emit_pb_file = target_name.startswith_lower("pb");
   cg_opts.format_code =
       !DisableCodeFormat && is_c_or_cxx_output && !is_binary_output;
   cg_opts.emit_header = true;
