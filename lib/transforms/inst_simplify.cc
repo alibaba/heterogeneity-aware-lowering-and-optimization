@@ -2874,6 +2874,96 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(UniqueInst* inst) {
   return {orig_def, orig_def};
 }
 
+static Def MatchMeanDiff(const Def& op0, const Def& op1,
+                         const std::vector<int>& dims) {
+  // Check if op1 == mean(op0)
+  auto mean_inst = DynCast<ReduceMeanInst>(op1);
+  if (mean_inst != nullptr && mean_inst->GetOperand(0) == op0) {
+    // Check if the mean is over the same dimensions
+    const auto& axis = mean_inst->GetAxis();
+    if (axis.size() == dims.size() &&
+        std::equal(axis.begin(), axis.end(), dims.begin())) {
+      return op0;
+    }
+  }
+  return Def::GetUndefined();
+}
+
+static Def MatchMeanDiff(const SubInst& inst, const std::vector<int>& dims) {
+  auto op0 = inst.GetOperand(0);
+  auto op1 = inst.GetOperand(1);
+  return MatchMeanDiff(op0, op1, dims);
+}
+
+static Def MatchMeanDiff(const SquaredDifferenceInst& inst,
+                         const std::vector<int>& dims) {
+  auto op0 = inst.GetOperand(0);
+  auto op1 = inst.GetOperand(1);
+  return MatchMeanDiff(op0, op1, dims);
+}
+
+static std::tuple<Def, std::vector<int>> MatchVariance(const Def& def) {
+  // Match for variance = mean(squared_difference(op0, mean(op0)))
+  Def input = Def::GetUndefined();
+  std::vector<int> dims;
+  const ReduceMeanInst* mean = DynCast<ReduceMeanInst>(def);
+  if (mean == nullptr) {
+    return {input, dims};
+  }
+  dims = mean->GetAxis();
+  // check for square_diff(x, mean(x))
+  auto op0 = mean->GetOperand(0);
+  if (const SquaredDifferenceInst* s = DynCast<SquaredDifferenceInst>(op0);
+      s != nullptr) {
+    input = MatchMeanDiff(*s, dims);
+  } else if (const MulInst* mul = DynCast<MulInst>(op0); mul != nullptr) {
+    // check for (x - mean(x))^2
+    auto mul_op = mul->GetOperand(0);
+    if (const SubInst* sub = DynCast<SubInst>(mul_op);
+        sub != nullptr && mul_op == mul->GetOperand(1)) {
+      input = MatchMeanDiff(*sub, dims);
+    }
+  }
+  return {input, dims};
+}
+
+static std::tuple<Def, float, std::vector<int>> MatchVarRsqrt(
+    const Instruction& inst) {
+  float epsilon = .0F;
+  Def input = Def::GetUndefined();
+  std::vector<int> dims;
+  if (inst.GetOpCode() != OpCode::RSQRT) {
+    return {input, epsilon, dims};
+  }
+  const auto& op0 = inst.GetOperand(0);
+  if (const AddInst* add = DynCast<AddInst>(op0); add != nullptr) {
+    auto get_epsilon = [](const Def& def) {
+      if (const Constant* c = DynCast<Constant>(def)) {
+        if (c->GetResultType().GetTotalNumOfElements() == 1) {
+          return std::make_pair(true, c->GetDataAsFloat32(0));
+        }
+      }
+      return std::make_pair(false, 0.0f);
+    };
+    const auto& lhs = add->GetOperand(0);
+    const auto& rhs = add->GetOperand(1);
+    auto ret = get_epsilon(lhs);
+    std::tie(input, dims) = MatchVariance(rhs);
+    if (ret.first && !input.IsNull()) {
+      return {input, ret.second, dims};
+    }
+    ret = get_epsilon(rhs);
+    std::tie(input, dims) = MatchVariance(lhs);
+    if (ret.first && !input.IsNull()) {
+      return {input, ret.second, dims};
+    }
+    return {Def::GetUndefined(), epsilon, dims};
+  }
+  // No epsilon.
+  std::tie(input, dims) = MatchVariance(op0);
+  return {input, epsilon, dims};
+}
+
 bool InstSimplify::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
   for (auto& inst_t : *bb) {
@@ -2904,6 +2994,14 @@ bool InstSimplify::RunOnBasicBlock(BasicBlock* bb) {
 
     if (auto lstm = DynCast<LSTMInst>(inst)) {
       changed |= FixUpLSTM(lstm);
+    }
+    {
+      const auto& [input, epsilon, dims] = MatchVarRsqrt(*inst);
+      if (input != Def::GetUndefined()) {
+        std::cout << "Find rsqrt variance: " << inst->GetName()
+                  << " eps:" << epsilon << std::endl;
+        std::cout << dims.size() << "\n";
+      }
     }
   }
   return changed;
