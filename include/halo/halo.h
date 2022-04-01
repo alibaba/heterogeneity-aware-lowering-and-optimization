@@ -105,6 +105,7 @@ struct CXXCodeGenOpts {
   bool emit_header = false;
   bool emit_obj = false;
   bool emit_shared_lib = false;
+  bool emit_pb_file = false;
   const char* linked_odla_lib = nullptr;
   const char* template_file = nullptr;
   bool save_temps = false;
