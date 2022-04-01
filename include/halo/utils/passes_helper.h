@@ -70,6 +70,11 @@ HL_UNUSED static void PopulateCodeGenPasses(
     }
     return;
   }
+  if (opts.emit_pb_file) {
+    pm->AddWeightsQuantizerPass(quant_weights, pgq_file, opts);
+    pm->AddSerializerPass(out_code, !emit_code_only);
+    return;
+  }
 
   if (emit_llvm_ir) {
     pm->AddWeightsQuantizerPass(quant_weights, pgq_file, opts);

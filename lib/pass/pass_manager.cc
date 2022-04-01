@@ -20,6 +20,7 @@
 #include <ostream>
 
 #include "halo/lib/quantizer/weights_quantizer.h"
+#include "halo/lib/serializer/serializer.h"
 #include "halo/lib/target/cpu/arm/binary/arm_llvmir_codegen.h"
 #include "halo/lib/target/cpu/riscv/binary/riscv_llvmir_codegen.h"
 #include "halo/lib/target/cpu/x86/binary/x86_llvmir_codegen.h"
@@ -374,6 +375,11 @@ Pass* PassManager::AddObjEmitPass(
 
 Pass* PassManager::AddONNXExtensionLegalizerPass() {
   return AddPass<ONNXExtensionLegalizer>();
+}
+
+Pass* PassManager::AddSerializerPass(std::ostringstream* os,
+                                     bool emit_weights) {
+  return AddPass<Serializer>(os, emit_weights);
 }
 
 Pass* PassManager::AddOutputRewriterPass(
