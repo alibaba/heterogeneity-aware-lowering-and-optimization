@@ -277,6 +277,21 @@ int OneHotPluginDynamic::enqueue(const nvinfer1::PluginTensorDesc* inputDesc,
   return status;
 }
 
+bool OneHotPluginDynamic::supportsFormatCombination(
+    int32_t pos, const nvinfer1::PluginTensorDesc* inOut, int32_t nbInputs,
+    int32_t nbOutputs) NOEXCEPT {
+  ASSERT(pos >= 0 && pos < 3);
+  if (pos == 0) {
+    return inOut[0].type == nvinfer1::DataType::kINT32;
+  }
+  if (pos == 1) {
+    return (inOut[1].type == nvinfer1::DataType::kFLOAT ||
+            inOut[1].type == nvinfer1::DataType::kHALF ||
+            inOut[1].type == nvinfer1::DataType::kINT32);
+  }
+  return inOut[pos].type == inOut[1].type;
+}
+
 void OneHotPluginDynamic::configurePlugin(
     const nvinfer1::DynamicPluginTensorDesc* in, int nbInputs,
     const nvinfer1::DynamicPluginTensorDesc* out, int nbOutputs) NOEXCEPT {

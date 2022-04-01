@@ -130,10 +130,10 @@ class OneHotPluginDynamic : public OneHotBase<nvinfer1::IPluginV2DynamicExt> {
       int outputIndex, const nvinfer1::DimsExprs* inputs, int nbInputs,
       nvinfer1::IExprBuilder& exprBuilder) NOEXCEPT override;
 
-  bool supportsFormatCombination(int32_t, const nvinfer1::PluginTensorDesc*,
-                                 int32_t, int32_t) NOEXCEPT override {
-    return true;
-  }
+  bool supportsFormatCombination(int32_t pos,
+                                 const nvinfer1::PluginTensorDesc* inOut,
+                                 int32_t nbInputs,
+                                 int32_t nbOutputs) NOEXCEPT override;
 
   size_t getWorkspaceSize(const nvinfer1::PluginTensorDesc* inputs,
                           int nbInputs,
