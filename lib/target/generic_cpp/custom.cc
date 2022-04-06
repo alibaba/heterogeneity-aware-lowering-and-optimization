@@ -35,7 +35,7 @@ void GenericCXXCodeGen::RunOnInstruction(CustomInst* inst) {
     inputs.push_back(ir_mapping_[op]);
   }
 
-  if (inst->GetOpname() == "custom_DetectionOutput") {
+  if (inst->GetOpName() == "custom_DetectionOutput") {
     const std::string op_name = "\"DetectionOutput\"";
     const int& bl = FindAttributeValue<int>(*inst, "background_label_id");
     float threshold = FindAttributeValue<float>(*inst, "confidence_threshold");
@@ -59,7 +59,7 @@ void GenericCXXCodeGen::RunOnInstruction(CustomInst* inst) {
                        ArgWithComment(nms_eta, "nms eta"));
     return;
   }
-  const std::string op_name = "\"" + inst->GetOpname() + "\"";
+  const std::string op_name = "\"" + inst->GetOpName() + "\"";
   EmitODLACall(rets, "odla_CustomOp", inputs, op_name, op_name);
 }
 

@@ -46,9 +46,9 @@ class ExtensionInst : public Instruction {
                          const std::vector<Def>& operands, int num_outs,
                          const std::string& opname, OpCode opcode);
   /// Return the extension opcode name
-  const std::string& GetOpname() const noexcept { return opname_; }
+  const std::string& GetOpName() const noexcept { return opname_; }
   /// Set the name.
-  void SetOpname(const std::string& name) noexcept { opname_ = name; }
+  void SetOpName(const std::string& name) noexcept { opname_ = name; }
   void PrintOpcode(std::ostream& os) const final { os << opname_; }
   bool IsOperandOptional(size_t idx) const noexcept override;
   void MarkOperandOptional(size_t idx) noexcept;

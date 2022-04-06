@@ -40,7 +40,7 @@ void ExtensionInst::MarkOperandOptional(size_t idx) noexcept {
 template <typename T>
 static Instruction* CloneInst(const ExtensionInst& inst,
                               const std::string& opname_prefix) {
-  auto opname = inst.GetOpname();
+  auto opname = inst.GetOpName();
   if (!opname_prefix.empty()) {
     opname = opname.substr(opname.find_first_of(opname_prefix) +
                            opname_prefix.size());
@@ -71,7 +71,7 @@ TFExtensionInst::TFExtensionInst(GlobalContext& context,
   if (it != TFMap.end()) {
     ext_op_code_ = it->second;
   } else {
-    SetOpname("!tf_" + opname);
+    SetOpName("!tf_" + opname);
   }
 }
 
@@ -95,7 +95,7 @@ ONNXExtensionInst::ONNXExtensionInst(GlobalContext& context,
   if (it != ONNXMap.end()) {
     ext_op_code_ = it->second;
   } else {
-    SetOpname("!onnx_" + opname);
+    SetOpName("!onnx_" + opname);
   }
 }
 
@@ -121,7 +121,7 @@ TFLITEExtensionInst::TFLITEExtensionInst(GlobalContext& context,
   if (it != TFLITEMap.end()) {
     ext_op_code_ = it->second;
   } else {
-    SetOpname("!tflite_" + opname);
+    SetOpName("!tflite_" + opname);
   }
 }
 
@@ -146,7 +146,7 @@ CAFFEExtensionInst::CAFFEExtensionInst(GlobalContext& context,
   if (it != CAFFEMap.end()) {
     ext_op_code_ = it->second;
   } else {
-    SetOpname("!caffe_" + opname);
+    SetOpName("!caffe_" + opname);
   }
 }
 std::unique_ptr<Instruction> CAFFEExtensionInst::Clone() const {
