@@ -82,6 +82,9 @@ let cat_ = cat_nn_activation,
   def HardSwish : Inst<"Compute the h-swish activation"
                        "Return x * relu6(x + 3) / 6.">;
 
+  def Gelu : Inst<"Compute the gelu (Gaussian error linear unit) activation, element-wise."
+                  " Return 0.5 * x *(1 + erf(x / sqrt(2)))">;
+
   def Softmax : Inst<"Compute the softmax activation."> {
     let attrs_ = [Attr<"The dimension the softmax would be performed on.",
                        Integer, "axis", "-1">];
