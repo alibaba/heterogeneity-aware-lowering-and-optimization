@@ -165,7 +165,9 @@ bool Serializer::RunOnModule(Module* module) {
         continue;
       }
       auto node_def = graph_def.add_node();
-      node_def->set_op_type(Instruction::OpCodeToString(inst->GetOpCode()));
+      std::ostringstream op_name;
+      inst->PrintOpcode(op_name);
+      node_def->set_op_type(op_name.str());
       node_def->set_name(inst->GetName());
       for (const auto& op : inst->GetOperands()) {
         node_def->add_input(op.GetDef()->GetName());
