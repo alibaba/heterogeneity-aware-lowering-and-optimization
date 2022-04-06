@@ -316,6 +316,12 @@ static llvm::cl::opt<bool> ConstantDecombine(
 #undef HALO_FUSION_OPTIONS
 #define HALO_FUSION_CMD_OPTIONS_DECL
 #include "halo/lib/ir/fusion.cc.inc"
+static llvm::cl::opt<bool> FuseGelu("fuse-gelu", llvm::cl::desc("fuse gelu"),
+                                    llvm::cl::init(true),
+                                    llvm::cl::cat(HaloOptCat));
+static llvm::cl::opt<bool> FuseGeluApprox(
+    "fuse-gelu-approx", llvm::cl::desc("fuse gelu approximation"),
+    llvm::cl::init(true), llvm::cl::cat(HaloOptCat));
 #undef HALO_FUSION_CMD_OPTIONS_DECL
 
 static void PrintVersion(llvm::raw_ostream& os) {
@@ -464,7 +470,9 @@ int main(int argc, char** argv) {
   std::vector<std::string> input_shapes(InputsShape.begin(), InputsShape.end());
   std::vector<std::string> inputs(Inputs.begin(), Inputs.end());
   std::vector<std::string> outputs(Outputs.begin(), Outputs.end());
-  const auto& fusion_opts = GetFusionOptions();
+  auto fusion_opts = GetFusionOptions();
+  fusion_opts.FuseGelu = FuseGelu;
+  fusion_opts.FuseGeluApprox = FuseGeluApprox;
 
   is_binary_output = name.endswith(".bc");
   if (EmitObj.getNumOccurrences() == 0 && name.endswith(".o")) {
