@@ -1437,6 +1437,17 @@ odla_value odla_Clamp(odla_value input, odla_float32 lo, odla_float32 hi,
   return CreateValue(relu, input->type, id);
 }
 
+odla_value odla_Gelu(odla_value input, const odla_value_id id) {
+  // approx version: x * 0.5 * (1 + tanh(sqrt(2 / M_PI) * (x + 0.044715 * x^3)))
+  const static char* plugin_name = "CustomGeluPluginDynamic";
+  const static char* plugin_ver = "01";
+  auto creator = getPluginRegistry()->getPluginCreator(plugin_name, plugin_ver);
+  nvinfer1::PluginFieldCollection plugin_data{0, nullptr};
+  auto plugin = creator->createPlugin(plugin_name, &plugin_data);
+  auto gelu = g_comp->network->addPluginV2(&input->tensor, 1, *plugin);
+  return CreateValue(gelu->getOutput(0), input->type, id);
+}
+
 odla_value odla_Relu(odla_value input, const odla_value_id id) {
   auto relu =
       g_comp->network->addActivation(*input, nvinfer1::ActivationType::kRELU);
