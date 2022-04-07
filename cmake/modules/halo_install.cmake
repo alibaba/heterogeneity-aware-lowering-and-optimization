@@ -31,7 +31,7 @@ install(CODE "execute_process(COMMAND ${PYTHON} ${SETUP_PY} install -O2 --root=$
 install(DIRECTORY ${OUTPUT_PY}/usr/local/lib/ DESTINATION lib)
 
 if (HALO_BUILD_RTLIB)
-install(DIRECTORY ${CMAKE_BINARY_DIR}/runtime DESTINATION .)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/runtime/lib/ DESTINATION lib)
 endif()
 install(CODE "execute_process(COMMAND ${CMAKE_SOURCE_DIR}/demo/install.sh ${CMAKE_INSTALL_PREFIX})")
 install(FILES ${CMAKE_BINARY_DIR}/docs/HaloIR.md DESTINATION docs OPTIONAL)
