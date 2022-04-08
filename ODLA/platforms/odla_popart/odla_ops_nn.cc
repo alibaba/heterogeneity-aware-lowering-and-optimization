@@ -259,6 +259,18 @@ odla_value odla_InstanceNormalization(
                          name);
 }
 
+odla_value odla_Gelu(odla_value input, odla_bool use_approx,
+                     const odla_value_id value_id) {
+  const auto& name =
+      value_id ? std::string(reinterpret_cast<const char*>(value_id)) : "Gelu";
+  popart::TensorId result =
+      g_comp->builder->aiGraphcoreOpset1().gelu({input->tensor_id}, name);
+  return new _odla_value(result,
+                         {g_comp->builder->getTensorDataType(result),
+                          g_comp->builder->getTensorShape(result)},
+                         name);
+}
+
 odla_value odla_LeakyRelu(odla_value input, odla_float32 alpha,
                           const odla_value_id value_id) {
   const auto& name = value_id

@@ -83,7 +83,11 @@ let cat_ = cat_nn_activation,
                        "Return x * relu6(x + 3) / 6.">;
 
   def Gelu : Inst<"Compute the gelu (Gaussian error linear unit) activation, element-wise."
-                  " Return 0.5 * x *(1 + erf(x / sqrt(2)))">;
+                  " Return 0.5 * x *(1 + erf(x / sqrt(2)))"> {
+    let attrs_ = [Attr<"Use approximated Gaussian cumulative distribution function: "
+                       " 0.5 * x * (1 + tanh(sqrt(2 / M_PI) * (x + 0.044715 * x^3)))",
+                       Bool, "use_approximation", "false">];
+  }
 
   def Softmax : Inst<"Compute the softmax activation."> {
     let attrs_ = [Attr<"The dimension the softmax would be performed on.",
