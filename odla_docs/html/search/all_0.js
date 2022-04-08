@@ -113,7 +113,7 @@ var searchData=
   ['odla_5ffreehostmemory_110',['odla_FreeHostMemory',['../odla__memory_8h.html#a8ae6cfb00cf4d12a88dff097c874fb62',1,'odla_memory.h']]],
   ['odla_5fgather_111',['odla_Gather',['../odla__ops__process_8h.html#afa1f5b13d16cb52677c79f17cc2440a9',1,'odla_ops_process.h']]],
   ['odla_5fgatherelements_112',['odla_GatherElements',['../odla__ops__process_8h.html#a5077a3a0ed6b9cc1821879e2f23fc555',1,'odla_ops_process.h']]],
-  ['odla_5fgelu_113',['odla_Gelu',['../odla__ops__nn_8h.html#a9f4821fe386ab9a773f42c4563be06b8',1,'odla_ops_nn.h']]],
+  ['odla_5fgelu_113',['odla_Gelu',['../odla__ops__nn_8h.html#ad895c69486e951ec003fb539c92ef071',1,'odla_ops_nn.h']]],
   ['odla_5fgemm_114',['odla_Gemm',['../odla__ops__math_8h.html#abc36967f89cf82494a58dfde0687883b',1,'odla_ops_math.h']]],
   ['odla_5fgetargfromcomputationbyidx_115',['odla_GetArgFromComputationByIdx',['../odla__compute_8h.html#a6177f78c953434aa831d0ed2ebecb5ae',1,'odla_compute.h']]],
   ['odla_5fgetargfromexecutablebyidx_116',['odla_GetArgFromExecutableByIdx',['../odla__compute_8h.html#a0da929e3f4896b9939b2f8cd88e2da6b',1,'odla_compute.h']]],
