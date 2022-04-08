@@ -113,12 +113,12 @@ def TF_AvgPool : OpMapping<"AvgPool", PoolingAvg> {
 
 def TF_BiasAdd : OpMapping<"BiasAdd", Add>;
 
-def TF_BatchMatMul : OpMapping<"BatchMatMul", BatchMatMul> {
+def TF_BatchMatMul : OpMapping<"BatchMatMul", MatMul> {
   let attr_mapping_ = [AttributeMapping<"adj_x", "transpose_a", "false">,
                        AttributeMapping<"adj_y", "transpose_b", "false">];
 }
 
-def TF_BatchMatMulV2 : OpMapping<"BatchMatMulV2", BatchMatMul> {
+def TF_BatchMatMulV2 : OpMapping<"BatchMatMulV2", MatMul> {
   let attr_mapping_ = [AttributeMapping<"adj_x", "transpose_a", "false">,
                        AttributeMapping<"adj_y", "transpose_b", "false">];
 }
