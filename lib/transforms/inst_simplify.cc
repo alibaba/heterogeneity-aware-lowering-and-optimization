@@ -2838,6 +2838,32 @@ static bool FixUpLSTM(LSTMInst* inst) {
   return changed;
 }
 
+std::pair<Def, Def> InstSimplify::RunOnInstruction(MatMulInst* inst) {
+  // for matmul(x, transpose(y), false, false) ==> matmul(x,
+  // transpose2(transpose(y)), false, true). Nested transposes will be combined
+  // or cancelled.
+  Def orig_def{inst, 0};
+  const auto& op1 = inst->GetOperand(1);
+  if (const TransposeInst* trans = DynCast<TransposeInst>(op1);
+      trans != nullptr && !inst->GetTransposeB() &&
+      trans->GetNumberOfUses() == 1) {
+    auto perm = trans->GetPermutation();
+    HLCHECK(perm.size() >= 2);
+    std::iota(perm.begin(), perm.end(), 0);
+    std::swap(perm[perm.size() - 1], perm[perm.size() - 2]);
+    IRBuilder builder(inst->GetParent());
+    builder.SetInsertBefore(inst);
+    auto new_transpose_inst =
+        builder.CreateTranspose(trans->GetName() + "_t", {op1});
+    new_transpose_inst->SetPermutation(perm);
+    auto new_matmul = DynCast<MatMulInst>(
+        builder.Clone(*inst, {inst->GetOperand(0), *new_transpose_inst}));
+    new_matmul->SetTransposeB(true);
+    return {orig_def, *new_matmul};
+  }
+  return {orig_def, orig_def};
+}
+
 std::pair<Def, Def> InstSimplify::RunOnInstruction(UniqueInst* inst) {
   Def orig_def{inst, 1};
   if (!opts_.simplify_for_preprocess) {
