@@ -258,6 +258,19 @@ odla_DeConv(odla_value input, odla_memory_layout input_layout,
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Elu(odla_value input, odla_float32 alpha, const odla_value_id value_id);
 
+//! \brief Gelu activation
+/*!
+  Gelu computes gaussian error linear unit activation as 0.5 * x *(1 + erf(x /
+  sqrt(2)))
+
+  \param input the input value
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_Gelu(odla_value input, const odla_value_id value_id);
+
 //! \brief Compute a one-layer GRU
 /*!
   GRU computes one-layer GRU. The output values are determined by \p outputs.
@@ -503,7 +516,7 @@ odla_NMS(odla_value boxes, odla_value scores, odla_uint32 max_num_outputs,
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_PRelu(odla_value input, odla_value slope, const odla_value_id value_id);
 
-//! \brief Relu activateion
+//! \brief Relu activation
 /*!
   Relu computes the relu activation as y = x < 0 : 0 ? x
 

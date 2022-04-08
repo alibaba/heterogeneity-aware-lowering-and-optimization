@@ -147,6 +147,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(DequantizeInst*) override;
   virtual void RunOnInstruction(GatherInst*) override;
   virtual void RunOnInstruction(GatherElementsInst*) override;
+  virtual void RunOnInstruction(GeluInst*) override;
   virtual void RunOnInstruction(GemmInst*) override;
   virtual void RunOnInstruction(GRUInst*) override;
   virtual void RunOnInstruction(IfInst*) override;
