@@ -122,7 +122,7 @@ void GenericCXXCodeGen::RunOnInstruction(GeluInst* inst) {
 
   CXXValue ret(inst->GetName(), op0.type);
 
-  EmitODLACall(ret, "odla_Gelu", op0);
+  EmitODLACall(ret, "odla_Gelu", op0, inst->GetUseApproximation());
 
   ir_mapping_[*inst] = ret;
 }
