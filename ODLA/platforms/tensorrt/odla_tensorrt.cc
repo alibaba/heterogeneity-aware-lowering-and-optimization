@@ -1452,7 +1452,7 @@ odla_value odla_Gelu(odla_value input, odla_bool use_approx,
       .length = 1,
   }};
   nvinfer1::PluginFieldCollection plugin_data{
-      .nbFields = fields.size(),
+      .nbFields = static_cast<int>(fields.size()),
       .fields = fields.data(),
   };
   auto plugin = creator->createPlugin(plugin_name, &plugin_data);
