@@ -43,6 +43,7 @@ set(SRCS
   lrn.cc
   lstm.cc
   matmul.cc
+  multiheadattention.cc
   nms.cc
   onehot.cc
   pad.cc
