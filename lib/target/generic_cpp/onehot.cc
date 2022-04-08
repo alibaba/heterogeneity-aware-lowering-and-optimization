@@ -30,7 +30,8 @@ void GenericCXXCodeGen::RunOnInstruction(OneHotInst* inst) {
   CXXValue on_off_val = ir_mapping_[inst->GetOperand(2)];
   const auto& ret_type = inst->GetResultType();
   const Constant* depth_c = DynCast<Constant>(inst->GetOperand(1));
-  HLCHECK(depth_c != nullptr && depth_c->GetResultType().IsScalar() &&
+  HLCHECK(depth_c != nullptr &&
+          depth_c->GetResultType().GetTotalNumOfElements() == 1 &&
           "Depth must be constant scalar");
 
   CXXValue ret(inst->GetName(), op_idx.type);

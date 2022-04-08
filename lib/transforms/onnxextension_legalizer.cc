@@ -804,9 +804,8 @@ static std::vector<Def> ConvertOneHot(const ONNXExtensionInst* ext,
   if (IsA<Instruction>(op2.GetDef())) {
     const Instruction* op2_inst = Downcast<const Instruction>(op2.GetDef());
     if (op2_inst->GetOpCode() == OpCode::CONCAT) {
-      OneHotInst* new_inst = builder->CreateOneHot(ext->GetName(), op0, op1,
-                                                   op2_inst->GetOperand(0),
-                                                   op2_inst->GetOperand(1));
+      OneHotInst* new_inst = builder->CreateOneHot(
+          ext->GetName(), op0, op1, op2, op2_inst->GetOperand(1));
 
       new_inst->SetAxis(axis);
       return {*new_inst};
@@ -818,6 +817,7 @@ static std::vector<Def> ConvertOneHot(const ONNXExtensionInst* ext,
 
     auto& type = op2.GetType();
     auto data_type = type.GetDataType();
+    HLCHECK(type.GetTotalNumOfElements() == 2);
 
     // split values to on-value and off-value
 
@@ -825,8 +825,6 @@ static std::vector<Def> ConvertOneHot(const ONNXExtensionInst* ext,
     size_t data_type_size = values->GetElementSizeInBytes();
     Type ty{data_type};
 
-    // Constant* off_value = cb.CreateConstant(name + "_off_value", ty,
-    //                                        static_cast<const void*>(ptr));
     Constant* on_value = cb.CreateConstant(
         name + "_on_value", ty,
         static_cast<const void*>(&ptr[data_type_size])); // NOLINT
