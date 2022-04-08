@@ -192,7 +192,9 @@ def TF_GreaterEqual : OpMapping<"GreaterEqual", Cmp> {
   let attr_mapping_ = [AttributeMapping<"", "predicator", "GE">];
 }
 
-def TF_IpuGelu : TFExtension<"IpuGelu">;
+def TF_IpuGelu : OpMapping<"IpuGelu", Gelu> {
+  let attr_mapping_ = [AttributeMapping<"", "use_approx", "false">];
+}
 
 def TF_LeakyRelu : OpMapping<"LeakyRelu", LeakyRelu> {
   let attr_mapping_ = [AttributeMapping<"alpha", "alpha", "1.0">];

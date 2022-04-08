@@ -264,12 +264,13 @@ odla_Elu(odla_value input, odla_float32 alpha, const odla_value_id value_id);
   sqrt(2)))
 
   \param input the input value
+  \param use_approx use the approximated version or not
   \param value_id a unique value id (can be NULL)
 
   \return odla_value
 */
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_Gelu(odla_value input, const odla_value_id value_id);
+odla_Gelu(odla_value input, odla_bool use_approx, const odla_value_id value_id);
 
 //! \brief Compute a one-layer GRU
 /*!
