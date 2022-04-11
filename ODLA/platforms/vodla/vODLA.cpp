@@ -1048,15 +1048,16 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
 
     if (rt) {
       std::cout << "[vODLA] ERROR: infer failed, ret=" << rt << "\n";
-      ret = ODLA_FAILURE;
+      ret = ODLA_UNRECOVERABLE_ERR;
     } else {
 #ifdef DEBUG
       std::cout << "[vODLA] INFO: Run inference finished!\n";
 #endif
       ret = static_cast<odla_status>(vodh_infer_res.status);
 #ifdef DEBUG
-      if (ret == ODLA_FAILURE) {
-        std::cout << "[vODLA] INFO: Remote inference failed!\n";
+      if (ret != ODLA_SUCCESS) {
+        std::cout << "[vODLA] INFO: Remote inference failed! ret=" << ret
+                  << "\n";
       }
 #endif
     }
