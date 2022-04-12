@@ -190,6 +190,8 @@ struct _odla_computation {
     popart::logging::warn("The computation:{} thread is DONE.", this);
     thread_done_cv_.notify_all();
   }
+  int _is_computation = 1;
+  inline int is_computation() { return _is_computation; }
 };
 
 struct _odla_context {
@@ -215,5 +217,7 @@ struct _odla_context {
   inline virtual void clear_visited_and_written() {}
   inline virtual bool deletable() { return false; }
   virtual bool hold(const std::string& function_name);
+  int _is_context = 1;
+  inline virtual int is_context() { return _is_context; }
 };
 #endif

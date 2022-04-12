@@ -50,6 +50,7 @@ static std::mutex
 
 odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
                                     odla_item_value value) {
+  if (comp == nullptr || comp->is_computation() != 1) return ODLA_FAILURE;
   switch (type) {
     case ODLA_USE_SIM_MODE:
       comp->opts.use_ipu_model = *(reinterpret_cast<bool*>(value));
@@ -84,9 +85,7 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
 
 odla_status odla_SetContextItem(odla_context context, odla_item_type type,
                                 odla_item_value value) {
-  if (context == nullptr) {
-    return ODLA_INVALID_PARAM;
-  }
+  if (context == nullptr || context->is_context() != 1) return ODLA_INVALID_PARAM;
   switch (type) {
     case ODLA_ASYNC_CALLBACK_FUNC:
       context->async_callback_func =
@@ -223,11 +222,17 @@ odla_status odla_CreateContext(odla_context* context) {
 }
 
 odla_status odla_DestroyContext(odla_context ctx) {
+  if (ctx == nullptr || ctx->is_context() != 1)
+    return ODLA_FAILURE;
+
   if (nullptr != ctx && ctx->hold("odla_DestroyContext")) delete (ctx);
   return ODLA_SUCCESS;
 }
 
 odla_status odla_DestroyComputation(odla_computation comp) {
+  if (comp == nullptr || comp->is_computation() != 1)
+    return ODLA_FAILURE;
+
   std::lock_guard<std::mutex> guard(g_computation_mutex);
   popart::logging::warn("call odla_destroyComputation comp: {}", comp);
   if (comp != nullptr) {
