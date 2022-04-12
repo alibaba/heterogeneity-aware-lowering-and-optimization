@@ -218,6 +218,7 @@ struct _odla_context {
   inline virtual bool deletable() { return false; }
   virtual bool hold(const std::string& function_name);
   int _is_context = 1;
-  inline virtual int is_context() { return _is_context; }
+  inline int is_context() { return _is_context; }
 };
 #endif
+
