@@ -1437,13 +1437,26 @@ odla_value odla_Clamp(odla_value input, odla_float32 lo, odla_float32 hi,
   return CreateValue(relu, input->type, id);
 }
 
-odla_value odla_Gelu(odla_value input, const odla_value_id id) {
+odla_value odla_Gelu(odla_value input, odla_bool use_approx,
+                     const odla_value_id id) {
   // approx version: x * 0.5 * (1 + tanh(sqrt(2 / M_PI) * (x + 0.044715 * x^3)))
   const static char* plugin_name = "CustomGeluPluginDynamic";
-  const static char* plugin_ver = "01";
+  const static char* plugin_ver = "1";
   auto creator = getPluginRegistry()->getPluginCreator(plugin_name, plugin_ver);
-  nvinfer1::PluginFieldCollection plugin_data{0, nullptr};
+  assert(creator != nullptr);
+  int ty = static_cast<int>(GetNVDataType(input->type.element_type));
+  std::vector<nvinfer1::PluginField> fields{nvinfer1::PluginField{
+      .name = "type_id",
+      .data = &ty,
+      .type = nvinfer1::PluginFieldType::kINT32,
+      .length = 1,
+  }};
+  nvinfer1::PluginFieldCollection plugin_data{
+      .nbFields = static_cast<int>(fields.size()),
+      .fields = fields.data(),
+  };
   auto plugin = creator->createPlugin(plugin_name, &plugin_data);
+  assert(plugin != nullptr);
   auto gelu = g_comp->network->addPluginV2(&input->tensor, 1, *plugin);
   return CreateValue(gelu->getOutput(0), input->type, id);
 }

@@ -49,20 +49,6 @@ static std::vector<Def> ConvertBroadcastTo(const TFExtensionInst* ext,
   return {ext->GetOperand(0)};
 }
 
-static std::vector<Def> ConvertIpuGelu(const TFExtensionInst* ext,
-                                       IRBuilder* builder) {
-  auto op0 = ext->GetOperand(0);
-  const auto& type = op0.GetType();
-  if (!type.IsValid()) {
-    return {};
-  }
-  builder->SetInsertAfter(ext);
-  auto new_inst =
-      builder->CreateCustom(ext->GetName(), ext->GetOperands(), 1, "IpuGelu");
-  new_inst->GetResultsTypes()[0] = type;
-  return {*new_inst};
-}
-
 static std::vector<Def> ConvertReshape(const TFExtensionInst* tf_reshape,
                                        IRBuilder* builder) {
   HLCHECK(tf_reshape->GetNumOfOperands() > 0 &&
@@ -1167,9 +1153,6 @@ static std::vector<Def> ConvertTFExtension(const TFExtensionInst* tf_inst,
     }
     case TFExtOpCode::FILL: {
       return ConvertFill(tf_inst, builder);
-    }
-    case TFExtOpCode::IPUGELU: {
-      return ConvertIpuGelu(tf_inst, builder);
     }
     case TFExtOpCode::MERGE: {
       return ConvertMerge(tf_inst, builder);

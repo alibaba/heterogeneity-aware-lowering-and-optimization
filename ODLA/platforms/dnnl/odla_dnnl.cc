@@ -1811,6 +1811,15 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
   return v;
 }
 
+odla_value odla_Gelu(odla_value input, odla_bool use_approx,
+                     const odla_value_id id) {
+  // exact version:  0.5 * x * (1+ erf(x / sqrt(2)))
+  // approx version: 0.5 * x * (1 + tanh(sqrt(2 / M_PI) * (x + 0.044715 * x^3)))
+  return unary_eltwise_op(use_approx ? dnnl::algorithm::eltwise_gelu_tanh
+                                     : dnnl::algorithm::eltwise_gelu_erf,
+                          input, .0F, .0F, id);
+}
+
 odla_value odla_Erf(odla_value input, const odla_value_id value_id) {
   std::function<void()> op;
   const auto& input_shape = input->shape;
