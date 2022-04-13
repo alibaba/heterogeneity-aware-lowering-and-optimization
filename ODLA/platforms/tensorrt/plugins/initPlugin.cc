@@ -31,7 +31,7 @@ void initODLAPlugin(nvinfer1::ILogger* logger, const char* libNamespace) {
 #else
   const int NUM_PLUGINS = 32;
 #endif
-  initLibNvInferPlugins(static_cast<void*>(logger), "");
+  initLibNvInferPlugins(static_cast<void*>(logger), libNamespace);
   REGISTER_TENSORRT_PLUGIN(BatchedNMSPluginV2Creator);
   REGISTER_TENSORRT_PLUGIN(OneHotPluginCreator);
 
