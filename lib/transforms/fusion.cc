@@ -311,6 +311,215 @@ class LayerNormMatcher {
     return false;
   }
 };
+
+class MultiHeadAttentionMatcher {
+ public:
+  explicit MultiHeadAttentionMatcher(const Instruction* inst)
+      : output_inst_(inst),
+        matched_(false),
+        batch_(0),
+        heads_(0),
+        seq_len_(0),
+        hidden_size_(0),
+        has_masking_(false),
+        mask_value_(NAN),
+        input_(Undefined),
+        mask_(Undefined),
+        query_t_(Undefined),
+        query_bias_(Undefined),
+        key_t_(Undefined),
+        key_bias_(Undefined),
+        value_t_(Undefined),
+        value_bias_(Undefined) {
+    matched_ = MatchMHA(inst);
+  }
+
+  bool Matched() const {
+    return matched_ && input_.GetType().GetTotalNumOfElements() ==
+                           batch_ * seq_len_ * heads_ * hidden_size_;
+  }
+
+  Def GetFusedMHA() const {
+    if (!Matched()) {
+      return Undefined;
+    }
+    IRBuilder builder(output_inst_->GetParent());
+    builder.SetInsertAfter(output_inst_);
+    auto ret = builder.CreateMultiHeadAttention(output_inst_->GetName(),
+                                                GetOperands());
+    ret->GetResultsTypes()[0] = output_inst_->GetResultType();
+    return *ret;
+  }
+
+  std::vector<Def> GetOperands() const {
+    std::vector<Def> ops{input_, mask_,     query_t_, query_bias_,
+                         key_t_, key_bias_, value_t_, value_bias_};
+
+    if (IsA<ReshapeInst>(input_)) {
+      ops[0] = DynCast<ReshapeInst>(input_)->GetOperand(0);
+    }
+    return ops;
+  }
+
+  int GetBatch() const { return batch_; }
+  int GetHeads() const { return heads_; }
+  int GetHiddenSize() const { return hidden_size_; }
+  bool HasMasking() const { return has_masking_; }
+  float GetMaskingValue() const { return mask_value_; }
+
+ private:
+  static inline constexpr int Dim = 4;
+  const Instruction* output_inst_;
+  bool matched_;
+  int batch_;
+  int heads_;
+  int seq_len_;
+  int hidden_size_;
+  bool has_masking_;
+  float mask_value_;
+  Def input_;
+  Def mask_;
+  Def query_t_;
+  Def query_bias_;
+  Def key_t_;
+  Def key_bias_;
+  Def value_t_;
+  Def value_bias_;
+
+  bool MatchMasking(const MulInst* mul) {
+    if (mul == nullptr) {
+      return false;
+    }
+    // check for (1 - mask) * value
+    auto is_one_minus_mask = [](const Def& op) {
+      const Instruction* sub = DynCast<SubInst>(op);
+      return sub != nullptr &&
+                     IsScalar(DynCast<Constant>(sub->GetOperand(0)), 1.0f)
+                 ? sub->GetOperand(1)
+                 : Undefined;
+    };
+
+    auto c = IsScalar(DynCast<Constant>(mul->GetOperand(0)));
+    if (c.first) {
+      mask_value_ = c.second;
+      mask_ = is_one_minus_mask(mul->GetOperand(1));
+      return true;
+    }
+    c = IsScalar(DynCast<Constant>(mul->GetOperand(1)));
+    if (c.first) {
+      mask_value_ = c.second;
+      mask_ = is_one_minus_mask(mul->GetOperand(0));
+      return true;
+    }
+    return false;
+  }
+
+  static bool IsValidTranspose(const TransposeInst* transpose,
+                               bool last_two_dims_transposed = false) {
+    if (transpose == nullptr || transpose->GetNumOfOperands() != 1 ||
+        !transpose->GetResultType().IsValid()) {
+      return false;
+    }
+    const std::vector<int> expected_perm{0, 2, 1, 3};
+    const std::vector<int> expected_perm_t{0, 2, 3, 1};
+    const auto& perm = transpose->GetPermutation();
+    return std::equal(perm.begin(), perm.end(),
+                      last_two_dims_transposed ? expected_perm_t.begin()
+                                               : expected_perm.begin());
+  }
+
+  bool MatchQKV(const Def& op, bool transposed, Def* weight, Def* bias) {
+    const TransposeInst* transpose = DynCast<TransposeInst>(op);
+    if (!IsValidTranspose(transpose, transposed)) {
+      return false;
+    }
+    const ReshapeInst* reshape = DynCast<ReshapeInst>(transpose->GetOperand(0));
+    if (reshape == nullptr || !reshape->GetResultType().IsValid()) {
+      return false;
+    }
+    const GemmInst* gemm = DynCast<GemmInst>(reshape->GetOperand(0));
+    if (gemm == nullptr || gemm->GetTransposeA() || !gemm->GetTransposeB() ||
+        gemm->GetAlpha() != 1.0F || gemm->GetBeta() != 1.0F) {
+      return false;
+    }
+    if (!input_.IsNull() && input_ != gemm->GetOperand(0)) {
+      input_ = Undefined;
+      return false;
+    }
+    if (input_.IsNull()) {
+      input_ = gemm->GetOperand(0);
+    }
+    if (!IsA<Constant>(gemm->GetOperand(1)) ||
+        (gemm->GetNumOfOperands() > 2 && !IsA<Constant>(gemm->GetOperand(2)))) {
+      return false;
+    }
+    *weight = gemm->GetOperand(1);
+    *bias = gemm->GetNumOfOperands() > 2 ? gemm->GetOperand(2) : Undefined;
+    return true;
+  }
+
+  bool MatchQKBase(const MatMulInst* matmul) {
+    if (matmul == nullptr || matmul->GetTransposeA() ||
+        !matmul->GetTransposeB()) {
+      return false;
+    }
+    return MatchQKV(matmul->GetOperand(0), false, &query_t_, &query_bias_) &&
+           MatchQKV(matmul->GetOperand(1), false, &key_t_, &key_bias_);
+  }
+
+  bool MatchQKBase(const MulInst* mul) {
+    if (mul == nullptr || heads_ <= 0) {
+      return false;
+    }
+    float scale = 1.0F / sqrtf(static_cast<float>(hidden_size_));
+    const auto& mul_lhs = MatchOneOperand(scale, mul);
+    return MatchQKBase(DynCast<MatMulInst>(mul_lhs));
+  }
+
+  bool MatchQKScores(const SoftmaxInst* inst) {
+    if (inst == nullptr ||
+        !(inst->GetAxis() == -1 || inst->GetAxis() == Dim - 1)) {
+      return false;
+    }
+    auto input = inst->GetOperand(0);
+    if (const AddInst* add = DynCast<AddInst>(input); add != nullptr) {
+      has_masking_ = true;
+      bool matched = MatchQKBase(DynCast<MulInst>(add->GetOperand(0)));
+      matched &= MatchMasking(DynCast<MulInst>(add->GetOperand(1)));
+      if (!matched) {
+        matched = MatchQKBase(DynCast<MulInst>(add->GetOperand(1)));
+        matched &= MatchMasking(DynCast<MulInst>(add->GetOperand(0)));
+      }
+      return matched;
+    }
+    return MatchQKBase(DynCast<MulInst>(input));
+  }
+
+  bool MatchMHA(const Instruction* inst) {
+    auto transpose = DynCast<TransposeInst>(inst);
+    if (!IsValidTranspose(transpose)) {
+      return false;
+    }
+    auto matmul = DynCast<MatMulInst>(inst->GetOperand(0));
+    if (matmul == nullptr) {
+      return false;
+    }
+    const Type& dt = matmul->GetResultType();
+    if (!dt.IsValid() || matmul->GetTransposeA() ||
+        matmul->GetNumOfOperands() != 2 || dt.GetNumOfDims() != Dim) {
+      return false;
+    }
+    auto lhs = matmul->GetOperand(0);
+    auto rhs = matmul->GetOperand(1);
+    batch_ = dt.GetNumOfElementsInDim(0);
+    heads_ = dt.GetNumOfElementsInDim(1);
+    seq_len_ = dt.GetNumOfElementsInDim(2);
+    hidden_size_ = dt.GetNumOfElementsInDim(3);
+    return MatchQKScores(DynCast<SoftmaxInst>(lhs)) &&
+           MatchQKV(rhs, matmul->GetTransposeB(), &value_t_, &value_bias_);
+  }
+};
+
 class GeluMatcher {
  public:
   explicit GeluMatcher(const Instruction* inst)
@@ -472,6 +681,13 @@ bool Fusion::RunOnBasicBlock(BasicBlock* bb) {
       if (ln_matcher.Matched()) {
         changed |= true;
         inst->ReplaceAllUsesWith(0, ln_matcher.GetFusedLayerNorm());
+        continue;
+      }
+    }
+    if (opts_.FuseMHA) {
+      if (MultiHeadAttentionMatcher matcher(inst); matcher.Matched()) {
+        changed |= true;
+        inst->ReplaceAllUsesWith(0, matcher.GetFusedMHA());
         continue;
       }
     }
