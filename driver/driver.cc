@@ -323,6 +323,10 @@ static llvm::cl::opt<bool> FuseLayernorm("fuse-layernorm",
 static llvm::cl::opt<bool> FuseGelu("fuse-gelu", llvm::cl::desc("fuse gelu"),
                                     llvm::cl::init(true),
                                     llvm::cl::cat(HaloOptCat));
+static llvm::cl::opt<bool> FuseMHA("fuse-mha",
+                                   llvm::cl::desc("fuse multi-head attention"),
+                                   llvm::cl::init(false),
+                                   llvm::cl::cat(HaloOptCat));
 #undef HALO_FUSION_CMD_OPTIONS_DECL
 
 static void PrintVersion(llvm::raw_ostream& os) {
@@ -474,6 +478,7 @@ int main(int argc, char** argv) {
   auto fusion_opts = GetFusionOptions();
   fusion_opts.FuseLayerNorm = FuseLayernorm;
   fusion_opts.FuseGelu = FuseGelu;
+  fusion_opts.FuseMHA = FuseMHA;
 
   is_binary_output = name.endswith(".bc");
   if (EmitObj.getNumOccurrences() == 0 && name.endswith(".o")) {
