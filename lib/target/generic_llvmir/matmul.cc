@@ -18,6 +18,7 @@
 #include <cstdio>
 
 #include "halo/lib/ir/ir_builder.h"
+#include "halo/lib/ir/math_instructions.h"
 #include "halo/lib/target/generic_llvmir/generic_llvmir_codegen.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/IRBuilder.h"
@@ -25,6 +26,18 @@
 namespace halo {
 
 void GenericLLVMIRCodeGen::RunOnInstruction(MatMulInst* inst) {
+  if (const auto ty = inst->GetResultType(); ty.GetNumOfDims() > 2) {
+    BatchMatMulInst bm(inst->GetGlobalContext(), inst->GetName(),
+                       inst->GetOperands());
+    bm.SetTransposeA(inst->GetTransposeA());
+    bm.SetTransposeB(inst->GetTransposeB());
+    bm.GetResultsTypes()[0] = ty;
+    RunOnInstruction(&bm);
+    Def ret{&bm, 0};
+    ir_mapping_[*inst] = ir_mapping_[ret];
+    return;
+  }
+
   llvm::IRBuilder<>* ir_builder = current_llvm_builder_;
   const Def& lhs = inst->GetOperand(0);
   const Def& rhs = inst->GetOperand(1);
