@@ -22,6 +22,8 @@ set(CUDA_ROOT /usr/local/cuda-${CUDA_VERSION}/targets/x86_64-linux)
 find_library(CUDART_LIB NAMES cudart PATHS ${CUDA_ROOT} PATH_SUFFIXES lib NO_DEFAULT_PATH)
 find_library(nvinfer NAMES nvinfer)
 find_library(nvinfer_plugin NAMES nvinfer_plugin)
+find_library(nvinfer_plugin_static NAMES nvinfer_plugin_static)
+
 
 if(NOT CUDART_LIB OR NOT nvinfer OR NOT nvinfer_plugin)
   message(STATUS "CUDA library not found, skip building ODLA for TensorRT")
