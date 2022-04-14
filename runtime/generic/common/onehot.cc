@@ -23,7 +23,7 @@
 extern "C" {
 /// A dummy implementation.
 void _sn_rt_onehot_f32(float* out, const int* indices, const int* depth,
-                       const float* on_value, const float* off_value,
+                       const float* off_value, const float* on_value,
                        int64_t noe_indices) {
   for (int i = 0; i < noe_indices; ++i) {
     for (int d = 0; d < *depth; ++d) {

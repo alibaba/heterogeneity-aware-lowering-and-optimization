@@ -1124,9 +1124,9 @@ bool FixUpOneHot(OneHotInst* inst, IRBuilder* builder) {
   }
   auto off_value = inst->GetOperand(3);
   builder->SetInsertBefore(inst);
-  auto on_off =
+  auto off_on =
       builder->CreateConcat(inst->GetName() + "_off_on", {off_value, on_value});
-  std::vector<Def> ops{inst->GetOperand(0), inst->GetOperand(1), *on_off,
+  std::vector<Def> ops{inst->GetOperand(0), inst->GetOperand(1), *off_on,
                        on_value};
   auto new_inst = builder->CreateOneHot(inst->GetName(), ops);
   inst->ReplaceAllUsesWith({*new_inst});

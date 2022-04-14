@@ -103,6 +103,10 @@ static llvm::cl::opt<bool> SeparateConstants(
     "separate-constants",
     llvm::cl::desc("Generate separate file for constants"),
     llvm::cl::init(true), llvm::cl::cat(HaloOptCat));
+static llvm::cl::opt<bool> SimplifyForPreprocess(
+    "simplify-for-preprocess",
+    llvm::cl::desc("assume the input is preprocessed"), llvm::cl::init(false),
+    llvm::cl::cat(HaloOptCat), llvm::cl::ReallyHidden);
 static llvm::cl::opt<bool> DisableBroadcasting(
     "disable-broadcasting", llvm::cl::desc("disable broadcasting of constants"),
     llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
@@ -404,6 +408,7 @@ int main(int argc, char** argv) {
   }
 
   CXXCodeGenOpts cg_opts;
+  cg_opts.simplify_for_preprocess = SimplifyForPreprocess;
   cg_opts.bf16_mode = OptBF16Mode;
   cg_opts.print_mem_stats = PrintMemStats;
   cg_opts.emit_value_reset = EmitValueReset;

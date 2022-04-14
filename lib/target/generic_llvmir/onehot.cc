@@ -25,16 +25,12 @@ void GenericLLVMIRCodeGen::RunOnInstruction(OneHotInst* inst) {
   llvm::IRBuilder<>* ir_builder = current_llvm_builder_;
   const Def& indices = inst->GetOperand(0);
   const Def& depth = inst->GetOperand(1);
-  const Def& on_value = inst->GetOperand(2);
-  const Def& off_value = inst->GetOperand(3);
+  const Def& off_value = inst->GetOperand(2);
+  const Def& on_value = inst->GetOperand(3);
   llvm::Value* op0 = ir_mapping_[indices];
   llvm::Value* op1 = ir_mapping_[depth];
-  llvm::Value* op2 = ir_mapping_[on_value];
-  llvm::Value* op3 = ir_mapping_[off_value];
-
-  // In ODLA, it uses off_value, on_value. To be consistant, we follow the ODLA
-  // x style.
-  std::swap(op3, op2);
+  llvm::Value* op2 = ir_mapping_[off_value];
+  llvm::Value* op3 = ir_mapping_[on_value];
 
   std::string fname = GetRTLibFuncName(*inst, on_value.GetType().GetDataType());
 
