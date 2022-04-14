@@ -19,8 +19,11 @@
 #ifndef POPART_CONFIG_H_
 #define POPART_CONFIG_H_
 
+#include <fstream>
 #include <iostream>
 #include <map>
+#include <mutex>
+#include <popart/version.hpp>
 #include <regex>
 #include <string>
 #include <vector>
@@ -59,13 +62,14 @@ class PopartConfig {
   std::string sdk_version_; // version of the sdk
   int batches_per_step_;    // Batch per step for PIPELINE & PARALLEL execution
                             // mode
+  static std::vector<std::string> mode; // string value of execution mode
   ExecutionMode
       execution_mode_; // The execution mode {PIPELINE, PARALLEL, SEQUENCE}
   bool load_onnx_;     // Whether load onnx model to run instead of the model
                        // constructed. Use for test
-  bool load_cache_;    // If the session will load graph from cache
-  std::string cache_path_; // the path of cache file, for load cache
-                           // directly
+  bool load_or_save_cache_; // If the session will load graph from cache
+  std::string cache_path_;  // the path of cache file, for load cache
+                            // directly
 
   std::string load_onnx_path_; // The path of onnx model file to load if
                                // load_onnx set to be true
@@ -86,6 +90,7 @@ class PopartConfig {
 
   std::shared_ptr<std::fstream> cache_fs;
 
+  std::mutex config_mutex_;
   static PopartConfig* instance_;
   odla_status load_from_file(const std::string& file_path);
 
@@ -96,7 +101,7 @@ class PopartConfig {
         batches_per_step_(1),
         execution_mode_(UNKNOWN),
         load_onnx_(false),
-        load_cache_(false),
+        load_or_save_cache_(false),
         save_model_(false),
         inited_(false),
         ipu_num_(1) {}
@@ -105,6 +110,20 @@ class PopartConfig {
   void use_default();
   static PopartConfig* instance() { return instance_; }
   const std::string& version() { return version_; }
+  inline void reset_init_state() {
+    if (inited_) {
+      std::lock_guard<std::mutex> guard(config_mutex_);
+      if (inited_) {
+        inited_ = false;
+        if (cache_fs->is_open()) {
+          cache_fs->close();
+          cache_fs->clear();
+        }
+        pipeline_setting_.clear();
+        sdk_version_ = "NA";
+      }
+    }
+  }
   inline float amp() { return amp_; };
   inline int batches_per_step() { return batches_per_step_; }
   inline ExecutionMode execution_mode() { return execution_mode_; }
@@ -125,12 +144,12 @@ class PopartConfig {
   inline std::shared_ptr<std::fstream> get_cache_fs() { return cache_fs; }
   inline void set_cache_fs(std::shared_ptr<std::fstream> fs) { cache_fs = fs; }
 
-  inline bool load_cache() { return load_cache_; }
+  inline bool load_or_save_cache() { return load_or_save_cache_; }
   inline const std::string& get_cache_path() { return cache_path_; }
-  inline void set_load_cache(bool is_load_cache) {
-    load_cache_ = is_load_cache;
+  inline void set_load_or_save_cache(bool is_load_or_save_cache) {
+    load_or_save_cache_ = is_load_or_save_cache;
   }
-  inline void set_cache_path(std::string catch_path) {
+  inline void set_cache_path(const std::string& catch_path) {
     cache_path_ = catch_path;
   }
 
