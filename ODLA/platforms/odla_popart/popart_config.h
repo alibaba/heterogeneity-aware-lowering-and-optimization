@@ -1,4 +1,4 @@
-//===- popart_config.h ------------------------------------------------------===//
+//===- popart_config.h ----------------------------------------------------===//
 //
 // Copyright (C) 2019-2020 Alibaba Group Holding Limited.
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
