@@ -1,4 +1,4 @@
-//===- odla_popart.h ------------------------------------------------------===//
+//===- popart_config.h ----------------------------------------------------===//
 //
 // Copyright (C) 2019-2020 Alibaba Group Holding Limited.
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
@@ -19,8 +19,11 @@
 #ifndef POPART_CONFIG_H_
 #define POPART_CONFIG_H_
 
+#include <fstream>
 #include <iostream>
 #include <map>
+#include <mutex>
+#include <popart/version.hpp>
 #include <regex>
 #include <string>
 #include <vector>
@@ -49,29 +52,30 @@
  *   "save_model_path":"pipeline_test.onnx"
  * }
  */
-enum ExecutionMode { UNKNOWN, PIPELINE, PARALLEL, SEQUENCE };
+// When change ExecutionMode, must check PopartConfig::mode in popart_config.cc
+enum ExecutionMode { UNKNOWN, PIPELINE, PARALLEL, SEQUENCE, PIPELINE_ASYNC };
 using json = nlohmann::json;
 
 class PopartConfig {
  private:
   float amp_;
-  std::string version_;     // Version of the configuration file
-  std::string sdk_version_; // version of the sdk
-  int batches_per_step_;    // Batch per step for PIPELINE & PARALLEL execution
-                            // mode
-  ExecutionMode
-      execution_mode_; // The execution mode {PIPELINE, PARALLEL, SEQUENCE}
-  bool load_onnx_;     // Whether load onnx model to run instead of the model
-                       // constructed. Use for test
-  bool load_cache_;    // If the session will load graph from cache
-  std::string cache_path_; // the path of cache file, for load cache
-                           // directly
+  std::string version_;                 // Version of the configuration file
+  std::string sdk_version_;             // version of the sdk
+  int batches_per_step_;                // Batch per step
+  static std::vector<std::string> mode; // string value of execution mode
+  ExecutionMode execution_mode_; // The execution mode {PIPELINE, PARALLEL,
+                                 // SEQUENCE, PIPELINE_ASYNC}
+  bool load_onnx_; // Whether load onnx model to run instead of the model
+                   // constructed. Use for test
+  bool load_or_save_cache_; // If the session will load graph from cache
+  std::string cache_path_;  // the path of cache file, for load cache
+                            // directly
 
   std::string load_onnx_path_; // The path of onnx model file to load if
                                // load_onnx set to be true
   std::map<std::string, std::vector<int>>
       pipeline_setting_; // The pipeline settings if execution_mode was set as
-                         // PIPELINE
+                         // PIPELINE or PIPELINE_ASYNC
   bool save_model_;      // Whether save the mode constructed by model.cc
   std::string save_model_path_; // The path where to save the model if
                                 // save_model was set as true
@@ -86,6 +90,7 @@ class PopartConfig {
 
   std::shared_ptr<std::fstream> cache_fs;
 
+  std::mutex config_mutex_;
   static PopartConfig* instance_;
   odla_status load_from_file(const std::string& file_path);
 
@@ -96,7 +101,7 @@ class PopartConfig {
         batches_per_step_(1),
         execution_mode_(UNKNOWN),
         load_onnx_(false),
-        load_cache_(false),
+        load_or_save_cache_(false),
         save_model_(false),
         inited_(false),
         ipu_num_(1) {}
@@ -105,6 +110,20 @@ class PopartConfig {
   void use_default();
   static PopartConfig* instance() { return instance_; }
   const std::string& version() { return version_; }
+  inline void reset_init_state() {
+    if (inited_) {
+      std::lock_guard<std::mutex> guard(config_mutex_);
+      if (inited_) {
+        inited_ = false;
+        if (cache_fs->is_open()) {
+          cache_fs->close();
+          cache_fs->clear();
+        }
+        pipeline_setting_.clear();
+        sdk_version_ = "NA";
+      }
+    }
+  }
   inline float amp() { return amp_; };
   inline int batches_per_step() { return batches_per_step_; }
   inline ExecutionMode execution_mode() { return execution_mode_; }
@@ -125,24 +144,24 @@ class PopartConfig {
   inline std::shared_ptr<std::fstream> get_cache_fs() { return cache_fs; }
   inline void set_cache_fs(std::shared_ptr<std::fstream> fs) { cache_fs = fs; }
 
-  inline bool load_cache() { return load_cache_; }
+  inline bool load_or_save_cache() { return load_or_save_cache_; }
   inline const std::string& get_cache_path() { return cache_path_; }
-  inline void set_load_cache(bool is_load_cache) {
-    load_cache_ = is_load_cache;
+  inline void set_load_or_save_cache(bool is_load_or_save_cache) {
+    load_or_save_cache_ = is_load_or_save_cache;
   }
-  inline void set_cache_path(std::string catch_path) {
+  inline void set_cache_path(const std::string& catch_path) {
     cache_path_ = catch_path;
   }
 
-  bool sdk_version_match(std::string& sdk_version) {
-    return (sdk_version_.compare(sdk_version) == 0);
-  }
+  bool sdk_version_match(std::string& sdk_version);
   void parse_from_json(const json&);
   odla_status load_from_string(const std::string& config_string);
   odla_status load_config(const char* file_path);
   bool get_pipeline_setting(const std::string& node_name, int64_t& ipu_idx,
                             int64_t& pipeline_stage);
   odla_status extract_config_from_cache();
+  std::string temp_get_error_inject_env(
+      const std::string& temp_config_path = "/tmp/temp_error_injector.json");
 
  private:
   void set_pipeline_setting(const std::string& name_pattern, int ipu_idx,

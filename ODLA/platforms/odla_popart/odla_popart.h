@@ -33,7 +33,6 @@
 #include <vector>
 
 #define g_comp _odla_computation::instance()
-// enum ExecutionMode {PIPELINE, PARALLEL, SEQUENCE};
 
 class Execution {
  public:
@@ -102,6 +101,8 @@ struct _odla_computation {
     if (instance_ == nullptr) {
       std::lock_guard<std::mutex> guard(comp_mutex_);
       if (instance_ == nullptr) instance_ = new _odla_computation();
+      popart::logging::warn("The computation:{} has been firstly created",
+                            instance_);
     }
     if (hold_it) instance_->hold();
     return instance_;
@@ -111,6 +112,8 @@ struct _odla_computation {
       std::lock_guard<std::mutex> guard(comp_mutex_);
       if (instance_ != nullptr) {
         delete instance_;
+        popart::logging::warn("The computation:{} has been destructed",
+                              instance_);
         instance_ = nullptr;
       }
     }
@@ -151,16 +154,31 @@ struct _odla_computation {
   inline void release_session() {
     if (session != nullptr) {
       session->getDevice().getDeviceInfo()->detach();
+      popart::logging::warn(
+          "The computation:{} session:{} detached from device", this,
+          session.get());
       session.reset();
       assert(session == nullptr);
+      popart::logging::warn("The computation:{} session has been reset", this);
     }
   }
-
+  inline void set_thread_run() {
+    std::unique_lock<std::mutex> lock(thread_done_mutex_);
+    thread_state_ = RUNNING;
+  }
   inline void mark_done() {
     while (thread_state_ != DONE) {
       std::unique_lock<std::mutex> lock(thread_done_mutex_);
-      thread_state_ = MARK_DONE;
-      thread_done_cv_.wait_for(lock, std::chrono::milliseconds(1000));
+      if (thread_state_ != DONE) {
+        thread_state_ = MARK_DONE;
+        popart::logging::warn(
+            "The computation:{} thread now is MARK_DONE, waiting for DONE",
+            this);
+        thread_done_cv_.wait_for(lock, std::chrono::milliseconds(5));
+      } else
+        popart::logging::warn(
+            "The computation {} thread already DONE when try to mark_done",
+            this);
     }
     // Once get notified, only detach the device once
     std::lock_guard<std::mutex> guard(init_mutex_);
@@ -169,6 +187,7 @@ struct _odla_computation {
   inline void thread_done() {
     std::unique_lock<std::mutex> lock(thread_done_mutex_);
     thread_state_ = DONE;
+    popart::logging::warn("The computation:{} thread is DONE.", this);
     thread_done_cv_.notify_all();
   }
 };
@@ -177,6 +196,8 @@ struct _odla_context {
   odla_computation comp;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> inputs;
   std::map<popart::TensorId, std::unique_ptr<popart::IArray>> outputs;
+  int (*async_callback_func)(void*, odla_status) = nullptr;
+  void* async_callback_arg = nullptr;
   _odla_context(odla_computation c) : comp(c) {}
   std::thread::id thread_id_of_holder;
   inline virtual void wait() {}
@@ -193,6 +214,6 @@ struct _odla_context {
   inline virtual bool all_tensors_written() { return true; }
   inline virtual void clear_visited_and_written() {}
   inline virtual bool deletable() { return false; }
-  bool hold(const std::string& function_name);
+  virtual bool hold(const std::string& function_name);
 };
 #endif

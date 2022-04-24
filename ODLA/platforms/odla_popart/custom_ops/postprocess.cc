@@ -133,8 +133,7 @@ PostProcessOpx::PostProcessOpx(popart::Op* op, popart::popx::Devicex* devicex)
   numTiles_vtx = 90;
   numTiles_partial = target.getTilesPerIPU() - numTiles_vtx;
   numWorkers_ = target.getNumWorkerContexts();
-  graph().addCodelets(
-      "../../../../ODLA/platforms/odla_popart/custom_ops/codelets_nms.cpp");
+  graph().addCodelets("codelets_nms.cpp");
 }
 
 void PostProcessOpx::grow(poplar::program::Sequence& prog) const {

@@ -23,6 +23,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <mutex>
 #include <popart/stepio.hpp>
 #include <queue>
@@ -44,44 +45,35 @@ class Queue {
   virtual void pop_input(odla_context ctx) = 0;
   virtual void pop_output(odla_context ctx) = 0;
   virtual std::size_t size() = 0;
+  virtual void handle_error() = 0;
 };
 
 class ContextQueues : public Queue {
  private:
-  std::queue<odla_context> input_queue_1;
-  std::queue<odla_context> input_queue_2;
-  std::queue<odla_context> wait_output_queue_1;
-  std::queue<odla_context> wait_output_queue_2;
-  std::mutex write_mutex;
-  std::queue<odla_context>* read_queue;
-  std::queue<odla_context>* write_queue;
-  std::queue<odla_context>* read_wait_queue;
-  std::queue<odla_context>* write_wait_queue;
-  odla_context input_ctx;  // the context which is under reading
-  odla_context output_ctx; // the context which is under writing
+  odla_context* buffer_;
+  std::size_t capacity_;
+  std::uint32_t head_;
+  std::uint32_t tail_;
+  std::uint32_t wait_;
+  std::map<popart::TensorId, std::uint32_t> tensor_to_idx_;
+  std::mutex batch_wait_mutex_;
+  std::condition_variable batch_wait_cv_;
+  std::mutex queue_mutex_; // lock the read & write
 
  public:
-  ContextQueues()
-      : read_queue(&input_queue_1),
-        write_queue(&input_queue_2),
-        read_wait_queue(&wait_output_queue_1),
-        write_wait_queue(&wait_output_queue_2),
-        input_ctx(nullptr),
-        output_ctx(nullptr) {}
-
-  ~ContextQueues() {}
-  void init(std::size_t capacity) final {}
+  ContextQueues() : head_(0), tail_(0), wait_(0){};
+  ~ContextQueues() {
+    if (buffer_) delete[] buffer_;
+  }
+  void init(std::size_t capacity);
   void put(odla_context ctx) final;
   odla_context get_input_context() final;
-  odla_context get_ctx_by_tensor(const popart::TensorId& id) final {
-    return nullptr;
-  }
+  odla_context get_ctx_by_tensor(const popart::TensorId& id) final;
   odla_context get_output_context() final;
   void pop_input(odla_context ctx) final;
   void pop_output(odla_context ctx) final;
-  std::size_t size() final {
-    return input_queue_1.size() + input_queue_2.size();
-  }
+  std::size_t size() final { return (tail_ - wait_ + capacity_) % capacity_; }
+  void handle_error() final;
 };
 
 class LockFreeQueue : public Queue {
@@ -92,6 +84,8 @@ class LockFreeQueue : public Queue {
   std::atomic<uint32_t> tail_;
   std::uint32_t wait_;
   std::map<popart::TensorId, std::uint32_t> tensor_to_idx_;
+  std::mutex batch_wait_mutex_;
+  std::condition_variable batch_wait_cv_;
 
  public:
   LockFreeQueue();
@@ -108,6 +102,7 @@ class LockFreeQueue : public Queue {
   std::size_t size() final {
     return (tail_.load() - wait_ + capacity_) % capacity_;
   }
+  void handle_error() final;
 };
 
 class QManager {
@@ -123,7 +118,10 @@ class QManager {
   void createQ(std::string queueType);
   void deleteQ();
   inline Queue* getQ() { return queue_; }
-  inline void set_status(odla_status status) { status_ = status; }
+  inline void set_status(odla_status status) {
+    status_ = status;
+    if (ODLA_SUCCESS != status_ && queue_) queue_->handle_error();
+  }
   inline odla_status get_status() { return status_; }
   static inline QManager* instance() { return instance_; }
 };
@@ -202,6 +200,40 @@ struct _odla_pipeline_context : public _odla_context {
     visited = 0;
     written = 0;
   }
+};
+
+struct _odla_pipeline_async_context : public _odla_pipeline_context {
+  _odla_pipeline_async_context(odla_computation c) : _odla_pipeline_context(c) {
+    popart::logging::info(
+        "[VODLA DEBUG] _odla_pipeline_async_context created: {}", this);
+  }
+  inline void wait() override { // for async, never wait
+    popart::logging::info(
+        "[VODLA DEBUG] never wait(), only write a log to return, ctx: {}",
+        this);
+  }
+  inline void notify() override { // for notify, will call the callback to
+                                  // notify
+    popart::logging::info(
+        "[VODLA DEBUG] will call the callback in the notify(), ctx: {}", this);
+    if (nullptr == async_callback_func) {
+      popart::logging::err(
+          "async_callback_func is null when try to notify inference result for "
+          "context: {}",
+          this);
+      throw std::invalid_argument("async_callback_func is null");
+    }
+    if (nullptr == async_callback_arg) {
+      popart::logging::err(
+          "async_callback_arg is null when try to notify inference result for "
+          "context: {}",
+          this);
+      throw std::invalid_argument("async_callback_arg is null");
+    }
+    async_callback_func(async_callback_arg, QManager::instance()->get_status());
+    popart::logging::info("[VODLA DEBUG] callback called, ctx: {}", this);
+  }
+  bool hold(const std::string& function_name) override { return true; }
 };
 
 struct _odla_pipeline_empty_context : public _odla_pipeline_context {

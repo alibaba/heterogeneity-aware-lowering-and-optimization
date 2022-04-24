@@ -27,9 +27,27 @@
 #include "json.hpp"
 
 PopartConfig* PopartConfig::instance_ = new PopartConfig();
+std::vector<std::string> PopartConfig::mode = {
+    "unknown", "pipeline", "parallel", "sequence", "pipeline_async"};
+
+const char* bool_to_str(const bool& value) { return value ? "true" : "false"; }
+
+const std::string get_config_path_from_cache_file(
+    const std::string& cache_path) {
+  std::string file_suffix(".popart");
+  int file_prefix = cache_path.rfind(file_suffix);
+  if (file_prefix == std::string::npos ||
+      file_prefix + file_suffix.size() < cache_path.size()) {
+    popart::logging::err(
+        "Bad cache file name. File name should end with '.popart'");
+    return std::string("");
+  }
+  return std::string(cache_path.substr(0, file_prefix) + ".json");
+}
 
 void PopartConfig::use_default() {
   amp_ = 0.6;
+  sdk_version_ = popart::core::packageHash();
   version_ = "1.0.0";
   batches_per_step_ = 1;
   ipu_num_ = 1;
@@ -41,31 +59,57 @@ void PopartConfig::use_default() {
   queue_type_ = "LockFreeQueue";
   queue_capacity_ = 1024 * 1024;
   debug_ = false;
-  default_config_string_ =
+  char config_base[] =
       "{\n\
-      \"version\":\"1.0.0\",\n\
-      \"amp\":0.6,\n\
-      \"batches_per_step\":1,\n\
-      \"execution_mode\":\"sequence\",\n\
-      \"ipu_num\":1,\n\
-      \"load_onnx\":false, \n\
-      \"load_onnx_path\":\"test-load-time.onnx\",\n\
-      \"queue_type\":\"LockFreeQueue\",\n\
-      \"queue_capacity\":1048576,\n\
-      \"debug\": false\n\
+      \"sdk_version\":\"%s\",\n\
+      \"version\":\"%s\",\n\
+      \"amp\":%f,\n\
+      \"batches_per_step\":%d,\n\
+      \"execution_mode\":\"%s\",\n\
+      \"ipu_num\":%d,\n\
+      \"load_onnx\":%s, \n\
+      \"load_onnx_path\":\"%s\",\n\
+      \"queue_type\":\"%s\",\n\
+      \"queue_capacity\":%d,\n\
+      \"debug\":%s\n\
       }\n";
+  char raw_default_config[1024] = {0};
+  snprintf(raw_default_config, 1024, config_base, sdk_version_.c_str(),
+           version_.c_str(), amp_, batches_per_step_,
+           PopartConfig::mode[(int)execution_mode_].c_str(), ipu_num_,
+           bool_to_str(load_onnx_), load_onnx_path_.c_str(),
+           queue_type_.c_str(), queue_capacity_, bool_to_str(debug_));
+  default_config_string_.assign(raw_default_config);
 }
 
-odla_status PopartConfig::load_config(const char* file_path) {
+odla_status PopartConfig::load_config(const char* env_file_path) {
   if (inited_) {
     popart::logging::info("config already inited");
     return ODLA_SUCCESS;
   }
-  use_default();
-  if (file_path != nullptr) {
-    load_from_file(file_path);
-  } else {
-    popart::logging::info("use default config");
+  odla_status ret = ODLA_FAILURE;
+  if (load_or_save_cache()) {
+    ret = extract_config_from_cache();
+    if (ret != ODLA_SUCCESS) {
+      popart::logging::warn("load config from cache failed");
+      std::string config_file_path =
+          get_config_path_from_cache_file(std::string(cache_path_));
+      if (!config_file_path.empty()) {
+        popart::logging::info("try load from file: {}", config_file_path);
+        ret = load_from_file(config_file_path);
+      }
+    }
+  }
+  if (ret != ODLA_SUCCESS) {
+    use_default();
+    if (env_file_path != nullptr) {
+      ret = load_from_file(env_file_path);
+      if (ret != ODLA_SUCCESS) {
+        popart::logging::info("use default config");
+      }
+    } else {
+      popart::logging::info("use default config");
+    }
   }
   return ODLA_SUCCESS;
 }
@@ -104,6 +148,8 @@ void PopartConfig::parse_from_json(const json& jf) {
       execution_mode_ = PIPELINE;
     else if ("parallel" == execution_mode)
       execution_mode_ = PARALLEL;
+    else if ("pipeline_async" == execution_mode)
+      execution_mode_ = PIPELINE_ASYNC;
     else
       execution_mode_ = SEQUENCE;
   }
@@ -139,9 +185,43 @@ odla_status PopartConfig::load_from_string(const std::string& config_string) {
   } catch (std::exception& e) {
     popart::logging::err("parse config falied:{}", e.what());
     return ODLA_FAILURE;
+  } catch (...) {
+    popart::logging::err("parse config falied");
+    return ODLA_FAILURE;
   }
   parse_from_json(jf);
   return ODLA_SUCCESS;
+}
+
+std::string PopartConfig::temp_get_error_inject_env(
+    const std::string& temp_config_path) {
+  using json = nlohmann::json;
+  std::ifstream ifs(temp_config_path, std::ios_base::in);
+  popart::logging::warn("get injector info from config file: {}",
+                        temp_config_path);
+  if (!ifs.good()) {
+    popart::logging::warn("config file {} not found, no injector for this run",
+                          temp_config_path);
+    return std::string("");
+  }
+  try {
+    json jf = json::parse(ifs);
+    if (jf.contains("POPLAR_ENGINE_OPTIONS")) {
+      auto poplar_engine_options =
+          jf["POPLAR_ENGINE_OPTIONS"].get<std::string>();
+      popart::logging::info(
+          "Read the POPLAR_ENGINE_OPTIONS from file:{} with value: {}.",
+          temp_config_path, poplar_engine_options);
+      return poplar_engine_options;
+    }
+  } catch (std::exception& e) {
+    popart::logging::err("parse config falied:{}", e.what());
+    return std::string("");
+  } catch (...) {
+    popart::logging::err("parse config falied");
+    return std::string("");
+  }
+  return std::string("");
 }
 
 odla_status PopartConfig::load_from_file(const std::string& file_path) {
@@ -149,7 +229,7 @@ odla_status PopartConfig::load_from_file(const std::string& file_path) {
     return ODLA_SUCCESS;
   }
   using json = nlohmann::json;
-  std::ifstream ifs(file_path);
+  std::ifstream ifs(file_path, std::ios_base::in);
   if (!ifs.good()) {
     popart::logging::err("config file {} not found", file_path);
     return ODLA_FAILURE;
@@ -162,12 +242,12 @@ odla_status PopartConfig::load_from_file(const std::string& file_path) {
 void PopartConfig::print() {
   std::string line(80, '=');
   popart::logging::info(line);
+  popart::logging::info("sdk_version: {}", sdk_version_);
   popart::logging::info("version: {}", version_);
   popart::logging::info("amp: {}", amp_);
   popart::logging::info("batch_per_step: {}", batches_per_step_);
-  std::string mode[] = {"UNKNOWN", "PIPELINE", "PARALLEL", "SEQUENCE"};
   popart::logging::info("execution_mode: {}",
-                        mode[(long unsigned int)execution_mode_]);
+                        PopartConfig::mode[(long unsigned int)execution_mode_]);
   popart::logging::info("ipu_num: {}", ipu_num_);
   std::string bool_value[] = {"false", "true"};
   popart::logging::info("load_onnx: {}",
@@ -247,4 +327,11 @@ odla_status PopartConfig::extract_config_from_cache() {
     }
   }
   return ODLA_SUCCESS;
+}
+
+bool PopartConfig::sdk_version_match(std::string& sdk_version) {
+  popart::logging::warn(
+      "sdk version in the cache file is {}, and from sdk is {}", sdk_version_,
+      sdk_version);
+  return (sdk_version_.compare(sdk_version) == 0);
 }
