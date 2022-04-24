@@ -36,62 +36,94 @@
 _odla_computation* _odla_computation::instance_ = nullptr;
 std::mutex _odla_computation::comp_mutex_;
 
+#define POPLAR_TRY try {
+#define POPLAR_CATCH                                                          \
+  }                                                                           \
+  catch (poplar::application_runtime_error & e) {                             \
+    popart::logging::err(                                                     \
+        "Poplar exception application_runtime_error caught: {}", e.what());   \
+    RETURN_ERROR(ODLA_INTERNAL_LOGIC_ERR)                                     \
+  }                                                                           \
+  catch (poplar::recoverable_runtime_error & e) {                             \
+    popart::logging::err(                                                     \
+        "Poplar recoverable_runtime_error exception caught: {}", e.what());   \
+    auto action = e.getRecoveryAction();                                      \
+    popart::logging::err("need to take action:{}", action);                   \
+    if (action == poplar::RecoveryAction::IPU_RESET) {                        \
+      RETURN_ERROR(ODLA_RECOVERABLE_ERR)                                      \
+    } else if (action == poplar::RecoveryAction::PARTITION_RESET) {           \
+      RETURN_ERROR(ODLA_PARTITION_RESET)                                      \
+    } else if (action == poplar::RecoveryAction::FULL_RESET) {                \
+      RETURN_ERROR(ODLA_FULL_RESET)                                           \
+    }                                                                         \
+  }                                                                           \
+  catch (poplar::unrecoverable_runtime_error & e) {                           \
+    popart::logging::err(                                                     \
+        "Poplar unrecoverable_runtime_error exception caught: {}", e.what()); \
+    RETURN_ERROR(ODLA_UNRECOVERABLE_ERR)                                      \
+  }                                                                           \
+  catch (poplar::unknown_runtime_error & e) {                                 \
+    popart::logging::err("Poplar unknown runtime exception caught: {}",       \
+                         e.what());                                           \
+    RETURN_ERROR(ODLA_UNRECOVERABLE_ERR)                                      \
+  }                                                                           \
+  catch (std::exception & e) {                                                \
+    popart::logging::err("std::exception gotten: {}", e.what());              \
+    RETURN_ERROR(ODLA_UNRECOVERABLE_ERR)                                      \
+  }                                                                           \
+  catch (...) {                                                               \
+    popart::logging::err("Poplar unknown exception caught");                  \
+    RETURN_ERROR(ODLA_UNRECOVERABLE_ERR)                                      \
+  }
+
+#define RETURN_ERROR(ERR_CODE) (QManager::instance()->set_status(ERR_CODE));
+
 void compute_loop(odla_computation comp) {
   // setup the stepio with allbacks
   popart::StepIOCallback stepio(input_callback, input_complete_callback,
                                 output_callback, output_complete_callback);
   int i = 0;
-  try {
-    while (!comp->is_done()) {
-      auto start = std::chrono::steady_clock::now();
-      popart::logging::info("This is the {} time for the inference", i++);
-      if (i == INT_MAX) i = 0;
-      comp->session->run(stepio);
-      auto end = std::chrono::steady_clock::now();
-      std::chrono::duration<double> elapsed_seconds = end - start;
+  bool info_printed = false;
+  POPLAR_TRY
+  comp->set_thread_run(); // set the state to RUNNING
+  while (!comp->is_done()) {
+    auto start = std::chrono::steady_clock::now();
+    popart::logging::info("This is the {} time for the inference", i++);
+    if (i == INT_MAX) i = 0;
+    if (!info_printed) {
       popart::logging::warn(
-          "[ {} ] ONE_STEP takes {} s. Check whether more inference tasks "
-          "wating.",
-          i, elapsed_seconds.count());
-      // Make wait on CPU if there's not inference task
-      start = std::chrono::steady_clock::now();
-      while (!comp->is_done() && QManager::instance()->getQ()->size() == 0)
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-      end = std::chrono::steady_clock::now();
-      std::chrono::duration<double, std::milli> elapsed_ms = end - start;
-      popart::logging::warn("Found new tasks in {} ms.", elapsed_ms.count());
+          "Start to run the stepio with comp:{}, session:{}, device:{}", comp,
+          comp->session.get(), comp->session->getDevice().getDeviceInfo());
+      info_printed = true;
     }
-  } catch (poplar::application_runtime_error& e) {
-    popart::logging::err("Poplar exception application_runtime_error caught:");
-    QManager::instance()->set_status(ODLA_INTERNAL_LOGIC_ERR);
-  } catch (poplar::recoverable_runtime_error& e) {
-    popart::logging::err("Poplar recoverable_runtime_error exception caught");
-    auto action = e.getRecoveryAction();
-    popart::logging::err("need to take action:{}", action);
-    if (action == poplar::RecoveryAction::IPU_RESET) {
-      QManager::instance()->set_status(ODLA_RECOVERABLE_ERR);
-    } else if (action == poplar::RecoveryAction::PARTITION_RESET) {
-      QManager::instance()->set_status(ODLA_PARTITION_RESET);
-    } else if (action == poplar::RecoveryAction::FULL_RESET) {
-      QManager::instance()->set_status(ODLA_FULL_RESET);
-    }
-  } catch (poplar::unrecoverable_runtime_error& e) {
-    popart::logging::err("Poplar unrecoverable_runtime_error exception caught");
-    QManager::instance()->set_status(ODLA_UNRECOVERABLE_ERR);
-  } catch (poplar::unknown_runtime_error& e) {
-    popart::logging::info("Poplar unknown runtime exception caught}");
-    QManager::instance()->set_status(ODLA_UNRECOVERABLE_ERR);
-  } catch (...) {
-    popart::logging::info("Poplar unknown exception caught");
-    QManager::instance()->set_status(ODLA_UNRECOVERABLE_ERR);
+    comp->session->run(stepio);
+    auto end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end - start;
+    popart::logging::info(
+        "[ {} ] ONE_STEP takes {} s. Check whether more inference tasks "
+        "wating.",
+        i, elapsed_seconds.count());
+    // Make wait on CPU if there's not inference task
+    start = std::chrono::steady_clock::now();
+    while (!comp->is_done() && QManager::instance()->getQ()->size() == 0)
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    end = std::chrono::steady_clock::now();
+    std::chrono::duration<double, std::milli> elapsed_ms = end - start;
+    popart::logging::info("Found new tasks in {} ms.", elapsed_ms.count());
   }
+  POPLAR_CATCH
 
-  popart::logging::warn("The pipeline loop finished");
+  popart::logging::warn(
+      "The computation: {} pipeline loop finished after {} steps run", comp, i);
   comp->thread_done();
 }
 
+#undef RETURN_ERROR
+#define RETURN_ERROR(ERR_CODE) return ERR_CODE;
+
 odla_status _odla_computation::compile_and_export() {
   odla_status ret_value = ODLA_SUCCESS;
+  POPLAR_TRY
   popart::logging::warn("Start compile and export");
   const std::string& cache_file_name =
       PopartConfig::instance()->get_cache_path();
@@ -99,7 +131,8 @@ odla_status _odla_computation::compile_and_export() {
   int file_prefix = cache_file_name.rfind(file_suffix);
   if (file_prefix == std::string::npos ||
       file_prefix + file_suffix.size() < cache_file_name.size()) {
-    popart::logging::err("Bad cache file name");
+    popart::logging::err(
+        "Bad cache file name. File name should end with '.popart'");
     return ODLA_FAILURE;
   }
   if (file_prefix == std::string::npos) {
@@ -107,8 +140,9 @@ odla_status _odla_computation::compile_and_export() {
   }
   std::string config_file_name(cache_file_name.substr(0, file_prefix) +
                                ".json");
-  std::fstream cache_fs(cache_file_name,
-                        std::ios_base::out | std::ifstream::binary);
+  std::fstream cache_fs(cache_file_name, std::ios_base::out |
+                                             std::ifstream::binary |
+                                             std::ios_base::trunc);
   if (!cache_fs.is_open()) {
     popart::logging::err("Open or create cache file falied");
     return ODLA_FAILURE;
@@ -119,7 +153,7 @@ odla_status _odla_computation::compile_and_export() {
     config_fs.open(config_file_name, std::ios_base::in | std::ifstream::binary);
     if (!config_fs.is_open()) {
       popart::logging::warn(
-          "invalid config file name:[ {} ] will use default config",
+          "Open config file failed:[ {} ] will use default config",
           config_file_name);
       PopartConfig::instance()->use_default();
       config_string = PopartConfig::instance()->get_default_config_string();
@@ -132,10 +166,18 @@ odla_status _odla_computation::compile_and_export() {
     config_string = PopartConfig::instance()->get_default_config_string();
   }
   // add sdk_version in the file content
-  std::string version_string(popart::core::versionString());
-  popart::logging::info("the popart version is: {}", version_string);
-  version_string = "\n\"sdk_version\":\"" + version_string + "\",";
-  config_string.insert(1, version_string);
+  std::string version_string(popart::core::packageHash());
+  popart::logging::info("the popart package hash is: {}", version_string);
+  if (config_string.find("sdk_version") == std::string::npos) {
+    std::string item_string = "\n\"sdk_version\":\"" + version_string + "\",";
+    config_string.insert(1, item_string);
+  }
+  // change all true to false
+  std::string src_replace("true");
+  std::string dest_replace("false");
+  std::string::size_type pos = 0;
+  while ((pos = config_string.find(src_replace)) != std::string::npos)
+    config_string.replace(pos, src_replace.length(), dest_replace);
   popart::logging::info("the config_string with sdk_version is: {}",
                         config_string);
   // added the sdk_version information to the file content
@@ -143,23 +185,20 @@ odla_status _odla_computation::compile_and_export() {
   cache_fs.write((char*)&config_size, sizeof(config_size));
   cache_fs.write(config_string.c_str(), config_string.size());
 
-  try {
-    _odla_computation::instance()->session->compileAndExport(cache_fs.flush());
-  } catch (std::exception& e) {
-    popart::logging::err("compileAndExport Falied: {}", e.what());
-    ret_value = ODLA_FAILURE;
-  }
+  _odla_computation::instance()->session->compileAndExport(cache_fs.flush());
   cache_fs.flush();
   cache_fs.close();
   config_fs.close();
-
+  POPLAR_CATCH
   return ret_value;
 }
 
 odla_status _odla_computation::init(bool is_compile) {
   if (!session) {
+    popart::logging::warn("The computation:{} start to init", this);
     std::lock_guard<std::mutex> guard(init_mutex_);
     if (!session) {
+      POPLAR_TRY
       odla_status status = set_opts();
       if (status != ODLA_SUCCESS) {
         popart::logging::err("set computation option failed");
@@ -185,15 +224,17 @@ odla_status _odla_computation::init(bool is_compile) {
             popart::DeviceManager::createDeviceManager().acquireAvailableDevice(
                 opts.ipu_num);
 
+      if (nullptr == device) {
+        popart::logging::err(
+            "Failed to get a device when initializing odla_computation");
+        throw std::runtime_error(
+            "Failed to get a device when initializing odla_computation");
+      }
+
       // Create and config SessionOptions
       set_session_opts();
       if (use_pipeline()) {
-        try {
-          builder = popart::Builder::createFromOnnxModel(set_pipeline_stage());
-        } catch (std::exception& e) {
-          popart::logging::err("create builder from onnx model failed.");
-          return ODLA_FAILURE;
-        }
+        builder = popart::Builder::createFromOnnxModel(set_pipeline_stage());
       }
       auto proto = builder->getModelProto(); // So, the init must be called at
                                              // odla_ExecuteCompute
@@ -211,59 +252,69 @@ odla_status _odla_computation::init(bool is_compile) {
       }
 
       std::unique_ptr<popart::InferenceSession> new_session;
-      try {
-        // Create InferenceSession
-        new_session = std::move(popart::InferenceSession::createFromOnnxModel(
-            proto, data_flow, device, popart::InputShapeInfo(), session_opts_));
-      } catch (std::exception& e) {
-        popart::logging::err("Session::createFromOnnxModel failed:{}",
-                             e.what());
-        return ODLA_FAILURE;
-      }
+      // Create InferenceSession
+      new_session = std::move(popart::InferenceSession::createFromOnnxModel(
+          proto, data_flow, device, popart::InputShapeInfo(), session_opts_));
 
       if (!is_compile) {
-        if (PopartConfig::instance()->load_cache()) {
+        if (PopartConfig::instance()->load_or_save_cache()) {
           popart::logging::info("Load cachefile from existing stream");
-          std::string version_string(popart::core::versionString());
+          std::string version_string(popart::core::packageHash());
           if (!PopartConfig::instance()->sdk_version_match(version_string)) {
-            popart::logging::err("The sdk version of cache does not match {}",
-                                 version_string);
-            return ODLA_FAILURE;
-          }
-          auto cache_fs = PopartConfig::instance()->get_cache_fs();
-          if (cache_fs->is_open()) {
-            try {
-              new_session->loadExecutableFromStream(*(cache_fs.get()));
-            } catch (std::exception& e) {
-              popart::logging::err("bad cache file, will compile the graph");
+            popart::logging::err(
+                "The sdk version of cache does not match popart hash {}",
+                version_string);
+            auto injector =
+                PopartConfig::instance()->temp_get_error_inject_env();
+            if (injector.empty())
+              return ODLA_FAILURE;
+            else
+              popart::logging::warn("Error injector set, will compile");
+          } else {
+            auto cache_fs = PopartConfig::instance()->get_cache_fs();
+            if (cache_fs->is_open()) {
+              try {
+                cache_fs->seekg(0, std::ios::beg);
+                int config_len = 0;
+                cache_fs->read((char*)&config_len, sizeof(config_len));
+                cache_fs->seekg(config_len + sizeof(config_len), std::ios::beg);
+                new_session->loadExecutableFromStream(*(cache_fs.get()));
+              } catch (std::exception& e) {
+                popart::logging::err("bad cache file: {}", e.what());
+                return ODLA_FAILURE;
+              } catch (...) {
+                popart::logging::err("bad cache file");
+                return ODLA_FAILURE;
+              }
             }
           }
         }
 
-        try {
-          new_session->prepareDevice();
-          new_session->setRandomSeed(0);  // Init seed
-          new_session->weightsFromHost(); // Copy weights from host to IPU
-        } catch (std::exception& e) {
-          popart::logging::err("session init failed: {}", e.what());
-          return ODLA_FAILURE;
-        }
-        // If in parallel mode, start the thread
-        ExecutionMode mode = PopartConfig::instance()->execution_mode();
-        if (PIPELINE == mode || PARALLEL == mode) {
-          std::thread parallel_thread(compute_loop, this);
-          thread_state_ = RUNNING;
-          popart::logging::warn("Parallel loop has been started");
-          parallel_thread.detach();
-        }
+        new_session->prepareDevice();
+        new_session->setRandomSeed(0);  // Init seed
+        new_session->weightsFromHost(); // Copy weights from host to IPU
       } else {
         is_compile_only_ = true;
       }
-
-      session =
-          std::move(new_session); // set session after all initialization done.
+      // set session after all initialization done.
+      session = std::move(new_session);
+      // Thread must be started after all initialization done
+      if (!is_compile) {
+        ExecutionMode mode = PopartConfig::instance()->execution_mode();
+        if (PIPELINE == mode || PARALLEL == mode || PIPELINE_ASYNC == mode) {
+          std::thread parallel_thread(compute_loop, this);
+          popart::logging::warn(
+              "The computation: {}, parallel loop has been started", this);
+          parallel_thread.detach();
+        }
+      }
+      POPLAR_CATCH
     }
+    popart::logging::warn(
+        "The computation:{} has been initialised with session:{}", this,
+        session.get());
   }
+  return ODLA_SUCCESS;
 }
 
 // Now we set this by config file, should set by the caller?
@@ -280,11 +331,11 @@ odla_status _odla_computation::set_opts() {
       return ODLA_FAILURE;
     }
     if (opts.batches_per_step != PopartConfig::instance()->batches_per_step()) {
-      popart::logging::err(
+      popart::logging::warn(
           "batches per step in pipeline configuration:" +
           std::to_string(PopartConfig::instance()->batches_per_step()) +
-          " must same with options: " + std::to_string(opts.batches_per_step));
-      return ODLA_FAILURE;
+          " not same with options: " + std::to_string(opts.batches_per_step));
+      opts.batches_per_step = PopartConfig::instance()->batches_per_step();
     }
   }
   return ODLA_SUCCESS;
@@ -293,7 +344,7 @@ odla_status _odla_computation::set_opts() {
 odla_status _odla_computation::set_executor() {
   odla_status ret_value = ODLA_SUCCESS;
   ExecutionMode mode = PopartConfig::instance()->execution_mode();
-  if (PIPELINE == mode || PARALLEL == mode) {
+  if (PIPELINE == mode || PARALLEL == mode || PIPELINE_ASYNC == mode) {
     popart::logging::info("set the executor as parallel");
     executor_ = new Parallel();
   } else if (SEQUENCE == mode) {
@@ -474,37 +525,14 @@ odla_status Sequence::compute(odla_computation comp, odla_context context,
   auto start = std::chrono::steady_clock::now();
   popart::StepIO stepio(inputs, outputs);
   // Run on ipu
-  try {
-    comp->session->run(stepio);
-    auto end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end - start;
-    popart::logging::info("[ {} ] [Sequence::compute] takes {} s.", i++,
-                          elapsed_seconds.count());
-    popart::logging::info("<<< Sequence::compute() with ctx: {}", context);
-  } catch (poplar::application_runtime_error& e) {
-    popart::logging::err("Poplar exception application_runtime_error caught:");
-    return ODLA_INTERNAL_LOGIC_ERR;
-  } catch (poplar::recoverable_runtime_error& e) {
-    popart::logging::err("Poplar recoverable_runtime_error exception caught");
-    auto action = e.getRecoveryAction();
-    popart::logging::err("need to take action:{}", action);
-    if (action == poplar::RecoveryAction::IPU_RESET) {
-      return ODLA_RECOVERABLE_ERR;
-    } else if (action == poplar::RecoveryAction::PARTITION_RESET) {
-      return ODLA_PARTITION_RESET;
-    } else if (action == poplar::RecoveryAction::FULL_RESET) {
-      return ODLA_FULL_RESET;
-    }
-  } catch (poplar::unrecoverable_runtime_error& e) {
-    popart::logging::err("Poplar unrecoverable_runtime_error exception caught");
-    return ODLA_UNRECOVERABLE_ERR;
-  } catch (poplar::unknown_runtime_error& e) {
-    popart::logging::info("Poplar unknown runtime exception caught}");
-    return ODLA_UNRECOVERABLE_ERR;
-  } catch (...) {
-    popart::logging::info("Poplar unknown exception caught");
-    return ODLA_UNRECOVERABLE_ERR;
-  }
+  POPLAR_TRY
+  comp->session->run(stepio);
+  auto end = std::chrono::steady_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end - start;
+  popart::logging::info("[ {} ] [Sequence::compute] takes {} s.", i++,
+                        elapsed_seconds.count());
+  popart::logging::info("<<< Sequence::compute() with ctx: {}", context);
+  POPLAR_CATCH
   return ODLA_SUCCESS;
 }
 
