@@ -151,7 +151,7 @@ struct _odla_computation {
   inline Execution* executor() { return executor_; }
   inline bool is_done() { return thread_state_ != RUNNING; }
   inline bool is_compile_only() { return is_compile_only_; }
-  inline void release_session();
+  void release_session();
   /* {
          if (nullptr == session)
            popart::logging::warn("session is nullptr when try to release it");
