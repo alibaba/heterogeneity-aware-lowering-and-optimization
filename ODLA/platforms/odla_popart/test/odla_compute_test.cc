@@ -15,9 +15,6 @@
 
 typedef unsigned short uint16_t;
 
-
-
-
 using namespace std;
 
 odla_status model_helper() 
@@ -153,7 +150,6 @@ TEST_CASE("testing base interface")
 
     SUBCASE("test arg function") 
     {    
-      
       odla_computation comp;
       odla_context ctx;
       CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
@@ -287,7 +283,6 @@ TEST_CASE("testing base interface")
       model_helper();
       set_computationItem(comp, 1);
 
-
       std::thread t1(execute_multithread, comp, &in[0], &out[0]);
       std::thread t2(execute_multithread, comp, &in[1], &out[1]);
       std::thread t3(execute_multithread, comp, &in[2], &out[2]);
@@ -305,45 +300,119 @@ TEST_CASE("testing base interface")
 
     SUBCASE("test pipeline execute") 
     { 
+      json _config_json = default_json();
+      _config_json["ipu_num"] = 2;
+      _config_json["execution_mode"] = std::string("pipeline");
+      PopartConfig::instance()->parse_from_json(_config_json);
+
       odla_computation comp;
       odla_context ctx;
       CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-      model_helper();
-      odla_CreateContext(&ctx);
+      CHECK_EQ(ODLA_SUCCESS, odla_CreateContext(&ctx));
+      model_helper(); 
       set_computationItem(comp, 2);
 
-        // Check parse_from_json
-      float _amp = 0.6;
-      int _batches_per_step = 256;
-      int _ipu_num = 2;
-      bool _save_model = false;
-      const std::string _sdk_version = popart::core::packageHash();
-      const std::string _version = std::string("1.0.0");
-      const std::string _save_model_path =
-          std::string("odla_popart_saved.onnx");
-      bool _load_onnx = false;
-      const std::string _load_onnx_path = std::string("not_set.onnx");
-      const std::string _execution_mode = std::string("pipeline");
-      const std::string _queue_type = std::string("LockFreeQueue");
-      int _queue_capacity = 1024 * 1024;
-      bool _debug = false;
-      ExecutionMode _Queue_type = PIPELINE;
+      float in = 1.f, out = 0.f;
+      odla_BindToArgumentById((const odla_value_id) "Input", &in, ctx);
+      odla_BindToOutputById((const odla_value_id) "Add", &out, ctx);
+      CHECK_EQ(odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr), ODLA_SUCCESS);
+      CHECK_EQ(5, out);
+      // CHECK_EQ(odla_DestroyComputation(comp), ODLA_SUCCESS);
+      // CHECK_EQ(odla_DestroyContext(ctx), ODLA_SUCCESS);
+    }
 
-      json _config_json = default_json(
-          _amp, _sdk_version, _version, _batches_per_step, _ipu_num,
-          _save_model, _save_model_path, _load_onnx, _load_onnx_path,
-          _execution_mode, _queue_type, _queue_capacity, _debug);
+    SUBCASE("test pipeline wrong ipu num") 
+    { 
+      json _config_json = default_json();
+      _config_json["execution_mode"] = std::string("pipeline");
+      _config_json["ipu_num"] = 1;
 
       PopartConfig::instance()->parse_from_json(_config_json);
+      odla_computation comp;
+      odla_context ctx;
 
-      float in = 1.f;
-      float out = 0.f;
+      CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+      CHECK_EQ(ODLA_SUCCESS, odla_CreateContext(&ctx));
+      model_helper();
+      set_computationItem(comp, 1);
+      CHECK_EQ(_odla_computation::instance(false)->init(), ODLA_UNRECOVERABLE_ERR);
+    }
+
+    SUBCASE("test pipeline wrong stage distribute") 
+    { 
+      json _config_json = default_json();
+      _config_json["execution_mode"] = std::string("pipeline");
+      _config_json["ipu_num"] = 2;
+      
+      json pipeline;
+      std::vector<int> vec1, vec2;
+      vec1.push_back(0);
+      vec1.push_back(1);
+      vec2.push_back(1);
+      vec2.push_back(2);
+      pipeline["Input"] = vec1;
+      pipeline["Mul"] = vec1;
+      pipeline["Mul_const"] = vec2;
+      pipeline["Add"] = vec2;
+      pipeline["Add_const"] = vec2;
+      _config_json["pipeline"] = pipeline;
+
+      PopartConfig::instance()->parse_from_json(_config_json);
+      odla_computation comp;
+      odla_context ctx;
+
+      CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+      CHECK_EQ(ODLA_SUCCESS, odla_CreateContext(&ctx));
+      model_helper();
+      set_computationItem(comp, 2);
+      float in = 1.f, out = 0.f;
+      CHECK_EQ(_odla_computation::instance(false)->init(), ODLA_UNRECOVERABLE_ERR);
+
       // odla_BindToArgumentById((const odla_value_id) "Input", &in, ctx);
       // odla_BindToOutputById((const odla_value_id) "Add", &out, ctx);
-
       // CHECK_EQ(odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr), ODLA_SUCCESS);
-      // odla_DestroyComputation(comp);
-      // odla_DestroyContext(ctx);
+      // CHECK_EQ(5, out);
+    }
+
+    SUBCASE("test pipeline multithread") 
+    { 
+      json _config_json = default_json();
+      _config_json["execution_mode"] = std::string("pipeline");
+      _config_json["ipu_num"] = 2;
+      
+      json pipeline;
+      std::vector<int> vec1, vec2;
+      vec1.push_back(0);
+      vec1.push_back(0);
+      vec2.push_back(1);
+      vec2.push_back(1);
+      pipeline["Input"] = vec1;
+      pipeline["Mul"] = vec2;
+      pipeline["Mul_const"] = vec2;
+      pipeline["Add"] = vec2;
+      pipeline["Add_const"] = vec2;
+      _config_json["pipeline"] = pipeline;
+
+      PopartConfig::instance()->parse_from_json(_config_json);
+      odla_computation comp;
+      odla_context ctx;
+
+      CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+      model_helper();
+      set_computationItem(comp, 2);
+      float in[3] = {1.f, 1.f, 1.f};
+      float out[3] = {0.f};
+
+      std::thread t1(execute_multithread, comp, &in[0], &out[0]);
+      std::thread t2(execute_multithread, comp, &in[1], &out[1]);
+      std::thread t3(execute_multithread, comp, &in[2], &out[2]);
+      t1.join();
+      t2.join();
+      t3.join();
+
+      CHECK_EQ(5, out[0]);
+      CHECK_EQ(5, out[1]);
+      CHECK_EQ(5, out[2]);
     }
 
 }
