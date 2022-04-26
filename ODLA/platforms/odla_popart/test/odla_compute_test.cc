@@ -414,6 +414,47 @@ TEST_CASE("testing base interface")
       CHECK_EQ(5, out[1]);
       CHECK_EQ(5, out[2]);
     }
+  
+
+   SUBCASE("TILE  TEST") {
+      odla_computation comp;
+      CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+      set_computationItem(comp, 1);
+
+      auto input =
+          odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 3}}},
+                              (const odla_value_id)("input"));
+
+      odla_value_shape output_dims = {.size = 2, .dims = {4, 3}};
+      const odla_uint32* rep = new  odla_uint32[2]{3,2};
+
+      auto Tile =
+          odla_Tile(input, rep, output_dims, (const odla_value_id) "Tile");
+
+      odla_SetValueAsOutput(Tile);
+      static odla_context ctx;
+      odla_CreateContext(&ctx);
+
+      std::vector<float> input_data = {1, 2, 3, 4, 5, 6};
+      odla_BindToArgumentById((const odla_value_id) "input", input_data.data(),
+                              ctx);
+
+      float out_Shape[16] = {0};
+      odla_BindToOutputById((const odla_value_id) "Tile", out_Shape, ctx);
+
+      odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
+      auto shape = comp->builder->getTensorShape(Tile->tensor_id);
+
+      // auto size = Tile->tensor_id;
+      std::cout << " shape:[";
+      for (int i = 0; i < shape.size(); ++i) {
+         CHECK_EQ(shape[i], rep[i] * comp->builder->getTensorShape(input->tensor_id)[i]);
+        //std::cout << shape[i] << ", ";
+      }
+      std::cout << "]" << std::endl;
+      odla_DestroyComputation(comp);
+      odla_DestroyContext(ctx);
+    }
 
 }
 
