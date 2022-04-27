@@ -151,17 +151,7 @@ struct _odla_computation {
   inline Execution* executor() { return executor_; }
   inline bool is_done() { return thread_state_ != RUNNING; }
   inline bool is_compile_only() { return is_compile_only_; }
-  inline void release_session() {
-    if (session != nullptr) {
-      session->getDevice().getDeviceInfo()->detach();
-      popart::logging::warn(
-          "The computation:{} session:{} detached from device", this,
-          session.get());
-      session.reset();
-      assert(session == nullptr);
-      popart::logging::warn("The computation:{} session has been reset", this);
-    }
-  }
+  void release_session();
   inline void set_thread_run() {
     std::unique_lock<std::mutex> lock(thread_done_mutex_);
     thread_state_ = RUNNING;
