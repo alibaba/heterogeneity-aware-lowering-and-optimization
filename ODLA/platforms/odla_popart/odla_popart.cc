@@ -137,8 +137,7 @@ void _odla_computation::release_session() {
     popart::logging::warn("The computation:{} session:{} detached from device",
                           this, session.get());
   }
-  if (session != nullptr)
-    session.reset();
+  if (session != nullptr) session.reset();
   assert(session == nullptr);
   popart::logging::warn("The computation:{} session has been reset", this);
 }
