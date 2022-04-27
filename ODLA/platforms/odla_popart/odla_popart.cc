@@ -124,9 +124,6 @@ void compute_loop(odla_computation comp) {
 void _odla_computation::release_session() {
   if (nullptr == session)
     popart::logging::warn("session is nullptr when try to release it");
-  // else if(session->getDevice() == nullptr)
-  //  popart::logging::warn("session->getDevice() is nullptr when try to release
-  //  it");
   else if (session->getDevice().getDeviceInfo() == nullptr)
     popart::logging::warn(
         "session->getDevice().getDeviceInfo() is nullptr when try to release "
@@ -139,10 +136,11 @@ void _odla_computation::release_session() {
     session->getDevice().getDeviceInfo()->detach();
     popart::logging::warn("The computation:{} session:{} detached from device",
                           this, session.get());
-    session.reset();
-    assert(session == nullptr);
-    popart::logging::warn("The computation:{} session has been reset", this);
   }
+  if (session != nullptr)
+    session.reset();
+  assert(session == nullptr);
+  popart::logging::warn("The computation:{} session has been reset", this);
 }
 
 odla_status _odla_computation::compile_and_export() {
