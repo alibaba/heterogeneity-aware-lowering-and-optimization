@@ -808,12 +808,115 @@ TEST_CASE("MATH OPS TESTING") {
 
     }
 
-    SUBCASE("MATH OPS AND TEST") 
-    {}
-    SUBCASE("MATH OPS OR TEST")
-    {}
+    SUBCASE("MATH OPS AND TEST") {
+    odla_computation comp;
+    CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+    set_computationItem(comp, 1);
+
+    auto lhs = odla_CreateArgument({ODLA_BOOL, {.size = 2, .dims = {2, 2}}},
+                                    (const odla_value_id)("lhs"));
+
+    auto rhs = odla_CreateArgument({ODLA_BOOL, {.size = 2, .dims = {2, 2}}},
+                                    (const odla_value_id)("rhs"));
+
+    auto And = odla_And(lhs, rhs, (const odla_value_id) "And");
+    odla_SetValueAsOutput(And);
+
+    static odla_context ctx;
+    odla_CreateContext(&ctx);
+
+    bool lhs_data[2 * 2] = {false, false, false, false};
+    odla_BindToArgumentById((const odla_value_id) "lhs", lhs_data, ctx);
+
+    bool rhs_data[2 * 2] = {false, false, false, false};
+    odla_BindToArgumentById((const odla_value_id) "rhs", rhs_data, ctx);
+
+    bool out_And[2 * 2] = {false, false, false, false};
+    odla_BindToOutputById((const odla_value_id) "And", out_And, ctx);
+
+    odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
+
+    std::cout << "out_And = [";
+    for (int i = 0; i < 4; i++) {
+        std::cout << out_And[i] << ", ";
+    }
+    std::cout << "]" << std::endl;
+    odla_DestroyComputation(comp);
+    odla_DestroyContext(ctx);
+    }
+  
+    SUBCASE("MATH OPS OR TEST"){
+    odla_computation comp;
+    CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+    set_computationItem(comp, 1);
+
+    auto lhs = odla_CreateArgument({ODLA_BOOL, {.size = 2, .dims = {2, 2}}},
+                                    (const odla_value_id)("lhs"));
+
+    auto rhs = odla_CreateArgument({ODLA_BOOL, {.size = 2, .dims = {2, 2}}},
+                                    (const odla_value_id)("rhs"));
+
+    auto Or = odla_Or(lhs, rhs, (const odla_value_id) "Or");
+    odla_SetValueAsOutput(Or);
+
+    static odla_context ctx;
+    odla_CreateContext(&ctx);
+
+    bool lhs_data[2 * 2] = {false, false, false, false};
+    odla_BindToArgumentById((const odla_value_id) "lhs", lhs_data, ctx);
+
+    bool rhs_data[2 * 2] = {false, false, false, false};
+    odla_BindToArgumentById((const odla_value_id) "rhs", rhs_data, ctx);
+
+    bool out_Or[2 * 2] = {false, false, false, false};
+    odla_BindToOutputById((const odla_value_id) "Or", out_Or, ctx);
+
+    odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
+
+    std::cout << "out_Or = [";
+    for (int i = 0; i < 4; i++) {
+        std::cout << out_Or[i] << ", ";
+    }
+    std::cout << "]" << std::endl;
+    odla_DestroyComputation(comp);
+    odla_DestroyContext(ctx);
+    }
     
-    SUBCASE("MATH OPS NOT EQUAL TEST") 
-    {}
+    SUBCASE("MATH OPS NOT EQUAL TEST") {
+    odla_computation comp;
+    CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+    set_computationItem(comp, 1);
+
+    auto lhs = odla_CreateArgument({ODLA_BOOL, {.size = 2, .dims = {2, 2}}},
+                                    (const odla_value_id)("lhs"));
+
+    auto rhs = odla_CreateArgument({ODLA_BOOL, {.size = 2, .dims = {2, 2}}},
+                                    (const odla_value_id)("rhs"));
+
+    auto NotEqual = odla_NotEqual(lhs, rhs, (const odla_value_id) "NotEqual");
+    odla_SetValueAsOutput(NotEqual);
+
+    static odla_context ctx;
+    odla_CreateContext(&ctx);
+
+    bool lhs_data[2 * 2] = {false, false, false, false};
+    odla_BindToArgumentById((const odla_value_id) "lhs", lhs_data, ctx);
+
+    bool rhs_data[2 * 2] = {false, false, false, false};
+    odla_BindToArgumentById((const odla_value_id) "rhs", rhs_data, ctx);
+
+    bool out_Equal[2 * 2] = {false, false, false, false};
+    odla_BindToOutputById((const odla_value_id) "NotEqual", out_Equal, ctx);
+
+    odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
+
+    std::cout << "out_Equal = [";
+    for (int i = 0; i < 4; i++) {
+        std::cout << out_Equal[i] << ", ";
+    }
+    std::cout << "]" << std::endl;
+    odla_DestroyComputation(comp);
+    odla_DestroyContext(ctx);
+    }
 }
 
