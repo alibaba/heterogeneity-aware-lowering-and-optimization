@@ -115,7 +115,7 @@ class PopartConfig {
       std::lock_guard<std::mutex> guard(config_mutex_);
       if (inited_) {
         inited_ = false;
-        if (cache_fs->is_open()) {
+        if (cache_fs && cache_fs->is_open()) {
           cache_fs->close();
           cache_fs->clear();
         }

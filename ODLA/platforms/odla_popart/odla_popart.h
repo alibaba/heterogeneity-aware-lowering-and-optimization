@@ -152,25 +152,6 @@ struct _odla_computation {
   inline bool is_done() { return thread_state_ != RUNNING; }
   inline bool is_compile_only() { return is_compile_only_; }
   void release_session();
-  /* {
-         if (nullptr == session)
-           popart::logging::warn("session is nullptr when try to release it");
-         //else if(session->getDevice() == nullptr)
-         //  popart::logging::warn("session->getDevice() is nullptr when try to
-   release it"); else if(session->getDevice().getDeviceInfo() == nullptr)
-           popart::logging::warn("session->getDevice().getDeviceInfo() is
-   nullptr when try to release it"); else { popart::logging::warn("Calling
-   session->getDevice().getDeviceInfo()->detach() to detach the device when
-   QManager Status is {}", QManager::instance()->get_status());
-       session->getDevice().getDeviceInfo()->detach();
-       popart::logging::warn(
-           "The computation:{} session:{} detached from device", this,
-           session.get());
-       session.reset();
-       assert(session == nullptr);
-       popart::logging::warn("The computation:{} session has been reset", this);
-     }
-   }*/
   inline void set_thread_run() {
     std::unique_lock<std::mutex> lock(thread_done_mutex_);
     thread_state_ = RUNNING;
