@@ -56,14 +56,16 @@ RUN mv pose_hrnet_w32_256x256.onnx input.in output.in /models/vision/pose_estima
 
 #YOLOv5
 WORKDIR /tmp
+ARG YOLOV5L_URI=https://github.com/ultralytics/yolov5
+ARG YOLOv5_VERSION=v6.1
 RUN apt install -y mesa-utils libgl1-mesa-glx
-RUN git clone https://github.com/ultralytics/yolov5
+RUN git clone ${YOLOV5L_URI}
 WORKDIR yolov5
-RUN git checkout -b tmp c03d590
+RUN git checkout -b tmp 7043872
 RUN pip3 install -r requirements.txt  # base requirements
 RUN pip3 install coremltools>=4.1 onnx>=1.8.1 scikit-learn==0.19.2
-RUN PYTHONPATH=/tmp/yolov5 python3 models/export.py --weights yolov5l.pt \
-    --img 640 --batch 1
+RUN PYTHONPATH=/tmp/yolov5 python3 export.py --include onnx \
+    --weights ${YOLOV5L_URI}/releases/download/${YOLOv5_VERSION}/yolov5l.pt --img 640 --batch 1
 WORKDIR /models/vision/detection/yolo
 RUN mv /tmp/yolov5/yolov5l.onnx .
 
@@ -75,6 +77,7 @@ RUN git clone --depth=1 https://github.com/onnx/models
 WORKDIR /tmp/models
 RUN git-lfs pull -X="" -I="caffenet-3.onnx"
 RUN git-lfs pull -X="" -I="yolov3-10.onnx"
+RUN git-lfs pull -X="" -I="yolov4.onnx"
 RUN git-lfs pull -X="" -I="inception-v1-9.onnx"
 RUN git-lfs pull -X="" -I="resnet18-v1-7.onnx"
 RUN git-lfs pull -X="" -I="resnet50-v2-7.onnx"
@@ -97,7 +100,8 @@ WORKDIR /models/vision/classification/shufflenet
 RUN mv /tmp/models/vision/classification/shufflenet/model/shufflenet-9.onnx .
 
 WORKDIR /models/vision/detection/yolo
-RUN mv /tmp/models/vision/object_detection_segmentation/yolov3/model/yolov3-10.onnx .
+RUN mv /tmp/models/vision/object_detection_segmentation/yolov3/model/yolov3-10.onnx . && \
+    mv /tmp/models/vision/object_detection_segmentation/yolov4/model/yolov4.onnx .
 
 WORKDIR /models/text/comprehension/bert
 RUN mv /tmp/models/text/machine_comprehension/bert-squad/model/bertsquad-10.onnx .
