@@ -1027,8 +1027,12 @@ static void RunOnInstruction(SliceInst* inst) {
   }
   inst->GetResultsTypes()[0] =
       halo::Type{op0.GetType().GetDataType(), ret_shape};
-  HLCHECK(inst->GetResultType().IsValid() &&
-          inst->GetResultType().GetTotalNumOfElements() > 0);
+  // Some exported ONNX model might have empty result (consumers like concat
+  // will ignore it)
+  if (inst->GetResultType().GetTotalNumOfElements() == 0) {
+    LOG(WARNING) << inst->GetName() << " has no elements";
+  }
+  HLCHECK(inst->GetResultType().IsValid());
 }
 
 static void RunOnInstruction(SliceDynamicInst* inst) {
