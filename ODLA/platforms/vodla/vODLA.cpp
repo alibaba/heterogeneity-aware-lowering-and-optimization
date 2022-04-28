@@ -4,12 +4,14 @@
 #include <sys/time.h>
 #include <vodh_common.h>
 
+#include <atomic>
 #include <cassert>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 #define MAX_INPUT_TENSOR 256
@@ -91,6 +93,8 @@ static u32 g_ctxId = 0;
 thread_local odla_computation g_comp;
 static std::vector<std::unique_ptr<_odla_computation>> g_comps;
 odla_device g_dev;
+bool is_new_cc = false;
+std::mutex is_new_cc_mu_;
 
 // read cc/bin files
 u32 readFile(std::string fname, bool isBin, char*& ret) {
@@ -201,7 +205,10 @@ odla_computation model_helper(const char* ccFile, const char* binFile) {
 
   comp->ccFile = std::string(ccFile);
   comp->wtFile = std::string(binFile);
-
+  {
+    std::lock_guard<std::mutex> lock(is_new_cc_mu_);
+    is_new_cc = true;
+  }
 #if USE_FILE_DMA
   // open and read model cc/bin files, img file and ref file
   // read cc source file
@@ -1054,6 +1061,15 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     device->vodh_infer_opt.model.weight_size = comp->wtFileSz;
     device->vodh_infer_opt.model.weight_id = comp->Id;
     device->vodh_infer_opt.model.use_file = 1; // use file path instead of DMA
+    {
+      std::lock_guard<std::mutex> lock(is_new_cc_mu_);
+      if (is_new_cc) {
+        device->vodh_infer_opt.model.is_needupdate = 1;
+        is_new_cc = false;
+      } else {
+        device->vodh_infer_opt.model.is_needupdate = 0;
+      }
+    }
     strcpy(device->vodh_infer_opt.model.weight_file, comp->wtFile.c_str());
 
 #ifdef DEBUG
