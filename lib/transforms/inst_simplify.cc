@@ -1301,62 +1301,53 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(ReshapeInst* reshape_inst) {
 
 std::pair<Def, Def> InstSimplify::RunOnInstruction(ExpandDimsInst* inst) {
   HLCHECK(inst->GetNumOfOperands() == 2);
-  auto input = inst->GetOperand(0);
-  const auto& input_type = input.GetType();
+  const auto& ret_type = inst->GetResultType();
   Def orig_def{inst, 0};
 
-  if (!input_type.IsValid() || !IsA<Constant>(inst->GetOperand(1))) {
+  if (!ret_type.IsValid()) {
     return {orig_def, orig_def};
   }
-  const Constant* shape = DynCast<Constant>(inst->GetOperand(1));
+
+  auto input = inst->GetOperand(0);
+  const auto& input_type = input.GetType();
   auto input_elem = input_type.GetTotalNumOfElements();
-  HLCHECK(shape->GetResultType().GetNumOfDims() == 1);
-  std::vector<int64_t> output_shape;
-  std::vector<int64_t> output_extends;
+  auto ret_elem = ret_type.GetTotalNumOfElements();
 
   IRBuilder builder(inst->GetParent());
   builder.SetInsertAfter(inst);
-
-  int shape_rank = shape->GetResultType().GetTotalNumOfElements();
-  int input_rank = input_type.GetNumOfDims();
-  auto src_extends = GetExtends(input_type.GetDimSizes());
-  for (int i = 0, e = std::max(shape_rank, input_rank); i < e; ++i) {
-    int input_idx = input_rank - 1 - i;
-    int shape_idx = shape_rank - 1 - i;
-    int64_t dim0 =
-        (input_idx < 0) ? 1 : input_type.GetNumOfElementsInDim(input_idx);
-    int64_t dim1 = (shape_idx < 0) ? 1 : shape->GetDataAsInt64(shape_idx);
-    HLCHECK(dim0 == dim1 || dim0 == 1 || dim1 == 1);
-    output_shape.push_back((dim0 == 1) ? dim1 : dim0);
-    bool is_bs = dim0 == 1;
-    output_extends.push_back(is_bs ? 0 : src_extends[input_idx]);
-  }
-  std::reverse(output_shape.begin(), output_shape.end());
-  std::reverse(output_extends.begin(), output_extends.end());
-
-  halo::Type ret_type{input_type.GetDataType(), output_shape};
-  auto ret_elem = ret_type.GetTotalNumOfElements();
 
   ConstantBuilder cb(inst->GetParent()->GetParent());
   if (input_elem == ret_elem) {
     Constant* c = cb.CreateConstant(
         inst->GetName() + "_expand",
         halo::Type{DataType::INT64,
-                   {static_cast<int64_t>(output_shape.size())}},
-        output_shape.data());
+                   {static_cast<int64_t>(ret_type.GetNumOfDims())}},
+        ret_type.GetDimSizes().data());
     auto reshape =
         builder.CreateReshape(inst->GetName(), {inst->GetOperand(0), *c});
-
     return {orig_def, *reshape};
   }
-  if (IsA<Constant>(inst->GetOperand(0))) {
-    const Constant* src = DynCast<Constant>(input);
+
+  if (const Constant* src = DynCast<Constant>(inst->GetOperand(0));
+      src != nullptr) {
+    int result_rank = input_type.GetNumOfDims();
+    int input_rank = input_type.GetNumOfDims();
+    std::vector<int64_t> output_extends;
+    auto src_extends = GetExtends(input_type.GetDimSizes());
+    for (int i = 0, e = std::max(result_rank, input_rank); i < e; ++i) {
+      int input_idx = input_rank - 1 - i;
+      bool is_bs =
+          input_idx < 0 || input_type.GetNumOfElementsInDim(input_idx) == 1;
+      output_extends.push_back(is_bs ? 0 : src_extends[input_idx]);
+    }
+    std::reverse(output_extends.begin(), output_extends.end());
+
     DefaultDataLayout data_layout;
     size_t elem_size = data_layout.Bytes(input_type.GetDataType());
     std::vector<unsigned char> buf(ret_elem * elem_size);
-    const auto& dst_extends = GetExtends(output_shape);
+    const auto& dst_extends = GetExtends(ret_type.GetDimSizes());
     for (int64_t dst_idx = 0; dst_idx < ret_elem; ++dst_idx) {
-      std::vector<int64_t> dst_dims(output_shape.size());
+      std::vector<int64_t> dst_dims(ret_type.GetNumOfDims());
       for (int64_t i = 0, e = dst_dims.size(), t = dst_idx; t >= 0 && i < e;
            ++i) {
         dst_dims[i] = t / dst_extends[i];
