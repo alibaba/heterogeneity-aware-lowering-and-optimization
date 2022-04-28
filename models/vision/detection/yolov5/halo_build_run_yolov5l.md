@@ -1,9 +1,19 @@
-[TOC]
-
+<!-- markdown-link-check-disable -->
+- [1.配置HALO、CUDA环境](#1配置halocuda环境)
+  - [下载HALO](#下载halo)
+  - [安装依赖](#安装依赖)
+- [2.导出yolov5l模型](#2导出yolov5l模型)
+  - [下载源码](#下载源码)
+  - [导出yolov5l.onnx](#导出yolov5lonnx)
+  - [导出旧版yolov5l.onnx](#导出旧版yolov5lonnx)
+  - [注意事项](#注意事项)
+- [3.编译模型](#3编译模型)
+  - [编译yolov5l.onnx](#编译yolov5lonnx)
+  - [运行模型](#运行模型)
 
 ​		本文档主要说明使用HALO将yolov5l.onnx模型编译成.so文件，并基于该.so文件对图片、视频进行inference产出数据，然后对得出的数据进行成像处理。
 
-## 配置HALO、CUDA环境
+## 1.配置HALO、CUDA环境
 ### 下载HALO
 - 本例中使用基于release版本runtime的镜像, 并在该镜像的基础上安装依赖, 构建运行模型的镜像环境
 ```shell
@@ -50,7 +60,7 @@ dpkg -l | grep TensorRT
 
 
 
-## 导出yolov5l模型
+## 2.导出yolov5l模型
 
 ### 下载源码
 ```shell
@@ -90,7 +100,7 @@ PYTHONPATH=`pwd` python3 export.py --include onnx \
 
 
 
-## 编译模型
+## 3.编译模型
 ### 编译yolov5l.onnx
 - 以下执行目录为/host/yolov5为参考, 需要先将下载后的yolov5l.onnx拷贝到指定路径下。
   - model, 包含模型文件; 
