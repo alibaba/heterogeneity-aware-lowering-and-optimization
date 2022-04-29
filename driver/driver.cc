@@ -109,7 +109,7 @@ static llvm::cl::opt<bool> SimplifyForPreprocess(
     llvm::cl::cat(HaloOptCat), llvm::cl::ReallyHidden);
 static llvm::cl::opt<bool> DisableBroadcasting(
     "disable-broadcasting", llvm::cl::desc("disable broadcasting of constants"),
-    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
+    llvm::cl::init(true), llvm::cl::cat(HaloOptCat));
 static llvm::cl::opt<bool> DisableConvBN(
     "disable-convert-bn",
     llvm::cl::desc("disable convert Batch Normalization into mul/add"),
