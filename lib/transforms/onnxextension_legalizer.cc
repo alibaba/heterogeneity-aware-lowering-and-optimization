@@ -46,36 +46,35 @@ static std::vector<Def> ConvertUnsqueeze(const ONNXExtensionInst* ext,
   if (!input_type.IsValid()) {
     return {};
   }
-  std::vector<int> axis;
+  std::set<int> axes;
   if (num_ops == 2) {
     const Constant* axes_c = DynCast<Constant>(ext->GetOperand(1));
     if (axes_c == nullptr) {
       return {};
     }
     auto n = axes_c->GetResultType().GetTotalNumOfElements();
-    axis.resize(n);
     for (int i = 0; i < n; ++i) {
-      axis[i] = axes_c->GetDataAsInt64(i);
+      axes.insert(axes_c->GetDataAsInt64(i));
     }
   } else {
     HLCHECK(ext->GetNumOfAttributes() == 1);
     const Attribute* attr = ext->GetAttributes()[0].get();
     HLCHECK(attr->GetName() == "axes");
-    axis = attr->GetValueAsIntegerList();
+    const auto& axes_attr = attr->GetValueAsIntegerList();
+    axes.insert(axes_attr.begin(), axes_attr.end());
   }
-  std::vector<int64_t> new_dims(input_type.GetDimSizes());
-  if (new_dims.empty()) {
-    // for scalar type, make its shape as [1].
-    HLCHECK(input_type.GetTotalNumOfElements() == 1);
-    new_dims.push_back(1);
-  } else {
-    for (auto& a : axis) {
-      if (a < 0) {
-        a += input_type.GetNumOfDims() + 1;
-      }
-      HLCHECK(static_cast<unsigned>(a) <= input_type.GetNumOfDims());
-      new_dims.insert(new_dims.begin() + a, 1);
-    }
+
+  int output_rank = static_cast<int>(input_type.GetNumOfDims() + axes.size());
+
+  for (auto d : axes) {
+    HLCHECK(d >= -output_rank && d <= output_rank - 1);
+  }
+
+  std::vector<int64_t> new_dims(output_rank);
+  for (int i = 0, j = 0; i < output_rank; ++i) {
+    new_dims[i] = (axes.count(i) != 0 || axes.count(i - output_rank) != 0)
+                      ? 1
+                      : input_type.GetNumOfElementsInDim(j++);
   }
 
   ConstantBuilder cb(ext->GetParent()->GetParent());
