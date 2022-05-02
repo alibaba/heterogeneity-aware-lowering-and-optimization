@@ -885,78 +885,43 @@ odla_status odla_BindToOutputById(const odla_value_id value_id,
   return odla_BindToOutput(val, data_ptr, context);
 }
 
-static odla_status odla_StoreEngine(odla_context context,
-                                    const odla_char* file_name) {
-  if (context == nullptr) {
+odla_status odla_StoreExecutable(odla_resource_location location,
+                                 const odla_executable executable) {
+  if (location.location_type != ODLA_LOCATION_PATH) {
+    return ODLA_FAILURE;
+  }
+  odla_context ctx = executable->context;
+  if (ctx == nullptr) {
     return ODLA_FAILURE;
   }
 
-  std::string engine = file_name;
-  std::ofstream engineFile(engine, std::ios::binary);
-  if (!engineFile) {
-    std::cerr << "Cannot open engine file: " << engine << std::endl;
+  const char* file_name = static_cast<const char*>(location.location);
+  std::ofstream engine_file(file_name, std::ios::binary);
+  if (!engine_file) {
+    std::cerr << "Cannot open engine file: " << file_name << std::endl;
     return ODLA_FAILURE;
   }
 
-  TrtUniquePtr<IHostMemory> serializedEngine{context->engine->serialize()};
+  TrtUniquePtr<IHostMemory> serializedEngine{ctx->engine->serialize()};
 
   if (serializedEngine == nullptr) {
     std::cerr << "Engine serialization failed" << std::endl;
     return ODLA_FAILURE;
   }
 
-  engineFile.write(static_cast<char*>(serializedEngine->data()),
-                   serializedEngine->size());
-
-  if (engineFile.fail()) {
-    return ODLA_FAILURE;
-  }
-
-  return ODLA_SUCCESS;
+  engine_file.write(static_cast<char*>(serializedEngine->data()),
+                    serializedEngine->size());
+  return engine_file.fail() ? ODLA_FAILURE : ODLA_SUCCESS;
 }
 
-odla_status odla_StoreExecutable(const odla_char* file_name,
-                                 const odla_executable executable) {
-  odla_context Ctx = executable->context;
-  return odla_StoreEngine(Ctx, file_name);
-}
-
-static odla_status odla_LoadEngine(odla_context context,
-                                   const odla_char* file_name, int DLACore) {
-  std::ifstream engineFile(file_name, std::ios::binary);
-  if (!engineFile) {
-    std::cerr << "Error opening engine file: " << file_name << std::endl;
-    return ODLA_FAILURE;
-  }
-
-  engineFile.seekg(0, engineFile.end);
-  long int fsize = engineFile.tellg();
-  engineFile.seekg(0, engineFile.beg);
-
-  std::vector<char> engineData(fsize);
-  engineFile.read(engineData.data(), fsize);
-  if (!engineFile) {
-    std::cerr << "Error loading engine file: " << file_name << std::endl;
-    return ODLA_FAILURE;
-  }
-
-  TrtUniquePtr<IRuntime> runtime{createInferRuntime(Logger)};
-  if (DLACore != -1) {
-    runtime->setDLACore(DLACore);
-  }
-
-  context->engine = TrtUniquePtr<nvinfer1::ICudaEngine>(
-      runtime->deserializeCudaEngine(engineData.data(), fsize, nullptr));
-  context->ctx = TrtUniquePtr<nvinfer1::IExecutionContext>(
-      context->engine->createExecutionContext());
-
-  return ODLA_SUCCESS;
-}
-
-odla_status odla_LoadExecutable(const odla_char* file_name, odla_device device,
-                                odla_executable* executable,
+odla_status odla_LoadExecutable(odla_resource_location location,
+                                odla_device device, odla_executable* executable,
                                 odla_context* context,
                                 odla_computation* computation) {
+  if (location.location_type != ODLA_LOCATION_PATH &&
+      location.location_type != ODLA_LOCATION_MEMORY) {
+    return ODLA_FAILURE;
+  }
   int DLACore = (*executable)->DLACore;
 
   if (*computation == nullptr) {
@@ -972,13 +937,46 @@ odla_status odla_LoadExecutable(const odla_char* file_name, odla_device device,
   if (*context == nullptr) {
     odla_CreateContext(context);
   };
+  *executable = nullptr;
 
-  if (odla_LoadEngine(*context, file_name, DLACore) != ODLA_SUCCESS) {
-    return ODLA_FAILURE;
+  const void* engine_data = nullptr;
+  size_t engine_size = 0;
+  if (location.location_type == ODLA_LOCATION_PATH) {
+    const char* file_name = static_cast<const char*>(location.location);
+    std::ifstream engine_file(file_name, std::ios::binary);
+    if (!engine_file) {
+      std::cerr << "Error opening engine file: " << file_name << std::endl;
+      return ODLA_FAILURE;
+    }
+
+    engine_file.seekg(0, std::ifstream::end);
+    engine_size = engine_file.tellg();
+    engine_file.seekg(0, std::ifstream::beg);
+    std::vector<char> data(engine_size);
+    engine_file.read(data.data(), engine_size);
+    if (!engine_file) {
+      std::cerr << "Error loading engine file: " << file_name << std::endl;
+      return ODLA_FAILURE;
+    }
+    engine_data = data.data();
+  } else {
+    engine_data = location.location;
+    engine_size = location.size;
   }
 
   (*executable)->computation = *computation;
   (*executable)->context = *context;
+
+  TrtUniquePtr<IRuntime> runtime{createInferRuntime(Logger)};
+  if (DLACore != -1) {
+    runtime->setDLACore(DLACore);
+  }
+
+  auto engine =
+      runtime->deserializeCudaEngine(engine_data, engine_size, nullptr);
+  (*context)->engine = TrtUniquePtr<nvinfer1::ICudaEngine>(engine);
+  (*context)->ctx = TrtUniquePtr<nvinfer1::IExecutionContext>(
+      engine->createExecutionContext());
 
   return ODLA_SUCCESS;
 }
