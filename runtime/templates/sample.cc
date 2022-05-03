@@ -27,10 +27,10 @@ static int init_model() {
 extern "C" {
 #endif
 void sample_model_fini() {
-  odla_DestroyComputation(comp);
-  comp = nullptr;
   odla_DestroyContext(ctx);
   ctx = nullptr;
+  odla_DestroyComputation(comp);
+  comp = nullptr;
 }
 
 int run_sample_model(const void* const inputs[], void* const outputs[]) {

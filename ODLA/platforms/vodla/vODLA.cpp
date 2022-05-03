@@ -14,6 +14,9 @@
 #include <mutex>
 #include <vector>
 
+#include "ODLA/odla_common.h"
+#include "ODLA/odla_compute.h"
+
 #define MAX_INPUT_TENSOR 256
 #define MAX_OUTPUT_TENSOR 256
 

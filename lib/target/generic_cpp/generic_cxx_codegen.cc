@@ -476,6 +476,7 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
   if (func.IsEntryFunction()) {
     if (opts_.dialect == Dialect::CXX_11) {
       oss << DeclAsExtern(func_decl);
+      oss << DeclAsExtern("int model_fini()");
     }
     oss << "int main(int argc, char** argv) {\n";
     oss << "  std::string test_case_dir = argv[argc - 1];\n";
@@ -536,6 +537,9 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
         << "output_elems, outputs.data()"
         << ", output_refs.data()"
         << ", test_case_dir, device_name, times, thre);\n";
+    if (opts_.exec_mode == ExecMode::Compile) {
+      oss << "  model_fini();\n";
+    }
     oss << "  return 0;\n}\n";
   }
   return oss.str();
