@@ -11,12 +11,13 @@ var searchData=
   ['odla_5fmemcpy_5ftype_8',['odla_memcpy_type',['../odla__memory_8h.html#afca890186b24d7614e3bff0106b887c2',1,'odla_memory.h']]],
   ['odla_5fmemory_5flayout_9',['odla_memory_layout',['../odla__ops__nn_8h.html#a54eaa7020ac01fc2a354d4fef9313a62',1,'odla_ops_nn.h']]],
   ['odla_5fresize_5fcoordinate_5fmode_10',['odla_resize_coordinate_mode',['../odla__ops__process_8h.html#afe771e362734750b05028ed08414761d',1,'odla_ops_process.h']]],
-  ['odla_5frnn_5fdirection_11',['odla_rnn_direction',['../odla__ops__nn_8h.html#a9270ccb090ddf6229c74cd04026120a0',1,'odla_ops_nn.h']]],
-  ['odla_5frnn_5fgate_5forder_12',['odla_rnn_gate_order',['../odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338d',1,'odla_ops_nn.h']]],
-  ['odla_5frnn_5foutputs_13',['odla_rnn_outputs',['../odla__ops__nn_8h.html#a848aed5682538d47c5b4a04c3bdc5e1b',1,'odla_ops_nn.h']]],
-  ['odla_5frnn_5fweight_5fformat_14',['odla_rnn_weight_format',['../odla__ops__nn_8h.html#af4b6795b2666bb0feff24897881c2ac5',1,'odla_ops_nn.h']]],
-  ['odla_5fstatus_15',['odla_status',['../odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29',1,'odla_common.h']]],
-  ['odla_5ftf_5fidf_5fmode_16',['odla_tf_idf_mode',['../odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980eb',1,'odla_ops_nn.h']]],
-  ['odla_5fvendor_5finfo_17',['odla_vendor_info',['../odla__device_8h.html#a5ee336a2ef2c35a0dcc57e64dbde0271',1,'odla_device.h']]],
-  ['odla_5fvendor_5fname_18',['odla_vendor_name',['../odla__device_8h.html#acc70b5ac70bcbc281da55d04741cafe1',1,'odla_device.h']]]
+  ['odla_5fresource_5flocation_5ftype_11',['odla_resource_location_type',['../odla__compute_8h.html#a621c9b564a8583ddf497985a7c808b93',1,'odla_compute.h']]],
+  ['odla_5frnn_5fdirection_12',['odla_rnn_direction',['../odla__ops__nn_8h.html#a9270ccb090ddf6229c74cd04026120a0',1,'odla_ops_nn.h']]],
+  ['odla_5frnn_5fgate_5forder_13',['odla_rnn_gate_order',['../odla__ops__nn_8h.html#a71dec80a52d199c1951f804e5a32338d',1,'odla_ops_nn.h']]],
+  ['odla_5frnn_5foutputs_14',['odla_rnn_outputs',['../odla__ops__nn_8h.html#a848aed5682538d47c5b4a04c3bdc5e1b',1,'odla_ops_nn.h']]],
+  ['odla_5frnn_5fweight_5fformat_15',['odla_rnn_weight_format',['../odla__ops__nn_8h.html#af4b6795b2666bb0feff24897881c2ac5',1,'odla_ops_nn.h']]],
+  ['odla_5fstatus_16',['odla_status',['../odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29',1,'odla_common.h']]],
+  ['odla_5ftf_5fidf_5fmode_17',['odla_tf_idf_mode',['../odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980eb',1,'odla_ops_nn.h']]],
+  ['odla_5fvendor_5finfo_18',['odla_vendor_info',['../odla__device_8h.html#a5ee336a2ef2c35a0dcc57e64dbde0271',1,'odla_device.h']]],
+  ['odla_5fvendor_5fname_19',['odla_vendor_name',['../odla__device_8h.html#acc70b5ac70bcbc281da55d04741cafe1',1,'odla_device.h']]]
 ];
