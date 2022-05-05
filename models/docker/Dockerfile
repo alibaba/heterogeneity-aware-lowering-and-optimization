@@ -35,6 +35,11 @@ RUN convert 0test.png -resize 256x256 test.jpg && rm 0test.png
 
 # HRNet
 FROM pytorch/pytorch:1.8.1-cuda11.1-cudnn8-devel AS HRNET
+SHELL [ "/bin/bash", "-c"]
+RUN mv /etc/apt/sources.list.d/{cuda,nvidia-ml}.list /tmp/
+RUN apt-get update && apt-get install -y curl && \
+    curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub | apt-key add - && \
+    mv /tmp/{cuda.list,nvidia-ml.list} /etc/apt/sources.list.d/
 RUN apt-get update && apt-get install -y git wget libgeos-dev gcc \
     libglib2.0-dev libsm6 libxext6 libxrender-dev
 RUN pip3 install EasyDict==1.7 opencv-python==3.4.8.29 shapely==1.6.4 Cython \
@@ -140,6 +145,9 @@ RUN curl -o caffenet.caffemodel http://dl.caffe.berkeleyvision.org/bvlc_referenc
 RUN mkdir -p /tmp/models/vision/detection/yolo
 WORKDIR /tmp/models/vision/detection/yolo
 RUN curl -o test.jpg http://images.cocodataset.org/test2017/000000133861.jpg
+RUN curl -O https://raw.githubusercontent.com/AlexeyAB/darknet/master/data/person.jpg
+RUN curl -O https://raw.githubusercontent.com/ultralytics/yolov5/master/data/images/zidane.jpg
+
 
 # Collect all Models & Data
 FROM alpine

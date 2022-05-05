@@ -13,7 +13,8 @@ import numpy as np
 from PIL import Image
 
 base_path = os.path.dirname(os.path.abspath(__file__))
-output_path = os.getenv("YOLOV_OUTPUT_PATH")
+output_path = os.getenv("YOLO5l_OUTPUT_PATH")
+model_path = os.getenv("YOLO_MODEL_PATH")
 
 
 so_exe = ctypes.CDLL(os.path.join(output_path, "yolov5l.so"))
@@ -44,7 +45,12 @@ def preprocess_image(img, target_size=(640, 640)):
     img = cv2.resize(img, new_unpad, interpolation=cv2.INTER_LINEAR)
 
     # add border
-    img = cv2.copyMakeBorder(img, int(round(delta_height - 0.1)), int(round(delta_height + 0.1)), int(round(delta_width - 0.1)), int(round(delta_width + 0.1)), cv2.BORDER_CONSTANT, value=(114, 114, 114))
+    img = cv2.copyMakeBorder(img, 
+                        int(round(delta_height - 0.1)), 
+                        int(round(delta_height + 0.1)), 
+                        int(round(delta_width - 0.1)), 
+                        int(round(delta_width + 0.1)), 
+                        cv2.BORDER_CONSTANT, value=(114, 114, 114))
     
     # img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
     img = img.transpose((2, 0, 1))  # HWC to CHW
@@ -258,9 +264,7 @@ def draw_bbox(image, output, rate, coco_class=None, is_show_obj=False):
     random.seed(None)
 
     msg = "HALO for Yolov5 "
-    if is_show_obj:
-        print(f"[detection]")
-    else:
+    if not is_show_obj:
         msg += f", FPS: {rate}"
     cv2.putText(image, msg, (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1, lineType=cv2.LINE_AA)
 
@@ -296,7 +300,7 @@ def load_class(coco_file_path):
             names[ID] = name.strip('\n')
     return names
 
-coco_class = load_class(os.path.join(base_path, "data/coco.names"))
+coco_class = load_class(os.path.join(os.path.dirname(base_path), "coco_classes.txt"))
 
 
 def process_detection(original_image, is_show_obj=False):
@@ -317,11 +321,16 @@ def process_detection(original_image, is_show_obj=False):
 
 
 if __name__ == "__main__":
-    input_res = os.path.join(base_path, "data/bus.jpg")
-    # input_res = os.path.join(base_path, "data/driving.m4v")
-    print(f"[procesing] \n  {input_res}")
+    input_res = os.path.join(os.path.dirname(model_path), "zidane.jpg")
+    if not os.path.exists(input_res):
+        with request.urlopen("https://github.com/ultralytics/yolov5/raw/master/data/images/zidane.jpg") as req:
+                with open(input_res, 'wb') as f:
+                    f.write(req.read())
+
     input_res_path = Path(input_res)
-    output_res = os.path.join(output_path, Path(input_res_path).name.replace(".", "-halo."))
+    output_res = os.path.join(output_path, input_res_path.name.replace(".", "-halo."))
+    print(f"[procesing] {input_res_path.name}")
+
     if not input_res_path.suffix.split('.')[-1] in ["mp4", "m4v"]:
         original_image = cv2.imread(input_res)
         original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)

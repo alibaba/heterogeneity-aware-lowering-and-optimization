@@ -4,7 +4,7 @@ import sys
 import os.path
 import time
 from pathlib import Path
-from urllib import request, parse
+from urllib import request
 from functools import reduce
 import ctypes 
 import cv2
@@ -15,7 +15,9 @@ from scipy import special
 from PIL import Image
 
 base_path = os.path.dirname(os.path.abspath(__file__))
-output_path = os.getenv("YOLOV_OUTPUT_PATH")
+output_path = os.getenv("YOLOV4_OUTPUT_PATH")
+model_path = os.getenv("YOLO_MODEL_PATH")
+
 
 INPUT_SIZE=416
 STRIDES = [8, 16, 32]
@@ -210,7 +212,8 @@ def read_class_names(class_file_name):
             names[ID] = name.strip('\n')
     return names
 
-COCONAMES = read_class_names(os.path.join(base_path, "data/coco.names"))
+# COCONAMES = read_class_names(os.path.join(os.path.dirname(base_path), "coco.names"))
+COCONAMES = read_class_names(os.path.join(os.path.dirname(base_path), "coco_classes.txt"))
 
 def draw_bbox(image, bboxes, is_show_obj, rate, classes=COCONAMES):
     """
@@ -226,9 +229,7 @@ def draw_bbox(image, bboxes, is_show_obj, rate, classes=COCONAMES):
     random.shuffle(colors)
     random.seed(None)
     msg = "HALO for Yolov4 "
-    if is_show_obj:
-        print(f"[detection]")
-    else:
+    if not is_show_obj:
         msg += f", FPS: {rate}"
     cv2.putText(image, msg, (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1, lineType=cv2.LINE_AA)
     for i, bbox in enumerate(bboxes):
@@ -251,7 +252,7 @@ def draw_bbox(image, bboxes, is_show_obj, rate, classes=COCONAMES):
 
     return image
 
-ANCHORS = get_anchors(os.path.join(base_path, "data/yolov4_anchors.txt"))
+ANCHORS = get_anchors(os.path.join(base_path, "yolov4_anchors.txt"))
 
 def process_detection(original_image, is_show_obj=False):
     original_image_size = original_image.shape[:2]
@@ -273,16 +274,17 @@ def process_detection(original_image, is_show_obj=False):
 
 
 if __name__ == "__main__":
-    # input_res = os.path.join(base_path, "data/horses.jpg")
-    input_res = os.path.join(base_path, "data/driving.m4v")
-    print(f"[procesing] \n  {input_res}")
-    input_res_path = Path(input_res)
-    output_res = os.path.join(output_path, Path(input_res_path).name.replace(".", "-halo."))
-    if not input_res_path.suffix.split('.')[-1] in ["mp4", "m4v"]:
-        if not os.path.exists(input_res):
-            with request.urlopen("https://github.com/AlexeyAB/darknet/raw/master/data/person.jpg") as req:
+    input_res = os.path.join(os.path.dirname(model_path), "person.jpg")
+    if not os.path.exists(input_res):
+        with request.urlopen("https://github.com/AlexeyAB/darknet/raw/master/data/person.jpg") as req:
                 with open(input_res, 'wb') as f:
                     f.write(req.read())
+
+    input_res_path = Path(input_res)
+    output_res = os.path.join(output_path, input_res_path.name.replace(".", "-halo."))
+    print(f"[procesing] {input_res_path.name}")
+
+    if not input_res_path.suffix.split('.')[-1] in ["mp4", "m4v"]:
         original_image = cv2.imread(input_res)
         original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
         image = process_detection(original_image, is_show_obj=True)
