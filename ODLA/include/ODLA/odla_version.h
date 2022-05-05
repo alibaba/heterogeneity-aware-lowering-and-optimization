@@ -33,6 +33,12 @@ extern "C" {
 //! \brief ODLA version number.
 #define ODLA_VERSION_NUMBER ((ODLA_MAJOR)*100 + (ODLA_MINOR)*10 + (OLDA_PATCH))
 
+//! \brief Get version info of runtime library.
+/*!
+  \return NULL-terminated string of version info.
+*/
+const char* odla_GetVersionString();
+
 #ifdef __cplusplus
 } // C extern
 #endif

@@ -37,7 +37,7 @@ add_subdirectory(plugins)
 add_odla_library(odla_tensorrt SHARED odla_tensorrt.cc)
 add_dependencies(odla_tensorrt ODLA_TRTPLUGIN)
 
-target_include_directories(odla_tensorrt PRIVATE ${CUDA_ROOT}/include)
+target_include_directories(odla_tensorrt PRIVATE ${CUDA_ROOT}/include ${CMAKE_BINARY_DIR}/include/halo)
 target_compile_options(odla_tensorrt PRIVATE -Wno-deprecated-declarations)
 target_link_libraries(odla_tensorrt ODLA ${nvinfer} ${CUDART_LIB} ${nvinfer_plugin})
 set_target_properties(odla_tensorrt PROPERTIES LINK_FLAGS

@@ -36,7 +36,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "ODLA/odla_common.h"
+#include "../include/odla_impl_common.h"
 #include "common.h"
 #include "plugins/initPlugin.h"
 
@@ -45,6 +45,22 @@ using namespace nvinfer1;
 #if !defined(ODLA_VERSION_NUMBER) || (ODLA_VERSION_NUMBER < 50)
 #error This library requires minimum ODLA version 0.5
 #endif
+
+#define ODLA_TRT_MAJOR HALO_VERSION_MAJOR
+#define ODLA_TRT_MINOR HALO_VERSION_MINOR
+#define ODLA_TRT_PATCH HALO_VERSION_PATCH
+#define ODLA_TRT_BUILD 0
+
+const char* odla_GetVersionString() {
+#define EXTRA_INFO                                                          \
+  "Built with TensorRT: " VERSION_STR(NV_TENSORRT_MAJOR, NV_TENSORRT_MINOR, \
+                                      NV_TENSORRT_PATCH, NV_TENSORRT_BUILD)
+  const char* version =
+      ODLA_VERSION_STR("ODLA for TensorRT", ODLA_TRT_MAJOR, ODLA_TRT_MINOR,
+                       ODLA_TRT_PATCH, ODLA_TRT_BUILD, EXTRA_INFO);
+#undef EXTRA_INFO
+  return version;
+}
 
 // Explicitly load cuda runtime before all other ctors, so cuda rt will be
 // released after calling dtors of all other global objs. This avoids the error
