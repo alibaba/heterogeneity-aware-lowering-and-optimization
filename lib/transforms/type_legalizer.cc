@@ -1027,8 +1027,12 @@ static void RunOnInstruction(SliceInst* inst) {
   }
   inst->GetResultsTypes()[0] =
       halo::Type{op0.GetType().GetDataType(), ret_shape};
-  HLCHECK(inst->GetResultType().IsValid() &&
-          inst->GetResultType().GetTotalNumOfElements() > 0);
+  // Some exported ONNX model might have empty result (consumers like concat
+  // will ignore it)
+  if (inst->GetResultType().GetTotalNumOfElements() == 0) {
+    LOG(WARNING) << inst->GetName() << " has no elements";
+  }
+  HLCHECK(inst->GetResultType().IsValid());
 }
 
 static void RunOnInstruction(SliceDynamicInst* inst) {
@@ -1347,19 +1351,29 @@ static void RunOnInstruction(EinsumInst* inst) {
 }
 
 static void RunOnInstruction(ExpandDimsInst* inst) {
-  const auto& idx_op = inst->GetOperand(1);
-  const auto& idx_type = idx_op.GetType();
+  const auto& shape = DynCast<Constant>(inst->GetOperand(1));
   const auto& input_type = inst->GetOperand(0).GetType();
-  if (!IsA<Constant>(idx_op)) {
+  if (shape == nullptr) {
     return;
   }
-  std::vector<int64_t> shape;
-  shape.reserve(idx_type.GetTotalNumOfElements());
-  Constant* c = DynCast<Constant>(idx_op);
-  for (int i = 0, e = idx_type.GetTotalNumOfElements(); i < e; ++i) {
-    shape.push_back(c->GetDataAsInt64(i));
+  std::vector<int64_t> output_shape;
+
+  int shape_rank = shape->GetResultType().GetTotalNumOfElements();
+  int input_rank = input_type.GetNumOfDims();
+  for (int i = 0, e = std::max(shape_rank, input_rank); i < e; ++i) {
+    int input_idx = input_rank - 1 - i;
+    int shape_idx = shape_rank - 1 - i;
+    int64_t dim0 =
+        (input_idx < 0) ? 1 : input_type.GetNumOfElementsInDim(input_idx);
+    int64_t dim1 = (shape_idx < 0) ? 1 : shape->GetDataAsInt64(shape_idx);
+    HLCHECK(dim0 == dim1 || dim0 == 1 || dim1 == 1);
+    output_shape.push_back((dim0 == 1) ? dim1 : dim0);
   }
-  inst->GetResultsTypes()[0] = Type{input_type.GetDataType(), shape};
+  std::reverse(output_shape.begin(), output_shape.end());
+
+  halo::Type ret_type{input_type.GetDataType(), output_shape};
+
+  inst->GetResultsTypes()[0] = Type{input_type.GetDataType(), output_shape};
 }
 
 static void RunOnInstruction(NonMaxSuppressionInst* inst) {

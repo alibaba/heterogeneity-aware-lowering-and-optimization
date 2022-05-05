@@ -2277,6 +2277,8 @@ odla_value odla_Select(odla_value condition, odla_value a, odla_value b,
     switch (ty) {
       case ODLA_FLOAT32:
         return ternary<float>(dst, cond_val, t_val, f_val, n);
+      case ODLA_INT32:
+        return ternary<int32_t>(dst, cond_val, t_val, f_val, n);
       case ODLA_INT64:
         return ternary<int64_t>(dst, cond_val, t_val, f_val, n);
       default:

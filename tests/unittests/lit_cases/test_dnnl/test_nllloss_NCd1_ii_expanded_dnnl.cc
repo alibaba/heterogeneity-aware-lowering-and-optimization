@@ -20,7 +20,7 @@
 // RUN: %halo_compiler -target cxx -o %data_path/test_nllloss_NCd1_ii_expanded/test_data_set_0/input_0.cc -x onnx -emit-data-as-c %data_path/test_nllloss_NCd1_ii_expanded/test_data_set_0/input_0.pb
 // RUN: %halo_compiler -target cxx -o %data_path/test_nllloss_NCd1_ii_expanded/test_data_set_0/output_0.cc -x onnx -emit-data-as-c %data_path/test_nllloss_NCd1_ii_expanded/test_data_set_0/output_0.pb
 // RUN: %halo_compiler -target cxx -o %data_path/test_nllloss_NCd1_ii_expanded/test_data_set_0/input_1.cc -x onnx -emit-data-as-c %data_path/test_nllloss_NCd1_ii_expanded/test_data_set_0/input_1.pb
-// RUN: %halo_compiler -target cxx -batch-size 1 %halo_compile_flags %data_path/test_nllloss_NCd1_ii_expanded/model.onnx -o %t.cc
+// RUN: %halo_compiler -target cxx -batch-size 1 %halo_compile_flags %data_path/test_nllloss_NCd1_ii_expanded/model.onnx -o %t.cc -disable-broadcasting=false
 // RUN: %cxx -c -fPIC -o %t.o %t.cc -I%odla_path/include
 // RUN: %cxx -g %s %t.o %t.bin -I%T -I%odla_path/include -I%unittests_path -I%data_path/test_nllloss_NCd1_ii_expanded/test_data_set_0 %odla_link %device_link -lodla_dnnl -o %t_dnnl.exe -Wno-deprecated-declarations
 // RUN: %t_dnnl.exe 0.0001 0 dnnl %data_path/test_nllloss_NCd1_ii_expanded | FileCheck %s
