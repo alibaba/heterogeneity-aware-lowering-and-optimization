@@ -128,8 +128,8 @@ struct vodh_request_cap {
 };
 
 struct vodh_model {
-  u8 use_file; /* 0 use ram(default), 1 use file*/
-  u8 res1;
+  u8 use_file;      /* 0 use ram(default), 1 use file*/
+  u8 is_needupdate; /* 0 not need, 1 need */
   u16 res2;
   u32 res3;
   u64 model_id;
