@@ -69,7 +69,7 @@ git clone https://github.com/ultralytics/yolov5
 
 ### 导出yolov5l.onnx
 - 即使切换到这个版本，下载的也是最新版本的yolov5l模型，需要tag才可以下载指定版本。
-- 该demo中使用的model为最新版本, 即**v6.1**;如果下载的不是该版本, 请参照下方的导出旧版本方式下载。
+- 该demo中使用的model为最新版本，即**v6.1**，如果下载的不是该版本，请参照下方的导出旧版本方式下载。
 ```shell
 cd yolov5
 git checkout -b tmp 7043872
@@ -92,8 +92,8 @@ PYTHONPATH=`pwd` python3 export.py --include onnx \
 ```
 
 ### 注意事项
-- 在导出yolov5l.onnx之前需要配置相应的[依赖环境](https://github.com/ultralytics/yolov5/issues/251)
-- 版本run inference后结果数据的shape不一样
+- 在导出yolov5l.onnx之前需要配置相应的[依赖环境](https://github.com/ultralytics/yolov5/issues/251)。
+- 版本run inference后结果数据的shape不同，以下脚本针对v6.1版本模型进行处理。
     - v6.1, (1, 25200, 85)
     - v5.0, (1, 3, 80, 80, 85)
 
@@ -102,11 +102,10 @@ PYTHONPATH=`pwd` python3 export.py --include onnx \
 
 ## 3.编译模型
 ### 编译yolov5l.onnx
-- 以下执行目录为/host/yolov5为参考, 需要先将下载后的yolov5l.onnx拷贝到指定路径下。
-  - model, 包含模型文件; 
-  - data, 输入文件, 包含图片、coco.names类名文件; 
-  - out, 输出文件, 包含yolov5l.bin、yolov5l.cc、yolov5l.h、yolov5l.o、yolov5l.so和效果图。
+以下执行目录为/host/yolov5为参考，需要先将下载后的yolov5l.onnx模型拷贝到指定路径下。
+
 - 编译
+
 ```shell
 /opt/halo/bin/halo /host/yolov5/model/yolov5l.onnx -target cxx -entry-func-name=model -o /host/yolov5/out/yolov5l.cc
 
@@ -118,8 +117,16 @@ g++ /host/yolov5/out/yolov5l.o /host/yolov5/out/yolov5l.bin -shared -lodla_tenso
 ```
 
 ### 运行模型
-- 在python脚本加载yolov5l.so文件, 对输入的数据run inference。
+- 在python脚本中加载yolov5l.so文件, 对输入的数据run inference。
 - 配置环境依赖完之后, 运行脚本, 稍等些许时间, 即可在out文件中查看输出的图像或者视频文件。生成的图像可与使用onnx处理的比较。
+
 ```shell
 bash run_yolov5.sh
 ```
+
+### 注意事项
+
+- 模型文件，脚本中引用$MODELS_ROOT/vision/detection/yolo/yolov5l.onnx。
+
+- 输入文件，包含图片（$MODELS_ROOT/vision/detection/yolo/）、coco.names类名文件（../coco_classes.txt）。
+- 输出文件，包含yolov5l.bin、yolov5l.cc、yolov5l.h、yolov5l.o、yolov5l.so、数据文件、效果图等。

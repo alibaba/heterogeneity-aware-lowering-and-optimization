@@ -4,6 +4,7 @@ import sys
 import os.path
 import time
 from pathlib import Path
+from urllib import request
 from functools import reduce
 import ctypes 
 import cv2
