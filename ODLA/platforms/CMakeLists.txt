@@ -86,3 +86,8 @@ option(ODLA_BUILD_TF_Wrapper "Build ODLA Tensorflow Wrapper" OFF)
 if (ODLA_BUILD_TF_Wrapper)
   add_subdirectory(tensorflow)
 endif()
+
+option(ODLA_BUILD_TORCH_Wrapper "Build ODLA TORCHSCRIPT Wrapper" OFF)
+if (ODLA_BUILD_TORCH_Wrapper)
+  add_subdirectory(torch)
+endif()
