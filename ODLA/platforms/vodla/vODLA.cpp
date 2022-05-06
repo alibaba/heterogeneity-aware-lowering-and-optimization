@@ -1164,4 +1164,41 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
   return ret;
 }
 
+odla_status ODLA_API_CALL odla_LoadExecutable(odla_resource_location location,
+                                              odla_device device,
+                                              odla_executable* executable) {
+  // init vODLA device failed
+  if (location.location_type != ODLA_LOCATION_PATH) {
+    std::cout << "[vODLA] ERROR: unsupported location type.\n";
+    return ODLA_FAILURE;
+  }
+  const char* file_name = static_cast<const char*>(location.location);
+  if (file_name == NULL) {
+    std::cout << "[vODLA] ERROR: Cache file name is NULL.\n";
+    return ODLA_FAILURE;
+  }
+  if (device == NULL) {
+    std::cout << "[vODLA] ERROR: odla device is NULL.\n";
+    return ODLA_FAILURE;
+  }
+  if (device->vodh_dev_list == NULL) {
+    std::cout
+        << "[vODLA] ERROR: allocation of device failed, skip loading cache.\n";
+    return ODLA_FAILURE;
+  }
+
+  struct vodh_model_options moptions;
+  struct vodh_model_op_result mresult;
+  moptions.opcode = TYPE_LOAD;
+  strcpy(moptions.modelname, file_name);
+  vodh_ret ret = vodh_model(device->vodh_hd, &(device->vodh_dev_list[0]),
+                            &moptions, &mresult);
+  if (ret) {
+    std::cout << "[vODLA] ERROR: load model cache failed, ret=" << ret << "\n";
+    return ODLA_FAILURE;
+  }
+
+  return ODLA_SUCCESS;
+}
+
 } // extern "C"
