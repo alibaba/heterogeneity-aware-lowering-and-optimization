@@ -29,7 +29,7 @@ struct _odla_device {
 };
 
 struct _odla_value {
-  _odla_value(uint32_t v):id_(v) {}
+  _odla_value(uint32_t v) : id_(v) {}
   uint32_t id_;
 };
 
@@ -54,45 +54,44 @@ _odla_context::_odla_context() {
 }
 
 size_t static getElementCount(const odla_value_shape& dims) {
-    return dims.size == 0 ? 1
+  return dims.size == 0 ? 1
                         : std::accumulate(dims.dims, dims.dims + dims.size, 1,
                                           std::multiplies<size_t>());
 }
 
 c10::IntArrayRef static toTensorDim(odla_value_shape& dims) {
-  return dims.size == 0 ? c10::IntArrayRef(1) : 
-                      c10::IntArrayRef(dims.dims, dims.size);
+  return dims.size == 0 ? c10::IntArrayRef(1)
+                        : c10::IntArrayRef(dims.dims, dims.size);
 }
 
 c10::ScalarType static toTensorDataType(odla_element_type dt) {
-    static const std::unordered_map<odla_element_type, c10::ScalarType> dt_map = {
-        {ODLA_FLOAT32, c10::ScalarType::Float},
-        {ODLA_INT32, c10::ScalarType::Int},
-        {ODLA_BOOL, c10::ScalarType::Bool}
-    };
-    auto it = dt_map.find(dt);
-    return it == dt_map.end() ? c10::ScalarType::Float : it->second;
+  static const std::unordered_map<odla_element_type, c10::ScalarType> dt_map = {
+      {ODLA_FLOAT32, c10::ScalarType::Float},
+      {ODLA_INT32, c10::ScalarType::Int},
+      {ODLA_BOOL, c10::ScalarType::Bool}};
+  auto it = dt_map.find(dt);
+  return it == dt_map.end() ? c10::ScalarType::Float : it->second;
 }
 
 odla_element_type static toODLADataType(const c10::ScalarType& st) {
-    static const std::unordered_map<c10::ScalarType, odla_element_type> dt_map = {
-        {c10::ScalarType::Float, ODLA_FLOAT32},
-        {c10::ScalarType::Int, ODLA_INT32},
-        {c10::ScalarType::Bool, ODLA_BOOL}
-    };
-    auto it = dt_map.find(st);
-    return it == dt_map.end() ? ODLA_FLOAT32 : it->second;
+  static const std::unordered_map<c10::ScalarType, odla_element_type> dt_map = {
+      {c10::ScalarType::Float, ODLA_FLOAT32},
+      {c10::ScalarType::Int, ODLA_INT32},
+      {c10::ScalarType::Bool, ODLA_BOOL}};
+  auto it = dt_map.find(st);
+  return it == dt_map.end() ? ODLA_FLOAT32 : it->second;
 }
 
-odla_value_type static toODLAValueType(const c10::ScalarType& dt, at::IntArrayRef dims) {
-    odla_value_type ty;
-    ty.element_type = toODLADataType(dt);
-    ty.shape.size = dims.size();
-    int i = 0;
-    for (auto d : dims) {
-        ty.shape.dims[i++] = d;
-    }
-    return ty;
+odla_value_type static toODLAValueType(const c10::ScalarType& dt,
+                                       at::IntArrayRef dims) {
+  odla_value_type ty;
+  ty.element_type = toODLADataType(dt);
+  ty.shape.size = dims.size();
+  int i = 0;
+  for (auto d : dims) {
+    ty.shape.dims[i++] = d;
+  }
+  return ty;
 }
 
 static std::unordered_map<odla_context, std::unique_ptr<_odla_context>> g_ctxs;
@@ -103,13 +102,12 @@ static _odla_device g_device{c10::kCUDA};
 
 odla_status odla_AllocateDevice(const odla_vendor vendor,
                                 const odla_device_name device_name,
-                                odla_device* device,
-                                const char* config) {
+                                odla_device* device, const char* config) {
   *device = &g_device;
   return ODLA_SUCCESS;
 }
 
-odla_status odla_LoadExecutable(odla_resource_location location, 
+odla_status odla_LoadExecutable(odla_resource_location location,
                                 odla_device device,
                                 odla_executable* computation) {
   *computation = nullptr;
@@ -120,21 +118,22 @@ odla_status odla_LoadExecutable(odla_resource_location location,
   auto comp = std::make_unique<_odla_executable>();
   if (location.location_type == ODLA_LOCATION_MEMORY) {
     std::istringstream s;
-    s.rdbuf()->pubsetbuf(const_cast<char*>(
-                         reinterpret_cast<const char*>(location.location)),
-                         location.size);
+    s.rdbuf()->pubsetbuf(
+        const_cast<char*>(reinterpret_cast<const char*>(location.location)),
+        location.size);
     comp->module_ = torch::jit::load(s, c10::Device(g_device.device_t_));
   } else {
-    comp->module_ = torch::jit::load(reinterpret_cast<const char*>(
-                                     location.location),
-                                     c10::Device(g_device.device_t_));
+    comp->module_ =
+        torch::jit::load(reinterpret_cast<const char*>(location.location),
+                         c10::Device(g_device.device_t_));
   }
   auto schema = comp->module_.get_method("forward").function().getSchema();
   assert(!schema.is_vararg());
   assert(!schema.is_varret());
   auto num_inputs = comp->module_.get_method("forward").function().num_inputs();
   comp->num_inputs_ = num_inputs - 1;
-  for (uint32_t idx = 0; idx < std::max(comp->num_inputs_, MAX_OUTPUT_TENSORS); ++idx) {
+  for (uint32_t idx = 0; idx < std::max(comp->num_inputs_, MAX_OUTPUT_TENSORS);
+       ++idx) {
     auto v = std::make_unique<_odla_value>(idx);
     comp->odla_inputs_outputs_.push_back(v.get());
   }
@@ -143,9 +142,8 @@ odla_status odla_LoadExecutable(odla_resource_location location,
   return ODLA_SUCCESS;
 }
 
-odla_status odla_GetArgFromExecutableByIdx(odla_executable comp, 
-                                            odla_uint32 idx, 
-                                            odla_value* value) {
+odla_status odla_GetArgFromExecutableByIdx(odla_executable comp,
+                                           odla_uint32 idx, odla_value* value) {
   if (idx > comp->num_inputs_) {
     *value = nullptr;
     return ODLA_FAILURE;
@@ -155,8 +153,8 @@ odla_status odla_GetArgFromExecutableByIdx(odla_executable comp,
 }
 
 odla_status odla_GetOutputFromExecutableByIdx(const odla_executable comp,
-                                   const odla_uint32 output_idx,
-                                   odla_value* output_value) {
+                                              const odla_uint32 output_idx,
+                                              odla_value* output_value) {
   if (output_idx > comp->odla_inputs_outputs_.size()) {
     *output_value = nullptr;
     return ODLA_FAILURE;
@@ -173,13 +171,15 @@ odla_status odla_CreateContext(odla_context* context) {
   return ODLA_SUCCESS;
 }
 
-odla_status odla_SetRuntimeValueType(odla_context context, odla_value v, odla_value_type ty) {
+odla_status odla_SetRuntimeValueType(odla_context context, odla_value v,
+                                     odla_value_type ty) {
   assert(v->id_ < MAX_INPUT_TENSORS);
   context->input_types_[v->id_] = std::move(ty);
   return ODLA_SUCCESS;
 }
 
-odla_status odla_GetRuntimeValueType(odla_context context, odla_value value, odla_value_type* ty) {
+odla_status odla_GetRuntimeValueType(odla_context context, odla_value value,
+                                     odla_value_type* ty) {
   assert(value->id_ <= context->num_output_tensors_);
   auto t = context->output_tensors_[value->id_];
   *ty = toODLAValueType(t.scalar_type(), t.sizes());
@@ -191,11 +191,12 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
   assert(value->id_ < MAX_INPUT_TENSORS);
   auto ty = context->input_types_[value->id_];
   auto options = c10::TensorOptions()
-      .dtype(toTensorDataType(ty.element_type))
-      .device(c10::kCPU);
-  auto t = at::from_blob(const_cast<void*>(data_ptr), toTensorDim(ty.shape), options);
+                     .dtype(toTensorDataType(ty.element_type))
+                     .device(c10::kCPU);
+  auto t = at::from_blob(const_cast<void*>(data_ptr), toTensorDim(ty.shape),
+                         options);
   if (g_device.device_t_ == c10::kCUDA) {
-      t = t.to(c10::device(c10::kCUDA));
+    t = t.to(c10::device(c10::kCUDA));
   }
   context->inputs_[value->id_] = c10::IValue(t);
   return ODLA_SUCCESS;
@@ -218,8 +219,8 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
   return ODLA_SUCCESS;
 }
 
-odla_status odla_GetRuntimeNumOfOutputs(odla_context context, 
-                                        odla_uint32 *num_output_ptr) {
+odla_status odla_GetRuntimeNumOfOutputs(odla_context context,
+                                        odla_uint32* num_output_ptr) {
   *num_output_ptr = (odla_uint32)context->num_output_tensors_;
   return ODLA_SUCCESS;
 }
@@ -235,7 +236,7 @@ odla_status odla_LaunchExecutable(const odla_executable computation,
   } else {
     assert(context->output_.isTuple());
     for (const auto& item : context->output_.toTuple()->elements()) {
-      assert (item.isTensor());
+      assert(item.isTensor());
       context->output_tensors_.push_back(item.toTensor());
     }
   }
