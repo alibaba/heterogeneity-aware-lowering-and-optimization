@@ -529,6 +529,29 @@ extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_BindToOutputById(
 extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_BindValueToOutputById(
     const odla_value_id value_id, odla_value data, odla_context context);
 
+extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_SetRuntimeValueType(
+    odla_context context, odla_value value, odla_value_type value_type);
+
+//! \brief Get the context runtime value type to an odla_value
+/*!
+  \param context the context object
+  \param value the property odla value
+  \param value_type_ptr the odla_value_type object
+
+  \return odla_status
+*/
+extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_GetRuntimeValueType(
+    odla_context context, odla_value value, odla_value_type* value_type_ptr);
+
+//! \brief Get the context runtime number of outputs
+/*!
+  \param context the context object
+  \param num_output_ptr the pointer to hold the number of outputs
+
+  \return odla_status
+*/
+extern ODLA_API_EXPORT odla_status ODLA_API_CALL
+odla_GetRuntimeNumOfOutputs(odla_context context, odla_uint32* num_output_ptr);
 #ifdef __cplusplus
 } // C extern
 #endif
