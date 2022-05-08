@@ -1869,6 +1869,7 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
                        static_cast<int>(kernel_dims.dims[3])},
       kernel_weights, bias_weights);
   conv->setStride(nvinfer1::DimsHW(strides[0], strides[1]));
+  conv->setDilation(nvinfer1::DimsHW(dilations[0], dilations[1]));
 #else
   auto conv = g_comp->network->addConvolutionNd(
       *input, oc,
@@ -1876,6 +1877,7 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
                        static_cast<int>(kernel_dims.dims[3])},
       kernel_weights, bias_weights);
   conv->setStrideNd(nvinfer1::DimsHW(strides[0], strides[1]));
+  conv->setDilationNd(nvinfer1::DimsHW(dilations[0], dilations[1]));
 #endif
   conv->setPrePadding(nvinfer1::DimsHW(paddings_front[0], paddings_front[1]));
   conv->setPostPadding(nvinfer1::DimsHW(paddings_back[0], paddings_back[1]));
@@ -1916,6 +1918,7 @@ odla_value odla_DeConv(odla_value input, odla_memory_layout input_layout,
                        static_cast<int>(kernel_dims.dims[3])},
       kernel_weights, bias_weights);
   conv->setStride(nvinfer1::DimsHW(strides[0], strides[1]));
+  conv->setDilation(nvinfer1::DimsHW(dilations[0], dilations[1]));
 #else
   auto conv = g_comp->network->addDeconvolutionNd(
       *input, oc,
@@ -1923,6 +1926,7 @@ odla_value odla_DeConv(odla_value input, odla_memory_layout input_layout,
                        static_cast<int>(kernel_dims.dims[3])},
       kernel_weights, bias_weights);
   conv->setStrideNd(nvinfer1::DimsHW(strides[0], strides[1]));
+  conv->setDilationNd(nvinfer1::DimsHW(dilations[0], dilations[1]));
 #endif
 
   conv->setPrePadding(nvinfer1::DimsHW(paddings_front[0], paddings_front[1]));
