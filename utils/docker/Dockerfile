@@ -12,6 +12,12 @@ ENV PYTHON_VERSION=${python}
 # To access the host directory
 RUN mkdir /host
 
+# update cuda repo public key
+RUN mv /etc/apt/sources.list.d/cuda.list /tmp/
+RUN apt-get update && apt-get install -y curl && \
+    curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub | apt-key add - && \
+    mv /tmp/cuda.list /etc/apt/sources.list.d/
+
 RUN apt-get update && apt-get -y --no-install-recommends install software-properties-common apt-utils wget && rm -fr /var/lib/apt/lists/*
 
 ARG GCC_VERSION=7
@@ -221,8 +227,8 @@ RUN if [[ ! "${BASE_IMAGE}" =~ "nvidia" ]]; then wget https://registrationcenter
     ./l_BaseKit_p_2021.2.0.2883_offline.sh -s -a --silent --eula accept; fi
 
 # Install models & test cases
-COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:latest-model-zoo /models /models
-COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:latest-model-zoo /unittests /unittests
+COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:v0.1-model-zoo /models /models
+COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:v0.1-model-zoo /unittests /unittests
 
 RUN mkdir -p /var/run/sshd
 RUN sed -i 's/prohibit-password/yes/' /etc/ssh/sshd_config
