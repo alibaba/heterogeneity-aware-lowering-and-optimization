@@ -280,7 +280,7 @@ def draw_bbox(image, output, rate, coco_class=None, is_show_obj=False):
 
             # show label 
             if is_show_obj:
-                print(f"[{class_name}], pos:{xyxy} score:{round(conf, 3)}")
+                print(f"[{class_name.strip(',')}], pos:{xyxy} score:{round(conf, 3)}")
 
             title = f"{class_name.title()}: {round(conf, 2)}"
             scale = 0.5

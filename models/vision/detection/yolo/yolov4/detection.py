@@ -242,7 +242,7 @@ def draw_bbox(image, bboxes, is_show_obj, rate, classes=COCONAMES):
         c1, c2 = (coor[0], coor[1]), (coor[2], coor[3])
         cv2.rectangle(image, c1, c2, bbox_color, bbox_thick)
         if is_show_obj:
-            print(f"[{classes[class_ind]}], pos:[{bbox[0]:.3f}, {bbox[1]:.3f}, {bbox[2]:.3f}, {bbox[3]:.3f}] score:{score:.3f}")
+            print(f"[{classes[class_ind].strip(',')}], pos:[{bbox[0]:.1f}, {bbox[1]:.1f}, {bbox[2]:.1f}, {bbox[3]:.1f}] score:{score:.3f}")
 
         bbox_mess = f"{classes[class_ind]}: {score:.2f}"
         t_size = cv2.getTextSize(bbox_mess, 0, fontScale, thickness=bbox_thick//2)[0]

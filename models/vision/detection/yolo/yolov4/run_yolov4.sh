@@ -66,6 +66,6 @@ python3 detection.py | tee $1
 
 # RUN: FileCheck --input-file %t.1 %s
 # CHECK: [procesing] person.jpg
-# CHECK-NEXT: [dog], pos:[63.256, 264.582, 200.325, 346.682] score:0.992
-# CHECK-NEXT: [person], pos:[190.901, 99.364, 274.993, 368.361] score:0.996
-# CHECK-NEXT: [horse], pos:[407.499, 133.997, 602.958, 346.265] score:0.995
+# CHECK-NEXT: ["dog"], pos:[63.3, 264.5, 200.3, 346.7] score:0.992
+# CHECK-NEXT: ["person"], pos:[190.9, 99.3, 275.0, 368.4] score:0.996
+# CHECK-NEXT: ["horse"], pos:[407.5, 134.0, 602.9, 346.3] score:0.995

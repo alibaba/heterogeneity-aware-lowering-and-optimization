@@ -10,6 +10,7 @@
 - [3.编译模型](#3编译模型)
   - [编译yolov5l.onnx](#编译yolov5lonnx)
   - [运行模型](#运行模型)
+  - [注意事项](#注意事项-1)
 
 ​		本文档主要说明使用HALO将yolov5l.onnx模型编译成.so文件，并基于该.so文件对图片、视频进行inference产出数据，然后对得出的数据进行成像处理。
 
@@ -34,8 +35,8 @@ source /etc/profile
 - 需要满足的依赖
 ```shell
 pip3 install --upgrade pip
-pip3 install numpy opencv-python Pillow
-apt-get install -y wget software-properties-common ffmpeg libsm6 libxext6  
+pip3 install scipy==1.5.4 opencv-python==4.5.5.64 numpy  Pillow
+apt-get update && apt-get install -y --no-install-recommends wget software-properties-common ffmpeg libsm6=2:1.2.2-1 libxext6=2:1.3.3-1  
 ```
 
 - 安装cuda的runtime环境, 以下是通过网络的方式，先安装[cuda toolkit](https://developer.nvidia.com/cuda-downloads)
