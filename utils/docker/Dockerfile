@@ -85,7 +85,10 @@ RUN apt-get update -y && \
       latex-cjk-all \
       libglib2.0-dev \
       libpixman-1-dev \
-      bc && \
+      bc \ 
+      ffmpeg \
+      libsm6=2:1.2.2-1 \
+      libxext6=2:1.3.3-1 && \
     apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 #install the Git
@@ -128,7 +131,8 @@ RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
     apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 #python
-RUN pip3 install wheel numpy six jupyter enum34 mock h5py pillow
+RUN pip3 install --upgrade pip && \
+    pip3 install wheel numpy six jupyter enum34 mock h5py pillow scipy==1.5.4 opencv-python==4.5.5.64
 
 # Update binutils
 ARG BINUTILS_VERSION=2.35
