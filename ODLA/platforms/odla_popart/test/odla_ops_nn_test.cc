@@ -735,7 +735,153 @@ TEST_CASE("NN OPS TESTING") {
     }
   
   SUBCASE("POSTPROCESS OPS TEST") {
-     
+      odla_computation comp;
+      CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+      set_computationItem();
+      void* handle = dlopen("build/libcustom_ops.so", RTLD_LAZY);
+      if (!handle) {
+        std::cerr << "Cannot open library: " << dlerror() << std::endl;
+        return 1;
+      }
+      std::cout << "=====> 2, OK" << std::endl;
+
+      auto builder = popart::Builder::create();
+
+      // Add input tensors
+
+
+      popart::TensorInfo orig_img_w_info{popart::DataType::UINT32,
+                                         std::vector<int64_t>{}};
+      std::cout << "Adding input tensor orig_img_w\n";
+      auto orig_img_w = builder->addInputTensor(orig_img_w_info);
+
+      popart::TensorInfo orig_img_h_info{popart::DataType::UINT32,
+                                   std::vector<int64_t>{}};
+      std::cout << "Adding input tensor orig_img_h\n";
+      auto orig_img_h = builder->addInputTensor(orig_img_h_info);
+
+      popart::TensorInfo bb13_info{popart::DataType::FLOAT,
+                                         std::vector<int64_t>{1, 30, 13, 13}};        //
+      std::cout << "Adding input tensor bb13\n";
+      auto bb13 = builder->addInputTensor(bb13_info);
+
+      popart::TensorInfo bb26_info{popart::DataType::FLOAT,
+                                   std::vector<int64_t>{1, 30, 26, 26}};
+      std::cout << "Adding input tensor bb26\n";
+      auto bb26 = builder->addInputTensor(bb26_info);
+
+      popart::TensorInfo bb52_info{popart::DataType::FLOAT,
+                                   std::vector<int64_t>{1, 30, 52, 52}};
+      std::cout << "Adding input tensor bb52\n";
+      auto bb52 = builder->addInputTensor(bb52_info);
+
+      // Add operation
+      std::cout << "Adding custom operation PostProcess\n";
+      const static popart::OperatorIdentifier postprocess(
+        popart::Domain::ai_graphcore, "PostProcess", 1, 5, 2);
+
+      auto o = builder->customOp(postprocess, 1, {orig_img_w, orig_img_h, bb13, bb26, bb52}, 2, {});
+
+      std::cout << "Get the tensor type and tensor shape of the output of "
+                   "AttentionMask with tensorid: "
+                << o << std::endl;
+      auto data_type = builder->getTensorDataType(o[0]);
+      auto data_shape = builder->getTensorShape(bb13);
+      std::cout << "=================================================="
+                << data_shape << std::endl;
+
+      auto shape_imgw = builder->getTensorShape(orig_img_w);
+      auto shape_imgh = builder->getTensorShape(orig_img_h);
+      auto shape_bb13 = builder->getTensorShape(bb13);
+      auto shape_bb26 = builder->getTensorShape(bb26);
+      auto shape_bb52 = builder->getTensorShape(bb52);
+      std::vector<std::vector<int64_t>> shapes;
+      std::vector<int64_t> out1;
+      std::vector<int64_t> out2;
+      shapes.push_back(shape_imgw);
+      shapes.push_back(shape_imgh);
+      shapes.push_back(shape_bb13);
+      shapes.push_back(shape_bb26);
+      shapes.push_back(shape_bb52);
+      //shapeInfer(shapes, out1, out2);
+
+      std::cout << "Getting model proto\n";
+      auto proto = builder->getModelProto();
+      builder->saveModelProto("postprocess_test.onnx");
+
+      std::cout << "Constructing DataFlow\n";
+      auto dataFlow =
+          popart::DataFlow(1, {{o[0], popart::AnchorReturnType("ALL")}});
+
+      std::map<std::string, std::string> deviceOpts{{"numIPUs", "1"}};
+      auto ipuModelDevice = 
+      popart::DeviceManager::createDeviceManager().acquireAvailableDevice(1);
+
+      std::cout << "Creating session from Onnx Model...\n";
+      auto session = popart::InferenceSession::createFromOnnxModel(proto, dataFlow,
+                                                                   ipuModelDevice);
+      std::cout << "Creating session from Onnx Model...done\n";
+
+      // // Prepare input tensor
+      uint32_t rawInputData1 = 255;
+      popart::NDArrayWrapper<uint32_t> orig_img_w_(&rawInputData1, {1});
+
+      uint32_t rawInputData2 = 255;
+      popart::NDArrayWrapper<uint32_t> orig_img_h_(&rawInputData2, {1});
+
+      float* rawInputData3 = new float[1 * 13 * 13 * 30];
+      std::fill_n(rawInputData3, 1 * 13 * 13 * 30, 0.f);
+
+      rawInputData3[0 + 85] = 0.5;
+      rawInputData3[169 + 85] = 0.5;
+      rawInputData3[169*2 + 85] = 0.7;
+      rawInputData3[169*3 + 85] = 0.7;
+      rawInputData3[169*4 + 85] = 0.9;
+      rawInputData3[169*5 + 85] = 0.9;
+
+      popart::NDArrayWrapper<float> bb13_(rawInputData3, {1, 30, 13, 13});
+
+
+      float* rawInputData4 = new float[1 * 26 * 26 * 30];
+      std::fill_n(rawInputData4, 1 * 26 * 26 * 30, 0.f);
+      popart::NDArrayWrapper<float> bb26_(rawInputData4, {1, 30, 26, 26});
+
+      float *rawInputData5 = new float[1 * 52 * 52 * 30];
+      std::fill_n(rawInputData5, 1 * 52 * 52 * 30, 0.f);
+      popart::NDArrayWrapper<float> bb52_(rawInputData5, {1, 30, 52, 52});
+
+      std::map<popart::TensorId, popart::IArray&> inputs = {
+          {orig_img_w, orig_img_w_}, 
+          {orig_img_h, orig_img_h_},
+          {bb13, bb13_},
+          {bb26, bb26_},
+          {bb52, bb52_},
+          };
+
+      uint64_t _len = 1;
+      for (auto i : out1)
+      {
+        _len *= i;
+      }
+      printf("XXXX %ld\n", _len);
+      float* rawOutputData = new float[_len];
+      popart::NDArrayWrapper<float> outData(rawOutputData, {out1[0], out1[1], out1[2]});
+      std::map<popart::TensorId, popart::IArray&> anchors = {{o[0], outData}};
+
+      std::cout << "Preparing session device...\n";
+      session->prepareDevice();
+      std::cout << "Preparing session device...done\n";
+
+      popart::StepIO stepio(inputs, anchors);
+
+      std::cout << "Running..."
+                << "\n";
+      session->run(stepio);
+      std::cout << "Running...done"
+                << "\n";
+      std::cout << "Output Data: " << outData << "\n";  
+      odla_DestroyComputation(comp);
+      odla_DestroyContext(ctx);
     }
    
   }
