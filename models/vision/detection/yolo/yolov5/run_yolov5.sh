@@ -60,6 +60,6 @@ python3 detection.py  | tee $1
 
 # RUN: FileCheck --input-file %t.1 %s
 # CHECK: [procesing] zidane.jpg
-# CHECK-NEXT: [person], pos:[749.0, 44.0, 1139.0, 708.0] score:0.942
-# CHECK-NEXT: [person], pos:[135.0, 200.0, 1110.0, 711.0] score:0.895
-# CHECK-NEXT: [tie], pos:[435.0, 436.0, 526.0, 717.0] score:0.818
+# CHECK-NEXT: ["person"], pos:[749.0, 44.0, 1139.0, 708.0] score:0.942
+# CHECK-NEXT: ["person"], pos:[135.0, 200.0, 1110.0, 711.0] score:0.895
+# CHECK-NEXT: ["tie"], pos:[435.0, 436.0, 526.0, 717.0] score:0.818
