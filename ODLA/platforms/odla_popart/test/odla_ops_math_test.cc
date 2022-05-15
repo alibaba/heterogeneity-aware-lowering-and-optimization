@@ -825,10 +825,10 @@ TEST_CASE("MATH OPS TESTING") {
     static odla_context ctx;
     odla_CreateContext(&ctx);
 
-    bool lhs_data[2 * 2] = {false, false, false, false};
+    bool lhs_data[2 * 2] = {false, false, true, true};
     odla_BindToArgumentById((const odla_value_id) "lhs", lhs_data, ctx);
 
-    bool rhs_data[2 * 2] = {false, false, false, false};
+    bool rhs_data[2 * 2] = {true, false, true, false};
     odla_BindToArgumentById((const odla_value_id) "rhs", rhs_data, ctx);
 
     bool out_And[2 * 2] = {false, false, false, false};
@@ -862,10 +862,10 @@ TEST_CASE("MATH OPS TESTING") {
     static odla_context ctx;
     odla_CreateContext(&ctx);
 
-    bool lhs_data[2 * 2] = {false, false, false, false};
+    bool lhs_data[2 * 2] = {false, false, true, true};
     odla_BindToArgumentById((const odla_value_id) "lhs", lhs_data, ctx);
 
-    bool rhs_data[2 * 2] = {false, false, false, false};
+    bool rhs_data[2 * 2] = {true, false, true, false};
     odla_BindToArgumentById((const odla_value_id) "rhs", rhs_data, ctx);
 
     bool out_Or[2 * 2] = {false, false, false, false};
@@ -899,10 +899,10 @@ TEST_CASE("MATH OPS TESTING") {
     static odla_context ctx;
     odla_CreateContext(&ctx);
 
-    bool lhs_data[2 * 2] = {false, false, false, false};
+    bool lhs_data[2 * 2] = {false, false, true, true};
     odla_BindToArgumentById((const odla_value_id) "lhs", lhs_data, ctx);
 
-    bool rhs_data[2 * 2] = {false, false, false, false};
+    bool rhs_data[2 * 2] = {true, false, true, false};
     odla_BindToArgumentById((const odla_value_id) "rhs", rhs_data, ctx);
 
     bool out_Equal[2 * 2] = {false, false, false, false};
