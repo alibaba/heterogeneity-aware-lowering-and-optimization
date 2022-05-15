@@ -69,6 +69,7 @@ TEST_CASE("testing popart_config") {
   }
   */
     //Check parse_from_json
+ SUBCASE("test pipline") {
     float _amp = 0.6;
     int _batches_per_step = 1;
     int _ipu_num = 1;
@@ -126,7 +127,62 @@ TEST_CASE("testing popart_config") {
        pipeline_stage);
    CHECK(ipu_idx == 1);
    CHECK(pipeline_stage == 1);
+   }
+
+   SUBCASE("test loading") {
+
+      json _config_json = default_json();
+      _config_json["amp"] = 0.6;
+      
+      PopartConfig::instance()->parse_from_json(_config_json);
+      std::string _path = "./test.popart";
+      PopartConfig::instance()->set_cache_path(_path);
+
+      odla_computation comp;
+      CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+      set_computationItem(comp);
+
+      std::cout << comp->opts.cache_dir << std::endl;
+      auto input = odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}}, (const odla_value_id)("input"));
+
+      auto Sign = odla_Sign(input, (const odla_value_id) "Sign");
+      odla_SetValueAsOutput(Sign);
+
+      static odla_context ctx;
+      odla_CreateContext(&ctx);
+
+      float input_data[2 * 2] = {-0.2, -0.3, 1, 0.5};
+      odla_BindToArgumentById((const odla_value_id) "input", input_data, ctx);
+
+      float out_Sign[4] = {0, 0, 0, 0};
+      odla_BindToOutputById((const odla_value_id) "Sign", out_Sign, ctx);
+      // odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
+
+      comp->compile_and_export();
+
+      std::cout << "batches_per_step(): " << PopartConfig::instance()->batches_per_step() << std::endl;
+      CHECK_EQ(0.6f, PopartConfig::instance()->amp());
+      //std::cout << "sdk_version: " << comp->opts.sdk_version_ << std::endl;
+      // CHECK_EQ(comp->compile_and_export(), ODLA_FAILURE);
+      CHECK_EQ("odla_popart_saved.onnx", PopartConfig::instance()->save_model_path());
+
+      CHECK_EQ(3, PopartConfig::instance()->execution_mode());
+
+      CHECK_EQ(1, PopartConfig::instance()->batches_per_step());
+
+      CHECK_EQ(false, PopartConfig::instance()->load_onnx());
+
+      CHECK_EQ(1, PopartConfig::instance()->ipu_num());
 
 
+      CHECK_EQ("./test.popart", PopartConfig::instance()->get_cache_path());
+
+      CHECK_EQ(1048576, PopartConfig::instance()->queue_capacity());
+
+
+
+      odla_DestroyComputation(comp);
+      odla_DestroyContext(ctx);
+   }
 
 }
