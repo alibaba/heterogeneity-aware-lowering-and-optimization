@@ -85,6 +85,7 @@ void QManager::createQ(std::string queueType) {
         throw std::invalid_argument(
             "[QManager::createQ] invalid queueType: " + queueType +
             ", should be ContextQueues or LockFreeQueue.");
+      status_ = ODLA_SUCCESS; // reset the QManager status when create new queue
       popart::logging::info("Created queue with queueType: {}.", queueType);
     }
   }
