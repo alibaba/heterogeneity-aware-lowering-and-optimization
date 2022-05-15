@@ -830,7 +830,9 @@ TEST_CASE("MATH OPS TESTING") {
 
     bool rhs_data[2 * 2] = {true, false, true, false};
     odla_BindToArgumentById((const odla_value_id) "rhs", rhs_data, ctx);
-
+    
+    bool gold[2 * 2] = {false, false, true, false};
+    
     bool out_And[2 * 2] = {false, false, false, false};
     odla_BindToOutputById((const odla_value_id) "And", out_And, ctx);
 
@@ -838,7 +840,7 @@ TEST_CASE("MATH OPS TESTING") {
 
     std::cout << "out_And = [";
     for (int i = 0; i < 4; i++) {
-        std::cout << out_And[i] << ", ";
+        CHECK_EQ(out_And[i], gold[i]);
     }
     std::cout << "]" << std::endl;
     odla_DestroyComputation(comp);
@@ -868,6 +870,8 @@ TEST_CASE("MATH OPS TESTING") {
     bool rhs_data[2 * 2] = {true, false, true, false};
     odla_BindToArgumentById((const odla_value_id) "rhs", rhs_data, ctx);
 
+    bool gold[2 * 2] = {true, false, true, true};
+      
     bool out_Or[2 * 2] = {false, false, false, false};
     odla_BindToOutputById((const odla_value_id) "Or", out_Or, ctx);
 
@@ -875,7 +879,7 @@ TEST_CASE("MATH OPS TESTING") {
 
     std::cout << "out_Or = [";
     for (int i = 0; i < 4; i++) {
-        std::cout << out_Or[i] << ", ";
+        CHECK_EQ(out_Or[i], gold[i]);
     }
     std::cout << "]" << std::endl;
     odla_DestroyComputation(comp);
@@ -904,7 +908,9 @@ TEST_CASE("MATH OPS TESTING") {
 
     bool rhs_data[2 * 2] = {true, false, true, false};
     odla_BindToArgumentById((const odla_value_id) "rhs", rhs_data, ctx);
-
+      
+    bool gold[2 * 2] = {true, false, false, true};
+      
     bool out_Equal[2 * 2] = {false, false, false, false};
     odla_BindToOutputById((const odla_value_id) "NotEqual", out_Equal, ctx);
 
@@ -912,7 +918,7 @@ TEST_CASE("MATH OPS TESTING") {
 
     std::cout << "out_Equal = [";
     for (int i = 0; i < 4; i++) {
-        std::cout << out_Equal[i] << ", ";
+        CHECK_EQ(out_Equal[i], gold[i]);
     }
     std::cout << "]" << std::endl;
     odla_DestroyComputation(comp);
