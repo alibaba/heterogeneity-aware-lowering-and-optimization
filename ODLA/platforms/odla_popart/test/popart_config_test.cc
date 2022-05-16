@@ -129,7 +129,7 @@ TEST_CASE("testing popart_config") {
    CHECK(pipeline_stage == 1);
    }
 
-   SUBCASE("test loading") {
+   SUBCASE("test read config from cache ") {
 
       json _config_json = default_json();
       _config_json["amp"] = 0.6;
@@ -174,15 +174,36 @@ TEST_CASE("testing popart_config") {
 
       CHECK_EQ(1, PopartConfig::instance()->ipu_num());
 
-
       CHECK_EQ("./test.popart", PopartConfig::instance()->get_cache_path());
 
       CHECK_EQ(1048576, PopartConfig::instance()->queue_capacity());
 
-
-
       odla_DestroyComputation(comp);
       odla_DestroyContext(ctx);
    }
+
+    SUBCASE("test nject_error") {
+
+      json _config_json = default_json();
+      PopartConfig::instance()->parse_from_json(_config_json);
+      odla_computation comp;
+      odla_context ctx;
+      CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+      model_helper();
+      odla_CreateContext(&ctx);
+      set_computationItem(comp, 1);
+
+      odla_context ctx_multithread;
+      odla_CreateContext(&ctx_multithread);
+
+      float in = 1.f, out = 0.f;
+      odla_BindToArgumentById((const odla_value_id) "Input", &in, ctx_multithread);
+      odla_BindToOutputById((const odla_value_id) "Sub", &out, ctx_multithread);
+      CHECK_EQ(odla_ExecuteComputation(comp, ctx_multithread, ODLA_COMPUTE_INFERENCE, nullptr), ODLA_RECOVERABLE_ERR);
+
+      odla_DestroyComputation(comp);
+      odla_DestroyContext(ctx);
+
+    }
 
 }
