@@ -58,17 +58,7 @@ json default_json(
 }
 
 TEST_CASE("testing popart_config") {
-  /*SUB_CASE("testing the execution mode PIPELINE_ASYNC") {
-    using jsonf = nlohmann::json;
-    jsonf jsonfile;
-    jsonfile["execution_mode"] = "pipeline_async";
 
-    std::string config_file_path("/tmp/tmp.json");
-    std::ofstream file(config_file_path);
-    file << jsonfile;
-  }
-  */
-    //Check parse_from_json
  SUBCASE("test pipline") {
     float _amp = 0.6;
     int _batches_per_step = 1;
@@ -184,7 +174,7 @@ TEST_CASE("testing popart_config") {
     odla_BindToArgumentById((const odla_value_id) "Input", &in, ctx);
     odla_BindToOutputById((const odla_value_id) "Sub", &out, ctx);
 
-    comp->compile_and_export();
+    CHECK_EQ(comp->compile_and_export(), ODLA_SUCCESS);
 
     odla_DestroyContext(ctx);
     odla_DestroyComputation(comp);
