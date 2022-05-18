@@ -132,7 +132,7 @@ TEST_CASE("testing popart_config") {
    SUBCASE("test read config from cache ") {
 
       json _config_json = default_json();
-      _config_json["amp"] = 0.6;
+      _config_json["amp"] = 0.123;
       
       PopartConfig::instance()->parse_from_json(_config_json);
       std::string _path = "./test.popart";
@@ -161,7 +161,7 @@ TEST_CASE("testing popart_config") {
       comp->compile_and_export();
 
       std::cout << "batches_per_step(): " << PopartConfig::instance()->batches_per_step() << std::endl;
-      CHECK_EQ(0.6f, PopartConfig::instance()->amp());
+      CHECK_EQ(0.123f, PopartConfig::instance()->amp());
       //std::cout << "sdk_version: " << comp->opts.sdk_version_ << std::endl;
       // CHECK_EQ(comp->compile_and_export(), ODLA_FAILURE);
       CHECK_EQ("odla_popart_saved.onnx", PopartConfig::instance()->save_model_path());
@@ -182,10 +182,19 @@ TEST_CASE("testing popart_config") {
       odla_DestroyContext(ctx);
    }
 
-    SUBCASE("test nject_error") {
-
+    SUBCASE("test inject_error") {
+      //generate json
       json _config_json = default_json();
       PopartConfig::instance()->parse_from_json(_config_json);
+      
+      json _inject_error;
+      _inject_error["POPLAR_ENGINE_OPTIONS"] = "{\"debug.simulateErrors\":\"MEMORY_ERROR@ALL:vertexName:popops__BroadcastScalar1DSupervisor___popops__expr__BinaryOpType__SUBTRACT_float\"}";
+      std::ofstream file("/tmp/temp_error_injector.json");
+      file << _inject_error;
+
+      std::string _path = "./test";
+      PopartConfig::instance()->set_cache_path(_path);
+      
       odla_computation comp;
       odla_context ctx;
       CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
@@ -203,7 +212,6 @@ TEST_CASE("testing popart_config") {
 
       odla_DestroyComputation(comp);
       odla_DestroyContext(ctx);
-
-    }
+   }
 
 }
