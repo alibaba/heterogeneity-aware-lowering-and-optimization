@@ -129,89 +129,86 @@ TEST_CASE("testing popart_config") {
    CHECK(pipeline_stage == 1);
    }
 
-   SUBCASE("test read config from cache ") {
+ SUBCASE("test inject_error") {
 
-      json _config_json = default_json();
-      _config_json["amp"] = 0.123;
-      
-      PopartConfig::instance()->parse_from_json(_config_json);
+    json _inject_error;
+    _inject_error["POPLAR_ENGINE_OPTIONS"] = "{\"debug.simulateErrors\":\"MEMORY_ERROR@ALL:vertexName:popops__BroadcastScalar1DSupervisor___popops__expr__BinaryOpType__SUBTRACT_float\"}";
+    std::ofstream file("/tmp/temp_error_injector.json");
+    file << _inject_error;
+    file.close();
+
+    odla_computation comp;
+    CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+    generate_model();
+    set_computationItem(comp);
+
+    odla_context ctx;
+    odla_CreateContext(&ctx);
+
+    float in = 1.f, out = 0.f;
+    odla_BindToArgumentById((const odla_value_id) "Input", &in, ctx);
+    odla_BindToOutputById((const odla_value_id) "Sub", &out, ctx);
+    CHECK_EQ(odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr), ODLA_RECOVERABLE_ERR);
+
+    json _inject_error_void;
+    std::ofstream file2("/tmp/temp_error_injector.json");
+    file2 << _inject_error_void;
+    file2.close();
+
+    odla_DestroyComputation(comp);
+    odla_DestroyContext(ctx);
+ }
+
+ SUBCASE("test exporting") {
+    json _config_json = default_json();
+    _config_json["amp"] = 0.123;
+    std::ofstream file("./test.json");
+    file << _config_json;
+    file.close();
+
+    std::string _path = "./test.popart";
+    PopartConfig::instance()->set_cache_path(_path);
+    PopartConfig::instance()->parse_from_json(_config_json);
+
+    odla_computation comp;
+    CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+    set_computationItem(comp);
+
+    generate_model();
+    odla_context ctx;
+    odla_CreateContext(&ctx);
+
+    float in = 1.f;
+    float out = 0.f;
+
+    odla_BindToArgumentById((const odla_value_id) "Input", &in, ctx);
+    odla_BindToOutputById((const odla_value_id) "Sub", &out, ctx);
+
+    comp->compile_and_export();
+
+    odla_DestroyContext(ctx);
+    odla_DestroyComputation(comp);
+  }
+
+ SUBCASE("test loading") {
+
+    //cache file is not exist
+    {
+      std::string _path = "./wrong_path";
+      PopartConfig::instance()->set_cache_path(_path);
+      CHECK_EQ(PopartConfig::instance()->extract_config_from_cache(), ODLA_FAILURE) ;
+    }
+
+    //use cache (test.json)
+    {
       std::string _path = "./test.popart";
       PopartConfig::instance()->set_cache_path(_path);
+      CHECK_EQ(PopartConfig::instance()->extract_config_from_cache(), ODLA_SUCCESS);
+      CHECK_EQ(PopartConfig::instance()->amp(), 0.123f);
+    }
 
-      odla_computation comp;
-      CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-      set_computationItem(comp);
 
-      std::cout << comp->opts.cache_dir << std::endl;
-      auto input = odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}}, (const odla_value_id)("input"));
 
-      auto Sign = odla_Sign(input, (const odla_value_id) "Sign");
-      odla_SetValueAsOutput(Sign);
-
-      static odla_context ctx;
-      odla_CreateContext(&ctx);
-
-      float input_data[2 * 2] = {-0.2, -0.3, 1, 0.5};
-      odla_BindToArgumentById((const odla_value_id) "input", input_data, ctx);
-
-      float out_Sign[4] = {0, 0, 0, 0};
-      odla_BindToOutputById((const odla_value_id) "Sign", out_Sign, ctx);
-      // odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
-      comp->compile_and_export();
-
-      std::cout << "batches_per_step(): " << PopartConfig::instance()->batches_per_step() << std::endl;
-      CHECK_EQ(0.123f, PopartConfig::instance()->amp());
-      //std::cout << "sdk_version: " << comp->opts.sdk_version_ << std::endl;
-      // CHECK_EQ(comp->compile_and_export(), ODLA_FAILURE);
-      CHECK_EQ("odla_popart_saved.onnx", PopartConfig::instance()->save_model_path());
-
-      CHECK_EQ(3, PopartConfig::instance()->execution_mode());
-
-      CHECK_EQ(1, PopartConfig::instance()->batches_per_step());
-
-      CHECK_EQ(false, PopartConfig::instance()->load_onnx());
-
-      CHECK_EQ(1, PopartConfig::instance()->ipu_num());
-
-      CHECK_EQ("./test.popart", PopartConfig::instance()->get_cache_path());
-
-      CHECK_EQ(1048576, PopartConfig::instance()->queue_capacity());
-
-      odla_DestroyComputation(comp);
-      odla_DestroyContext(ctx);
-   }
-
-    SUBCASE("test inject_error") {
-      //generate json
-      json _config_json = default_json();
-      PopartConfig::instance()->parse_from_json(_config_json);
-      
-      json _inject_error;
-      _inject_error["POPLAR_ENGINE_OPTIONS"] = "{\"debug.simulateErrors\":\"MEMORY_ERROR@ALL:vertexName:popops__BroadcastScalar1DSupervisor___popops__expr__BinaryOpType__SUBTRACT_float\"}";
-      std::ofstream file("/tmp/temp_error_injector.json");
-      file << _inject_error;
-
-      std::string _path = "./test";
-      PopartConfig::instance()->set_cache_path(_path);
-      
-      odla_computation comp;
-      odla_context ctx;
-      CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-      model_helper();
-      odla_CreateContext(&ctx);
-      set_computationItem(comp, 1);
-
-      odla_context ctx_multithread;
-      odla_CreateContext(&ctx_multithread);
-
-      float in = 1.f, out = 0.f;
-      odla_BindToArgumentById((const odla_value_id) "Input", &in, ctx_multithread);
-      odla_BindToOutputById((const odla_value_id) "Sub", &out, ctx_multithread);
-      CHECK_EQ(odla_ExecuteComputation(comp, ctx_multithread, ODLA_COMPUTE_INFERENCE, nullptr), ODLA_RECOVERABLE_ERR);
-
-      odla_DestroyComputation(comp);
-      odla_DestroyContext(ctx);
-   }
+  }
 
 }
