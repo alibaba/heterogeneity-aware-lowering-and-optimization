@@ -1347,6 +1347,37 @@ static odla_value unary_op(nvinfer1::UnaryOperation op, odla_value input,
   return CreateValue(layer, input->type, id);
 }
 
+odla_value odla_ExpandDims(odla_value input, odla_value_shape output_dims,
+                           const odla_value_id value_id) {
+  // use slice to expand dims.
+  // reshape to the same rank.
+  auto input_dims = input->type.shape;
+  int rank_diff = output_dims.size - input_dims.size;
+  assert(rank_diff >= 0);
+
+  if (rank_diff > 0) {
+    odla_value_shape new_dims = output_dims;
+    for (int i = 0, j = -rank_diff; i < output_dims.size; ++i, ++j) {
+      new_dims.dims[i] = j >= 0 ? input_dims.dims[j] : 1;
+    }
+    const std::string& name = GetName(value_id, "_expand");
+    input = odla_Reshape(input, new_dims, (const odla_value_id)name.c_str());
+    input_dims = new_dims;
+  }
+  Dims start;
+  Dims size;
+  Dims stride;
+  start.nbDims = size.nbDims = stride.nbDims = output_dims.size;
+  for (int i = 0; i < output_dims.size; ++i) {
+    start.d[i] = 0;
+    size.d[i] = output_dims.dims[i];
+    stride.d[i] = (input_dims.dims[i] == output_dims.dims[i]) ? 1 : 0;
+  }
+
+  auto layer = g_comp->network->addSlice(*(input->tensor), start, size, stride);
+  return CreateValue(layer, {input->type.element_type, output_dims}, value_id);
+}
+
 odla_value odla_Log(odla_value input, const odla_value_id id) {
   return unary_op(nvinfer1::UnaryOperation::kLOG, input, id);
 }
