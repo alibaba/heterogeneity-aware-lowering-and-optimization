@@ -20,7 +20,6 @@
 #include <NvInferRuntime.h>
 #include <NvInferRuntimeCommon.h>
 #include <ODLA/odla.h>
-#include <bits/stdint-intn.h>
 #include <cuda_runtime.h>
 
 #include <algorithm>
