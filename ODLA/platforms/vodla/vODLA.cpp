@@ -899,9 +899,9 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
       .pad = 0,
       .time_used = 0,
       .output = NULL};
+  pid_t tid = gettid();
 
 #ifdef DEBUG
-  pid_t tid = gettid();
   std::cout << "[vODLA] DEBUG: tid " << tid
             << " odla_ExecuteComputation use opt addr " << &vodh_infer_opt
             << "\nres addr " << &vodh_infer_res << std::endl;
@@ -990,11 +990,13 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
       xpu_time_avg += vodh_infer_res.time_used;
     }
     xpu_time_avg /= LOOP_CNT;
-    std::cout << "[vODLA] TIMING: Remote xPU inference avg time: "
-              << xpu_time_avg << "us, max time: " << xpu_time_max
+    std::cout << "[vODLA] TIMING: tid " << tid
+              << " Remote xPU inference avg time: " << xpu_time_avg
+              << "us, max time: " << xpu_time_max
               << "us, min time: " << xpu_time_min << "us.\n";
     time_avg /= LOOP_CNT;
-    std::cout << "[vODLA] TIMING: Inference avg time: " << time_avg << "us, "
+    std::cout << "[vODLA] TIMING: tid " << tid
+              << "Inference avg time: " << time_avg << "us, "
               << "max time: " << time_max << " us,"
               << "min time: " << time_min << " us.\n";
     std::cout << "[vODLA] TIMING: Inference avg throuput: "
