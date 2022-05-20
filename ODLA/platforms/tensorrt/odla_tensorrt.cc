@@ -182,7 +182,7 @@ static constexpr size_t MAX_WORKSPACE_SIZE_BYTES =
 #else
 static constexpr size_t MAX_WORKSPACE_SIZE_BYTES = 1ul * 1024 * 1024 * 1024;
 #endif
-static const int MAX_INT64_CONVERTION_NUM = 65536ul;
+static const int MAX_INT64_CONVERTION_NUM = std::numeric_limits<int32_t>::max();
 
 typedef struct {
   IIfConditional* branch;
