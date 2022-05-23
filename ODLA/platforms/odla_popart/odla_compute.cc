@@ -240,6 +240,7 @@ odla_status odla_DestroyComputation(odla_computation comp) {
   }
   popart::logging::warn("reset config state, comp: {}", comp);
   PopartConfig::instance()->reset_init_state();
+  popart::logging::warn("odla_DestroyComputation successfully, comp: {}", comp);
 
   return ODLA_SUCCESS;
 }

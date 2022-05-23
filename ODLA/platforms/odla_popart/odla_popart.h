@@ -153,7 +153,14 @@ struct _odla_computation {
   inline bool is_compile_only() { return is_compile_only_; }
   inline void release_session() {
     if (session != nullptr) {
-      session->getDevice().getDeviceInfo()->detach();
+      if (session->getDevice().getDeviceInfo() != nullptr) {
+        popart::logging::warn("Tring to detach device for computation: {}",
+                              this);
+        session->getDevice().getDeviceInfo()->detach();
+      } else
+        popart::logging::warn(
+            "Device info is nullptr when try to detach for computation: {}",
+            this);
       popart::logging::warn(
           "The computation:{} session:{} detached from device", this,
           session.get());

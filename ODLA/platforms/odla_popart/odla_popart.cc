@@ -199,6 +199,9 @@ odla_status _odla_computation::init(bool is_compile) {
     std::lock_guard<std::mutex> guard(init_mutex_);
     if (!session) {
       POPLAR_TRY
+      // only continue to init the computation when no failure
+      if (ODLA_SUCCESS != QManager::instance()->get_status())
+        return QManager::instance()->get_status();
       odla_status status = set_opts();
       if (status != ODLA_SUCCESS) {
         popart::logging::err("set computation option failed");
@@ -213,7 +216,7 @@ odla_status _odla_computation::init(bool is_compile) {
                                  popart::AnchorReturnType("All"));
       // Acquire IPU
       if (opts.use_ipu_model) {
-        popart::logging::info("Using IPU Model to run.");
+        popart::logging::warn("Using IPU Model to run.");
         std::map<std::string, std::string> deviceOpts{
             {"numIPUs", std::to_string(opts.ipu_num)}, {"tilesPerIPU", "1216"}};
         device =
@@ -230,6 +233,7 @@ odla_status _odla_computation::init(bool is_compile) {
         throw std::runtime_error(
             "Failed to get a device when initializing odla_computation");
       }
+      popart::logging::warn("Device acquired to run model");
 
       // Create and config SessionOptions
       set_session_opts();
@@ -255,6 +259,9 @@ odla_status _odla_computation::init(bool is_compile) {
       // Create InferenceSession
       new_session = std::move(popart::InferenceSession::createFromOnnxModel(
           proto, data_flow, device, popart::InputShapeInfo(), session_opts_));
+      popart::logging::warn(
+          "New session: {} has been created for computation: {}",
+          new_session.get(), this);
 
       if (!is_compile) {
         if (PopartConfig::instance()->load_or_save_cache()) {
@@ -404,7 +411,7 @@ bool _odla_computation::hold() {
   } else {
     std::stringstream ss_holder;
     ss_holder << thread_id_of_holder;
-    popart::logging::warn(
+    popart::logging::info(
         "The odla_computation {} has been held by thread: {}"
         ", when thread {} try to hold it.",
         this, thread_id_of_holder, this_thread_id);
