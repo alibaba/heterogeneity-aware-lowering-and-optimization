@@ -2618,6 +2618,26 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
   return {orig_def, orig_def};
 }
 
+template <typename T>
+static Constant* GetSelectedConstant(Instruction* inst, const Constant* cond,
+                                     const Constant* tv, const Constant* fv) {
+  const auto& ret_type = inst->GetResultType();
+  size_t num_elements = ret_type.GetTotalNumOfElements();
+  std::string name = inst->GetName() + "_folded";
+  ConstantBuilder cb(inst->GetParent()->GetParent());
+
+  std::vector<T> ret;
+  for (size_t i = 0; i < num_elements; ++i) {
+    if (cond->GetData<bool>(i)) {
+      ret.push_back(tv->GetData<T>(i));
+    } else {
+      ret.push_back(fv->GetData<T>(i));
+    }
+  }
+  auto c_ret = cb.CreateConstant(name, ret_type, ret.data());
+  return c_ret;
+}
+
 std::pair<Def, Def> InstSimplify::RunOnInstruction(SelectInst* inst) {
   Def orig_def{inst, 0};
   auto cond = DynCast<Constant>(inst->GetOperand(0));
@@ -2638,10 +2658,27 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SelectInst* inst) {
   auto tv = DynCast<Constant>(lhs);
   auto fv = DynCast<Constant>(rhs);
   if (tv != nullptr && fv != nullptr) {
-    // TODO(unknown): constant folding
-    return {orig_def, orig_def};
+    Constant* c_ret = nullptr;
+    switch (ret_type.GetDataType()) {
+      case DataType::INT32: {
+        c_ret = GetSelectedConstant<int32_t>(inst, cond, tv, fv);
+        break;
+      }
+      case DataType::INT64: {
+        c_ret = GetSelectedConstant<int64_t>(inst, cond, tv, fv);
+        break;
+      }
+      case DataType::FLOAT32: {
+        c_ret = GetSelectedConstant<float>(inst, cond, tv, fv);
+        break;
+      }
+      default:
+        break;
+    }
+    if (c_ret != nullptr) {
+      return {orig_def, *c_ret};
+    }
   }
-
   return {orig_def, orig_def};
 }
 
@@ -2831,8 +2868,8 @@ static bool FixUpLSTM(LSTMInst* inst) {
 
 std::pair<Def, Def> InstSimplify::RunOnInstruction(MatMulInst* inst) {
   // for matmul(x, transpose(y), false, false) ==> matmul(x,
-  // transpose2(transpose(y)), false, true). Nested transposes will be combined
-  // or cancelled.
+  // transpose2(transpose(y)), false, true). Nested transposes will be
+  // combined or cancelled.
   Def orig_def{inst, 0};
   const auto& op1 = inst->GetOperand(1);
   if (const TransposeInst* trans = DynCast<TransposeInst>(op1);
