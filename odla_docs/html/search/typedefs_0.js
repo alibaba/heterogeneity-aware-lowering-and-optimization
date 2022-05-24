@@ -30,13 +30,12 @@ var searchData=
   ['odla_5fquint64_27',['odla_quint64',['../odla__common_8h.html#a02772eefb47a8a4219be7e23d56cbe24',1,'odla_common.h']]],
   ['odla_5fquint8_28',['odla_quint8',['../odla__common_8h.html#a47681b75cefcd1e2355ef155beb6931b',1,'odla_common.h']]],
   ['odla_5fsize_5ft_29',['odla_size_t',['../odla__common_8h.html#acac65b5a20353d7f068ca61c6ab7569c',1,'odla_common.h']]],
-  ['odla_5fstring_30',['odla_string',['../odla__common_8h.html#abd5c0aa787a6e04de64aef40f80c8cc2',1,'odla_common.h']]],
-  ['odla_5fuint16_31',['odla_uint16',['../odla__common_8h.html#a06050332dcc769101e4de49f7ccc2139',1,'odla_common.h']]],
-  ['odla_5fuint32_32',['odla_uint32',['../odla__common_8h.html#a6b80c6921b4b4e20c95df868e20c8afd',1,'odla_common.h']]],
-  ['odla_5fuint64_33',['odla_uint64',['../odla__common_8h.html#aeb84ef9d7f788f94b03b14ad3517b374',1,'odla_common.h']]],
-  ['odla_5fuint8_34',['odla_uint8',['../odla__common_8h.html#a865438a9ae649ef089e0e577dabc280d',1,'odla_common.h']]],
-  ['odla_5fvalue_35',['odla_value',['../odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b',1,'odla_value.h']]],
-  ['odla_5fvalue_5fid_36',['odla_value_id',['../odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82',1,'odla_value.h']]],
-  ['odla_5fvendor_37',['odla_vendor',['../odla__device_8h.html#a6dc7b117d59c66da8fa01e8687473d19',1,'odla_device.h']]],
-  ['odla_5fvoid_38',['odla_void',['../odla__common_8h.html#ada3e0e93ebd03f1f5fe3ff21655cdb11',1,'odla_common.h']]]
+  ['odla_5fuint16_30',['odla_uint16',['../odla__common_8h.html#a06050332dcc769101e4de49f7ccc2139',1,'odla_common.h']]],
+  ['odla_5fuint32_31',['odla_uint32',['../odla__common_8h.html#a6b80c6921b4b4e20c95df868e20c8afd',1,'odla_common.h']]],
+  ['odla_5fuint64_32',['odla_uint64',['../odla__common_8h.html#aeb84ef9d7f788f94b03b14ad3517b374',1,'odla_common.h']]],
+  ['odla_5fuint8_33',['odla_uint8',['../odla__common_8h.html#a865438a9ae649ef089e0e577dabc280d',1,'odla_common.h']]],
+  ['odla_5fvalue_34',['odla_value',['../odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b',1,'odla_value.h']]],
+  ['odla_5fvalue_5fid_35',['odla_value_id',['../odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82',1,'odla_value.h']]],
+  ['odla_5fvendor_36',['odla_vendor',['../odla__device_8h.html#a6dc7b117d59c66da8fa01e8687473d19',1,'odla_device.h']]],
+  ['odla_5fvoid_37',['odla_void',['../odla__common_8h.html#ada3e0e93ebd03f1f5fe3ff21655cdb11',1,'odla_common.h']]]
 ];
