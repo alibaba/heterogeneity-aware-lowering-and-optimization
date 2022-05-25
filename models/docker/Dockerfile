@@ -78,11 +78,11 @@ RUN mv /tmp/yolov5/yolov5l.onnx .
 FROM alpine/git:v2.30.1 AS ONNX
 RUN apk add git-lfs
 WORKDIR /tmp
-RUN git clone --depth=1 https://github.com/onnx/models
+RUN git clone https://github.com/onnx/models
 WORKDIR /tmp/models
+RUN git checkout -f -b tmp 94abdef
 RUN git-lfs pull -X="" -I="caffenet-3.onnx"
 RUN git-lfs pull -X="" -I="yolov3-10.onnx"
-RUN git-lfs pull -X="" -I="yolov4.onnx"
 RUN git-lfs pull -X="" -I="inception-v1-9.onnx"
 RUN git-lfs pull -X="" -I="resnet18-v1-7.onnx"
 RUN git-lfs pull -X="" -I="resnet50-v2-7.onnx"
@@ -105,11 +105,17 @@ WORKDIR /models/vision/classification/shufflenet
 RUN mv /tmp/models/vision/classification/shufflenet/model/shufflenet-9.onnx .
 
 WORKDIR /models/vision/detection/yolo
-RUN mv /tmp/models/vision/object_detection_segmentation/yolov3/model/yolov3-10.onnx . && \
-    mv /tmp/models/vision/object_detection_segmentation/yolov4/model/yolov4.onnx .
+RUN mv /tmp/models/vision/object_detection_segmentation/yolov3/model/yolov3-10.onnx .
 
 WORKDIR /models/text/comprehension/bert
 RUN mv /tmp/models/text/machine_comprehension/bert-squad/model/bertsquad-10.onnx .
+
+RUN cd /tmp/models && \
+    git checkout -b yolov4 625eaec && \
+    git-lfs pull -X="" -I="yolov4.onnx"
+
+WORKDIR /models/vision/detection/yolo
+RUN mv /tmp/models/vision/object_detection_segmentation/yolov4/model/yolov4.onnx .
 
 WORKDIR /tmp
 RUN git clone --depth=1 -b rel-1.8.0 https://github.com/onnx/onnx.git
