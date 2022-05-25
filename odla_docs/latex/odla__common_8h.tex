@@ -52,6 +52,8 @@ typedef float \mbox{\hyperlink{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5
 \item 
 typedef double \mbox{\hyperlink{odla__common_8h_a956bdf1765e13ccacb04cbf02de7d0b3}{odla\+\_\+float64}}
 \item 
+typedef const char $\ast$ \mbox{\hyperlink{odla__common_8h_abd5c0aa787a6e04de64aef40f80c8cc2}{odla\+\_\+string}}
+\item 
 typedef \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\+\_\+uint32}} \mbox{\hyperlink{odla__common_8h_a86f265601c0773152f4e193a8614c0ac}{odla\+\_\+bool}}
 \item 
 typedef char \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\+\_\+char}}
@@ -90,6 +92,7 @@ enum {\bfseries odla\+\_\+element\+\_\+type} \{ \newline
 , {\bfseries ODLA\+\_\+\+FLOAT64}
 , \newline
 {\bfseries ODLA\+\_\+\+BOOL}
+, {\bfseries ODLA\+\_\+\+STRING}
  \}
 \item 
 enum \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} \{ \newline
@@ -131,7 +134,7 @@ Definition in file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h
 
 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00094}{94}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00096}{96}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_a115004e03b7bafa9bd7ab433afc7ac5f}\label{odla__common_8h_a115004e03b7bafa9bd7ab433afc7ac5f}} 
 \index{odla\_common.h@{odla\_common.h}!ODLA\_API\_CALL@{ODLA\_API\_CALL}}
@@ -141,7 +144,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00094}{94}} of file 
 
 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00170}{170}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00173}{173}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}\label{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}} 
 \index{odla\_common.h@{odla\_common.h}!ODLA\_API\_EXPORT@{ODLA\_API\_EXPORT}}
@@ -155,7 +158,7 @@ API export directives.
 
 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00169}{169}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00172}{172}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 
 
@@ -168,7 +171,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00169}{169}} of file
 
 16-\/bit brain floating point type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00088}{88}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00089}{89}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_a86f265601c0773152f4e193a8614c0ac}\label{odla__common_8h_a86f265601c0773152f4e193a8614c0ac}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_bool@{odla\_bool}}
@@ -178,7 +181,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00088}{88}} of file 
 
 boolean type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00097}{97}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00099}{99}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}\label{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_char@{odla\_char}}
@@ -192,7 +195,7 @@ char
 
 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00128}{128}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00131}{131}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_a64ee51987605659050cbe1ef64941f1d}\label{odla__common_8h_a64ee51987605659050cbe1ef64941f1d}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_float16@{odla\_float16}}
@@ -202,7 +205,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00128}{128}} of file
 
 16-\/bit floating point type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00087}{87}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00088}{88}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}\label{odla__common_8h_aeaf2b4ed87e14f5bbf792ab782aa73f5}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_float32@{odla\_float32}}
@@ -212,7 +215,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00087}{87}} of file 
 
 32-\/bit floating point type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00089}{89}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00090}{90}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_a956bdf1765e13ccacb04cbf02de7d0b3}\label{odla__common_8h_a956bdf1765e13ccacb04cbf02de7d0b3}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_float64@{odla\_float64}}
@@ -222,7 +225,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00089}{89}} of file 
 
 64-\/bit floating point type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00090}{90}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00091}{91}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_a6fecbc127ee239fc550a1568bd0f44c2}\label{odla__common_8h_a6fecbc127ee239fc550a1568bd0f44c2}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_int16@{odla\_int16}}
@@ -232,7 +235,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00090}{90}} of file 
 
 16-\/bit signed integer type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00064}{64}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00065}{65}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}\label{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_int32@{odla\_int32}}
@@ -242,7 +245,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00064}{64}} of file 
 
 32-\/bit signed integer type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00065}{65}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00066}{66}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_a4c8498c0bc04a3dc2e8683c1c9bd3aa9}\label{odla__common_8h_a4c8498c0bc04a3dc2e8683c1c9bd3aa9}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_int64@{odla\_int64}}
@@ -252,7 +255,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00065}{65}} of file 
 
 64-\/bit signed integer type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00066}{66}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00067}{67}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_ab759367dbc391f2a4c1ef47fc12640d1}\label{odla__common_8h_ab759367dbc391f2a4c1ef47fc12640d1}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_int8@{odla\_int8}}
@@ -262,7 +265,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00066}{66}} of file 
 
 8-\/bit signed integer type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00063}{63}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00064}{64}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_aaaa5d01bda022f8b6f4ff38680741426}\label{odla__common_8h_aaaa5d01bda022f8b6f4ff38680741426}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_qint16@{odla\_qint16}}
@@ -272,7 +275,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00063}{63}} of file 
 
 16-\/bit signed quantized integer type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00074}{74}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00075}{75}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_a1766e33e280d3cf1638c892d9246b47d}\label{odla__common_8h_a1766e33e280d3cf1638c892d9246b47d}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_qint32@{odla\_qint32}}
@@ -282,7 +285,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00074}{74}} of file 
 
 32-\/bit signed quantized integer type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00075}{75}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00076}{76}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_ae11db7721a08fec274632164c0afd399}\label{odla__common_8h_ae11db7721a08fec274632164c0afd399}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_qint64@{odla\_qint64}}
@@ -292,7 +295,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00075}{75}} of file 
 
 64-\/bit signed quantized integer type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00076}{76}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00077}{77}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_aacf1be22ddf1341e1d39369fd39c2f72}\label{odla__common_8h_aacf1be22ddf1341e1d39369fd39c2f72}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_qint8@{odla\_qint8}}
@@ -302,7 +305,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00076}{76}} of file 
 
 8-\/bit signed quantized integer type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00073}{73}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00074}{74}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_a24af12d9854e5945e989ce9c660e3faf}\label{odla__common_8h_a24af12d9854e5945e989ce9c660e3faf}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_quint16@{odla\_quint16}}
@@ -312,7 +315,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00073}{73}} of file 
 
 16-\/bit unsigned quantized integer type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00080}{80}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00081}{81}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_ac7491c5982654776eb48710a97c33e75}\label{odla__common_8h_ac7491c5982654776eb48710a97c33e75}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_quint32@{odla\_quint32}}
@@ -322,7 +325,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00080}{80}} of file 
 
 32-\/bit unsigned quantized integer type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00082}{82}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00083}{83}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_a02772eefb47a8a4219be7e23d56cbe24}\label{odla__common_8h_a02772eefb47a8a4219be7e23d56cbe24}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_quint64@{odla\_quint64}}
@@ -332,7 +335,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00082}{82}} of file 
 
 64-\/bit unsigned quantized integer type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00084}{84}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00085}{85}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_a47681b75cefcd1e2355ef155beb6931b}\label{odla__common_8h_a47681b75cefcd1e2355ef155beb6931b}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_quint8@{odla\_quint8}}
@@ -342,7 +345,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00084}{84}} of file 
 
 8-\/bit unsigned quantized integer type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00078}{78}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00079}{79}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_acac65b5a20353d7f068ca61c6ab7569c}\label{odla__common_8h_acac65b5a20353d7f068ca61c6ab7569c}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_size\_t@{odla\_size\_t}}
@@ -356,7 +359,17 @@ size\+\_\+t
 
 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00131}{131}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00134}{134}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+
+\mbox{\Hypertarget{odla__common_8h_abd5c0aa787a6e04de64aef40f80c8cc2}\label{odla__common_8h_abd5c0aa787a6e04de64aef40f80c8cc2}} 
+\index{odla\_common.h@{odla\_common.h}!odla\_string@{odla\_string}}
+\index{odla\_string@{odla\_string}!odla\_common.h@{odla\_common.h}}
+\doxysubsubsection{\texorpdfstring{odla\_string}{odla\_string}}
+{\footnotesize\ttfamily typedef const char$\ast$ \mbox{\hyperlink{odla__common_8h_abd5c0aa787a6e04de64aef40f80c8cc2}{odla\+\_\+string}}}
+
+pointer to NULL-\/terminated string 
+
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00092}{92}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_a06050332dcc769101e4de49f7ccc2139}\label{odla__common_8h_a06050332dcc769101e4de49f7ccc2139}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_uint16@{odla\_uint16}}
@@ -366,7 +379,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00131}{131}} of file
 
 16-\/bit unsigned integer type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00068}{68}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00069}{69}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}\label{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_uint32@{odla\_uint32}}
@@ -376,7 +389,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00068}{68}} of file 
 
 32-\/bit unsigned integer type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00069}{69}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00070}{70}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_aeb84ef9d7f788f94b03b14ad3517b374}\label{odla__common_8h_aeb84ef9d7f788f94b03b14ad3517b374}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_uint64@{odla\_uint64}}
@@ -386,7 +399,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00069}{69}} of file 
 
 64-\/bit unsigned integer type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00070}{70}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00071}{71}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_a865438a9ae649ef089e0e577dabc280d}\label{odla__common_8h_a865438a9ae649ef089e0e577dabc280d}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_uint8@{odla\_uint8}}
@@ -396,7 +409,7 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00070}{70}} of file 
 
 8-\/bit unsigned integer type 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00067}{67}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00068}{68}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 \mbox{\Hypertarget{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}\label{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}} 
 \index{odla\_common.h@{odla\_common.h}!odla\_void@{odla\_void}}
@@ -410,7 +423,7 @@ void
 
 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00134}{134}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00137}{137}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 
 
@@ -423,36 +436,37 @@ Definition at line \mbox{\hyperlink{odla__common_8h_source_l00134}{134}} of file
 
 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00100}{100}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00102}{102}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 
 \begin{DoxyCode}{0}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00100}00100              \{}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00101}00101   ODLA\_INT8,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00102}00102   ODLA\_INT16,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00103}00103   ODLA\_INT32,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00104}00104   ODLA\_INT64,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00105}00105   ODLA\_UINT8,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00106}00106   ODLA\_UINT16,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00107}00107   ODLA\_UINT32,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00108}00108   ODLA\_UINT64,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00109}00109 }
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00110}00110   ODLA\_QINT8,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00111}00111   ODLA\_QINT16,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00112}00112   ODLA\_QINT32,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00113}00113   ODLA\_QINT64,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00114}00114   ODLA\_QUINT8,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00115}00115   ODLA\_QUINT16,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00116}00116   ODLA\_QUINT32,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00117}00117   ODLA\_QUINT64,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00118}00118 }
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00119}00119   ODLA\_FLOAT16,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00120}00120   ODLA\_BFLOAT16,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00121}00121   ODLA\_FLOAT32,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00122}00122   ODLA\_FLOAT64,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00123}00123 }
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00124}00124   ODLA\_BOOL,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00125}00125 \} odla\_element\_type;}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00102}00102              \{}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00103}00103   ODLA\_INT8,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00104}00104   ODLA\_INT16,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00105}00105   ODLA\_INT32,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00106}00106   ODLA\_INT64,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00107}00107   ODLA\_UINT8,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00108}00108   ODLA\_UINT16,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00109}00109   ODLA\_UINT32,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00110}00110   ODLA\_UINT64,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00111}00111 }
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00112}00112   ODLA\_QINT8,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00113}00113   ODLA\_QINT16,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00114}00114   ODLA\_QINT32,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00115}00115   ODLA\_QINT64,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00116}00116   ODLA\_QUINT8,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00117}00117   ODLA\_QUINT16,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00118}00118   ODLA\_QUINT32,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00119}00119   ODLA\_QUINT64,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00120}00120 }
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00121}00121   ODLA\_FLOAT16,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00122}00122   ODLA\_BFLOAT16,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00123}00123   ODLA\_FLOAT32,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00124}00124   ODLA\_FLOAT64,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00125}00125 }
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00126}00126   ODLA\_BOOL,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00127}00127   ODLA\_STRING,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00128}00128 \} odla\_element\_type;}
 
 \end{DoxyCode}
 \mbox{\Hypertarget{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}\label{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}} 
@@ -505,26 +519,26 @@ ODLA\+\_\+\+UNRECOVERABLE\+\_\+\+ERR&unrecoverable error \\
 \end{DoxyEnumFields}
 
 
-Definition at line \mbox{\hyperlink{odla__common_8h_source_l00137}{137}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
+Definition at line \mbox{\hyperlink{odla__common_8h_source_l00140}{140}} of file \mbox{\hyperlink{odla__common_8h_source}{odla\+\_\+common.\+h}}.
 
 
 \begin{DoxyCode}{0}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00137}00137              \{}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00138}00138   ODLA\_SUCCESS,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00140}00140   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a6d455c06ecdf45fe88b1e126ca213087}{ODLA\_DL\_ERROR}},}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00141}00141   ODLA\_FILE\_NOT\_EXIST,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00143}00143   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a5b894b19f9456cae708edc778f63218f}{ODLA\_INVALID\_PARAM}},}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00145}00145   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a3bbe59e41327500a9a709ae05af34dd1}{ODLA\_MEM\_ERROR}},}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00146}00146   ODLA\_UNSUPPORTED\_DATATYPE,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00147}00147   ODLA\_UNSUPPORTED\_DEVICE\_TYPE,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00149}00149   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29abb64d0b5146c0236d571cb897384853e}{ODLA\_UNSUPPORTED\_OP}},}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00151}00151   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a2a2087e4e487e8ec867e356bdcc95f00}{ODLA\_TIMEOUT}},}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00153}00153   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a0c19e9d42ae016f5b9dc9a7054077d13}{ODLA\_INTERNAL\_LOGIC\_ERR}},}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00155}00155   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a78d98eb3ea302582a487afa76c9f1344}{ODLA\_RECOVERABLE\_ERR}},}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00157}00157   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a4f2a588c748813827894ececed6a4547}{ODLA\_PARTITION\_RESET}},}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00158}00158   ODLA\_FULL\_RESET,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00160}00160   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a7f249f9bdd98e4745333b2c83ac73a7c}{ODLA\_UNRECOVERABLE\_ERR}},}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00161}00161   ODLA\_FAILURE,}
-\DoxyCodeLine{\Hypertarget{odla__common_8h_l00162}00162 \} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}};}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00140}00140              \{}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00141}00141   ODLA\_SUCCESS,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00143}00143   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a6d455c06ecdf45fe88b1e126ca213087}{ODLA\_DL\_ERROR}},}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00144}00144   ODLA\_FILE\_NOT\_EXIST,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00146}00146   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a5b894b19f9456cae708edc778f63218f}{ODLA\_INVALID\_PARAM}},}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00148}00148   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a3bbe59e41327500a9a709ae05af34dd1}{ODLA\_MEM\_ERROR}},}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00149}00149   ODLA\_UNSUPPORTED\_DATATYPE,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00150}00150   ODLA\_UNSUPPORTED\_DEVICE\_TYPE,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00152}00152   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29abb64d0b5146c0236d571cb897384853e}{ODLA\_UNSUPPORTED\_OP}},}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00154}00154   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a2a2087e4e487e8ec867e356bdcc95f00}{ODLA\_TIMEOUT}},}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00156}00156   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a0c19e9d42ae016f5b9dc9a7054077d13}{ODLA\_INTERNAL\_LOGIC\_ERR}},}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00158}00158   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a78d98eb3ea302582a487afa76c9f1344}{ODLA\_RECOVERABLE\_ERR}},}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00160}00160   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a4f2a588c748813827894ececed6a4547}{ODLA\_PARTITION\_RESET}},}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00161}00161   ODLA\_FULL\_RESET,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00163}00163   \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29a7f249f9bdd98e4745333b2c83ac73a7c}{ODLA\_UNRECOVERABLE\_ERR}},}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00164}00164   ODLA\_FAILURE,}
+\DoxyCodeLine{\Hypertarget{odla__common_8h_l00165}00165 \} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}};}
 
 \end{DoxyCode}
