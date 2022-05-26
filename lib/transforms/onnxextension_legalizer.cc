@@ -369,13 +369,11 @@ static std::vector<Def> ConvertSum(const ONNXExtensionInst* ext,
       return {ext->GetOperand(0)};
       break;
     default:
-  
- 
-  auto op0 = builder->CreateAdd(ext->GetName(), ext->GetOperand(0),
-                                ext->GetOperand(1));
-  for (unsigned i = 2; i < n; ++i) {
-    op0 = builder->CreateAdd(ext->GetName() + std::to_string(i - 1), *op0,
-                             ext->GetOperand(i));
+      auto op0 = builder->CreateAdd(ext->GetName(), ext->GetOperand(0),
+                                    ext->GetOperand(1));
+      for (unsigned i = 2; i < n; ++i) {
+        op0 = builder->CreateAdd(ext->GetName() + std::to_string(i - 1), *op0,
+                                 ext->GetOperand(i));
   }
   return {*op0};
   break;
