@@ -374,9 +374,10 @@ static std::vector<Def> ConvertSum(const ONNXExtensionInst* ext,
       for (unsigned i = 2; i < n; ++i) {
         op0 = builder->CreateAdd(ext->GetName() + std::to_string(i - 1), *op0,
                                  ext->GetOperand(i));
+      break;
   }
   return {*op0};
-  break;
+
 }
 }
 static std::vector<Def> ConvertFlatten(const ONNXExtensionInst* ext,
