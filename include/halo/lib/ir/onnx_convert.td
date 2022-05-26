@@ -310,6 +310,7 @@ def ONNX_MaxPool : OpMapping<"MaxPool", PoolingMax> {
     ExtensionAttr<"dilations", IntegerList, "{1,1}">,
     ExtensionAttr<"storage_order", Integer, "0">];
 }
+def ONNX_Mean :ONNXExtension<"Mean">;
 
 def ONNX_Min : OpMapping<"Min", Minimum>;
 
