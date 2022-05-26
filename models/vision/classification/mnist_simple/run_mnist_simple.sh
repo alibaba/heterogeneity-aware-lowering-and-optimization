@@ -29,4 +29,4 @@ g++ -o $out/test $out/main.o $out/mnist_simple.so \
 $out/test $model_path/test_image $model_path/test_label | tee $2
 # RUN: FileCheck --input-file %t.2 %s
 
-# CHECK: Accuracy 919{{.*}}/10000 (91.9{{.*}}%)
+# CHECK: Accuracy 91{{.*}}/10000 (91.{{.*}}%)
