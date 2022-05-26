@@ -362,15 +362,17 @@ static std::vector<Def> ConvertSum(const ONNXExtensionInst* ext,
                                    IRBuilder* builder) {
   // Conver to a chain of adds.
   auto n = ext->GetNumOfOperands();
+  auto input = ext->GetOperand(0);
   HLCHECK(n >= 1);
   switch(n)
   {
-    case 1:
-      auto input = ext->GetOperand(0);
+    case 1:{
       return {input};
       break;
+    }
     default:
-      auto op0 = builder->CreateAdd(ext->GetName(), ext->GetOperand(0),
+      {
+      auto op0 = builder->CreateAdd(ext->GetName(), input,
                                     ext->GetOperand(1));
       for (unsigned i = 2; i < n; ++i) {
         op0 = builder->CreateAdd(ext->GetName() + std::to_string(i - 1), *op0,
@@ -378,6 +380,7 @@ static std::vector<Def> ConvertSum(const ONNXExtensionInst* ext,
       }
       return {*op0};
       break;
+      }
   }
 }
 static std::vector<Def> ConvertFlatten(const ONNXExtensionInst* ext,
