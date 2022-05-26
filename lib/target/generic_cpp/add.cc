@@ -58,6 +58,7 @@ void GenericCXXCodeGen::RunOnBinaryInstruction(Instruction* inst) {
       {OpCode::AND, "odla_And"},
       {OpCode::DIV, "odla_Div"},
       {OpCode::MAXIMUM, "odla_Max"},
+      {OpCode::MEAN, "odla_Mean"},
       {OpCode::MINIMUM, "odla_Min"},
       {OpCode::MUL, "odla_Mul"},
       {OpCode::SUB, "odla_Sub"},
@@ -89,7 +90,11 @@ void GenericCXXCodeGen::RunOnInstruction(SubInst* inst) {
 void GenericCXXCodeGen::RunOnInstruction(MaximumInst* inst) {
   RunOnBinaryInstruction(inst);
 }
-
+  
+void GenericCXXCodeGen::RunOnInstruction(MeanInst* inst) {
+  RunOnBinaryInstruction(inst);
+}
+  
 void GenericCXXCodeGen::RunOnInstruction(MinimumInst* inst) {
   RunOnBinaryInstruction(inst);
 }

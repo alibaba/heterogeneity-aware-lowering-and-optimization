@@ -362,7 +362,11 @@ static std::vector<Def> ConvertSum(const ONNXExtensionInst* ext,
                                    IRBuilder* builder) {
   // Conver to a chain of adds.
   auto n = ext->GetNumOfOperands();
-  HLCHECK(n >= 2);
+  HLCHECK(n >= 1);
+  if (n == 1) {
+    return {ext->GetOperand(0)};
+  }
+
   auto op0 = builder->CreateAdd(ext->GetName(), ext->GetOperand(0),
                                 ext->GetOperand(1));
   for (unsigned i = 2; i < n; ++i) {
@@ -371,6 +375,30 @@ static std::vector<Def> ConvertSum(const ONNXExtensionInst* ext,
   }
   return {*op0};
 }
+static std::vector<Def> ConvertMean(const ONNXExtensionInst* ext,
+                                    IRBuilder* builder) {
+  // Conver to a chain of Means.
+
+  auto input = ext->GetOperand(0);
+  ConstantBuilder c_builder(ext->GetParent()->GetParent());
+
+  HLCHECK(ext->GetNumOfOperands() >= 1);
+  if (ext->GetNumOfOperands() == 1) {
+    return {ext->GetOperand(0)};
+  }
+  auto op0 = builder->CreateAdd(ext->GetName(), input, ext->GetOperand(1));
+  for (unsigned i = 2; i < ext->GetNumOfOperands(); ++i) {
+    op0 = builder->CreateAdd(ext->GetName() + std::to_string(i - 1), *op0,
+                             ext->GetOperand(i));
+  }
+  float n = ext->GetNumOfOperands();
+  Def mean_div = *c_builder.CreateConstant(
+      "NumOfOperands", halo::Type{DataType::FLOAT32, std::vector<int64_t>{}},
+      std::vector<float>{n});
+  auto op1 = builder->CreateDiv(ext->GetName() + "_DIV", *op0, mean_div);
+  return {*op1};
+}
+
 
 static std::vector<Def> ConvertFlatten(const ONNXExtensionInst* ext,
                                        IRBuilder* builder) {
@@ -1621,6 +1649,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::SUM: {
       return ConvertSum(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::MEAN: {
+      return ConvertMean(onnx_inst, builder);
     }
     case ONNXExtOpCode::PAD: {
       return ConvertPad(onnx_inst, builder);
