@@ -362,7 +362,10 @@ static std::vector<Def> ConvertSum(const ONNXExtensionInst* ext,
                                    IRBuilder* builder) {
   // Conver to a chain of adds.
   auto n = ext->GetNumOfOperands();
-  HLCHECK(n >= 2);
+  HLCHECK(n >= 1);
+  if (n == 1) {
+    return {ext->GetOperand(0)};
+  }
   auto op0 = builder->CreateAdd(ext->GetName(), ext->GetOperand(0),
                                 ext->GetOperand(1));
   for (unsigned i = 2; i < n; ++i) {
