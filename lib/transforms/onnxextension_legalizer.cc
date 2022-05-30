@@ -377,6 +377,44 @@ static std::vector<Def> ConvertSum(const ONNXExtensionInst* ext,
   return {*op0};
 }
 
+static std::vector<Def> ConvertMaximum(const ONNXExtensionInst* ext,
+                                       IRBuilder* builder) {
+  // Conver to a chain of adds.
+  auto n = ext->GetNumOfOperands();
+  HLCHECK(n >= 1);
+  if (n == 1) {
+    auto input = ext->GetOperand(0);
+
+    return {input};
+  }
+  auto op0 = builder->CreateMaximum(ext->GetName(), ext->GetOperand(0),
+                                    ext->GetOperand(1));
+  for (unsigned i = 2; i < n; ++i) {
+    op0 = builder->CreateMaximum(ext->GetName() + std::to_string(i - 1), *op0,
+                                 ext->GetOperand(i));
+  }
+  return {*op0};
+}
+
+static std::vector<Def> ConvertMinimum(const ONNXExtensionInst* ext,
+                                       IRBuilder* builder) {
+  // Conver to a chain of adds.
+  auto n = ext->GetNumOfOperands();
+  HLCHECK(n >= 1);
+  if (n == 1) {
+    auto input = ext->GetOperand(0);
+
+    return {input};
+  }
+  auto op0 = builder->CreateMinimum(ext->GetName(), ext->GetOperand(0),
+                                    ext->GetOperand(1));
+  for (unsigned i = 2; i < n; ++i) {
+    op0 = builder->CreateMinimum(ext->GetName() + std::to_string(i - 1), *op0,
+                                 ext->GetOperand(i));
+  }
+  return {*op0};
+}
+
 static std::vector<Def> ConvertFlatten(const ONNXExtensionInst* ext,
                                        IRBuilder* builder) {
   auto input = ext->GetOperand(0);
@@ -1564,6 +1602,13 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
   builder->SetInsertAfter(onnx_inst);
 
   switch (onnx_inst->GetExtOpCode()) {
+    case ONNXExtOpCode::MAX: {
+      return ConvertMaximum(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::MIN: {
+      return ConvertMinimum(onnx_inst, builder);
+    }
+
     case ONNXExtOpCode::CAST: {
       return ConvertCast(onnx_inst, builder);
     }
