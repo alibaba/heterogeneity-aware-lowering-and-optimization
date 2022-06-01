@@ -377,7 +377,7 @@ static std::vector<Def> ConvertSum(const ONNXExtensionInst* ext,
 
 static std::vector<Def> ConvertMaximum(const ONNXExtensionInst* ext,
                                        IRBuilder* builder) {
-  // Conver to a chain of adds.
+  // Conver to a chain of maximum.
   auto n = ext->GetNumOfOperands();
   HLCHECK(n >= 1);
   if (n == 1) {
@@ -394,7 +394,7 @@ static std::vector<Def> ConvertMaximum(const ONNXExtensionInst* ext,
 
 static std::vector<Def> ConvertMinimum(const ONNXExtensionInst* ext,
                                        IRBuilder* builder) {
-  // Conver to a chain of adds.
+  // Conver to a chain of minimum.
   auto n = ext->GetNumOfOperands();
   HLCHECK(n >= 1);
   if (n == 1) {
