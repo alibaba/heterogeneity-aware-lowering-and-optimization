@@ -1045,6 +1045,7 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     vodh_ret rt;
 
     /* Additional inference info */
+    std::cout << "[vODLA] batch size: " << context->batchSize << "\n";
     device->vodh_infer_opt.batch_size = context->batchSize;
     device->vodh_infer_opt.request_id = device->vodh_infer_result.request_id;
     device->vodh_infer_opt.request_cap.type = device->vodh_dev_cap_list[0].type;
