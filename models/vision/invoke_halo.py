@@ -197,6 +197,7 @@ if __name__ == "__main__":
         else:
             print(ind)
             res_info.append(ind)
+    c_lib.model_fini()
     #resfile = os.path.splitext(os.path.basename(model_file[0]))[0]
     #resfile = resfile + '_' + args.odla + '.txt'
     #resfile = os.path.join('/tmp', resfile)
