@@ -20,7 +20,6 @@
 #include <NvInferRuntime.h>
 #include <NvInferRuntimeCommon.h>
 #include <ODLA/odla.h>
-#include <bits/stdint-intn.h>
 #include <cuda_runtime.h>
 
 #include <algorithm>
@@ -183,7 +182,7 @@ static constexpr size_t MAX_WORKSPACE_SIZE_BYTES =
 #else
 static constexpr size_t MAX_WORKSPACE_SIZE_BYTES = 1ul * 1024 * 1024 * 1024;
 #endif
-static const int MAX_INT64_CONVERTION_NUM = 65536ul;
+static const int MAX_INT64_CONVERTION_NUM = std::numeric_limits<int32_t>::max();
 
 typedef struct {
   IIfConditional* branch;
@@ -1348,6 +1347,37 @@ static odla_value unary_op(nvinfer1::UnaryOperation op, odla_value input,
   return CreateValue(layer, input->type, id);
 }
 
+odla_value odla_ExpandDims(odla_value input, odla_value_shape output_dims,
+                           const odla_value_id value_id) {
+  // use slice to expand dims.
+  // reshape to the same rank.
+  auto input_dims = input->type.shape;
+  int rank_diff = output_dims.size - input_dims.size;
+  assert(rank_diff >= 0);
+
+  if (rank_diff > 0) {
+    odla_value_shape new_dims = output_dims;
+    for (int i = 0, j = -rank_diff; i < output_dims.size; ++i, ++j) {
+      new_dims.dims[i] = j >= 0 ? input_dims.dims[j] : 1;
+    }
+    const std::string& name = GetName(value_id, "_expand");
+    input = odla_Reshape(input, new_dims, (const odla_value_id)name.c_str());
+    input_dims = new_dims;
+  }
+  Dims start;
+  Dims size;
+  Dims stride;
+  start.nbDims = size.nbDims = stride.nbDims = output_dims.size;
+  for (int i = 0; i < output_dims.size; ++i) {
+    start.d[i] = 0;
+    size.d[i] = output_dims.dims[i];
+    stride.d[i] = (input_dims.dims[i] == output_dims.dims[i]) ? 1 : 0;
+  }
+
+  auto layer = g_comp->network->addSlice(*(input->tensor), start, size, stride);
+  return CreateValue(layer, {input->type.element_type, output_dims}, value_id);
+}
+
 odla_value odla_Log(odla_value input, const odla_value_id id) {
   return unary_op(nvinfer1::UnaryOperation::kLOG, input, id);
 }
@@ -2135,24 +2165,36 @@ odla_value odla_Transpose(odla_value input, odla_value_shape permutations,
   return CreateValue(shuffle, {input->type.element_type, output_dims}, id);
 }
 
+static odla_value arg_min_max(odla_value input, odla_int32 axis,
+                              odla_bool keep_dims, odla_bool return_last_index,
+                              odla_value_type output_value_type,
+                              nvinfer1::TopKOperation min_max,
+                              const odla_value_id id) {
+  unsigned reduce_axes = axis < 0 ? input->type.shape.size + axis : axis;
+  auto topk = g_comp->network->addTopK(*input, min_max, 1, 1 << reduce_axes);
+  if (keep_dims == 0) {
+    auto name = GetName(id, "_keep_dims");
+    auto ret = CreateValue(topk->getOutput(1), output_value_type,
+                           (const odla_value_id)name.c_str());
+    return odla_Reshape(ret, output_value_type.shape, id);
+  }
+  return CreateValue(topk->getOutput(1), output_value_type, id);
+}
+
 odla_value odla_ArgMax(odla_value input, odla_int32 axis, odla_bool keep_dims,
                        odla_bool return_last_index,
                        odla_value_type output_value_type,
                        const odla_value_id id) {
-  unsigned reduce_axes = axis < 0 ? input->type.shape.size + axis : axis;
-  auto topk = g_comp->network->addTopK(*input, nvinfer1::TopKOperation::kMAX, 1,
-                                       1 << reduce_axes);
-  return CreateValue(topk->getOutput(1), output_value_type, id);
+  return arg_min_max(input, axis, keep_dims, return_last_index,
+                     output_value_type, nvinfer1::TopKOperation::kMAX, id);
 }
 
 odla_value odla_ArgMin(odla_value input, odla_int32 axis, odla_bool keep_dims,
                        odla_bool return_last_index,
                        odla_value_type output_value_type,
                        const odla_value_id id) {
-  unsigned reduce_axes = axis < 0 ? input->type.shape.size + axis : axis;
-  auto topk = g_comp->network->addTopK(*input, nvinfer1::TopKOperation::kMIN, 1,
-                                       1 << reduce_axes);
-  return CreateValue(topk->getOutput(1), output_value_type, id);
+  return arg_min_max(input, axis, keep_dims, return_last_index,
+                     output_value_type, nvinfer1::TopKOperation::kMIN, id);
 }
 
 odla_value odla_Gather(odla_value input, const odla_value indices,

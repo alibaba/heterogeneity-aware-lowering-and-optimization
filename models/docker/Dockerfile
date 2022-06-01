@@ -35,6 +35,11 @@ RUN convert 0test.png -resize 256x256 test.jpg && rm 0test.png
 
 # HRNet
 FROM pytorch/pytorch:1.8.1-cuda11.1-cudnn8-devel AS HRNET
+SHELL [ "/bin/bash", "-c"]
+RUN mv /etc/apt/sources.list.d/{cuda,nvidia-ml}.list /tmp/
+RUN apt-get update && apt-get install -y curl && \
+    curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub | apt-key add - && \
+    mv /tmp/{cuda.list,nvidia-ml.list} /etc/apt/sources.list.d/
 RUN apt-get update && apt-get install -y git wget libgeos-dev gcc \
     libglib2.0-dev libsm6 libxext6 libxrender-dev
 RUN pip3 install EasyDict==1.7 opencv-python==3.4.8.29 shapely==1.6.4 Cython \
@@ -56,14 +61,16 @@ RUN mv pose_hrnet_w32_256x256.onnx input.in output.in /models/vision/pose_estima
 
 #YOLOv5
 WORKDIR /tmp
+ARG YOLOV5L_URI=https://github.com/ultralytics/yolov5
+ARG YOLOv5_VERSION=v6.1
 RUN apt install -y mesa-utils libgl1-mesa-glx
-RUN git clone https://github.com/ultralytics/yolov5
+RUN git clone ${YOLOV5L_URI}
 WORKDIR yolov5
-RUN git checkout -b tmp c03d590
+RUN git checkout -b tmp 7043872
 RUN pip3 install -r requirements.txt  # base requirements
 RUN pip3 install coremltools>=4.1 onnx>=1.8.1 scikit-learn==0.19.2
-RUN PYTHONPATH=/tmp/yolov5 python3 models/export.py --weights yolov5l.pt \
-    --img 640 --batch 1
+RUN PYTHONPATH=/tmp/yolov5 python3 export.py --include onnx \
+    --weights ${YOLOV5L_URI}/releases/download/${YOLOv5_VERSION}/yolov5l.pt --img 640 --batch 1
 WORKDIR /models/vision/detection/yolo
 RUN mv /tmp/yolov5/yolov5l.onnx .
 
@@ -71,8 +78,9 @@ RUN mv /tmp/yolov5/yolov5l.onnx .
 FROM alpine/git:v2.30.1 AS ONNX
 RUN apk add git-lfs
 WORKDIR /tmp
-RUN git clone --depth=1 https://github.com/onnx/models
+RUN git clone https://github.com/onnx/models
 WORKDIR /tmp/models
+RUN git checkout -f -b tmp 94abdef
 RUN git-lfs pull -X="" -I="caffenet-3.onnx"
 RUN git-lfs pull -X="" -I="yolov3-10.onnx"
 RUN git-lfs pull -X="" -I="inception-v1-9.onnx"
@@ -101,6 +109,13 @@ RUN mv /tmp/models/vision/object_detection_segmentation/yolov3/model/yolov3-10.o
 
 WORKDIR /models/text/comprehension/bert
 RUN mv /tmp/models/text/machine_comprehension/bert-squad/model/bertsquad-10.onnx .
+
+RUN cd /tmp/models && \
+    git checkout -b yolov4 625eaec && \
+    git-lfs pull -X="" -I="yolov4.onnx"
+
+WORKDIR /models/vision/detection/yolo
+RUN mv /tmp/models/vision/object_detection_segmentation/yolov4/model/yolov4.onnx .
 
 WORKDIR /tmp
 RUN git clone --depth=1 -b rel-1.8.0 https://github.com/onnx/onnx.git
@@ -136,6 +151,9 @@ RUN curl -o caffenet.caffemodel http://dl.caffe.berkeleyvision.org/bvlc_referenc
 RUN mkdir -p /tmp/models/vision/detection/yolo
 WORKDIR /tmp/models/vision/detection/yolo
 RUN curl -o test.jpg http://images.cocodataset.org/test2017/000000133861.jpg
+RUN curl -O https://raw.githubusercontent.com/AlexeyAB/darknet/master/data/person.jpg
+RUN curl -O https://raw.githubusercontent.com/ultralytics/yolov5/master/data/images/zidane.jpg
+
 
 # Collect all Models & Data
 FROM alpine

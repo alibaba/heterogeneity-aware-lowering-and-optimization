@@ -800,14 +800,14 @@ static std::vector<Def> ConvertSlice(const ONNXExtensionInst* ext,
     }
   }
 
-  // calculate sizes: -((start - end) / step)
+  // calculate sizes:  1 + (end - start - 1) / step
   std::vector<int> sizes_data;
   std::vector<int> starts_data;
   sizes_data.reserve(axes.size());
   starts_data.reserve(axes.size());
   for (auto axis : axes) {
     starts_data.push_back(starts[axis]);
-    sizes_data.push_back(-((starts[axis] - ends[axis]) / steps[axis]));
+    sizes_data.push_back((ends[axis] - starts[axis] - 1) / steps[axis] + 1);
     HLCHECK(sizes_data.back() >= 0);
   }
   Constant* c_begins_norm = cb.CreateConstant(

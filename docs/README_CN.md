@@ -62,7 +62,7 @@ $ docker run --runtime=nvidia -e NVIDIA_DRIVER_CAPABILITIES=video,compute,utilit
 	--privileged --cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
 	-it --name halo_build_env \
 	-v `pwd`:/host --tmpfs /tmp:exec \
-	--rm registry-intl.us-west-1.aliyuncs.com/computation/halo:0.7.6-devel-cuda11.4.2-cudnn8-ubuntu18.04
+	--rm registry-intl.us-west-1.aliyuncs.com/computation/halo:0.8.0-devel-cuda11.4.2-cudnn8-ubuntu18.04
 ```
 
 - 执行编译操作，每个步骤执行顺利到最后会生成`HALO-{version}-Linux.tar.bz2`的包，在容器环境中*验证与源码环境编译*类似。
