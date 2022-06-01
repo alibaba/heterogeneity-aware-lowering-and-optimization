@@ -364,9 +364,7 @@ static std::vector<Def> ConvertSum(const ONNXExtensionInst* ext,
   auto n = ext->GetNumOfOperands();
   HLCHECK(n >= 1);
   if (n == 1) {
-    auto input = ext->GetOperand(0);
-
-    return {input};
+    return {ext->GetOperand(0)};
   }
   auto op0 = builder->CreateAdd(ext->GetName(), ext->GetOperand(0),
                                 ext->GetOperand(1));
