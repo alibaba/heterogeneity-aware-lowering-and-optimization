@@ -82,7 +82,7 @@ jobs:
           rm -fr ${{runner.workspace}}/$repo_name/output_centos
           mkdir -p ${{runner.workspace}}/$repo_name/output_centos
           docker pull $image_registry/computation/halo:$image_tag
-          docker run --rm -v /tmp/centos.cache:/cache --tmpfs /build:exec --user=$UID:$GID \
+          docker run --rm --runtime=nvidia -v /tmp/centos.cache:/cache --tmpfs /build:exec --user=$UID:$GID \
             -v $poplar_sdk:/opt/poplar_sdk:ro \
             -v ${{runner.workspace}}/$repo_name:/host \
             $image_registry/computation/halo:$image_tag \
