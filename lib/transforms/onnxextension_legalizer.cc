@@ -383,9 +383,7 @@ static std::vector<Def> ConvertMaximum(const ONNXExtensionInst* ext,
   auto n = ext->GetNumOfOperands();
   HLCHECK(n >= 1);
   if (n == 1) {
-    auto input = ext->GetOperand(0);
-
-    return {input};
+    return {ext->GetOperand(0)};
   }
   auto op0 = builder->CreateMaximum(ext->GetName(), ext->GetOperand(0),
                                     ext->GetOperand(1));
@@ -402,9 +400,7 @@ static std::vector<Def> ConvertMinimum(const ONNXExtensionInst* ext,
   auto n = ext->GetNumOfOperands();
   HLCHECK(n >= 1);
   if (n == 1) {
-    auto input = ext->GetOperand(0);
-
-    return {input};
+    return {ext->GetOperand(0)};
   }
   auto op0 = builder->CreateMinimum(ext->GetName(), ext->GetOperand(0),
                                     ext->GetOperand(1));
