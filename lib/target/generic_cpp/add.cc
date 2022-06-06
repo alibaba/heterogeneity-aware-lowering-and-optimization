@@ -58,6 +58,7 @@ void GenericCXXCodeGen::RunOnBinaryInstruction(Instruction* inst) {
       {OpCode::AND, "odla_And"},
       {OpCode::DIV, "odla_Div"},
       {OpCode::MAXIMUM, "odla_Max"},
+      {OpCode::MEAN, "odla_Mean"},
       {OpCode::MINIMUM, "odla_Min"},
       {OpCode::MUL, "odla_Mul"},
       {OpCode::SUB, "odla_Sub"},
@@ -282,6 +283,21 @@ void GenericCXXCodeGen::RunOnInstruction(ShiftInst* inst) {
 
   CXXValue ret(inst->GetName(), op0.type);
   EmitODLACall(ret, "odla_Shift", op0, op1, inst->GetIsLeftShift());
+  ir_mapping_[*inst] = ret;
+}
+
+void GenericCXXCodeGen::RunOnInstruction(MeanInst* inst) {
+  CXXValue op0 = ir_mapping_[inst->GetOperand(0)];
+  CXXValue ret(inst->GetName(), op0.type);
+
+  const auto num = inst->GetNumOfOperands();
+  std::vector<CXXValue> inputs;
+  for (size_t i = 0; i < num; ++i) {
+    const Def& op = inst->GetOperand(i);
+    CXXValue op_v = ir_mapping_[op];
+    inputs.push_back(op_v);
+  }
+  EmitODLACall(ret, "odla_Mean", inputs);
   ir_mapping_[*inst] = ret;
 }
 
