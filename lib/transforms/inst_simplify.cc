@@ -2892,6 +2892,15 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(MatMulInst* inst) {
   return {orig_def, orig_def};
 }
 
+std::pair<Def, Def> InstSimplify::RunOnInstruction(MeanInst* inst) {
+  Def orig_def{inst, 0};
+  auto operands = inst->GetOperands();
+  if (operands.size() == 1) {
+    return {orig_def, operands[0]};
+  }
+  return {orig_def, orig_def};
+}
+
 std::pair<Def, Def> InstSimplify::RunOnInstruction(UniqueInst* inst) {
   Def orig_def{inst, 1};
   if (!opts_.simplify_for_preprocess) {
