@@ -1311,6 +1311,10 @@ odla_value odla_Or(odla_value lhs, odla_value rhs, const odla_value_id id) {
   return binary_op(nvinfer1::ElementWiseOperation::kOR, lhs, rhs, id);
 }
 
+odla_value odla_Xor(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  return binary_op(nvinfer1::ElementWiseOperation::kXOR, lhs, rhs, id);
+}
+
 odla_value odla_NotEqual(odla_value lhs, odla_value rhs,
                          const odla_value_id id) {
   std::string name = GetName(id, "_eq");
