@@ -40,7 +40,7 @@ jobs:
         uses: DoozyX/clang-format-lint-action@v0.11
         with:
           source: "./halo"
-          exclude: "./halo/third_party ./halo/external ./halo/ODLA/external ./halo/ODLA/platforms/odla_popart/custom_ops"
+          exclude: "./halo/third_party ./halo/external ./halo/ODLA/external ./halo/ODLA/platforms/odla_popart"
           clangFormatVersion: 9
           style: file
 
