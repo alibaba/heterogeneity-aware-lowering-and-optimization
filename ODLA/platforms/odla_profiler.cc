@@ -223,7 +223,7 @@ static odla_value profile(Args... args) {
     return ret;
   }
   std::vector<float> buf(GetTotalElements(vt.shape));
-  odla_GetValueData(ret, buf.data());
+  odla_GetValueData(ret, buf.data(), nullptr /*context*/);
   odla_ProfileValue(fn_name, buf.data(), vt, reinterpret_cast<char*>(id));
   return ret;
 }
@@ -317,7 +317,8 @@ odla_status odla_GetValueType(const odla_value value,
 }
 
 static constexpr const char fn_gvd[] = "odla_GetValueData";
-odla_status odla_GetValueData(const odla_value value, odla_void* data_ptr) {
+odla_status odla_GetValueData(const odla_value value, odla_void* data_ptr,
+                              odla_context context) {
   return dispatch<fn_gvd, odla_status>(value, data_ptr);
 }
 
