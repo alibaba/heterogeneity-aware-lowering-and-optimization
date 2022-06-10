@@ -34,8 +34,8 @@ void GenericCXXCodeGen::RunOnInstruction(ReturnInst* inst) {
         os_ << "  odla_SetValueAsOutput(" << val.name << ");\n";
       }
     } else {
-      os_ << "  odla_GetValueData(" << Join(val.name, "out_" + val.name)
-          << ");\n";
+      os_ << "  odla_GetValueData("
+          << Join(val.name, "out_" + val.name, EmitNull()) << ");\n";
     }
   }
 }

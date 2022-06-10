@@ -771,7 +771,8 @@ odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
   return GetValue(type, const_cast<void*>(ptr));
 }
 
-odla_status odla_GetValueData(const odla_value value, odla_void* data_ptr) {
+odla_status odla_GetValueData(const odla_value value, odla_void* data_ptr,
+                              odla_context context) {
   memcpy(data_ptr, value->ptr, GetValueSize(value->type));
   return ODLA_SUCCESS;
 }

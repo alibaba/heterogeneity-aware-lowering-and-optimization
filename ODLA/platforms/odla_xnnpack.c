@@ -291,7 +291,8 @@ odla_status odla_SetValueData(odla_value val, const void* ptr) {
   return ODLA_SUCCESS;
 }
 
-odla_status odla_GetValueData(const odla_value value, odla_void* data_ptr) {
+odla_status odla_GetValueData(const odla_value value, odla_void* data_ptr,
+                              odla_context context) {
   memcpy(data_ptr, value->data,
          sizeof(float) * GetTotalElements(&value->shape));
 }

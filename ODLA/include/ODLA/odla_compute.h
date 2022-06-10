@@ -552,6 +552,18 @@ extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_GetRuntimeValueType(
 */
 extern ODLA_API_EXPORT odla_status ODLA_API_CALL
 odla_GetRuntimeNumOfOutputs(odla_context context, odla_uint32* num_output_ptr);
+
+//! \brief Get a value data
+/*!
+  \param value the value
+  \param data_ptr the pointer to the retrieved data buffer
+  \param context the context associated with the value data
+
+  \return odla_status
+*/
+extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_GetValueData(
+    const odla_value value, odla_void* data_ptr, odla_context context);
+
 #ifdef __cplusplus
 } // C extern
 #endif
