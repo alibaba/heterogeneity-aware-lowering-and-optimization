@@ -13,34 +13,18 @@
 #include "doctest.h"
 #include "odla_popart.h"
 #include "popart_config.h"
-
+#include "utils.h"
 //#include "json.hpp"
 
 typedef unsigned short uint16_t;
 using namespace std;
 
-static odla_computation Comp;
-static odla_context Ctx;
-static odla_executable Exec;
-
-void set_computationItem() {
-  bool use_ipu_model = 1;
-  int ipu_num = 1;
-  int batches_per_step = 1;
-  odla_SetComputationItem(Comp, ODLA_USE_SIM_MODE,
-                          (odla_item_value)&use_ipu_model);
-  odla_SetComputationItem(Comp, ODLA_PROCESSOR_NUM, (odla_item_value)&ipu_num);
-  odla_SetComputationItem(Comp, ODLA_BATCHES_PER_STEP,
-                          (odla_item_value)&batches_per_step);
-}
 
 TEST_CASE("MATH OPS TESTING") {
-    
     SUBCASE("MATH OPS ABS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
-
+    set_computationItem(comp);
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
@@ -49,22 +33,20 @@ TEST_CASE("MATH OPS TESTING") {
     auto abs_value = odla_Abs(input, (const odla_value_id) "Abs");
     odla_SetValueAsOutput(abs_value);
 
-    static odla_context ctx;
+    odla_context ctx;
     odla_CreateContext(&ctx);
 
-    float input_data[2 * 2] = {2.0, 1.0, -3.0, -10.0};
-    odla_BindToArgumentById((const odla_value_id) "input", input_data, ctx);
+    std::vector<float> input_data = {2.0, 1.0, -3.0, -10.0};
+    odla_BindToArgumentById((const odla_value_id) "input", input_data.data(), ctx);
 
-    float out_Abs[2 * 2] = {0, 0, 0, 0};
-    odla_BindToOutputById((const odla_value_id) "Abs", out_Abs, ctx);
+    std::vector<float> out_Abs(4);
+    odla_BindToOutputById((const odla_value_id) "Abs", out_Abs.data(), ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
 
-    std::cout << "out_Abs = [";
-    for (int i = 0; i < 4; i++) {
-      std::cout << out_Abs[i] << ", ";
-    }
-    std::cout << "]" << std::endl;
+    std::vector<float> expected = {2, 1, 3, 10,};
+    CHECK_EQ(expected, out_Abs);
+
 
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
@@ -74,7 +56,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS ARG MIN TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
@@ -90,20 +72,16 @@ TEST_CASE("MATH OPS TESTING") {
 
     static odla_context ctx;
     odla_CreateContext(&ctx);
+    std::vector<float> input_data = {2.0, 1.0, -3.0, -10.0};
+    odla_BindToArgumentById((const odla_value_id) "input", input_data.data(), ctx);
 
-    float input_data[2 * 2] = {2.0, 1.0, 3.0, 10.0};
-    odla_BindToArgumentById((const odla_value_id) "input", input_data, ctx);
-
-    int32_t out_ArgMin[2] = {-1, -1};
-    odla_BindToOutputById((const odla_value_id) "ArgMin", out_ArgMin, ctx);
+    std::vector<int32_t> out_ArgMin(2);
+    odla_BindToOutputById((const odla_value_id) "ArgMin", out_ArgMin.data(), ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
 
-    std::cout << "out_ArgMin = [";
-    for (int i = 0; i < 2; i++) {
-      std::cout << out_ArgMin[i] << ", ";
-    }
-    std::cout << "]" << std::endl;
+    std::vector<int32_t> expected = {1, 1};
+    CHECK_EQ(expected, out_ArgMin);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
   }
@@ -111,7 +89,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS CEIL TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
 
     auto input =
@@ -127,16 +105,14 @@ TEST_CASE("MATH OPS TESTING") {
     float input_data[2 * 2] = {2.0, 1.0, 3.5, 10.0};
     odla_BindToArgumentById((const odla_value_id) "input", input_data, ctx);
 
-    float out_Ceil[4] = {0, 0, 0, 0};
-    odla_BindToOutputById((const odla_value_id) "Ceil", out_Ceil, ctx);
+    std::vector<float> out_Ceil(4);
+    odla_BindToOutputById((const odla_value_id) "Ceil", out_Ceil.data(), ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
 
-    std::cout << "out_Ceil = [";
-    for (int i = 0; i < 4; i++) {
-      std::cout << out_Ceil[i] << ", ";
-    }
-    std::cout << "]" << std::endl;
+    std::vector<float> expected = {2, 1, 4, 10};
+    CHECK_EQ(expected, out_Ceil);
+
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
   }
@@ -144,7 +120,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS CLAMP TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
 
     auto input =
@@ -163,17 +139,12 @@ TEST_CASE("MATH OPS TESTING") {
 
     float input_data[3 * 3] = {2.0, 1.0, 3.5, 10.0, 4.3, 5.8, 9.0, 12.0, 100.3};
     odla_BindToArgumentById((const odla_value_id) "input", input_data, ctx);
-
-    float out_Clamp[3 * 3] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-    odla_BindToOutputById((const odla_value_id) "Clamp", out_Clamp, ctx);
+    std::vector<float> out_Clamp(9);
+    odla_BindToOutputById((const odla_value_id) "Clamp", out_Clamp.data(), ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
-    std::cout << "out_Clamp = [";
-    for (int i = 0; i < 9; i++) {
-        std::cout << out_Clamp[i] << ", ";
-    }
-    std::cout << "]" << std::endl;
+    std::vector<float> expected = {3, 3, 3.5, 5, 4.3, 5, 5, 5, 5};
+    CHECK_EQ(expected, out_Clamp);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
     }
@@ -181,7 +152,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS EQUAL TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
     auto lhs = odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
                                     (const odla_value_id)("lhs"));
@@ -205,12 +176,9 @@ TEST_CASE("MATH OPS TESTING") {
     odla_BindToOutputById((const odla_value_id) "Equal", out_Equal, ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
-    std::cout << "out_Equal = [";
     for (int i = 0; i < 4; i++) {
-        std::cout << out_Equal[i] << ", ";
+        CHECK_EQ( out_Equal[i] , out_Equal[i]);
     }
-    std::cout << "]" << std::endl;
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
     }
@@ -218,7 +186,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS EXP TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
@@ -233,24 +201,20 @@ TEST_CASE("MATH OPS TESTING") {
     float input_data[2 * 2] = {2.0, 1.0, 3.5, 5.0};
     odla_BindToArgumentById((const odla_value_id) "input", input_data, ctx);
 
-    float out_Exp[4] = {0, 0, 0, 0};
-    odla_BindToOutputById((const odla_value_id) "Exp", out_Exp, ctx);
+    std::vector<float> out_Exp(4);   
+    odla_BindToOutputById((const odla_value_id) "Exp", out_Exp.data(), ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
-    std::cout << "out_Exp = [";
-    for (int i = 0; i < 4; i++) {
-        std::cout << out_Exp[i] << ", ";
-    }
-    std::cout << "]" << std::endl;
+    std::vector<float> expected = {7.38906, 2.71828, 33.1155, 148.413};
+    CHECK_EQ(expected, expected);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
     }
-   
+
     SUBCASE("MATH OPS GREATER TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
     auto lhs = odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
                                     (const odla_value_id)("lhs"));
@@ -270,16 +234,12 @@ TEST_CASE("MATH OPS TESTING") {
     float rhs_data[2 * 2] = {2.0, 1.5, 4.5, 5.0};
     odla_BindToArgumentById((const odla_value_id) "rhs", rhs_data, ctx);
 
-    bool out_Greater[4] = {0, 0, 0, 0};
-    odla_BindToOutputById((const odla_value_id) "Greater", out_Greater, ctx);
+    std::vector<float> out_Greater(4);  
+    odla_BindToOutputById((const odla_value_id) "Greater", out_Greater.data(), ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
-    std::cout << "out_Greater = [";
-    for (int i = 0; i < 4; i++) {
-        std::cout << out_Greater[i] << ", ";
-    }
-    std::cout << "]" << std::endl;
+    std::vector<float> expected = {1, 0, 0, 1};
+    CHECK_EQ(expected, out_Greater);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
     }
@@ -287,7 +247,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS LESS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
     auto lhs = odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
                                     (const odla_value_id)("lhs"));
@@ -307,16 +267,12 @@ TEST_CASE("MATH OPS TESTING") {
     float rhs_data[2 * 2] = {2.0, 1.5, 4.5, 5.0};
     odla_BindToArgumentById((const odla_value_id) "rhs", rhs_data, ctx);
 
-    bool out_Less[4] = {0, 0, 0, 0};
-    odla_BindToOutputById((const odla_value_id) "Less", out_Less, ctx);
+    std::vector<float> out_Less(4);  
+    odla_BindToOutputById((const odla_value_id) "Less", out_Less.data(), ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
-    std::cout << "out_Less = [";
-    for (int i = 0; i < 4; i++) {
-        std::cout << out_Less[i] << ", ";
-    }
-    std::cout << "]" << std::endl;
+    std::vector<float> expected = {0, 1, 1, 0};
+    CHECK_EQ(expected, out_Less);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
     }
@@ -324,7 +280,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS LOG TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
@@ -339,16 +295,12 @@ TEST_CASE("MATH OPS TESTING") {
     float input_data[2 * 2] = {2.0, 1.0, 3.5, 5.0};
     odla_BindToArgumentById((const odla_value_id) "input", input_data, ctx);
 
-    float out_Log[4] = {0, 0, 0, 0};
-    odla_BindToOutputById((const odla_value_id) "Log", out_Log, ctx);
+    std::vector<float> out_Log(4);  
+    odla_BindToOutputById((const odla_value_id) "Log", out_Log.data(), ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
-    std::cout << "out_Log = [";
-    for (int i = 0; i < 4; i++) {
-        std::cout << out_Log[i] << ", ";
-    }
-    std::cout << "]" << std::endl;
+    std::vector<float> expected = {0.693147, 0, 1.25276, 1.60944};
+    CHECK_EQ(expected, out_Log);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
     }
@@ -356,7 +308,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS MAX TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
     auto lhs = odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
                                     (const odla_value_id)("lhs"));
@@ -373,19 +325,15 @@ TEST_CASE("MATH OPS TESTING") {
     float lhs_data[2 * 2] = {2.0, 1.0, 3.5, 5.0};
     odla_BindToArgumentById((const odla_value_id) "lhs", lhs_data, ctx);
 
-    float rhs_data[2 * 2] = {4.0, 0.9, -3.5, 588888.0};
+    float rhs_data[2 * 2] = {4.0, 0.9, -3.5, 58.0};
     odla_BindToArgumentById((const odla_value_id) "rhs", rhs_data, ctx);
 
-    float out_Max[4] = {0, 0, 0, 0};
-    odla_BindToOutputById((const odla_value_id) "Max", out_Max, ctx);
+    std::vector<float> out_Max(4);  
+    odla_BindToOutputById((const odla_value_id) "Max", out_Max.data(), ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
-    std::cout << "out_Max = [";
-    for (int i = 0; i < 4; i++) {
-        std::cout << out_Max[i] << ", ";
-    }
-    std::cout << "]" << std::endl;
+    std::vector<float> expected = {4, 1, 3.5, 58};
+    CHECK_EQ(expected, out_Max);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
     }
@@ -393,7 +341,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS MIN TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
     auto lhs = odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
                                     (const odla_value_id)("lhs"));
@@ -413,16 +361,12 @@ TEST_CASE("MATH OPS TESTING") {
     float rhs_data[2 * 2] = {4.0, 0.9, -3.5, 588888.0};
     odla_BindToArgumentById((const odla_value_id) "rhs", rhs_data, ctx);
 
-    float out_Min[4] = {0, 0, 0, 0};
-    odla_BindToOutputById((const odla_value_id) "Min", out_Min, ctx);
+    std::vector<float> out_Min(4);  
+    odla_BindToOutputById((const odla_value_id) "Min", out_Min.data(), ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
-    std::cout << "out_Min = [";
-    for (int i = 0; i < 4; i++) {
-        std::cout << out_Min[i] << ", ";
-    }
-    std::cout << "]" << std::endl;
+    std::vector<float> expected = {2, 0.9, -3.5, 5};
+    CHECK_EQ(expected, out_Min);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
     }
@@ -430,7 +374,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS MEAN TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
     auto input_1 =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
@@ -465,17 +409,12 @@ TEST_CASE("MATH OPS TESTING") {
                             input_data_3.data(), ctx);
     // float input_data[2 * 2] = {2.0, 1.0, 3.5, 5.0};
     // odla_BindToArgumentById((const odla_value_id) "input", input_data, ctx);
-
-    float out_Mean[4] = {0, 0, 0, 0};
-    odla_BindToOutputById((const odla_value_id) "Mean", out_Mean, ctx);
+    std::vector<float> out_Mean(4);  
+    odla_BindToOutputById((const odla_value_id) "Mean", out_Mean.data(), ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
-    std::cout << "out_Mean = [";
-    for (int i = 0; i < 4; i++) {
-        std::cout << out_Mean[i] << ", ";
-    }
-    std::cout << "]" << std::endl;
+    std::vector<float> expected = {0.5, 0.6, 0.833333, 1};
+    CHECK_EQ(expected, out_Mean);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
     }
@@ -483,7 +422,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS NEG TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
@@ -497,17 +436,12 @@ TEST_CASE("MATH OPS TESTING") {
 
     float input_data[2 * 2] = {2.0, 1.0, 3.5, 5.0};
     odla_BindToArgumentById((const odla_value_id) "input", input_data, ctx);
-
-    float out_Neg[4] = {0, 0, 0, 0};
-    odla_BindToOutputById((const odla_value_id) "Neg", out_Neg, ctx);
+    std::vector<float> out_Neg(4);   
+    odla_BindToOutputById((const odla_value_id) "Neg", out_Neg.data(), ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
-    std::cout << "out_Neg = [";
-    for (int i = 0; i < 4; i++) {
-        std::cout << out_Neg[i] << ", ";
-    }
-    std::cout << "]" << std::endl;
+    std::vector<float> expected = {-2, -1, -3.5, -5};
+    CHECK_EQ(expected, out_Neg);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
     }
@@ -515,7 +449,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS NOT TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
     auto input = odla_CreateArgument({ODLA_BOOL, {.size = 2, .dims = {2, 2}}},
                                         (const odla_value_id)("input"));
@@ -530,13 +464,14 @@ TEST_CASE("MATH OPS TESTING") {
     odla_BindToArgumentById((const odla_value_id) "input", input_data, ctx);
 
     bool out_Not[4] = {false, false, false, false};
+
+    bool expected[4] = {false, true, false, true};
     odla_BindToOutputById((const odla_value_id) "Not", out_Not, ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
 
-    std::cout << "out_Not = [";
     for (int i = 0; i < 4; i++) {
-        std::cout << out_Not[i] << ", ";
+       CHECK_EQ(out_Not[i], expected[i]);
     }
     std::cout << "]" << std::endl;
     odla_DestroyComputation(comp);
@@ -546,7 +481,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS POW TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
     auto lhs = odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
                                     (const odla_value_id)("lhs"));
@@ -565,17 +500,12 @@ TEST_CASE("MATH OPS TESTING") {
 
     float rhs_data[2 * 2] = {4.0, 0.9, -2.0, 4.0};
     odla_BindToArgumentById((const odla_value_id) "rhs", rhs_data, ctx);
-
-    float out_Pow[4] = {0, 0, 0, 0};
-    odla_BindToOutputById((const odla_value_id) "Pow", out_Pow, ctx);
+    std::vector<float> out_Pow(4);  
+    odla_BindToOutputById((const odla_value_id) "Pow", out_Pow.data(), ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
-    std::cout << "out_Pow = [";
-    for (int i = 0; i < 4; i++) {
-        std::cout << out_Pow[i] << ", ";
-    }
-    std::cout << "]" << std::endl;
+    std::vector<float> expected = {16, 1, 0.0816327, 625};
+    CHECK_EQ(expected, out_Pow);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
     }
@@ -583,7 +513,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS RECIPROCAL TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
@@ -599,17 +529,13 @@ TEST_CASE("MATH OPS TESTING") {
     float input_data[2 * 2] = {-0.2, -4, 8, 9};
     odla_BindToArgumentById((const odla_value_id) "input", input_data, ctx);
 
-    float out_Reciprocal[4] = {0, 0, 0, 0};
-    odla_BindToOutputById((const odla_value_id) "Reciprocal", out_Reciprocal,
+    std::vector<float> out_Reciprocal(4);  
+    odla_BindToOutputById((const odla_value_id) "Reciprocal", out_Reciprocal.data(),
                             ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
-    std::cout << "out_Reciprocal = [";
-    for (int i = 0; i < 4; i++) {
-        std::cout << out_Reciprocal[i] << ", ";
-    }
-    std::cout << "]" << std::endl;
+    std::vector<float> expected = {-5, -0.25, 0.125, 0.111111};
+    CHECK_EQ(expected, out_Reciprocal);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
     }
@@ -617,7 +543,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS REDUCEMAX TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
@@ -639,17 +565,13 @@ TEST_CASE("MATH OPS TESTING") {
     float input_data[2 * 2] = {-0.2, -4, 8, 9};
     odla_BindToArgumentById((const odla_value_id) "input", input_data, ctx);
 
-    float out_ReduceMax[4] = {0, 0, 0, 0};
-    odla_BindToOutputById((const odla_value_id) "ReduceMax", out_ReduceMax,
+    std::vector<float> out_ReduceMax(4);  
+    odla_BindToOutputById((const odla_value_id) "ReduceMax", out_ReduceMax.data(),
                             ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
-    std::cout << "out_ReduceMax = [";
-    for (int i = 0; i < 4; i++) {
-        std::cout << out_ReduceMax[i] << ", ";
-    }
-    std::cout << "]" << std::endl;
+    std::vector<float> expected = {-0.2, 9, 0, 0};
+    CHECK_EQ(expected, out_ReduceMax);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
     }
@@ -657,7 +579,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS REDUCEMIN TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
@@ -679,12 +601,13 @@ TEST_CASE("MATH OPS TESTING") {
     float input_data[2 * 2] = {-0.2, -4, 8, 9};
     odla_BindToArgumentById((const odla_value_id) "input", input_data, ctx);
 
-    float out_ReduceMin[4] = {0, 0, 0, 0};
-    odla_BindToOutputById((const odla_value_id) "ReduceMin", out_ReduceMin,
+    std::vector<float> out_ReduceMin(4);  
+    odla_BindToOutputById((const odla_value_id) "ReduceMin", out_ReduceMin.data(),
                             ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
+    std::vector<float> expected = {-4, 8, 0, 0};
+    CHECK_EQ(expected, out_ReduceMin);
     std::cout << "out_ReduceMin = [";
     for (int i = 0; i < 4; i++) {
         std::cout << out_ReduceMin[i] << ", ";
@@ -697,7 +620,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS REDUCEPROD TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
@@ -719,17 +642,13 @@ TEST_CASE("MATH OPS TESTING") {
     float input_data[2 * 2] = {-0.2, -4, 8, 9};
     odla_BindToArgumentById((const odla_value_id) "input", input_data, ctx);
 
-    float out_ReduceProd[4] = {0, 0, 0, 0};
-    odla_BindToOutputById((const odla_value_id) "ReduceProd", out_ReduceProd,
+    std::vector<float> out_ReduceProd(4);  
+    odla_BindToOutputById((const odla_value_id) "ReduceProd", out_ReduceProd.data(),
                             ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
-    std::cout << "out_ReduceProd = [";
-    for (int i = 0; i < 4; i++) {
-        std::cout << out_ReduceProd[i] << ", ";
-    }
-    std::cout << "]" << std::endl;
+    std::vector<float> expected = {-1.6, -36, 0, 0};
+    CHECK_EQ(expected, out_ReduceProd);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
     }
@@ -737,7 +656,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS REDUCESUM TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem();
+     set_computationItem(comp);
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
@@ -759,17 +678,13 @@ TEST_CASE("MATH OPS TESTING") {
     float input_data[2 * 2] = {-0.2, -4, 8, 9};
     odla_BindToArgumentById((const odla_value_id) "input", input_data, ctx);
 
-    float out_ReduceSum[4] = {0, 0, 0, 0};
-    odla_BindToOutputById((const odla_value_id) "ReduceSum", out_ReduceSum,
+    std::vector<float> out_ReduceSum(4);  
+    odla_BindToOutputById((const odla_value_id) "ReduceSum", out_ReduceSum.data(),
                             ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
-    std::cout << "out_ReduceSum = [";
-    for (int i = 0; i < 4; i++) {
-        std::cout << out_ReduceSum[i] << ", ";
-    }
-    std::cout << "]" << std::endl;
+    std::vector<float> expected = {7.8, 5, 0, 0};
+    CHECK_EQ(expected, out_ReduceSum);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
     }
@@ -777,7 +692,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS SIGN TEST") {
       odla_computation comp;
       CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-      set_computationItem();
+       set_computationItem(comp);
 
       auto input =
           odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
@@ -792,16 +707,12 @@ TEST_CASE("MATH OPS TESTING") {
       float input_data[2 * 2] = {-0.2, -0.3, 1, 0.5};
       odla_BindToArgumentById((const odla_value_id) "input", input_data, ctx);
 
-      float out_Sign[4] = {0, 0, 0, 0};
-      odla_BindToOutputById((const odla_value_id) "Sign", out_Sign, ctx);
+      std::vector<float> out_Sign(4);  
+      odla_BindToOutputById((const odla_value_id) "Sign", out_Sign.data(), ctx);
 
       odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
-      std::cout << "out_Sign = [";
-      for (int i = 0; i < 4; i++) {
-        std::cout << out_Sign[i] << ", ";
-      }
-      std::cout << "]" << std::endl;
+      std::vector<float> expected = {-1, -1, 1, 1};
+      CHECK_EQ(expected, out_Sign);
 
       odla_DestroyComputation(comp);
       odla_DestroyContext(ctx);
@@ -811,7 +722,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS AND TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem(comp, 1);
+    set_computationItem(comp);
 
     auto lhs = odla_CreateArgument({ODLA_BOOL, {.size = 2, .dims = {2, 2}}},
                                     (const odla_value_id)("lhs"));
@@ -837,7 +748,6 @@ TEST_CASE("MATH OPS TESTING") {
     odla_BindToOutputById((const odla_value_id) "And", out_And, ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
     std::cout << "out_And = [";
     for (int i = 0; i < 4; i++) {
         CHECK_EQ(out_And[i], gold[i]);
@@ -850,7 +760,7 @@ TEST_CASE("MATH OPS TESTING") {
     SUBCASE("MATH OPS OR TEST"){
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem(comp, 1);
+    set_computationItem(comp);
 
     auto lhs = odla_CreateArgument({ODLA_BOOL, {.size = 2, .dims = {2, 2}}},
                                     (const odla_value_id)("lhs"));
@@ -885,11 +795,11 @@ TEST_CASE("MATH OPS TESTING") {
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
     }
-    
+
     SUBCASE("MATH OPS NOT EQUAL TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem(comp, 1);
+    set_computationItem(comp);
 
     auto lhs = odla_CreateArgument({ODLA_BOOL, {.size = 2, .dims = {2, 2}}},
                                     (const odla_value_id)("lhs"));
@@ -924,5 +834,104 @@ TEST_CASE("MATH OPS TESTING") {
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
     }
+    
+    SUBCASE("MATH OPS SUB TEST")
+ {
+    odla_computation comp;
+    CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+    set_computationItem(comp);
+
+    std::vector<float> c6 = {6.f};
+
+    auto input = odla_CreateArgument({ODLA_FLOAT32,
+     {.size = 1, .dims = {1, 1}}}, (const odla_value_id)("input"));
+
+    auto const_6 = odla_CreateConstant({ODLA_FLOAT32, {.size = 1, .dims = {1, 1}}},
+                            c6.data(), (const odla_value_id) "const");
+    
+    auto Sub_value = odla_Sub(input, const_6, (const odla_value_id) "Sub");
+
+    odla_SetValueAsOutput(Sub_value);
+    static odla_context ctx;
+    odla_CreateContext(&ctx);
+    std::vector<float> input_data = {2.0};
+    odla_BindToArgumentById((const odla_value_id) "input", input_data.data(), ctx);
+
+    std::vector<float> out_sub = {0.f};
+    odla_BindToOutputById((const odla_value_id) "Sub", out_sub.data(), ctx);
+    odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
+    
+    std::vector<float> expected = {-4.f};
+    CHECK_EQ(expected, out_sub);
+    
+    odla_DestroyComputation(comp);
+    odla_DestroyContext(ctx); 
+ }
+
+    SUBCASE("MATH OPS DIV TEST")
+ {
+    odla_computation comp;
+    CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+    set_computationItem(comp);
+
+    std::vector<float> c6 = {6.f};
+
+    auto input = odla_CreateArgument({ODLA_FLOAT32,
+     {.size = 1, .dims = {1, 1}}}, (const odla_value_id)("input"));
+
+    auto const_6 = odla_CreateConstant({ODLA_FLOAT32, {.size = 1, .dims = {1, 1}}},
+                            c6.data(), (const odla_value_id) "const");
+    
+    auto Div_value = odla_Div(input, const_6, (const odla_value_id) "Div");
+
+    odla_SetValueAsOutput(Div_value);
+    static odla_context ctx;
+    odla_CreateContext(&ctx);
+    std::vector<float> input_data = {12.0};
+    odla_BindToArgumentById((const odla_value_id) "input", input_data.data(), ctx);
+
+    std::vector<float> out_div = {0.f};
+    odla_BindToOutputById((const odla_value_id) "Div", out_div.data(), ctx);
+    odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
+    
+    std::vector<float> expected = {2.f};
+    CHECK_EQ(expected, out_div);
+    
+    odla_DestroyComputation(comp);
+    odla_DestroyContext(ctx); 
+ }
+ 
+    SUBCASE("MATH OPS ERF TEST")
+ {
+    odla_computation comp;
+    CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+    set_computationItem(comp);
+
+    std::vector<float> c6 = {6.f};
+
+    auto input = odla_CreateArgument({ODLA_FLOAT32,
+     {.size = 1, .dims = {1, 1}}}, (const odla_value_id)("input"));
+
+    
+    auto Erf_value = odla_Erf(input, (const odla_value_id) "Erf");
+
+    odla_SetValueAsOutput(Erf_value);
+    static odla_context ctx;
+    odla_CreateContext(&ctx);
+    std::vector<float> input_data = {12.0};
+    odla_BindToArgumentById((const odla_value_id) "input", input_data.data(), ctx);
+
+    std::vector<float> out_erf = {0.f};
+    odla_BindToOutputById((const odla_value_id) "Erf", out_erf.data(), ctx);
+    odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
+    
+    std::vector<float> expected = {1.f};
+
+    CHECK_EQ(expected, out_erf);
+    
+    odla_DestroyComputation(comp);
+    odla_DestroyContext(ctx); 
+ }
+
 }
 

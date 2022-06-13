@@ -1,52 +1,30 @@
 cmake_minimum_required(VERSION 3.14)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -g ${CMAKE_CXX_FLAGS}")
+if(ENABLE_COVERAGE)
+    message("Use gcov for code coverage test")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage --coverage")
+endif()
 
-enable_testing()
-include_directories(../../odla_popart/custom_ops/third_party/include)
-include_directories(../../odla_popart)
-include_directories(../../../../ODLA/include)
-link_directories(../../../build/lib)
+function(add_odla_cpp_unit_test name)
+  set(oneValueArgs "VARIANTS;LABELS;TEST_UTILS")
+  cmake_parse_arguments(test_args "" "FILES" "${oneValueArgs}" "FILES;${ARGN}")
+  set(FILES "${test_args_FILES}")
 
-##odla_compute_test
-add_executable(odla_compute_test  odla_compute_test.cc)
-set_property(TARGET odla_compute_test PROPERTY CXX_STANDARD 14)
-target_compile_definitions(odla_compute_test PRIVATE ONNX_NAMESPACE=onnx)
-target_link_libraries(odla_compute_test PRIVATE popart poplar popops odla_popart pthread)
-add_test(NAME odla_compute_test COMMAND odla_compute_test)
+  message(${FILES})
+  set(target_name ${ARGV0})
+  message(${target_name})
 
-##popart_config_test
-add_executable(popart_config_test  popart_config_test.cc)
-set_property(TARGET popart_config_test PROPERTY CXX_STANDARD 14)
-target_compile_definitions(popart_config_test PRIVATE ONNX_NAMESPACE=onnx)
-target_link_libraries(popart_config_test PRIVATE popart poplar popops odla_popart pthread)
-add_test(NAME popart_config_test COMMAND popart_config_test)
+  add_executable(${target_name} ${FILES} utils.cc)
+  target_link_libraries(${target_name} PUBLIC ODLA pthread gcov custom_ops odla_popart popart-only)
 
-##odla_ops_math_test
-add_executable(odla_ops_math_test  odla_ops_math_test.cc)
-set_property(TARGET odla_ops_math_test PROPERTY CXX_STANDARD 14)
-target_compile_definitions(odla_ops_math_test PRIVATE ONNX_NAMESPACE=onnx)
-target_link_libraries(odla_ops_math_test PRIVATE popart poplar popops odla_popart pthread)
-add_test(NAME odla_ops_math_test COMMAND odla_ops_math_test)
+  target_include_directories(${target_name}
+      PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}
+      ${CMAKE_CURRENT_SOURCE_DIR}/..
+  )
+ 
+endfunction()
 
-##odla_ops_nn_test
-add_executable(odla_ops_nn_test  odla_ops_nn_test.cc)
-set_property(TARGET odla_ops_nn_test PROPERTY CXX_STANDARD 14)
-target_compile_definitions(odla_ops_nn_test PRIVATE ONNX_NAMESPACE=onnx)
-target_link_libraries(odla_ops_nn_test PRIVATE popart poplar popops odla_popart pthread)
-add_test(NAME odla_ops_nn_test COMMAND odla_ops_nn_test)
-
-##odla_ops_process_test
-add_executable(odla_ops_process_test  odla_ops_process_test.cc)
-set_property(TARGET odla_ops_process_test PROPERTY CXX_STANDARD 14)
-target_compile_definitions(odla_ops_process_test PRIVATE ONNX_NAMESPACE=onnx)
-target_link_libraries(odla_ops_process_test PRIVATE popart poplar popops odla_popart pthread)
-add_test(NAME odla_ops_process_test COMMAND odla_ops_process_test)
-
-##odla_ops_test
-add_executable(odla_ops_test  odla_ops_test.cc)
-set_property(TARGET odla_ops_test PROPERTY CXX_STANDARD 14)
-target_compile_definitions(odla_ops_test PRIVATE ONNX_NAMESPACE=onnx)
-target_link_libraries(odla_ops_test PRIVATE popart poplar popops odla_popart pthread)
-add_test(NAME odla_ops_test COMMAND odla_ops_test)
-
+add_odla_cpp_unit_test(unittes_odla_compute odla_compute_test.cc)
+add_odla_cpp_unit_test(unittes_odla_config odla_config_test.cc)
+add_odla_cpp_unit_test(unittes_odla_ops_math odla_ops_math_test.cc)
