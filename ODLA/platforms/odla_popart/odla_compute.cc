@@ -85,7 +85,9 @@ odla_status odla_SetComputationItem(odla_computation comp, odla_item_type type,
 
 odla_status odla_SetContextItem(odla_context context, odla_item_type type,
                                 odla_item_value value) {
-  if (context == nullptr || context->is_context() != 1) return ODLA_INVALID_PARAM;
+  if (context == nullptr) {
+    return ODLA_INVALID_PARAM;
+  }
   switch (type) {
     case ODLA_ASYNC_CALLBACK_FUNC:
       context->async_callback_func =

@@ -45,10 +45,8 @@ TEST_CASE("TestConfig") {
 
     CHECK_EQ(ODLA_SUCCESS, comp->compile_and_export());
 
-    odla_DestroyContext(ctx);
     odla_DestroyComputation(comp);
-   
-
+    odla_DestroyContext(ctx);
   }
 
   SUBCASE("TestCompLoadCache") 
