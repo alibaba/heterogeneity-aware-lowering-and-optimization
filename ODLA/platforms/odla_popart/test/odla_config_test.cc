@@ -165,28 +165,28 @@ TEST_CASE("TestConfig") {
   }
 
   SUBCASE("TestMakeNDArrayWrapperType")
-  {
-    odla_void* val;
-    std::vector<int64_t> shape(1, 1); 
-    auto ndarray = MakeNDArrayWrapper(val, popart::DataType::FLOAT16, shape);
-    CHECK_EQ(popart::DataType::FLOAT16, ndarray.get()->dataType());
+ {
+   odla_void* val;
+   std::vector<int64_t> shape(1, 1); 
+   auto ndarray = MakeNDArrayWrapper(val, popart::DataType::FLOAT16, shape);
+   CHECK_EQ(popart::DataType::FLOAT16, ndarray.get()->dataType());
 
-    ndarray = MakeNDArrayWrapper(val, popart::DataType::UINT32, shape);
-    CHECK_EQ(popart::DataType::UINT32, ndarray.get()->dataType());
-    
-    ndarray = MakeNDArrayWrapper(val, popart::DataType::BOOL, shape);
-    CHECK_EQ(popart::DataType::BOOL, ndarray.get()->dataType());
+   ndarray = MakeNDArrayWrapper(val, popart::DataType::UINT32, shape);
+   CHECK_EQ(popart::DataType::UINT32, ndarray.get()->dataType());
+   
+   ndarray = MakeNDArrayWrapper(val, popart::DataType::BOOL, shape);
+   CHECK_EQ(popart::DataType::BOOL, ndarray.get()->dataType());
 
-    ndarray = MakeNDArrayWrapper(val, popart::DataType::INT64, shape);
-    CHECK_EQ(popart::DataType::INT64, ndarray.get()->dataType());
+   ndarray = MakeNDArrayWrapper(val, popart::DataType::INT64, shape);
+   CHECK_EQ(popart::DataType::INT64, ndarray.get()->dataType());
 
-    ndarray = MakeNDArrayWrapper(val, popart::DataType::INT32, shape);
-    CHECK_EQ(popart::DataType::INT32, ndarray.get()->dataType());
+   ndarray = MakeNDArrayWrapper(val, popart::DataType::INT32, shape);
+   CHECK_EQ(popart::DataType::INT32, ndarray.get()->dataType());
 
-    ndarray = MakeNDArrayWrapper(val, popart::DataType::FLOAT, shape);
-    CHECK_EQ(popart::DataType::FLOAT, ndarray.get()->dataType());
+   ndarray = MakeNDArrayWrapper(val, popart::DataType::FLOAT, shape);
+   CHECK_EQ(popart::DataType::FLOAT, ndarray.get()->dataType());
 
-  }
+ }
 
   SUBCASE("TestConfigFunctionCallAfterInited")
    {
