@@ -1,8 +1,8 @@
 
 //===- utils.cc ----------------------------------------------------===//
 //
-// Copyright (C) 2019-2020 Alibaba Group Holding Limited.
-// Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+// Copyright (C) 2022 Alibaba Group Holding Limited.
+// Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.

@@ -1,5 +1,6 @@
 # ==============================================================================
 # Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+# Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,8 +12,8 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
-# limitations under the License
-# ==============================================================================
+# limitations under the License.
+# =============================================================================
 cmake_minimum_required(VERSION 3.14)
 
 if(ENABLE_COVERAGE)
@@ -37,9 +38,9 @@ function(add_odla_cpp_unit_test name)
  
 endfunction()
 
-add_odla_cpp_unit_test(unittes_odla_compute odla_compute_test.cc)
-add_odla_cpp_unit_test(unittes_odla_config odla_config_test.cc)
-add_odla_cpp_unit_test(unittes_odla_ops_math odla_ops_math_test.cc)
-add_odla_cpp_unit_test(unittes_odla_ops odla_ops_test.cc)
-add_odla_cpp_unit_test(unittes_odla_ops_nn odla_ops_nn_test.cc)
-add_odla_cpp_unit_test(unittes_odla_process odla_ops_process_test.cc)
+add_odla_cpp_unit_test(unitest_odla_compute odla_compute_test.cc)
+add_odla_cpp_unit_test(unitest_odla_config odla_config_test.cc)
+add_odla_cpp_unit_test(unitest_odla_ops_math odla_ops_math_test.cc)
+add_odla_cpp_unit_test(unitest_odla_ops odla_ops_test.cc)
+add_odla_cpp_unit_test(unitest_odla_ops_nn odla_ops_nn_test.cc)
+add_odla_cpp_unit_test(unitest_odla_process odla_ops_process_test.cc)

@@ -16,7 +16,7 @@
 
 option(ODLA_BUILD_POPART_USE_CXX11ABI "Use CXX11 ABI for odla_popart" ON)
 option(ODLA_BUILD_POPART_CUSTOM_OPS "Link with Popart custom ops" ON)
-option(ODLA_BUILD_POPART_UNITTEST "Link with Popart uniitest " ON)
+option(ODLA_BUILD_POPART_UNITEST "Link with Popart unitest " ON)
 
 
 if(ENABLE_COVERAGE)
@@ -57,7 +57,12 @@ if (NOT ODLA_BUILD_POPART_USE_CXX11ABI)
   target_compile_definitions(odla_popart PRIVATE _GLIBCXX_USE_CXX11_ABI=0)
 endif()
 
-target_link_libraries(odla_popart PUBLIC ODLA gcov custom_ops popart-only)
+
+target_link_libraries(odla_popart PUBLIC ODLA custom_ops popart-only)
+
+if(ENABLE_COVERAGE)
+  target_link_libraries(odla_popart PUBLIC gcov)
+endif()
 
 target_include_directories(odla_popart PRIVATE
    ${CMAKE_CURRENT_SOURCE_DIR}/custom_ops/third_party/onnx/
