@@ -13,6 +13,7 @@
 #include "doctest.h"
 #include "odla_popart.h"
 #include "popart_config.h"
+#include "utils.h"
 
 using namespace std;
 
@@ -20,10 +21,9 @@ TEST_CASE("NN OPS TESTING") {
   SUBCASE("AVERAGEPOOL OPS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem(comp, 1)
+    set_computationItem(comp);
 
-    auto input =
-        odla_CreateArgument({ODLA_FLOAT32, {.size = 4, .dims = {1, 1, 4, 4}}},
+    auto input = odla_CreateArgument({ODLA_FLOAT32, {.size = 4, .dims = {1, 1, 4, 4}}},
                             (const odla_value_id)("input"));
 
     odla_memory_layout unused_layout;
@@ -52,8 +52,9 @@ TEST_CASE("NN OPS TESTING") {
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
 
     std::vector<float> expected = {6, 7, 10, 11};
-    CHECK_EQ(expected, out_AveragePool);
-
+    for (int i = 0; i < 4; i++){
+      CHECK_LT(abs(expected[i] - out_AveragePool[i]), TOLLERANCE);
+    }
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
   }
@@ -61,7 +62,7 @@ TEST_CASE("NN OPS TESTING") {
   SUBCASE("BATCHNORMALIZATION OPS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem(comp, 1);
+    set_computationItem(comp);
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 4, .dims = {1, 2, 1, 3}}},
@@ -118,7 +119,9 @@ TEST_CASE("NN OPS TESTING") {
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
     std::vector<float> expected = {-0.999995, 0, 0.999995, -0.224741, 1, 2.22474};
-    CHECK_EQ(expected, out_BatchNormalization);
+    for (int i = 0; i < 6; i++){
+      CHECK_LT(abs(expected[i] - out_BatchNormalization[i]), TOLLERANCE);
+    }
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
   }
@@ -126,7 +129,7 @@ TEST_CASE("NN OPS TESTING") {
   SUBCASE("CONV OPS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem(comp, 1);
+    set_computationItem(comp);
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 4, .dims = {1, 1, 5, 5}}},
@@ -180,7 +183,7 @@ TEST_CASE("NN OPS TESTING") {
   SUBCASE("DECONV OPS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem(comp, 1);
+    set_computationItem(comp);
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 4, .dims = {1, 1, 3, 3}}},
@@ -218,12 +221,14 @@ TEST_CASE("NN OPS TESTING") {
     odla_BindToArgumentById((const odla_value_id) "kernel", kernel_data.data(),
                             ctx);
 
-    std::vector<float> out_DeConv(60);
+    std::vector<float> out_DeConv(50);
     odla_BindToOutputById((const odla_value_id) "DeConv", out_DeConv.data(), ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
     std::vector<float> expected = {0, 1, 3, 3, 2, 3, 8, 15, 12, 7, 9, 21, 36, 27, 15, 9, 20, 33, 24, 13, 6, 13, 21, 15, 8, 0, 1, 3, 3, 2, 3, 8, 15, 12, 7, 9, 21, 36, 27, 15, 9, 20, 33, 24, 13, 6, 13, 21, 15, 8};
-    CHECK_EQ(expected, out_DeConv);
+    for (int i = 0; i < 50; i++){
+      CHECK_LT(abs(expected[i] - out_DeConv[i]), TOLLERANCE);
+    }
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
   }
@@ -231,7 +236,7 @@ TEST_CASE("NN OPS TESTING") {
   SUBCASE("ELU OPS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem(comp, 1);
+    set_computationItem(comp);
 
     auto input = odla_CreateArgument({ODLA_FLOAT32, {.size = 1, .dims = {3}}},
                                      (const odla_value_id)("input"));
@@ -252,7 +257,9 @@ TEST_CASE("NN OPS TESTING") {
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
 
     std::vector<float> expected = {-1.26424, 0, 1};
-    CHECK_EQ(expected, out_Elu);
+    for (int i = 0; i < 3; i++){
+      CHECK_LT(abs(expected[i] - out_Elu[i]), TOLLERANCE);
+    }
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
   }
@@ -260,7 +267,7 @@ TEST_CASE("NN OPS TESTING") {
   SUBCASE("HARDSIGMOID OPS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem(comp, 1);
+    set_computationItem(comp);
 
     auto input = odla_CreateArgument({ODLA_FLOAT32, {.size = 1, .dims = {3}}},
                                      (const odla_value_id)("input"));
@@ -285,7 +292,9 @@ TEST_CASE("NN OPS TESTING") {
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
 
     std::vector<float> expected = {0.1, 0.6, 1};
-    CHECK_EQ(expected, out_HardSigmoid);
+    for (int i = 0; i < 3; i++){
+      CHECK_LT(abs(expected[i] - out_HardSigmoid[i]), TOLLERANCE);
+    }
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
   }
@@ -293,7 +302,7 @@ TEST_CASE("NN OPS TESTING") {
   SUBCASE("INSTANCENORMALIZATION OPS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem(comp, 1);
+    set_computationItem(comp);
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 4, .dims = {1, 2, 1, 3}}},
@@ -351,7 +360,9 @@ TEST_CASE("NN OPS TESTING") {
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
 
     std::vector<float> expected = {-1.22474, 0, 1.22474, -0.837103, 1, 2.8371};
-    CHECK_EQ(expected, out_InstanceNormalization);
+    for (int i = 0; i < 6; i++){
+      CHECK_LT(abs(expected[i] - out_InstanceNormalization[i]), TOLLERANCE);
+    }
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
   }
@@ -359,7 +370,7 @@ TEST_CASE("NN OPS TESTING") {
   SUBCASE("LEAKYRELU OPS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem(comp, 1);
+    set_computationItem(comp);
 
     auto input = odla_CreateArgument({ODLA_FLOAT32, {.size = 1, .dims = {3}}},
                                      (const odla_value_id)("input"));
@@ -391,7 +402,7 @@ TEST_CASE("NN OPS TESTING") {
   SUBCASE("LOGSOFTMAX OPS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem(comp, 1);
+    set_computationItem(comp);
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {1, 3}}},
@@ -414,7 +425,9 @@ TEST_CASE("NN OPS TESTING") {
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
     std::vector<float> expected = {-2.40761, -1.40761, -0.407606};
-    CHECK_EQ(expected, out_LogSoftmax);
+        for (int i = 0; i < 3; i++){
+      CHECK_LT(abs(expected[i] - out_LogSoftmax[i]), TOLLERANCE);
+    }
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
   }
@@ -422,7 +435,7 @@ TEST_CASE("NN OPS TESTING") {
   SUBCASE("LSTM OPS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-    set_computationItem(comp, 1);
+    set_computationItem(comp);
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 3, .dims = {1, 3, 2}}},
@@ -474,7 +487,10 @@ TEST_CASE("NN OPS TESTING") {
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
     std::vector<float> expected = {0.0952412, 0.0952412, 0.0952412, 0.256064, 0.256064, 0.256064, 0.403238, 0.403238, 0.403238};
-    CHECK_EQ(expected, out_LSTM);
+    for (int i = 0; i < 9; i++){
+      CHECK_LT(abs(expected[i] - out_LSTM[i]), TOLLERANCE);
+    }
+    
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
     }
@@ -482,7 +498,7 @@ TEST_CASE("NN OPS TESTING") {
   SUBCASE("MAXPOOL OPS TEST") {
       odla_computation comp;
       CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-      set_computationItem(comp, 1);
+      set_computationItem(comp);
 
       auto input =
           odla_CreateArgument({ODLA_FLOAT32, {.size = 4, .dims = {1, 1, 4, 4}}},
@@ -522,7 +538,7 @@ TEST_CASE("NN OPS TESTING") {
   SUBCASE("SELU OPS TEST") {
       odla_computation comp;
       CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-      set_computationItem(comp, 1);
+      set_computationItem(comp);
 
       auto input = odla_CreateArgument({ODLA_FLOAT32, {.size = 1, .dims = {3}}},
                                        (const odla_value_id)("input"));
@@ -544,7 +560,10 @@ TEST_CASE("NN OPS TESTING") {
       odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
 
       std::vector<float> expected = {-3.79272, 0, 3};
-      CHECK_EQ(expected, out_Selu);
+      for (int i = 0; i < 3; i++)
+      {
+        CHECK_LT(abs(expected[i] - out_Selu[i]), TOLLERANCE);
+      }
       odla_DestroyComputation(comp);
       odla_DestroyContext(ctx);
     }
@@ -552,7 +571,7 @@ TEST_CASE("NN OPS TESTING") {
   SUBCASE("SIGMOID OPS TEST") {
       odla_computation comp;
       CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-      set_computationItem(comp, 1);
+      set_computationItem(comp);
 
       auto input = odla_CreateArgument({ODLA_FLOAT32, {.size = 1, .dims = {3}}},
                                        (const odla_value_id)("input"));
@@ -572,7 +591,10 @@ TEST_CASE("NN OPS TESTING") {
       odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
 
       std::vector<float> expected = {0.268941, 0.5, 0.731059};
-      CHECK_EQ(expected, out_Sigmoid);
+      for (int i = 0; i < 3; i++)
+      {
+        CHECK_LT(abs(expected[i] - out_Sigmoid[i]), TOLLERANCE);
+      }
       odla_DestroyComputation(comp);
       odla_DestroyContext(ctx);
     }
@@ -580,7 +602,7 @@ TEST_CASE("NN OPS TESTING") {
   SUBCASE("TANH OPS TEST") {
       odla_computation comp;
       CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-      set_computationItem(comp, 1);
+      set_computationItem(comp);
 
       auto input = odla_CreateArgument({ODLA_FLOAT32, {.size = 1, .dims = {3}}},
                                        (const odla_value_id)("input"));
@@ -601,7 +623,11 @@ TEST_CASE("NN OPS TESTING") {
       odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
 
       std::vector<float> expected = {-0.761594, 0, 0.761594};
-      CHECK_EQ(expected, out_Tanh);
+      for (int i = 0; i < 3; i++)
+      {
+        CHECK_LT(abs(expected[i] - out_Tanh[i]), TOLLERANCE);
+      }
+      
       odla_DestroyComputation(comp);
       odla_DestroyContext(ctx);
     }

@@ -28,7 +28,7 @@
 #include "ODLA/odla_common.h"
 
 
-
+#define TOLLERANCE 0.001f
 
 odla_status build_default_model();
 
