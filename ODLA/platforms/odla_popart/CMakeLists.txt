@@ -68,5 +68,6 @@ target_include_directories(odla_popart PRIVATE
    ${CMAKE_CURRENT_SOURCE_DIR}/custom_ops/third_party/onnx/
    ${CMAKE_CURRENT_SOURCE_DIR}/custom_ops/third_party/include/
 )
-
-add_subdirectory(test)
+if(ODLA_BUILD_POPART_UNITEST)
+  add_subdirectory(test)
+endif()
