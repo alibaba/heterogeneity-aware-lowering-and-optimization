@@ -1,4 +1,5 @@
-//===- odla_ops_process_test.cc ----------------------------------------------------===//
+//===- odla_ops_process_test.cc
+//----------------------------------------------------===//
 //
 // Copyright (C) 2022 Alibaba Group Holding Limited.
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
@@ -33,14 +34,11 @@
 
 using namespace std;
 
-
 TEST_CASE("PROCESS OPS TESTING") {
-
-   SUBCASE("CAST OPS TEST") {
+  SUBCASE("CAST OPS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
     set_computationItem(comp);
-
 
     auto input = odla_CreateArgument({ODLA_FLOAT32, {.size = 1, .dims = {4}}},
                                      (const odla_value_id)("input"));
@@ -68,63 +66,65 @@ TEST_CASE("PROCESS OPS TESTING") {
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
   }
-   
-  //  SUBCASE("CONCAT OPS TEST") {
-  //   odla_computation comp;
-  //   CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
-  //   set_computationItem(comp, false);
 
-  //   auto input_1 =
-  //       odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 1}}},
-  //                           (const odla_value_id)("input_1"));
-
-  //   auto input_2 =
-  //       odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
-  //                           (const odla_value_id)("input_2"));
-
-  //   auto input_3 =
-  //       odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 4}}},
-  //                           (const odla_value_id)("input_3"));
-
-  //   int axis = 1;
-  //   odla_value_shape output_shape;
-  //   auto Concat =
-  //       odla_Concat({.size = 3, .values = {input_1, input_2, input_3}}, axis,
-  //                   output_shape, (const odla_value_id) "Concat");
-  //   odla_SetValueAsOutput(Concat);
-
-  //   static odla_context ctx;
-  //   odla_CreateContext(&ctx);
-
-  //   std::vector<float> input_data_1 = {5, 8};
-  //   odla_BindToArgumentById((const odla_value_id) "input_1",
-  //                           input_data_1.data(), ctx);
-
-  //   std::vector<float> input_data_2 = {1, 3, 4, 7};
-  //   odla_BindToArgumentById((const odla_value_id) "input_2",
-  //                           input_data_2.data(), ctx);
-
-  //   std::vector<float> input_data_3 = {1, 2, 3, 5, 7, 8, 9, 0};
-  //   odla_BindToArgumentById((const odla_value_id) "input_3",
-  //                           input_data_3.data(), ctx);
-
-  //   std::vector<float> out_Concat(4);
-  //   odla_BindToOutputById((const odla_value_id) "Concat", out_Concat.data(), ctx);
-
-  //   odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-
-  //   std::vector<float> expected = {5, 1, 3, 1};
-  //   CHECK_EQ(expected, out_Concat);
-  //   odla_DestroyComputation(comp);
-  //   odla_DestroyContext(ctx);
-
-  // }
-
-   SUBCASE("EXPANDDIM OPS TEST") {
+  SUBCASE("CONCAT OPS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
     set_computationItem(comp);
 
+    auto input_1 =
+        odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 1}}},
+                            (const odla_value_id)("input_1"));
+
+    auto input_2 =
+        odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
+                            (const odla_value_id)("input_2"));
+
+    auto input_3 =
+        odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 4}}},
+                            (const odla_value_id)("input_3"));
+
+    int axis = 1;
+    odla_value_shape output_shape;
+    auto Concat =
+        odla_Concat({.size = 3, .values = {input_1, input_2, input_3}}, axis,
+                    output_shape, (const odla_value_id) "Concat");
+    odla_SetValueAsOutput(Concat);
+
+    static odla_context ctx;
+    odla_CreateContext(&ctx);
+
+    std::vector<float> input_data_1 = {5, 8};
+    odla_BindToArgumentById((const odla_value_id) "input_1",
+                            input_data_1.data(), ctx);
+
+    std::vector<float> input_data_2 = {1, 3, 4, 7};
+    odla_BindToArgumentById((const odla_value_id) "input_2",
+                            input_data_2.data(), ctx);
+
+    std::vector<float> input_data_3 = {1, 2, 3, 5, 7, 8, 9, 0};
+    odla_BindToArgumentById((const odla_value_id) "input_3",
+                            input_data_3.data(), ctx);
+
+    float out_Concat[14] = {0};
+    odla_BindToOutputById((const odla_value_id) "Concat", out_Concat, ctx);
+
+    odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
+
+    std::vector<float> expected = {
+        5, 1, 3, 1, 2, 3, 5, 8, 4, 7, 7, 8, 9, 0,
+    };
+    for (int i = 0; i < 14; i++) {
+      CHECK_EQ(expected[i], out_Concat[i]);
+    }
+    odla_DestroyComputation(comp);
+    odla_DestroyContext(ctx);
+  }
+
+  SUBCASE("EXPANDDIM OPS TEST") {
+    odla_computation comp;
+    CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+    set_computationItem(comp);
 
     auto input = odla_CreateArgument({ODLA_FLOAT32, {.size = 1, .dims = {1}}},
                                      (const odla_value_id)("input"));
@@ -132,8 +132,8 @@ TEST_CASE("PROCESS OPS TESTING") {
     int axis = 1;
     odla_value_shape output_shape{.size = 2, .dims = {1, 1}};
     //   odla_value_shape output_shape{.size=3, .dims={2, 1, 6}};
-    auto ExpandDim = odla_ExpandDims(input, output_shape,
-                                     (const odla_value_id) "ExpandDim");
+    auto ExpandDim =
+        odla_ExpandDims(input, output_shape, (const odla_value_id) "ExpandDim");
     odla_SetValueAsOutput(ExpandDim);
 
     static odla_context ctx;
@@ -144,10 +144,9 @@ TEST_CASE("PROCESS OPS TESTING") {
     odla_BindToArgumentById((const odla_value_id) "input", input_data.data(),
                             ctx);
 
-
     std::vector<float> out_ExpandDim(4);
-    odla_BindToOutputById((const odla_value_id) "ExpandDim", out_ExpandDim.data(),
-                          ctx);
+    odla_BindToOutputById((const odla_value_id) "ExpandDim",
+                          out_ExpandDim.data(), ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
 
@@ -159,15 +158,12 @@ TEST_CASE("PROCESS OPS TESTING") {
     std::cout << "]" << std::endl;
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
-
-
   }
-   
-   SUBCASE("PAD OPS TEST") {
+
+  SUBCASE("PAD OPS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
     set_computationItem(comp);
-
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
@@ -187,23 +183,21 @@ TEST_CASE("PROCESS OPS TESTING") {
     odla_BindToArgumentById((const odla_value_id) "input", input_data.data(),
                             ctx);
 
-
     std::vector<float> out_Pad(16);
     odla_BindToOutputById((const odla_value_id) "Pad", out_Pad.data(), ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
-    std::vector<float> expected = {0, 0, 0, 0, 0, 1, 2, 0, 0, 3, 4, 0, 0, 0, 0, 0};
+    std::vector<float> expected = {0, 0, 0, 0, 0, 1, 2, 0,
+                                   0, 3, 4, 0, 0, 0, 0, 0};
     CHECK_EQ(expected, out_Pad);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
-
   }
-   
-   SUBCASE("RESIZE OPS TEST") {
+
+  SUBCASE("RESIZE OPS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
     set_computationItem(comp);
-
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 4, .dims = {1, 1, 2, 4}}},
@@ -224,19 +218,20 @@ TEST_CASE("PROCESS OPS TESTING") {
                             ctx);
 
     std::vector<float> out_Resize(16);
-    odla_BindToOutputById((const odla_value_id) "Resize", out_Resize.data(), ctx);
+    odla_BindToOutputById((const odla_value_id) "Resize", out_Resize.data(),
+                          ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
 
-    std::vector<float> expected = {1, 3, 1, 3, 5, 7, 5, 7, 0, 0, 0, 0, 0, 0, 0, 0};
+    std::vector<float> expected = {1, 3, 1, 3, 5, 7, 5, 7,
+                                   0, 0, 0, 0, 0, 0, 0, 0};
     CHECK_EQ(expected, out_Resize);
 
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
-
   }
-   
-   SUBCASE("SHAPE OPS TEST") {
+
+  SUBCASE("SHAPE OPS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
     set_computationItem(comp);
@@ -258,7 +253,8 @@ TEST_CASE("PROCESS OPS TESTING") {
                             ctx);
 
     std::vector<float> out_Shape(16);
-    odla_BindToOutputById((const odla_value_id) "Reshape", out_Shape.data(), ctx);
+    odla_BindToOutputById((const odla_value_id) "Reshape", out_Shape.data(),
+                          ctx);
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
     auto shape = comp->builder->getTensorShape(Reshape->tensor_id);
@@ -266,17 +262,16 @@ TEST_CASE("PROCESS OPS TESTING") {
     // auto size = Reshape->tensor_id;
     float expected[2] = {3, 2};
     for (int i = 0; i < shape.size(); ++i) {
-      CHECK_EQ(shape[i],  shape[i]);
+      CHECK_EQ(shape[i], shape[i]);
     }
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
   }
-   
-   SUBCASE("SQUEEZE OPS TEST") {
+
+  SUBCASE("SQUEEZE OPS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
     set_computationItem(comp);
-
 
     auto input =
         odla_CreateArgument({ODLA_FLOAT32, {.size = 3, .dims = {2, 1, 3}}},
@@ -300,7 +295,6 @@ TEST_CASE("PROCESS OPS TESTING") {
 
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
 
-
     auto shape = comp->builder->getTensorShape(Squeeze->tensor_id);
     std::cout << "squeeze result shape:[";
     for (int i = 0; i < shape.size(); ++i) {
@@ -310,5 +304,4 @@ TEST_CASE("PROCESS OPS TESTING") {
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
   }
-
 }

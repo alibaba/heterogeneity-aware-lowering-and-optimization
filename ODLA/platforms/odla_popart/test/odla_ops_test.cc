@@ -1,4 +1,5 @@
-//===- odla_ops_test.cc ----------------------------------------------------===//
+//===- odla_ops_test.cc
+//----------------------------------------------------===//
 //
 // Copyright (C) 2022 Alibaba Group Holding Limited.
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
@@ -34,9 +35,7 @@
 
 using namespace std;
 
-
 TEST_CASE("GEMM OPS TESTING") {
-
   SUBCASE("GEMM OPS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
@@ -114,22 +113,19 @@ TEST_CASE("GEMM OPS TESTING") {
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
   }
-
 }
 
-
-
 TEST_CASE("OPS TESTING") {
-      SUBCASE("OPS Sub TEST") {
+  SUBCASE("OPS Sub TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
     set_computationItem(comp);
 
     auto lhs = odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
-                                    (const odla_value_id)("lhs"));
+                                   (const odla_value_id)("lhs"));
 
     auto rhs = odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
-                                    (const odla_value_id)("rhs"));
+                                   (const odla_value_id)("rhs"));
 
     auto Sub = odla_Add(lhs, rhs, (const odla_value_id) "Sub");
     odla_SetValueAsOutput(Sub);
@@ -150,12 +146,12 @@ TEST_CASE("OPS TESTING") {
     odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
 
     std::vector<float> expected = {6, 1.9, 1.5, 9};
-    CHECK_EQ(expected, out_Sub );
+    CHECK_EQ(expected, out_Sub);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
-    }
-   
-    SUBCASE("OPS Floor TEST") {
+  }
+
+  SUBCASE("OPS Floor TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
     set_computationItem(comp);
@@ -181,9 +177,9 @@ TEST_CASE("OPS TESTING") {
     CHECK_EQ(expected, out_Neg);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
-    }
+  }
 
-    SUBCASE("OPS Sqrt TEST") {
+  SUBCASE("OPS Sqrt TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
     set_computationItem(comp);
@@ -210,9 +206,9 @@ TEST_CASE("OPS TESTING") {
     CHECK_EQ(expected, expected);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
-    }    
+  }
 
-    SUBCASE("OPS Rsqrt TEST") {
+  SUBCASE("OPS Rsqrt TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
     set_computationItem(comp);
@@ -239,9 +235,9 @@ TEST_CASE("OPS TESTING") {
     CHECK_EQ(expected, expected);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
-    }
+  }
 
-    SUBCASE("OPS Relu TEST") {
+  SUBCASE("OPS Relu TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
     set_computationItem(comp);
@@ -268,5 +264,5 @@ TEST_CASE("OPS TESTING") {
     CHECK_EQ(expected, out_Neg);
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
-    }
+  }
 }
