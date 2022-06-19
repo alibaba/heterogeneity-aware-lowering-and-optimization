@@ -41,3 +41,4 @@ void test_bind_funciton_multithread(float* in, float* out);
 void execute_multithread(odla_computation comp, float* in, float* out);
 
 json default_json();
+void call_function(float param);

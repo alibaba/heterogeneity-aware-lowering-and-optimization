@@ -102,3 +102,7 @@ json default_json() {
   file << jsonfile;
   return jsonfile;
 }
+
+void call_function(float param) {
+  popart::logging::info({}, "call back function, parameter value", param);
+}

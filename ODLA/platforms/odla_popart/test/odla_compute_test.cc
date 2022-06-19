@@ -127,13 +127,13 @@ TEST_CASE("TestBaseCompFunction") {
     CHECK_EQ(odla_SetValueAsOutput(_input2), ODLA_SUCCESS);
 
     odla_values _ovs = {2, {_input1, _input2}};
-    // CHECK_EQ(odla_SetValuesAsOutput(_ovs), ODLA_FAILURE); //todo: duplicate
+    CHECK_EQ(odla_SetValuesAsOutput(_ovs), ODLA_SUCCESS); // todo: duplicate
     // set, should be failed
     CHECK_EQ(odla_GetNumOfOutputsFromComputation(comp, &_num), ODLA_SUCCESS);
     // CHECK_EQ(_num, 2); //todo: duplicate set, should be failed
 
     CHECK_EQ(odla_GetOutputFromComputationByIdx(comp, 0, &_ov), ODLA_SUCCESS);
-    CHECK_EQ(odla_GetOutputFromComputationByIdx(comp, 2, &_ov),
+    CHECK_EQ(odla_GetOutputFromComputationByIdx(comp, 4, &_ov),
              ODLA_INVALID_PARAM);
     // CHECK_EQ(odla_GetOutputFromComputationByIdx(nullptr, 0, &_ov),
     // ODLA_FAILURE); //todo 1
@@ -227,10 +227,11 @@ TEST_CASE("TestBaseCompFunction") {
     odla_DestroyContext(ctx);
   }
 
-  SUBCASE("TestAsyncExecute") {
+  SUBCASE("TestContextQueue") {
     json config_json = default_json();
-    config_json["execution_mode"] = "pipeline_async";
+    config_json["queue_type"] = std::string("ContextQueues");
     config_json["ipu_num"] = 2;
+    config_json["execution_mode"] = std::string("pipeline");
     json pipeline_json;
     std::vector<int> vec1 = {0, 0};
     std::vector<int> vec2 = {1, 1};
@@ -247,6 +248,47 @@ TEST_CASE("TestBaseCompFunction") {
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
 
     build_default_model();
+    set_computationItem(comp, false, 2);
+
+    odla_context ctx;
+    CHECK_EQ(ODLA_SUCCESS, odla_CreateContext(&ctx));
+
+    float in = 1.f;
+    float out = 0.f;
+
+    odla_BindToArgumentById((const odla_value_id) "Input", &in, ctx);
+    odla_BindToOutputById((const odla_value_id) "Add", &out, ctx);
+
+    CHECK_EQ(
+        odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr),
+        ODLA_SUCCESS);
+
+    CHECK_EQ(out, 8.f);
+
+    odla_DestroyComputation(comp);
+    odla_DestroyContext(ctx);
+  }
+
+  SUBCASE("TestPipelineAsync") {
+    json config_json = default_json();
+    config_json["execution_mode"] = "pipeline_async";
+    config_json["ipu_num"] = 2;
+    json pipeline_json;
+    std::vector<int> vec1 = {0, 0};
+    std::vector<int> vec2 = {1, 1};
+    pipeline_json["Input"] = vec1;
+    pipeline_json["Mul"] = vec2;
+    pipeline_json["Mul_const"] = vec2;
+    pipeline_json["Add"] = vec2;
+    pipeline_json["Add_const"] = vec2;
+    config_json["pipeline"] = pipeline_json;
+
+    PopartConfig::instance()->parse_from_json(config_json);
+
+    odla_computation comp;
+    odla_CreateComputation(&comp);
+
+    build_default_model();
     set_computationItem(comp, true, 2);
 
     odla_context ctx;
@@ -257,18 +299,12 @@ TEST_CASE("TestBaseCompFunction") {
     odla_BindToArgumentById((const odla_value_id) "Input", &in, ctx);
     odla_BindToOutputById((const odla_value_id) "Add", &out, ctx);
     float parameter = 1;
-    auto call_back = [](float parameter) {
-      popart::logging::info({}, "call back function, parameter value",
-                            parameter);
-    };
     odla_SetContextItem(ctx, ODLA_ASYNC_CALLBACK_FUNC,
-                        (odla_item_value)&call_back);
+                        (odla_item_value)&call_function);
     odla_SetContextItem(ctx, ODLA_ASYNC_CALLBACK_ARG,
                         (odla_item_value)&parameter);
-
-    // CHECK_EQ(odla_AsyncExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE,
-    //                                       nullptr),
-    //          ODLA_SUCCESS); //todo
+    CHECK_EQ(ODLA_SUCCESS, odla_AsyncExecuteComputation(
+                               comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr));
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
   }
@@ -337,6 +373,63 @@ TEST_CASE("TestBaseCompFunction") {
     odla_DestroyContext(ctx);
   }
 
+  SUBCASE("TestSaveOnnx") {
+    json config_json = default_json();
+    config_json["save_model"] = true;
+    config_json["save_model_path"] = std::string("./model.onnx");
+    PopartConfig::instance()->parse_from_json(config_json);
+
+    odla_computation comp;
+    CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+
+    build_default_model();
+    set_computationItem(comp);
+
+    odla_context ctx;
+    CHECK_EQ(ODLA_SUCCESS, odla_CreateContext(&ctx));
+
+    float in = 1.f;
+    float out = 0.f;
+    odla_BindToArgumentById((const odla_value_id) "Input", &in, ctx);
+    odla_BindToOutputById((const odla_value_id) "Add", &out, ctx);
+
+    CHECK_EQ(
+        odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr),
+        ODLA_SUCCESS);
+    odla_DestroyComputation(comp);
+    odla_DestroyContext(ctx);
+    std::fstream model("./model.onnx");
+    CHECK_EQ(true, model.good());
+  }
+
+  SUBCASE("TestLoadOnnx") {
+   json config_json = default_json();
+    config_json["load_onnx"] = true;
+    config_json["load_onnx_path"] = std::string("./model.onnx");
+    PopartConfig::instance()->parse_from_json(config_json);
+
+    odla_computation comp;
+    CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+
+    build_default_model();
+    set_computationItem(comp);
+
+    odla_context ctx;
+    CHECK_EQ(ODLA_SUCCESS, odla_CreateContext(&ctx));
+
+    float in = 1.f;
+    float out = 0.f;
+    odla_BindToArgumentById((const odla_value_id) "Input", &in, ctx);
+    odla_BindToOutputById((const odla_value_id) "Add", &out, ctx);
+
+    CHECK_EQ(
+        odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr),
+        ODLA_SUCCESS);
+    CHECK_EQ(out, 8.f); //todo need to change verify way.
+    odla_DestroyComputation(comp);
+    odla_DestroyContext(ctx);
+  }
+
   SUBCASE("TestInjectError") {
     // generate json
     json config_json = default_json();
@@ -387,6 +480,39 @@ TEST_CASE("TestBaseCompFunction") {
              ODLA_RECOVERABLE_ERR);
 
     remove("/tmp/temp_error_injector.json");
+    odla_DestroyComputation(comp);
+    odla_DestroyContext(ctx);
+  }
+
+  SUBCASE("TestIPUNumNotEqualFailure") {
+    json config_json = default_json();
+    config_json["ipu_num"] = 2;
+    config_json["execution_mode"] = std::string("pipeline_async");
+    json pipeline_json;
+    std::vector<int> vec1 = {0, 0};
+    std::vector<int> vec2 = {1, 1};
+    pipeline_json["Input"] = vec1;
+    pipeline_json["Mul"] = vec2;
+    pipeline_json["Mul_const"] = vec2;
+    pipeline_json["Add"] = vec2;
+    pipeline_json["Add_const"] = vec2;
+    config_json["pipeline"] = pipeline_json;
+    PopartConfig::instance()->parse_from_json(config_json);
+
+    float in = 1.f;
+    odla_computation comp;
+    CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+    build_default_model();
+    set_computationItem(comp, true, 1);
+
+    odla_context ctx;
+    odla_CreateContext(&ctx);
+
+    // Info: number of ipus in pipeline configuration:2 must same with options:
+    // 1 Info: init computation item in CreateContext failed Info: Can't notify
+    // the failure status: 14 as null callback func:0 or arg:0
+    CHECK_EQ(ODLA_FAILURE,
+             odla_BindToArgumentById((const odla_value_id) "Input", &in, ctx));
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
   }

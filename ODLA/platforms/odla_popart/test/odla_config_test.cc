@@ -215,7 +215,7 @@ TEST_CASE("TestConfig") {
                           "config already inited");
   }
 
-  SUBCASE("TestConfigFunctionCallAfterInited") {
+  SUBCASE("TestDefualtConfig") {
     auto pci = PopartConfig::instance();
     pci->use_default();
     CHECK_EQ(true, pci->inited());
@@ -250,7 +250,7 @@ TEST_CASE("TestConfig") {
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
   }
 
-  SUBCASE("TestInjectError") {
+  SUBCASE("TestCompEnviroment2") {
     // have injector but not set POPART_LOG_LEVEL, should set to info
     json inject_error;
     std::ofstream file("/tmp/temp_error_injector.json");

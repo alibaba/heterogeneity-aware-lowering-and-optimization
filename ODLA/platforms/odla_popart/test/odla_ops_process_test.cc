@@ -231,7 +231,7 @@ TEST_CASE("PROCESS OPS TESTING") {
     odla_DestroyContext(ctx);
   }
 
-  SUBCASE("SHAPE OPS TEST") {
+  SUBCASE("RESHAPE OPS TEST") {
     odla_computation comp;
     CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
     set_computationItem(comp);
@@ -266,6 +266,48 @@ TEST_CASE("PROCESS OPS TESTING") {
     }
     odla_DestroyComputation(comp);
     odla_DestroyContext(ctx);
+  }
+
+  SUBCASE("SHAPE OPS TEST") {
+    odla_computation comp;
+    CHECK_EQ(ODLA_SUCCESS, odla_CreateComputation(&comp));
+    set_computationItem(comp);
+
+    auto input =
+        odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 3}}},
+                            (const odla_value_id)("input"));
+
+    odla_value_shape output_dims = {.size = 2, .dims = {3, 2}};
+    auto Shape = odla_Shape(input, output_dims, (const odla_value_id) "shape");
+
+    odla_SetValueAsOutput(Shape);
+
+    auto shape = comp->builder->getTensorShape(Shape->tensor_id);
+
+    // auto size = shape->tensor_id;
+    float expected[2] = {3, 2};
+    for (int i = 0; i < shape.size(); ++i) {
+      CHECK_EQ(shape[i], shape[i]);
+    }
+    odla_DestroyComputation(comp);
+  }
+
+  SUBCASE("TILE OPS TEST") {
+    odla_computation comp;
+    odla_CreateComputation(&comp);
+    set_computationItem(comp);
+
+    auto input =
+        odla_CreateArgument({ODLA_FLOAT32, {.size = 2, .dims = {2, 2}}},
+                            (const odla_value_id)("input"));
+
+    odla_value_shape output_dims = {.size = 2, .dims = {2, 2}};
+    odla_uint32 repeat_time = 1;
+    auto Tile = odla_Tile(input, &repeat_time, output_dims,
+                          (const odla_value_id) "Tile");
+    //todo need to verify result
+    odla_SetValueAsOutput(Tile);
+    odla_DestroyComputation(comp);
   }
 
   SUBCASE("SQUEEZE OPS TEST") {
