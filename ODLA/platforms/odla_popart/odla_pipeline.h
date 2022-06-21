@@ -20,6 +20,7 @@
 #ifndef ODLA_PIPELINE_H_
 #define ODLA_PIPELINE_H_
 #include <ODLA/odla.h>
+#include <semaphore.h>
 
 #include <atomic>
 #include <chrono>
