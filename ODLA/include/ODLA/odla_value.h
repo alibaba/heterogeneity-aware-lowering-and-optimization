@@ -34,6 +34,19 @@ extern "C" {
 //! \brief Supported maximum output size
 #define ODLA_MAX_OUTPUTS 64
 
+typedef struct {
+  odla_element_type data_type;
+  union {
+    odla_int32 val_int32;
+    odla_uint32 val_uint32;
+    odla_int64 val_int64;
+    odla_uint64 val_uint64;
+    odla_float32 val_fp32;
+    odla_float64 val_fp64;
+    odla_string val_str;
+  };
+} odla_scalar_value;
+
 //! \brief Shape of value
 typedef struct {
   // size = -1: undefined size

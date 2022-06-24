@@ -15,6 +15,8 @@
 // limitations under the License.
 // =============================================================================
 
+#include "odla_tensorrt.h"
+
 #include <NvInfer.h>
 #include <NvInferPlugin.h>
 #include <NvInferRuntime.h>

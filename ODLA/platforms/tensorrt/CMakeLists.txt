@@ -34,12 +34,12 @@ endif()
 set(PLUGIN_NAME odla_plugin)
 add_subdirectory(plugins)
 
-add_odla_library(odla_tensorrt SHARED odla_tensorrt.cc)
+add_odla_library(odla_tensorrt SHARED odla_tensorrt.cc odla_device.cc)
 add_dependencies(odla_tensorrt ODLA_TRTPLUGIN)
 
 target_include_directories(odla_tensorrt PRIVATE ${CUDA_ROOT}/include ${CMAKE_BINARY_DIR}/include/halo)
 target_compile_options(odla_tensorrt PRIVATE -Wno-deprecated-declarations)
-target_link_libraries(odla_tensorrt ODLA ${nvinfer} ${CUDART_LIB} ${nvinfer_plugin})
+target_link_libraries(odla_tensorrt ODLA ${nvinfer} ${CUDART_LIB} ${nvinfer_plugin} cuda nvidia-ml)
 set_target_properties(odla_tensorrt PROPERTIES LINK_FLAGS
                       "-Wl,-rpath=\\\${ORIGIN}/tensorrt:\\\${ORIGIN} -L${CMAKE_BINARY_DIR}/tensorrt")
 target_link_libraries(odla_tensorrt ${PLUGIN_NAME})
