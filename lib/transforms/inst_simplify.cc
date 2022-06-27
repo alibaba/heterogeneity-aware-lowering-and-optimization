@@ -2466,6 +2466,46 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(SliceInst* inst) {
   auto op_len = inst->GetOperand(2);
   const auto& dst_type = inst->GetResultsTypes()[0];
   if (dst_type.IsValid() && !dst_type.IsStaticShape()) {
+    auto nums = inst->GetOperand(0).GetType().GetNumOfDims();
+    if (inst->GetNumOfOperands() > 4) {
+      auto input_shape = inst->GetOperand(0).GetType().GetDimSizes();
+
+      ConstantBuilder cb(inst->GetParent()->GetParent());
+      IRBuilder builder(inst->GetParent());
+      builder.SetInsertAfter(inst);
+      const halo::Type size_i_type{DataType::INT32,
+                                   {static_cast<int32_t>(nums)}};
+      std::vector<int32_t> size_len(nums, 0);
+      std::vector<int32_t> shapes(input_shape.begin(), input_shape.end());
+
+      std::vector<int32_t> size_step(nums, 1);
+
+      Constant* start_co = cb.CreateConstant(inst->GetName() + "_zeros",
+                                             size_i_type, size_len.data());
+      Constant* len_co = cb.CreateConstant(inst->GetName() + "_shape",
+                                           size_i_type, shapes.data());
+      Constant* step_co = cb.CreateConstant(inst->GetName() + "_one_step",
+                                            size_i_type, size_step.data());
+
+      auto new_start =
+          builder.CreateDimsExpand(inst->GetName() + "_new_start", *start_co,
+                                   inst->GetOperand(1), inst->GetOperand(4));
+      auto new_len =
+          builder.CreateDimsExpand(inst->GetName() + "_new_len", *len_co,
+                                   inst->GetOperand(2), inst->GetOperand(4));
+      auto new_step =
+          builder.CreateDimsExpand(inst->GetName() + "_new_step", *step_co,
+                                   inst->GetOperand(3), inst->GetOperand(4));
+
+      auto new_slice = builder.CreateSliceDynamic(
+          inst->GetName(),
+          {inst->GetOperand(0), *new_start, *new_len, *new_step});
+      new_slice->GetResultsTypes()[0] = dst_type;
+      return {orig_def, *new_slice};
+    }
+    if (!IsA<Constant>(op_len)) {
+      return {orig_def, orig_def};
+    }
     IRBuilder builder(inst->GetParent());
     builder.SetInsertAfter(inst);
     ConstantBuilder cb(inst->GetParent()->GetParent());
