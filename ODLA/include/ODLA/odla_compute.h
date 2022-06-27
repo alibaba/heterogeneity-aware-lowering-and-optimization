@@ -48,6 +48,10 @@ typedef enum {
   ODLA_MIN_SHAPE,
   ODLA_MAX_SHAPE,
   ODLA_OPT_SHAPE,
+  ODLA_DYNAMIC_VALUE,
+  ODLA_MIN_VALUE,
+  ODLA_MAX_VALUE,
+  ODLA_OPT_VALUE,
   ODLA_BF16_MODE,
   ODLA_FP16_MODE,
   ODLA_USE_SIM_MODE,
@@ -259,6 +263,17 @@ extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_SetComputationItem(
 */
 extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_SetValueShapeInfo(
     odla_value value, odla_item_type type, odla_value_shape value_shape);
+
+//! \brief Set the computation arguments shape info with a property item
+/*!
+  \param value the odla_value
+  \param type the property item type
+  \param value_input the property value_shape
+
+  \return odla_status
+*/
+extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_SetInputValueInfo(
+    odla_value value, odla_item_type type, odla_item_value value_input);
 
 //! \brief Set the context runtime shapes to an odla_value
 /*!
