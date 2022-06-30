@@ -85,7 +85,7 @@ RUN apt-get update -y && \
       latex-cjk-all \
       libglib2.0-dev \
       libpixman-1-dev \
-      bc \ 
+      bc \
       ffmpeg \
       libsm6=2:1.2.2-1 \
       libxext6=2:1.3.3-1 && \
@@ -229,6 +229,12 @@ RUN cd /tmp && \
 RUN if [[ ! "${BASE_IMAGE}" =~ "nvidia" ]]; then wget https://registrationcenter-download.intel.com/akdlm/irc_nas/17769/l_BaseKit_p_2021.2.0.2883_offline.sh && \
     chmod +x ./l_BaseKit_p_2021.2.0.2883_offline.sh && \
     ./l_BaseKit_p_2021.2.0.2883_offline.sh -s -a --silent --eula accept; fi
+
+# Install Ascend Toolkit
+RUN apt-get update && apt-get install -y python3.8 \
+ && curl --output /tmp/ascend.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/CANN/5.1.RC2.alpha006/Ascend-cann-toolkit_5.1.RC2.alpha006_linux-x86_64.run \
+ && bash /tmp/ascend.run --full \
+ && apt-get remove -y python3.8 && apt clean && rm -fr /var/lib/apt/lists* /tmp/* /var/tmp*
 
 # Install models & test cases
 COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:v0.1-model-zoo /models /models
