@@ -9,7 +9,6 @@
 #include "ge_ir_build.h"
 #include "odla_ascend_acl.h"
 
-
 using namespace ge;
 
 using namespace std;

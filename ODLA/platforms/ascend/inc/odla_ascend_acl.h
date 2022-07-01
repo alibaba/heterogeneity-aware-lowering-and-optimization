@@ -16,7 +16,6 @@
 #include "ge/ge_api.h"
 #include "model_process.h"
 
-
 using namespace std;
 using namespace ge;
 using ge::Operator;

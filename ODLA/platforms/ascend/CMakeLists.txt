@@ -13,8 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License
 # ==============================================================================
-
-set(ASCEND_PATH "/usr/local/Ascend")
+if(DEFINED $ENV{ASCEND_HOME})
+    set(ASCEND_PATH $ENV{ASCEND_HOME})
+elseif(EXISTS "/usr/local/Ascend")
+    set(ASCEND_PATH "/usr/local/Ascend")
+else()
+    set(ASCEND_PATH "~/Ascend")
+endif()
 
 include_directories(
     ${ASCEND_PATH}/ascend-toolkit/latest/opp/op_proto/built-in/inc
