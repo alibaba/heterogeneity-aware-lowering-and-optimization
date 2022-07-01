@@ -97,6 +97,12 @@ ENV CCACHE_DIR=/cache
 
 RUN rpm --rebuilddb && yum install -y rpm-build && yum clean all
 
+# Install Ascend Toolkit
+RUN cd /tmp && wget https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz && tar xvf Python-3.8.12.tgz \
+ && cd Python-3.8*/ && ./configure  --prefix=/opt/python3.8 && make altinstall
+RUN /opt/python3.8/bin/python3.8 -m venv /tmp/venv && source /tmp/venv/bin/activate &&  curl --output /tmp/ascend.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/CANN/5.1.RC2.alpha006/Ascend-cann-toolkit_5.1.RC2.alpha006_linux-x86_64.run \
+ && bash /tmp/ascend.run --full && rm -fr /tmp/*
+
 # Install models & test cases
 COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:v0.1-model-zoo /models /models
 COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:v0.1-model-zoo /unittests /unittests
