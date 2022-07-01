@@ -311,6 +311,15 @@ static odla_value_shape GetOdlaShape(const nvinfer1::Dims& dims) {
   return ret;
 }
 
+static bool IsStaticShape(const odla_value_shape& shape) {
+  for (int i = 0; i < shape.size; ++i) {
+    if (shape.dims[i] < 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
 struct _odla_context {
   odla_computation comp = nullptr;
   TrtUniquePtr<nvinfer1::IExecutionContext> ctx{nullptr};
@@ -325,22 +334,26 @@ struct _odla_context {
   typedef struct {
     void* host_ptr = nullptr;
     void* dev_ptr = nullptr;
-    size_t len = 0;
-    odla_value_type vt;
+    size_t total_size = 0; // max memory size.
+    size_t used_size = 0;  // used memory size.
+    // odla_value_type vt;
   } OutputPtrInfo;
 
   typedef struct {
-    const void* host_ptr = nullptr;
     void* dev_ptr = nullptr;
+    size_t total_size = 0;
   } InputPtrInfo;
-  std::unordered_map<std::string, OutputPtrInfo> output_ptrs;
-  std::unordered_map<std::string, InputPtrInfo> input_ptrs;
+  std::unordered_map<odla_value, OutputPtrInfo> output_ptrs;
+  std::unordered_map<odla_value, InputPtrInfo> input_ptrs;
 
   int run_batch_size = 0;
 
   std::unordered_map<odla_value, odla_value_shape> real_shapes;
 
   _odla_context(odla_computation comp) : comp(comp) {
+    for (auto& v : comp->input_vals) {
+      real_shapes[v] = v->type.shape;
+    }
     if (comp->executable.engine == nullptr) {
       odla_executable exec;
       odla_CompileComputation(comp, nullptr, &exec);
@@ -350,7 +363,14 @@ struct _odla_context {
     assert(ctx != nullptr);
     CHECK(cudaStreamCreate(&stream));
   }
+
   ~_odla_context() {
+    for (const auto& ptr_info : input_ptrs) {
+      cudaFree(ptr_info.second.dev_ptr);
+    }
+    for (const auto& ptr_info : output_ptrs) {
+      cudaFree(ptr_info.second.dev_ptr);
+    }
     CHECK(cudaStreamDestroy(stream));
     stream = nullptr;
     comp = nullptr;
@@ -555,7 +575,10 @@ static std::vector<nvinfer1::RNNGateType> GetRNNGateOrder(
 extern "C" {
 odla_status odla_SetRuntimeValueType(odla_context context, odla_value value,
                                      odla_value_type value_type) {
-  return ODLA_SUCCESS;
+  if (value_type.element_type != value->type.element_type) {
+    return ODLA_FAILURE;
+  }
+  return odla_SetRuntimeShape(context, value, value_type.shape);
 }
 
 odla_status odla_GetRuntimeNumOfOutputs(odla_context context,
@@ -566,23 +589,8 @@ odla_status odla_GetRuntimeNumOfOutputs(odla_context context,
 
 odla_status odla_GetRuntimeValueType(odla_context context, odla_value value,
                                      odla_value_type* value_type_ptr) {
-  odla_value_shape real_shape = value->type.shape;
-  auto comp = context->comp;
-  if (comp->is_dynamic_batch || context->run_batch_size) {
-    real_shape.dims[0] = context->run_batch_size;
-  }
-  if (comp->is_dynamic_shape) {
-    if (context->real_shapes.find(value) != context->real_shapes.end()) {
-      real_shape = context->real_shapes[value];
-      int idx = comp->executable.engine->getBindingIndex(value->name);
-      nvinfer1::Dims nvdims = GetNVDims(real_shape);
-      // set runtime shape
-      context->ctx->setBindingDimensions(idx, nvdims);
-    }
-  }
-  *value_type_ptr = {.element_type = value->type.element_type,
-                     .shape = real_shape};
-  return ODLA_SUCCESS;
+  value_type_ptr->element_type = value->type.element_type;
+  return odla_GetRuntimeShape(context, value, &(value_type_ptr->shape));
 }
 
 odla_status odla_CreateComputation(odla_computation* computation) {
@@ -730,7 +738,19 @@ odla_status odla_SetInputValueInfo(odla_value value, odla_item_type type,
 
 odla_status odla_SetRuntimeShape(odla_context context, odla_value value,
                                  odla_value_shape value_shape) {
+  // Only allowed for input values.
+  auto comp = context->comp;
+  if (auto e = comp->input_vals.end();
+      std::find(comp->input_vals.begin(), e, value) == e) {
+    return ODLA_FAILURE;
+  }
+  // Disable dynamic batch if dynamic shape is used.
+  comp->is_dynamic_batch = false;
   context->real_shapes[value] = value_shape;
+  int idx = comp->executable.engine->getBindingIndex(value->name);
+  nvinfer1::Dims nvdims = GetNVDims(value_shape);
+  // set runtime shape
+  context->ctx->setBindingDimensions(idx, nvdims);
   return ODLA_SUCCESS;
 }
 
@@ -751,9 +771,20 @@ odla_status odla_GetRuntimeShape(odla_context context, odla_value value,
 odla_status odla_SetContextItem(odla_context context, odla_item_type type,
                                 odla_item_value value) {
   switch (type) {
-    case ODLA_RUN_BATCH_SIZE:
-      context->run_batch_size = *(reinterpret_cast<int*>(value));
+    case ODLA_RUN_BATCH_SIZE: {
+      int bs = *(reinterpret_cast<int*>(value));
+      if (bs < 0) {
+        return ODLA_FAILURE;
+      }
+      context->run_batch_size = bs;
+      // Update real shapes for inputs.
+      for (auto& input : context->comp->input_vals) {
+        if (input->type.shape.dims[0] < 0) {
+          context->real_shapes[input].dims[0] = bs;
+        }
+      }
       break;
+    }
     case ODLA_AGGREGATE_OPS:
       context->enable_cuda_graph = *(reinterpret_cast<bool*>(value));
       if (context->enable_cuda_graph && (context->comp->is_dynamic_batch ||
@@ -879,14 +910,16 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
   if (buf != nullptr) {
     validated_data_ptr = buf.get();
   }
-  void* dev_ptr = context->input_ptrs[value->name].dev_ptr;
-  if (dev_ptr == nullptr) {
-    CHECK(cudaMalloc(&dev_ptr, bytes));
+  auto& input_ptr_info = context->input_ptrs[value];
+  if (bytes > input_ptr_info.total_size) {
+    // Expand the buffer.
+    CHECK(cudaFree(input_ptr_info.dev_ptr));
+    CHECK(cudaMalloc(&input_ptr_info.dev_ptr, bytes));
+    input_ptr_info.total_size = bytes;
   }
 
-  CHECK(cudaMemcpyAsync(dev_ptr, validated_data_ptr, bytes,
+  CHECK(cudaMemcpyAsync(input_ptr_info.dev_ptr, validated_data_ptr, bytes,
                         cudaMemcpyHostToDevice, context->stream));
-  context->input_ptrs[value->name] = {.host_ptr = data_ptr, .dev_ptr = dev_ptr};
 
   return ODLA_SUCCESS;
 }
@@ -900,10 +933,10 @@ odla_status odla_BindToArgumentById(const odla_value_id value_id,
 }
 
 static void* AllocOutput(odla_value value, odla_context context,
-                         size_t& dstsize) {
+                         void* host_data) {
   odla_value_shape real_shape = value->type.shape;
   auto comp = context->comp;
-  if ((comp->is_dynamic_batch) || context->run_batch_size) {
+  if ((comp->is_dynamic_batch) || context->run_batch_size > 0) {
     real_shape.dims[0] = context->run_batch_size;
   }
   if (comp->is_dynamic_shape || comp->is_dynamic_value) {
@@ -916,42 +949,53 @@ static void* AllocOutput(odla_value value, odla_context context,
       context->real_shapes[value] = real_shape;
     }
   }
+  if (!IsStaticShape(real_shape)) {
+    assert(0 && "not a fixed shape");
+    return nullptr;
+  }
   size_t bytes =
       GetTotalElements(real_shape) * GetElementSize(value->type.element_type);
   // TODO: convert to int64 for int64 outputs?
-  void* dst = context->output_ptrs[value->name].dev_ptr;
-  if (dst == nullptr) {
-    CHECK(cudaMalloc(&dst, bytes));
+  auto& ptr_info = context->output_ptrs[value];
+  if (ptr_info.total_size < bytes) {
+    CHECK(cudaFree(ptr_info.dev_ptr));
+    CHECK(cudaMalloc(&ptr_info.dev_ptr, bytes));
+    ptr_info.total_size = bytes;
   }
-  dstsize = bytes;
-  return dst;
+  ptr_info.used_size = bytes;
+  if (host_data != nullptr) {
+    ptr_info.host_ptr = host_data;
+  }
+  return ptr_info.dev_ptr;
 }
 
 odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
                               odla_context context) {
-  size_t bytes;
-  void* dst = AllocOutput(value, context, bytes);
-  context->output_ptrs[value->name] = {
-      .host_ptr = data_ptr, .dev_ptr = dst, .len = bytes, .vt = value->type};
-
+  void* dst = AllocOutput(value, context, data_ptr);
   return ODLA_SUCCESS;
 }
 
 odla_status odla_GetValueData(odla_value value, odla_void* data_ptr,
                               odla_context context) {
-  assert(context->output_ptrs.find(value->name) != context->output_ptrs.end());
-  auto& kv = context->output_ptrs[value->name];
-  if (kv.vt.element_type == ODLA_INT64) {
-    std::vector<int> host_tmp(GetTotalElements(kv.vt.shape));
-    CHECK(cudaMemcpy(host_tmp.data(), kv.dev_ptr, kv.len,
+  auto it = context->output_ptrs.find(value);
+  if (it == context->output_ptrs.end()) {
+    assert(0 && "Invalid value");
+    return ODLA_FAILURE;
+  }
+  const auto& ptr_info = it->second;
+  if (value->type.element_type == ODLA_INT64) {
+    std::vector<int> host_tmp(GetTotalElements(value->type.shape));
+    CHECK(cudaMemcpy(host_tmp.data(), ptr_info.dev_ptr, ptr_info.used_size,
                      cudaMemcpyDeviceToHost));
     int64_t* ptr = static_cast<int64_t*>(data_ptr);
     for (int d : host_tmp) {
       *ptr++ = static_cast<int64_t>(d);
     }
   } else {
-    CHECK(cudaMemcpy(data_ptr, kv.dev_ptr, kv.len, cudaMemcpyDeviceToHost));
+    CHECK(cudaMemcpy(data_ptr, ptr_info.dev_ptr, ptr_info.used_size,
+                     cudaMemcpyDeviceToHost));
   }
+  return ODLA_SUCCESS;
 }
 
 odla_status odla_BindToOutputById(const odla_value_id value_id,
@@ -1176,7 +1220,12 @@ odla_status odla_LoadExecutable(odla_resource_location location,
       runtime->deserializeCudaEngine(engine_data, engine_size, nullptr);
   computation->executable.engine = TrtUniquePtr<ICudaEngine>(engine);
 
-  for (int i = 0, n = engine->getNbBindings(); i < n; ++i) {
+  int nb_prof = engine->getNbOptimizationProfiles();
+  int nb_bindings_per_prof = engine->getNbBindings() / nb_prof;
+  int use_profile = 0;
+  for (int i = nb_bindings_per_prof * use_profile,
+           n = nb_bindings_per_prof * (use_profile + 1);
+       i < n; ++i) {
     const char* name = engine->getBindingName(i);
     Dims dims = engine->getBindingDimensions(i);
     DataType nv_type = engine->getBindingDataType(i);
@@ -1258,8 +1307,8 @@ odla_status odla_GetValueType(const odla_value value,
 odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
-  auto add_to_buffer = [&](const std::string& name, void* ptr) {
-    int idx = comp->executable.engine->getBindingIndex(name.c_str());
+  auto add_to_buffer = [&](odla_value value, void* ptr) {
+    int idx = comp->executable.engine->getBindingIndex(value->name);
     if (idx >= 0) {
       if (context->bindings.size() <= idx) {
         context->bindings.resize(idx + 1);
@@ -1269,13 +1318,11 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
   };
 
   for (auto& v : context->comp->output_vals) {
-    size_t bytes;
-    void* dst = AllocOutput(v, context, bytes);
-    if (context->output_ptrs[v->name].dev_ptr == nullptr ||
-        context->output_ptrs[v->name].len < bytes) {
-      context->output_ptrs[v->name] = {
-          .host_ptr = nullptr, .dev_ptr = dst, .len = bytes, .vt = v->type};
-    }
+    // For lazy value get mode:
+    // Users run odla_ExecuteComputation/odla_LaunchExecutable without invoking
+    // odla_BindToOutput(). Results can be retrieved later on via
+    // odla_GetValueData().
+    void* dst = AllocOutput(v, context, nullptr);
   }
 
   for (auto& kv : context->input_ptrs) {
@@ -1311,7 +1358,7 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     if (comp->is_dynamic_batch) {
       for (auto& input_ptr : context->input_ptrs) {
         int idx =
-            comp->executable.engine->getBindingIndex(input_ptr.first.c_str());
+            comp->executable.engine->getBindingIndex(input_ptr.first->name);
         nvinfer1::Dims dims = context->ctx->getBindingDimensions(idx);
         dims.d[0] = context->run_batch_size;
         context->ctx->setBindingDimensions(idx, dims);
@@ -1327,17 +1374,18 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
 
   for (auto& kv : context->output_ptrs) {
     if (kv.second.host_ptr != nullptr) {
-      if (kv.second.vt.element_type == ODLA_INT64) {
-        std::vector<int> host_tmp(GetTotalElements(kv.second.vt.shape));
-        CHECK(cudaMemcpyAsync(host_tmp.data(), kv.second.dev_ptr, kv.second.len,
-                              cudaMemcpyDeviceToHost, context->stream));
+      if (kv.first->type.element_type == ODLA_INT64) {
+        std::vector<int> host_tmp(GetTotalElements(kv.first->type.shape));
+        CHECK(cudaMemcpyAsync(host_tmp.data(), kv.second.dev_ptr,
+                              kv.second.used_size, cudaMemcpyDeviceToHost,
+                              context->stream));
         int64_t* ptr = static_cast<int64_t*>(kv.second.host_ptr);
         for (int d : host_tmp) {
           *ptr++ = static_cast<int64_t>(d);
         }
       } else {
         CHECK(cudaMemcpyAsync(kv.second.host_ptr, kv.second.dev_ptr,
-                              kv.second.len, cudaMemcpyDeviceToHost,
+                              kv.second.used_size, cudaMemcpyDeviceToHost,
                               context->stream));
       }
     }
@@ -1349,14 +1397,8 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
   if (!comp->is_dynamic_batch) {
     return ODLA_SUCCESS;
   }
-  // copy results and free temp buffers.
-  for (auto& ptr : context->bindings) {
-    CHECK(cudaFree(ptr));
-  }
   context->bindings.clear();
 
-  context->input_ptrs.clear();
-  context->output_ptrs.clear();
   return ODLA_SUCCESS;
 }
 
