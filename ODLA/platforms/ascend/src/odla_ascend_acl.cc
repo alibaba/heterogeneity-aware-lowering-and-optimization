@@ -400,7 +400,9 @@ odla_value odla_Reshape(odla_value input, odla_value_shape output_dims,
   auto shape =
       op::Const((string(name) + "_shape").c_str()).set_attr_value(shape_tensor);
 
-  auto reshape = op::Reshape(name).set_input_x(x_tensor).set_input_shape(shape);
+  auto reshape = op::Reshape(name)
+                     .set_input_x_by_name(x_tensor, input->outputname)
+                     .set_input_shape(shape);
 
   ge::DataType input_type = GetAscendType(input->type);
   TensorDesc reshape_input_desc_x(ge::Shape(), FORMAT_ND, input_type);

@@ -7,8 +7,9 @@ odla_value binary_helper(odla_value lhs, odla_value rhs,
   ge::Operator x1_tensor = lhs->op;
   ge::Operator x2_tensor = rhs->op;
 
-  auto add = Op(name).set_input_x1(x1_tensor).set_input_x2_by_name(
-      x2_tensor, rhs->outputname);
+  auto add = Op(name)
+                 .set_input_x1_by_name(x1_tensor, lhs->outputname)
+                 .set_input_x2_by_name(x2_tensor, rhs->outputname);
 
   ge::DataType ascend_type = GetAscendType(lhs->type);
   TensorDesc add_input_desc_x1(ge::Shape(), FORMAT_ND, ascend_type);
@@ -379,7 +380,8 @@ odla_values odla_TopK(odla_value input, odla_uint32 K, odla_bool largest,
   topk.update_output_desc_values(topk_output_desc_values);
   topk.update_output_desc_indices(topk_output_desc_indices);
 
-  auto values = CreateValue(topk, output_value_type, value_ids.value_ids[0]);
+  auto values =
+      CreateValue(topk, output_value_type, value_ids.value_ids[0], "values");
 
   auto cast = op::Cast((string(name) + "_cast").c_str())
                   .set_input_x_by_name(topk, "indices")

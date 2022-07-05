@@ -21,6 +21,8 @@ else()
     set(ASCEND_PATH "~/Ascend")
 endif()
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
+
 include_directories(
     ${ASCEND_PATH}/ascend-toolkit/latest/opp/op_proto/built-in/inc
     ${ASCEND_PATH}/ascend-toolkit/latest/fwkacllib/include/graph
