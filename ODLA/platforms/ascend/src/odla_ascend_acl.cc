@@ -571,7 +571,7 @@ odla_status odla_CreateContext(odla_context* context) {
 
   // 2. system init
   std::map<ge::AscendString, ge::AscendString> global_options = {
-      {AscendString(ge::ir_option::SOC_VERSION), "Ascend310P"},
+      {AscendString(ge::ir_option::SOC_VERSION), "Ascend310P3"},
   };
   auto status = aclgrphBuildInitialize(global_options);
   if (status == ACL_ERROR_NONE) {
