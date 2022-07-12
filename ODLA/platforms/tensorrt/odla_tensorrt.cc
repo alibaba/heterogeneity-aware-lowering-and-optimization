@@ -22,6 +22,7 @@
 #include <NvInferRuntime.h>
 #include <NvInferRuntimeCommon.h>
 #include <ODLA/odla.h>
+#include <cuda.h>
 #include <cuda_runtime.h>
 
 #include <algorithm>
@@ -31,6 +32,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <numeric>
 #include <stack>
 #include <unordered_map>
@@ -90,7 +92,7 @@ std::shared_ptr<T> trt_shared_obj(T* obj) {
 inline bool check(cudaError_t e, int line, const char* file_name) {
   if (e != cudaSuccess) {
     std::cerr << "CUDA runtime API error " << cudaGetErrorName(e) << " at line "
-              << line << " in file " << file_name;
+              << line << " in file " << file_name << std::endl;
     return false;
   }
   return true;
@@ -98,7 +100,8 @@ inline bool check(cudaError_t e, int line, const char* file_name) {
 
 inline bool check(bool result, int line, const char* file_name) {
   if (!result) {
-    std::cerr << "Error at line " << line << " in file " << file_name;
+    std::cerr << "Error at line " << line << " in file " << file_name
+              << std::endl;
     return false;
   }
   return true;
@@ -202,6 +205,7 @@ struct _odla_executable {
 };
 
 struct _odla_computation {
+  odla_device device = nullptr;
   TrtUniquePtr<nvinfer1::IBuilder> builder;
   TrtUniquePtr<nvinfer1::INetworkDefinition> network;
 
@@ -239,13 +243,7 @@ struct _odla_computation {
   _odla_executable executable;
   std::unordered_set<std::unique_ptr<_odla_context>> contexts;
 
-  _odla_computation() : executable{this} {
-    if (const char* env_p = std::getenv("ODLA_TRT_MAX_WS_MB")) {
-      if (int mb = std::stoi(env_p); mb != 0) {
-        max_workspace_size = mb << 20;
-      }
-    }
-
+  _odla_computation(odla_device dev) : device(dev), executable{this} {
     initODLAPlugin(&Logger, "");
     if (!load_engine_mode) {
       builder = TrtUniquePtr<nvinfer1::IBuilder>(
@@ -273,15 +271,14 @@ struct _odla_computation {
   }
 
   ~_odla_computation() {
+    contexts.clear(); // release all contexts before destroying executable.
+    executable.engine.reset();
     network.reset();
     builder.reset();
-    contexts.clear(); // release all contexts before destroying executable.
-    if (executable.engine.get() != nullptr) {
-      executable.engine.reset();
-    }
   }
 
   odla_context create_context() {
+    odla_SetCurrentDevice(device);
     auto context = std::make_unique<_odla_context>(this);
     auto ret = context.get();
     contexts.insert(std::move(context));
@@ -312,6 +309,12 @@ static odla_value_shape GetOdlaShape(const nvinfer1::Dims& dims) {
 }
 
 static bool IsStaticShape(const odla_value_shape& shape) {
+  if (shape.size < 0) {
+    return false;
+  }
+  if (shape.size == 0) {
+    return shape.dims[0] >= 0;
+  }
   for (int i = 0; i < shape.size; ++i) {
     if (shape.dims[i] < 0) {
       return false;
@@ -322,6 +325,7 @@ static bool IsStaticShape(const odla_value_shape& shape) {
 
 struct _odla_context {
   odla_computation comp = nullptr;
+  CUcontext cu_ctx = nullptr;
   TrtUniquePtr<nvinfer1::IExecutionContext> ctx{nullptr};
   std::vector<void*> bindings;
 
@@ -358,6 +362,7 @@ struct _odla_context {
       odla_executable exec;
       odla_CompileComputation(comp, nullptr, &exec);
     }
+    cuDevicePrimaryCtxRetain(&cu_ctx, comp->device->cu_device);
     ctx = TrtUniquePtr<IExecutionContext>(
         comp->executable.engine->createExecutionContext());
     assert(ctx != nullptr);
@@ -392,6 +397,24 @@ static odla_element_type GetODLAType(DataType type) {
     default:
       return ODLA_FLOAT32;
   }
+}
+
+void SetFP16Mode(odla_computation comp) {
+#if NV_TENSORRT_MAJOR >= 8
+  comp->builder_cfg->setFlag(BuilderFlag::kFP16);
+#else
+  comp->builder->setFp16Mode(true);
+#endif
+}
+
+static odla_device GetDefaultDevice() {
+  static std::unique_ptr<_odla_device> dev;
+  if (dev == nullptr) {
+    odla_device d;
+    odla_AllocateDevice(0, ODLA_DEVICE_NVIDIA_GPU, 0, &d);
+    dev.reset(d);
+  }
+  return dev.get();
 }
 
 static int64_t GetTotalElements(const odla_value_shape& dims) {
@@ -454,7 +477,8 @@ static nvinfer1::Dims SqueezeNVDims(const nvinfer1::Dims dims, int index) {
   return ret;
 }
 
-thread_local odla_computation g_comp;
+static thread_local odla_computation g_comp;
+static thread_local odla_device g_current_device;
 static std::vector<std::unique_ptr<_odla_computation>> g_comps;
 static std::vector<std::unique_ptr<int[]>> g_workspace;
 
@@ -505,7 +529,7 @@ static std::string GetName(const odla_value& value, const char* suffix) {
 static odla_value_type ValidateValueType(const odla_value_type& type) {
   // Trt doesn't support INT64, convert value_type of ODLA_INT64 to ODLA_INT32
   if (type.element_type == ODLA_INT64) {
-    return odla_value_type{.element_type = ODLA_INT32, .shape = type.shape};
+    return odla_value_type{ODLA_INT32, type.shape};
   }
   return type;
 }
@@ -594,15 +618,25 @@ odla_status odla_GetRuntimeValueType(odla_context context, odla_value value,
 }
 
 odla_status odla_CreateComputation(odla_computation* computation) {
-  g_comps.push_back(std::make_unique<_odla_computation>());
+  g_comps.push_back(std::make_unique<_odla_computation>(nullptr));
   g_comp = g_comps.back().get();
   *computation = g_comp;
+  (*computation)->device = g_current_device;
   return ODLA_SUCCESS;
 }
 
 odla_status odla_SetActiveComputation(odla_computation computation) {
   g_comp = computation;
   return ODLA_SUCCESS;
+}
+
+odla_status odla_SetCurrentDevice(odla_device device) {
+  g_current_device = device;
+  if (device == nullptr) {
+    return ODLA_SUCCESS;
+  }
+  return cudaSetDevice(device->device_idx) == cudaSuccess ? ODLA_SUCCESS
+                                                          : ODLA_FAILURE;
 }
 
 odla_status odla_DestroyComputation(odla_computation comp) {
@@ -614,6 +648,21 @@ odla_status odla_DestroyComputation(odla_computation comp) {
   }
   assert(0);
   return ODLA_FAILURE;
+}
+
+odla_status odla_DestroyDevice(odla_device dev) {
+  std::vector<odla_computation> dead_comps;
+  for (auto& comp : g_comps) {
+    if (comp && comp->device == dev) {
+      dead_comps.push_back(comp.get());
+    }
+  }
+  for (auto comp : dead_comps) {
+    odla_DestroyComputation(comp);
+  }
+
+  delete dev;
+  return ODLA_SUCCESS;
 }
 
 odla_status odla_SetComputationItem(odla_computation computation,
@@ -751,6 +800,7 @@ odla_status odla_SetRuntimeShape(odla_context context, odla_value value,
   nvinfer1::Dims nvdims = GetNVDims(value_shape);
   // set runtime shape
   context->ctx->setBindingDimensions(idx, nvdims);
+  context->comp->is_dynamic_shape = true;
   return ODLA_SUCCESS;
 }
 
@@ -804,6 +854,13 @@ odla_status odla_SetContextItem(odla_context context, odla_item_type type,
 }
 
 odla_status odla_CreateContext(odla_context* context) {
+  // g_comp is TLS and if odla_LoadExecutable/odla_CreateComputation() is called
+  // in a different thread, g_comp won't be set. In this case,
+  // odla_LoadExecutable/odla_CreateComputation() and odla_CreateContext has to
+  // be created in strict order.
+  assert(!g_comps.empty());
+  g_comp = g_comps.back().get();
+
   *context = g_comp->create_context();
   return ODLA_SUCCESS;
 }
@@ -901,6 +958,8 @@ odla_status odla_GetOutputFromComputationByIdx(
 
 odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                 odla_context context) {
+  odla_SetCurrentDevice(context->comp->device);
+  assert(cuCtxSetCurrent(context->cu_ctx) == CUDA_SUCCESS);
   odla_value_type real_type;
   odla_GetRuntimeValueType(context, value, &real_type);
   size_t bytes = GetTotalElements(real_type.shape) *
@@ -971,12 +1030,15 @@ static void* AllocOutput(odla_value value, odla_context context,
 
 odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
                               odla_context context) {
+  odla_SetCurrentDevice(context->comp->device);
   void* dst = AllocOutput(value, context, data_ptr);
   return ODLA_SUCCESS;
 }
 
 odla_status odla_GetValueData(odla_value value, odla_void* data_ptr,
                               odla_context context) {
+  odla_SetCurrentDevice(context->comp->device);
+  cuCtxSetCurrent(context->cu_ctx);
   auto it = context->output_ptrs.find(value);
   if (it == context->output_ptrs.end()) {
     assert(0 && "Invalid value");
@@ -1039,6 +1101,17 @@ odla_status odla_CompileComputation(const odla_computation comp,
     *executable = &comp->executable;
     return ODLA_SUCCESS;
   }
+
+  if (comp->device != nullptr && device != nullptr) {
+    assert(comp->device == device);
+  }
+  if (comp->device == nullptr) {
+    comp->device = device;
+  }
+  if (comp->device == nullptr) {
+    comp->device = GetDefaultDevice();
+  }
+
   if (!comp->load_engine_mode) {
     auto& builder = comp->builder;
     auto& builder_cfg = comp->builder_cfg;
@@ -1165,6 +1238,10 @@ odla_status odla_CompileComputation(const odla_computation comp,
 odla_status odla_LoadExecutable(odla_resource_location location,
                                 odla_device device,
                                 odla_executable* executable) {
+  if (device == nullptr) {
+    device = GetDefaultDevice();
+  }
+  cuCtxSetCurrent(device->cu_ctx);
   *executable = nullptr;
   if (location.location_type != ODLA_LOCATION_PATH &&
       location.location_type != ODLA_LOCATION_MEMORY) {
@@ -1174,6 +1251,7 @@ odla_status odla_LoadExecutable(odla_resource_location location,
 
   odla_computation computation = nullptr;
   odla_CreateComputation(&computation);
+  computation->device = device;
 
   int load_engine_mode = 1;
   odla_SetComputationItem(computation, ODLA_LOAD_ENGINE_MODE,
@@ -1307,10 +1385,16 @@ odla_status odla_GetValueType(const odla_value value,
 odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
+  if (context->comp != comp) {
+    assert(0 && "invalid context");
+    return ODLA_FAILURE;
+  }
+  odla_SetCurrentDevice(comp->device);
+
   auto add_to_buffer = [&](odla_value value, void* ptr) {
     int idx = comp->executable.engine->getBindingIndex(value->name);
     if (idx >= 0) {
-      if (context->bindings.size() <= idx) {
+      if (context->bindings.size() <= (unsigned)idx) {
         context->bindings.resize(idx + 1);
       }
       context->bindings[idx] = ptr;
@@ -1670,8 +1754,10 @@ odla_value odla_Neg(odla_value input, const odla_value_id id) {
 odla_value odla_Pad(odla_value input, const odla_uint32* padding_front,
                     const odla_uint32* padding_back,
                     odla_value_shape output_dims, const odla_value_id id) {
+#ifndef NDEBUG
   const auto& input_dims = input->type.shape;
   assert(input_dims.size >= 3 && input_dims.dims[0] == output_dims.dims[0]);
+#endif
 #if NV_TENSORRT_MAJOR < 7
   auto pad = g_comp->network->addPadding(
       *input->tensor,
@@ -1848,7 +1934,7 @@ static odla_value reduce(odla_value input, nvinfer1::ReduceOperation op,
   }
 
   uint32_t reduce_axes = 0;
-  for (int i = 0; i < num_of_axes; ++i) {
+  for (int i = 0; i < (int)num_of_axes; ++i) {
     reduce_axes |= (1 << axes[i]);
   }
 
@@ -1963,9 +2049,10 @@ odla_value odla_LRN(odla_value input, odla_memory_layout input_layout,
                     odla_int32 window_size, odla_float32 alpha,
                     odla_float32 beta, odla_float32 bias,
                     const odla_value_id value_id) {
+#ifndef NDEBUG
   auto const& type = input->type.element_type;
-  const auto& input_dims = input->type.shape;
   assert(input_layout == odla_memory_layout::ODLA_CHANNELS_FIRST);
+#endif
   assert(type == ODLA_FLOAT32);
   auto lrn = g_comp->network->addLRN(*input, window_size, alpha, beta, bias);
   return CreateValue(lrn, input->type, value_id);
@@ -3084,7 +3171,7 @@ odla_status odla_EnterBranchBody(odla_bool true_branch) {
 odla_values odla_EndIf(odla_value_ids value_ids) {
   auto br_info = g_comp->branchs.top();
   int n = br_info.true_outputs.size();
-  assert(n == br_info.false_outputs.size());
+  assert((size_t)n == br_info.false_outputs.size());
   assert(n <= ODLA_MAX_OUTPUTS);
   odla_values ret;
   ret.size = n;
