@@ -352,6 +352,33 @@ def TF_HgDequant : TFExtension<"HgDequant"> {
   ];
 }
 
+def TF_KvParser : OpMapping<"StandardKvParser", KvParser> {
+  let attr_mapping_ = [
+    AttributeMapping<"common_flag", "common_flag", "\"[common]\"">,
+    AttributeMapping<"dense_column_names", "dense_column_names", "{}">,
+    AttributeMapping<"dense_default_values", "dense_default_values", "{}">,
+    AttributeMapping<"dense_max_lens", "dense_max_lens", "{}">,
+    AttributeMapping<"dense_need_actual_lens", "dense_need_actual_lens", "{}">,
+    AttributeMapping<"dense_separators", "dense_separators", "{}">,
+    AttributeMapping<"dense_types", "dense_types", "{}">,
+    AttributeMapping<"empty_value_valid", "empty_value_valid", "false">,
+    AttributeMapping<"Nsparse", "Nsparse", "0">,
+    AttributeMapping<"Nvar", "Nvar", "0">,
+    AttributeMapping<"record_flag", "record_flag", "\"[dat]\"">,
+    AttributeMapping<"sparse_column_names", "sparse_column_names", "{}">,
+    AttributeMapping<"sparse_index_columns", "sparse_index_columns", "{}">,
+    AttributeMapping<"sparse_index_value_separators", "sparse_index_value_separators", "{}">,
+    AttributeMapping<"sparse_max_lens", "sparse_max_lens", "{}">,
+    AttributeMapping<"sparse_separators", "sparse_separators", "{}">,
+    AttributeMapping<"sparse_types", "sparse_types", "{}">,
+    AttributeMapping<"sparse_value_columns", "sparse_value_columns", "{}">,
+    AttributeMapping<"var_len_column_names", "var_len_column_names", "{}">,
+    AttributeMapping<"var_len_max_lens", "var_len_max_lens", "{}">,
+    AttributeMapping<"var_len_separators", "var_len_separators", "{}">,
+    AttributeMapping<"var_len_types", "var_len_types", "{}">
+  ];
+}
+
 def TF_TopK  : OpMapping<"TopKV2", TopK>;
 
 def TF_Range : OpMapping<"Range", Range>;

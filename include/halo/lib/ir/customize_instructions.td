@@ -63,4 +63,31 @@ let cat_ = cat_customize in {
     let outs_ = [Arg<"The result DeQuantized value.", ArgType<[F32,F16]> >];
   }
 
+  def KvParser : Inst<"KVParser op"> {
+    let attrs_ = [Attr<"common flag", String, "common_flag", "\"[common]\"">,                     
+                  Attr<"dense column names", StringList, "dense_column_names", "{\"\"}">,
+                  Attr<"dense default values", StringList, "dense_default_values", "{\"\"}">,
+                  Attr<"dense max lens", StringList, "dense_max_lens", "{\"\"}">,
+                  Attr<"dense need actual lens", BoolList, "dense_need_actual_lens", "{false}">,
+                  Attr<"dense separators", StringList, "dense_separators", "{\",\"}">,
+                  Attr<"dense types", StringList, "dense_types", "{\"\"}">,                       /// ? To check if TypeList is available.
+                  Attr<"empty value valid", Bool, "empty_value_valid", "false">,
+                  Attr<"Nsparse", Integer, "Nsparse", "0">,
+                  Attr<"Nvar", Integer, "Nvar", "0">,
+                  Attr<"record flag", String, "record_flag", "\"[dat]\"">, 
+                  Attr<"sparse column names", StringList, "sparse_column_names", "{\"\"}">,       /// Not used in BERT like model
+                  Attr<"sparse index columns", IntegerList, "sparse_index_columns", "">,          /// Not used in BERT like model
+                  Attr<"sparse index value separators", StringList, "sparse_index_value_separators", "{\"\"}">, /// Not used in BERT like model
+                  Attr<"sparse_max_lens", IntegerList, "sparse_max_lens", "">,                    /// Not used in BERT like model
+                  Attr<"sparse_separators", StringList, "sparse_separators", "{\"\"}">,           /// Not used in BERT like model
+                  Attr<"sparse_types", StringList, "sparse_types", "{\"\"}">,                     /// Not used in BERT like model
+                  Attr<"sparse_value_columns", StringList, "sparse_value_columns", "{\"\"}">,     /// Not used in BERT like model
+                  Attr<"var_len_column_names", StringList, "var_len_column_names", "{\"\"}">,
+                  Attr<"var_len_max_lens", StringList, "var_len_max_lens", "{\"\"}">,
+                  Attr<"var_len_separators", StringList, "var_len_separators", "{\",\"}">,
+                  Attr<"var_len_types", StringList, "var_len_types", "{\"\"}">                   /// ? To check if TypeList is available.
+                  ];
+    let ins_ = [Arg<"Input data.", ArgType<[Str]> >];
+    ///? Not determine outs_ because the number and type of output are not determined.
+  }
 }
