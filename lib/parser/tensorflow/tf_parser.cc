@@ -1033,6 +1033,25 @@ Status TFParser::ConvertConstNode(IRBuilder* ir_builder,
         }
         break;
       }
+      case DataType::STRING: {
+        // check need decoded from tensor content
+        std::vector<Tensor<std::string>> tensors;
+        IRObject* inst = nullptr;
+        if (CreateConstant<std::string>(&attrs, data_type, node_def) ==
+            nullptr) {
+          std::vector<Tensor<std::string>> native_tensors;
+          if (attrs.Process<std::vector<Tensor<std::string>>>(
+                  "value", &native_tensors)) {
+            HLCHECK(1 == native_tensors.size());
+            inst = c_builder_->CreateConstant(
+                node_def.name(),
+                Type(data_type, native_tensors.back().GetShape()),
+                native_tensors.back().GetData());
+          }
+        }
+        inst_name_to_ptr_.emplace(node_def.name(), inst);
+        break;
+      }
       default:
         std::cerr << node_def.name();
         HLCHECK(0 && "Unsupported data type");
