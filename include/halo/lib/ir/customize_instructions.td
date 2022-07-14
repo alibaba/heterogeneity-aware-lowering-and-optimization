@@ -70,7 +70,7 @@ let cat_ = cat_customize in {
                   Attr<"dense max lens", StringList, "dense_max_lens", "{\"\"}">,
                   Attr<"dense need actual lens", BoolList, "dense_need_actual_lens", "{false}">,
                   Attr<"dense separators", StringList, "dense_separators", "{\",\"}">,
-                  Attr<"dense types", StringList, "dense_types", "{\"\"}">,                       /// ? To check if TypeList is available.
+                  Attr<"dense types", TypeList, "dense_types", "{}">,                       
                   Attr<"empty value valid", Bool, "empty_value_valid", "false">,
                   Attr<"Nsparse", Integer, "Nsparse", "0">,
                   Attr<"Nvar", Integer, "Nvar", "0">,
@@ -85,9 +85,8 @@ let cat_ = cat_customize in {
                   Attr<"var_len_column_names", StringList, "var_len_column_names", "{\"\"}">,
                   Attr<"var_len_max_lens", StringList, "var_len_max_lens", "{\"\"}">,
                   Attr<"var_len_separators", StringList, "var_len_separators", "{\",\"}">,
-                  Attr<"var_len_types", StringList, "var_len_types", "{\"\"}">                   /// ? To check if TypeList is available.
+                  Attr<"var_len_types", TypeList, "var_len_types", "{}">                   
                   ];
     let ins_ = [Arg<"Input data.", ArgType<[Str]> >];
-    ///? Not determine outs_ because the number and type of output are not determined.
   }
 }
