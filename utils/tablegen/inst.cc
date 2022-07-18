@@ -288,11 +288,16 @@ void Inst::EmitConstructorCommon() {
     os_ << "InitAttributes();\n";
   }
   if (opcode_ == "OpCode::CALL" || opcode_ == "OpCode::IF" ||
-      opcode_ == "OpCode::RETURN") {
+      opcode_ == "OpCode::RETURN" || opcode_ == "OpCode::KVPARSER") {
     os_.indent(4);
     os_ << "SetVariadicReturns(true);\n";
     if (opcode_ == "OpCode::RETURN") {
+      os_.indent(4);
       os_ << "SetNumOfResults(GetNumOfOperands());\n";
+    } else if (opcode_ == "OpCode::KVPARSER") {
+      os_.indent(4);
+      os_ << "auto DenseColumnNames_vec = GetDenseColumnNames();\n";
+      os_ << "SetNumOfResults(DenseColumnNames_vec.size());\n";
     }
   }
 }

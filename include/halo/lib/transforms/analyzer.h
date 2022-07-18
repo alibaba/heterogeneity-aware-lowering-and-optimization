@@ -127,6 +127,7 @@ class Analyzer final : public ModulePass {
   void RunOnInstruction(ReturnInst* inst);
   void RunOnInstruction(ResizeInst* inst);
   void RunOnInstruction(LSTMInst* inst);
+  void RunOnInstruction(KvParserInst* inst);
 
  private:
   std::ostream* os_;
