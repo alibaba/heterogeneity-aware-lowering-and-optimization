@@ -2292,3 +2292,15 @@ odla_value odla_Select(odla_value condition, odla_value a, odla_value b,
   v->elem_type = a->elem_type;
   return v;
 }
+
+odla_value odla_Mean(odla_values inputs, const odla_value_id value_id) {
+  int num = inputs.size;
+  auto rank = inputs.values[0]->shape.size;
+  auto elem_type = inputs.values[0]->elem_type;
+  auto dst = odla_Add(inputs.values[0], inputs.values[1], nullptr);
+  for (int i = 2; i < num; ++i) {
+    dst = odla_Add(dst, inputs.values[i], nullptr);
+  }
+  auto div = CreateConstantFromScalar(num, rank);
+  return odla_Div(dst, div, value_id);
+}

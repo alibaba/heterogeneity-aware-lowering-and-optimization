@@ -1,7 +1,7 @@
 #!/bin/bash -xe
 
 REPO="registry-intl.us-west-1.aliyuncs.com/computation/halo"
-VER="0.7.6"
+VER="0.8.1"
 FLAVOR="devel"
 
 MOUNT_DIR="$PWD"

@@ -21,6 +21,11 @@ endmacro(add_odla_library)
 
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
 
+option(ODLA_BUILD_ASCEND "Build ODLA Runtime Library for ASCEND" ON)
+if (ODLA_BUILD_ASCEND)
+  add_subdirectory(ascend)
+endif()
+
 option(ODLA_BUILD_EIGEN "Build ODLA Runtime Library for Eigen" ON)
 if (ODLA_BUILD_EIGEN)
   set(EIGEN_VERSION 3.4.0)

@@ -2,13 +2,29 @@
 # Build this image:  docker build -t halo:[version] .
 #
 
-FROM centos:7.2.1511
+ARG BASE_IMAGE
+
+FROM  ${BASE_IMAGE}
+
 RUN yum install -y zlib-devel curl-devel wget make bzip2 python3 \
     which unzip git && \
     yum clean all
 RUN yum install -y centos-release-scl && \
     yum install -y devtoolset-7-gcc-c++-7.3.1 && \
     yum clean all
+
+ARG BASE_IMAGE=${BASE_IMAGE}
+
+SHELL ["/bin/bash", "-c"]
+ENV NV_NVINFER_DEV_VERSION=8.2.5-1.cuda11.4
+RUN if [[ ${BASE_IMAGE} =~ nvidia ]]; then \
+        yum update -y && \
+        yum install -y libnvinfer-plugin-devel-${NV_NVINFER_DEV_VERSION} \
+            libnvinfer-plugin8-${NV_NVINFER_DEV_VERSION} \
+            libnvinfer-devel-${NV_NVINFER_DEV_VERSION}  \
+            libnvinfer8-${NV_NVINFER_DEV_VERSION} && \
+        yum clean all ; \
+    fi
 
 SHELL ["/usr/bin/scl", "enable", "devtoolset-7"]
 
@@ -24,7 +40,7 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cm
     rm -rf /tmp/cmake
 
 # Install Ninja
-RUN cd /tmp && git clone git://github.com/ninja-build/ninja.git && \
+RUN cd /tmp && git clone https://github.com/ninja-build/ninja.git && \
     cd ninja && \
     git checkout v1.10.2 &&  cmake -G "Unix Makefiles" . && make -j && make install && \
     rm -fr /tmp/ninja
@@ -81,10 +97,17 @@ ENV CCACHE_DIR=/cache
 
 RUN rpm --rebuilddb && yum install -y rpm-build && yum clean all
 
-# Install models & test cases
-COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:latest-model-zoo /models /models
-COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:latest-model-zoo /unittests /unittests
+# Install Ascend Toolkit
+RUN cd /tmp && wget https://www.python.org/ftp/python/3.8.12/Python-3.8.12.tgz && tar xvf Python-3.8.12.tgz \
+ && cd Python-3.8*/ && ./configure  --prefix=/opt/python3.8 && make altinstall
+RUN /opt/python3.8/bin/python3.8 -m venv /tmp/venv && source /tmp/venv/bin/activate &&  curl --output /tmp/ascend.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/CANN/5.1.RC2.alpha006/Ascend-cann-toolkit_5.1.RC2.alpha006_linux-x86_64.run \
+ && bash /tmp/ascend.run --full && rm -fr /tmp/*
 
+# Install models & test cases
+COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:v0.1-model-zoo /models /models
+COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:v0.1-model-zoo /unittests /unittests
+
+WORKDIR /host
 RUN echo "source scl_source enable devtoolset-7" >> /etc/bashrc
 
 #ENTRYPOINT ["/usr/bin/scl", "enable", "devtoolset-7"]

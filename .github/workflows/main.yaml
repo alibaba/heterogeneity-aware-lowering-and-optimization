@@ -40,7 +40,7 @@ jobs:
         uses: DoozyX/clang-format-lint-action@v0.11
         with:
           source: "./halo"
-          exclude: "./halo/third_party ./halo/external ./halo/ODLA/external ./halo/ODLA/platforms/odla_popart/custom_ops"
+          exclude: "./halo/third_party ./halo/external ./halo/ODLA/external ./halo/ODLA/platforms/odla_popart"
           clangFormatVersion: 9
           style: file
 
@@ -82,16 +82,16 @@ jobs:
           rm -fr ${{runner.workspace}}/$repo_name/output_centos
           mkdir -p ${{runner.workspace}}/$repo_name/output_centos
           docker pull $image_registry/computation/halo:$image_tag
-          docker run --rm -v /tmp/centos.cache:/cache --tmpfs /build:exec --user=$UID:$GID \
+          docker run --rm --runtime=nvidia -v /tmp/centos.cache:/cache --tmpfs /build:exec --user=$UID:$GID \
             -v $poplar_sdk:/opt/poplar_sdk:ro \
             -v ${{runner.workspace}}/$repo_name:/host \
             $image_registry/computation/halo:$image_tag \
-            /bin/bash -c 'source scl_source enable devtoolset-7 && cd /build && cmake -G Ninja /host/halo -DHALO_USE_TIDY_CHECK=OFF -DHALO_GEN_DOCS=OFF -DODLA_BUILD_POPART_USE_CXX11ABI=OFF -DODLA_BUILD_POPART_CUSTOM_OPS=ON -DODLA_BUILD_TRT=OFF -DODLA_BUILD_XNNPACK=OFF -DODLA_BUILD_EIGEN=ON -DODLA_BUILD_DNNL=ON -DHALO_BUILD_RTLIB=OFF -DHALO_USE_STATIC_PROTOBUF=ON -DCPACK_SYSTEM_NAME=centos-i686 && ninja && source /opt/poplar_sdk/poplar/enable.sh && ninja check-halo && ninja package && cp /build/*.bz2 /build/*.rpm /host/output_centos'
+            /bin/bash -c 'source scl_source enable devtoolset-7 && cd /build && cmake -G Ninja /host/halo -DHALO_USE_TIDY_CHECK=OFF -DHALO_GEN_DOCS=OFF -DODLA_BUILD_POPART_USE_CXX11ABI=OFF -DODLA_BUILD_POPART_CUSTOM_OPS=ON -DODLA_BUILD_TRT=ON -DODLA_BUILD_XNNPACK=OFF -DODLA_BUILD_EIGEN=ON -DODLA_BUILD_DNNL=ON -DODLA_BUILD_ASCEND=ON -DHALO_BUILD_RTLIB=OFF -DHALO_USE_STATIC_PROTOBUF=ON -DCPACK_SYSTEM_NAME=centos-i686 && ninja && source /opt/poplar_sdk/poplar/enable.sh && ninja check-halo && ninja package && cp /build/*.bz2 /build/*.rpm /host/output_centos'
         env:
           poplar_sdk: /opt/poplar_sdk-centos_7_6-2.3.1_793
           repo_name : heterogeneity-aware-lowering-and-optimization
           image_registry : registry-intl.us-west-1.aliyuncs.com
-          image_tag : 0.7.2-devel-x86_64-centos7
+          image_tag : 0.8.1-devel-cuda11.4.2-cudnn8-centos7
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2

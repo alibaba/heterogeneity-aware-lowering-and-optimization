@@ -291,7 +291,7 @@ def ONNX_MatMul: OpMapping<"MatMul", MatMul> {
   ];
 }
 
-def ONNX_Max : OpMapping<"Max", Maximum>;
+def ONNX_Max : ONNXExtension<"Max">;
 
 def ONNX_MaxPool : OpMapping<"MaxPool", PoolingMax> {
   let attr_mapping_ = [
@@ -311,7 +311,9 @@ def ONNX_MaxPool : OpMapping<"MaxPool", PoolingMax> {
     ExtensionAttr<"storage_order", Integer, "0">];
 }
 
-def ONNX_Min : OpMapping<"Min", Minimum>;
+def ONNX_Mean : OpMapping<"Mean", Mean>;
+
+def ONNX_Min : ONNXExtension<"Min">;
 
 def ONNX_Mod : OpMapping<"Mod", Mod> {
    let attr_mapping_ = [

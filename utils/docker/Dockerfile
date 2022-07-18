@@ -12,6 +12,12 @@ ENV PYTHON_VERSION=${python}
 # To access the host directory
 RUN mkdir /host
 
+# update cuda repo public key
+RUN mv /etc/apt/sources.list.d/cuda.list /tmp/
+RUN apt-get update && apt-get install -y curl && \
+    curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub | apt-key add - && \
+    mv /tmp/cuda.list /etc/apt/sources.list.d/
+
 RUN apt-get update && apt-get -y --no-install-recommends install software-properties-common apt-utils wget && rm -fr /var/lib/apt/lists/*
 
 ARG GCC_VERSION=7
@@ -79,7 +85,10 @@ RUN apt-get update -y && \
       latex-cjk-all \
       libglib2.0-dev \
       libpixman-1-dev \
-      bc && \
+      bc \
+      ffmpeg \
+      libsm6=2:1.2.2-1 \
+      libxext6=2:1.3.3-1 && \
     apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 #install the Git
@@ -122,7 +131,8 @@ RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
     apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 #python
-RUN pip3 install wheel numpy six jupyter enum34 mock h5py pillow
+RUN pip3 install --upgrade pip && \
+    pip3 install wheel numpy six jupyter enum34 mock h5py pillow scipy==1.5.4 opencv-python==4.5.5.64
 
 # Update binutils
 ARG BINUTILS_VERSION=2.35
@@ -220,9 +230,15 @@ RUN if [[ ! "${BASE_IMAGE}" =~ "nvidia" ]]; then wget https://registrationcenter
     chmod +x ./l_BaseKit_p_2021.2.0.2883_offline.sh && \
     ./l_BaseKit_p_2021.2.0.2883_offline.sh -s -a --silent --eula accept; fi
 
+# Install Ascend Toolkit
+RUN apt-get update && apt-get install -y python3.8 \
+ && curl --output /tmp/ascend.run https://ascend-repo.obs.cn-east-2.myhuaweicloud.com/CANN/5.1.RC2.alpha006/Ascend-cann-toolkit_5.1.RC2.alpha006_linux-x86_64.run \
+ && bash /tmp/ascend.run --full \
+ && apt-get remove -y python3.8 && apt clean && rm -fr /var/lib/apt/lists* /tmp/* /var/tmp*
+
 # Install models & test cases
-COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:latest-model-zoo /models /models
-COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:latest-model-zoo /unittests /unittests
+COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:v0.1-model-zoo /models /models
+COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:v0.1-model-zoo /unittests /unittests
 
 RUN mkdir -p /var/run/sshd
 RUN sed -i 's/prohibit-password/yes/' /etc/ssh/sshd_config
