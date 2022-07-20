@@ -252,6 +252,8 @@ void Analyzer::RunOnInstruction(ResizeInst* inst) {
   }
 }
 
+void Analyzer::RunOnInstruction(KvParserInst* inst) {}
+
 void Analyzer::RunOnInstruction(LSTMInst* inst) {
   auto& node_info = GenerateCommonInfo(inst);
   node_info.flops = 0;

@@ -57,6 +57,11 @@ inline const std::vector<std::string>& GetAttributeValue(
 }
 
 template <>
+inline const std::vector<DataType>& GetAttributeValue(const Attribute& attr) {
+  return attr.GetValueAsTypeList();
+}
+
+template <>
 inline const float& GetAttributeValue(const Attribute& attr) {
   return attr.GetValueAsFloat();
 }

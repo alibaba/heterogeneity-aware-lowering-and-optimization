@@ -29,6 +29,7 @@ static const char* IsArray = "is_array_";
 static const char* Is2DArray = "is_2d_array_";
 static const char* IsPointer = "is_pointer_";
 static const char* EnumTypeName = "EnumValueType";
+static const char* IsEnum = "is_enum_";
 
 /// This is the main function that emits halo::Attribute subclasses.
 /// The emitted code should be included into attribute.h.
@@ -127,10 +128,18 @@ void EmitAttrDef(const llvm::RecordKeeper& records, llvm::raw_ostream& os) {
       os << "    os << \"[\";\n";
       os << "    size_t num_of_elements = value_.size();\n";
       os << "    if (num_of_elements > 0) {\n";
-      os << "      os << value_.at(0);\n";
-      os << "      for (size_t i = 1; i < num_of_elements; ++i) {\n";
-      os << "        os << \", \" << value_.at(i);\n";
-      os << "      }\n";
+      if (c->getValueAsBit(IsEnum)) {
+        os << "      os << \"enum_data_type \" << (int)value_.at(0);\n";
+        os << "      for (size_t i = 1; i < num_of_elements; ++i) {\n";
+        os << "        os << \", \" << (int)value_.at(i);\n";
+        os << "      }\n";
+      } else {
+        os << "      os << value_.at(0);\n";
+        os << "      for (size_t i = 1; i < num_of_elements; ++i) {\n";
+        os << "        os << \", \" << value_.at(i);\n";
+        os << "      }\n";
+      }
+
       os << "    }\n";
       os << "    os << \"]>\";\n";
     } else if (c->getValueAsBit(Is2DArray)) {

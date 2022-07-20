@@ -38,6 +38,8 @@ class ValueType<int size, string cpp_ty = ""> {
   bit is_quantized_ = 0;
   // 2d array type flag
   bit is_2d_array_ = 0;
+  // enum type flag
+  bit is_enum_ = 0;
   // alternative name
   string alt_name = "";
 }

@@ -45,6 +45,11 @@ def StringList : ValueType<0, "std::vector<std::string>"> {
   let is_array_ = 1;
 }
 
+def TypeList : ValueType<1, "std::vector<DataType>"> { 
+  let is_array_ = 1; 
+  let is_enum_ = 1;
+}
+
 def FunctionPtr : ValueType<0, "halo::Function*"> {
   let is_pointer_ = 1;
 }
