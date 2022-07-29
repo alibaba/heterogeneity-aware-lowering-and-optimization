@@ -992,41 +992,43 @@ static void RunOnInstruction(SliceInst* inst) {
     }
     return;
   }
-
-  if (!IsA<Constant>(op_len)) {
-    return;
-  }
-
   std::unordered_set<int32_t> axes;
 
   bool specified_axes = inst->GetNumOfOperands() > 4;
 
   if (specified_axes) {
     auto op_axes = inst->GetOperand(4);
-    if (!IsA<Constant>(op_axes)) {
-      return;
-    }
-    const Constant* axes_c = DynCast<Constant>(op_axes);
-    for (int i = 0, e = op_axes.GetType().GetTotalNumOfElements(); i != e;
-         ++i) {
-      axes.insert(axes_c->GetDataAsInt64(i));
+    if (IsA<Constant>(op_axes)) {
+      const Constant* axes_c = DynCast<Constant>(op_axes);
+      for (int i = 0, e = op_axes.GetType().GetTotalNumOfElements(); i != e;
+           ++i) {
+        axes.insert(axes_c->GetDataAsInt64(i));
+      }
     }
   } else {
     for (size_t i = 0; i < dims; ++i) {
       axes.insert(i);
     }
   }
-  Constant* c_sizes = DynCast<Constant>(op_len);
-  std::vector<int64_t> ret_shape(dims);
-  for (size_t i = 0, j = 0; i < dims; ++i) {
-    ret_shape[i] = axes.count(i) != 0 ? c_sizes->GetDataAsInt64(j++)
-                                      : input_type.GetNumOfElementsInDim(i);
-    if (ret_shape[i] == -1) {
-      ret_shape[i] = input_type.GetNumOfElementsInDim(i);
+
+  if (!IsA<Constant>(op_len)) {
+    std::vector<int64_t> ret_shape(dims, -1);
+    inst->GetResultsTypes()[0] =
+        halo::Type{op0.GetType().GetDataType(), ret_shape};
+  } else {
+    Constant* c_sizes = DynCast<Constant>(op_len);
+    std::vector<int64_t> ret_shape(dims);
+    for (size_t i = 0, j = 0; i < dims; ++i) {
+      ret_shape[i] = axes.count(i) != 0 ? c_sizes->GetDataAsInt64(j++)
+                                        : input_type.GetNumOfElementsInDim(i);
+      if (ret_shape[i] == -1) {
+        ret_shape[i] = input_type.GetNumOfElementsInDim(i);
+      }
     }
+    inst->GetResultsTypes()[0] =
+        halo::Type{op0.GetType().GetDataType(), ret_shape};
   }
-  inst->GetResultsTypes()[0] =
-      halo::Type{op0.GetType().GetDataType(), ret_shape};
+
   // Some exported ONNX model might have empty result (consumers like concat
   // will ignore it)
   if (inst->GetResultType().GetTotalNumOfElements() == 0) {

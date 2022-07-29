@@ -123,6 +123,14 @@ let cat_ = cat_common in {
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
   }
 
+  def DimsExpand : Inst<"Expand dims from the original.">{
+
+    let ins_ = [Arg<"The inputs.", ArgType<[I32,I64]>, 1D>,
+                Arg<"The original.", ArgType<[I32,I64]>, 1D>,
+                Arg<"The axes.", ArgType<[I32,I64]>, 1D>];
+    let outs_ = [Arg<"The result.", MatchArgType<0>, 1D>]; 
+  }
+
   def SliceDynamic : Inst<"Extract a dynamic slice from the input."> {
     let ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >,
                 Arg<"The starting indices, inclusive, along the specified"

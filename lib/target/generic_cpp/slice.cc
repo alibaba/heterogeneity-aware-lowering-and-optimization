@@ -143,6 +143,21 @@ void GenericCXXCodeGen::RunOnInstruction(SliceInst* inst) {
                EmitShape(inst->GetResultType()));
 }
 
+void GenericCXXCodeGen::RunOnInstruction(DimsExpandInst* inst) {
+  const Def& input = inst->GetOperand(0);
+  const Def& original = inst->GetOperand(1);
+  const Def& axes = inst->GetOperand(2);
+
+  CXXValue op0 = ir_mapping_[input];
+  CXXValue op1 = ir_mapping_[original];
+  CXXValue op2 = ir_mapping_[axes];
+
+  CXXValue ret(inst->GetName(), op0.type);
+  EmitODLACall(ret, "odla_DimsExpand", op0, op1, op2,
+               EmitShape(inst->GetResultType()));
+  ir_mapping_[*inst] = ret;
+}
+
 void GenericCXXCodeGen::RunOnInstruction(SliceDynamicInst* inst) {
   const Def& input = inst->GetOperand(0);
   const Def& start = inst->GetOperand(1);
