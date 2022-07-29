@@ -33,7 +33,8 @@ enum class alg_binary_eltwise {
   mod,
   fmod,
   pow,
-  sum,
+  add,
+  sub,
 };
 
 // Input and output are both bool type.
@@ -130,6 +131,10 @@ static void binary_eltwise_T(alg_binary_eltwise alg, void* dst,
     }
     case alg_binary_eltwise::pow: {
       out = in_l.pow(in_r);
+      break;
+    }
+    case alg_binary_eltwise::sub: {
+      out = in_l - in_r;
       break;
     }
     default: {
@@ -287,4 +292,8 @@ odla_value odla_Mod(odla_value lhs, odla_value rhs, odla_int64 fmod,
     auto t = odla_binary_eltwise(alg_binary_eltwise::mod, lhs, rhs, value_id);
     return t;
   }
+}
+
+odla_value odla_Sub(odla_value lhs, odla_value rhs, const odla_value_id id) {
+  return odla_binary_eltwise(alg_binary_eltwise::sub, lhs, rhs, id);
 }

@@ -506,7 +506,11 @@ std::string GenericCXXCodeGen::GenerateTestFunc(const Function& func,
     // load reference data and declare output
     for (auto& out : ret_inst.GetOperands()) {
       const auto& type = out.GetType();
-      const auto elem_nums = type.GetTotalNumOfElements();
+      auto elem_nums = type.GetTotalNumOfElements();
+      if (!type.IsStaticShape()) {
+        auto& type = func.arg_front()->GetResultType();
+        elem_nums = type.GetTotalNumOfElements();
+      }
       data_type.clear();
       data_type = convert_data_type(type.GetDataType());
       oss << "  output_refs.push_back(output_" << i << ");\n";
