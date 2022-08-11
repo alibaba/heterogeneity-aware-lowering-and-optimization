@@ -1,6 +1,13 @@
+<<<<<<< HEAD
 //===- dynamic_type_legalizer.cc ------------------------------------------===//
 //
 // Copyright (C) 2019-2022 Alibaba Group Holding Limited.
+=======
+//===- dynamic_type_legalizer.cc
+//--------------------------------------------------===//
+//
+// Copyright (C) 2019-2020 Alibaba Group Holding Limited.
+>>>>>>> 2a0d2326 (reshape)
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,6 +53,7 @@ static void RunOnInstruction(ReshapeInst* inst) {
   }
 }
 
+<<<<<<< HEAD
 static void RunOnInstruction(UnsqueezeInst* inst) {
   auto op0 = inst->GetOperand(0);
   const auto& op0_type = op0.GetType();
@@ -61,6 +69,8 @@ static void RunOnInstruction(UnsqueezeInst* inst) {
   inst->GetResultsTypes()[0] = new_type;
 }
 
+=======
+>>>>>>> 2a0d2326 (reshape)
 bool DynamicTypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
   // Dedup names.
