@@ -27,6 +27,7 @@ void GenericCXXCodeGen::RunOnInstruction(ReshapeInst* inst) {
 
   const auto& ret_type = inst->GetResultType();
   CXXValue ret(inst->GetName(), op0.type);
+
   if (inst->GetNumOfOperands() > 1 && !IsA<Constant>(inst->GetOperand(1))) {
     const Def& shape = inst->GetOperand(1);
     CXXValue op1 = ir_mapping_[shape];

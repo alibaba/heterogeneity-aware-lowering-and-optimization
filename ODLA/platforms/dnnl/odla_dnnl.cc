@@ -26,6 +26,7 @@
 #include <cstring>
 #include <iostream>
 #include <numeric>
+#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -893,6 +894,7 @@ odla_value odla_ReshapeDynamic(odla_value input, odla_value output_shape,
                                const odla_value_id value_id) {
   const auto& input_dims = input->shape;
   int dims = input_dims.size;
+
   const auto& shape_dims = output_shape->shape;
   int shape_nbdims = shape_dims.dims[0];
 
@@ -911,10 +913,17 @@ odla_value odla_ReshapeDynamic(odla_value input, odla_value output_shape,
     int64_t* p_shape_mem =
         static_cast<int64_t*>(output_shape->mem.get_data_handle());
     std::vector<int64_t> shape_data;
+<<<<<<< HEAD
     shape_data = std::vector<int64_t>(p_shape_mem, p_shape_mem + shape_nbdims);
     odla_value_shape new_output_dims;
     new_output_dims.size = shape_nbdims;
     for (int i = 0; i < shape_nbdims; ++i) {
+=======
+    shape_data = std::vector<int64_t>(p_shape_mem, p_shape_mem + axes_nbdims);
+    odla_value_shape new_output_dims;
+    new_output_dims.size = axes_nbdims;
+    for (int i = 0; i < axes_nbdims; ++i) {
+>>>>>>> 14abf74d (reshape)
       if (shape_data[i] == 0) {
         new_output_dims.dims[i] = input_dims.dims[i];
         product *= new_output_dims.dims[i];
