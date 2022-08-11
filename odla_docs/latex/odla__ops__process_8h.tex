@@ -52,6 +52,8 @@ enum \mbox{\hyperlink{odla__ops__process_8h_ae5784f32274737503651496765cc159c}{o
 \begin{DoxyCompactList}\small\item\em Get the shape of input. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__process_8h_abf910c48486dda41c1b73db8b9615108}{odla\+\_\+\+Slice}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, const \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} $\ast$start, const \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} $\ast$end, const \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} $\ast$stride, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+dims, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Extract a slice. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__process_8h_a1fed75c73493c4a5555edcbd616fcb03}{odla\+\_\+\+Dims\+Expand}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} original, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} axes, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+dims, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} id)
+\begin{DoxyCompactList}\small\item\em Extract a Dims\+Expand. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__process_8h_a1929c14aef69f22429a5d631787b4b54}{odla\+\_\+\+Slice\+Dynamic}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} start, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} size, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} stride, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+dims, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Extract a dynamic slice. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{structodla__values}{odla\+\_\+values}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__process_8h_a348203ffba9da9a163263314a99fc7c9}{odla\+\_\+\+Split}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} split\+\_\+dim, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} num\+\_\+split, const \mbox{\hyperlink{structodla__value__ids}{odla\+\_\+value\+\_\+ids}} value\+\_\+ids)
@@ -290,6 +292,32 @@ Concat concatenates multiple values into single one. All inputs must have the sa
 {\em axis} & the axis on which the inputs to be concatenated \\
 \hline
 {\em output\+\_\+shape} & the result shape \\
+\hline
+{\em value\+\_\+id} & a unique value id (can be NULL)\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+value 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__ops__process_8h_a1fed75c73493c4a5555edcbd616fcb03}\label{odla__ops__process_8h_a1fed75c73493c4a5555edcbd616fcb03}} 
+\index{odla\_ops\_process.h@{odla\_ops\_process.h}!odla\_DimsExpand@{odla\_DimsExpand}}
+\index{odla\_DimsExpand@{odla\_DimsExpand}!odla\_ops\_process.h@{odla\_ops\_process.h}}
+\doxysubsubsection{\texorpdfstring{odla\_DimsExpand()}{odla\_DimsExpand()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Dims\+Expand (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{original,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{axes,  }\item[{\mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}}}]{output\+\_\+dims,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{id }\end{DoxyParamCaption})}
+
+
+
+Extract a Dims\+Expand. 
+
+odla\+\_\+\+Axes\+\_\+cal extracts a Dims\+Expand from {\ttfamily axes}.
+
+
+\begin{DoxyParams}{Parameters}
+{\em input} & the input value \\
+\hline
+{\em original} & the original value \\
+\hline
+{\em axes} & the axes to slice\\
 \hline
 {\em value\+\_\+id} & a unique value id (can be NULL)\\
 \hline

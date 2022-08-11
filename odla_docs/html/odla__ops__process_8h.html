@@ -144,6 +144,9 @@ Functions</h2></td></tr>
 <tr class="memitem:abf910c48486dda41c1b73db8b9615108"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__process_8h.html#abf910c48486dda41c1b73db8b9615108">odla_Slice</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, const <a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a> *start, const <a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a> *end, const <a class="el" href="odla__common_8h.html#a11711813c2dfcdbc8c94c8f73c47a203">odla_int32</a> *stride, <a class="el" href="structodla__value__shape.html">odla_value_shape</a> output_dims, const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
 <tr class="memdesc:abf910c48486dda41c1b73db8b9615108"><td class="mdescLeft">&#160;</td><td class="mdescRight">Extract a slice.  <a href="odla__ops__process_8h.html#abf910c48486dda41c1b73db8b9615108">More...</a><br /></td></tr>
 <tr class="separator:abf910c48486dda41c1b73db8b9615108"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1fed75c73493c4a5555edcbd616fcb03"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__process_8h.html#a1fed75c73493c4a5555edcbd616fcb03">odla_DimsExpand</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> original, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> axes, <a class="el" href="structodla__value__shape.html">odla_value_shape</a> output_dims, const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> id)</td></tr>
+<tr class="memdesc:a1fed75c73493c4a5555edcbd616fcb03"><td class="mdescLeft">&#160;</td><td class="mdescRight">Extract a DimsExpand.  <a href="odla__ops__process_8h.html#a1fed75c73493c4a5555edcbd616fcb03">More...</a><br /></td></tr>
+<tr class="separator:a1fed75c73493c4a5555edcbd616fcb03"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1929c14aef69f22429a5d631787b4b54"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__ops__process_8h.html#a1929c14aef69f22429a5d631787b4b54">odla_SliceDynamic</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> input, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> start, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> size, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> stride, <a class="el" href="structodla__value__shape.html">odla_value_shape</a> output_dims, const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a> value_id)</td></tr>
 <tr class="memdesc:a1929c14aef69f22429a5d631787b4b54"><td class="mdescLeft">&#160;</td><td class="mdescRight">Extract a dynamic slice.  <a href="odla__ops__process_8h.html#a1929c14aef69f22429a5d631787b4b54">More...</a><br /></td></tr>
 <tr class="separator:a1929c14aef69f22429a5d631787b4b54"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -478,6 +481,65 @@ Functions</h2></td></tr>
     <tr><td class="paramname">inputs</td><td>the input values </td></tr>
     <tr><td class="paramname">axis</td><td>the axis on which the inputs to be concatenated </td></tr>
     <tr><td class="paramname">output_shape</td><td>the result shape </td></tr>
+    <tr><td class="paramname">value_id</td><td>a unique value id (can be NULL)</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>odla_value </dd></dl>
+
+</div>
+</div>
+<a id="a1fed75c73493c4a5555edcbd616fcb03" name="a1fed75c73493c4a5555edcbd616fcb03"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1fed75c73493c4a5555edcbd616fcb03">&#9670;&nbsp;</a></span>odla_DimsExpand()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> ODLA_API_CALL odla_DimsExpand </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
+          <td class="paramname"><em>input</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
+          <td class="paramname"><em>original</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
+          <td class="paramname"><em>axes</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structodla__value__shape.html">odla_value_shape</a>&#160;</td>
+          <td class="paramname"><em>output_dims</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="odla__value_8h.html#a875459af53aca134ae1b1d82e971ec82">odla_value_id</a>&#160;</td>
+          <td class="paramname"><em>id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Extract a DimsExpand. </p>
+<p >odla_Axes_cal extracts a DimsExpand from <code>axes</code>.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">input</td><td>the input value </td></tr>
+    <tr><td class="paramname">original</td><td>the original value </td></tr>
+    <tr><td class="paramname">axes</td><td>the axes to slice</td></tr>
     <tr><td class="paramname">value_id</td><td>a unique value id (can be NULL)</td></tr>
   </table>
   </dd>
