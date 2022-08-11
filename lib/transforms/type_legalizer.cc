@@ -298,7 +298,7 @@ static void RunOnInstruction(ReshapeInst* inst) {
     inst->GetResultsTypes()[0] = halo::Type{op0_type.GetDataType(), new_shape};
     return;
   }
-
+  std::vector<int64_t> new_shape;
   const Constant* shape_c = DynCast<Constant>(op1);
   if (shape_c == nullptr) {
     return;
@@ -309,7 +309,7 @@ static void RunOnInstruction(ReshapeInst* inst) {
     inst->GetResultsTypes()[0] = halo::Type{op0_type.GetDataType(), {}};
     return;
   }
-  std::vector<int64_t> new_shape;
+
   for (size_t i = 0, e = shape_c->GetResultType().GetTotalNumOfElements();
        i != e; ++i) {
     new_shape.push_back(shape_c->GetDataAsInt64(i));

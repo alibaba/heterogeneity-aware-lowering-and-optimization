@@ -111,6 +111,8 @@ class HL_API_EXPORT PassManager final {
                                   const std::string& rt_lib_name);
   Pass* AddSerializerPass(std::ostringstream* os, bool emit_weights);
   Pass* AddSplittingPass();
+  Pass* AddFunctionBarrierPass();
+
   Pass* AddTemplatedCXXCodeGenPass(std::ostringstream& os,
                                    std::ostringstream& header_os,
                                    const CXXCodeGenOpts& opts);
@@ -121,6 +123,9 @@ class HL_API_EXPORT PassManager final {
   Pass* AddTypeCastPass();
   Pass* AddTypeLegalizerPass();
   Pass* AddTypeLegalizerPass(bool relaxed);
+  Pass* AddDynamicTypeLegalizerPass();
+  Pass* AddDynamicTypeLegalizerPass(bool relaxed);
+
   Pass* AddWeightsQuantizerPass(Quantization quant, const std::string& file,
                                 const CXXCodeGenOpts& opts);
   Pass* AddX86BinaryWriterPass(std::ostream& os);

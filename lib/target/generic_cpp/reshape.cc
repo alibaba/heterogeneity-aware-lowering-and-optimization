@@ -27,7 +27,13 @@ void GenericCXXCodeGen::RunOnInstruction(ReshapeInst* inst) {
 
   const auto& ret_type = inst->GetResultType();
   CXXValue ret(inst->GetName(), op0.type);
-  EmitODLACall(ret, "odla_Reshape", op0, EmitShape(ret_type));
+  if (inst->GetNumOfOperands() > 1 && !IsA<Constant>(inst->GetOperand(1))) {
+    const Def& shape = inst->GetOperand(1);
+    CXXValue op1 = ir_mapping_[shape];
+    EmitODLACall(ret, "odla_ReshapeDynamic", op0, op1);
+  } else {
+    EmitODLACall(ret, "odla_Reshape", op0, EmitShape(ret_type));
+  }
 
   ir_mapping_[*inst] = ret;
 }

@@ -144,6 +144,7 @@ static void PopulateOptPasses(PassManager* pm, const std::string& target,
   }
   pm->AddDCEPass();
   pm->AddTypeLegalizerPass(true);
+
   if (!inputs.empty()) {
     pm->AddInputRewriterPass(inputs);
   }
@@ -165,6 +166,9 @@ static void PopulateOptPasses(PassManager* pm, const std::string& target,
   if (opts.constant_decombine) {
     pm->AddConstantDecombinePass();
   }
+  pm->AddFunctionBarrierPass();
+
+  pm->AddDynamicTypeLegalizerPass(true);
 }
 } // namespace halo
 

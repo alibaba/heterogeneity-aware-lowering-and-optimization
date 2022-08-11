@@ -233,6 +233,20 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Reshape(odla_value input, odla_value_shape output_dims,
              const odla_value_id value_id);
 
+//! \brief Reshape a value
+/*!
+  ReshapeDynamic reshapes the input with a new dimension specified by \p
+  output_shape.
+
+  \param input the input value
+  \param output_shape the output shape
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_ReshapeDynamic(
+    odla_value input, odla_value output_shape, const odla_value_id value_id);
+
 //! \brief Resize by interpolating
 /*!
   Resize resizes the input using specified interploation method.
