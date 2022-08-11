@@ -48,6 +48,12 @@ static std::vector<Def> ConvertUnsqueeze(const ONNXExtensionInst* ext,
   }
   std::set<int> axes;
   if (num_ops == 2) {
+    if (!IsA<Constant>(ext->GetOperand(1))) {
+      auto new_inst =
+          builder->CreateUnsqueeze(ext->GetName(), input, ext->GetOperand(1));
+
+      return {*new_inst};
+    }
     const Constant* axes_c = DynCast<Constant>(ext->GetOperand(1));
     if (axes_c == nullptr) {
       return {};
