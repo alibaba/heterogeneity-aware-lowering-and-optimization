@@ -429,11 +429,22 @@ Pass* PassManager::AddTritonConfigWriterPass(const std::string& filename,
 }
 
 Pass* PassManager::AddTypeCastPass() { return AddPass<TypeCast>(); }
+Pass* PassManager::AddFunctionBarrierPass() {
+  return AddPass<FunctionBarrier>();
+}
 
 Pass* PassManager::AddTypeLegalizerPass() { return AddPass<TypeLegalizer>(); }
 
 Pass* PassManager::AddTypeLegalizerPass(bool relaxed) {
   return AddPass<TypeLegalizer>(relaxed);
+}
+
+Pass* PassManager::AddDynamicTypeLegalizerPass() {
+  return AddPass<DynamicTypeLegalizer>();
+}
+
+Pass* PassManager::AddDynamicTypeLegalizerPass(bool relaxed) {
+  return AddPass<DynamicTypeLegalizer>(relaxed);
 }
 
 Pass* PassManager::AddWeightsQuantizerPass(Quantization quant,

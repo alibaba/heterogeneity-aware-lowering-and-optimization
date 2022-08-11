@@ -36,6 +36,23 @@ class TypeLegalizer final : public BasicBlockPass {
  private:
   bool relaxed_; // Skip uninferable shape if true.
 };
+class FunctionBarrier : public ModulePass {
+ public:
+  FunctionBarrier() : ModulePass("Function Barrier") {}
+  bool RunOnModule(Module* module) override { return false; }
+};
+/// This pass validates and infers types and dimensions of each operand.
+class DynamicTypeLegalizer final : public BasicBlockPass {
+ public:
+  DynamicTypeLegalizer(bool relaxed)
+      : BasicBlockPass("Dynamic Type Legalizer"), relaxed_(relaxed) {}
+  DynamicTypeLegalizer() : DynamicTypeLegalizer(false) {}
+
+  bool RunOnBasicBlock(BasicBlock* bb) override;
+
+ private:
+  bool relaxed_; // Skip uninferable shape if true.
+};
 
 class ImageAxisInfo {
  public:

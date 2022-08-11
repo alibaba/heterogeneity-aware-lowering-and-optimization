@@ -37,6 +37,7 @@ set(SRCS
   tfliteextension_legalizer.cc
   transforms_util.cc
   type_legalizer.cc
+  dynamic_type_legalizer.cc
   typecast.cc
 )
 

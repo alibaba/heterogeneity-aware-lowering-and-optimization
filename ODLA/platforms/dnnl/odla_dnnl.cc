@@ -889,6 +889,53 @@ odla_value odla_Reshape(odla_value input, odla_value_shape output_dims,
   return t;
 }
 
+odla_value odla_ReshapeDynamic(odla_value input, odla_value output_shape,
+                               const odla_value_id value_id) {
+  const auto& input_dims = input->shape;
+  int dims = input_dims.size;
+  const auto& shape_dims = output_shape->shape;
+  int shape_nbdims = shape_dims.dims[0];
+
+  dnnl::memory::data_type type = input->mem.get_desc().data_type();
+  dnnl::memory::desc dst_md = getMemoryDesc(input_dims, type);
+  auto dst_mem = dnnl::memory(dst_md, g_comp->eng);
+  auto v = CreateValue(dst_mem, input_dims, value_id);
+  auto len_input = getValueStorageSize(input);
+
+  size_t elements_num = GetTotalElements(input_dims);
+
+  auto op = [=]() {
+    int neg_dim = -1;
+    size_t product = 1;
+    memcpy(dst_mem.get_data_handle(), input->mem.get_data_handle(), len_input);
+    int64_t* p_shape_mem =
+        static_cast<int64_t*>(output_shape->mem.get_data_handle());
+    std::vector<int64_t> shape_data;
+    shape_data = std::vector<int64_t>(p_shape_mem, p_shape_mem + shape_nbdims);
+    odla_value_shape new_output_dims;
+    new_output_dims.size = shape_nbdims;
+    for (int i = 0; i < shape_nbdims; ++i) {
+      if (shape_data[i] == 0) {
+        new_output_dims.dims[i] = input_dims.dims[i];
+        product *= new_output_dims.dims[i];
+      } else if (shape_data[i] == -1) {
+        neg_dim = i;
+      } else {
+        new_output_dims.dims[i] = shape_data[i];
+        product *= new_output_dims.dims[i];
+      }
+    }
+    if (neg_dim >= 0) {
+      new_output_dims.dims[neg_dim] = elements_num / product;
+    }
+    is_dynamic_shape = true;
+    real_shape[v] = new_output_dims;
+  };
+  add_op(op);
+  InterpretIfNeeded();
+  return v;
+}
+
 template <typename T>
 static void left_shift(void* dst, const void* input, const void* shift_amt,
                        size_t n) {
