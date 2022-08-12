@@ -307,6 +307,22 @@ odla_Slice(odla_value input, const odla_int32* start, const odla_int32* end,
            const odla_int32* stride, odla_value_shape output_dims,
            const odla_value_id value_id);
 
+//! \brief Extract a DimsExpand
+/*!
+  odla_Axes_cal extracts a DimsExpand from \p axes.
+
+  \param input the input value
+  \param original the original value
+  \param axes the axes to slice
+
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_DimsExpand(odla_value input, odla_value original, odla_value axes,
+                odla_value_shape output_dims, const odla_value_id id);
+
 //! \brief Extract a dynamic slice
 /*!
   SliceDynamic extracts a dynamic slice from \p input.

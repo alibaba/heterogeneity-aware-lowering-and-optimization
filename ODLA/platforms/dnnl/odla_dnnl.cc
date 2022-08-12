@@ -55,7 +55,8 @@ struct _odla_context {
 thread_local odla_computation g_comp;
 static std::vector<std::unique_ptr<_odla_computation>> g_comps;
 thread_local bool g_interpret_mode = false;
-
+bool is_dynamic_shape = false;
+std::unordered_map<odla_value, odla_value_shape> real_shape;
 void add_op(dnnl::primitive prim,
             const std::unordered_map<int, dnnl::memory>& args) {
   operation op;
@@ -142,6 +143,9 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
 #ifdef ODLA_BUILD_DNNL_GPU
     read_from_dnnl_memory(dst_ptr, src_val->mem);
 #else
+    if (is_dynamic_shape) {
+      src_val->shape = real_shape[src_val];
+    }
     auto len = getValueStorageSize(src_val);
     memcpy(dst_ptr, src_val->mem.get_data_handle(), len);
 #endif
@@ -617,16 +621,6 @@ odla_value odla_Mul(odla_value lhs, odla_value rhs, const odla_value_id id) {
     return unary_eltwise_op(dnnl::algorithm::eltwise_square, lhs, 1.f, 0.f, id);
   }
   return binary_eltwise(dnnl::algorithm::binary_mul, lhs, rhs, id);
-}
-
-odla_value odla_Sub(odla_value lhs, odla_value rhs, const odla_value_id id) {
-#if (DNNL_VERSION_MINOR != 8)
-  auto v = unary_eltwise_op(dnnl::algorithm::eltwise_linear, rhs, -1.f, 0.f,
-                            nullptr);
-  return binary_eltwise(dnnl::algorithm::binary_add, lhs, v, id);
-#else
-  return binary_eltwise(dnnl::algorithm::binary_sub, lhs, rhs, id);
-#endif
 }
 
 odla_value odla_Div(odla_value lhs, odla_value rhs, const odla_value_id id) {
@@ -1814,7 +1808,8 @@ odla_value odla_Gemm(odla_value lhs, odla_bool transpose_lhs, odla_value rhs,
 odla_value odla_Gelu(odla_value input, odla_bool use_approx,
                      const odla_value_id id) {
   // exact version:  0.5 * x * (1+ erf(x / sqrt(2)))
-  // approx version: 0.5 * x * (1 + tanh(sqrt(2 / M_PI) * (x + 0.044715 * x^3)))
+  // approx version: 0.5 * x * (1 + tanh(sqrt(2 / M_PI) * (x + 0.044715 *
+  // x^3)))
   return unary_eltwise_op(use_approx ? dnnl::algorithm::eltwise_gelu_tanh
                                      : dnnl::algorithm::eltwise_gelu_erf,
                           input, .0F, .0F, id);
@@ -1923,6 +1918,87 @@ odla_value odla_Slice(odla_value input, const odla_int32* start,
   }
   InterpretIfNeeded();
   return CreateValue(dst_mem, output_dims, id);
+}
+
+odla_value odla_DimsExpand(odla_value input, odla_value original,
+                           odla_value axes, odla_value_shape output_dims,
+                           const odla_value_id id) {
+  const auto& input_dims = input->shape;
+  auto output_dism = input->shape;
+  int32_t len = input_dims.dims[0];
+  int dims = axes->shape.dims[0];
+  dnnl::memory::data_type type = input->mem.get_desc().data_type();
+  dnnl::memory::desc dst_md = getMemoryDesc(input_dims, type);
+
+  auto dst_mem = dnnl::memory(dst_md, g_comp->eng);
+  int64_t dst_elems = GetTotalElements(axes->shape);
+  int32_t* p_input_mem = static_cast<int32_t*>(input->mem.get_data_handle());
+  auto len_input = getValueStorageSize(input);
+  memcpy(dst_mem.get_data_handle(), p_input_mem, len_input);
+  auto op = [=]() {
+    int32_t* p_original_mem =
+        static_cast<int32_t*>(original->mem.get_data_handle());
+    int32_t* p_axes_mem = static_cast<int32_t*>(axes->mem.get_data_handle());
+    int32_t* p_out_mem = static_cast<int32_t*>(dst_mem.get_data_handle());
+    std::vector<int32_t> axes_data;
+    axes_data = std::vector<int32_t>(p_axes_mem, p_axes_mem + dims);
+    std::vector<int32_t> original_data;
+    original_data = std::vector<int32_t>(p_original_mem, p_original_mem + dims);
+    for (int i = 0; i < dst_elems; ++i) {
+      if (axes_data[i] < 0) {
+        axes_data[i] += len;
+      }
+      if (original_data[i] < 0) {
+        original_data[i] += p_out_mem[axes_data[i]];
+      }
+      p_out_mem[axes_data[i]] = original_data[i];
+    }
+  };
+  add_op(op);
+  InterpretIfNeeded();
+  return CreateValue(dst_mem, input_dims, id);
+}
+
+odla_value odla_SliceDynamic(odla_value input, odla_value start,
+                             odla_value size, odla_value stride,
+                             odla_value_shape output_dims,
+                             const odla_value_id value_id) {
+  const auto& input_dims = input->shape;
+  int dims = input_dims.size;
+  dnnl::memory::data_type type = input->mem.get_desc().data_type();
+  dnnl::memory::desc dst_md = getMemoryDesc(input_dims, type);
+  auto dst_mem = dnnl::memory(dst_md, g_comp->eng);
+  auto v = CreateValue(dst_mem, output_dims, value_id);
+  auto op = [=]() {
+    const auto& input_dims = input->shape;
+    int dims = input_dims.size;
+    int32_t* p_start_mem = static_cast<int32_t*>(start->mem.get_data_handle());
+    int32_t* p_size_mem = static_cast<int32_t*>(size->mem.get_data_handle());
+    int32_t* p_stride_mem =
+        static_cast<int32_t*>(stride->mem.get_data_handle());
+
+    std::vector<int32_t> start_data;
+    std::vector<int32_t> size_data;
+    std::vector<int32_t> stride_data;
+    start_data = std::vector<int32_t>(p_start_mem, p_start_mem + dims);
+    size_data = std::vector<int32_t>(p_size_mem, p_size_mem + dims);
+    stride_data = std::vector<int32_t>(p_stride_mem, p_stride_mem + dims);
+
+    odla_value_shape new_output_dims;
+    new_output_dims.size = dims;
+    for (int i = 0; i < dims; ++i) {
+      new_output_dims.dims[i] = size_data[i];
+    }
+    is_dynamic_shape = true;
+    real_shape[v] = new_output_dims;
+    int elem_size = getElementStorageSize(input->elem_type);
+    strided_slice(input->mem.get_data_handle(), elem_size, input_dims,
+                  start_data.data(), size_data.data(), stride_data.data(),
+                  dst_mem.get_data_handle(), new_output_dims);
+  };
+  add_op(op);
+  InterpretIfNeeded();
+  return v;
 }
 
 odla_values odla_TopK(odla_value input, odla_uint32 K, odla_bool largest,

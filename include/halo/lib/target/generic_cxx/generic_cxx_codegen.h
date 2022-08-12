@@ -96,6 +96,7 @@ class GenericCXXCodeGen : public CodeGen {
   // TODO(unknown): The following RunOnInstruction will be generated via .td
   // file.
   virtual void RunOnInstruction(AbsInst*) override;
+  virtual void RunOnInstruction(DimsExpandInst*) override;
   virtual void RunOnInstruction(ACosInst*) override;
   virtual void RunOnInstruction(ACoshInst*) override;
   virtual void RunOnInstruction(AddInst*) override;
