@@ -32,16 +32,8 @@
 #include "driver_types.h"
 #include "odla_tensorrt.h"
 
-#define RETURN_ON_ERROR(x, success) \
-  do {                              \
-    if (x != success) {             \
-      return ODLA_FAILURE;          \
-    }                               \
-  } while (0)
-
-#define RETURN_ON_NVML_ERROR(x) RETURN_ON_ERROR(x, NVML_SUCCESS)
-#define RETURN_ON_CUDA_ERROR(x) RETURN_ON_ERROR(x, cudaSuccess)
-#define RETURN_ON_CU_ERROR(x) RETURN_ON_ERROR(x, CUDA_SUCCESS)
+#define RETURN_ON_CU_ERROR(x) RETURN_ON_ERROR("cuda driver", x, CUDA_SUCCESS)
+#define RETURN_ON_NVML_ERROR(x) RETURN_ON_ERROR("nvml", x, NVML_SUCCESS)
 
 odla_status odla_AllocateDevice(odla_vendor vendor,
                                 odla_device_name device_name,
