@@ -22,7 +22,7 @@
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00018}00018 \textcolor{preprocessor}{\#ifndef \_ODLA\_DEVICE\_H\_}}
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00019}00019 \textcolor{preprocessor}{\#define \_ODLA\_DEVICE\_H\_}}
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00020}00020 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00021}00021 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{odla__common_8h}{ODLA/odla\_common.h}}>}}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00021}00021 \textcolor{preprocessor}{\#include <\mbox{\hyperlink{odla__value_8h}{ODLA/odla\_value.h}}>}}
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00022}00022 }
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00027}00027 \textcolor{preprocessor}{\#ifdef \_\_cplusplus}}
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00028}00028 \textcolor{keyword}{extern} \textcolor{stringliteral}{"{}C"{}} \{}
@@ -70,71 +70,78 @@
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00073}00073 \} \mbox{\hyperlink{odla__device_8h_aa752c9d7d8ae4aca3037f9c6dccd68b2}{odla\_device\_name}};}
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00074}00074 }
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00076}\mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}{00076}} \textcolor{keyword}{typedef} \textcolor{keyword}{enum} \{}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00077}00077   ODLA\_DEVICE\_INFO\_DESCRIPTION,}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00078}00078   ODLA\_DEVICE\_INFO\_ODLA\_VERSION,}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00079}00079   ODLA\_DEVICE\_INFO\_NUM\_CORES,}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00080}00080   ODLA\_DEVICE\_INFO\_TOTAL\_MEM\_SIZE,}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00081}00081   ODLA\_DEVICE\_INFO\_CORE\_MEM\_SIZE,}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00082}00082 \} \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}{odla\_device\_info}};}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00083}00083 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00085}\mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{00085}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_vendor* \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\_vendor}};}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00086}00086 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00088}\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{00088}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_device* \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}};}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00089}00089 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00091}\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{00091}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_device\_config* \mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\_device\_config}};}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00092}00092 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00094}\mbox{\hyperlink{odla__device_8h_a643162987c9d516257f0926bd5c6a1ba}{00094}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_device\_config\_item* \mbox{\hyperlink{odla__device_8h_a643162987c9d516257f0926bd5c6a1ba}{odla\_device\_config\_item}};}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00095}00095 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00097}00097 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00103}00103 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00104}\mbox{\hyperlink{odla__device_8h_a22ae9fedb1f37be5687e57745c76dacb}{00104}} \mbox{\hyperlink{odla__device_8h_a22ae9fedb1f37be5687e57745c76dacb}{odla\_GetVendor}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__device_8h_acc70b5ac70bcbc281da55d04741cafe1}{odla\_vendor\_name}} vendor\_name, \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\_vendor}}* vendor);}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00077}\mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba38ec62d26e34eecc457a0473b80789b8}{00077}}   \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba38ec62d26e34eecc457a0473b80789b8}{ODLA\_DEVICE\_INFO\_ODLA\_LIB\_VERSION}}, }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00078}\mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba38a6b7491fef0c3214a1394541929f05}{00078}}   \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba38a6b7491fef0c3214a1394541929f05}{ODLA\_DEVICE\_INFO\_DEV\_COUNT}},        }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00079}\mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba2944c2be6fb2f3af024331278c54a179}{00079}}   \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba2944c2be6fb2f3af024331278c54a179}{ODLA\_DEVICE\_INFO\_DEV\_INDEX}},        }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00080}\mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7baf223ab18bc0c3ba81ebdb2b380a05854}{00080}}   \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7baf223ab18bc0c3ba81ebdb2b380a05854}{ODLA\_DEVICE\_INFO\_DEV\_TYPE}},         }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00081}\mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba73ea35f8d370c19bf4255e610ab52df5}{00081}}   \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba73ea35f8d370c19bf4255e610ab52df5}{ODLA\_DEVICE\_INFO\_DEV\_UUID}},         }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00082}00082   \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7bae99bfbe5cea539a04beb6a2eaeacfa02}{ODLA\_DEVICE\_INFO\_PROCESSOR\_UTIL}}, }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00084}00084   \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba72d992efe0f407237845c00afe35f72e}{ODLA\_DEVICE\_INFO\_MEMORY\_UTIL}},    }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00086}\mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba8c1e6cead5c77d1519577191538f8c8d}{00086}}   \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba8c1e6cead5c77d1519577191538f8c8d}{ODLA\_DEVICE\_INFO\_TOTAL\_MEMORY}},   }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00087}\mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba797da60bfc5805e3cbb5e6ca34dd7841}{00087}}   \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba797da60bfc5805e3cbb5e6ca34dd7841}{ODLA\_DEVICE\_INFO\_USED\_MEMORY}},    }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00088}\mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7bab1bd943bb95215f72e2d5f96547ac1ac}{00088}}   \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7bab1bd943bb95215f72e2d5f96547ac1ac}{ODLA\_DEVICE\_INFO\_POWER\_USAGE}},    }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00089}\mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba1893d5a4e298745f5cd72e99d49dcada}{00089}}   \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba1893d5a4e298745f5cd72e99d49dcada}{ODLA\_DEVICE\_INFO\_POWER\_LIMIT}},    }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00090}\mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba9193adc7930c8e3fcf93186957d56eca}{00090}}   \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba9193adc7930c8e3fcf93186957d56eca}{ODLA\_DEVICE\_INFO\_DRIVER\_VERSION}}, }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00091}\mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba78c5108d5708f4ea74b785575b252c37}{00091}}   \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7ba78c5108d5708f4ea74b785575b252c37}{ODLA\_DEVICE\_INFO\_SDK\_VERSION}},    }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00092}00092 \} \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}{odla\_device\_info}};}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00093}00093 }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00095}\mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{00095}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_vendor* \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\_vendor}};}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00096}00096 }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00098}\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{00098}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_device* \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}};}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00099}00099 }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00101}\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{00101}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_device\_config* \mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\_device\_config}};}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00102}00102 }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00104}\mbox{\hyperlink{odla__device_8h_a643162987c9d516257f0926bd5c6a1ba}{00104}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_device\_config\_item* \mbox{\hyperlink{odla__device_8h_a643162987c9d516257f0926bd5c6a1ba}{odla\_device\_config\_item}};}
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00105}00105 }
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00107}00107 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00116}\mbox{\hyperlink{odla__device_8h_aa80672b818da14472d90705528431c1a}{00116}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__device_8h_aa80672b818da14472d90705528431c1a}{odla\_GetVendorInfo}}(}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00117}00117     \textcolor{keyword}{const} \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\_vendor}} vendor, \textcolor{keyword}{const} \mbox{\hyperlink{odla__device_8h_a5ee336a2ef2c35a0dcc57e64dbde0271}{odla\_vendor\_info}} info\_name,}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00118}00118     \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_acac65b5a20353d7f068ca61c6ab7569c}{odla\_size\_t}} allocated\_info\_value\_size, \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\_void}}* info\_value,}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00119}00119     \mbox{\hyperlink{odla__common_8h_acac65b5a20353d7f068ca61c6ab7569c}{odla\_size\_t}}* retrieved\_info\_value\_size);}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00120}00120 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00122}00122 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00129}\mbox{\hyperlink{odla__device_8h_a58cd9237d9b856196a3866eddc0ef95d}{00129}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__device_8h_a58cd9237d9b856196a3866eddc0ef95d}{odla\_AllocateDevice}}(}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00130}00130     \textcolor{keyword}{const} \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\_vendor}} vendor, \textcolor{keyword}{const} \mbox{\hyperlink{odla__device_8h_aa752c9d7d8ae4aca3037f9c6dccd68b2}{odla\_device\_name}} device\_name,}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00131}00131     \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}}* device, \textcolor{keyword}{const} \textcolor{keywordtype}{char}* config);}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00113}00113 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00114}\mbox{\hyperlink{odla__device_8h_a22ae9fedb1f37be5687e57745c76dacb}{00114}} \mbox{\hyperlink{odla__device_8h_a22ae9fedb1f37be5687e57745c76dacb}{odla\_GetVendor}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__device_8h_acc70b5ac70bcbc281da55d04741cafe1}{odla\_vendor\_name}} vendor\_name, \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\_vendor}}* vendor);}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00115}00115 }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00117}00117 }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00126}\mbox{\hyperlink{odla__device_8h_aa80672b818da14472d90705528431c1a}{00126}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__device_8h_aa80672b818da14472d90705528431c1a}{odla\_GetVendorInfo}}(}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00127}00127     \textcolor{keyword}{const} \mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\_vendor}} vendor, \textcolor{keyword}{const} \mbox{\hyperlink{odla__device_8h_a5ee336a2ef2c35a0dcc57e64dbde0271}{odla\_vendor\_info}} info\_name,}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00128}00128     \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_acac65b5a20353d7f068ca61c6ab7569c}{odla\_size\_t}} allocated\_info\_value\_size, \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\_void}}* info\_value,}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00129}00129     \mbox{\hyperlink{odla__common_8h_acac65b5a20353d7f068ca61c6ab7569c}{odla\_size\_t}}* retrieved\_info\_value\_size);}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00130}00130 }
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00132}00132 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00134}00134 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00143}\mbox{\hyperlink{odla__device_8h_a04cba41bee90172253efc94561a20e74}{00143}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__device_8h_a04cba41bee90172253efc94561a20e74}{odla\_GetDeviceInfo}}(}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00144}00144     \textcolor{keyword}{const} \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device, \textcolor{keyword}{const} \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}{odla\_device\_info}} info\_name,}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00145}00145     \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_acac65b5a20353d7f068ca61c6ab7569c}{odla\_size\_t}} allocated\_info\_value\_size, \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\_void}}* info\_value,}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00146}00146     \mbox{\hyperlink{odla__common_8h_acac65b5a20353d7f068ca61c6ab7569c}{odla\_size\_t}}* retrieved\_info\_value\_size);}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00147}00147 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00149}00149 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00155}00155 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00156}\mbox{\hyperlink{odla__device_8h_a3d5955591890ff2437fbdfe8fa6e5ef1}{00156}} \mbox{\hyperlink{odla__device_8h_a3d5955591890ff2437fbdfe8fa6e5ef1}{odla\_InitDevice}}(\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device, \textcolor{keyword}{const} \mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\_device\_config}} config);}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00157}00157 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00159}00159 }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00139}00139 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00140}\mbox{\hyperlink{odla__device_8h_a79fe72180ac5a0ccf351787c0e307f34}{00140}} \mbox{\hyperlink{odla__device_8h_a79fe72180ac5a0ccf351787c0e307f34}{odla\_AllocateDevice}}(\mbox{\hyperlink{odla__device_8h_a6dc7b117d59c66da8fa01e8687473d19}{odla\_vendor}} vendor, \mbox{\hyperlink{odla__device_8h_aa752c9d7d8ae4aca3037f9c6dccd68b2}{odla\_device\_name}} device\_name,}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00141}00141                     \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\_int32}} device\_idx, \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}}* device);}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00142}00142 }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00144}00144 }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00153}00153 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00154}\mbox{\hyperlink{odla__device_8h_adbe014c7f2c2020df1e920e29b67de8e}{00154}} \mbox{\hyperlink{odla__device_8h_adbe014c7f2c2020df1e920e29b67de8e}{odla\_GetDeviceInfo}}(\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device, \mbox{\hyperlink{odla__device_8h_a4d9efb9c1c1f4976f6d8168b21578d7b}{odla\_device\_info}} info\_type,}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00155}00155                    \mbox{\hyperlink{structodla__scalar__value}{odla\_scalar\_value}}* info\_value);}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00156}00156 }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00158}00158 }
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00164}00164 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00165}\mbox{\hyperlink{odla__device_8h_af2ce8f8b0cba3b3382a30b5adf34eb0f}{00165}} \mbox{\hyperlink{odla__device_8h_af2ce8f8b0cba3b3382a30b5adf34eb0f}{odla\_SetCurrentDevice}}(\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device);}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00165}\mbox{\hyperlink{odla__device_8h_a3d5955591890ff2437fbdfe8fa6e5ef1}{00165}} \mbox{\hyperlink{odla__device_8h_a3d5955591890ff2437fbdfe8fa6e5ef1}{odla\_InitDevice}}(\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device, \textcolor{keyword}{const} \mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\_device\_config}} config);}
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00166}00166 }
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00168}00168 }
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00173}00173 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00174}\mbox{\hyperlink{odla__device_8h_aae5090077f6c6173687c9c32b82a7e57}{00174}} \mbox{\hyperlink{odla__device_8h_aae5090077f6c6173687c9c32b82a7e57}{odla\_DestroyDevice}}(\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device);}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00174}\mbox{\hyperlink{odla__device_8h_af2ce8f8b0cba3b3382a30b5adf34eb0f}{00174}} \mbox{\hyperlink{odla__device_8h_af2ce8f8b0cba3b3382a30b5adf34eb0f}{odla\_SetCurrentDevice}}(\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device);}
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00175}00175 }
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00177}00177 }
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00182}00182 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00183}\mbox{\hyperlink{odla__device_8h_a218cc769dbccaeceed3579078e6de0dd}{00183}} \mbox{\hyperlink{odla__device_8h_a218cc769dbccaeceed3579078e6de0dd}{odla\_CreateDeviceConfig}}(\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\_device\_config}}* device\_config);}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00183}\mbox{\hyperlink{odla__device_8h_aae5090077f6c6173687c9c32b82a7e57}{00183}} \mbox{\hyperlink{odla__device_8h_aae5090077f6c6173687c9c32b82a7e57}{odla\_DestroyDevice}}(\mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device);}
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00184}00184 }
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00186}00186 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00193}00193 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00194}\mbox{\hyperlink{odla__device_8h_a9c2b18144d3a094ff560e10c06fc150d}{00194}} \mbox{\hyperlink{odla__device_8h_a9c2b18144d3a094ff560e10c06fc150d}{odla\_SetDeviceConfigItem}}(\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\_device\_config}} device\_config,}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00195}00195                          \mbox{\hyperlink{odla__device_8h_a643162987c9d516257f0926bd5c6a1ba}{odla\_device\_config\_item}} device\_config\_item, ...);}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00196}00196 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00198}00198 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00203}00203 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00204}\mbox{\hyperlink{odla__device_8h_aa75c96d077e56bd22c05bcef89f0b7b5}{00204}} \mbox{\hyperlink{odla__device_8h_aa75c96d077e56bd22c05bcef89f0b7b5}{odla\_DestroyDeviceConfig}}(\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\_device\_config}} device\_config);}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00191}00191 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00192}\mbox{\hyperlink{odla__device_8h_a218cc769dbccaeceed3579078e6de0dd}{00192}} \mbox{\hyperlink{odla__device_8h_a218cc769dbccaeceed3579078e6de0dd}{odla\_CreateDeviceConfig}}(\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\_device\_config}}* device\_config);}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00193}00193 }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00195}00195 }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00202}00202 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00203}\mbox{\hyperlink{odla__device_8h_a9c2b18144d3a094ff560e10c06fc150d}{00203}} \mbox{\hyperlink{odla__device_8h_a9c2b18144d3a094ff560e10c06fc150d}{odla\_SetDeviceConfigItem}}(\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\_device\_config}} device\_config,}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00204}00204                          \mbox{\hyperlink{odla__device_8h_a643162987c9d516257f0926bd5c6a1ba}{odla\_device\_config\_item}} device\_config\_item, ...);}
 \DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00205}00205 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00206}00206 \textcolor{preprocessor}{\#ifdef \_\_cplusplus}}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00207}00207 \} \textcolor{comment}{// C extern}}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00208}00208 \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00209}00209 }
-\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00210}00210 \textcolor{preprocessor}{\#endif }\textcolor{comment}{// \_ODLA\_DEVICE\_H\_}}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00207}00207 }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00212}00212 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00213}\mbox{\hyperlink{odla__device_8h_aa75c96d077e56bd22c05bcef89f0b7b5}{00213}} \mbox{\hyperlink{odla__device_8h_aa75c96d077e56bd22c05bcef89f0b7b5}{odla\_DestroyDeviceConfig}}(\mbox{\hyperlink{odla__device_8h_a603f36b808701ffafdddf16a8eb4a6c0}{odla\_device\_config}} device\_config);}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00214}00214 }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00215}00215 \textcolor{preprocessor}{\#ifdef \_\_cplusplus}}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00216}00216 \} \textcolor{comment}{// C extern}}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00217}00217 \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00218}00218 }
+\DoxyCodeLine{\Hypertarget{odla__device_8h_source_l00219}00219 \textcolor{preprocessor}{\#endif }\textcolor{comment}{// \_ODLA\_DEVICE\_H\_}}
 
 \end{DoxyCode}
