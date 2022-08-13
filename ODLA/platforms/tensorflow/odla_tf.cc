@@ -183,8 +183,7 @@ static _odla_device g_device;
 
 odla_status odla_AllocateDevice(odla_vendor vendor,
                                 odla_device_name device_name,
-                                odla_int32_t device_idx, odla_device* device,
-                                const char* config) {
+                                odla_int32_t device_idx, odla_device* device) {
   *device = &g_device;
   return ODLA_SUCCESS;
 }

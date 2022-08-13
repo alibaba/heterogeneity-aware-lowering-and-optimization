@@ -34,7 +34,7 @@ endif()
 set(PLUGIN_NAME odla_plugin)
 add_subdirectory(plugins)
 
-add_odla_library(odla_tensorrt SHARED odla_tensorrt.cc odla_device.cc)
+add_odla_library(odla_tensorrt SHARED odla_tensorrt.cc odla_device.cc ../common/utils.cc)
 add_dependencies(odla_tensorrt ODLA_TRTPLUGIN)
 
 target_include_directories(odla_tensorrt PRIVATE ${CUDA_ROOT}/include ${CMAKE_BINARY_DIR}/include/halo)

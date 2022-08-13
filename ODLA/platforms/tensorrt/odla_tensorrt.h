@@ -19,9 +19,11 @@
 #define ODLA_TENSORRT_H
 
 #include <cuda.h>
+#include <cuda_runtime_api.h>
 
 #include <string>
 
+#include "../include/odla_impl_common.h"
 #include "common.h"
 
 typedef struct nvmlDevice_st* nvmlDevice_t;
@@ -36,5 +38,28 @@ struct _odla_device {
   CUdevice cu_device;
   CUcontext cu_ctx;
 };
+
+static std::string GetErrorMsg(const char* prefix, int err) {
+  std::string msg(prefix);
+  msg += " error: code: " + std::to_string(err);
+  return msg;
+}
+
+static std::string GetErrorMsg(const char* prefix, cudaError_t err) {
+  std::string msg(prefix);
+  msg += std::string(" error: ") + cudaGetErrorName(err) + std::string(":") +
+         cudaGetErrorString(err);
+  return msg;
+}
+
+#define RETURN_ON_ERROR(lib, x, success)   \
+  do {                                     \
+    if (x != success) {                    \
+      ODLA_LOG_ERROR(GetErrorMsg(lib, x)); \
+      return ODLA_FAILURE;                 \
+    }                                      \
+  } while (0)
+
+#define RETURN_ON_CUDA_ERROR(x) RETURN_ON_ERROR("cuda runtime", x, cudaSuccess)
 
 #endif // ODLA_TENSORRT_H

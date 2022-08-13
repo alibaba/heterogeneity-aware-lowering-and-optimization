@@ -89,55 +89,62 @@ std::shared_ptr<T> trt_shared_obj(T* obj) {
   return std::shared_ptr<T>(obj, TrtDestroyer<T>());
 }
 
-inline bool check(cudaError_t e, int line, const char* file_name) {
+inline bool check(cudaError_t e, const char* file_name, int line,
+                  const char* func) {
   if (e != cudaSuccess) {
-    std::cerr << "CUDA runtime API error " << cudaGetErrorName(e) << " at line "
-              << line << " in file " << file_name << std::endl;
+    std::string msg("CUDA runtime API error ");
+    msg += cudaGetErrorName(e) + std::string(":") + cudaGetErrorString(e);
+    odla_GetLogger()(file_name, line, func, ODLA_LOG_LEVEL_ERROR, msg.c_str());
     return false;
   }
   return true;
 }
 
-inline bool check(bool result, int line, const char* file_name) {
+inline bool check(bool result, const char* file_name, int line,
+                  const char* func) {
   if (!result) {
-    std::cerr << "Error at line " << line << " in file " << file_name
-              << std::endl;
+    odla_GetLogger()(file_name, line, func, ODLA_LOG_LEVEL_ERROR, "trt error");
     return false;
   }
   return true;
 }
 
-#define CHECK(call) check(call, __LINE__, __FILE__)
+#define CHECK(call) check(call, __FILE__, __LINE__, __PRETTY_FUNCTION__)
+
+#define RETURN_ON_TRT_ERROR(call) \
+  do {                            \
+    if (CHECK(call) == false) {   \
+      return ODLA_FAILURE;        \
+    }                             \
+  } while (0);
 
 namespace open_dla_tensorrt {
 class Logger : public nvinfer1::ILogger {
  public:
   void log(ILogger::Severity severity, const char* msg) NOEXCEPT override {
-    int log_level;
+    odla_log_level level = ODLA_LOG_LEVEL_OFF;
     switch (severity) {
       case ILogger::Severity::kINTERNAL_ERROR:
-        log_level = 0;
+        level = ODLA_LOG_LEVEL_ERROR;
         break;
       case ILogger::Severity::kERROR:
-        log_level = 1;
+        level = ODLA_LOG_LEVEL_ERROR;
         break;
       case ILogger::Severity::kWARNING:
-        log_level = 2;
+        level = ODLA_LOG_LEVEL_WARN;
         break;
       case ILogger::Severity::kINFO:
-        log_level = 3;
+        level = ODLA_LOG_LEVEL_INFO;
         break;
       case ILogger::Severity::kVERBOSE:
-        log_level = 4;
+        level = ODLA_LOG_LEVEL_TRACE;
         break;
       default:
-        log_level = 5;
+        level = ODLA_LOG_LEVEL_OFF;
     }
-    if (log_level <= 1) {
-      std::cerr << "[" << log_level << "]: " << msg << "\n";
-    }
+    odla_GetLogger()("tensorrt", 0, "internal", level, msg);
   }
-};
+}; // namespace open_dla_tensorrt
 } // namespace open_dla_tensorrt
 
 static open_dla_tensorrt::Logger Logger;
@@ -977,8 +984,9 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
     input_ptr_info.total_size = bytes;
   }
 
-  CHECK(cudaMemcpyAsync(input_ptr_info.dev_ptr, validated_data_ptr, bytes,
-                        cudaMemcpyHostToDevice, context->stream));
+  RETURN_ON_CUDA_ERROR(
+      cudaMemcpyAsync(input_ptr_info.dev_ptr, validated_data_ptr, bytes,
+                      cudaMemcpyHostToDevice, context->stream));
 
   return ODLA_SUCCESS;
 }
@@ -1041,7 +1049,7 @@ odla_status odla_GetValueData(odla_value value, odla_void* data_ptr,
   cuCtxSetCurrent(context->cu_ctx);
   auto it = context->output_ptrs.find(value);
   if (it == context->output_ptrs.end()) {
-    assert(0 && "Invalid value");
+    ODLA_LOG_FATAL("Invalid value");
     return ODLA_FAILURE;
   }
   const auto& ptr_info = it->second;
@@ -1054,8 +1062,9 @@ odla_status odla_GetValueData(odla_value value, odla_void* data_ptr,
       *ptr++ = static_cast<int64_t>(d);
     }
   } else {
-    CHECK(cudaMemcpy(data_ptr, ptr_info.dev_ptr, ptr_info.used_size,
-                     cudaMemcpyDeviceToHost));
+    RETURN_ON_CUDA_ERROR(cudaMemcpy(data_ptr, ptr_info.dev_ptr,
+                                    ptr_info.used_size,
+                                    cudaMemcpyDeviceToHost));
   }
   return ODLA_SUCCESS;
 }
@@ -1280,7 +1289,7 @@ odla_status odla_LoadExecutable(odla_resource_location location,
     data.resize(engine_size);
     engine_file.read(data.data(), engine_size);
     if (!engine_file) {
-      std::cerr << "Error loading engine file: " << file_name << std::endl;
+      ODLA_LOG_ERROR(std::string("Error loading engine file: ") + file_name);
       return ODLA_FAILURE;
     }
     engine_data = data.data();
@@ -1447,12 +1456,12 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
         dims.d[0] = context->run_batch_size;
         context->ctx->setBindingDimensions(idx, dims);
       }
-      CHECK(context->ctx->enqueueV2(context->bindings.data(), context->stream,
-                                    nullptr));
+      RETURN_ON_TRT_ERROR(context->ctx->enqueueV2(context->bindings.data(),
+                                                  context->stream, nullptr));
     } else {
       int batch = 1;
-      CHECK(context->ctx->enqueue(batch, context->bindings.data(),
-                                  context->stream, nullptr));
+      RETURN_ON_TRT_ERROR(context->ctx->enqueue(batch, context->bindings.data(),
+                                                context->stream, nullptr));
     }
   }
 
@@ -1460,17 +1469,17 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     if (kv.second.host_ptr != nullptr) {
       if (kv.first->type.element_type == ODLA_INT64) {
         std::vector<int> host_tmp(GetTotalElements(kv.first->type.shape));
-        CHECK(cudaMemcpyAsync(host_tmp.data(), kv.second.dev_ptr,
-                              kv.second.used_size, cudaMemcpyDeviceToHost,
-                              context->stream));
+        RETURN_ON_CUDA_ERROR(cudaMemcpyAsync(
+            host_tmp.data(), kv.second.dev_ptr, kv.second.used_size,
+            cudaMemcpyDeviceToHost, context->stream));
         int64_t* ptr = static_cast<int64_t*>(kv.second.host_ptr);
         for (int d : host_tmp) {
           *ptr++ = static_cast<int64_t>(d);
         }
       } else {
-        CHECK(cudaMemcpyAsync(kv.second.host_ptr, kv.second.dev_ptr,
-                              kv.second.used_size, cudaMemcpyDeviceToHost,
-                              context->stream));
+        RETURN_ON_CUDA_ERROR(cudaMemcpyAsync(
+            kv.second.host_ptr, kv.second.dev_ptr, kv.second.used_size,
+            cudaMemcpyDeviceToHost, context->stream));
       }
     }
   }
