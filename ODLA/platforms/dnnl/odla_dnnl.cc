@@ -896,6 +896,21 @@ odla_value odla_Reshape(odla_value input, odla_value_shape output_dims,
   return t;
 }
 
+template <typename T>
+static odla_value_shape CreateShape(odla_value shape) {
+  const T* p_shape_mem;
+  const auto& shape_dims = shape->shape;
+  int shape_nbdims = shape_dims.dims[0];
+  assert(shape->data_ptr != nullptr);
+  p_shape_mem = static_cast<const T*>(shape->data_ptr);
+  odla_value_shape new_output_dims;
+  new_output_dims.size = shape_nbdims;
+  for (int i = 0; i < shape_nbdims; ++i) {
+    new_output_dims.dims[i] = p_shape_mem[i];
+  }
+  return new_output_dims;
+}
+
 odla_value odla_ReshapeDynamic(odla_value input, odla_value output_shape,
                                const odla_value_id value_id) {
   const auto& input_dims = input->shape;
@@ -903,15 +918,18 @@ odla_value odla_ReshapeDynamic(odla_value input, odla_value output_shape,
   const auto& shape_dims = output_shape->shape;
   int shape_nbdims = shape_dims.dims[0];
   if (output_shape->is_const) {
-    const int64_t* p_shape_mem;
-    assert(output_shape->data_ptr != nullptr);
-    p_shape_mem = static_cast<const int64_t*>(output_shape->data_ptr);
-    std::vector<int64_t> shape_data;
-    shape_data = std::vector<int64_t>(p_shape_mem, p_shape_mem + shape_nbdims);
+    const auto& output_ty = output_shape->elem_type;
     odla_value_shape new_output_dims;
-    new_output_dims.size = shape_nbdims;
-    for (int i = 0; i < shape_nbdims; ++i) {
-      new_output_dims.dims[i] = shape_data[i];
+    switch (output_ty) {
+      case ODLA_INT64:
+        new_output_dims = CreateShape<int64_t>(output_shape);
+        break;
+      case ODLA_INT32:
+        new_output_dims = CreateShape<int32_t>(output_shape);
+        break;
+      default:
+        assert(0);
+        break;
     }
     auto t = CreateValue(input->mem, new_output_dims, value_id);
     t->elem_type = input->elem_type;

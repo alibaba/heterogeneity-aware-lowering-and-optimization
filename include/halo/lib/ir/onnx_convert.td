@@ -392,7 +392,7 @@ let attr_mapping_ = [
 
 def ONNX_Relu : OpMapping<"Relu", Relu>;
 
-def ONNX_Reshape : OpMapping<"Reshape", Reshape>;
+def ONNX_Reshape : ONNXExtension<"Reshape">;
 
 def ONNX_Resize : ONNXExtension<"Resize">;
 

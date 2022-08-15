@@ -77,6 +77,9 @@ class Type final {
   /// Return true if it is a literal type.
   bool IsLiteral() const noexcept { return is_literal_; }
 
+  /// Return true if it is a literal type.
+  bool GetLiteral() const noexcept { return is_literal_; }
+
   /// Return true if it is a scalar type.
   bool IsScalar() const noexcept { return is_scalar_; }
 

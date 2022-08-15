@@ -207,10 +207,11 @@ static std::vector<Def> ConvertFlatten(const CAFFEExtensionInst* ext,
     }
   }
   ConstantBuilder cb(ext->GetParent()->GetParent());
-  Constant* c = cb.CreateConstant(ext->GetName() + "_flatten_dims",
-                                  Type{DataType::INT32, {2}}, new_dims.data());
+  Constant* c =
+      cb.CreateConstant(ext->GetName() + "_flatten_dims",
+                        Type{DataType::INT32, {2}, true}, new_dims.data());
   builder->SetInsertAfter(ext);
-  auto new_inst = builder->CreateReshape(ext->GetName(), {input, *c});
+  auto new_inst = builder->CreateReshapeDynamic(ext->GetName(), {input, *c});
   return {*new_inst};
 }
 
@@ -245,9 +246,10 @@ static std::vector<Def> ConvertNormalize(const CAFFEExtensionInst* ext,
     ConstantBuilder cb(ext->GetParent()->GetParent());
     Constant* c = cb.CreateConstant(
         ext->GetName() + "_shape",
-        Type{DataType::INT64, {static_cast<int64_t>(new_shape.size())}},
+        Type{DataType::INT64, {static_cast<int64_t>(new_shape.size())}, true},
         new_shape.data());
-    scale = *builder->CreateReshape(ext->GetName() + "_reshape", {scale, *c});
+    scale = *builder->CreateReshapeDynamic(ext->GetName() + "_reshape",
+                                           {scale, *c});
   }
 
   auto l2norm =
@@ -467,9 +469,10 @@ static std::vector<Def> ConvertInnerProduct(const CAFFEExtensionInst* ext,
     new_shape.resize(2);
     Constant* c = cb.CreateConstant(
         ext->GetName() + "_shape",
-        Type{DataType::INT64, {static_cast<int64_t>(new_shape.size())}},
+        Type{DataType::INT64, {static_cast<int64_t>(new_shape.size())}, true},
         new_shape.data());
-    input = *builder->CreateReshape(ext->GetName() + "_reshape", {input, *c});
+    input = *builder->CreateReshapeDynamic(ext->GetName() + "_reshape",
+                                           {input, *c});
   }
   auto matmul = builder->CreateMatMul(ext->GetName(), {input, op1});
   matmul->SetTransposeB(!transpose); // Caffe uses col-major by default.
@@ -558,11 +561,11 @@ static std::vector<Def> ConvertScale(const CAFFEExtensionInst* ext,
       ConstantBuilder cb(ext->GetParent()->GetParent());
       Constant* c = cb.CreateConstant(
           ext->GetName() + "_shape",
-          Type{DataType::INT64, {static_cast<int64_t>(new_shape.size())}},
+          Type{DataType::INT64, {static_cast<int64_t>(new_shape.size())}, true},
           new_shape.data());
 
-      return *builder->CreateReshape(def.GetDef()->GetName() + "_reshape",
-                                     {def, *c});
+      return *builder->CreateReshapeDynamic(
+          def.GetDef()->GetName() + "_reshape", {def, *c});
     }
     return def;
   };
@@ -610,7 +613,7 @@ static std::vector<Def> ConvertPower(const CAFFEExtensionInst* ext,
 
 static std::vector<Def> ConvertReshape(const CAFFEExtensionInst* ext,
                                        IRBuilder* builder) {
-  HLCHECK(ext->GetNumOfOperands() == 1);
+  HLCHECK(ext->GetNumOfOperands() >= 1);
   auto bottom = ext->GetOperand(0);
   const Type& input_type = bottom.GetType();
   if (!input_type.IsValid()) {
@@ -629,11 +632,12 @@ static std::vector<Def> ConvertReshape(const CAFFEExtensionInst* ext,
     ConstantBuilder cb(ext->GetParent()->GetParent());
     Constant* c = cb.CreateConstant(
         ext->GetName() + "_shape",
-        Type{DataType::INT32, {static_cast<int64_t>(shape.size())}},
+        Type{DataType::INT32, {static_cast<int64_t>(shape.size())}, true},
         shape.data());
-    auto new_inst = builder->CreateReshape(ext->GetName(), {bottom, *c});
+    auto new_inst = builder->CreateReshapeDynamic(ext->GetName(), {bottom, *c});
     return {*new_inst};
   }
+
   return {};
 }
 

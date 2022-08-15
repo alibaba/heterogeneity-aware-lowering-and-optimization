@@ -259,6 +259,18 @@ odla_value odla_Reshape(odla_value input, odla_value_shape output_dims,
                          name);
 }
 
+odla_value odla_ReshapeDynamic(odla_value input, odla_value output_shape,
+                               const odla_value_id id) {
+  const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
+
+  popart::TensorId result = g_comp->builder->aiOnnxOpset10().reshape(
+      {input->tensor_id, output_shape->tensor_id}, name);
+  return new _odla_value(result,
+                         {g_comp->builder->getTensorDataType(result),
+                          g_comp->builder->getTensorShape(result)},
+                         name);
+}
+
 odla_value odla_OneHot(odla_value indices, odla_int32 depth, odla_value values,
                        odla_int32 axis, odla_value_shape output_dims,
                        const odla_value_id id) {

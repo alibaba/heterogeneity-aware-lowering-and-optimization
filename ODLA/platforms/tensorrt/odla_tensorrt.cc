@@ -168,13 +168,8 @@ struct _odla_value {
     layer->setName(name);
   }
   _odla_value(const void* ptr, const odla_value_type& type, const char* name)
-      : data_ptr(ptr),
-        tensor(layer->getOutput(0)),
-        type(type),
-        name(name),
-        is_const(true) {
-    layer->setName(name);
-  }
+      : data_ptr(ptr), type(type), name(name), is_const(true) {}
+
   _odla_value() {}
 
   operator nvinfer1::ITensor&() { return *tensor; }
@@ -529,6 +524,18 @@ static odla_value CreateValue(T* t, const odla_value_type& type,
   return ret;
 }
 
+template <typename T>
+static odla_value_shape CreateShape(odla_value shape) {
+  odla_value_shape new_output_dims;
+  auto output_type = shape->type;
+  new_output_dims.size = output_type.shape.dims[0];
+  const T* shape_data_mem = static_cast<const T*>(shape->data_ptr);
+  for (int i = 0; i < new_output_dims.size; ++i) {
+    new_output_dims.dims[i] = shape_data_mem[i];
+  }
+  return new_output_dims;
+}
+
 static odla_value CreateValue(const void* ptr, const odla_value_type& type,
                               const odla_value_id id) {
   const char* name = reinterpret_cast<const char*>(id);
@@ -824,7 +831,7 @@ odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
 
 odla_value odla_CreateLiteral(odla_value_type type, const void* data_ptr,
                               const odla_value_id id) {
-  return CreateValue(data_ptr, ValidateValueType(type), id);
+  return CreateValue(data_ptr, type, id);
 }
 
 odla_status odla_SetValueAsOutput(const odla_value val) {
@@ -2277,12 +2284,18 @@ odla_value odla_ReshapeDynamic(odla_value input, odla_value output_shape,
                                const odla_value_id value_id) {
   auto shuffle = g_comp->network->addShuffle(*input);
   if (output_shape->is_const) {
+    const auto& output_ty = output_shape->type;
     odla_value_shape new_output_dims;
-    new_output_dims.size = output_shape.shape.d[0];
-    const int64_t* shape_data_mem =
-        static_cast<const int64_t*>(output_shape->data_ptr);
-    for (int i = i; i < new_output_dims.size; ++i) {
-      new_output_dims.shape.d[i] = shape_data_mem[i];
+    switch (output_ty.element_type) {
+      case ODLA_INT64:
+        new_output_dims = CreateShape<int64_t>(output_shape);
+        break;
+      case ODLA_INT32:
+        new_output_dims = CreateShape<int32_t>(output_shape);
+        break;
+      default:
+        assert(0);
+        break;
     }
     shuffle->setReshapeDimensions(GetNVDims(new_output_dims));
     return CreateValue(shuffle, {input->type.element_type, new_output_dims},

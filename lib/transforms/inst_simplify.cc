@@ -552,7 +552,7 @@ static std::pair<Def, Def> RunOnMathBinaryInstruction(
                 DataType::INT64, {static_cast<int64_t>(dims.size())}, true},
             dims.data());
         auto new_addend = builder.CreateReshapeDynamic(
-            op1.GetDef()->GetName() + "_r", {op1, *c_shape});
+            op1.GetDef()->GetName() + "_r", op1, *c_shape);
         new_addend->GetResultsTypes()[0] =
             Type{op1.GetType().GetDataType(), dims};
         op1 = *new_addend;
@@ -1283,20 +1283,30 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(
   if (input_type.IsValid() && ret_type.IsValid() && input_type == ret_type) {
     return {orig_def, op0};
   }
+  ConstantBuilder cb(reshape_inst->GetParent()->GetParent());
+  IRBuilder builder(reshape_inst->GetParent());
+  auto op1 = reshape_inst->GetOperand(1);
+  auto& ty = op1.GetType();
+  if (IsA<Constant>(op1) && !ty.GetLiteral()) {
+    IRBuilder builder(reshape_inst->GetParent());
+    builder.SetInsertAfter(reshape_inst);
 
+    op1.SetType(halo::Type{ty.GetDataType(), ty.GetDimSizes(), true});
+    auto new_inst =
+        builder.CreateReshapeDynamic(reshape_inst->GetName(), op0, op1);
+    return {orig_def, Def{new_inst, 0}};
+  }
   if (IsA<Constant>(op0) && reshape_inst->GetResultType().IsValid()) {
     Constant* src = DynCast<Constant>(op0);
     Constant* new_c = nullptr;
     if (op0.GetDef()->GetNumberOfUses() == 1) {
       new_c = src;
     } else {
-      ConstantBuilder cb(reshape_inst->GetParent()->GetParent());
       new_c = cb.Clone(*src);
     }
     new_c->GetResultsTypes()[0] = reshape_inst->GetResultType();
     return {orig_def, *new_c};
   }
-
   return {orig_def, orig_def};
 }
 
@@ -1325,8 +1335,8 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(ExpandDimsInst* inst) {
                    {static_cast<int64_t>(ret_type.GetNumOfDims())},
                    true},
         ret_type.GetDimSizes().data());
-    auto reshape = builder.CreateReshapeDynamic(inst->GetName(),
-                                                {inst->GetOperand(0), *c});
+    auto reshape =
+        builder.CreateReshapeDynamic(inst->GetName(), inst->GetOperand(0), *c);
     return {orig_def, *reshape};
   }
 
@@ -2174,7 +2184,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(TransposeInst* inst) {
       auto shape = cb.CreateConstant(inst->GetName() + "_reshape", reshape_ty,
                                      out_type.GetDimSizes().data());
       auto* reshape =
-          builder.CreateReshapeDynamic(inst->GetName(), {input, *shape});
+          builder.CreateReshapeDynamic(inst->GetName(), input, *shape);
       reshape->GetResultsTypes()[0] = out_type;
       ret.second = *reshape;
       return ret;
@@ -2230,7 +2240,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(TransposeInst* inst) {
           halo::Type{DataType::INT64, std::vector<int64_t>{dims}, true},
           new_shape.data());
       auto reshape = builder.CreateReshapeDynamic(
-          inst->GetName(), {inst->GetOperand(0), *c_shape});
+          inst->GetName(), inst->GetOperand(0), *c_shape);
       reshape->GetResultsTypes()[0] = inst->GetResultType();
       ret.second = *reshape;
       return ret;

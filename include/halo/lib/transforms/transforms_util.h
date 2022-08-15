@@ -164,7 +164,7 @@ std::vector<Def> ConvertSqueezeImpl(const T* ext, IRBuilder* builder,
                                   Type{DataType::INT64, new_shape, true}, data);
   builder->SetInsertAfter(ext);
 
-  auto new_inst = builder->CreateReshapeDynamic(ext->GetName(), {input, *c});
+  auto new_inst = builder->CreateReshapeDynamic(ext->GetName(), input, *c);
   return {*new_inst};
 }
 

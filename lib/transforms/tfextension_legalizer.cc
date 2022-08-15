@@ -57,7 +57,7 @@ static std::vector<Def> ConvertReshape(const TFExtensionInst* tf_reshape,
 
   builder->SetInsertAfter(tf_reshape);
   if (tf_reshape->GetNumOfOperands() == 2) {
-    new_inst = builder->CreateReshape(
+    new_inst = builder->CreateReshapeDynamic(
         tf_reshape->GetName(),
         {tf_reshape->GetOperand(0), tf_reshape->GetOperand(1)});
   } else {
@@ -69,8 +69,8 @@ static std::vector<Def> ConvertReshape(const TFExtensionInst* tf_reshape,
         tf_reshape->GetName() + "_shape",
         Type{DataType::INT32, {static_cast<int64_t>(shape.size())}},
         shape.data());
-    new_inst = builder->CreateReshape(tf_reshape->GetName(),
-                                      {tf_reshape->GetOperand(0), *c});
+    new_inst = builder->CreateReshapeDynamic(tf_reshape->GetName(),
+                                             {tf_reshape->GetOperand(0), *c});
   }
   return {*new_inst};
 }
@@ -115,10 +115,11 @@ static std::vector<Def> ConvertSqueeze(const TFExtensionInst* tf_squeeze,
   ConstantBuilder cb(tf_squeeze->GetParent()->GetParent());
   Constant* c = cb.CreateConstant(
       tf_squeeze->GetName() + "_squeeze_dims",
-      Type{DataType::INT32, {static_cast<int64_t>(new_dims.size())}},
+      Type{DataType::INT32, {static_cast<int64_t>(new_dims.size())}, true},
       new_dims.data());
   builder->SetInsertAfter(tf_squeeze);
-  auto new_inst = builder->CreateReshape(tf_squeeze->GetName(), {input, *c});
+  auto new_inst =
+      builder->CreateReshapeDynamic(tf_squeeze->GetName(), {input, *c});
   return {*new_inst};
 }
 
@@ -188,10 +189,10 @@ static std::vector<Def> ConvertExpandDims(const TFExtensionInst* ext,
   ConstantBuilder cb(ext->GetParent()->GetParent());
   Constant* c = cb.CreateConstant(
       ext->GetName() + "_expand_dims",
-      Type{DataType::INT64, {static_cast<int64_t>(new_dims.size())}},
+      Type{DataType::INT64, {static_cast<int64_t>(new_dims.size())}, true},
       new_dims.data());
   builder->SetInsertAfter(ext);
-  auto new_inst = builder->CreateReshape(ext->GetName(), {input, *c});
+  auto new_inst = builder->CreateReshapeDynamic(ext->GetName(), {input, *c});
   return {*new_inst};
 }
 
@@ -511,11 +512,11 @@ static std::vector<Def> ConvertStridedSlice(const TFExtensionInst* ext,
     } else {
       new_shape.push_back(static_cast<int64_t>(new_dims.size()));
     }
-    Constant* c_shape =
-        cb.CreateConstant(new_slice_inst->GetName() + "_shape",
-                          Type{DataType::INT32, new_shape}, new_dims.data());
-    new_slice_inst = builder->CreateReshape(ext->GetName() + "_reshape",
-                                            {Def{new_slice_inst, 0}, *c_shape});
+    Constant* c_shape = cb.CreateConstant(
+        new_slice_inst->GetName() + "_shape",
+        Type{DataType::INT32, new_shape, true}, new_dims.data());
+    new_slice_inst = builder->CreateReshapeDynamic(
+        ext->GetName() + "_reshape", {Def{new_slice_inst, 0}, *c_shape});
   }
   return {*new_slice_inst};
 }
@@ -716,10 +717,11 @@ static std::vector<Def> ConvertBatch2Space(const TFExtensionInst* tf_inst,
   Constant* shape0_c = cb.CreateConstant(
       name + "_shape0",
       Type{DataType::INT64,
-           std::vector<int64_t>{static_cast<int64_t>(shape0.size())}},
+           std::vector<int64_t>{static_cast<int64_t>(shape0.size())}, true},
       shape0.data());
 
-  auto reshape0 = builder->CreateReshape(name + "_reshape_0", {op0, *shape0_c});
+  auto reshape0 =
+      builder->CreateReshapeDynamic(name + "_reshape_0", {op0, *shape0_c});
 
   // Do permute.
   TransposeInst* perm = builder->CreateTranspose(name + "_perm", {*reshape0});
@@ -753,10 +755,10 @@ static std::vector<Def> ConvertBatch2Space(const TFExtensionInst* tf_inst,
   Constant* shape1_c = cb.CreateConstant(
       name + "_shape1",
       Type{DataType::INT64,
-           std::vector<int64_t>{static_cast<int64_t>(shape1.size())}},
+           std::vector<int64_t>{static_cast<int64_t>(shape1.size())}, true},
       shape1.data());
   auto reshape1 =
-      builder->CreateReshape(name + "_reshape_1", {*perm, *shape1_c});
+      builder->CreateReshapeDynamic(name + "_reshape_1", {*perm, *shape1_c});
 
   // Do crop
   bool ignore_crops =
@@ -867,10 +869,11 @@ static std::vector<Def> ConvertSpace2Batch(const TFExtensionInst* tf_inst,
   Constant* shape0_c = cb.CreateConstant(
       name + "_shape0",
       Type{DataType::INT64,
-           std::vector<int64_t>{static_cast<int64_t>(shape0.size())}},
+           std::vector<int64_t>{static_cast<int64_t>(shape0.size())}, true},
       shape0.data());
 
-  auto reshape0 = builder->CreateReshape(name + "_reshape_0", {op0, *shape0_c});
+  auto reshape0 =
+      builder->CreateReshapeDynamic(name + "_reshape_0", {op0, *shape0_c});
 
   TransposeInst* perm = builder->CreateTranspose(name + "_perm", {*reshape0});
   std::vector<int32_t> perms;
@@ -901,10 +904,11 @@ static std::vector<Def> ConvertSpace2Batch(const TFExtensionInst* tf_inst,
   Constant* shape1_c = cb.CreateConstant(
       name + "_shape1",
       Type{DataType::INT64,
-           std::vector<int64_t>{static_cast<int64_t>(output_shape.size())}},
+           std::vector<int64_t>{static_cast<int64_t>(output_shape.size())},
+           true},
       output_shape.data());
   auto reshape1 =
-      builder->CreateReshape(name + "_reshape_1", {*perm, *shape1_c});
+      builder->CreateReshapeDynamic(name + "_reshape_1", {*perm, *shape1_c});
 
   return {*reshape1};
 }

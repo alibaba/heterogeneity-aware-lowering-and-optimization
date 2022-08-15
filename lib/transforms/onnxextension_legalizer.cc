@@ -88,7 +88,7 @@ static std::vector<Def> ConvertUnsqueeze(const ONNXExtensionInst* ext,
       ext->GetName() + "_unsqueeze",
       Type{DataType::INT64, {static_cast<int64_t>(new_dims.size())}, true},
       new_dims.data());
-  auto new_inst = builder->CreateReshapeDynamic(ext->GetName(), {input, *c});
+  auto new_inst = builder->CreateReshapeDynamic(ext->GetName(), input, *c);
   return {*new_inst};
 }
 
@@ -440,7 +440,7 @@ static std::vector<Def> ConvertFlatten(const ONNXExtensionInst* ext,
   Constant* c =
       cb.CreateConstant(ext->GetName() + "_flatten_dims",
                         Type{DataType::INT64, {2}, true}, new_dims.data());
-  auto new_inst = builder->CreateReshapeDynamic(ext->GetName(), {input, *c});
+  auto new_inst = builder->CreateReshapeDynamic(ext->GetName(), input, *c);
   return {*new_inst};
 }
 
@@ -533,6 +533,22 @@ static std::vector<Def> ConvertResize(const ONNXExtensionInst* ext,
   resize->SetExplicitShape(explicit_shape);
 
   return {*resize};
+}
+
+static std::vector<Def> ConvertReshape(const ONNXExtensionInst* ext,
+                                       IRBuilder* builder) {
+  const auto& op0 = ext->GetOperand(0);
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  auto op1 = ext->GetOperand(1);
+  if (!IsA<Constant>(op1)) {
+    auto new_inst =
+        builder->CreateReshapeDynamic(ext->GetName(), op0, ext->GetOperand(1));
+    return {*new_inst};
+  }
+  auto& ty = op1.GetType();
+  op1.SetType(halo::Type{ty.GetDataType(), ty.GetDimSizes(), true});
+  auto new_inst = builder->CreateReshapeDynamic(ext->GetName(), op0, op1);
+  return {*new_inst};
 }
 
 static std::vector<Def> ConvertSqueeze(const ONNXExtensionInst* ext,
@@ -1624,6 +1640,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::RESIZE: {
       return ConvertResize(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::RESHAPE: {
+      return ConvertReshape(onnx_inst, builder);
     }
     case ONNXExtOpCode::SQUEEZE: {
       return ConvertSqueeze(onnx_inst, builder);

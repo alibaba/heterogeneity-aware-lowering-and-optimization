@@ -332,6 +332,19 @@ odla_value odla_CreateConstant(odla_value_type type, const void* data_ptr,
   return new _odla_value(tensor_id, tensor_info, name);
 }
 
+odla_value odla_CreateLiteral(odla_value_type type, const void* data_ptr,
+                              const odla_value_id id) {
+  const auto& name = id ? std::string(reinterpret_cast<const char*>(id)) : "";
+  popart::TensorInfo tensor_info(GetPopartType(type),
+                                 GetPopartShape(type.shape));
+  popart::ConstVoidData data = {
+      data_ptr, {GetPopartType(type), GetPopartShape(type.shape)}};
+  popart::TensorId tensor_id =
+      _odla_computation::instance()->builder->aiOnnxOpset10().constant(data,
+                                                                       name);
+  return new _odla_value(tensor_id, tensor_info, name);
+}
+
 odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                 odla_context context) {
   odla_status status =
