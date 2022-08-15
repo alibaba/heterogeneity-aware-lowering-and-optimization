@@ -521,12 +521,12 @@ odla_status odla_OpenDevice(odla_device dev) {
 
 odla_status odla_AllocateDevice(const odla_vendor vendor,
                                 const odla_device_name device_name,
-                                odla_device* device, const char* config) {
-  // Init, query and open vvodh devices
+                                int device_idx, odla_device* device) {
+  // Init, query and open vodla devices
 #ifdef DEBUG
   std::cout << "[vODLA] INFO: Start initializing vodh device.\n";
 #endif
-
+  const char* config = nullptr;
   // create vODLA device
   odla_device dev = new _odla_device();
   if (dev == NULL) {
