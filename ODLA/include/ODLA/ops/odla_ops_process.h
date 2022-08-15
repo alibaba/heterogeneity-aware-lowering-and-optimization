@@ -252,7 +252,7 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_ReshapeDynamic(
   Unsqueeze the input with a new dimension specified by \p output_dims.
 
   \param input the input value
-  \param axes the output shape
+  \param axes the axes
   \param value_id a unique value id (can be NULL)
 
   \return odla_value

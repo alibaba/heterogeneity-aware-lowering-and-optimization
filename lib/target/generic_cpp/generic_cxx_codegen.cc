@@ -931,8 +931,12 @@ void GenericCXXCodeGen::RunOnConstant(Constant& constant, bool decl) {
   }
   auto ptr_name = ir_mapping_[constant].name;
   CXXValue value(constant.GetName() + "_", TensorTypeToCXXType(type, true));
+  if (type.IsLiteral()) {
+    EmitODLACall(value, "odla_CreateLiteral", type, ptr_name);
+  } else {
+    EmitODLACall(value, "odla_CreateConstant", type, ptr_name);
+  }
 
-  EmitODLACall(value, "odla_CreateConstant", type, ptr_name);
   ir_mapping_[constant] = value;
 }
 

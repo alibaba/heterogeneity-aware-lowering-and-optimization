@@ -190,6 +190,7 @@ class GenericCXXCodeGen : public CodeGen {
   virtual void RunOnInstruction(Relu6Inst*) override;
   virtual void RunOnInstruction(ReshapeInst*) override;
   virtual void RunOnInstruction(UnsqueezeInst*) override;
+  virtual void RunOnInstruction(ReshapeDynamicInst*) override;
   virtual void RunOnInstruction(ResizeInst*) override;
   virtual void RunOnInstruction(ReturnInst*) override;
   virtual void RunOnInstruction(RNNInst*) override;

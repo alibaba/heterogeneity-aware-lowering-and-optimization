@@ -271,7 +271,7 @@ static void RunOnInstruction(CompressInst* inst) {
   inst->GetResultsTypes()[0] = Type{dt, ret_dims};
 }
 
-static void RunOnInstruction(ReshapeInst* inst) {
+static void RunOnInstruction(ReshapeDynamicInst* inst) {
   auto& op0_type = inst->GetOperand(0).GetType();
   Def op1 = inst->GetOperand(1);
   const auto& op1_type = op1.GetType();
@@ -299,7 +299,6 @@ static void RunOnInstruction(ReshapeInst* inst) {
     return;
   }
   std::vector<int64_t> new_shape;
-
   const Constant* shape_c = DynCast<Constant>(op1);
   if (shape_c == nullptr) {
     return;
@@ -315,88 +314,88 @@ static void RunOnInstruction(ReshapeInst* inst) {
        i != e; ++i) {
     new_shape.push_back(shape_c->GetDataAsInt64(i));
   }
-}
-size_t product = 1;
-size_t elements_num = 1;
-int neg_dim = -1;
-if (op0_type.IsDynamicShape() || !IsA<Constant>(op1)) {
-  halo::Type new_type{op0_type.GetDataType(), new_shape};
-  inst->GetResultsTypes()[0] = new_type;
-} else if (op0_type.IsDynamicBatch()) {
-  if (new_shape[0] > 0) {
-    return;
-  }
-  new_shape[0] = op0_type.GetNumOfElementsInDim(0);
-  for (size_t i = 1; i < op0_type.GetNumOfDims(); ++i) {
-    elements_num *= op0_type.GetNumOfElementsInDim(i);
-  }
-  for (int i = 1, e = new_shape.size(); i != e; ++i) {
-    if (new_shape[i] == 0) {
-      if (!op0_type.IsValid()) {
-        return;
+
+  size_t product = 1;
+  size_t elements_num = 1;
+  int neg_dim = -1;
+  if (op0_type.IsDynamicShape()) {
+    halo::Type new_type{op0_type.GetDataType(), new_shape};
+    inst->GetResultsTypes()[0] = new_type;
+  } else if (op0_type.IsDynamicBatch()) {
+    if (new_shape[0] > 0) {
+      return;
+    }
+    new_shape[0] = op0_type.GetNumOfElementsInDim(0);
+    for (size_t i = 1; i < op0_type.GetNumOfDims(); ++i) {
+      elements_num *= op0_type.GetNumOfElementsInDim(i);
+    }
+    for (int i = 1, e = new_shape.size(); i != e; ++i) {
+      if (new_shape[i] == 0) {
+        if (!op0_type.IsValid()) {
+          return;
+        }
+        if (i < static_cast<int>(op0_type.GetNumOfDims())) {
+          new_shape[i] = op0_type.GetNumOfElementsInDim(i);
+        } else {
+          HLCHECK(0 && "Invalid reshape");
+        }
       }
-      if (i < static_cast<int>(op0_type.GetNumOfDims())) {
-        new_shape[i] = op0_type.GetNumOfElementsInDim(i);
+      if (new_shape[i] == -1) {
+        if (neg_dim > 0) {
+          HLCHECK(0 && "Invalid reshape operand");
+          break;
+        }
+        neg_dim = i;
       } else {
-        HLCHECK(0 && "Invalid reshape");
+        product *= new_shape[i];
       }
     }
-    if (new_shape[i] == -1) {
-      if (neg_dim > 0) {
-        HLCHECK(0 && "Invalid reshape operand");
-        break;
-      }
-      neg_dim = i;
-    } else {
-      product *= new_shape[i];
+    if (neg_dim > 0 && !op0_type.IsValid()) {
+      return;
     }
-  }
-  if (neg_dim > 0 && !op0_type.IsValid()) {
-    return;
-  }
-  if (neg_dim > 0) {
-    HLCHECK(elements_num % product == 0 && "Invalid reshape operand");
-    new_shape[neg_dim] = elements_num / product;
-  }
+    if (neg_dim > 0) {
+      HLCHECK(elements_num % product == 0 && "Invalid reshape operand");
+      new_shape[neg_dim] = elements_num / product;
+    }
 
-  halo::Type new_type{op0_type.GetDataType(), new_shape};
-  inst->GetResultsTypes()[0] = new_type;
+    halo::Type new_type{op0_type.GetDataType(), new_shape};
+    inst->GetResultsTypes()[0] = new_type;
 
-} else {
-  for (int i = 0, e = new_shape.size(); i != e; ++i) {
-    if (new_shape[i] == 0) {
-      if (!op0_type.IsValid()) {
-        return;
+  } else {
+    for (int i = 0, e = new_shape.size(); i != e; ++i) {
+      if (new_shape[i] == 0) {
+        if (!op0_type.IsValid()) {
+          return;
+        }
+        if (i < static_cast<int>(op0_type.GetNumOfDims())) {
+          new_shape[i] = op0_type.GetNumOfElementsInDim(i);
+        } else {
+          HLCHECK(0 && "Invalid reshape");
+        }
       }
-      if (i < static_cast<int>(op0_type.GetNumOfDims())) {
-        new_shape[i] = op0_type.GetNumOfElementsInDim(i);
+      if (new_shape[i] == -1) {
+        if (neg_dim >= 0) {
+          HLCHECK(0 && "Invalid reshape operand");
+          break;
+        }
+        neg_dim = i;
       } else {
-        HLCHECK(0 && "Invalid reshape");
+        product *= new_shape[i];
       }
     }
-    if (new_shape[i] == -1) {
-      if (neg_dim >= 0) {
-        HLCHECK(0 && "Invalid reshape operand");
-        break;
-      }
-      neg_dim = i;
-    } else {
-      product *= new_shape[i];
+    if (neg_dim >= 0 && !op0_type.IsValid()) {
+      return;
     }
-  }
-  if (neg_dim >= 0 && !op0_type.IsValid()) {
-    return;
-  }
-  if (neg_dim >= 0) {
-    HLCHECK(op0_type.GetTotalNumOfElements() % product == 0 &&
-            "Invalid reshape operand");
-    new_shape[neg_dim] = op0_type.GetTotalNumOfElements() / product;
-  }
+    if (neg_dim >= 0) {
+      HLCHECK(op0_type.GetTotalNumOfElements() % product == 0 &&
+              "Invalid reshape operand");
+      new_shape[neg_dim] = op0_type.GetTotalNumOfElements() / product;
+    }
 
-  halo::Type new_type{op0_type.GetDataType(), new_shape};
-  inst->GetResultsTypes()[0] = new_type;
+    halo::Type new_type{op0_type.GetDataType(), new_shape};
+    inst->GetResultsTypes()[0] = new_type;
+  }
 }
-} // namespace halo
 
 static void RunOnInstruction(DequantizeInst* inst) {
   auto op0 = inst->GetOperand(0);

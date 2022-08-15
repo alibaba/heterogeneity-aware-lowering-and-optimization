@@ -46,6 +46,7 @@ struct _odla_value {
   odla_element_type elem_type; // TODO: use odla_value_type
   odla_value_shape shape;
   std::string name;
+  const void* data_ptr;
   _odla_value(const dnnl::memory& m, const odla_value_shape& shape_,
               const std::string& id)
       : mem(m),
@@ -53,6 +54,17 @@ struct _odla_value {
         shape(shape_),
         name(id),
         elem_type(ODLA_FLOAT32) {
+    if (shape.size == 0) {
+      shape.size = 1;
+      shape.dims[0] = 1;
+    }
+  }
+  _odla_value(const void* ptr, odla_value_shape& shape_, const std::string& id)
+      : data_ptr(ptr),
+        is_const(true),
+        shape(shape_),
+        name(id),
+        elem_type(ODLA_INT64) {
     if (shape.size == 0) {
       shape.size = 1;
       shape.dims[0] = 1;
@@ -285,6 +297,15 @@ static inline odla_value CreateValue(const dnnl::memory& mem,
   return ret;
 }
 
+static inline odla_value CreateValue(const void* ptr, odla_value_type type,
+                                     const odla_value_id id) {
+  std::string name = id == nullptr ? "" : std::string((const char*)id);
+  auto v = std::make_unique<_odla_value>(ptr, type.shape, name);
+  auto ret = v.get();
+  g_comp->vals.push_back(std::move(v));
+  ret->elem_type = type.element_type;
+  return ret;
+}
 static inline void expand_dims(odla_value_shape& src,
                                const odla_value_shape& dst) {
   // src shape is [1,5], dst shape is [1,4,1], we expand src shape to [1,1,5]

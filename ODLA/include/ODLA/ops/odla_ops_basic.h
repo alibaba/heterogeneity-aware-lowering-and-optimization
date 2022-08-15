@@ -63,6 +63,19 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_CreateConstant(const odla_value_type value_type, const odla_void* data_ptr,
                     const odla_value_id value_id);
 
+//! \def CreateLiteral
+//! \brief Create a literal value
+/*!
+  \param value_type literal value type
+  \param data_ptr the pointer to the raw data
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_CreateLiteral(const odla_value_type value_type, const odla_void* data_ptr,
+                   const odla_value_id value_id);
+
 //! \def CloneValue
 //! \brief Clone a value with the data copy
 /*!
