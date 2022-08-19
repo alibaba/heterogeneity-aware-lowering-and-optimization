@@ -46,224 +46,232 @@
 \DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00048}00048   ODLA\_MIN\_SHAPE,}
 \DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00049}00049   ODLA\_MAX\_SHAPE,}
 \DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00050}00050   ODLA\_OPT\_SHAPE,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00051}00051   ODLA\_BF16\_MODE,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00052}00052   ODLA\_FP16\_MODE,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00053}00053   ODLA\_USE\_SIM\_MODE,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00054}00054   ODLA\_PROCESSOR\_NUM,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00055}00055   ODLA\_BATCHES\_PER\_STEP,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00056}00056   ODLA\_USE\_DATA\_TYPE,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00057}00057   ODLA\_LOAD\_ENGINE\_MODE,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00058}00058   ODLA\_USE\_DLA\_CORE,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00059}00059   ODLA\_QUANT\_TABLE,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00060}00060   ODLA\_QUANT\_TABLE\_SIZE,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00061}00061   ODLA\_AGGREGATE\_OPS,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00062}00062   ODLA\_ENABLE\_ENGINE\_CACHE,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00063}00063   ODLA\_CACHE\_DIR,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00064}00064   ODLA\_ASYNC\_CALLBACK\_FUNC,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00065}00065   ODLA\_ASYNC\_CALLBACK\_ARG,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00066}00066 \} \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\_item\_type}};}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00067}00067 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00069}\mbox{\hyperlink{odla__compute_8h_acdd4e76bab81ce3f41e2dc909c0051bd}{00069}} \textcolor{keyword}{typedef} \textcolor{keyword}{enum} \{}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00070}00070   BF16\_DISABLE,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00071}00071   BF16\_ACCURACY\_MODE,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00072}00072   BF16\_PERFORMACE\_MODE,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00073}00073   BF16\_AUTO\_MODE,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00074}00074 \} \mbox{\hyperlink{odla__compute_8h_acdd4e76bab81ce3f41e2dc909c0051bd}{odla\_bf16\_mode}};}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00075}00075 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00077}\mbox{\hyperlink{odla__compute_8h_a621c9b564a8583ddf497985a7c808b93}{00077}} \textcolor{keyword}{typedef} \textcolor{keyword}{enum} \{}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00078}00078   ODLA\_LOCATION\_PATH,   \textcolor{comment}{// string of file path}}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00079}00079   ODLA\_LOCATION\_MEMORY, \textcolor{comment}{// memory address of a buffer}}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00080}00080   ODLA\_LOCATION\_URI,    \textcolor{comment}{// string of URI}}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00081}00081 \} \mbox{\hyperlink{odla__compute_8h_a621c9b564a8583ddf497985a7c808b93}{odla\_resource\_location\_type}};}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00082}00082 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00084}00084 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00089}\mbox{\hyperlink{structodla__resource__location}{00089}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\{}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00090}00090   \mbox{\hyperlink{odla__compute_8h_a621c9b564a8583ddf497985a7c808b93}{odla\_resource\_location\_type}} location\_type;}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00091}00091   \textcolor{keyword}{const} \textcolor{keywordtype}{void}* location;}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00092}00092   \mbox{\hyperlink{odla__common_8h_acac65b5a20353d7f068ca61c6ab7569c}{odla\_size\_t}} size;}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00093}00093 \} \mbox{\hyperlink{structodla__resource__location}{odla\_resource\_location}};}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00094}00094 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00096}\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{00096}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_computation* \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}};}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00097}00097 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00099}\mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{00099}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_executable* \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}};}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00100}00100 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00102}\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{00102}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_context* \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}};}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00103}00103 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00105}\mbox{\hyperlink{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}{00105}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_item\_value* \mbox{\hyperlink{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}{odla\_item\_value}};}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00106}00106 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00108}\mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{00108}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_constants\_array* \mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\_constants\_array}};}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00109}00109 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00111}00111 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00116}00116 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00117}\mbox{\hyperlink{odla__compute_8h_aedc3cc00aac00f6ea608c4968fc76178}{00117}} \mbox{\hyperlink{odla__compute_8h_aedc3cc00aac00f6ea608c4968fc76178}{odla\_CreateComputation}}(\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}}* computation);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00118}00118 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00120}00120 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00126}00126 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00127}\mbox{\hyperlink{odla__compute_8h_a286d926ee5cfce72473ae1ed0d66569f}{00127}} \mbox{\hyperlink{odla__compute_8h_a286d926ee5cfce72473ae1ed0d66569f}{odla\_CompileComputation}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00128}00128                         \textcolor{keyword}{const} \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device, \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}}* executable);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00129}00129 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00131}00131 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00137}\mbox{\hyperlink{odla__compute_8h_ab3d3e07c70a34f076db9019c25446a60}{00137}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_ab3d3e07c70a34f076db9019c25446a60}{odla\_LoadComputation}}(}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00138}00138     \mbox{\hyperlink{structodla__resource__location}{odla\_resource\_location}} location, \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}}* computation);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00140}00140 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00146}\mbox{\hyperlink{odla__compute_8h_a7387aa465dabee32d35862c48ba5c4ac}{00146}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a7387aa465dabee32d35862c48ba5c4ac}{odla\_StoreComputation}}(}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00147}00147     \mbox{\hyperlink{structodla__resource__location}{odla\_resource\_location}} location, \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00148}00148 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00150}00150 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00155}00155 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00156}\mbox{\hyperlink{odla__compute_8h_a2d42e143efcda54765a4ed1b3b0c9986}{00156}} \mbox{\hyperlink{odla__compute_8h_a2d42e143efcda54765a4ed1b3b0c9986}{odla\_DifferentiateComputation}}(\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00157}00157 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00159}00159 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00167}\mbox{\hyperlink{odla__compute_8h_aa164c55ee48284ef1dc9766deeaa38c2}{00167}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_aa164c55ee48284ef1dc9766deeaa38c2}{odla\_ExecuteComputation}}(}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00168}00168     \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation, \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00169}00169     \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}{odla\_compute\_mode}} mode, \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00170}00170 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00172}00172 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00180}\mbox{\hyperlink{odla__compute_8h_a64cc20bfecd19538d92ec920407659d7}{00180}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a64cc20bfecd19538d92ec920407659d7}{odla\_AsyncExecuteComputation}}(}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00181}00181     \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation, \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00182}00182     \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}{odla\_compute\_mode}} mode, \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00183}00183 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00185}00185 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00191}00191 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00192}\mbox{\hyperlink{odla__compute_8h_ad35845886b1213cad24cbadcca335d51}{00192}} \mbox{\hyperlink{odla__compute_8h_ad35845886b1213cad24cbadcca335d51}{odla\_GetNumOfArgsFromComputation}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00193}00193                                  \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\_uint32}}* num\_args);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00194}00194 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00196}00196 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00203}00203 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00204}\mbox{\hyperlink{odla__compute_8h_a6177f78c953434aa831d0ed2ebecb5ae}{00204}} \mbox{\hyperlink{odla__compute_8h_a6177f78c953434aa831d0ed2ebecb5ae}{odla\_GetArgFromComputationByIdx}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00205}00205                                 \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\_uint32}} arg\_idx,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00206}00206                                 \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}}* arg\_value);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00207}00207 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00209}00209 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00215}00215 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00216}\mbox{\hyperlink{odla__compute_8h_add614986ba37efadbe9db5e34c3dd699}{00216}} \mbox{\hyperlink{odla__compute_8h_add614986ba37efadbe9db5e34c3dd699}{odla\_GetNumOfOutputsFromComputation}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00217}00217                                     \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\_uint32}}* num\_outputs);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00218}00218 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00220}00220 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00227}00227 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00228}\mbox{\hyperlink{odla__compute_8h_a397c756aca00881648ac68dfac7d509f}{00228}} \mbox{\hyperlink{odla__compute_8h_a397c756aca00881648ac68dfac7d509f}{odla\_GetOutputFromComputationByIdx}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00229}00229                                    \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\_uint32}} output\_idx,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00230}00230                                    \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}}* output\_value);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00231}00231 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00233}00233 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00238}00238 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00239}\mbox{\hyperlink{odla__compute_8h_afeac3628599c4806a3c1fe73d6fd6339}{00239}} \mbox{\hyperlink{odla__compute_8h_afeac3628599c4806a3c1fe73d6fd6339}{odla\_DestroyComputation}}(\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00240}00240 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00242}00242 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00249}\mbox{\hyperlink{odla__compute_8h_ade7c51b5da824e80505e95170f020bc9}{00249}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_ade7c51b5da824e80505e95170f020bc9}{odla\_SetComputationItem}}(}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00250}00250     \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation, \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\_item\_type}} type, \mbox{\hyperlink{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}{odla\_item\_value}} value);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00251}00251 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00253}00253 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00260}\mbox{\hyperlink{odla__compute_8h_a72a8b7da115456080955ae72069a0b61}{00260}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a72a8b7da115456080955ae72069a0b61}{odla\_SetValueShapeInfo}}(}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00261}00261     \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}} value, \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\_item\_type}} type, \mbox{\hyperlink{structodla__value__shape}{odla\_value\_shape}} value\_shape);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00262}00262 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00264}00264 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00271}\mbox{\hyperlink{odla__compute_8h_a8cd604dceff11feb3b63751c4bd53a61}{00271}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a8cd604dceff11feb3b63751c4bd53a61}{odla\_SetRuntimeShape}}(}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00272}00272     \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}} value, \mbox{\hyperlink{structodla__value__shape}{odla\_value\_shape}} value\_shape);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00273}00273 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00275}00275 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00282}\mbox{\hyperlink{odla__compute_8h_ab24b288d9eae9cc7069ba225ccd39ce2}{00282}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_ab24b288d9eae9cc7069ba225ccd39ce2}{odla\_GetRuntimeShape}}(}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00283}00283     \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}} value, \mbox{\hyperlink{structodla__value__shape}{odla\_value\_shape}}* value\_shape\_ptr);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00284}00284 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00286}00286 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00291}00291 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00292}\mbox{\hyperlink{odla__compute_8h_ac065f191ce3c6eabe42ff3079e83c4d9}{00292}} \mbox{\hyperlink{odla__compute_8h_ac065f191ce3c6eabe42ff3079e83c4d9}{odla\_CreateConstantsArray}}(\mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\_constants\_array}}* constants\_array);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00293}00293 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00295}00295 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00301}\mbox{\hyperlink{odla__compute_8h_a73b75c0a8eb2e85b786b0bd555bcdafc}{00301}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a73b75c0a8eb2e85b786b0bd555bcdafc}{odla\_LoadConstantsArray}}(}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00302}00302     \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\_char}}* file\_name, \mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\_constants\_array}}* constants\_array);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00303}00303 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00305}00305 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00311}\mbox{\hyperlink{odla__compute_8h_a2b55a5bd868ca8bf533f918a87530f37}{00311}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a2b55a5bd868ca8bf533f918a87530f37}{odla\_StoreConstantsArray}}(}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00312}00312     \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\_char}}* file\_name, \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\_constants\_array}} constants\_array);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00313}00313 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00315}00315 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00320}00320 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00321}\mbox{\hyperlink{odla__compute_8h_a93dd6a6215574b2ace5be8d698c87637}{00321}} \mbox{\hyperlink{odla__compute_8h_a93dd6a6215574b2ace5be8d698c87637}{odla\_DestroyConstantsArray}}(\mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\_constants\_array}} constants\_array);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00322}00322 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00324}00324 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00332}00332 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00333}\mbox{\hyperlink{odla__compute_8h_a750a651dc6a53236168b524665435bbb}{00333}} \mbox{\hyperlink{odla__compute_8h_a750a651dc6a53236168b524665435bbb}{odla\_LoadExecutable}}(\mbox{\hyperlink{structodla__resource__location}{odla\_resource\_location}} location, \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00334}00334                     \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}}* executable);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00335}00335 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00051}00051   ODLA\_DYNAMIC\_VALUE,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00052}00052   ODLA\_MIN\_VALUE,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00053}00053   ODLA\_MAX\_VALUE,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00054}00054   ODLA\_OPT\_VALUE,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00055}00055   ODLA\_BF16\_MODE,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00056}00056   ODLA\_FP16\_MODE,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00057}00057   ODLA\_USE\_SIM\_MODE,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00058}00058   ODLA\_PROCESSOR\_NUM,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00059}00059   ODLA\_BATCHES\_PER\_STEP,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00060}00060   ODLA\_USE\_DATA\_TYPE,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00061}00061   ODLA\_LOAD\_ENGINE\_MODE,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00062}00062   ODLA\_USE\_DLA\_CORE,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00063}00063   ODLA\_QUANT\_TABLE,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00064}00064   ODLA\_QUANT\_TABLE\_SIZE,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00065}00065   ODLA\_AGGREGATE\_OPS,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00066}00066   ODLA\_ENABLE\_ENGINE\_CACHE,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00067}00067   ODLA\_CACHE\_DIR,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00068}00068   ODLA\_ASYNC\_CALLBACK\_FUNC,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00069}00069   ODLA\_ASYNC\_CALLBACK\_ARG,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00070}00070 \} \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\_item\_type}};}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00071}00071 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00073}\mbox{\hyperlink{odla__compute_8h_acdd4e76bab81ce3f41e2dc909c0051bd}{00073}} \textcolor{keyword}{typedef} \textcolor{keyword}{enum} \{}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00074}00074   BF16\_DISABLE,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00075}00075   BF16\_ACCURACY\_MODE,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00076}00076   BF16\_PERFORMACE\_MODE,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00077}00077   BF16\_AUTO\_MODE,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00078}00078 \} \mbox{\hyperlink{odla__compute_8h_acdd4e76bab81ce3f41e2dc909c0051bd}{odla\_bf16\_mode}};}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00079}00079 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00081}\mbox{\hyperlink{odla__compute_8h_a621c9b564a8583ddf497985a7c808b93}{00081}} \textcolor{keyword}{typedef} \textcolor{keyword}{enum} \{}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00082}00082   ODLA\_LOCATION\_PATH,   \textcolor{comment}{// string of file path}}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00083}00083   ODLA\_LOCATION\_MEMORY, \textcolor{comment}{// memory address of a buffer}}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00084}00084   ODLA\_LOCATION\_URI,    \textcolor{comment}{// string of URI}}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00085}00085 \} \mbox{\hyperlink{odla__compute_8h_a621c9b564a8583ddf497985a7c808b93}{odla\_resource\_location\_type}};}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00086}00086 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00088}00088 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00093}\mbox{\hyperlink{structodla__resource__location}{00093}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\{}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00094}00094   \mbox{\hyperlink{odla__compute_8h_a621c9b564a8583ddf497985a7c808b93}{odla\_resource\_location\_type}} location\_type;}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00095}00095   \textcolor{keyword}{const} \textcolor{keywordtype}{void}* location;}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00096}00096   \mbox{\hyperlink{odla__common_8h_acac65b5a20353d7f068ca61c6ab7569c}{odla\_size\_t}} size;}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00097}00097 \} \mbox{\hyperlink{structodla__resource__location}{odla\_resource\_location}};}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00098}00098 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00100}\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{00100}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_computation* \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}};}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00101}00101 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00103}\mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{00103}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_executable* \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}};}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00104}00104 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00106}\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{00106}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_context* \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}};}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00107}00107 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00109}\mbox{\hyperlink{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}{00109}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_item\_value* \mbox{\hyperlink{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}{odla\_item\_value}};}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00110}00110 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00112}\mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{00112}} \textcolor{keyword}{typedef} \textcolor{keyword}{struct }\_odla\_constants\_array* \mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\_constants\_array}};}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00113}00113 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00115}00115 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00120}00120 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00121}\mbox{\hyperlink{odla__compute_8h_aedc3cc00aac00f6ea608c4968fc76178}{00121}} \mbox{\hyperlink{odla__compute_8h_aedc3cc00aac00f6ea608c4968fc76178}{odla\_CreateComputation}}(\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}}* computation);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00122}00122 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00124}00124 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00130}00130 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00131}\mbox{\hyperlink{odla__compute_8h_a286d926ee5cfce72473ae1ed0d66569f}{00131}} \mbox{\hyperlink{odla__compute_8h_a286d926ee5cfce72473ae1ed0d66569f}{odla\_CompileComputation}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00132}00132                         \textcolor{keyword}{const} \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device, \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}}* executable);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00133}00133 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00135}00135 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00141}\mbox{\hyperlink{odla__compute_8h_ab3d3e07c70a34f076db9019c25446a60}{00141}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_ab3d3e07c70a34f076db9019c25446a60}{odla\_LoadComputation}}(}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00142}00142     \mbox{\hyperlink{structodla__resource__location}{odla\_resource\_location}} location, \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}}* computation);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00144}00144 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00150}\mbox{\hyperlink{odla__compute_8h_a7387aa465dabee32d35862c48ba5c4ac}{00150}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a7387aa465dabee32d35862c48ba5c4ac}{odla\_StoreComputation}}(}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00151}00151     \mbox{\hyperlink{structodla__resource__location}{odla\_resource\_location}} location, \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00152}00152 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00154}00154 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00159}00159 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00160}\mbox{\hyperlink{odla__compute_8h_a2d42e143efcda54765a4ed1b3b0c9986}{00160}} \mbox{\hyperlink{odla__compute_8h_a2d42e143efcda54765a4ed1b3b0c9986}{odla\_DifferentiateComputation}}(\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00161}00161 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00163}00163 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00171}\mbox{\hyperlink{odla__compute_8h_aa164c55ee48284ef1dc9766deeaa38c2}{00171}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_aa164c55ee48284ef1dc9766deeaa38c2}{odla\_ExecuteComputation}}(}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00172}00172     \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation, \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00173}00173     \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}{odla\_compute\_mode}} mode, \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00174}00174 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00176}00176 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00184}\mbox{\hyperlink{odla__compute_8h_a64cc20bfecd19538d92ec920407659d7}{00184}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a64cc20bfecd19538d92ec920407659d7}{odla\_AsyncExecuteComputation}}(}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00185}00185     \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation, \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00186}00186     \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}{odla\_compute\_mode}} mode, \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00187}00187 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00189}00189 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00195}00195 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00196}\mbox{\hyperlink{odla__compute_8h_ad35845886b1213cad24cbadcca335d51}{00196}} \mbox{\hyperlink{odla__compute_8h_ad35845886b1213cad24cbadcca335d51}{odla\_GetNumOfArgsFromComputation}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00197}00197                                  \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\_uint32}}* num\_args);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00198}00198 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00200}00200 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00207}00207 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00208}\mbox{\hyperlink{odla__compute_8h_a6177f78c953434aa831d0ed2ebecb5ae}{00208}} \mbox{\hyperlink{odla__compute_8h_a6177f78c953434aa831d0ed2ebecb5ae}{odla\_GetArgFromComputationByIdx}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00209}00209                                 \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\_uint32}} arg\_idx,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00210}00210                                 \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}}* arg\_value);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00211}00211 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00213}00213 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00219}00219 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00220}\mbox{\hyperlink{odla__compute_8h_add614986ba37efadbe9db5e34c3dd699}{00220}} \mbox{\hyperlink{odla__compute_8h_add614986ba37efadbe9db5e34c3dd699}{odla\_GetNumOfOutputsFromComputation}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00221}00221                                     \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\_uint32}}* num\_outputs);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00222}00222 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00224}00224 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00231}00231 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00232}\mbox{\hyperlink{odla__compute_8h_a397c756aca00881648ac68dfac7d509f}{00232}} \mbox{\hyperlink{odla__compute_8h_a397c756aca00881648ac68dfac7d509f}{odla\_GetOutputFromComputationByIdx}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00233}00233                                    \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\_uint32}} output\_idx,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00234}00234                                    \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}}* output\_value);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00235}00235 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00237}00237 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00242}00242 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00243}\mbox{\hyperlink{odla__compute_8h_afeac3628599c4806a3c1fe73d6fd6339}{00243}} \mbox{\hyperlink{odla__compute_8h_afeac3628599c4806a3c1fe73d6fd6339}{odla\_DestroyComputation}}(\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00244}00244 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00246}00246 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00253}\mbox{\hyperlink{odla__compute_8h_ade7c51b5da824e80505e95170f020bc9}{00253}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_ade7c51b5da824e80505e95170f020bc9}{odla\_SetComputationItem}}(}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00254}00254     \mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\_computation}} computation, \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\_item\_type}} type, \mbox{\hyperlink{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}{odla\_item\_value}} value);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00255}00255 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00257}00257 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00264}\mbox{\hyperlink{odla__compute_8h_a72a8b7da115456080955ae72069a0b61}{00264}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a72a8b7da115456080955ae72069a0b61}{odla\_SetValueShapeInfo}}(}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00265}00265     \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}} value, \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\_item\_type}} type, \mbox{\hyperlink{structodla__value__shape}{odla\_value\_shape}} value\_shape);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00266}00266 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00268}00268 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00275}\mbox{\hyperlink{odla__compute_8h_a13bc361e47f4139f786cde53e3d036a2}{00275}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a13bc361e47f4139f786cde53e3d036a2}{odla\_SetInputValueInfo}}(}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00276}00276     \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}} value, \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\_item\_type}} type, \mbox{\hyperlink{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}{odla\_item\_value}} value\_input);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00277}00277 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00279}00279 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00286}\mbox{\hyperlink{odla__compute_8h_a8cd604dceff11feb3b63751c4bd53a61}{00286}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a8cd604dceff11feb3b63751c4bd53a61}{odla\_SetRuntimeShape}}(}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00287}00287     \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}} value, \mbox{\hyperlink{structodla__value__shape}{odla\_value\_shape}} value\_shape);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00288}00288 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00290}00290 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00297}\mbox{\hyperlink{odla__compute_8h_ab24b288d9eae9cc7069ba225ccd39ce2}{00297}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_ab24b288d9eae9cc7069ba225ccd39ce2}{odla\_GetRuntimeShape}}(}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00298}00298     \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}} value, \mbox{\hyperlink{structodla__value__shape}{odla\_value\_shape}}* value\_shape\_ptr);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00299}00299 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00301}00301 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00306}00306 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00307}\mbox{\hyperlink{odla__compute_8h_ac065f191ce3c6eabe42ff3079e83c4d9}{00307}} \mbox{\hyperlink{odla__compute_8h_ac065f191ce3c6eabe42ff3079e83c4d9}{odla\_CreateConstantsArray}}(\mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\_constants\_array}}* constants\_array);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00308}00308 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00310}00310 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00316}\mbox{\hyperlink{odla__compute_8h_a73b75c0a8eb2e85b786b0bd555bcdafc}{00316}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a73b75c0a8eb2e85b786b0bd555bcdafc}{odla\_LoadConstantsArray}}(}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00317}00317     \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\_char}}* file\_name, \mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\_constants\_array}}* constants\_array);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00318}00318 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00320}00320 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00326}\mbox{\hyperlink{odla__compute_8h_a2b55a5bd868ca8bf533f918a87530f37}{00326}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a2b55a5bd868ca8bf533f918a87530f37}{odla\_StoreConstantsArray}}(}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00327}00327     \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_a70ab5c97f8e2150ab1c252e6fa33d38b}{odla\_char}}* file\_name, \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\_constants\_array}} constants\_array);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00328}00328 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00330}00330 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00335}00335 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00336}\mbox{\hyperlink{odla__compute_8h_a93dd6a6215574b2ace5be8d698c87637}{00336}} \mbox{\hyperlink{odla__compute_8h_a93dd6a6215574b2ace5be8d698c87637}{odla\_DestroyConstantsArray}}(\mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\_constants\_array}} constants\_array);}
 \DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00337}00337 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00343}00343 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00344}\mbox{\hyperlink{odla__compute_8h_a83cd0160f48a08b2d52bfd054b0ebadb}{00344}} \mbox{\hyperlink{odla__compute_8h_a83cd0160f48a08b2d52bfd054b0ebadb}{odla\_StoreExecutable}}(\mbox{\hyperlink{structodla__resource__location}{odla\_resource\_location}}, \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}} executable);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00345}00345 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00347}00347 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00353}00353 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00354}\mbox{\hyperlink{odla__compute_8h_a224eba8f1d524aafd6256949930e2971}{00354}} \mbox{\hyperlink{odla__compute_8h_a224eba8f1d524aafd6256949930e2971}{odla\_LaunchExecutable}}(\mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}} executable, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00355}00355 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00357}00357 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00366}\mbox{\hyperlink{odla__compute_8h_a28a46a4f653e1a78f061055dbe4b1254}{00366}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a28a46a4f653e1a78f061055dbe4b1254}{odla\_AsyncLaunchExecutable}}(}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00367}00367     \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}} executable,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00368}00368     \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\_constants\_array}} constants\_array, \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00369}00369     \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}{odla\_compute\_mode}} mode, \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00339}00339 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00347}00347 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00348}\mbox{\hyperlink{odla__compute_8h_a750a651dc6a53236168b524665435bbb}{00348}} \mbox{\hyperlink{odla__compute_8h_a750a651dc6a53236168b524665435bbb}{odla\_LoadExecutable}}(\mbox{\hyperlink{structodla__resource__location}{odla\_resource\_location}} location, \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00349}00349                     \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}}* executable);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00350}00350 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00352}00352 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00358}00358 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00359}\mbox{\hyperlink{odla__compute_8h_a83cd0160f48a08b2d52bfd054b0ebadb}{00359}} \mbox{\hyperlink{odla__compute_8h_a83cd0160f48a08b2d52bfd054b0ebadb}{odla\_StoreExecutable}}(\mbox{\hyperlink{structodla__resource__location}{odla\_resource\_location}}, \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}} executable);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00360}00360 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00362}00362 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00368}00368 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00369}\mbox{\hyperlink{odla__compute_8h_a224eba8f1d524aafd6256949930e2971}{00369}} \mbox{\hyperlink{odla__compute_8h_a224eba8f1d524aafd6256949930e2971}{odla\_LaunchExecutable}}(\mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}} executable, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context);}
 \DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00370}00370 }
 \DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00372}00372 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00378}00378 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00379}\mbox{\hyperlink{odla__compute_8h_a782215a68326098002d1d0cb8d5acaee}{00379}} \mbox{\hyperlink{odla__compute_8h_a782215a68326098002d1d0cb8d5acaee}{odla\_GetNumOfArgsFromExecutable}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}} executable,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00380}00380                                 \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\_uint32}}* num\_args);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00381}00381 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00383}00383 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00390}\mbox{\hyperlink{odla__compute_8h_a0da929e3f4896b9939b2f8cd88e2da6b}{00390}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a0da929e3f4896b9939b2f8cd88e2da6b}{odla\_GetArgFromExecutableByIdx}}(}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00391}00391     \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}} executable, \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\_uint32}} arg\_idx,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00392}00392     \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}}* arg\_value);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00393}00393 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00395}00395 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00401}00401 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00402}\mbox{\hyperlink{odla__compute_8h_a6ed12a71e0c2443208e3c209007c68cc}{00402}} \mbox{\hyperlink{odla__compute_8h_a6ed12a71e0c2443208e3c209007c68cc}{odla\_GetNumOfOutputsFromExecutable}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}} executable,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00403}00403                                    \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\_uint32}}* num\_outputs);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00404}00404 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00406}00406 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00413}00413 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00414}\mbox{\hyperlink{odla__compute_8h_ac302a51f5938bde00bed0524de7745af}{00414}} \mbox{\hyperlink{odla__compute_8h_ac302a51f5938bde00bed0524de7745af}{odla\_GetOutputFromExecutableByIdx}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}} executable,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00415}00415                                   \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\_uint32}} output\_idx,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00416}00416                                   \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}}* output\_value);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00417}00417 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00381}\mbox{\hyperlink{odla__compute_8h_a28a46a4f653e1a78f061055dbe4b1254}{00381}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a28a46a4f653e1a78f061055dbe4b1254}{odla\_AsyncLaunchExecutable}}(}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00382}00382     \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}} executable,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00383}00383     \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}{odla\_constants\_array}} constants\_array, \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00384}00384     \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}{odla\_compute\_mode}} mode, \mbox{\hyperlink{odla__device_8h_aaeace6ca8143dfbca7fbc71736b0c2ae}{odla\_device}} device);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00385}00385 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00387}00387 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00393}00393 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00394}\mbox{\hyperlink{odla__compute_8h_a782215a68326098002d1d0cb8d5acaee}{00394}} \mbox{\hyperlink{odla__compute_8h_a782215a68326098002d1d0cb8d5acaee}{odla\_GetNumOfArgsFromExecutable}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}} executable,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00395}00395                                 \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\_uint32}}* num\_args);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00396}00396 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00398}00398 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00405}\mbox{\hyperlink{odla__compute_8h_a0da929e3f4896b9939b2f8cd88e2da6b}{00405}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a0da929e3f4896b9939b2f8cd88e2da6b}{odla\_GetArgFromExecutableByIdx}}(}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00406}00406     \textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}} executable, \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\_uint32}} arg\_idx,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00407}00407     \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}}* arg\_value);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00408}00408 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00410}00410 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00416}00416 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00417}\mbox{\hyperlink{odla__compute_8h_a6ed12a71e0c2443208e3c209007c68cc}{00417}} \mbox{\hyperlink{odla__compute_8h_a6ed12a71e0c2443208e3c209007c68cc}{odla\_GetNumOfOutputsFromExecutable}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}} executable,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00418}00418                                    \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\_uint32}}* num\_outputs);}
 \DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00419}00419 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00424}00424 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00425}\mbox{\hyperlink{odla__compute_8h_a810e442760978d8b91bb3812550810a5}{00425}} \mbox{\hyperlink{odla__compute_8h_a810e442760978d8b91bb3812550810a5}{odla\_DestroyExecutable}}(\mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}} executable);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00426}00426 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00428}00428 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00433}00433 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00434}\mbox{\hyperlink{odla__compute_8h_aba5b33f631d860ffe2ef96e4966aa7cf}{00434}} \mbox{\hyperlink{odla__compute_8h_aba5b33f631d860ffe2ef96e4966aa7cf}{odla\_CreateContext}}(\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}}* context);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00435}00435 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00437}00437 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00444}\mbox{\hyperlink{odla__compute_8h_a7481cc6c3d147e5538df0ae20816619d}{00444}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a7481cc6c3d147e5538df0ae20816619d}{odla\_SetContextItem}}(}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00445}00445     \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context, \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\_item\_type}} type, \mbox{\hyperlink{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}{odla\_item\_value}} value);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00446}00446 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00448}00448 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00453}00453 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00454}\mbox{\hyperlink{odla__compute_8h_acb4beb721ca073e03d197671e5a6064d}{00454}} \mbox{\hyperlink{odla__compute_8h_acb4beb721ca073e03d197671e5a6064d}{odla\_DestroyContext}}(\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00455}00455 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00457}00457 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00466}\mbox{\hyperlink{odla__compute_8h_aa52b7810d7b35e1ab9c0bcbd290b4822}{00466}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_aa52b7810d7b35e1ab9c0bcbd290b4822}{odla\_BindToArgument}}(}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00467}00467     \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}} value, \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\_void}}* data\_ptr, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00468}00468 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00421}00421 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00428}00428 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00429}\mbox{\hyperlink{odla__compute_8h_ac302a51f5938bde00bed0524de7745af}{00429}} \mbox{\hyperlink{odla__compute_8h_ac302a51f5938bde00bed0524de7745af}{odla\_GetOutputFromExecutableByIdx}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}} executable,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00430}00430                                   \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_a6b80c6921b4b4e20c95df868e20c8afd}{odla\_uint32}} output\_idx,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00431}00431                                   \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}}* output\_value);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00432}00432 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00434}00434 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00439}00439 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00440}\mbox{\hyperlink{odla__compute_8h_a810e442760978d8b91bb3812550810a5}{00440}} \mbox{\hyperlink{odla__compute_8h_a810e442760978d8b91bb3812550810a5}{odla\_DestroyExecutable}}(\mbox{\hyperlink{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}{odla\_executable}} executable);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00441}00441 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00443}00443 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00448}00448 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00449}\mbox{\hyperlink{odla__compute_8h_aba5b33f631d860ffe2ef96e4966aa7cf}{00449}} \mbox{\hyperlink{odla__compute_8h_aba5b33f631d860ffe2ef96e4966aa7cf}{odla\_CreateContext}}(\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}}* context);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00450}00450 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00452}00452 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00459}\mbox{\hyperlink{odla__compute_8h_a7481cc6c3d147e5538df0ae20816619d}{00459}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a7481cc6c3d147e5538df0ae20816619d}{odla\_SetContextItem}}(}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00460}00460     \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context, \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\_item\_type}} type, \mbox{\hyperlink{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}{odla\_item\_value}} value);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00461}00461 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00463}00463 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00468}00468 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00469}\mbox{\hyperlink{odla__compute_8h_acb4beb721ca073e03d197671e5a6064d}{00469}} \mbox{\hyperlink{odla__compute_8h_acb4beb721ca073e03d197671e5a6064d}{odla\_DestroyContext}}(\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context);}
 \DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00470}00470 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00479}00479 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00480}\mbox{\hyperlink{odla__compute_8h_ad12ec50954c76007f319fa0cea4425d9}{00480}} \mbox{\hyperlink{odla__compute_8h_ad12ec50954c76007f319fa0cea4425d9}{odla\_BindToArgumentById}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\_value\_id}} value\_id, \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\_void}}* data\_ptr,}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00481}00481                         \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00482}00482 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00483}00483 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL odla\_BindValueToArgumentById(}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00484}00484     \textcolor{keyword}{const} \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\_value\_id}} value\_id, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}} data, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00472}00472 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00481}\mbox{\hyperlink{odla__compute_8h_aa52b7810d7b35e1ab9c0bcbd290b4822}{00481}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_aa52b7810d7b35e1ab9c0bcbd290b4822}{odla\_BindToArgument}}(}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00482}00482     \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}} value, \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\_void}}* data\_ptr, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00483}00483 }
 \DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00485}00485 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00487}00487 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00497}00497 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00498}\mbox{\hyperlink{odla__compute_8h_ac6e884a1708ef8ce1fcfb02fe71dc063}{00498}} \mbox{\hyperlink{odla__compute_8h_ac6e884a1708ef8ce1fcfb02fe71dc063}{odla\_BindToOutput}}(\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}} value, \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\_void}}* data\_ptr, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00499}00499 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00501}00501 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00511}\mbox{\hyperlink{odla__compute_8h_a781388a236372f0f59d64f71660230eb}{00511}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a781388a236372f0f59d64f71660230eb}{odla\_BindToOutputById}}(}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00512}00512     \textcolor{keyword}{const} \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\_value\_id}} value\_id, \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\_void}}* data\_ptr, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context);}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00513}00513 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00514}00514 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL odla\_BindValueToOutputById(}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00515}00515     \textcolor{keyword}{const} \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\_value\_id}} value\_id, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}} data, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00494}00494 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00495}\mbox{\hyperlink{odla__compute_8h_ad12ec50954c76007f319fa0cea4425d9}{00495}} \mbox{\hyperlink{odla__compute_8h_ad12ec50954c76007f319fa0cea4425d9}{odla\_BindToArgumentById}}(\textcolor{keyword}{const} \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\_value\_id}} value\_id, \textcolor{keyword}{const} \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\_void}}* data\_ptr,}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00496}00496                         \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00497}00497 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00498}00498 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL odla\_BindValueToArgumentById(}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00499}00499     \textcolor{keyword}{const} \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\_value\_id}} value\_id, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}} data, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00500}00500 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00502}00502 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00512}00512 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00513}\mbox{\hyperlink{odla__compute_8h_ac6e884a1708ef8ce1fcfb02fe71dc063}{00513}} \mbox{\hyperlink{odla__compute_8h_ac6e884a1708ef8ce1fcfb02fe71dc063}{odla\_BindToOutput}}(\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}} value, \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\_void}}* data\_ptr, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00514}00514 }
 \DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00516}00516 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00517}00517 \textcolor{preprocessor}{\#ifdef \_\_cplusplus}}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00518}00518 \} \textcolor{comment}{// C extern}}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00519}00519 \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00520}00520 }
-\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00521}00521 \textcolor{preprocessor}{\#endif }\textcolor{comment}{// \_ODLA\_COMPUTE\_H\_}}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00526}\mbox{\hyperlink{odla__compute_8h_a781388a236372f0f59d64f71660230eb}{00526}} \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL \mbox{\hyperlink{odla__compute_8h_a781388a236372f0f59d64f71660230eb}{odla\_BindToOutputById}}(}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00527}00527     \textcolor{keyword}{const} \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\_value\_id}} value\_id, \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\_void}}* data\_ptr, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00528}00528 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00529}00529 \textcolor{keyword}{extern} \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\_API\_EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\_status}} ODLA\_API\_CALL odla\_BindValueToOutputById(}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00530}00530     \textcolor{keyword}{const} \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\_value\_id}} value\_id, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\_value}} data, \mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\_context}} context);}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00531}00531 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00532}00532 \textcolor{preprocessor}{\#ifdef \_\_cplusplus}}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00533}00533 \} \textcolor{comment}{// C extern}}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00534}00534 \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00535}00535 }
+\DoxyCodeLine{\Hypertarget{odla__compute_8h_source_l00536}00536 \textcolor{preprocessor}{\#endif }\textcolor{comment}{// \_ODLA\_COMPUTE\_H\_}}
 
 \end{DoxyCode}

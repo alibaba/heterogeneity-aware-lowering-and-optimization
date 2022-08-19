@@ -38,6 +38,11 @@ enum \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\+
 , {\bfseries ODLA\+\_\+\+MAX\+\_\+\+SHAPE}
 , \newline
 {\bfseries ODLA\+\_\+\+OPT\+\_\+\+SHAPE}
+, {\bfseries ODLA\+\_\+\+DYNAMIC\+\_\+\+VALUE}
+, {\bfseries ODLA\+\_\+\+MIN\+\_\+\+VALUE}
+, {\bfseries ODLA\+\_\+\+MAX\+\_\+\+VALUE}
+, \newline
+{\bfseries ODLA\+\_\+\+OPT\+\_\+\+VALUE}
 , {\bfseries ODLA\+\_\+\+BF16\+\_\+\+MODE}
 , {\bfseries ODLA\+\_\+\+FP16\+\_\+\+MODE}
 , {\bfseries ODLA\+\_\+\+USE\+\_\+\+SIM\+\_\+\+MODE}
@@ -99,6 +104,8 @@ enum \mbox{\hyperlink{odla__compute_8h_a621c9b564a8583ddf497985a7c808b93}{odla\+
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__compute_8h_ade7c51b5da824e80505e95170f020bc9}{odla\+\_\+\+Set\+Computation\+Item}} (\mbox{\hyperlink{odla__compute_8h_a7906dc5bd415fd126df428a44cfc660e}{odla\+\_\+computation}} computation, \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\+\_\+item\+\_\+type}} type, \mbox{\hyperlink{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}{odla\+\_\+item\+\_\+value}} value)
 \begin{DoxyCompactList}\small\item\em Set the computation with a property item. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__compute_8h_a72a8b7da115456080955ae72069a0b61}{odla\+\_\+\+Set\+Value\+Shape\+Info}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} value, \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\+\_\+item\+\_\+type}} type, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} value\+\_\+shape)
+\begin{DoxyCompactList}\small\item\em Set the computation arguments shape info with a property item. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__compute_8h_a13bc361e47f4139f786cde53e3d036a2}{odla\+\_\+\+Set\+Input\+Value\+Info}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} value, \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\+\_\+item\+\_\+type}} type, \mbox{\hyperlink{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}{odla\+\_\+item\+\_\+value}} value\+\_\+input)
 \begin{DoxyCompactList}\small\item\em Set the computation arguments shape info with a property item. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__compute_8h_a8cd604dceff11feb3b63751c4bd53a61}{odla\+\_\+\+Set\+Runtime\+Shape}} (\mbox{\hyperlink{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}{odla\+\_\+context}} context, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} value, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} value\+\_\+shape)
 \begin{DoxyCompactList}\small\item\em Set the context runtime shapes to an odla\+\_\+value. \end{DoxyCompactList}\item 
@@ -172,7 +179,7 @@ Computation object.
 
 
 
-Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00096}{96}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
+Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00100}{100}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
 
 \mbox{\Hypertarget{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}\label{odla__compute_8h_aec5edf954a98e250d6c1744f4e5ba672}} 
 \index{odla\_compute.h@{odla\_compute.h}!odla\_constants\_array@{odla\_constants\_array}}
@@ -186,7 +193,7 @@ Constants array object.
 
 
 
-Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00108}{108}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
+Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00112}{112}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
 
 \mbox{\Hypertarget{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}\label{odla__compute_8h_a6ee1db476eaea6347d96e1e0ab7e0ad7}} 
 \index{odla\_compute.h@{odla\_compute.h}!odla\_context@{odla\_context}}
@@ -200,7 +207,7 @@ Context object.
 
 
 
-Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00102}{102}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
+Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00106}{106}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
 
 \mbox{\Hypertarget{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}\label{odla__compute_8h_a58a9f95845de8c2dcee9df9efd983aaf}} 
 \index{odla\_compute.h@{odla\_compute.h}!odla\_executable@{odla\_executable}}
@@ -214,7 +221,7 @@ Executable object.
 
 
 
-Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00099}{99}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
+Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00103}{103}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
 
 \mbox{\Hypertarget{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}\label{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}} 
 \index{odla\_compute.h@{odla\_compute.h}!odla\_item\_value@{odla\_item\_value}}
@@ -228,7 +235,7 @@ Property item value object.
 
 
 
-Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00105}{105}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
+Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00109}{109}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
 
 
 
@@ -245,16 +252,16 @@ BF16 mode.
 
 
 
-Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00069}{69}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
+Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00073}{73}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
 
 
 \begin{DoxyCode}{0}
-\DoxyCodeLine{00069              \{}
-\DoxyCodeLine{00070   BF16\_DISABLE,}
-\DoxyCodeLine{00071   BF16\_ACCURACY\_MODE,}
-\DoxyCodeLine{00072   BF16\_PERFORMACE\_MODE,}
-\DoxyCodeLine{00073   BF16\_AUTO\_MODE,}
-\DoxyCodeLine{00074 \} \mbox{\hyperlink{odla__compute_8h_acdd4e76bab81ce3f41e2dc909c0051bd}{odla\_bf16\_mode}};}
+\DoxyCodeLine{00073              \{}
+\DoxyCodeLine{00074   BF16\_DISABLE,}
+\DoxyCodeLine{00075   BF16\_ACCURACY\_MODE,}
+\DoxyCodeLine{00076   BF16\_PERFORMACE\_MODE,}
+\DoxyCodeLine{00077   BF16\_AUTO\_MODE,}
+\DoxyCodeLine{00078 \} \mbox{\hyperlink{odla__compute_8h_acdd4e76bab81ce3f41e2dc909c0051bd}{odla\_bf16\_mode}};}
 
 \end{DoxyCode}
 \mbox{\Hypertarget{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}\label{odla__compute_8h_a5cf465369118fbb3edf6d76f28616517}} 
@@ -306,22 +313,26 @@ Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00041}{41}} of file
 \DoxyCodeLine{00048   ODLA\_MIN\_SHAPE,}
 \DoxyCodeLine{00049   ODLA\_MAX\_SHAPE,}
 \DoxyCodeLine{00050   ODLA\_OPT\_SHAPE,}
-\DoxyCodeLine{00051   ODLA\_BF16\_MODE,}
-\DoxyCodeLine{00052   ODLA\_FP16\_MODE,}
-\DoxyCodeLine{00053   ODLA\_USE\_SIM\_MODE,}
-\DoxyCodeLine{00054   ODLA\_PROCESSOR\_NUM,}
-\DoxyCodeLine{00055   ODLA\_BATCHES\_PER\_STEP,}
-\DoxyCodeLine{00056   ODLA\_USE\_DATA\_TYPE,}
-\DoxyCodeLine{00057   ODLA\_LOAD\_ENGINE\_MODE,}
-\DoxyCodeLine{00058   ODLA\_USE\_DLA\_CORE,}
-\DoxyCodeLine{00059   ODLA\_QUANT\_TABLE,}
-\DoxyCodeLine{00060   ODLA\_QUANT\_TABLE\_SIZE,}
-\DoxyCodeLine{00061   ODLA\_AGGREGATE\_OPS,}
-\DoxyCodeLine{00062   ODLA\_ENABLE\_ENGINE\_CACHE,}
-\DoxyCodeLine{00063   ODLA\_CACHE\_DIR,}
-\DoxyCodeLine{00064   ODLA\_ASYNC\_CALLBACK\_FUNC,}
-\DoxyCodeLine{00065   ODLA\_ASYNC\_CALLBACK\_ARG,}
-\DoxyCodeLine{00066 \} \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\_item\_type}};}
+\DoxyCodeLine{00051   ODLA\_DYNAMIC\_VALUE,}
+\DoxyCodeLine{00052   ODLA\_MIN\_VALUE,}
+\DoxyCodeLine{00053   ODLA\_MAX\_VALUE,}
+\DoxyCodeLine{00054   ODLA\_OPT\_VALUE,}
+\DoxyCodeLine{00055   ODLA\_BF16\_MODE,}
+\DoxyCodeLine{00056   ODLA\_FP16\_MODE,}
+\DoxyCodeLine{00057   ODLA\_USE\_SIM\_MODE,}
+\DoxyCodeLine{00058   ODLA\_PROCESSOR\_NUM,}
+\DoxyCodeLine{00059   ODLA\_BATCHES\_PER\_STEP,}
+\DoxyCodeLine{00060   ODLA\_USE\_DATA\_TYPE,}
+\DoxyCodeLine{00061   ODLA\_LOAD\_ENGINE\_MODE,}
+\DoxyCodeLine{00062   ODLA\_USE\_DLA\_CORE,}
+\DoxyCodeLine{00063   ODLA\_QUANT\_TABLE,}
+\DoxyCodeLine{00064   ODLA\_QUANT\_TABLE\_SIZE,}
+\DoxyCodeLine{00065   ODLA\_AGGREGATE\_OPS,}
+\DoxyCodeLine{00066   ODLA\_ENABLE\_ENGINE\_CACHE,}
+\DoxyCodeLine{00067   ODLA\_CACHE\_DIR,}
+\DoxyCodeLine{00068   ODLA\_ASYNC\_CALLBACK\_FUNC,}
+\DoxyCodeLine{00069   ODLA\_ASYNC\_CALLBACK\_ARG,}
+\DoxyCodeLine{00070 \} \mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\_item\_type}};}
 
 \end{DoxyCode}
 \mbox{\Hypertarget{odla__compute_8h_a621c9b564a8583ddf497985a7c808b93}\label{odla__compute_8h_a621c9b564a8583ddf497985a7c808b93}} 
@@ -336,15 +347,15 @@ Type of resource location.
 
 
 
-Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00077}{77}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
+Definition at line \mbox{\hyperlink{odla__compute_8h_source_l00081}{81}} of file \mbox{\hyperlink{odla__compute_8h_source}{odla\+\_\+compute.\+h}}.
 
 
 \begin{DoxyCode}{0}
-\DoxyCodeLine{00077              \{}
-\DoxyCodeLine{00078   ODLA\_LOCATION\_PATH,   \textcolor{comment}{// string of file path}}
-\DoxyCodeLine{00079   ODLA\_LOCATION\_MEMORY, \textcolor{comment}{// memory address of a buffer}}
-\DoxyCodeLine{00080   ODLA\_LOCATION\_URI,    \textcolor{comment}{// string of URI}}
-\DoxyCodeLine{00081 \} \mbox{\hyperlink{odla__compute_8h_a621c9b564a8583ddf497985a7c808b93}{odla\_resource\_location\_type}};}
+\DoxyCodeLine{00081              \{}
+\DoxyCodeLine{00082   ODLA\_LOCATION\_PATH,   \textcolor{comment}{// string of file path}}
+\DoxyCodeLine{00083   ODLA\_LOCATION\_MEMORY, \textcolor{comment}{// memory address of a buffer}}
+\DoxyCodeLine{00084   ODLA\_LOCATION\_URI,    \textcolor{comment}{// string of URI}}
+\DoxyCodeLine{00085 \} \mbox{\hyperlink{odla__compute_8h_a621c9b564a8583ddf497985a7c808b93}{odla\_resource\_location\_type}};}
 
 \end{DoxyCode}
 
@@ -991,6 +1002,28 @@ Set the context with a property item.
 {\em type} & the property item type \\
 \hline
 {\em value} & the property item value\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__compute_8h_a13bc361e47f4139f786cde53e3d036a2}\label{odla__compute_8h_a13bc361e47f4139f786cde53e3d036a2}} 
+\index{odla\_compute.h@{odla\_compute.h}!odla\_SetInputValueInfo@{odla\_SetInputValueInfo}}
+\index{odla\_SetInputValueInfo@{odla\_SetInputValueInfo}!odla\_compute.h@{odla\_compute.h}}
+\doxysubsubsection{\texorpdfstring{odla\_SetInputValueInfo()}{odla\_SetInputValueInfo()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Set\+Input\+Value\+Info (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{value,  }\item[{\mbox{\hyperlink{odla__compute_8h_a6be789aa7177278446e347afcfb9aa0b}{odla\+\_\+item\+\_\+type}}}]{type,  }\item[{\mbox{\hyperlink{odla__compute_8h_ad4d602ac28a58bbb9e4bd8bb8ea704b2}{odla\+\_\+item\+\_\+value}}}]{value\+\_\+input }\end{DoxyParamCaption})}
+
+
+
+Set the computation arguments shape info with a property item. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em value} & the odla\+\_\+value \\
+\hline
+{\em type} & the property item type \\
+\hline
+{\em value\+\_\+input} & the property value\+\_\+shape\\
 \hline
 \end{DoxyParams}
 \begin{DoxyReturn}{Returns}

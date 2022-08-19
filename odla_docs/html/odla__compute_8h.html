@@ -121,6 +121,11 @@ Enumerations</h2></td></tr>
 , <b>ODLA_MAX_SHAPE</b>
 , <br />
 &#160;&#160;<b>ODLA_OPT_SHAPE</b>
+, <b>ODLA_DYNAMIC_VALUE</b>
+, <b>ODLA_MIN_VALUE</b>
+, <b>ODLA_MAX_VALUE</b>
+, <br />
+&#160;&#160;<b>ODLA_OPT_VALUE</b>
 , <b>ODLA_BF16_MODE</b>
 , <b>ODLA_FP16_MODE</b>
 , <b>ODLA_USE_SIM_MODE</b>
@@ -201,6 +206,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a72a8b7da115456080955ae72069a0b61"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__compute_8h.html#a72a8b7da115456080955ae72069a0b61">odla_SetValueShapeInfo</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> value, <a class="el" href="odla__compute_8h.html#a6be789aa7177278446e347afcfb9aa0b">odla_item_type</a> type, <a class="el" href="structodla__value__shape.html">odla_value_shape</a> value_shape)</td></tr>
 <tr class="memdesc:a72a8b7da115456080955ae72069a0b61"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the computation arguments shape info with a property item.  <a href="odla__compute_8h.html#a72a8b7da115456080955ae72069a0b61">More...</a><br /></td></tr>
 <tr class="separator:a72a8b7da115456080955ae72069a0b61"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a13bc361e47f4139f786cde53e3d036a2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__compute_8h.html#a13bc361e47f4139f786cde53e3d036a2">odla_SetInputValueInfo</a> (<a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> value, <a class="el" href="odla__compute_8h.html#a6be789aa7177278446e347afcfb9aa0b">odla_item_type</a> type, <a class="el" href="odla__compute_8h.html#ad4d602ac28a58bbb9e4bd8bb8ea704b2">odla_item_value</a> value_input)</td></tr>
+<tr class="memdesc:a13bc361e47f4139f786cde53e3d036a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the computation arguments shape info with a property item.  <a href="odla__compute_8h.html#a13bc361e47f4139f786cde53e3d036a2">More...</a><br /></td></tr>
+<tr class="separator:a13bc361e47f4139f786cde53e3d036a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8cd604dceff11feb3b63751c4bd53a61"><td class="memItemLeft" align="right" valign="top"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="odla__compute_8h.html#a8cd604dceff11feb3b63751c4bd53a61">odla_SetRuntimeShape</a> (<a class="el" href="odla__compute_8h.html#a6ee1db476eaea6347d96e1e0ab7e0ad7">odla_context</a> context, <a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a> value, <a class="el" href="structodla__value__shape.html">odla_value_shape</a> value_shape)</td></tr>
 <tr class="memdesc:a8cd604dceff11feb3b63751c4bd53a61"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the context runtime shapes to an odla_value.  <a href="odla__compute_8h.html#a8cd604dceff11feb3b63751c4bd53a61">More...</a><br /></td></tr>
 <tr class="separator:a8cd604dceff11feb3b63751c4bd53a61"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -293,7 +301,7 @@ Functions</h2></td></tr>
 
 <p>Computation object. </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__compute_8h_source.html#l00096">96</a> of file <a class="el" href="odla__compute_8h_source.html">odla_compute.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__compute_8h_source.html#l00100">100</a> of file <a class="el" href="odla__compute_8h_source.html">odla_compute.h</a>.</p>
 
 </div>
 </div>
@@ -311,7 +319,7 @@ Functions</h2></td></tr>
 
 <p>Constants array object. </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__compute_8h_source.html#l00108">108</a> of file <a class="el" href="odla__compute_8h_source.html">odla_compute.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__compute_8h_source.html#l00112">112</a> of file <a class="el" href="odla__compute_8h_source.html">odla_compute.h</a>.</p>
 
 </div>
 </div>
@@ -329,7 +337,7 @@ Functions</h2></td></tr>
 
 <p>Context object. </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__compute_8h_source.html#l00102">102</a> of file <a class="el" href="odla__compute_8h_source.html">odla_compute.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__compute_8h_source.html#l00106">106</a> of file <a class="el" href="odla__compute_8h_source.html">odla_compute.h</a>.</p>
 
 </div>
 </div>
@@ -347,7 +355,7 @@ Functions</h2></td></tr>
 
 <p>Executable object. </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__compute_8h_source.html#l00099">99</a> of file <a class="el" href="odla__compute_8h_source.html">odla_compute.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__compute_8h_source.html#l00103">103</a> of file <a class="el" href="odla__compute_8h_source.html">odla_compute.h</a>.</p>
 
 </div>
 </div>
@@ -365,7 +373,7 @@ Functions</h2></td></tr>
 
 <p>Property item value object. </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__compute_8h_source.html#l00105">105</a> of file <a class="el" href="odla__compute_8h_source.html">odla_compute.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="odla__compute_8h_source.html#l00109">109</a> of file <a class="el" href="odla__compute_8h_source.html">odla_compute.h</a>.</p>
 
 </div>
 </div>
@@ -384,14 +392,14 @@ Functions</h2></td></tr>
 
 <p>BF16 mode. </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__compute_8h_source.html#l00069">69</a> of file <a class="el" href="odla__compute_8h_source.html">odla_compute.h</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">   69</span>             {</div>
-<div class="line"><span class="lineno">   70</span>  BF16_DISABLE,</div>
-<div class="line"><span class="lineno">   71</span>  BF16_ACCURACY_MODE,</div>
-<div class="line"><span class="lineno">   72</span>  BF16_PERFORMACE_MODE,</div>
-<div class="line"><span class="lineno">   73</span>  BF16_AUTO_MODE,</div>
-<div class="line"><span class="lineno">   74</span>} <a class="code hl_enumeration" href="odla__compute_8h.html#acdd4e76bab81ce3f41e2dc909c0051bd">odla_bf16_mode</a>;</div>
-<div class="ttc" id="aodla__compute_8h_html_acdd4e76bab81ce3f41e2dc909c0051bd"><div class="ttname"><a href="odla__compute_8h.html#acdd4e76bab81ce3f41e2dc909c0051bd">odla_bf16_mode</a></div><div class="ttdeci">odla_bf16_mode</div><div class="ttdoc">BF16 mode.</div><div class="ttdef"><b>Definition:</b> <a href="odla__compute_8h_source.html#l00069">odla_compute.h:69</a></div></div>
+<p class="definition">Definition at line <a class="el" href="odla__compute_8h_source.html#l00073">73</a> of file <a class="el" href="odla__compute_8h_source.html">odla_compute.h</a>.</p>
+<div class="fragment"><div class="line"><span class="lineno">   73</span>             {</div>
+<div class="line"><span class="lineno">   74</span>  BF16_DISABLE,</div>
+<div class="line"><span class="lineno">   75</span>  BF16_ACCURACY_MODE,</div>
+<div class="line"><span class="lineno">   76</span>  BF16_PERFORMACE_MODE,</div>
+<div class="line"><span class="lineno">   77</span>  BF16_AUTO_MODE,</div>
+<div class="line"><span class="lineno">   78</span>} <a class="code hl_enumeration" href="odla__compute_8h.html#acdd4e76bab81ce3f41e2dc909c0051bd">odla_bf16_mode</a>;</div>
+<div class="ttc" id="aodla__compute_8h_html_acdd4e76bab81ce3f41e2dc909c0051bd"><div class="ttname"><a href="odla__compute_8h.html#acdd4e76bab81ce3f41e2dc909c0051bd">odla_bf16_mode</a></div><div class="ttdeci">odla_bf16_mode</div><div class="ttdoc">BF16 mode.</div><div class="ttdef"><b>Definition:</b> <a href="odla__compute_8h_source.html#l00073">odla_compute.h:73</a></div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -444,22 +452,26 @@ Functions</h2></td></tr>
 <div class="line"><span class="lineno">   48</span>  ODLA_MIN_SHAPE,</div>
 <div class="line"><span class="lineno">   49</span>  ODLA_MAX_SHAPE,</div>
 <div class="line"><span class="lineno">   50</span>  ODLA_OPT_SHAPE,</div>
-<div class="line"><span class="lineno">   51</span>  ODLA_BF16_MODE,</div>
-<div class="line"><span class="lineno">   52</span>  ODLA_FP16_MODE,</div>
-<div class="line"><span class="lineno">   53</span>  ODLA_USE_SIM_MODE,</div>
-<div class="line"><span class="lineno">   54</span>  ODLA_PROCESSOR_NUM,</div>
-<div class="line"><span class="lineno">   55</span>  ODLA_BATCHES_PER_STEP,</div>
-<div class="line"><span class="lineno">   56</span>  ODLA_USE_DATA_TYPE,</div>
-<div class="line"><span class="lineno">   57</span>  ODLA_LOAD_ENGINE_MODE,</div>
-<div class="line"><span class="lineno">   58</span>  ODLA_USE_DLA_CORE,</div>
-<div class="line"><span class="lineno">   59</span>  ODLA_QUANT_TABLE,</div>
-<div class="line"><span class="lineno">   60</span>  ODLA_QUANT_TABLE_SIZE,</div>
-<div class="line"><span class="lineno">   61</span>  ODLA_AGGREGATE_OPS,</div>
-<div class="line"><span class="lineno">   62</span>  ODLA_ENABLE_ENGINE_CACHE,</div>
-<div class="line"><span class="lineno">   63</span>  ODLA_CACHE_DIR,</div>
-<div class="line"><span class="lineno">   64</span>  ODLA_ASYNC_CALLBACK_FUNC,</div>
-<div class="line"><span class="lineno">   65</span>  ODLA_ASYNC_CALLBACK_ARG,</div>
-<div class="line"><span class="lineno">   66</span>} <a class="code hl_enumeration" href="odla__compute_8h.html#a6be789aa7177278446e347afcfb9aa0b">odla_item_type</a>;</div>
+<div class="line"><span class="lineno">   51</span>  ODLA_DYNAMIC_VALUE,</div>
+<div class="line"><span class="lineno">   52</span>  ODLA_MIN_VALUE,</div>
+<div class="line"><span class="lineno">   53</span>  ODLA_MAX_VALUE,</div>
+<div class="line"><span class="lineno">   54</span>  ODLA_OPT_VALUE,</div>
+<div class="line"><span class="lineno">   55</span>  ODLA_BF16_MODE,</div>
+<div class="line"><span class="lineno">   56</span>  ODLA_FP16_MODE,</div>
+<div class="line"><span class="lineno">   57</span>  ODLA_USE_SIM_MODE,</div>
+<div class="line"><span class="lineno">   58</span>  ODLA_PROCESSOR_NUM,</div>
+<div class="line"><span class="lineno">   59</span>  ODLA_BATCHES_PER_STEP,</div>
+<div class="line"><span class="lineno">   60</span>  ODLA_USE_DATA_TYPE,</div>
+<div class="line"><span class="lineno">   61</span>  ODLA_LOAD_ENGINE_MODE,</div>
+<div class="line"><span class="lineno">   62</span>  ODLA_USE_DLA_CORE,</div>
+<div class="line"><span class="lineno">   63</span>  ODLA_QUANT_TABLE,</div>
+<div class="line"><span class="lineno">   64</span>  ODLA_QUANT_TABLE_SIZE,</div>
+<div class="line"><span class="lineno">   65</span>  ODLA_AGGREGATE_OPS,</div>
+<div class="line"><span class="lineno">   66</span>  ODLA_ENABLE_ENGINE_CACHE,</div>
+<div class="line"><span class="lineno">   67</span>  ODLA_CACHE_DIR,</div>
+<div class="line"><span class="lineno">   68</span>  ODLA_ASYNC_CALLBACK_FUNC,</div>
+<div class="line"><span class="lineno">   69</span>  ODLA_ASYNC_CALLBACK_ARG,</div>
+<div class="line"><span class="lineno">   70</span>} <a class="code hl_enumeration" href="odla__compute_8h.html#a6be789aa7177278446e347afcfb9aa0b">odla_item_type</a>;</div>
 <div class="ttc" id="aodla__compute_8h_html_a6be789aa7177278446e347afcfb9aa0b"><div class="ttname"><a href="odla__compute_8h.html#a6be789aa7177278446e347afcfb9aa0b">odla_item_type</a></div><div class="ttdeci">odla_item_type</div><div class="ttdoc">Property item type.</div><div class="ttdef"><b>Definition:</b> <a href="odla__compute_8h_source.html#l00041">odla_compute.h:41</a></div></div>
 </div><!-- fragment -->
 </div>
@@ -478,13 +490,13 @@ Functions</h2></td></tr>
 
 <p>Type of resource location. </p>
 
-<p class="definition">Definition at line <a class="el" href="odla__compute_8h_source.html#l00077">77</a> of file <a class="el" href="odla__compute_8h_source.html">odla_compute.h</a>.</p>
-<div class="fragment"><div class="line"><span class="lineno">   77</span>             {</div>
-<div class="line"><span class="lineno">   78</span>  ODLA_LOCATION_PATH,   <span class="comment">// string of file path</span></div>
-<div class="line"><span class="lineno">   79</span>  ODLA_LOCATION_MEMORY, <span class="comment">// memory address of a buffer</span></div>
-<div class="line"><span class="lineno">   80</span>  ODLA_LOCATION_URI,    <span class="comment">// string of URI</span></div>
-<div class="line"><span class="lineno">   81</span>} <a class="code hl_enumeration" href="odla__compute_8h.html#a621c9b564a8583ddf497985a7c808b93">odla_resource_location_type</a>;</div>
-<div class="ttc" id="aodla__compute_8h_html_a621c9b564a8583ddf497985a7c808b93"><div class="ttname"><a href="odla__compute_8h.html#a621c9b564a8583ddf497985a7c808b93">odla_resource_location_type</a></div><div class="ttdeci">odla_resource_location_type</div><div class="ttdoc">Type of resource location.</div><div class="ttdef"><b>Definition:</b> <a href="odla__compute_8h_source.html#l00077">odla_compute.h:77</a></div></div>
+<p class="definition">Definition at line <a class="el" href="odla__compute_8h_source.html#l00081">81</a> of file <a class="el" href="odla__compute_8h_source.html">odla_compute.h</a>.</p>
+<div class="fragment"><div class="line"><span class="lineno">   81</span>             {</div>
+<div class="line"><span class="lineno">   82</span>  ODLA_LOCATION_PATH,   <span class="comment">// string of file path</span></div>
+<div class="line"><span class="lineno">   83</span>  ODLA_LOCATION_MEMORY, <span class="comment">// memory address of a buffer</span></div>
+<div class="line"><span class="lineno">   84</span>  ODLA_LOCATION_URI,    <span class="comment">// string of URI</span></div>
+<div class="line"><span class="lineno">   85</span>} <a class="code hl_enumeration" href="odla__compute_8h.html#a621c9b564a8583ddf497985a7c808b93">odla_resource_location_type</a>;</div>
+<div class="ttc" id="aodla__compute_8h_html_a621c9b564a8583ddf497985a7c808b93"><div class="ttname"><a href="odla__compute_8h.html#a621c9b564a8583ddf497985a7c808b93">odla_resource_location_type</a></div><div class="ttdeci">odla_resource_location_type</div><div class="ttdoc">Type of resource location.</div><div class="ttdef"><b>Definition:</b> <a href="odla__compute_8h_source.html#l00081">odla_compute.h:81</a></div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -1713,6 +1725,51 @@ Functions</h2></td></tr>
     <tr><td class="paramname">context</td><td>the context object </td></tr>
     <tr><td class="paramname">type</td><td>the property item type </td></tr>
     <tr><td class="paramname">value</td><td>the property item value</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>odla_status </dd></dl>
+
+</div>
+</div>
+<a id="a13bc361e47f4139f786cde53e3d036a2" name="a13bc361e47f4139f786cde53e3d036a2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a13bc361e47f4139f786cde53e3d036a2">&#9670;&nbsp;</a></span>odla_SetInputValueInfo()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="odla__common_8h.html#a1f9123e77ab174e483a7f307eb9c264e">ODLA_API_EXPORT</a> <a class="el" href="odla__common_8h.html#a32d12bc3360c8b8891c225a703f7db29">odla_status</a> ODLA_API_CALL odla_SetInputValueInfo </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="odla__value_8h.html#ace8591dbfa7d6ec7c38533286be8490b">odla_value</a>&#160;</td>
+          <td class="paramname"><em>value</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__compute_8h.html#a6be789aa7177278446e347afcfb9aa0b">odla_item_type</a>&#160;</td>
+          <td class="paramname"><em>type</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="odla__compute_8h.html#ad4d602ac28a58bbb9e4bd8bb8ea704b2">odla_item_value</a>&#160;</td>
+          <td class="paramname"><em>value_input</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set the computation arguments shape info with a property item. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">value</td><td>the odla_value </td></tr>
+    <tr><td class="paramname">type</td><td>the property item type </td></tr>
+    <tr><td class="paramname">value_input</td><td>the property value_shape</td></tr>
   </table>
   </dd>
 </dl>
