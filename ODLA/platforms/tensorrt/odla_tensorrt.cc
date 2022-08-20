@@ -15,6 +15,8 @@
 // limitations under the License.
 // =============================================================================
 
+#include "odla_tensorrt.h"
+
 #include <NvInfer.h>
 #include <NvInferPlugin.h>
 #include <NvInferRuntime.h>
@@ -174,6 +176,7 @@ struct _odla_value {
   nvinfer1::IConstantLayer* const_layer = nullptr;
   odla_value_type type;
   const char* name;
+  bool is_shape_tensor = false;
 };
 
 #ifdef MAX_WORKSPACE_SIZE
@@ -227,6 +230,12 @@ struct _odla_computation {
   std::unordered_map<odla_value, odla_value_shape> inputs_min_shapes;
   std::unordered_map<odla_value, odla_value_shape> inputs_max_shapes;
   std::unordered_map<odla_value, odla_value_shape> inputs_opt_shapes;
+
+  bool is_dynamic_value = false;
+  std::unordered_map<odla_value, int32_t> min_input_values;
+  std::unordered_map<odla_value, int32_t> max_input_values;
+  std::unordered_map<odla_value, int32_t> opt_input_values;
+
   _odla_executable executable;
   std::unordered_set<std::unique_ptr<_odla_context>> contexts;
 
@@ -572,6 +581,8 @@ odla_status odla_SetComputationItem(odla_computation computation,
                                     odla_item_value value) {
   bool is_dynamic_batch = false;
   bool is_dynamic_shape = false;
+  bool is_dynamic_value = false;
+
   switch (type) {
     case ODLA_DYNAMIC_BATCH:
       is_dynamic_batch = *(reinterpret_cast<bool*>(value));
@@ -597,6 +608,13 @@ odla_status odla_SetComputationItem(odla_computation computation,
       }
       break;
 
+    case ODLA_DYNAMIC_VALUE:
+      is_dynamic_value = *(reinterpret_cast<bool*>(value));
+      if (is_dynamic_value &&
+          (computation->is_dynamic_value != is_dynamic_value)) {
+        computation->is_dynamic_value = is_dynamic_value;
+      }
+      break;
     case ODLA_MIN_BATCH_SIZE:
       computation->min_batch_size = *(reinterpret_cast<int*>(value));
       break;
@@ -641,6 +659,33 @@ odla_status odla_SetValueShapeInfo(odla_value value, odla_item_type type,
 
     case ODLA_OPT_SHAPE:
       g_comp->inputs_opt_shapes[value] = value_shape;
+      break;
+
+    default:
+      std::cerr << "Unsupported property type: " << type << std::endl;
+      return ODLA_FAILURE;
+  }
+
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_SetInputValueInfo(odla_value value, odla_item_type type,
+                                   odla_item_value value_input) {
+  value->is_shape_tensor = true;
+  switch (type) {
+    case ODLA_MIN_VALUE:
+      g_comp->min_input_values[value] =
+          *(reinterpret_cast<int32_t*>(value_input));
+      break;
+
+    case ODLA_MAX_VALUE:
+      g_comp->max_input_values[value] =
+          *(reinterpret_cast<int32_t*>(value_input));
+      break;
+
+    case ODLA_OPT_VALUE:
+      g_comp->opt_input_values[value] =
+          *(reinterpret_cast<int32_t*>(value_input));
       break;
 
     default:
@@ -807,9 +852,23 @@ odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
       context->ctx->setBindingDimensions(idx, nvdims);
     }
   }
+  void* validated_data_ptr = const_cast<void*>(data_ptr);
+  if (comp->is_dynamic_value) {
+    int idx = comp->executable.engine->getBindingIndex(value->name);
+    nvinfer1::Dims nvdims = GetNVDims(real_shape);
+    if (comp->executable.engine->isShapeBinding(idx)) {
+      const int32_t* src = static_cast<const int32_t*>(validated_data_ptr);
+      std::vector<int32_t> real_data_ptr(nvdims.d[0]);
+      for (int j = 0; j < nvdims.d[0]; ++j) {
+        real_data_ptr[j] = static_cast<int32_t>(src[j]);
+      }
+      context->ctx->setInputShapeBinding(idx, &real_data_ptr[0]);
+    } else {
+      context->ctx->setBindingDimensions(idx, nvdims);
+    }
+  }
   size_t bytes =
       GetTotalElements(real_shape) * GetElementSize(value->type.element_type);
-  void* validated_data_ptr = const_cast<void*>(data_ptr);
   auto buf = ConvertData(value->type, data_ptr);
   if (buf != nullptr) {
     validated_data_ptr = buf.get();
@@ -841,7 +900,7 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
   if ((comp->is_dynamic_batch) || context->run_batch_size) {
     real_shape.dims[0] = context->run_batch_size;
   }
-  if (comp->is_dynamic_shape) {
+  if (comp->is_dynamic_shape || comp->is_dynamic_value) {
     if (context->real_shapes.find(value) != context->real_shapes.end()) {
       real_shape = context->real_shapes[value];
     } else {
@@ -942,7 +1001,32 @@ odla_status odla_CompileComputation(const odla_computation comp,
 
       comp->builder_cfg->addOptimizationProfile(comp->builder_profile);
     }
+    if (comp->is_dynamic_value) {
+      comp->builder_profile = builder->createOptimizationProfile();
+      for (auto& input : comp->inputs) {
+        const char* input_name = input.first.c_str();
+        odla_value value = input.second;
+        if (value->is_shape_tensor) {
+          auto dims = GetNVDims(value->type.shape);
+          int nb_dims = dims.d[0];
 
+          std::vector<int32_t> shapes_min(nb_dims), shapes_opt(nb_dims),
+              shapes_max(nb_dims);
+          for (int j = 0, end = nb_dims; j < end; ++j) {
+            shapes_min[j] = comp->min_input_values[value];
+            shapes_opt[j] = comp->opt_input_values[value];
+            shapes_max[j] = comp->max_input_values[value];
+          }
+          comp->builder_profile->setShapeValues(
+              input_name, OptProfileSelector::kMIN, &shapes_min[0], nb_dims);
+          comp->builder_profile->setShapeValues(
+              input_name, OptProfileSelector::kOPT, &shapes_opt[0], nb_dims);
+          comp->builder_profile->setShapeValues(
+              input_name, OptProfileSelector::kMAX, &shapes_max[0], nb_dims);
+        }
+      }
+      builder_cfg->addOptimizationProfile(comp->builder_profile);
+    }
     if (comp->is_dynamic_batch) {
       comp->builder_profile = builder->createOptimizationProfile();
       for (auto& input : comp->inputs) {
@@ -2267,6 +2351,7 @@ odla_value odla_SliceDynamic(odla_value input, odla_value start,
   if (stride) {
     slice->setInput(3, *stride);
   }
+  slice->setMode(nvinfer1::SliceMode::kREFLECT);
   return CreateValue(slice, {input->type.element_type, output_dims}, value_id);
 }
 

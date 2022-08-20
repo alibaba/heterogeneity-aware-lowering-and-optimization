@@ -18,7 +18,7 @@
 #ifndef _ODLA_DEVICE_H_
 #define _ODLA_DEVICE_H_
 
-#include <ODLA/odla_common.h>
+#include <ODLA/odla_value.h>
 
 /*! \file
  * \details This file defines the ODLA device related APIs.
@@ -72,13 +72,23 @@ typedef enum {
   ODLA_DEVICE_QUALCOMM_AIC100,
 } odla_device_name;
 
-//! \brief Device info
+//! \brief Device info enum
 typedef enum {
-  ODLA_DEVICE_INFO_DESCRIPTION,
-  ODLA_DEVICE_INFO_ODLA_VERSION,
-  ODLA_DEVICE_INFO_NUM_CORES,
-  ODLA_DEVICE_INFO_TOTAL_MEM_SIZE,
-  ODLA_DEVICE_INFO_CORE_MEM_SIZE,
+  ODLA_DEVICE_INFO_ODLA_LIB_VERSION, ///< Version of ODLA library (string)
+  ODLA_DEVICE_INFO_DEV_COUNT,        ///< Number of total devices (int32)
+  ODLA_DEVICE_INFO_DEV_INDEX,        ///< Device index of current device (int32)
+  ODLA_DEVICE_INFO_DEV_TYPE,         ///< Name/model of device (string)
+  ODLA_DEVICE_INFO_DEV_UUID,         ///<  Raw UUID of device (16-byte string)
+  ODLA_DEVICE_INFO_PROCESSOR_UTIL, ///< Current processor utilization in [0, 1]
+                                   ///< (float32)
+  ODLA_DEVICE_INFO_MEMORY_UTIL,    ///< Current memory utilization in [0, 1]
+                                   ///< (float32)
+  ODLA_DEVICE_INFO_TOTAL_MEMORY,   ///< Size of device memory (int64)
+  ODLA_DEVICE_INFO_USED_MEMORY,    ///< Size of used device memory (int64)
+  ODLA_DEVICE_INFO_POWER_USAGE,    ///< Current power usage in watt (float)
+  ODLA_DEVICE_INFO_POWER_LIMIT,    ///< Power limit in watt (float)
+  ODLA_DEVICE_INFO_DRIVER_VERSION, ///< Version of driver (string)
+  ODLA_DEVICE_INFO_SDK_VERSION,    ///< Version of SDK (string)
 } odla_device_info;
 
 //! \brief Vendor object
@@ -126,9 +136,9 @@ extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_GetVendorInfo(
 
   \return odla_status
 */
-extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_AllocateDevice(
-    const odla_vendor vendor, const odla_device_name device_name,
-    odla_device* device, const char* config);
+extern ODLA_API_EXPORT odla_status ODLA_API_CALL
+odla_AllocateDevice(odla_vendor vendor, odla_device_name device_name,
+                    odla_int32 device_idx, odla_device* device);
 
 //! \brief Get the device info
 /*!
@@ -140,10 +150,9 @@ extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_AllocateDevice(
 
   \return odla_status
 */
-extern ODLA_API_EXPORT odla_status ODLA_API_CALL odla_GetDeviceInfo(
-    const odla_device device, const odla_device_info info_name,
-    const odla_size_t allocated_info_value_size, odla_void* info_value,
-    odla_size_t* retrieved_info_value_size);
+extern ODLA_API_EXPORT odla_status ODLA_API_CALL
+odla_GetDeviceInfo(odla_device device, odla_device_info info_type,
+                   odla_scalar_value* info_value);
 
 //! \brief Initialize an allocated device
 /*!

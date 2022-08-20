@@ -560,17 +560,18 @@ void GenericCXXCodeGen::RunOnHostFunction(Function& function) {
     os_ << DeclAsExtern(func_decl);
   }
 
+  os_ << "static odla_device trt_dev;\n";
+  os_ << "static odla_device x86_dev;\n";
+  os_ << "static odla_device host_dev;\n";
+
   os_ << func_decl << " {\n";
-  os_ << "  static odla_device trt_dev;\n";
-  os_ << "  static odla_device x86_dev;\n";
-  os_ << "  static odla_device host_dev;\n";
   os_ << "  odla_AllocateDevice(" << EmitNull()
-      << ", ODLA_DEVICE_DEFAULT, &host_dev);\n";
+      << ", ODLA_DEVICE_DEFAULT, 0, &host_dev);\n";
   os_ << "  odla_AllocateDevice(" << EmitNull()
-      << ", ODLA_DEVICE_NVIDIA_TENSORRT, "
+      << ", ODLA_DEVICE_NVIDIA_TENSORRT, 0, "
          "&trt_dev);\n";
   os_ << "  odla_AllocateDevice(" << EmitNull()
-      << ", ODLA_DEVICE_INTEL_X86, &x86_dev);\n";
+      << ", ODLA_DEVICE_INTEL_X86, 0, &x86_dev);\n";
   os_ << "  odla_SetCurrentDevice(host_dev);\n";
 
   std::vector<std::string> created_val_names;
