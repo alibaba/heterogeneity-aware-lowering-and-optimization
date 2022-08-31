@@ -720,11 +720,6 @@ odla_status odla_LoadExecutable(odla_resource_location location,
   int load_engine_mode = 1;
   odla_SetComputationItem(computation, ODLA_LOAD_ENGINE_MODE,
                           (odla_item_value)&load_engine_mode);
-#ifndef XAVIER
-  bool is_dynamic_batch = true;
-  odla_SetComputationItem(computation, ODLA_DYNAMIC_BATCH,
-                          (odla_item_value)&is_dynamic_batch);
-#endif
 
   *executable = &computation->executable;
   const void* engine_data = nullptr;
@@ -752,6 +747,17 @@ odla_status odla_LoadExecutable(odla_resource_location location,
     engine_data = location.location;
     engine_size = location.size;
   }
+  auto is_trt_plan = [&engine_data, &engine_size]() {
+    // check if the engine is a TRT plan using "ptrt" magic word.
+    const char* s = static_cast<const char*>(engine_data);
+    return engine_size >= 4 && s[0] == 'p' && s[1] == 't' && s[2] == 'r' &&
+           s[3] == 't';
+  };
+
+  if (!is_trt_plan()) {
+    std::cerr << "Error loading engine file: " << std::endl;
+    return ODLA_FAILURE;
+  }
 
   TrtUniquePtr<IRuntime> runtime{createInferRuntime(Logger)};
   if (DLACore != -1) {
@@ -765,6 +771,7 @@ odla_status odla_LoadExecutable(odla_resource_location location,
   int nb_prof = engine->getNbOptimizationProfiles();
   int nb_bindings_per_prof = engine->getNbBindings() / nb_prof;
   int use_profile = 0;
+  bool is_dynamic_batch = false;
   for (int i = nb_bindings_per_prof * use_profile,
            n = nb_bindings_per_prof * (use_profile + 1);
        i < n; ++i) {
@@ -781,6 +788,7 @@ odla_status odla_LoadExecutable(odla_resource_location location,
     auto value = v.get();
     value->name = name;
     value->type = type;
+    is_dynamic_batch |= !IsStaticShape(value->type.shape);
     computation->vals.push_back(std::move(v));
     if (engine->bindingIsInput(i)) {
       computation->inputs[name] = value;
@@ -790,6 +798,14 @@ odla_status odla_LoadExecutable(odla_resource_location location,
       computation->output_vals.push_back(value);
     }
   }
+
+#ifndef XAVIER
+  if (is_dynamic_batch) {
+    odla_SetComputationItem(computation, ODLA_DYNAMIC_BATCH,
+                            (odla_item_value)&is_dynamic_batch);
+  }
+#endif
+
   return ODLA_SUCCESS;
 }
 
