@@ -79,6 +79,9 @@ struct CXXCodeGenOpts {
   int max_batch_size = 0;
   int min_batch_size = 0;
   int opt_batch_size = 0;
+  int max_shape_value = 20;
+  int min_shape_value = 0;
+  int opt_shape_value = 5;
   bool enable_ipu_device = false;
   bool use_ipu_model = false;
   bool separate_constants = false;
@@ -95,6 +98,7 @@ struct CXXCodeGenOpts {
   bool fuse_fully_connected = true;
   bool fuse_mul_to_conv = true;
   bool enable_anole_device = false;
+  bool is_shape_tensor = false;
   int64_t ipu_num = 1;
   int64_t batches_per_step = 1;
   const char* quant_tbl = nullptr;

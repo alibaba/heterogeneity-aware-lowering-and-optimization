@@ -297,6 +297,10 @@ static llvm::cl::opt<bool> CheckModel("check-model",
                                       llvm::cl::init(false),
                                       llvm::cl::cat(HaloOptCat));
 
+static llvm::cl::opt<bool> is_shape_tensor(
+    "is_shape_tensor", llvm::cl::desc("Dynamic Shape Tensor"),
+    llvm::cl::init(false), llvm::cl::cat(HaloOptCat));
+
 static llvm::cl::list<std::string> IncludePaths(
     "I", llvm::cl::desc("Add directory to include search paths"),
     llvm::cl::cat(HaloOptCat));
@@ -448,6 +452,7 @@ int main(int argc, char** argv) {
   cg_opts.save_temps = SaveTemps;
   cg_opts.constant_decombine = ConstantDecombine;
   cg_opts.quant_tbl = nullptr;
+  cg_opts.is_shape_tensor = is_shape_tensor;
   if (QuantWeights != Quantization::None) {
     cg_opts.quant_tbl = QuantTable.c_str();
   }
