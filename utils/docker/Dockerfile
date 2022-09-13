@@ -237,8 +237,8 @@ RUN apt-get update && apt-get install -y python3.8 \
  && apt-get remove -y python3.8 && apt clean && rm -fr /var/lib/apt/lists* /tmp/* /var/tmp*
 
 # Install models & test cases
-COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:v0.1-model-zoo /models /models
-COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:v0.1-model-zoo /unittests /unittests
+COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:v0.2-model-zoo /models /models
+COPY --from=registry-intl.us-west-1.aliyuncs.com/computation/halo:v0.2-model-zoo /unittests /unittests
 
 RUN mkdir -p /var/run/sshd
 RUN sed -i 's/prohibit-password/yes/' /etc/ssh/sshd_config
