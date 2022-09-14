@@ -32,25 +32,25 @@ void GenericCXXCodeGen::RunOnInstruction(Conv2DInst* inst) {
 
   const auto& info = ImageAxisInfo::GetImageAxisInfo(inst->GetDataFormat(),
                                                      inst->GetFilterFormat());
-  auto padding_left = static_cast<uint32_t>(inst->GetPaddingLeft());
-  auto padding_right = static_cast<uint32_t>(inst->GetPaddingRight());
-  auto padding_top = static_cast<uint32_t>(inst->GetPaddingTop());
-  auto padding_bottom = static_cast<uint32_t>(inst->GetPaddingBottom());
-  auto stride_h =
-      static_cast<uint32_t>(inst->GetStrides()[info.data_height_axis]);
-  auto stride_w =
-      static_cast<uint32_t>(inst->GetStrides()[info.data_width_axis]);
-  auto dilation_h =
-      static_cast<uint32_t>(inst->GetDilations()[info.data_height_axis]);
-  auto dilation_w =
-      static_cast<uint32_t>(inst->GetDilations()[info.data_width_axis]);
+  const auto& pad_b = inst->GetPaddingsBefore();
+  const auto& pad_a = inst->GetPaddingsAfter();
+  unsigned spatial_dims = ret_type.GetNumOfDims() - 2;
+
+  std::vector<uint32_t> paddings_before(pad_b.begin(), pad_b.end());
+  std::vector<uint32_t> paddings_after(pad_a.begin(), pad_a.end());
+
   auto group = inst->GetGroup();
 
   CXXValue ret(inst->GetName(), op0.type);
-  std::vector<uint32_t> strides{stride_h, stride_w};
-  std::vector<uint32_t> dilations{dilation_h, dilation_w};
-  std::vector<uint32_t> paddings_front{padding_top, padding_left};
-  std::vector<uint32_t> paddings_back{padding_bottom, padding_right};
+
+  const auto& strs = inst->GetStrides();
+  const auto& dils = inst->GetDilations();
+  std::vector<uint32_t> strides(
+      strs.begin() + info.data_spatial_axis,
+      strs.begin() + info.data_spatial_axis + spatial_dims);
+  std::vector<uint32_t> dilations(
+      dils.begin() + info.data_spatial_axis,
+      dils.begin() + info.data_spatial_axis + spatial_dims);
 
   const std::string& enum_ns_layout = "odla_memory_layout::";
   const std::string& enum_prefix = "ODLA_";
@@ -71,11 +71,9 @@ void GenericCXXCodeGen::RunOnInstruction(Conv2DInst* inst) {
     CXXValue op2 = ir_mapping_[bias];
     bias_name = op2.name;
   }
+
   EmitODLACall(ret, "odla_Conv", op0, data_layout, group, op1, kernel_layout,
-               std::vector<uint32_t>{stride_h, stride_w},
-               std::vector<uint32_t>{dilation_h, dilation_w},
-               std::vector<uint32_t>{padding_top, padding_left},
-               std::vector<uint32_t>{padding_bottom, padding_right}, bias_name,
+               strides, dilations, paddings_before, paddings_after, bias_name,
                EmitShape(ret_type));
   ir_mapping_[*inst] = ret;
 }

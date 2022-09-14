@@ -31,6 +31,7 @@
 #include "halo/lib/ir/extension_instructions.h"
 #include "halo/lib/ir/ir_builder.h"
 #include "halo/lib/ir/math_instructions.h"
+#include "halo/lib/ir/nn_cnn_instructions.h"
 #include "halo/lib/transforms/transforms_util.h"
 #include "onnx_parser.h"
 
@@ -1703,6 +1704,24 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
   return std::vector<Def>{};
 }
 
+static bool FixupConvPadding(Conv2DInst* inst) {
+  if (inst->GetPadding() != Padding::EXPLICIT ||
+      inst->GetPaddingsBefore().size() == inst->GetPaddingsAfter().size()) {
+    return false;
+  }
+  std::vector<int> pads_before = inst->GetPaddingsBefore();
+  auto dims = pads_before.size();
+  HLCHECK((dims & 1) == 0);
+  HLCHECK(inst->GetPaddingsAfter().empty());
+
+  std::vector<int> pads_after(pads_before.begin() + dims / 2,
+                              pads_before.end());
+  pads_before.resize(dims / 2);
+  inst->SetPaddingsBefore(pads_before);
+  inst->SetPaddingsAfter(pads_after);
+  return false;
+}
+
 bool ONNXExtensionLegalizer::RunOnBasicBlock(BasicBlock* bb) {
   IRBuilder builder(bb);
   bool changed = false;
@@ -1723,6 +1742,8 @@ bool ONNXExtensionLegalizer::RunOnBasicBlock(BasicBlock* bb) {
       changed |= FixupLoopBody(DynCast<LoopInst>(inst));
     } else if (inst->GetOpCode() == OpCode::TRANSPOSE) {
       changed |= FixupTranspose(DynCast<TransposeInst>(inst));
+    } else if (inst->GetOpCode() == OpCode::CONV2D) {
+      changed |= FixupConvPadding(DynCast<Conv2DInst>(inst));
     }
   }
   return changed;
