@@ -35,15 +35,11 @@ let cat_ = cat_nn_cnn in {
                   Attr<"The dilation factor for each dimension of input, its "
                        "order is determined by data_format.",
                        IntegerList, "dilations", "{1,1,1,1}">,
-                  Attr<"The explicit padding to the left of the input.",
-                       Integer, "padding_left", "0">,
-                  Attr<"The explicit padding to the right of the input.",
-                       Integer, "padding_right", "0">,
-                  Attr<"The explicit padding to the top of the input.",
-                       Integer, "padding_top", "0">,
-                  Attr<"The explicit padding to the bottom of the input.",
-                       Integer, "padding_bottom", "0">,
-                  Attr<"The group size for depthwise conv",
+                  Attr<"The padding amount for before each axis",
+                        IntegerList, "paddings_before", "{}">,
+                  Attr<"The padding amount for after each axis",
+                        IntegerList, "paddings_after", "{}">,
+                 Attr<"The group size for depthwise conv",
                        Integer, "group", "1">];
     let ins_ = [Arg<"The input image.", ArgType<[F16,F32]>, 4D>,
                 Arg<"The filter.", MatchArgType<0>, 4D>];

@@ -140,10 +140,8 @@ def ONNX_Conv : OpMapping<"Conv", Conv2D> {
     AttributeMapping<"", "data_format", "NCHW">,
     AttributeMapping<"", "filter_format", "NCHW">,
     AttributeMapping<"group", "group", "1">,
-    AttributeMapping<"pads", "padding_left", "{0,0,0,0}", 1>,
-    AttributeMapping<"pads", "padding_top", "{0,0,0,0}", 0>,
-    AttributeMapping<"pads", "padding_right", "{0,0,0,0}", 3>,
-    AttributeMapping<"pads", "padding_bottom", "{0,0,0,0}", 2>];
+    AttributeMapping<"pads", "paddings_before", "{}">, // will be adjusted.
+  ];
   let extension_attr_ = [
     ExtensionAttr<"kernel_shape", IntegerList, "{}">];
 }

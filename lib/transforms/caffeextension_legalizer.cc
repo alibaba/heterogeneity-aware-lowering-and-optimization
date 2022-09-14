@@ -66,10 +66,9 @@ static std::vector<Def> ConvertConvolution(const CAFFEExtensionInst* ext,
   IRObject* new_inst =
       builder->CreateConv2D(ext->GetName() + "_conv", input, weight);
   Conv2DInst* conv_inst = Downcast<Conv2DInst>(new_inst);
-  conv_inst->SetPaddingLeft(pad[1]);
-  conv_inst->SetPaddingRight(pad[1]);
-  conv_inst->SetPaddingTop(pad[0]);
-  conv_inst->SetPaddingBottom(pad[0]);
+  std::vector<int> pads{pad[0], pad[1]};
+  conv_inst->SetPaddingsBefore(pads);
+  conv_inst->SetPaddingsAfter(pads);
   conv_inst->SetStrides(stride);
   conv_inst->SetDilations(dilation);
   conv_inst->SetGroup(group);

@@ -1010,7 +1010,8 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(ReluInst* inst) {
 
 std::pair<Def, Def> InstSimplify::RunOnInstruction(Conv2DInst* inst) {
   std::pair<Def, Def> ret{Def{inst, 0}, Def{inst, 0}};
-  if (!inst->GetResultType().IsValid()) {
+  if (!inst->GetResultType().IsValid() ||
+      inst->GetResultType().GetNumOfDims() != 4) {
     return ret;
   }
 
@@ -1059,12 +1060,14 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Conv2DInst* inst) {
         new_inst->SetFilterFormat(inst->GetFilterFormat());
         new_inst->SetDilations(inst->GetDilations());
         new_inst->SetStrides(inst->GetStrides());
-        new_inst->SetPaddingTop(inst->GetPaddingTop() + vals[indices_hw[0]]);
-        new_inst->SetPaddingBottom(inst->GetPaddingBottom() +
-                                   vals[indices_hw[1]]);
-        new_inst->SetPaddingLeft(inst->GetPaddingLeft() + vals[indices_hw[2]]);
-        new_inst->SetPaddingRight(inst->GetPaddingRight() +
-                                  vals[indices_hw[3]]);
+        auto paddings_before = inst->GetPaddingsBefore();
+        paddings_before[0] += vals[indices_hw[0]];
+        paddings_before[1] += vals[indices_hw[2]];
+        auto paddings_after = inst->GetPaddingsAfter();
+        paddings_after[0] += vals[indices_hw[1]];
+        paddings_after[1] += vals[indices_hw[3]];
+        new_inst->SetPaddingsBefore(paddings_before);
+        new_inst->SetPaddingsAfter(paddings_after);
         new_inst->GetResultsTypes()[0] = inst->GetResultsTypes()[0];
         new_inst->SetPadding(Padding::EXPLICIT);
         ret.second = Def(new_inst, 0);
@@ -1113,9 +1116,7 @@ std::pair<Def, Def> InstSimplify::RunOnInstruction(Conv2DInst* inst) {
       return ret;
     }
 
-    bool has_padding =
-        inst->GetPaddingBottom() != 0 || inst->GetPaddingLeft() != 0 ||
-        inst->GetPaddingTop() != 0 || inst->GetPaddingRight() != 0;
+    bool has_padding = !inst->GetPaddingsBefore().empty();
 
     Constant* kernel = DynCast<Constant>(op_kernel);
     ConstantBuilder cb(inst->GetParent()->GetParent());
