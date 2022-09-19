@@ -36,6 +36,8 @@ enum \mbox{\hyperlink{odla__ops__process_8h_ae5784f32274737503651496765cc159c}{o
 \begin{DoxyCompactList}\small\item\em Generate a value with data. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__process_8h_afa1f5b13d16cb52677c79f17cc2440a9}{odla\+\_\+\+Gather}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} indices, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} axis, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+dims, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Gather slices. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__process_8h_a1c5703bfb8161094fd0fb4f56e1064f1}{odla\+\_\+\+Gather\+ND}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} indices, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} num\+\_\+batch\+\_\+dims, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+dims, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
+\begin{DoxyCompactList}\small\item\em Gather slices. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__process_8h_a5077a3a0ed6b9cc1821879e2f23fc555}{odla\+\_\+\+Gather\+Elements}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} input, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} indices, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} axis, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+dims, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
 \begin{DoxyCompactList}\small\item\em Gather elements. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__ops__process_8h_a3a748c117356fee54008e07578f63a91}{odla\+\_\+\+One\+Hot}} (\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} indices, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} depth, \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} values, \mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}} axis, \mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}} output\+\_\+dims, const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id)
@@ -428,6 +430,34 @@ Gather slices from {\ttfamily input} according to {\ttfamily indices}.
 {\em indices} & the indices value \\
 \hline
 {\em axis} & the axis on which the input is to gather \\
+\hline
+{\em output\+\_\+dims} & the optional output shape (can be undefined) \\
+\hline
+{\em value\+\_\+id} & a unique value id (can be NULL)\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+value 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__ops__process_8h_a1c5703bfb8161094fd0fb4f56e1064f1}\label{odla__ops__process_8h_a1c5703bfb8161094fd0fb4f56e1064f1}} 
+\index{odla\_ops\_process.h@{odla\_ops\_process.h}!odla\_GatherND@{odla\_GatherND}}
+\index{odla\_GatherND@{odla\_GatherND}!odla\_ops\_process.h@{odla\_ops\_process.h}}
+\doxysubsubsection{\texorpdfstring{odla\_GatherND()}{odla\_GatherND()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Gather\+ND (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{input,  }\item[{\mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{indices,  }\item[{\mbox{\hyperlink{odla__common_8h_a11711813c2dfcdbc8c94c8f73c47a203}{odla\+\_\+int32}}}]{num\+\_\+batch\+\_\+dims,  }\item[{\mbox{\hyperlink{structodla__value__shape}{odla\+\_\+value\+\_\+shape}}}]{output\+\_\+dims,  }\item[{const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}}}]{value\+\_\+id }\end{DoxyParamCaption})}
+
+
+
+Gather slices. 
+
+Gather slices from {\ttfamily input} according to {\ttfamily indices}.
+
+
+\begin{DoxyParams}{Parameters}
+{\em input} & the input value \\
+\hline
+{\em indices} & the indices value \\
+\hline
+{\em num\+\_\+batch\+\_\+dims} & the number of leading dimensions to be omitted \\
 \hline
 {\em output\+\_\+dims} & the optional output shape (can be undefined) \\
 \hline
