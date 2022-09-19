@@ -168,6 +168,22 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Gather(odla_value input, odla_value indices, odla_int32 axis,
             odla_value_shape output_dims, const odla_value_id value_id);
 
+//! \brief Gather slices
+/*!
+  Gather slices from \p input according to \p indices.
+
+  \param input the input value
+  \param indices the indices value
+  \param num_batch_dims the number of leading dimensions to be omitted
+  \param output_dims the optional output shape (can be undefined)
+  \param value_id a unique value id (can be NULL)
+
+  \return odla_value
+*/
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_GatherND(odla_value input, odla_value indices, odla_int32 num_batch_dims,
+              odla_value_shape output_dims, const odla_value_id value_id);
+
 //! \brief Gather elements
 /*!
   Gather slices from \p input according to \p indices.

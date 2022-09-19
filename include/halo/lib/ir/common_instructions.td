@@ -56,6 +56,14 @@ let cat_ = cat_common in {
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
   }
 
+  def GatherND : Inst <"Gather data from input X1 based on indices X2."> {
+    let attrs_ = [Attr<"number of leading dimensions to be omitted", Integer, "num_batch_dims", "0">];
+    let ins_ = [Arg<"The inpput data.", ArgType<[I8,I16,I32,F16,F32]> >,
+                Arg<"The indices.", ArgType<[I32, I64]> >,
+                OptionalArg<"The axis.", ArgType<[I32]>, 0D>];
+    let outs_ = [Arg<"The result.", MatchArgType<0> >];
+  }
+
   def GatherElements : Inst <"Gather data from input X1 based on indices specified by X2."> {
     let attrs_ = [Attr<"The axis to gather on", Integer, "axis", "0">];
     let ins_ = [Arg<"The input data.", ArgType<[I8,I16,I32,F16,F32]> >,
@@ -128,7 +136,7 @@ let cat_ = cat_common in {
     let ins_ = [Arg<"The inputs.", ArgType<[I32,I64]>, 1D>,
                 Arg<"The original.", ArgType<[I32,I64]>, 1D>,
                 Arg<"The axes.", ArgType<[I32,I64]>, 1D>];
-    let outs_ = [Arg<"The result.", MatchArgType<0>, 1D>]; 
+    let outs_ = [Arg<"The result.", MatchArgType<0>, 1D>];
   }
 
   def SliceDynamic : Inst<"Extract a dynamic slice from the input."> {

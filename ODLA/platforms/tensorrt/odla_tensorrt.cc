@@ -2285,9 +2285,10 @@ odla_value odla_ArgMin(odla_value input, odla_int32 axis, odla_bool keep_dims,
                      output_value_type, nvinfer1::TopKOperation::kMIN, id);
 }
 
-odla_value odla_Gather(odla_value input, const odla_value indices,
-                       odla_int32 axis, odla_value_shape output_dims,
-                       const odla_value_id id) {
+static odla_value Gather(odla_value input, odla_value indices,
+                         nvinfer1::GatherMode mode, odla_int32 axis,
+                         odla_int32 batch_dims, odla_value_shape output_dims,
+                         odla_value_id id) {
   axis = axis < 0 ? input->type.shape.size - 1 : axis;
   assert(indices->type.element_type == ODLA_INT32 ||
          indices->type.element_type == ODLA_INT64);
@@ -2297,7 +2298,13 @@ odla_value odla_Gather(odla_value input, const odla_value indices,
                         (const odla_value_id)GetName(input, "_cast").c_str())
                   ->tensor;
   }
-  auto gather = g_comp->network->addGather(*input_t, *indices, axis);
+  auto gather = g_comp->network->addGatherV2(*input_t, *indices, mode);
+  gather->setMode(mode);
+  if (mode == nvinfer1::GatherMode::kND) {
+    gather->setNbElementWiseDims(batch_dims);
+  } else {
+    gather->setGatherAxis(axis);
+  }
   if (input->type.element_type == ODLA_BOOL) {
     const auto& gather_name = GetName(id, "_extra");
     auto gather_v =
@@ -2311,6 +2318,27 @@ odla_value odla_Gather(odla_value input, const odla_value indices,
     return odla_Greater(gather_v, zero_v, id);
   }
   return CreateValue(gather, {input->type.element_type, output_dims}, id);
+}
+
+odla_value odla_Gather(odla_value input, const odla_value indices,
+                       odla_int32 axis, odla_value_shape output_dims,
+                       const odla_value_id id) {
+  return Gather(input, indices, nvinfer1::GatherMode::kDEFAULT, axis, 0,
+                output_dims, id);
+}
+
+odla_value odla_GatherElements(odla_value input, odla_value indices,
+                               odla_int32 axis, odla_value_shape output_dims,
+                               const odla_value_id id) {
+  return Gather(input, indices, nvinfer1::GatherMode::kELEMENT, axis, 0,
+                output_dims, id);
+}
+
+odla_value odla_GatherND(odla_value input, const odla_value indices,
+                         odla_int32 batch_dims, odla_value_shape output_dims,
+                         const odla_value_id id) {
+  return Gather(input, indices, nvinfer1::GatherMode::kND, 0, batch_dims,
+                output_dims, id);
 }
 
 odla_value odla_Slice(odla_value input, const odla_int32* start,

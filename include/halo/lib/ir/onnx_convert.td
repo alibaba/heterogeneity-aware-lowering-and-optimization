@@ -224,6 +224,10 @@ def ONNX_Gather : OpMapping<"Gather", Gather> {
   let attr_mapping_ = [AttributeMapping<"axis", "axis", "0">];
 }
 
+def ONNX_GatherND : OpMapping<"GatherND", GatherND> {
+  let attr_mapping_ = [AttributeMapping<"batch_dims", "num_batch_dims", "0">];
+}
+
 def ONNX_GatherElements : OpMapping <"GatherElements", GatherElements> {
   let attr_mapping_ = [AttributeMapping<"axis", "axis", "0">];
 }
