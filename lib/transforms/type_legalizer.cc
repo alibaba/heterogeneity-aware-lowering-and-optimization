@@ -963,6 +963,43 @@ static void RunOnInstruction(GatherElementsInst* inst) {
   inst->GetResultsTypes()[0] = halo::Type{data_type, index_type.GetDimSizes()};
 }
 
+static void RunOnInstruction(GatherNDInst* inst) {
+  auto op_data = inst->GetOperand(0);
+  auto op_idx = inst->GetOperand(1);
+  const auto& data_type = op_data.GetType();
+  const auto& indices_type = op_idx.GetType();
+
+  if (!data_type.IsValid() || !indices_type.IsValid()) {
+    return;
+  }
+
+  int32_t batch_dims = inst->GetNumBatchDims();
+  int32_t rank_data = static_cast<int32_t>(data_type.GetNumOfDims());
+  int32_t rank_indices = static_cast<int32_t>(indices_type.GetNumOfDims());
+  HLCHECK(batch_dims >= 0 && batch_dims < std::min(rank_data, rank_indices));
+  int32_t last_index_dim = static_cast<int32_t>(
+      indices_type.GetNumOfElementsInDim(rank_indices - 1));
+  HLCHECK(last_index_dim >= 1 && last_index_dim <= rank_data - batch_dims);
+  for (int i = 0; i < batch_dims; ++i) {
+    HLCHECK(data_type.GetNumOfElementsInDim(i) ==
+            indices_type.GetNumOfElementsInDim(i));
+  }
+  std::vector<int64_t> ret_shape;
+  auto ret_rank = rank_data + rank_indices - last_index_dim - 1 - batch_dims;
+  ret_shape.reserve(ret_rank);
+  for (int i = 0; i < batch_dims; ++i) {
+    ret_shape.push_back(data_type.GetNumOfElementsInDim(i));
+  }
+  for (int i = batch_dims; i < rank_indices - 1; ++i) {
+    ret_shape.push_back(indices_type.GetNumOfElementsInDim(i));
+  }
+  for (int i = 0, r = rank_data - batch_dims - last_index_dim; i < r; ++i) {
+    ret_shape.push_back(data_type.GetNumOfElementsInDim(rank_data - r + i));
+  }
+  HLCHECK(ret_shape.size() == static_cast<size_t>(ret_rank));
+  inst->GetResultsTypes()[0] = halo::Type{data_type.GetDataType(), ret_shape};
+}
+
 static void RunOnInstruction(SliceInst* inst) {
   auto op0 = inst->GetOperand(0);
   auto op_start = inst->GetOperand(1);
