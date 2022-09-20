@@ -297,10 +297,8 @@ static std::vector<Def> ConvertPool(const CAFFEExtensionInst* ext,
 
   auto set_pooling_attributes = [&](auto inst) {
     inst->SetKsize({1, 1, kernel_size_h, kernel_size_w});
-    inst->SetPaddingLeft(pad_w);
-    inst->SetPaddingRight(pad_w);
-    inst->SetPaddingTop(pad_h);
-    inst->SetPaddingBottom(pad_h);
+    inst->SetPaddingsBefore({pad_h, pad_w});
+    inst->SetPaddingsAfter({pad_h, pad_w});
     inst->SetStrides({1, 1, stride_h, stride_w});
     inst->SetPadding(Padding::EXPLICIT);
     inst->SetDataFormat(DataFormat::NCHW);
@@ -693,10 +691,8 @@ static std::vector<Def> ConvertDeConvolution(const CAFFEExtensionInst* ext,
   IRObject* new_inst =
       builder->CreateConv2DTranspose(ext->GetName() + "_conv", input, weight);
   Conv2DTransposeInst* deconv_inst = Downcast<Conv2DTransposeInst>(new_inst);
-  deconv_inst->SetPaddingLeft(pad[1]);
-  deconv_inst->SetPaddingRight(pad[1]);
-  deconv_inst->SetPaddingTop(pad[0]);
-  deconv_inst->SetPaddingBottom(pad[0]);
+  deconv_inst->SetPaddingsBefore({pad[0], pad[1]});
+  deconv_inst->SetPaddingsAfter({pad[0], pad[1]});
   deconv_inst->SetStrides(stride);
   deconv_inst->SetDilations(dilation);
   deconv_inst->SetGroup(group);

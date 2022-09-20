@@ -31,23 +31,21 @@ void GenericCXXCodeGen::RunOnInstruction(PoolingMaxInst* inst) {
   const auto& info = ImageAxisInfo::GetImageAxisInfo(
       inst->GetDataFormat(), inst->GetDataFormat() /* filter format */);
 
-  auto padding_left = static_cast<uint32_t>(inst->GetPaddingLeft());
-  auto padding_right = static_cast<uint32_t>(inst->GetPaddingRight());
-  auto padding_top = static_cast<uint32_t>(inst->GetPaddingTop());
-  auto padding_bottom = static_cast<uint32_t>(inst->GetPaddingBottom());
-  auto stride_h =
-      static_cast<uint32_t>(inst->GetStrides()[info.data_height_axis]);
-  auto stride_w =
-      static_cast<uint32_t>(inst->GetStrides()[info.data_width_axis]);
-  auto kernel_h =
-      static_cast<uint32_t>(inst->GetKsize()[info.kernel_height_axis]);
-  auto kernel_w =
-      static_cast<uint32_t>(inst->GetKsize()[info.kernel_width_axis]);
+  const auto& pad_b = inst->GetPaddingsBefore();
+  const auto& pad_a = inst->GetPaddingsAfter();
+  unsigned spatial_dims = ret_type.GetNumOfDims() - 2;
 
-  std::vector<uint32_t> strides{stride_h, stride_w};
-  std::vector<uint32_t> window{kernel_h, kernel_w};
-  std::vector<uint32_t> paddings_front{padding_top, padding_left};
-  std::vector<uint32_t> paddings_back{padding_bottom, padding_right};
+  const auto& strs = inst->GetStrides();
+  const auto& wins = inst->GetKsize();
+
+  std::vector<uint32_t> strides(
+      strs.begin() + info.data_spatial_axis,
+      strs.begin() + info.data_spatial_axis + spatial_dims);
+  std::vector<uint32_t> window(
+      wins.begin() + info.kernel_spatial_axis,
+      wins.begin() + info.kernel_spatial_axis + spatial_dims);
+  std::vector<uint32_t> paddings_front(pad_b.begin(), pad_b.end());
+  std::vector<uint32_t> paddings_back(pad_a.begin(), pad_a.end());
 
   EmitODLACall(ret, "odla_MaxPool", op0, inst->GetDataFormat(), window, strides,
                paddings_front, paddings_back, EmitShape(ret_type));
@@ -65,23 +63,21 @@ void GenericCXXCodeGen::RunOnInstruction(PoolingAvgInst* inst) {
   const auto& info = ImageAxisInfo::GetImageAxisInfo(
       inst->GetDataFormat(), inst->GetDataFormat() /* filter format */);
 
-  auto padding_left = static_cast<uint32_t>(inst->GetPaddingLeft());
-  auto padding_right = static_cast<uint32_t>(inst->GetPaddingRight());
-  auto padding_top = static_cast<uint32_t>(inst->GetPaddingTop());
-  auto padding_bottom = static_cast<uint32_t>(inst->GetPaddingBottom());
-  auto stride_h =
-      static_cast<uint32_t>(inst->GetStrides()[info.data_height_axis]);
-  auto stride_w =
-      static_cast<uint32_t>(inst->GetStrides()[info.data_width_axis]);
-  auto kernel_h =
-      static_cast<uint32_t>(inst->GetKsize()[info.kernel_height_axis]);
-  auto kernel_w =
-      static_cast<uint32_t>(inst->GetKsize()[info.kernel_width_axis]);
+  const auto& pad_b = inst->GetPaddingsBefore();
+  const auto& pad_a = inst->GetPaddingsAfter();
+  unsigned spatial_dims = ret_type.GetNumOfDims() - 2;
 
-  std::vector<uint32_t> strides{stride_h, stride_w};
-  std::vector<uint32_t> window{kernel_h, kernel_w};
-  std::vector<uint32_t> paddings_front{padding_top, padding_left};
-  std::vector<uint32_t> paddings_back{padding_bottom, padding_right};
+  const auto& strs = inst->GetStrides();
+  const auto& wins = inst->GetKsize();
+
+  std::vector<uint32_t> strides(
+      strs.begin() + info.data_spatial_axis,
+      strs.begin() + info.data_spatial_axis + spatial_dims);
+  std::vector<uint32_t> window(
+      wins.begin() + info.kernel_spatial_axis,
+      wins.begin() + info.kernel_spatial_axis + spatial_dims);
+  std::vector<uint32_t> paddings_front(pad_b.begin(), pad_b.end());
+  std::vector<uint32_t> paddings_back(pad_a.begin(), pad_a.end());
 
   EmitODLACall(ret, "odla_AveragePool", op0, inst->GetDataFormat(), window,
                strides, paddings_front, paddings_back, EmitShape(ret_type));

@@ -1042,10 +1042,8 @@ std::vector<Def> ConvertGlobalMaxPooling(const ONNXExtensionInst* ext,
 
   auto set_pooling_attributes = [&](auto inst) {
     inst->SetKsize({1, 1, kernel_size_h, kernel_size_w});
-    inst->SetPaddingLeft(0);
-    inst->SetPaddingRight(0);
-    inst->SetPaddingTop(0);
-    inst->SetPaddingBottom(0);
+    inst->SetPaddingsBefore({0, 0});
+    inst->SetPaddingsAfter({0, 0});
     inst->SetStrides({1, 1, 1, 1});
     inst->SetPadding(Padding::EXPLICIT);
     inst->SetDataFormat(DataFormat::NCHW);
@@ -1704,7 +1702,8 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
   return std::vector<Def>{};
 }
 
-static bool FixupConvPadding(Conv2DInst* inst) {
+template <typename T>
+static bool FixupConvPadding(T* inst) {
   if (inst->GetPadding() != Padding::EXPLICIT ||
       inst->GetPaddingsBefore().size() == inst->GetPaddingsAfter().size()) {
     return false;
@@ -1744,6 +1743,12 @@ bool ONNXExtensionLegalizer::RunOnBasicBlock(BasicBlock* bb) {
       changed |= FixupTranspose(DynCast<TransposeInst>(inst));
     } else if (inst->GetOpCode() == OpCode::CONV2D) {
       changed |= FixupConvPadding(DynCast<Conv2DInst>(inst));
+    } else if (inst->GetOpCode() == OpCode::CONV2DTRANSPOSE) {
+      changed |= FixupConvPadding(DynCast<Conv2DTransposeInst>(inst));
+    } else if (inst->GetOpCode() == OpCode::POOLINGAVG) {
+      changed |= FixupConvPadding(DynCast<PoolingAvgInst>(inst));
+    } else if (inst->GetOpCode() == OpCode::POOLINGMAX) {
+      changed |= FixupConvPadding(DynCast<PoolingMaxInst>(inst));
     }
   }
   return changed;

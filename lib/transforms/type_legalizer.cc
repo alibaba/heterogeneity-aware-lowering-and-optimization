@@ -464,10 +464,16 @@ static void FixupForDynamicShape(const Type& data_type,
 static Type ComputeKernelWiseType(
     const Type& data_type, const std::vector<int64_t>& kernel_shape,
     const std::vector<int>& strides, Padding padding_mode,
-    std::vector<int>* input_paddings, const std::vector<int>& dilations,
-    DataFormat data_format, DataFormat kernel_format, int group, OpCode op,
-    bool ceil_mode = false) {
-  std::vector<int>& explicit_paddings = *input_paddings;
+    std::vector<int>* paddings_before, std::vector<int>* paddings_after,
+    const std::vector<int>& dilations, DataFormat data_format,
+    DataFormat kernel_format, int group, OpCode op, bool ceil_mode = false) {
+  std::vector<int>& pad_before = *paddings_before;
+  std::vector<int>& pad_after = *paddings_after;
+
+  unsigned spatial_dims = data_type.GetNumOfDims() - 2;
+  pad_before.resize(spatial_dims);
+  pad_after.resize(spatial_dims);
+
   switch (op) {
     case OpCode::CONV2D:
     case OpCode::CONV2DTRANSPOSE:
@@ -483,10 +489,9 @@ static Type ComputeKernelWiseType(
 
   const auto& info =
       ImageAxisInfo::GetImageAxisInfo(data_format, kernel_format);
-  auto& data_shape = data_type.GetDimSizes();
+  const auto& data_shape = data_type.GetDimSizes();
   auto ret_shape = data_shape;
   HLCHECK(data_type.GetNumOfDims() >= 3); // [N, C, H...]
-  unsigned spatial_dims = data_type.GetNumOfDims() - 2;
 
   if (op != OpCode::POOLINGMAX && op != OpCode::POOLINGAVG) {
     // for depthwise, for NHWC, the kernel is H, W, in_ch, multiplier
@@ -527,11 +532,10 @@ static Type ComputeKernelWiseType(
       case Padding::EXPLICIT: {
         if (op == OpCode::CONV2DTRANSPOSE) {
           ret_shape[index] = (data_shape[index] - 1) * strides[index] +
-                             kernel_dim - explicit_paddings[i * 2] -
-                             explicit_paddings[i * 2 + 1];
+                             kernel_dim - pad_before[i] - pad_after[i];
         } else {
-          ret_shape[index] = (data_shape[index] + explicit_paddings[i * 2] +
-                              explicit_paddings[i * 2 + 1] - kernel_dilated);
+          ret_shape[index] = (data_shape[index] + pad_before[i] + pad_after[i] -
+                              kernel_dilated);
           if (ceil_mode) {
             ret_shape[index] =
                 (ret_shape[index] + strides[index] - 1) / strides[index] + 1;
@@ -550,11 +554,11 @@ static Type ComputeKernelWiseType(
         0L, (ret_shape[index] - 1) * strides[index] + kernel_dim +
                 (dilation_dim - 1) * (kernel_dim - 1) - data_shape[index]);
 
-    explicit_paddings[i * 2] = paddings / 2;
-    explicit_paddings[i * 2 + 1] = paddings - explicit_paddings[i * 2];
+    pad_before[i] = paddings / 2;
+    pad_after[i] = paddings - pad_before[i];
 
     if (padding_mode == Padding::SAME_LOWER) {
-      std::swap(explicit_paddings[i], explicit_paddings[i * 2 + 1]);
+      std::swap(pad_before[i], pad_after[i]);
     }
   }
   FixupForDynamicShape(data_type, &ret_shape);
@@ -577,29 +581,17 @@ static void RunOnInstruction(Conv2DInst* inst) {
     inst->SetGroup(in_channel);
   }
 
-  std::vector<int> explicit_paddings;
-  for (unsigned i = 0; i != inst->GetPaddingsBefore().size(); ++i) {
-    explicit_paddings.push_back(inst->GetPaddingsBefore()[i]);
-    explicit_paddings.push_back(inst->GetPaddingsAfter()[i]);
-  }
-  if (explicit_paddings.empty()) {
-    explicit_paddings.resize(
-        2 * (inst->GetOperand(0).GetType().GetNumOfDims() - 2));
-  }
+  std::vector<int> before = inst->GetPaddingsBefore();
+  std::vector<int> after = inst->GetPaddingsAfter();
+
   auto ret_type = ComputeKernelWiseType(
       data_type, kernel_type.GetDimSizes(), inst->GetStrides(),
-      inst->GetPadding(), &explicit_paddings, inst->GetDilations(),
+      inst->GetPadding(), &before, &after, inst->GetDilations(),
       inst->GetDataFormat(), inst->GetFilterFormat(), inst->GetGroup(),
       inst->GetOpCode());
   inst->GetResultsTypes()[0] = ret_type;
   if (inst->GetPadding() != Padding::EXPLICIT ||
       inst->GetPaddingsBefore().empty()) {
-    std::vector<int> before;
-    std::vector<int> after;
-    for (unsigned i = 0, e = explicit_paddings.size(); i < e; i += 2) {
-      before.push_back(explicit_paddings[i]);
-      after.push_back(explicit_paddings[i + 1]);
-    }
     inst->SetPaddingsBefore(before);
     inst->SetPaddingsAfter(after);
   }
@@ -612,20 +604,20 @@ static void RunOnInstruction(Conv2DTransposeInst* inst) {
   if (!data_type.IsValid() || !kernel_type.IsValid()) {
     return;
   }
-  std::vector<int> explicit_paddings{
-      inst->GetPaddingTop(), inst->GetPaddingBottom(), inst->GetPaddingLeft(),
-      inst->GetPaddingRight()};
+
+  std::vector<int> before = inst->GetPaddingsBefore();
+  std::vector<int> after = inst->GetPaddingsAfter();
+
   auto ret_type = ComputeKernelWiseType(
       data_type, kernel_type.GetDimSizes(), inst->GetStrides(),
-      inst->GetPadding(), &explicit_paddings, inst->GetDilations(),
+      inst->GetPadding(), &before, &after, inst->GetDilations(),
       inst->GetDataFormat(), inst->GetFilterFormat(), inst->GetGroup(),
       inst->GetOpCode());
   inst->GetResultsTypes()[0] = ret_type;
-  if (inst->GetPadding() != Padding::EXPLICIT) {
-    inst->SetPaddingTop(explicit_paddings[0]);
-    inst->SetPaddingBottom(explicit_paddings[1]);
-    inst->SetPaddingLeft(explicit_paddings[2]);
-    inst->SetPaddingRight(explicit_paddings[3]);
+  if (inst->GetPadding() != Padding::EXPLICIT ||
+      inst->GetPaddingsBefore().empty()) {
+    inst->SetPaddingsBefore(before);
+    inst->SetPaddingsAfter(after);
   }
 }
 
@@ -768,24 +760,23 @@ static void RunOnPoolingInstruction(Instruction* pooling_inst) {
 
   bool ceil_mode = inst->GetRoundMode() == 1;
 
-  std::vector<int> explicit_paddings{
-      inst->GetPaddingTop(), inst->GetPaddingBottom(), inst->GetPaddingLeft(),
-      inst->GetPaddingRight()};
+  std::vector<int> before = inst->GetPaddingsBefore();
+  std::vector<int> after = inst->GetPaddingsAfter();
+
   std::vector<int64_t> kernel_shape;
   kernel_shape.reserve(4);
   for (auto dim : inst->GetKsize()) {
     kernel_shape.push_back(dim);
   }
   auto ret_type = ComputeKernelWiseType(
-      data_type, kernel_shape, inst->GetStrides(), inst->GetPadding(),
-      &explicit_paddings, {1, 1, 1, 1}, inst->GetDataFormat(),
-      inst->GetDataFormat(), 1 /*group*/, inst->GetOpCode(), ceil_mode);
+      data_type, kernel_shape, inst->GetStrides(), inst->GetPadding(), &before,
+      &after, {1, 1, 1, 1}, inst->GetDataFormat(), inst->GetDataFormat(),
+      1 /*group*/, inst->GetOpCode(), ceil_mode);
   inst->GetResultsTypes()[0] = ret_type;
-  if (inst->GetPadding() != Padding::EXPLICIT) {
-    inst->SetPaddingTop(explicit_paddings[0]);
-    inst->SetPaddingBottom(explicit_paddings[1]);
-    inst->SetPaddingLeft(explicit_paddings[2]);
-    inst->SetPaddingRight(explicit_paddings[3]);
+  if (inst->GetPadding() != Padding::EXPLICIT ||
+      inst->GetPaddingsBefore().empty()) {
+    inst->SetPaddingsBefore(before);
+    inst->SetPaddingsAfter(after);
   }
 }
 

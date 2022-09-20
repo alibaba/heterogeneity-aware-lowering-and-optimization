@@ -61,10 +61,7 @@ def ONNX_AveragePool : OpMapping<"AveragePool", PoolingAvg> {
     AttributeMapping<"strides", "strides", "{1,1}", -1, 1>,
     AttributeMapping<"kernel_shape", "ksize", "{1,1}", -1, 1>,
     AttributeMapping<"", "data_format", "NCHW">,
-    AttributeMapping<"pads", "padding_left", "{0,0,0,0}", 0>,
-    AttributeMapping<"pads", "padding_top", "{0,0,0,0}", 1>,
-    AttributeMapping<"pads", "padding_right", "{0,0,0,0}", 2>,
-    AttributeMapping<"pads", "padding_bottom", "{0,0,0,0}", 3>,
+    AttributeMapping<"pads", "paddings_before", "{}">, // will be adjusted.
     AttributeMapping<"ceil_mode", "round_mode", "0">,
     AttributeMapping<"group", "group", "1">];
   let extension_attr_ = [
@@ -154,10 +151,8 @@ def ONNX_ConvTranspose : OpMapping<"ConvTranspose", Conv2DTranspose> {
     AttributeMapping<"", "data_format", "NCHW">,
     AttributeMapping<"", "filter_format", "CNHW">,
     AttributeMapping<"group", "group", "1">,
-    AttributeMapping<"pads", "padding_left", "{0,0,0,0}", 0>,
-    AttributeMapping<"pads", "padding_top", "{0,0,0,0}", 1>,
-    AttributeMapping<"pads", "padding_right", "{0,0,0,0}", 2>,
-    AttributeMapping<"pads", "padding_bottom", "{0,0,0,0}", 3>];
+    AttributeMapping<"pads", "paddings_before", "{}">, // will be adjusted.
+  ];
   let extension_attr_ = [
     ExtensionAttr<"kernel_shape", IntegerList, "{}">];
 }
@@ -301,10 +296,7 @@ def ONNX_MaxPool : OpMapping<"MaxPool", PoolingMax> {
     AttributeMapping<"strides", "strides", "{1,1}", -1, 1>,
     AttributeMapping<"kernel_shape", "ksize", "{1,1}", -1, 1>,
     AttributeMapping<"", "data_format", "NCHW">,
-    AttributeMapping<"pads", "padding_left", "{0,0,0,0}", 0>,
-    AttributeMapping<"pads", "padding_top", "{0,0,0,0}", 1>,
-    AttributeMapping<"pads", "padding_right", "{0,0,0,0}", 2>,
-    AttributeMapping<"pads", "padding_bottom", "{0,0,0,0}", 3>,
+    AttributeMapping<"pads", "paddings_before", "{}">, // will be adjusted.
     AttributeMapping<"group", "group", "1">,
     AttributeMapping<"ceil_mode", "round_mode", "0">];
 
