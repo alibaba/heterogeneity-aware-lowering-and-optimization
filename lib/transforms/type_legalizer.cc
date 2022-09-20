@@ -550,15 +550,16 @@ static Type ComputeKernelWiseType(
       }
     }
 
-    auto paddings = std::max(
-        0L, (ret_shape[index] - 1) * strides[index] + kernel_dim +
-                (dilation_dim - 1) * (kernel_dim - 1) - data_shape[index]);
+    if (padding_mode != Padding::EXPLICIT || ceil_mode) {
+      auto paddings = std::max(
+          0L, (ret_shape[index] - 1) * strides[index] + kernel_dim +
+                  (dilation_dim - 1) * (kernel_dim - 1) - data_shape[index]);
+      pad_before[i] = paddings / 2;
+      pad_after[i] = paddings - pad_before[i];
 
-    pad_before[i] = paddings / 2;
-    pad_after[i] = paddings - pad_before[i];
-
-    if (padding_mode == Padding::SAME_LOWER) {
-      std::swap(pad_before[i], pad_after[i]);
+      if (padding_mode == Padding::SAME_LOWER) {
+        std::swap(pad_before[i], pad_after[i]);
+      }
     }
   }
   FixupForDynamicShape(data_type, &ret_shape);
