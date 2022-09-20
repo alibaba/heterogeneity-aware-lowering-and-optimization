@@ -79,10 +79,11 @@ void GenericLLVMIRCodeGen::RunOnInstruction(PoolingMaxInst* inst0) {
       ir_builder->getInt64(inst.GetStrides()[info.data_height_axis]);
   llvm::Value* stride_w =
       ir_builder->getInt64(inst.GetStrides()[info.data_width_axis]);
-  llvm::Value* padding_left = ir_builder->getInt64(inst.GetPaddingLeft());
-  llvm::Value* padding_right = ir_builder->getInt64(inst.GetPaddingRight());
-  llvm::Value* padding_top = ir_builder->getInt64(inst.GetPaddingTop());
-  llvm::Value* padding_bottom = ir_builder->getInt64(inst.GetPaddingBottom());
+  llvm::Value* padding_left = ir_builder->getInt64(inst.GetPaddingsBefore()[1]);
+  llvm::Value* padding_right = ir_builder->getInt64(inst.GetPaddingsAfter()[1]);
+  llvm::Value* padding_top = ir_builder->getInt64(inst.GetPaddingsBefore()[0]);
+  llvm::Value* padding_bottom =
+      ir_builder->getInt64(inst.GetPaddingsAfter()[0]);
 
   llvm::Value* result = AllocateLLVMBuffer(ir_builder, Def{&inst, 0});
 
