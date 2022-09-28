@@ -180,6 +180,7 @@ odla_status odla_SetComputationItem(odla_computation computation,
 
     case ODLA_FP16_MODE:
       computation->fp16_mode = *(reinterpret_cast<bool*>(value));
+      SetFP16Mode(computation, computation->fp16_mode);
       break;
 
     case ODLA_LOAD_ENGINE_MODE:
