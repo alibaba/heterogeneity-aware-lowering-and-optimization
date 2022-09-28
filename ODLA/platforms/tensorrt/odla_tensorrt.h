@@ -176,6 +176,8 @@ class Logger : public nvinfer1::ILogger {
 };
 } // namespace open_dla_tensorrt
 
+inline static void SetFP16Mode(odla_computation comp, bool value);
+
 static open_dla_tensorrt::Logger Logger;
 
 struct _odla_value {
@@ -416,6 +418,18 @@ static odla_element_type GetODLAType(DataType type) {
     default:
       return ODLA_FLOAT32;
   }
+}
+
+void SetFP16Mode(odla_computation comp, bool value) {
+#if NV_TENSORRT_MAJOR >= 8
+  if (value) {
+    comp->builder_cfg->setFlag(BuilderFlag::kFP16);
+  } else {
+    comp->builder_cfg->clearFlag(BuilderFlag::kFP16);
+  }
+#else
+  comp->builder->setFp16Mode(value);
+#endif
 }
 
 static odla_device GetDefaultDevice() {
