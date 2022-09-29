@@ -40,7 +40,7 @@ odla_status ModelProcess::LoadModelFromWithMem(
   aclError ret = aclmdlLoadFromMem(ModelBufferData_.data.get(),
                                    ModelBufferData_.length, &modelId_);
   if (ret != ACL_ERROR_NONE) {
-    ERROR_LOG("load model from memory failed");
+    ERROR_LOG("load model from memory failed %d", ret);
     return ODLA_FAILURE;
   }
 
@@ -70,7 +70,7 @@ odla_status ModelProcess::CreateInput(void* input_ptr, size_t input_size) {
 
   ret = aclmdlAddDatasetBuffer(input_, inputData);
   if (ret != ACL_ERROR_NONE) {
-    ERROR_LOG("add input dataset buffer failed");
+    ERROR_LOG("add input dataset buffer failed %d", ret);
     aclrtFree(inputBuffer);
     aclDestroyDataBuffer(inputData);
     return ODLA_FAILURE;
@@ -102,7 +102,7 @@ odla_status ModelProcess::CreateDesc() {
 
   aclError ret = aclmdlGetDesc(modelDesc_, modelId_);
   if (ret != ACL_SUCCESS) {
-    ERROR_LOG("get model description failed");
+    ERROR_LOG("get model description failed %d", ret);
     return ODLA_FAILURE;
   }
 
@@ -138,21 +138,21 @@ odla_status ModelProcess::CreateOutput() {
     aclError ret =
         aclrtMalloc(&outputBuffer, buffer_size, ACL_MEM_MALLOC_NORMAL_ONLY);
     if (ret != ACL_ERROR_NONE) {
-      ERROR_LOG("can't malloc buffer, size is %zu, create output failed",
-                buffer_size);
+      ERROR_LOG("can't malloc buffer, size is %zu, create output failed  %d",
+                buffer_size, ret);
       return ODLA_FAILURE;
     }
 
     aclDataBuffer* outputData = aclCreateDataBuffer(outputBuffer, buffer_size);
     if (ret != ACL_ERROR_NONE) {
-      ERROR_LOG("can't create data buffer, create output failed");
+      ERROR_LOG("can't create data buffer, create output failed %d", ret);
       aclrtFree(outputBuffer);
       return ODLA_FAILURE;
     }
 
     ret = aclmdlAddDatasetBuffer(output_, outputData);
     if (ret != ACL_ERROR_NONE) {
-      ERROR_LOG("can't add data buffer, create output failed");
+      ERROR_LOG("can't add data buffer, create output failed %d", ret);
       aclrtFree(outputBuffer);
       aclDestroyDataBuffer(outputData);
       return ODLA_FAILURE;
@@ -235,7 +235,7 @@ void ModelProcess::Unload() {
 
   aclError ret = aclmdlUnload(modelId_);
   if (ret != ACL_ERROR_NONE) {
-    ERROR_LOG("unload model failed, modelId is %u", modelId_);
+    ERROR_LOG("unload model failed: %d, modelId is %u", ret, modelId_);
   }
 
   if (modelDesc_ != nullptr) {
