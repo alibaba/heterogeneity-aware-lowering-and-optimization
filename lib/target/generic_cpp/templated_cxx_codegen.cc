@@ -160,8 +160,9 @@ class Visitor : public clang::RecursiveASTVisitor<Visitor> {
         fd->dropAttrs();
         std::string txt;
 
-        txt += "static odla_computation " + fd->getName().str() + "() {\n";
-        txt += info_.ModelCode.str();
+        txt += "static void " + fd->getName().str() +
+               "(odla_computation comp) {\n"; // entry function declaration
+        txt += info_.ModelCode.str();         // entry function body
         txt += "\n};";
         rewriter_.ReplaceText(clang::SourceRange{loc.getLocWithOffset(0),
                                                  loc_e.getLocWithOffset(0)},
@@ -268,8 +269,6 @@ TemplatedCXXCodeGen::TemplatedCXXCodeGen(std::ostringstream& os,
 }
 
 void TemplatedCXXCodeGen::RunOnFunction(Function& function) {
-  generic_os_ << "  odla_computation _comp;\n";
-  generic_os_ << "  odla_CreateComputation(&_comp);\n";
   const auto& ctx = function.GetGlobalContext();
 
   // Declare external data.
@@ -297,7 +296,6 @@ void TemplatedCXXCodeGen::RunOnFunction(Function& function) {
   for (auto& bb : function) {
     RunOnBasicBlock(*bb);
   }
-  generic_os_ << " return _comp;\n";
   CXXModelInfo info(generic_os_);
   for (auto& arg : function.Args()) {
     info.InputIds.push_back(arg->GetName());
