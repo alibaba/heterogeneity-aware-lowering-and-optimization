@@ -1,0 +1,136 @@
+\hypertarget{odla__log_8h}{}\doxysection{ODLA/odla\+\_\+log.h File Reference}
+\label{odla__log_8h}\index{ODLA/odla\_log.h@{ODLA/odla\_log.h}}
+\doxysubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef void($\ast$ \mbox{\hyperlink{odla__log_8h_a7c6187c5ea4893b3f0046259b5bc1869}{odla\+\_\+logging\+\_\+func}}) (const char $\ast$file\+\_\+name, int line, const char $\ast$func\+\_\+name, \mbox{\hyperlink{odla__log_8h_af28cd9207f87b3dd8f1e4fa88ecb619c}{odla\+\_\+log\+\_\+level}} level, const char $\ast$msg)
+\begin{DoxyCompactList}\small\item\em Logging function type. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{odla__log_8h_af28cd9207f87b3dd8f1e4fa88ecb619c}{odla\+\_\+log\+\_\+level}} \{ \newline
+{\bfseries ODLA\+\_\+\+LOG\+\_\+\+LEVEL\+\_\+\+OFF}
+, {\bfseries ODLA\+\_\+\+LOG\+\_\+\+LEVEL\+\_\+\+FATAL}
+, {\bfseries ODLA\+\_\+\+LOG\+\_\+\+LEVEL\+\_\+\+ERROR}
+, {\bfseries ODLA\+\_\+\+LOG\+\_\+\+LEVEL\+\_\+\+WARN}
+, \newline
+{\bfseries ODLA\+\_\+\+LOG\+\_\+\+LEVEL\+\_\+\+INFO}
+, {\bfseries ODLA\+\_\+\+LOG\+\_\+\+LEVEL\+\_\+\+DEBUG}
+, {\bfseries ODLA\+\_\+\+LOG\+\_\+\+LEVEL\+\_\+\+TRACE}
+ \}
+\begin{DoxyCompactList}\small\item\em log level enum \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__log_8h_a755b1065b378daf219b2007418c8bc8e}{odla\+\_\+\+Set\+Log\+Level}} (\mbox{\hyperlink{odla__log_8h_af28cd9207f87b3dd8f1e4fa88ecb619c}{odla\+\_\+log\+\_\+level}} level)
+\begin{DoxyCompactList}\small\item\em Set current log level. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__log_8h_a56868b7ac9b089034ec1e5ccf16db4ce}{odla\+\_\+\+Set\+Logger}} (\mbox{\hyperlink{odla__log_8h_a7c6187c5ea4893b3f0046259b5bc1869}{odla\+\_\+logging\+\_\+func}} logger)
+\begin{DoxyCompactList}\small\item\em Set active logger. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__log_8h_a7c6187c5ea4893b3f0046259b5bc1869}{odla\+\_\+logging\+\_\+func}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__log_8h_a4a616eaf7183c8c935f58d179d8caf65}{odla\+\_\+\+Get\+Logger}} ()
+\begin{DoxyCompactList}\small\item\em Get active logger. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+This file defines the ODLA log related APIs. 
+
+Definition in file \mbox{\hyperlink{odla__log_8h_source}{odla\+\_\+log.\+h}}.
+
+
+
+\doxysubsection{Typedef Documentation}
+\mbox{\Hypertarget{odla__log_8h_a7c6187c5ea4893b3f0046259b5bc1869}\label{odla__log_8h_a7c6187c5ea4893b3f0046259b5bc1869}} 
+\index{odla\_log.h@{odla\_log.h}!odla\_logging\_func@{odla\_logging\_func}}
+\index{odla\_logging\_func@{odla\_logging\_func}!odla\_log.h@{odla\_log.h}}
+\doxysubsubsection{\texorpdfstring{odla\_logging\_func}{odla\_logging\_func}}
+{\footnotesize\ttfamily typedef void($\ast$ odla\+\_\+logging\+\_\+func) (const char $\ast$file\+\_\+name, int line, const char $\ast$func\+\_\+name, \mbox{\hyperlink{odla__log_8h_af28cd9207f87b3dd8f1e4fa88ecb619c}{odla\+\_\+log\+\_\+level}} level, const char $\ast$msg)}
+
+
+
+Logging function type. 
+
+
+
+Definition at line \mbox{\hyperlink{odla__log_8h_source_l00043}{43}} of file \mbox{\hyperlink{odla__log_8h_source}{odla\+\_\+log.\+h}}.
+
+
+
+\doxysubsection{Enumeration Type Documentation}
+\mbox{\Hypertarget{odla__log_8h_af28cd9207f87b3dd8f1e4fa88ecb619c}\label{odla__log_8h_af28cd9207f87b3dd8f1e4fa88ecb619c}} 
+\index{odla\_log.h@{odla\_log.h}!odla\_log\_level@{odla\_log\_level}}
+\index{odla\_log\_level@{odla\_log\_level}!odla\_log.h@{odla\_log.h}}
+\doxysubsubsection{\texorpdfstring{odla\_log\_level}{odla\_log\_level}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{odla__log_8h_af28cd9207f87b3dd8f1e4fa88ecb619c}{odla\+\_\+log\+\_\+level}}}
+
+
+
+log level enum 
+
+
+
+Definition at line \mbox{\hyperlink{odla__log_8h_source_l00032}{32}} of file \mbox{\hyperlink{odla__log_8h_source}{odla\+\_\+log.\+h}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00032              \{}
+\DoxyCodeLine{00033   ODLA\_LOG\_LEVEL\_OFF,}
+\DoxyCodeLine{00034   ODLA\_LOG\_LEVEL\_FATAL,}
+\DoxyCodeLine{00035   ODLA\_LOG\_LEVEL\_ERROR,}
+\DoxyCodeLine{00036   ODLA\_LOG\_LEVEL\_WARN,}
+\DoxyCodeLine{00037   ODLA\_LOG\_LEVEL\_INFO,}
+\DoxyCodeLine{00038   ODLA\_LOG\_LEVEL\_DEBUG,}
+\DoxyCodeLine{00039   ODLA\_LOG\_LEVEL\_TRACE,}
+\DoxyCodeLine{00040 \} \mbox{\hyperlink{odla__log_8h_af28cd9207f87b3dd8f1e4fa88ecb619c}{odla\_log\_level}};}
+
+\end{DoxyCode}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{odla__log_8h_a4a616eaf7183c8c935f58d179d8caf65}\label{odla__log_8h_a4a616eaf7183c8c935f58d179d8caf65}} 
+\index{odla\_log.h@{odla\_log.h}!odla\_GetLogger@{odla\_GetLogger}}
+\index{odla\_GetLogger@{odla\_GetLogger}!odla\_log.h@{odla\_log.h}}
+\doxysubsubsection{\texorpdfstring{odla\_GetLogger()}{odla\_GetLogger()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__log_8h_a7c6187c5ea4893b3f0046259b5bc1869}{odla\+\_\+logging\+\_\+func}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Get\+Logger (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Get active logger. 
+
+\begin{DoxyReturn}{Returns}
+function pointer to current logger 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__log_8h_a56868b7ac9b089034ec1e5ccf16db4ce}\label{odla__log_8h_a56868b7ac9b089034ec1e5ccf16db4ce}} 
+\index{odla\_log.h@{odla\_log.h}!odla\_SetLogger@{odla\_SetLogger}}
+\index{odla\_SetLogger@{odla\_SetLogger}!odla\_log.h@{odla\_log.h}}
+\doxysubsubsection{\texorpdfstring{odla\_SetLogger()}{odla\_SetLogger()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Set\+Logger (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__log_8h_a7c6187c5ea4893b3f0046259b5bc1869}{odla\+\_\+logging\+\_\+func}}}]{logger }\end{DoxyParamCaption})}
+
+
+
+Set active logger. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em logger} & the function pointer to logger\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
+\mbox{\Hypertarget{odla__log_8h_a755b1065b378daf219b2007418c8bc8e}\label{odla__log_8h_a755b1065b378daf219b2007418c8bc8e}} 
+\index{odla\_log.h@{odla\_log.h}!odla\_SetLogLevel@{odla\_SetLogLevel}}
+\index{odla\_SetLogLevel@{odla\_SetLogLevel}!odla\_log.h@{odla\_log.h}}
+\doxysubsubsection{\texorpdfstring{odla\_SetLogLevel()}{odla\_SetLogLevel()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Set\+Log\+Level (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{odla__log_8h_af28cd9207f87b3dd8f1e4fa88ecb619c}{odla\+\_\+log\+\_\+level}}}]{level }\end{DoxyParamCaption})}
+
+
+
+Set current log level. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em level} & the log level used\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+odla\+\_\+status 
+\end{DoxyReturn}
