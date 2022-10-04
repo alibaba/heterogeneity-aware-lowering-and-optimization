@@ -34,8 +34,8 @@ typedef struct \+\_\+odla\+\_\+value\+\_\+id $\ast$ \mbox{\hyperlink{odla__value
 \begin{DoxyCompactList}\small\item\em Set a value data. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__value_8h_a0d2391996f9aa4fbd7bf49e669a326d7}{odla\+\_\+\+Set\+Value\+Data\+By\+Id}} (const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id, const \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$data\+\_\+ptr)
 \begin{DoxyCompactList}\small\item\em Set a value data by id. \end{DoxyCompactList}\item 
-\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__value_8h_a31f626a22d8320f553f59df9fe6e9278}{odla\+\_\+\+Get\+Value\+Data}} (const \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} value, \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$data\+\_\+ptr)
-\begin{DoxyCompactList}\small\item\em Get a value data. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__value_8h_a68ba205b38d1f5b178802eff354c150d}{odla\+\_\+\+Get\+Raw\+Data\+Ptr}} (const \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} value, \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$$\ast$data\+\_\+ptr)
+\begin{DoxyCompactList}\small\item\em Get the raw data ptr from value. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__value_8h_af4df7fb15acdf47b1b7cc8b13ffd66b3}{odla\+\_\+\+Get\+Value\+Data\+By\+Id}} (const \mbox{\hyperlink{odla__value_8h_a875459af53aca134ae1b1d82e971ec82}{odla\+\_\+value\+\_\+id}} value\+\_\+id, \mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$data\+\_\+ptr)
 \begin{DoxyCompactList}\small\item\em Get a value data by id. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL \mbox{\hyperlink{odla__value_8h_a2ce41aaaf6b833974b6e63731a290761}{odla\+\_\+\+Get\+Value\+Type}} (const \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}} value, \mbox{\hyperlink{structodla__value__type}{odla\+\_\+value\+\_\+type}} $\ast$value\+\_\+type)
@@ -165,21 +165,21 @@ Return the value by id.
 \begin{DoxyReturn}{Returns}
 odla\+\_\+status 
 \end{DoxyReturn}
-\mbox{\Hypertarget{odla__value_8h_a31f626a22d8320f553f59df9fe6e9278}\label{odla__value_8h_a31f626a22d8320f553f59df9fe6e9278}} 
-\index{odla\_value.h@{odla\_value.h}!odla\_GetValueData@{odla\_GetValueData}}
-\index{odla\_GetValueData@{odla\_GetValueData}!odla\_value.h@{odla\_value.h}}
-\doxysubsubsection{\texorpdfstring{odla\_GetValueData()}{odla\_GetValueData()}}
-{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Get\+Value\+Data (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{value,  }\item[{\mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$}]{data\+\_\+ptr }\end{DoxyParamCaption})}
+\mbox{\Hypertarget{odla__value_8h_a68ba205b38d1f5b178802eff354c150d}\label{odla__value_8h_a68ba205b38d1f5b178802eff354c150d}} 
+\index{odla\_value.h@{odla\_value.h}!odla\_GetRawDataPtr@{odla\_GetRawDataPtr}}
+\index{odla\_GetRawDataPtr@{odla\_GetRawDataPtr}!odla\_value.h@{odla\_value.h}}
+\doxysubsubsection{\texorpdfstring{odla\_GetRawDataPtr()}{odla\_GetRawDataPtr()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{odla__common_8h_a1f9123e77ab174e483a7f307eb9c264e}{ODLA\+\_\+\+API\+\_\+\+EXPORT}} \mbox{\hyperlink{odla__common_8h_a32d12bc3360c8b8891c225a703f7db29}{odla\+\_\+status}} ODLA\+\_\+\+API\+\_\+\+CALL odla\+\_\+\+Get\+Raw\+Data\+Ptr (\begin{DoxyParamCaption}\item[{const \mbox{\hyperlink{odla__value_8h_ace8591dbfa7d6ec7c38533286be8490b}{odla\+\_\+value}}}]{value,  }\item[{\mbox{\hyperlink{odla__common_8h_ada3e0e93ebd03f1f5fe3ff21655cdb11}{odla\+\_\+void}} $\ast$$\ast$}]{data\+\_\+ptr }\end{DoxyParamCaption})}
 
 
 
-Get a value data. 
+Get the raw data ptr from value. 
 
 
 \begin{DoxyParams}{Parameters}
 {\em value} & the value \\
 \hline
-{\em data\+\_\+ptr} & the pointer to the retrieved data buffer\\
+{\em data\+\_\+ptr} & the raw data pointer of the value\\
 \hline
 \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
