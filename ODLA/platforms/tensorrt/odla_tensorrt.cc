@@ -167,6 +167,8 @@ struct _odla_value {
       : layer(layer), tensor(layer->getOutput(0)), type(type), name(name) {
     layer->setName(name);
   }
+  _odla_value(const void* ptr, const odla_value_type& type, const char* name)
+      : data_ptr(ptr), type(type), name(name), is_const(true) {}
 
   _odla_value() {}
 
@@ -177,6 +179,8 @@ struct _odla_value {
   odla_value_type type;
   const char* name;
   bool is_shape_tensor = false;
+  const void* data_ptr;
+  bool is_const;
 };
 
 #ifdef MAX_WORKSPACE_SIZE
@@ -520,6 +524,31 @@ static odla_value CreateValue(T* t, const odla_value_type& type,
   return ret;
 }
 
+template <typename T>
+static odla_value_shape CreateShape(odla_value shape) {
+  odla_value_shape new_output_dims;
+  auto output_type = shape->type;
+  new_output_dims.size = output_type.shape.dims[0];
+  const T* shape_data_mem = static_cast<const T*>(shape->data_ptr);
+  for (int i = 0; i < new_output_dims.size; ++i) {
+    new_output_dims.dims[i] = shape_data_mem[i];
+  }
+  return new_output_dims;
+}
+
+static odla_value CreateValue(const void* ptr, const odla_value_type& type,
+                              const odla_value_id id) {
+  const char* name = reinterpret_cast<const char*>(id);
+
+  auto v = std::make_unique<_odla_value>(ptr, type, name);
+  auto ret = v.get();
+  g_comp->vals.push_back(std::move(v));
+  if (!g_comp->branchs.empty()) {
+    g_comp->branchs.top().branch->addInput(*ret);
+  }
+  return ret;
+}
+
 static std::vector<nvinfer1::RNNGateType> GetRNNGateOrder(
     const odla_rnn_gate_order gate_order) {
   const nvinfer1::RNNGateType trt_gate_iofc[] = {
@@ -830,6 +859,11 @@ odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
   odla_value v = CreateValue(c->getOutput(0), ValidateValueType(type), id);
   v->const_layer = c;
   return v;
+}
+
+odla_value odla_CreateLiteral(odla_value_type type, const void* data_ptr,
+                              const odla_value_id id) {
+  return CreateValue(data_ptr, type, id);
 }
 
 odla_status odla_SetValueAsOutput(const odla_value val) {
@@ -1487,12 +1521,18 @@ odla_value odla_ExpandDims(odla_value input, odla_value_shape output_dims,
   assert(rank_diff >= 0);
 
   if (rank_diff > 0) {
+    odla_value_type dt{.element_type = ODLA_INT64,
+                       .shape = {.size = 1, .dims = {output_dims.size}}};
+    std::vector<int64_t> shape_data(output_dims.size);
     odla_value_shape new_dims = output_dims;
     for (int i = 0, j = -rank_diff; i < output_dims.size; ++i, ++j) {
       new_dims.dims[i] = j >= 0 ? input_dims.dims[j] : 1;
+      shape_data[i] = new_dims.dims[i];
     }
+    auto new_shape = odla_CreateLiteral(dt, shape_data.data(), nullptr);
     const std::string& name = GetName(value_id, "_expand");
-    input = odla_Reshape(input, new_dims, (const odla_value_id)name.c_str());
+    input = odla_ReshapeDynamic(input, new_shape,
+                                (const odla_value_id)name.c_str());
     input_dims = new_dims;
   }
   Dims start;
@@ -2287,6 +2327,29 @@ odla_value odla_Reshape(odla_value input, odla_value_shape output_dims,
   return CreateValue(shuffle, {input->type.element_type, output_dims}, id);
 }
 
+odla_value odla_ReshapeDynamic(odla_value input, odla_value output_shape,
+                               const odla_value_id value_id) {
+  auto shuffle = g_comp->network->addShuffle(*input);
+  if (output_shape->is_const) {
+    const auto& output_ty = output_shape->type;
+    odla_value_shape new_output_dims;
+    switch (output_ty.element_type) {
+      case ODLA_INT64:
+        new_output_dims = CreateShape<int64_t>(output_shape);
+        break;
+      case ODLA_INT32:
+        new_output_dims = CreateShape<int32_t>(output_shape);
+        break;
+      default:
+        assert(0);
+        break;
+    }
+    shuffle->setReshapeDimensions(GetNVDims(new_output_dims));
+    return CreateValue(shuffle, {input->type.element_type, new_output_dims},
+                       value_id);
+  }
+}
+
 odla_value odla_Transpose(odla_value input, odla_value_shape permutations,
                           odla_value_shape output_dims,
                           const odla_value_id id) {
@@ -2311,7 +2374,16 @@ static odla_value arg_min_max(odla_value input, odla_int32 axis,
     auto name = GetName(id, "_keep_dims");
     auto ret = CreateValue(topk->getOutput(1), output_value_type,
                            (const odla_value_id)name.c_str());
-    return odla_Reshape(ret, output_value_type.shape, id);
+    int64_t nb_dims = output_value_type.shape.size;
+
+    odla_value_type dt{.element_type = ODLA_INT64,
+                       .shape = {.size = 1, .dims = {nb_dims}}};
+    std::vector<int64_t> shape_data(nb_dims);
+    for (int i = 0; i < nb_dims; ++i) {
+      shape_data[i] = output_value_type.shape.dims[i];
+    }
+    auto new_shape = odla_CreateLiteral(dt, shape_data.data(), nullptr);
+    return odla_ReshapeDynamic(ret, new_shape, id);
   }
   return CreateValue(topk->getOutput(1), output_value_type, id);
 }

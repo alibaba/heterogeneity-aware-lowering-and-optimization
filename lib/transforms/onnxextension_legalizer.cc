@@ -49,6 +49,12 @@ static std::vector<Def> ConvertUnsqueeze(const ONNXExtensionInst* ext,
   }
   std::set<int> axes;
   if (num_ops == 2) {
+    if (!IsA<Constant>(ext->GetOperand(1))) {
+      auto new_inst =
+          builder->CreateUnsqueeze(ext->GetName(), input, ext->GetOperand(1));
+
+      return {*new_inst};
+    }
     const Constant* axes_c = DynCast<Constant>(ext->GetOperand(1));
     if (axes_c == nullptr) {
       return {};
@@ -81,9 +87,9 @@ static std::vector<Def> ConvertUnsqueeze(const ONNXExtensionInst* ext,
   ConstantBuilder cb(ext->GetParent()->GetParent());
   Constant* c = cb.CreateConstant(
       ext->GetName() + "_unsqueeze",
-      Type{DataType::INT64, {static_cast<int64_t>(new_dims.size())}},
+      Type{DataType::INT64, {static_cast<int64_t>(new_dims.size())}, true},
       new_dims.data());
-  auto new_inst = builder->CreateReshape(ext->GetName(), {input, *c});
+  auto new_inst = builder->CreateReshapeDynamic(ext->GetName(), input, *c);
   return {*new_inst};
 }
 
@@ -215,13 +221,14 @@ static std::vector<Def> ConvertDepthToSpace(const ONNXExtensionInst* ext,
   ConstantBuilder c_builder(ext->GetParent()->GetParent());
   const auto& name = input.GetDef()->GetName();
   auto c_shape_0 = c_builder.CreateConstant(
-      name + "_shape_0", Type{DataType::INT64, {tmp_rank}}, shape_0);
-  auto v = builder->CreateReshape(name + "_reshape_0", input, *c_shape_0);
+      name + "_shape_0", Type{DataType::INT64, {tmp_rank}, true}, shape_0);
+  auto v =
+      builder->CreateReshapeDynamic(name + "_reshape_0", input, *c_shape_0);
   auto tr = builder->CreateTranspose(name + "_tr", {*v});
   tr->SetPermutation(perm);
   auto c_shape_1 = c_builder.CreateConstant(
-      name + "_shape_1", Type{DataType::INT64, {4}}, shape_1);
-  return {*builder->CreateReshape(name + "_reshape_1", *tr, *c_shape_1)};
+      name + "_shape_1", Type{DataType::INT64, {4}, true}, shape_1);
+  return {*builder->CreateReshapeDynamic(name + "_reshape_1", *tr, *c_shape_1)};
 }
 
 static std::vector<Def> ConvertDynamicQuantize(const ONNXExtensionInst* ext,
@@ -422,7 +429,7 @@ static std::vector<Def> ConvertFlatten(const ONNXExtensionInst* ext,
   const Attribute* attr = ext->GetAttributes()[0].get();
   HLCHECK(attr->GetName() == "axis");
   int axis = attr->GetValueAsInteger();
-  std::vector<int32_t> new_dims{1, 1};
+  std::vector<int64_t> new_dims{1, 1};
   for (int i = 0, e = input_type.GetNumOfDims(); i < e; ++i) {
     if (i < axis) {
       new_dims[0] *= input_type.GetNumOfElementsInDim(i);
@@ -431,9 +438,10 @@ static std::vector<Def> ConvertFlatten(const ONNXExtensionInst* ext,
     }
   }
   ConstantBuilder cb(ext->GetParent()->GetParent());
-  Constant* c = cb.CreateConstant(ext->GetName() + "_flatten_dims",
-                                  Type{DataType::INT32, {2}}, new_dims.data());
-  auto new_inst = builder->CreateReshape(ext->GetName(), {input, *c});
+  Constant* c =
+      cb.CreateConstant(ext->GetName() + "_flatten_dims",
+                        Type{DataType::INT64, {2}, true}, new_dims.data());
+  auto new_inst = builder->CreateReshapeDynamic(ext->GetName(), input, *c);
   return {*new_inst};
 }
 
@@ -526,6 +534,22 @@ static std::vector<Def> ConvertResize(const ONNXExtensionInst* ext,
   resize->SetExplicitShape(explicit_shape);
 
   return {*resize};
+}
+
+static std::vector<Def> ConvertReshape(const ONNXExtensionInst* ext,
+                                       IRBuilder* builder) {
+  const auto& op0 = ext->GetOperand(0);
+  ConstantBuilder cb(ext->GetParent()->GetParent());
+  auto op1 = ext->GetOperand(1);
+  if (!IsA<Constant>(op1)) {
+    auto new_inst =
+        builder->CreateReshapeDynamic(ext->GetName(), op0, ext->GetOperand(1));
+    return {*new_inst};
+  }
+  auto& ty = op1.GetType();
+  op1.SetType(halo::Type{ty.GetDataType(), ty.GetDimSizes(), true});
+  auto new_inst = builder->CreateReshapeDynamic(ext->GetName(), op0, op1);
+  return {*new_inst};
 }
 
 static std::vector<Def> ConvertSqueeze(const ONNXExtensionInst* ext,
@@ -1615,6 +1639,9 @@ static std::vector<Def> ConvertONNXExtension(const ONNXExtensionInst* onnx_inst,
     }
     case ONNXExtOpCode::RESIZE: {
       return ConvertResize(onnx_inst, builder);
+    }
+    case ONNXExtOpCode::RESHAPE: {
+      return ConvertReshape(onnx_inst, builder);
     }
     case ONNXExtOpCode::SQUEEZE: {
       return ConvertSqueeze(onnx_inst, builder);

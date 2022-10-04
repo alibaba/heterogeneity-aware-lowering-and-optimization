@@ -139,7 +139,7 @@ std::vector<Def> ConvertSqueezeImpl(const T* ext, IRBuilder* builder,
     HLCHECK(attr->GetName() == attr_name);
     squeeze_dims = attr->GetValueAsIntegerList();
   }
-  std::vector<int32_t> new_dims;
+  std::vector<int64_t> new_dims;
   for (size_t i = 0, e = input_type.GetNumOfDims(); i < e; ++i) {
     auto size = input_type.GetNumOfElementsInDim(i);
     if (size != 1) {
@@ -153,17 +153,18 @@ std::vector<Def> ConvertSqueezeImpl(const T* ext, IRBuilder* builder,
     }
   }
   ConstantBuilder cb(ext->GetParent()->GetParent());
-  const int32_t one = 1;
+  const int64_t one = 1;
   std::vector<int64_t> new_shape{static_cast<int64_t>(new_dims.size())};
-  const int32_t* data = new_dims.data();
+  const int64_t* data = new_dims.data();
   if (new_dims.empty()) {
     data = &one;
     new_shape.clear();
   }
   Constant* c = cb.CreateConstant(ext->GetName() + "_squeeze_dims",
-                                  Type{DataType::INT32, new_shape}, data);
+                                  Type{DataType::INT64, new_shape, true}, data);
   builder->SetInsertAfter(ext);
-  auto new_inst = builder->CreateReshape(ext->GetName(), {input, *c});
+
+  auto new_inst = builder->CreateReshapeDynamic(ext->GetName(), input, *c);
   return {*new_inst};
 }
 

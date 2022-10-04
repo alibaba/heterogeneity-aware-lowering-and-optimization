@@ -26,6 +26,7 @@
 #include <cstring>
 #include <iostream>
 #include <numeric>
+#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -198,6 +199,12 @@ odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
   g_comp->inputs[name] = v;
   g_comp->input_vals.push_back(v);
   return v;
+}
+
+odla_value odla_CreateLiteral(odla_value_type type, const void* data_ptr,
+                              const odla_value_id id) {
+  rewrite_scalar_type(type);
+  return CreateValue(data_ptr, type, id);
 }
 
 odla_status odla_GetNumOfArgsFromComputation(const odla_computation computation,
@@ -889,13 +896,45 @@ odla_value odla_Reshape(odla_value input, odla_value_shape output_dims,
   return t;
 }
 
+template <typename T>
+static odla_value_shape CreateShape(odla_value shape) {
+  const T* p_shape_mem;
+  const auto& shape_dims = shape->shape;
+  int shape_nbdims = shape_dims.dims[0];
+  assert(shape->data_ptr != nullptr);
+  p_shape_mem = static_cast<const T*>(shape->data_ptr);
+  odla_value_shape new_output_dims;
+  new_output_dims.size = shape_nbdims;
+  for (int i = 0; i < shape_nbdims; ++i) {
+    new_output_dims.dims[i] = p_shape_mem[i];
+  }
+  return new_output_dims;
+}
+
 odla_value odla_ReshapeDynamic(odla_value input, odla_value output_shape,
                                const odla_value_id value_id) {
   const auto& input_dims = input->shape;
   int dims = input_dims.size;
   const auto& shape_dims = output_shape->shape;
   int shape_nbdims = shape_dims.dims[0];
-
+  if (output_shape->is_const) {
+    const auto& output_ty = output_shape->elem_type;
+    odla_value_shape new_output_dims;
+    switch (output_ty) {
+      case ODLA_INT64:
+        new_output_dims = CreateShape<int64_t>(output_shape);
+        break;
+      case ODLA_INT32:
+        new_output_dims = CreateShape<int32_t>(output_shape);
+        break;
+      default:
+        assert(0);
+        break;
+    }
+    auto t = CreateValue(input->mem, new_output_dims, value_id);
+    t->elem_type = input->elem_type;
+    return t;
+  }
   dnnl::memory::data_type type = input->mem.get_desc().data_type();
   dnnl::memory::desc dst_md = getMemoryDesc(input_dims, type);
   auto dst_mem = dnnl::memory(dst_md, g_comp->eng);
@@ -928,6 +967,43 @@ odla_value odla_ReshapeDynamic(odla_value input, odla_value output_shape,
     if (neg_dim >= 0) {
       new_output_dims.dims[neg_dim] = elements_num / product;
     }
+    is_dynamic_shape = true;
+    real_shape[v] = new_output_dims;
+  };
+  add_op(op);
+  InterpretIfNeeded();
+  return v;
+}
+
+odla_value odla_Unsqueeze(odla_value input, odla_value axes,
+                          const odla_value_id value_id) {
+  const auto& input_dims = input->shape;
+  int dims = input_dims.size;
+  const auto& axes_dims = axes->shape;
+  int axes_nbdims = axes_dims.dims[0];
+
+  dnnl::memory::data_type type = input->mem.get_desc().data_type();
+  dnnl::memory::desc dst_md = getMemoryDesc(input_dims, type);
+  auto dst_mem = dnnl::memory(dst_md, g_comp->eng);
+  auto v = CreateValue(dst_mem, input_dims, value_id);
+  auto len_input = getValueStorageSize(input);
+
+  auto op = [=]() {
+    int output_rank = dims + axes_nbdims;
+    memcpy(dst_mem.get_data_handle(), input->mem.get_data_handle(), len_input);
+    int64_t* p_axes_mem = static_cast<int64_t*>(axes->mem.get_data_handle());
+    std::set<int64_t> axes_data;
+    axes_data = std::set<int64_t>(p_axes_mem, p_axes_mem + axes_nbdims);
+
+    odla_value_shape new_output_dims;
+    new_output_dims.size = output_rank;
+    for (int i = 0, j = 0; i < output_rank; ++i) {
+      new_output_dims.dims[i] =
+          (axes_data.count(i) != 0 || axes_data.count(i - output_rank) != 0)
+              ? 1
+              : input_dims.dims[j++];
+    }
+
     is_dynamic_shape = true;
     real_shape[v] = new_output_dims;
   };
@@ -1478,7 +1554,12 @@ odla_value odla_BatchNormalization(odla_value input,
       if (x == nullptr) {
         x = CreateConstantFromScalar(scalar, 2);
       }
-      return odla_Reshape(x, {2, {1, channels}}, nullptr);
+      odla_value_type dt{.element_type = ODLA_INT64,
+                         .shape = {.size = 1, .dims = {2}}};
+      std::vector<int64_t> shape_data(2, 1);
+      shape_data[1] = channels;
+      auto new_shape = odla_CreateLiteral(dt, shape_data.data(), nullptr);
+      return odla_ReshapeDynamic(x, new_shape, nullptr);
     };
     odla_value s = get_value(scale, scalar_scale);
     odla_value b = get_value(offset, scalar_offset);
@@ -1592,11 +1673,18 @@ odla_value odla_InstanceNormalization(
     }
   }
 
-  auto scale_shape = mean_shape;
-  scale_shape.dims[0] = 1;
+  odla_value_type dt{.element_type = ODLA_INT64,
+                     .shape = {.size = 1, .dims = {mean_shape.size}}};
+  std::vector<int64_t> shape_data(mean_shape.size);
+  for (int i = 0; i < mean_shape.size; ++i) {
+    shape_data[i] = mean_shape.dims[i];
+  }
+  shape_data[0] = 1;
+  auto new_shape = odla_CreateLiteral(dt, shape_data.data(), nullptr);
+
   if (ch_first) {
-    scale = odla_Reshape(scale, scale_shape, nullptr);
-    offset = odla_Reshape(offset, scale_shape, nullptr);
+    scale = odla_ReshapeDynamic(scale, new_shape, nullptr);
+    offset = odla_ReshapeDynamic(offset, new_shape, nullptr);
   }
 
   auto elems = CreateConstantFromScalar(static_cast<float>(m));

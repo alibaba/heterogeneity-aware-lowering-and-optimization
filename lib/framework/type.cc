@@ -72,6 +72,46 @@ Type::Type(const DataType dt_id, const std::vector<int64_t>& shape)
   }
 }
 
+/// To constructs a dt_id type with the shape dimension.
+/// An empty shape is allowed.
+Type::Type(const DataType dt_id, const std::vector<int64_t>& shape,
+           bool is_literal)
+    : data_type_id_(dt_id), shape_(shape), is_literal_(is_literal) {
+  if (!shape.empty()) {
+    total_num_of_elements_ = 1;
+
+    if (shape[0] == kDynamicBatchSize) {
+      is_dynamic_batch_ = true;
+      total_num_of_elements_ = std::numeric_limits<int64_t>::max();
+    } else if (shape[0] >= 0) {
+      total_num_of_elements_ *= shape[0];
+    } else {
+      total_num_of_elements_ = -1;
+    }
+
+    for (int64_t i = 1, e = shape.size(); i != e; ++i) {
+      if (shape[i] < 0) {
+        if (shape[i] == kDynamicShapeSize) {
+          is_dynamic_shape_ = true;
+          total_num_of_elements_ = std::numeric_limits<int64_t>::max();
+        } else {
+          total_num_of_elements_ = -1;
+        }
+        break;
+      }
+      total_num_of_elements_ *= shape[i];
+    }
+
+    if (is_dynamic_batch_) {
+      total_num_of_elements_ = std::numeric_limits<int64_t>::max();
+    }
+  } else {
+    // scalar type
+    is_scalar_ = true;
+    total_num_of_elements_ = 1;
+  }
+}
+
 template <>
 bool Type::HasNativeType<bool>(DataType dt) {
   return dt == DataType::BOOL;

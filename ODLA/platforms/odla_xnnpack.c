@@ -20,6 +20,7 @@
 #include <float.h>
 #include <math.h>
 #include <pthreadpool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -175,6 +176,8 @@ struct _odla_value {
   float* buf1;
   int is_extern_data;
   int needs_setup;
+  bool is_const;
+  odla_element_type elem_type;
 };
 
 #define MAX_VALUE 1000
@@ -279,8 +282,9 @@ odla_status odla_DestroyContext(odla_context ctx) {
 }
 
 odla_value odla_CreateValue(odla_value_type type, const odla_value_id id) {
-  assert(type.element_type == ODLA_FLOAT32);
+  // assert(type.element_type == ODLA_FLOAT32);
   odla_value v = GetValue(&type.shape, id);
+  v->elem_type = type.element_type;
   return v;
 }
 
@@ -300,7 +304,7 @@ odla_status odla_GetValueData(const odla_value value, odla_void* data_ptr,
 
 odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
                                const odla_value_id id) {
-  assert(type.element_type == ODLA_FLOAT32);
+  // assert(type.element_type == ODLA_FLOAT32);
   odla_value val = GetOrCreateValue(&type.shape, id);
   if (val->data == NULL) {
     val->data = (void*)ptr;
@@ -313,6 +317,20 @@ odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
       XNN_INVALID_VALUE_ID, 0, &val->id);
   assert(s == xnn_status_success);
 #endif
+  val->elem_type = type.element_type;
+  return val;
+}
+
+odla_value odla_CreateLiteral(odla_value_type type, const void* ptr,
+                              const odla_value_id id) {
+  odla_value val = GetOrCreateValue(&type.shape, id);
+  if (val->data == NULL) {
+    val->data = (void*)ptr;
+    val->is_extern_data = 1;
+    val->needs_setup = 0;
+    val->is_const = true;
+  }
+  val->elem_type = type.element_type;
   return val;
 }
 
@@ -797,6 +815,29 @@ odla_value odla_Reshape(odla_value input, odla_value_shape output_dims,
   val->data = input->data;
   val->is_extern_data = 1;
   return val;
+}
+
+odla_value odla_ReshapeDynamic(odla_value input, odla_value output_shape,
+                               const odla_value_id id) {
+  if (output_shape->is_const) {
+    odla_value_shape new_output_dims;
+    new_output_dims.size = output_shape->shape.dims[0];
+    if (output_shape->elem_type == ODLA_INT64) {
+      int64_t* p_shape_mem = (int64_t*)output_shape->data;
+      for (int i = 0; i < new_output_dims.size; ++i) {
+        new_output_dims.dims[i] = p_shape_mem[i];
+      }
+    } else {
+      int32_t* p_shape_mem = (int32_t*)output_shape->data;
+      for (int i = 0; i < new_output_dims.size; ++i) {
+        new_output_dims.dims[i] = p_shape_mem[i];
+      }
+    }
+    odla_value val = GetOrCreateValue(&new_output_dims, id);
+    val->data = input->data;
+    val->is_extern_data = 1;
+    return val;
+  }
 }
 
 odla_value odla_ReduceMean(odla_value input, odla_size_t num_of_axes,

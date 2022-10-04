@@ -271,7 +271,7 @@ static void RunOnInstruction(CompressInst* inst) {
   inst->GetResultsTypes()[0] = Type{dt, ret_dims};
 }
 
-static void RunOnInstruction(ReshapeInst* inst) {
+static void RunOnInstruction(ReshapeDynamicInst* inst) {
   auto& op0_type = inst->GetOperand(0).GetType();
   Def op1 = inst->GetOperand(1);
   const auto& op1_type = op1.GetType();
@@ -318,6 +318,8 @@ static void RunOnInstruction(ReshapeInst* inst) {
   size_t product = 1;
   size_t elements_num = 1;
   int neg_dim = -1;
+  halo::Type new_op1_type{DataType::INT64, op1_type.GetDimSizes(), true};
+  ConstantBuilder cb(inst->GetParent()->GetParent());
   if (op0_type.IsDynamicShape()) {
     halo::Type new_type{op0_type.GetDataType(), new_shape};
     inst->GetResultsTypes()[0] = new_type;
@@ -357,7 +359,9 @@ static void RunOnInstruction(ReshapeInst* inst) {
       HLCHECK(elements_num % product == 0 && "Invalid reshape operand");
       new_shape[neg_dim] = elements_num / product;
     }
-
+    Constant* c = cb.CreateConstant(inst->GetName() + "_shape", new_op1_type,
+                                    new_shape.data());
+    inst->ReplaceOperandWith(1, *c);
     halo::Type new_type{op0_type.GetDataType(), new_shape};
     inst->GetResultsTypes()[0] = new_type;
 
@@ -393,6 +397,9 @@ static void RunOnInstruction(ReshapeInst* inst) {
     }
 
     halo::Type new_type{op0_type.GetDataType(), new_shape};
+    Constant* c = cb.CreateConstant(inst->GetName() + "_shape", new_op1_type,
+                                    new_shape.data());
+    inst->ReplaceOperandWith(1, *c);
     inst->GetResultsTypes()[0] = new_type;
   }
 }
