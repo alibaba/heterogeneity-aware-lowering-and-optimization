@@ -66,7 +66,7 @@ const char* odla_GetVersionString() {
 // Explicitly load cuda runtime before all other ctors, so cuda rt will be
 // released after calling dtors of all other global objs. This avoids the error
 // of "driver shutting down".
-static auto Dummy = cudaFree(0);
+// static auto Dummy = cudaFree(0);
 
 template <typename T>
 struct TrtDestroyer {
