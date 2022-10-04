@@ -46,7 +46,7 @@ macro(gen_protobuf_files)
     )
   endforeach(PROTO_FILE)
 
-  # Add link library and include pathes for generated files.
+  # Add link library and include paths for generated files.
   set(GEN_TARGET ${_TARGET_NAME}_GEN)
   add_library(${GEN_TARGET} OBJECT "")
   target_sources(${GEN_TARGET} PUBLIC ${ALL_GEN_SRCS})
