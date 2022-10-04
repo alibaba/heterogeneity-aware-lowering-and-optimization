@@ -307,17 +307,20 @@ struct _odla_computation {
   }
 };
 
-static nvinfer1::Dims GetNVDims(const odla_value_shape& dims) {
+template <typename Tint>
+static nvinfer1::Dims GetNVDims(int size, const Tint* dims) {
   nvinfer1::Dims ret;
-  ret.nbDims = dims.size;
-  assert(dims.size <= std::min(nvinfer1::Dims::MAX_DIMS, ODLA_MAX_DIMENSION));
-  if (dims.size == 0) {
+  ret.nbDims = size;
+  assert(size <= std::min(nvinfer1::Dims::MAX_DIMS, ODLA_MAX_DIMENSION));
+  if (size == 0) {
     ret.d[0] = 0;
   }
-  for (int i = 0; i < dims.size; ++i) {
-    ret.d[i] = dims.dims[i];
-  }
+  std::copy(dims, dims + size, ret.d);
   return ret;
+}
+
+static nvinfer1::Dims GetNVDims(const odla_value_shape& dims) {
+  return GetNVDims(dims.size, dims.dims);
 }
 
 static odla_value_shape GetOdlaShape(const nvinfer1::Dims& dims) {

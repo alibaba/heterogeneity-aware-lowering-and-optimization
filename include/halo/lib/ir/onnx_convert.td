@@ -62,6 +62,7 @@ def ONNX_AveragePool : OpMapping<"AveragePool", PoolingAvg> {
     AttributeMapping<"kernel_shape", "ksize", "{1,1}", -1, 1>,
     AttributeMapping<"", "data_format", "NCHW">,
     AttributeMapping<"pads", "paddings_before", "{}">, // will be adjusted.
+    AttributeMapping<"count_include_pad", "padding_included", "false">,
     AttributeMapping<"ceil_mode", "round_mode", "0">,
     AttributeMapping<"group", "group", "1">];
   let extension_attr_ = [

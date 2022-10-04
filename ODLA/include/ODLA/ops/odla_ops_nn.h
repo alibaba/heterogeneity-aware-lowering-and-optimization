@@ -98,16 +98,18 @@ typedef enum {
   \param strides the stride along each spatial axis
   \param paddings_front paddings applied to the start of each spatial dimension
   \param paddings_back paddings applied to the end of each spatial dimension
+  \param padding_included padded values included when computing average
   \param output_dims the optional output shape (can be undefined)
   \param value_id a unique value id (can be NULL)
 
   \return odla_value
 */
-extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_AveragePool(
-    odla_value input, odla_memory_layout input_layout,
-    const odla_uint32* window_dims, const odla_uint32* strides,
-    const odla_uint32* paddings_front, const odla_uint32* paddings_back,
-    odla_value_shape output_dims, const odla_value_id value_id);
+extern ODLA_API_EXPORT odla_value ODLA_API_CALL
+odla_AveragePool(odla_value input, odla_memory_layout input_layout,
+                 const odla_uint32* window_dims, const odla_uint32* strides,
+                 const odla_uint32* paddings_front,
+                 const odla_uint32* paddings_back, odla_bool padding_included,
+                 odla_value_shape output_dims, const odla_value_id value_id);
 
 //! \brief Hardmax computation
 /*!
