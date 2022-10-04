@@ -1633,6 +1633,8 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
   const auto& kernel_dims = kernel->type.shape;
   nvinfer1::Weights bias_weights{kernel_weights.type, nullptr, 0};
   int oc = output_dims.dims[1];
+  int spatial_dims = kernel_dims.size - 2;
+
 #if NV_TENSORRT_MAJOR < 7
   auto conv = g_comp->network->addConvolution(
       *input, oc,
@@ -1643,15 +1645,14 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
   conv->setDilation(nvinfer1::DimsHW(dilations[0], dilations[1]));
 #else
   auto conv = g_comp->network->addConvolutionNd(
-      *input, oc,
-      nvinfer1::DimsHW{static_cast<int>(kernel_dims.dims[2]),
-                       static_cast<int>(kernel_dims.dims[3])},
-      kernel_weights, bias_weights);
-  conv->setStrideNd(nvinfer1::DimsHW(strides[0], strides[1]));
-  conv->setDilationNd(nvinfer1::DimsHW(dilations[0], dilations[1]));
+      *input, oc, GetNVDims(spatial_dims, &kernel_dims.dims[2]), kernel_weights,
+      bias_weights);
+  conv->setStrideNd(GetNVDims(spatial_dims, strides));
+  conv->setDilationNd(GetNVDims(spatial_dims, dilations));
 #endif
-  conv->setPrePadding(nvinfer1::DimsHW(paddings_front[0], paddings_front[1]));
-  conv->setPostPadding(nvinfer1::DimsHW(paddings_back[0], paddings_back[1]));
+  conv->setPrePadding(GetNVDims(spatial_dims, paddings_front));
+  conv->setPostPadding(GetNVDims(spatial_dims, paddings_back));
+
   odla_value_type output_type{.element_type = input->type.element_type,
                               .shape = output_dims};
   if (group > 1) {
@@ -1753,7 +1754,7 @@ static odla_value Pooling(odla_value input, odla_memory_layout input_layout,
                           const odla_uint32* strides,
                           const odla_uint32* paddings_front,
                           const odla_uint32* paddings_back,
-                          odla_value_shape output_dims,
+                          bool padding_included, odla_value_shape output_dims,
                           const odla_value_id value_id) {
   assert(input_layout == odla_memory_layout::ODLA_CHANNELS_FIRST);
   int spatial_dims = input->type.shape.size - 2;
@@ -1767,24 +1768,13 @@ static odla_value Pooling(odla_value input, odla_memory_layout input_layout,
       nvinfer1::DimsHW(paddings_front[0], paddings_front[1]));
   pooling->setPostPadding(nvinfer1::DimsHW(paddings_back[0], paddings_back[1]));
 #else
-  nvinfer1::Dims kdims;
-  nvinfer1::Dims stride_dims;
-  nvinfer1::Dims pre_padding_dims;
-  nvinfer1::Dims post_padding_dims;
-
-  kdims.nbDims = stride_dims.nbDims = pre_padding_dims.nbDims =
-      post_padding_dims.nbDims = spatial_dims;
-  for (int i = 0; i < spatial_dims; ++i) {
-    kdims.d[i] = window_dims[i];
-    stride_dims.d[i] = strides[i];
-    pre_padding_dims.d[i] = paddings_front[i];
-    post_padding_dims.d[i] = paddings_back[i];
-  }
-  auto pooling = g_comp->network->addPoolingNd(*input, pooling_type, kdims);
-  pooling->setStrideNd(stride_dims);
-  pooling->setPrePadding(pre_padding_dims);
-  pooling->setPostPadding(post_padding_dims);
+  auto pooling = g_comp->network->addPoolingNd(
+      *input, pooling_type, GetNVDims(spatial_dims, window_dims));
+  pooling->setStrideNd(GetNVDims(spatial_dims, strides));
+  pooling->setPrePadding(GetNVDims(spatial_dims, paddings_front));
+  pooling->setPostPadding(GetNVDims(spatial_dims, paddings_back));
 #endif
+  pooling->setAverageCountExcludesPadding(!padding_included);
 
   odla_value_type output_type{.element_type = input->type.element_type,
                               .shape = output_dims};
@@ -1800,7 +1790,8 @@ odla_value odla_MaxPool(odla_value input, odla_memory_layout input_layout,
                         odla_value_shape output_dims,
                         const odla_value_id value_id) {
   return Pooling(input, input_layout, nvinfer1::PoolingType::kMAX, window_dims,
-                 strides, paddings_front, paddings_back, output_dims, value_id);
+                 strides, paddings_front, paddings_back, true, output_dims,
+                 value_id);
 }
 
 odla_value odla_AveragePool(odla_value input, odla_memory_layout input_layout,
@@ -1808,11 +1799,12 @@ odla_value odla_AveragePool(odla_value input, odla_memory_layout input_layout,
                             const odla_uint32* strides,
                             const odla_uint32* paddings_front,
                             const odla_uint32* paddings_back,
+                            odla_bool padding_included,
                             odla_value_shape output_dims,
                             const odla_value_id value_id) {
   return Pooling(input, input_layout, nvinfer1::PoolingType::kAVERAGE,
                  window_dims, strides, paddings_front, paddings_back,
-                 output_dims, value_id);
+                 padding_included != 0, output_dims, value_id);
 }
 
 odla_value odla_Fill(odla_value_type type, odla_fill_method method,

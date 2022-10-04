@@ -342,10 +342,12 @@ odla_value odla_AveragePool(odla_value input, odla_memory_layout input_layout,
                             const odla_uint32* strides,
                             const odla_uint32* paddings_front,
                             const odla_uint32* paddings_back,
+                            odla_bool padding_included,
                             odla_value_shape output_dims,
                             const odla_value_id value_id) {
   return profile<fn_ap>(input, input_layout, window_dims, strides,
-                        paddings_front, paddings_back, output_dims, value_id);
+                        paddings_front, paddings_back, padding_included,
+                        output_dims, value_id);
 }
 
 static constexpr const char fn_bn[] = "odla_BatchNormalization";

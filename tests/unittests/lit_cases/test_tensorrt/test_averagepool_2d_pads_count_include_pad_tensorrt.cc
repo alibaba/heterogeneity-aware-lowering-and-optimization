@@ -25,5 +25,5 @@
 // RUN: %t_tensorrt.exe 0.0001 0 tensorrt %data_path/test_averagepool_2d_pads_count_include_pad | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
+
 #include "test_averagepool_2d_pads_count_include_pad_tensorrt.cc.tmp.main.cc.in"
