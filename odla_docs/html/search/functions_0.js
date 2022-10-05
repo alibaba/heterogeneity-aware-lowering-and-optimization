@@ -18,7 +18,7 @@ var searchData=
   ['odla_5fasyncstopdeviceprofiler_15',['odla_AsyncStopDeviceProfiler',['../odla__profiler_8h.html#a14498d3ccc1700a232df04cf4885a0e5',1,'odla_profiler.h']]],
   ['odla_5fatan_16',['odla_ATan',['../odla__ops__math_8h.html#a60adab29071eb1196adcd6290483f198',1,'odla_ops_math.h']]],
   ['odla_5fatanh_17',['odla_ATanh',['../odla__ops__math_8h.html#adbb4cede4a5fdaf8282d144a6bf8b36f',1,'odla_ops_math.h']]],
-  ['odla_5faveragepool_18',['odla_AveragePool',['../odla__ops__nn_8h.html#aabf18960d3382d89681e3458ea289763',1,'odla_ops_nn.h']]],
+  ['odla_5faveragepool_18',['odla_AveragePool',['../odla__ops__nn_8h.html#ad743fded3928f74be4c2d3e9def6ba64',1,'odla_ops_nn.h']]],
   ['odla_5fbatchmatmul_19',['odla_BatchMatMul',['../odla__ops__math_8h.html#a894c71e3ffbe6786fb86ee46455f2a97',1,'odla_ops_math.h']]],
   ['odla_5fbatchnormalization_20',['odla_BatchNormalization',['../odla__ops__nn_8h.html#a1dda39ad8115de52254d5052e4b8b504',1,'odla_ops_nn.h']]],
   ['odla_5fbeginloop_21',['odla_BeginLoop',['../odla__ops__control__flow_8h.html#a1c5a091d433a4af5d10439c5bb29c7b0',1,'odla_ops_control_flow.h']]],
