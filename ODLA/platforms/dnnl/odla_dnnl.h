@@ -135,12 +135,25 @@ static inline dnnl::memory::format_tag getFormatTag(
 }
 
 static inline dnnl::memory::format_tag getFormatTag(odla_memory_layout layout,
-                                                    unsigned group = 1) {
+                                                    unsigned group = 1,
+                                                    unsigned spatial_dims = 2) {
   switch (layout) {
     case ODLA_CHANNELS_FIRST:
-      return dnnl::memory::format_tag::nchw;
+      assert(spatial_dims >= 1 && spatial_dims <= 3);
+      if (spatial_dims == 1) {
+        return dnnl::memory::format_tag::ncw;
+      }
+      if (spatial_dims == 2) {
+        return dnnl::memory::format_tag::nchw;
+      }
+      return dnnl::memory::format_tag::ncdhw;
     case ODLA_CHANNELS_LAST:
-      return dnnl::memory::format_tag::nhwc;
+      if (spatial_dims == 1) {
+        return dnnl::memory::format_tag::nwc;
+      } else if (spatial_dims == 2) {
+        return dnnl::memory::format_tag::nhwc;
+      }
+      return dnnl::memory::format_tag::ndhwc;
     case ODLA_SIO:
       return (group > 1) ? dnnl::memory::format_tag::hwigo
                          : dnnl::memory::format_tag::hwio;

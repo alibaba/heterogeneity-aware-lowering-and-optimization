@@ -837,10 +837,13 @@ odla_value odla_Clamp(odla_value input, odla_float32 lo, odla_float32 hi,
 }
 
 static odla_value_shape getNCHWDims(const odla_value_shape& src_dims) {
-  assert(src_dims.size == 4);
-  return {
-      src_dims.size,
-      {src_dims.dims[0], src_dims.dims[3], src_dims.dims[1], src_dims.dims[2]}};
+  assert(src_dims.size >= 3);
+  odla_value_shape ret = src_dims;
+  ret.dims[1] = src_dims.dims[src_dims.size - 1];
+  for (int i = 2; i < src_dims.size; ++i) {
+    ret.dims[i] = src_dims.dims[i - 1];
+  }
+  return ret;
 }
 
 static odla_value_shape getOIHWDims(const odla_value_shape& src_dims) {
@@ -1362,10 +1365,14 @@ static odla_value BasePool(odla_value input, odla_memory_layout input_layout,
                            odla_value_shape output_dims,
                            const odla_value_id value_id,
                            dnnl::algorithm algorithm) {
-  dnnl::memory::dims stride_dims{strides[0], strides[1]};
-  dnnl::memory::dims kernel_dims{window_dims[0], window_dims[1]};
-  dnnl::memory::dims paddings_before{paddings_front[0], paddings_front[1]};
-  dnnl::memory::dims paddings_after{paddings_back[0], paddings_back[1]};
+  int spatial_dims = input->shape.size - 2;
+  assert(spatial_dims >= 1);
+  dnnl::memory::dims stride_dims(strides, strides + spatial_dims);
+  dnnl::memory::dims kernel_dims(window_dims, window_dims + spatial_dims);
+  dnnl::memory::dims paddings_before(paddings_front,
+                                     paddings_front + spatial_dims);
+  dnnl::memory::dims paddings_after(paddings_back,
+                                    paddings_back + spatial_dims);
   auto dt = input->mem.get_desc().data_type();
 
   auto input_dims = input->shape;
@@ -1374,10 +1381,10 @@ static odla_value BasePool(odla_value input, odla_memory_layout input_layout,
     input_dims = getNCHWDims(input_dims);
     output_dims = getNCHWDims(output_dims);
   }
-  auto ret_md =
-      dnnl::memory::desc(getDims(output_dims), dt, getFormatTag(input_layout));
-  auto input_md =
-      dnnl::memory::desc(getDims(input_dims), dt, getFormatTag(input_layout));
+  auto ret_md = dnnl::memory::desc(getDims(output_dims), dt,
+                                   getFormatTag(input_layout, 1, spatial_dims));
+  auto input_md = dnnl::memory::desc(
+      getDims(input_dims), dt, getFormatTag(input_layout, 1, spatial_dims));
 
   auto ret_mem = dnnl::memory(ret_md, g_comp->eng);
 
