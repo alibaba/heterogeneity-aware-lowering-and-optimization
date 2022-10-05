@@ -114,6 +114,11 @@ odla_status odla_DestroyComputation(odla_computation computation) {
   return ODLA_SUCCESS;
 }
 
+odla_status odla_DestroyDevice(odla_device dev) {
+  g_comps.clear();
+  return ODLA_SUCCESS;
+}
+
 odla_status odla_CreateContext(odla_context* ctx) {
   *ctx = new _odla_context();
   (*ctx)->comp = g_comp;
