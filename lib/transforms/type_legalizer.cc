@@ -769,9 +769,16 @@ static void RunOnPoolingInstruction(Instruction* pooling_inst) {
   for (auto dim : inst->GetKsize()) {
     kernel_shape.push_back(dim);
   }
+  auto rank = data_type.GetNumOfDims();
+  if (int k = rank - inst->GetStrides().size(); k > 0) {
+    std::vector<int> strides = inst->GetStrides();
+    strides.insert(strides.end(), k, 1);
+    inst->SetStrides(strides);
+  }
+  std::vector<int> dilations(rank, 1);
   auto ret_type = ComputeKernelWiseType(
       data_type, kernel_shape, inst->GetStrides(), inst->GetPadding(), &before,
-      &after, {1, 1, 1, 1}, inst->GetDataFormat(), inst->GetDataFormat(),
+      &after, dilations, inst->GetDataFormat(), inst->GetDataFormat(),
       1 /*group*/, inst->GetOpCode(), ceil_mode);
   inst->GetResultsTypes()[0] = ret_type;
   if (inst->GetPadding() != Padding::EXPLICIT ||
