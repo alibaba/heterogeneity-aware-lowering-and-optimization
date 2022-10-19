@@ -291,7 +291,8 @@ odla_status odla_SetValueData(odla_value val, const void* ptr) {
   return ODLA_SUCCESS;
 }
 
-odla_status odla_GetValueData(const odla_value value, odla_void* data_ptr) {
+odla_status odla_GetValueData(const odla_value value, odla_void* data_ptr,
+                              odla_context context) {
   memcpy(data_ptr, value->data,
          sizeof(float) * GetTotalElements(&value->shape));
 }
@@ -697,6 +698,7 @@ odla_value odla_AveragePool(odla_value input, odla_memory_layout input_layout,
                             const odla_uint32* strides,
                             const odla_uint32* paddings_front,
                             const odla_uint32* paddings_back,
+                            odla_bool padding_included,
                             odla_value_shape output_dims,
                             const odla_value_id value_id) {
   if (window_dims[0] == 1 && window_dims[1] == 1) {

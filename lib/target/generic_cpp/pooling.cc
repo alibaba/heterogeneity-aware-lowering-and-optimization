@@ -80,7 +80,8 @@ void GenericCXXCodeGen::RunOnInstruction(PoolingAvgInst* inst) {
   std::vector<uint32_t> paddings_back(pad_a.begin(), pad_a.end());
 
   EmitODLACall(ret, "odla_AveragePool", op0, inst->GetDataFormat(), window,
-               strides, paddings_front, paddings_back, EmitShape(ret_type));
+               strides, paddings_front, paddings_back,
+               inst->GetPaddingIncluded(), EmitShape(ret_type));
   ir_mapping_[*inst] = ret;
 }
 

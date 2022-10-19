@@ -99,16 +99,15 @@ odla_SetValueData(odla_value value, const odla_void* data_ptr);
 extern ODLA_API_EXPORT odla_status ODLA_API_CALL
 odla_SetValueDataById(const odla_value_id value_id, const odla_void* data_ptr);
 
-//! \brief Get a value data
+//! \brief Get the raw data ptr from value
 /*!
   \param value the value
-  \param data_ptr the pointer to the retrieved data buffer
+  \param data_ptr the raw data pointer of the value
 
   \return odla_status
 */
 extern ODLA_API_EXPORT odla_status ODLA_API_CALL
-odla_GetValueData(const odla_value value, odla_void* data_ptr);
-
+odla_GetRawDataPtr(const odla_value value, odla_void** data_ptr);
 //! \brief Get a value data by id
 /*!
   \param value_id the value id

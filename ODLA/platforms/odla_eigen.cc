@@ -647,6 +647,7 @@ odla_value odla_AveragePool(odla_value input, odla_memory_layout input_layout,
                             const odla_uint32* strides,
                             const odla_uint32* paddings_front,
                             const odla_uint32* paddings_back,
+                            odla_bool padding_included,
                             odla_value_shape output_dims,
                             const odla_value_id value_id) {
   return odla_Pooling(false, input, input_layout, window_dims, strides,
@@ -771,7 +772,8 @@ odla_value odla_CreateConstant(odla_value_type type, const void* ptr,
   return GetValue(type, const_cast<void*>(ptr));
 }
 
-odla_status odla_GetValueData(const odla_value value, odla_void* data_ptr) {
+odla_status odla_GetValueData(const odla_value value, odla_void* data_ptr,
+                              odla_context context) {
   memcpy(data_ptr, value->ptr, GetValueSize(value->type));
   return ODLA_SUCCESS;
 }

@@ -17,412 +17,6 @@
 
 #include "odla_tensorrt.h"
 
-#include <NvInfer.h>
-#include <NvInferPlugin.h>
-#include <NvInferRuntime.h>
-#include <NvInferRuntimeCommon.h>
-#include <ODLA/odla.h>
-#include <cuda_runtime.h>
-
-#include <algorithm>
-#include <cassert>
-#include <cmath>
-#include <cstddef>
-#include <fstream>
-#include <iostream>
-#include <memory>
-#include <numeric>
-#include <stack>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-
-#include "../include/odla_impl_common.h"
-#include "common.h"
-#include "plugins/initPlugin.h"
-
-using namespace nvinfer1;
-
-#if !defined(ODLA_VERSION_NUMBER) || (ODLA_VERSION_NUMBER < 50)
-#error This library requires minimum ODLA version 0.5
-#endif
-
-#define ODLA_TRT_MAJOR HALO_VERSION_MAJOR
-#define ODLA_TRT_MINOR HALO_VERSION_MINOR
-#define ODLA_TRT_PATCH HALO_VERSION_PATCH
-#define ODLA_TRT_BUILD 0
-
-const char* odla_GetVersionString() {
-#define EXTRA_INFO                                                          \
-  "Built with TensorRT: " VERSION_STR(NV_TENSORRT_MAJOR, NV_TENSORRT_MINOR, \
-                                      NV_TENSORRT_PATCH, NV_TENSORRT_BUILD)
-  const char* version =
-      ODLA_VERSION_STR("ODLA for TensorRT", ODLA_TRT_MAJOR, ODLA_TRT_MINOR,
-                       ODLA_TRT_PATCH, ODLA_TRT_BUILD, EXTRA_INFO);
-#undef EXTRA_INFO
-  return version;
-}
-
-// Explicitly load cuda runtime before all other ctors, so cuda rt will be
-// released after calling dtors of all other global objs. This avoids the error
-// of "driver shutting down".
-static auto Dummy = cudaFree(0);
-
-template <typename T>
-struct TrtDestroyer {
-  void operator()(T* t) {
-#if NV_TENSORRT_MAJOR < 8
-    t->destroy();
-#else
-    delete (t);
-#endif
-  }
-};
-
-template <typename T>
-using TrtUniquePtr = std::unique_ptr<T, TrtDestroyer<T>>;
-
-template <typename T>
-std::shared_ptr<T> trt_shared_obj(T* obj) {
-  return std::shared_ptr<T>(obj, TrtDestroyer<T>());
-}
-
-inline bool check(cudaError_t e, int line, const char* file_name) {
-  if (e != cudaSuccess) {
-    std::cerr << "CUDA runtime API error " << cudaGetErrorName(e) << " at line "
-              << line << " in file " << file_name;
-    return false;
-  }
-  return true;
-}
-
-inline bool check(bool result, int line, const char* file_name) {
-  if (!result) {
-    std::cerr << "Error at line " << line << " in file " << file_name;
-    return false;
-  }
-  return true;
-}
-
-#define CHECK(call) check(call, __LINE__, __FILE__)
-
-namespace open_dla_tensorrt {
-class Logger : public nvinfer1::ILogger {
- public:
-  void log(ILogger::Severity severity, const char* msg) NOEXCEPT override {
-    int log_level;
-    switch (severity) {
-      case ILogger::Severity::kINTERNAL_ERROR:
-        log_level = 0;
-        break;
-      case ILogger::Severity::kERROR:
-        log_level = 1;
-        break;
-      case ILogger::Severity::kWARNING:
-        log_level = 2;
-        break;
-      case ILogger::Severity::kINFO:
-        log_level = 3;
-        break;
-      case ILogger::Severity::kVERBOSE:
-        log_level = 4;
-        break;
-      default:
-        log_level = 5;
-    }
-    if (log_level <= 1) {
-      std::cerr << "[" << log_level << "]: " << msg << "\n";
-    }
-  }
-};
-} // namespace open_dla_tensorrt
-
-static open_dla_tensorrt::Logger Logger;
-
-#ifndef NDEBUG
-static void LOG_VERBOSE(const std::string& msg) {
-  Logger.log(ILogger::Severity::kVERBOSE, msg.c_str());
-}
-
-static std::string gen_str(const nvinfer1::Dims& d) {
-  std::string s{"("};
-  if (d.nbDims != 0) {
-    for (int64_t i = 0; i < d.nbDims; i++)
-      (s += std::to_string(d.d[i])) += ", ";
-    s.pop_back();
-    s.pop_back();
-  }
-  return s + ')';
-}
-#endif
-
-struct _odla_value {
-  _odla_value(nvinfer1::ITensor* tensor, const odla_value_type& type,
-              const char* name)
-      : tensor(tensor), type(type), name(name) {
-    tensor->setName(name);
-  }
-  _odla_value(nvinfer1::ILayer* layer, const odla_value_type& type,
-              const char* name)
-      : layer(layer), tensor(layer->getOutput(0)), type(type), name(name) {
-    layer->setName(name);
-  }
-
-  _odla_value() {}
-
-  operator nvinfer1::ITensor&() { return *tensor; }
-  nvinfer1::ILayer* layer = nullptr;
-  nvinfer1::ITensor* tensor = nullptr;
-  nvinfer1::IConstantLayer* const_layer = nullptr;
-  odla_value_type type;
-  const char* name;
-  bool is_shape_tensor = false;
-};
-
-#ifdef MAX_WORKSPACE_SIZE
-static constexpr size_t MAX_WORKSPACE_SIZE_BYTES =
-    (size_t)MAX_WORKSPACE_SIZE * 1024 * 1024;
-#else
-static constexpr size_t MAX_WORKSPACE_SIZE_BYTES = 1ul * 1024 * 1024 * 1024;
-#endif
-static const int MAX_INT64_CONVERTION_NUM = std::numeric_limits<int32_t>::max();
-
-typedef struct {
-  IIfConditional* branch;
-  std::vector<odla_value> true_outputs;
-  std::vector<odla_value> false_outputs;
-  bool in_true_body;
-} branch_info;
-
-struct _odla_executable {
-  odla_computation computation;
-  TrtUniquePtr<nvinfer1::ICudaEngine> engine;
-  _odla_executable(odla_computation computation)
-      : computation(computation), engine{nullptr} {}
-};
-
-struct _odla_computation {
-  TrtUniquePtr<nvinfer1::IBuilder> builder;
-  TrtUniquePtr<nvinfer1::INetworkDefinition> network;
-
-  std::unordered_map<std::string, odla_value> inputs;
-  std::unordered_map<std::string, odla_value> outputs;
-  std::vector<std::vector<float>> buffers;
-  std::vector<std::unique_ptr<_odla_value>> vals;
-  std::vector<odla_value> input_vals;
-  std::vector<odla_value> output_vals;
-#if NV_TENSORRT_MAJOR >= 7
-  TrtUniquePtr<nvinfer1::IBuilderConfig> builder_cfg;
-  nvinfer1::IOptimizationProfile* builder_profile = nullptr;
-#endif
-  std::stack<branch_info> branchs;
-  bool fp16_mode = false;
-
-  bool is_dynamic_batch = false;
-  int min_batch_size = 0;
-  int max_batch_size = 0;
-  int opt_batch_size = 0;
-  bool load_engine_mode = false;
-  int use_dla_core = -1;
-  size_t max_workspace_size = MAX_WORKSPACE_SIZE_BYTES;
-
-  bool is_dynamic_shape = false;
-  std::unordered_map<odla_value, odla_value_shape> inputs_min_shapes;
-  std::unordered_map<odla_value, odla_value_shape> inputs_max_shapes;
-  std::unordered_map<odla_value, odla_value_shape> inputs_opt_shapes;
-
-  bool is_dynamic_value = false;
-  std::unordered_map<odla_value, int32_t> min_input_values;
-  std::unordered_map<odla_value, int32_t> max_input_values;
-  std::unordered_map<odla_value, int32_t> opt_input_values;
-
-  _odla_executable executable;
-  std::unordered_set<std::unique_ptr<_odla_context>> contexts;
-
-  _odla_computation() : executable{this} {
-    if (const char* env_p = std::getenv("ODLA_TRT_MAX_WS_MB")) {
-      if (int mb = std::stoi(env_p); mb != 0) {
-        max_workspace_size = mb << 20;
-      }
-    }
-
-    initODLAPlugin(&Logger, "");
-    if (!load_engine_mode) {
-      builder = TrtUniquePtr<nvinfer1::IBuilder>(
-          nvinfer1::createInferBuilder(Logger));
-#if NV_TENSORRT_MAJOR < 7
-      builder->setMaxWorkspaceSize(MAX_WORKSPACE_SIZE_BYTES);
-      network = TrtUniquePtr<nvinfer1::INetworkDefinition>(builder->createNetwork();
-#else
-      nvinfer1::NetworkDefinitionCreationFlags flags = 0;
-      if (const char* env_p = std::getenv("ODLA_TRT_USE_EXPLICIT_BATCH")) {
-        if (*env_p != '0') {
-          flags = 1U << static_cast<uint32_t>(
-                      nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
-        }
-      }
-      network = TrtUniquePtr<nvinfer1::INetworkDefinition>(
-          builder->createNetworkV2(flags));
-      assert(network != nullptr);
-      builder_cfg = TrtUniquePtr<nvinfer1::IBuilderConfig>(
-          builder->createBuilderConfig());
-      assert(builder_cfg != nullptr);
-
-#endif
-    }
-  }
-
-  ~_odla_computation() {
-    network.reset();
-    builder.reset();
-    contexts.clear(); // release all contexts before destroying executable.
-    if (executable.engine.get() != nullptr) {
-      executable.engine.reset();
-    }
-  }
-
-  odla_context create_context() {
-    auto context = std::make_unique<_odla_context>(this);
-    auto ret = context.get();
-    contexts.insert(std::move(context));
-    return ret;
-  }
-};
-
-static nvinfer1::Dims GetNVDims(const odla_value_shape& dims) {
-  nvinfer1::Dims ret;
-  ret.nbDims = dims.size;
-  assert(dims.size <= std::min(nvinfer1::Dims::MAX_DIMS, ODLA_MAX_DIMENSION));
-  if (dims.size == 0) {
-    ret.d[0] = 0;
-  }
-  for (int i = 0; i < dims.size; ++i) {
-    ret.d[i] = dims.dims[i];
-  }
-  return ret;
-}
-
-static odla_value_shape GetOdlaShape(const nvinfer1::Dims& dims) {
-  odla_value_shape ret;
-  ret.size = dims.nbDims;
-  for (int i = 0; i < ret.size; ++i) {
-    ret.dims[i] = dims.d[i];
-  }
-  return ret;
-}
-
-struct _odla_context {
-  odla_computation comp = nullptr;
-  TrtUniquePtr<nvinfer1::IExecutionContext> ctx{nullptr};
-  std::vector<void*> bindings;
-
-  cudaStream_t stream = nullptr;
-  cudaGraph_t graph;
-  cudaGraphExec_t instance;
-  bool enable_cuda_graph = false;
-  bool is_captured = false;
-
-  typedef struct {
-    void* host_ptr = nullptr;
-    void* dev_ptr = nullptr;
-    size_t len = 0;
-    odla_value_type vt;
-  } OutputPtrInfo;
-
-  typedef struct {
-    const void* host_ptr = nullptr;
-    void* dev_ptr = nullptr;
-  } InputPtrInfo;
-  std::unordered_map<std::string, OutputPtrInfo> output_ptrs;
-  std::unordered_map<std::string, InputPtrInfo> input_ptrs;
-
-  int run_batch_size = 0;
-
-  std::unordered_map<odla_value, odla_value_shape> real_shapes;
-
-  _odla_context(odla_computation comp) : comp(comp) {
-    if (comp->executable.engine == nullptr) {
-      odla_executable exec;
-      odla_CompileComputation(comp, nullptr, &exec);
-    }
-    ctx = TrtUniquePtr<IExecutionContext>(
-        comp->executable.engine->createExecutionContext());
-    assert(ctx != nullptr);
-    CHECK(cudaStreamCreate(&stream));
-  }
-  ~_odla_context() {
-    CHECK(cudaStreamDestroy(stream));
-    stream = nullptr;
-    comp = nullptr;
-  }
-};
-
-static odla_element_type GetODLAType(DataType type) {
-  switch (type) {
-    case nvinfer1::DataType::kFLOAT:
-      return ODLA_FLOAT32;
-    case nvinfer1::DataType::kHALF:
-      return ODLA_FLOAT16;
-    case nvinfer1::DataType::kINT32:
-      return ODLA_INT32;
-    case nvinfer1::DataType::kINT8:
-      return ODLA_INT8;
-    case nvinfer1::DataType::kBOOL:
-      return ODLA_BOOL;
-    default:
-      return ODLA_FLOAT32;
-  }
-}
-
-static int64_t GetTotalElements(const odla_value_shape& dims) {
-  return dims.size == 0 ? 1
-                        : std::accumulate(dims.dims, dims.dims + dims.size, 1,
-                                          std::multiplies<size_t>());
-}
-
-const int nvinfer1::Dims::MAX_DIMS;
-
-static nvinfer1::Dims GetNVDims(int n, const odla_uint32* dims) {
-  nvinfer1::Dims ret;
-  assert(n <= nvinfer1::Dims::MAX_DIMS);
-  ret.nbDims = n;
-  if (n == 0) {
-    ret.d[0] = 0;
-  }
-  for (int i = 0; i < n; ++i) {
-    ret.d[i] = static_cast<int>(dims[i]);
-  }
-  return ret;
-}
-
-static bool SameNVDims(const nvinfer1::Dims& d1, const nvinfer1::Dims& d2) {
-  if (d1.nbDims != d2.nbDims) {
-    return false;
-  }
-  for (int i = 0; i < d1.nbDims; ++i) {
-    if (d1.d[i] != d2.d[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
-static nvinfer1::Dims BroadcastDims(const odla_value_shape& dims,
-                                    size_t dim_size) {
-  if (dims.size >= dim_size) {
-    return GetNVDims(dims);
-  }
-  nvinfer1::Dims ret;
-  ret.nbDims = dim_size;
-  for (int i = 0, e = dim_size - dims.size; i != e; ++i) {
-    ret.d[i] = 1;
-  }
-  for (int i = dim_size - dims.size, j = 0; i != dim_size; ++i, ++j) {
-    ret.d[i] = dims.dims[j];
-  }
-  return ret;
-}
-
 static nvinfer1::Dims SqueezeNVDims(const nvinfer1::Dims dims, int index) {
   nvinfer1::Dims ret;
   ret.nbDims = dims.nbDims - 1;
@@ -434,77 +28,10 @@ static nvinfer1::Dims SqueezeNVDims(const nvinfer1::Dims dims, int index) {
   return ret;
 }
 
-thread_local odla_computation g_comp;
+static thread_local odla_computation g_comp;
+static thread_local odla_device g_current_device;
 static std::vector<std::unique_ptr<_odla_computation>> g_comps;
 static std::vector<std::unique_ptr<int[]>> g_workspace;
-
-static nvinfer1::DataType GetNVDataType(odla_element_type type) {
-  switch (type) {
-    case ODLA_FLOAT32:
-      return nvinfer1::DataType::kFLOAT;
-    case ODLA_FLOAT16:
-      return nvinfer1::DataType::kHALF;
-    case ODLA_INT32:
-    case ODLA_INT64:
-      return nvinfer1::DataType::kINT32;
-    case ODLA_INT8:
-      return nvinfer1::DataType::kINT8;
-    case ODLA_BOOL:
-      return nvinfer1::DataType::kBOOL;
-    default:
-      assert(0 && "unsupported");
-      return nvinfer1::DataType::kFLOAT;
-  }
-}
-
-static unsigned GetElementSize(odla_element_type type) {
-  switch (type) {
-    case ODLA_FLOAT32:
-      return sizeof(float);
-    case ODLA_FLOAT16:
-      return sizeof(int16_t);
-    case ODLA_INT32:
-    case ODLA_INT64:
-      return sizeof(int32_t);
-    case ODLA_INT8:
-    case ODLA_BOOL:
-      return 1;
-    default:
-      return 0;
-  }
-}
-
-static std::string GetName(odla_value_id id, const char* suffix = nullptr) {
-  return std::string(reinterpret_cast<const char*>(id)) + suffix;
-}
-
-static std::string GetName(const odla_value& value, const char* suffix) {
-  return GetName((odla_value_id)(value->name), suffix);
-}
-
-static odla_value_type ValidateValueType(const odla_value_type& type) {
-  // Trt doesn't support INT64, convert value_type of ODLA_INT64 to ODLA_INT32
-  if (type.element_type == ODLA_INT64) {
-    return odla_value_type{.element_type = ODLA_INT32, .shape = type.shape};
-  }
-  return type;
-}
-
-static std::unique_ptr<int[]> ConvertData(const odla_value_type& type,
-                                          const void* ptr) {
-  if (type.element_type == ODLA_INT64) {
-    const int64_t* src = static_cast<const int64_t*>(ptr);
-    auto num_elements = GetTotalElements(type.shape);
-    auto buf = std::make_unique<int[]>(num_elements);
-    int* tmp = buf.get();
-    for (int i = 0; i < num_elements; ++i) {
-      assert(*src < MAX_INT64_CONVERTION_NUM);
-      tmp[i] = (static_cast<int>(*src++));
-    }
-    return buf;
-  }
-  return nullptr;
-}
 
 template <typename T>
 static odla_value CreateValue(T* t, const odla_value_type& type,
@@ -520,49 +47,58 @@ static odla_value CreateValue(T* t, const odla_value_type& type,
   return ret;
 }
 
-static std::vector<nvinfer1::RNNGateType> GetRNNGateOrder(
-    const odla_rnn_gate_order gate_order) {
-  const nvinfer1::RNNGateType trt_gate_iofc[] = {
-      nvinfer1::RNNGateType::kINPUT, nvinfer1::RNNGateType::kOUTPUT,
-      nvinfer1::RNNGateType::kFORGET, nvinfer1::RNNGateType::kCELL};
-  const nvinfer1::RNNGateType trt_gate_ifco[] = {
-      nvinfer1::RNNGateType::kINPUT, nvinfer1::RNNGateType::kFORGET,
-      nvinfer1::RNNGateType::kCELL, nvinfer1::RNNGateType::kOUTPUT};
-  const nvinfer1::RNNGateType trt_gate_ifoc[] = {
-      nvinfer1::RNNGateType::kINPUT, nvinfer1::RNNGateType::kFORGET,
-      nvinfer1::RNNGateType::kOUTPUT, nvinfer1::RNNGateType::kCELL};
-  const nvinfer1::RNNGateType trt_gate_icof[] = {
-      nvinfer1::RNNGateType::kINPUT, nvinfer1::RNNGateType::kCELL,
-      nvinfer1::RNNGateType::kOUTPUT, nvinfer1::RNNGateType::kFORGET};
-
-  switch (gate_order) {
-    case ODLA_RNN_IFCO:
-      return std::vector<nvinfer1::RNNGateType>(trt_gate_ifco,
-                                                trt_gate_ifco + 4);
-    case ODLA_RNN_IFOC:
-      return std::vector<nvinfer1::RNNGateType>(trt_gate_ifoc,
-                                                trt_gate_ifoc + 4);
-    case ODLA_RNN_ICOF:
-      return std::vector<nvinfer1::RNNGateType>(trt_gate_icof,
-                                                trt_gate_icof + 4);
-    default:
-      // default order as iofc
-      return std::vector<nvinfer1::RNNGateType>(trt_gate_iofc,
-                                                trt_gate_iofc + 4);
-  }
+const char* odla_GetVersionString() {
+#define EXTRA_INFO                                                          \
+  "Built with TensorRT: " VERSION_STR(NV_TENSORRT_MAJOR, NV_TENSORRT_MINOR, \
+                                      NV_TENSORRT_PATCH, NV_TENSORRT_BUILD)
+  const char* version =
+      ODLA_VERSION_STR("ODLA for TensorRT", ODLA_TRT_MAJOR, ODLA_TRT_MINOR,
+                       ODLA_TRT_PATCH, ODLA_TRT_BUILD, EXTRA_INFO);
+#undef EXTRA_INFO
+  return version;
 }
 
 extern "C" {
+odla_status odla_SetRuntimeValueType(odla_context context, odla_value value,
+                                     odla_value_type value_type) {
+  if (value_type.element_type != value->type.element_type) {
+    return ODLA_FAILURE;
+  }
+  return odla_SetRuntimeShape(context, value, value_type.shape);
+}
+
+odla_status odla_GetRuntimeNumOfOutputs(odla_context context,
+                                        odla_uint32* num_output_ptr) {
+  *num_output_ptr = context->output_ptrs.size();
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_GetRuntimeValueType(odla_context context, odla_value value,
+                                     odla_value_type* value_type_ptr) {
+  value_type_ptr->element_type = value->type.element_type;
+  return odla_GetRuntimeShape(context, value, &(value_type_ptr->shape));
+}
+
 odla_status odla_CreateComputation(odla_computation* computation) {
-  g_comps.push_back(std::make_unique<_odla_computation>());
+  g_comps.push_back(std::make_unique<_odla_computation>(nullptr));
   g_comp = g_comps.back().get();
   *computation = g_comp;
+  (*computation)->device = g_current_device;
   return ODLA_SUCCESS;
 }
 
 odla_status odla_SetActiveComputation(odla_computation computation) {
   g_comp = computation;
   return ODLA_SUCCESS;
+}
+
+odla_status odla_SetCurrentDevice(odla_device device) {
+  g_current_device = device;
+  if (device == nullptr) {
+    return ODLA_SUCCESS;
+  }
+  return cudaSetDevice(device->device_idx) == cudaSuccess ? ODLA_SUCCESS
+                                                          : ODLA_FAILURE;
 }
 
 odla_status odla_DestroyComputation(odla_computation comp) {
@@ -574,6 +110,21 @@ odla_status odla_DestroyComputation(odla_computation comp) {
   }
   assert(0);
   return ODLA_FAILURE;
+}
+
+odla_status odla_DestroyDevice(odla_device dev) {
+  std::vector<odla_computation> dead_comps;
+  for (auto& comp : g_comps) {
+    if (comp && comp->device == dev) {
+      dead_comps.push_back(comp.get());
+    }
+  }
+  for (auto comp : dead_comps) {
+    odla_DestroyComputation(comp);
+  }
+
+  delete dev;
+  return ODLA_SUCCESS;
 }
 
 odla_status odla_SetComputationItem(odla_computation computation,
@@ -629,6 +180,7 @@ odla_status odla_SetComputationItem(odla_computation computation,
 
     case ODLA_FP16_MODE:
       computation->fp16_mode = *(reinterpret_cast<bool*>(value));
+      SetFP16Mode(computation, computation->fp16_mode);
       break;
 
     case ODLA_LOAD_ENGINE_MODE:
@@ -698,7 +250,20 @@ odla_status odla_SetInputValueInfo(odla_value value, odla_item_type type,
 
 odla_status odla_SetRuntimeShape(odla_context context, odla_value value,
                                  odla_value_shape value_shape) {
+  // Only allowed for input values.
+  auto comp = context->comp;
+  if (auto e = comp->input_vals.end();
+      std::find(comp->input_vals.begin(), e, value) == e) {
+    return ODLA_FAILURE;
+  }
+  // Disable dynamic batch if dynamic shape is used.
+  comp->is_dynamic_batch = false;
   context->real_shapes[value] = value_shape;
+  int idx = comp->executable.engine->getBindingIndex(value->name);
+  nvinfer1::Dims nvdims = GetNVDims(value_shape);
+  // set runtime shape
+  context->ctx->setBindingDimensions(idx, nvdims);
+  context->comp->is_dynamic_shape = true;
   return ODLA_SUCCESS;
 }
 
@@ -719,9 +284,20 @@ odla_status odla_GetRuntimeShape(odla_context context, odla_value value,
 odla_status odla_SetContextItem(odla_context context, odla_item_type type,
                                 odla_item_value value) {
   switch (type) {
-    case ODLA_RUN_BATCH_SIZE:
-      context->run_batch_size = *(reinterpret_cast<int*>(value));
+    case ODLA_RUN_BATCH_SIZE: {
+      int bs = *(reinterpret_cast<int*>(value));
+      if (bs < 0) {
+        return ODLA_FAILURE;
+      }
+      context->run_batch_size = bs;
+      // Update real shapes for inputs.
+      for (auto& input : context->comp->input_vals) {
+        if (input->type.shape.dims[0] < 0) {
+          context->real_shapes[input].dims[0] = bs;
+        }
+      }
       break;
+    }
     case ODLA_AGGREGATE_OPS:
       context->enable_cuda_graph = *(reinterpret_cast<bool*>(value));
       if (context->enable_cuda_graph && (context->comp->is_dynamic_batch ||
@@ -741,6 +317,13 @@ odla_status odla_SetContextItem(odla_context context, odla_item_type type,
 }
 
 odla_status odla_CreateContext(odla_context* context) {
+  // g_comp is TLS and if odla_LoadExecutable/odla_CreateComputation() is called
+  // in a different thread, g_comp won't be set. In this case,
+  // odla_LoadExecutable/odla_CreateComputation() and odla_CreateContext has to
+  // be created in strict order.
+  assert(!g_comps.empty());
+  g_comp = g_comps.back().get();
+
   *context = g_comp->create_context();
   return ODLA_SUCCESS;
 }
@@ -838,49 +421,28 @@ odla_status odla_GetOutputFromComputationByIdx(
 
 odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
                                 odla_context context) {
-  odla_value_shape real_shape = value->type.shape;
-  auto comp = context->comp;
-  if (comp->is_dynamic_batch || context->run_batch_size) {
-    real_shape.dims[0] = context->run_batch_size;
-  }
-  if (comp->is_dynamic_shape) {
-    if (context->real_shapes.find(value) != context->real_shapes.end()) {
-      real_shape = context->real_shapes[value];
-      int idx = comp->executable.engine->getBindingIndex(value->name);
-      nvinfer1::Dims nvdims = GetNVDims(real_shape);
-      // set runtime shape
-      context->ctx->setBindingDimensions(idx, nvdims);
-    }
-  }
+  odla_SetCurrentDevice(context->comp->device);
+  assert(cuCtxSetCurrent(context->cu_ctx) == CUDA_SUCCESS);
+  odla_value_type real_type;
+  odla_GetRuntimeValueType(context, value, &real_type);
+  size_t bytes = GetTotalElements(real_type.shape) *
+                 GetElementSize(value->type.element_type);
   void* validated_data_ptr = const_cast<void*>(data_ptr);
-  if (comp->is_dynamic_value) {
-    int idx = comp->executable.engine->getBindingIndex(value->name);
-    nvinfer1::Dims nvdims = GetNVDims(real_shape);
-    if (comp->executable.engine->isShapeBinding(idx)) {
-      const int32_t* src = static_cast<const int32_t*>(validated_data_ptr);
-      std::vector<int32_t> real_data_ptr(nvdims.d[0]);
-      for (int j = 0; j < nvdims.d[0]; ++j) {
-        real_data_ptr[j] = static_cast<int32_t>(src[j]);
-      }
-      context->ctx->setInputShapeBinding(idx, &real_data_ptr[0]);
-    } else {
-      context->ctx->setBindingDimensions(idx, nvdims);
-    }
-  }
-  size_t bytes =
-      GetTotalElements(real_shape) * GetElementSize(value->type.element_type);
   auto buf = ConvertData(value->type, data_ptr);
   if (buf != nullptr) {
     validated_data_ptr = buf.get();
   }
-  void* dev_ptr = context->input_ptrs[value->name].dev_ptr;
-  if (dev_ptr == nullptr) {
-    CHECK(cudaMalloc(&dev_ptr, bytes));
+  auto& input_ptr_info = context->input_ptrs[value];
+  if (bytes > input_ptr_info.total_size) {
+    // Expand the buffer.
+    CHECK(cudaFree(input_ptr_info.dev_ptr));
+    CHECK(cudaMalloc(&input_ptr_info.dev_ptr, bytes));
+    input_ptr_info.total_size = bytes;
   }
 
-  CHECK(cudaMemcpyAsync(dev_ptr, validated_data_ptr, bytes,
-                        cudaMemcpyHostToDevice, context->stream));
-  context->input_ptrs[value->name] = {.host_ptr = data_ptr, .dev_ptr = dev_ptr};
+  RETURN_ON_CUDA_ERROR(
+      cudaMemcpyAsync(input_ptr_info.dev_ptr, validated_data_ptr, bytes,
+                      cudaMemcpyHostToDevice, context->stream));
 
   return ODLA_SUCCESS;
 }
@@ -893,11 +455,11 @@ odla_status odla_BindToArgumentById(const odla_value_id value_id,
   return odla_BindToArgument(context->comp->inputs[name], data_ptr, context);
 }
 
-odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
-                              odla_context context) {
+static void* AllocOutput(odla_value value, odla_context context,
+                         void* host_data) {
   odla_value_shape real_shape = value->type.shape;
   auto comp = context->comp;
-  if ((comp->is_dynamic_batch) || context->run_batch_size) {
+  if ((comp->is_dynamic_batch) || context->run_batch_size > 0) {
     real_shape.dims[0] = context->run_batch_size;
   }
   if (comp->is_dynamic_shape || comp->is_dynamic_value) {
@@ -910,17 +472,56 @@ odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
       context->real_shapes[value] = real_shape;
     }
   }
+  if (!IsStaticShape(real_shape)) {
+    assert(0 && "not a fixed shape");
+    return nullptr;
+  }
   size_t bytes =
       GetTotalElements(real_shape) * GetElementSize(value->type.element_type);
   // TODO: convert to int64 for int64 outputs?
-  void* dst = context->output_ptrs[value->name].dev_ptr;
-  if (dst == nullptr) {
-    CHECK(cudaMalloc(&dst, bytes));
+  auto& ptr_info = context->output_ptrs[value];
+  if (ptr_info.total_size < bytes) {
+    CHECK(cudaFree(ptr_info.dev_ptr));
+    CHECK(cudaMalloc(&ptr_info.dev_ptr, bytes));
+    ptr_info.total_size = bytes;
   }
+  ptr_info.used_size = bytes;
+  if (host_data != nullptr) {
+    ptr_info.host_ptr = host_data;
+  }
+  return ptr_info.dev_ptr;
+}
 
-  context->output_ptrs[value->name] = {
-      .host_ptr = data_ptr, .dev_ptr = dst, .len = bytes, .vt = value->type};
+odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
+                              odla_context context) {
+  odla_SetCurrentDevice(context->comp->device);
+  void* dst = AllocOutput(value, context, data_ptr);
+  return ODLA_SUCCESS;
+}
 
+odla_status odla_GetValueData(odla_value value, odla_void* data_ptr,
+                              odla_context context) {
+  odla_SetCurrentDevice(context->comp->device);
+  cuCtxSetCurrent(context->cu_ctx);
+  auto it = context->output_ptrs.find(value);
+  if (it == context->output_ptrs.end()) {
+    ODLA_LOG_FATAL("Invalid value");
+    return ODLA_FAILURE;
+  }
+  const auto& ptr_info = it->second;
+  if (value->type.element_type == ODLA_INT64) {
+    std::vector<int> host_tmp(GetTotalElements(value->type.shape));
+    CHECK(cudaMemcpy(host_tmp.data(), ptr_info.dev_ptr, ptr_info.used_size,
+                     cudaMemcpyDeviceToHost));
+    int64_t* ptr = static_cast<int64_t*>(data_ptr);
+    for (int d : host_tmp) {
+      *ptr++ = static_cast<int64_t>(d);
+    }
+  } else {
+    RETURN_ON_CUDA_ERROR(cudaMemcpy(data_ptr, ptr_info.dev_ptr,
+                                    ptr_info.used_size,
+                                    cudaMemcpyDeviceToHost));
+  }
   return ODLA_SUCCESS;
 }
 
@@ -965,6 +566,17 @@ odla_status odla_CompileComputation(const odla_computation comp,
     *executable = &comp->executable;
     return ODLA_SUCCESS;
   }
+
+  if (comp->device != nullptr && device != nullptr) {
+    assert(comp->device == device);
+  }
+  if (comp->device == nullptr) {
+    comp->device = device;
+  }
+  if (comp->device == nullptr) {
+    comp->device = GetDefaultDevice();
+  }
+
   if (!comp->load_engine_mode) {
     auto& builder = comp->builder;
     auto& builder_cfg = comp->builder_cfg;
@@ -1091,6 +703,10 @@ odla_status odla_CompileComputation(const odla_computation comp,
 odla_status odla_LoadExecutable(odla_resource_location location,
                                 odla_device device,
                                 odla_executable* executable) {
+  if (device == nullptr) {
+    device = GetDefaultDevice();
+  }
+  cuCtxSetCurrent(device->cu_ctx);
   *executable = nullptr;
   if (location.location_type != ODLA_LOCATION_PATH &&
       location.location_type != ODLA_LOCATION_MEMORY) {
@@ -1100,15 +716,11 @@ odla_status odla_LoadExecutable(odla_resource_location location,
 
   odla_computation computation = nullptr;
   odla_CreateComputation(&computation);
+  computation->device = device;
 
   int load_engine_mode = 1;
   odla_SetComputationItem(computation, ODLA_LOAD_ENGINE_MODE,
                           (odla_item_value)&load_engine_mode);
-#ifndef XAVIER
-  bool is_dynamic_batch = true;
-  odla_SetComputationItem(computation, ODLA_DYNAMIC_BATCH,
-                          (odla_item_value)&is_dynamic_batch);
-#endif
 
   *executable = &computation->executable;
   const void* engine_data = nullptr;
@@ -1128,13 +740,24 @@ odla_status odla_LoadExecutable(odla_resource_location location,
     data.resize(engine_size);
     engine_file.read(data.data(), engine_size);
     if (!engine_file) {
-      std::cerr << "Error loading engine file: " << file_name << std::endl;
+      ODLA_LOG_ERROR(std::string("Error loading engine file: ") + file_name);
       return ODLA_FAILURE;
     }
     engine_data = data.data();
   } else {
     engine_data = location.location;
     engine_size = location.size;
+  }
+  auto is_trt_plan = [&engine_data, &engine_size]() {
+    // check if the engine is a TRT plan using "ptrt" magic word.
+    const char* s = static_cast<const char*>(engine_data);
+    return engine_size >= 4 && s[0] == 'p' && s[1] == 't' && s[2] == 'r' &&
+           s[3] == 't';
+  };
+
+  if (!is_trt_plan()) {
+    std::cerr << "Error loading engine file: " << std::endl;
+    return ODLA_FAILURE;
   }
 
   TrtUniquePtr<IRuntime> runtime{createInferRuntime(Logger)};
@@ -1146,7 +769,13 @@ odla_status odla_LoadExecutable(odla_resource_location location,
       runtime->deserializeCudaEngine(engine_data, engine_size, nullptr);
   computation->executable.engine = TrtUniquePtr<ICudaEngine>(engine);
 
-  for (int i = 0, n = engine->getNbBindings(); i < n; ++i) {
+  int nb_prof = engine->getNbOptimizationProfiles();
+  int nb_bindings_per_prof = engine->getNbBindings() / nb_prof;
+  int use_profile = 0;
+  bool is_dynamic_batch = false;
+  for (int i = nb_bindings_per_prof * use_profile,
+           n = nb_bindings_per_prof * (use_profile + 1);
+       i < n; ++i) {
     const char* name = engine->getBindingName(i);
     Dims dims = engine->getBindingDimensions(i);
     DataType nv_type = engine->getBindingDataType(i);
@@ -1160,6 +789,7 @@ odla_status odla_LoadExecutable(odla_resource_location location,
     auto value = v.get();
     value->name = name;
     value->type = type;
+    is_dynamic_batch |= !IsStaticShape(value->type.shape);
     computation->vals.push_back(std::move(v));
     if (engine->bindingIsInput(i)) {
       computation->inputs[name] = value;
@@ -1169,6 +799,14 @@ odla_status odla_LoadExecutable(odla_resource_location location,
       computation->output_vals.push_back(value);
     }
   }
+
+#ifndef XAVIER
+  if (is_dynamic_batch) {
+    odla_SetComputationItem(computation, ODLA_DYNAMIC_BATCH,
+                            (odla_item_value)&is_dynamic_batch);
+  }
+#endif
+
   return ODLA_SUCCESS;
 }
 
@@ -1228,15 +866,30 @@ odla_status odla_GetValueType(const odla_value value,
 odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
                                     odla_compute_mode mode,
                                     odla_device device) {
-  auto add_to_buffer = [&](const std::string& name, void* ptr) {
-    int idx = comp->executable.engine->getBindingIndex(name.c_str());
+  if (context->comp != comp) {
+    assert(0 && "invalid context");
+    return ODLA_FAILURE;
+  }
+  odla_SetCurrentDevice(comp->device);
+
+  auto add_to_buffer = [&](odla_value value, void* ptr) {
+    int idx = comp->executable.engine->getBindingIndex(value->name);
     if (idx >= 0) {
-      if (context->bindings.size() <= idx) {
+      if (context->bindings.size() <= (unsigned)idx) {
         context->bindings.resize(idx + 1);
       }
       context->bindings[idx] = ptr;
     }
   };
+
+  for (auto& v : context->comp->output_vals) {
+    // For lazy value get mode:
+    // Users run odla_ExecuteComputation/odla_LaunchExecutable without invoking
+    // odla_BindToOutput(). Results can be retrieved later on via
+    // odla_GetValueData().
+    void* dst = AllocOutput(v, context, nullptr);
+  }
+
   for (auto& kv : context->input_ptrs) {
     add_to_buffer(kv.first, kv.second.dev_ptr);
   }
@@ -1270,33 +923,36 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     if (comp->is_dynamic_batch) {
       for (auto& input_ptr : context->input_ptrs) {
         int idx =
-            comp->executable.engine->getBindingIndex(input_ptr.first.c_str());
+            comp->executable.engine->getBindingIndex(input_ptr.first->name);
         nvinfer1::Dims dims = context->ctx->getBindingDimensions(idx);
         dims.d[0] = context->run_batch_size;
         context->ctx->setBindingDimensions(idx, dims);
       }
-      CHECK(context->ctx->enqueueV2(context->bindings.data(), context->stream,
-                                    nullptr));
+      RETURN_ON_TRT_ERROR(context->ctx->enqueueV2(context->bindings.data(),
+                                                  context->stream, nullptr));
     } else {
       int batch = 1;
-      CHECK(context->ctx->enqueue(batch, context->bindings.data(),
-                                  context->stream, nullptr));
+      RETURN_ON_TRT_ERROR(context->ctx->enqueue(batch, context->bindings.data(),
+                                                context->stream, nullptr));
     }
   }
 
   for (auto& kv : context->output_ptrs) {
-    if (kv.second.vt.element_type == ODLA_INT64) {
-      std::vector<int> host_tmp(GetTotalElements(kv.second.vt.shape));
-      CHECK(cudaMemcpyAsync(host_tmp.data(), kv.second.dev_ptr, kv.second.len,
-                            cudaMemcpyDeviceToHost, context->stream));
-      int64_t* ptr = static_cast<int64_t*>(kv.second.host_ptr);
-      for (int d : host_tmp) {
-        *ptr++ = static_cast<int64_t>(d);
+    if (kv.second.host_ptr != nullptr) {
+      if (kv.first->type.element_type == ODLA_INT64) {
+        std::vector<int> host_tmp(GetTotalElements(kv.first->type.shape));
+        RETURN_ON_CUDA_ERROR(cudaMemcpyAsync(
+            host_tmp.data(), kv.second.dev_ptr, kv.second.used_size,
+            cudaMemcpyDeviceToHost, context->stream));
+        int64_t* ptr = static_cast<int64_t*>(kv.second.host_ptr);
+        for (int d : host_tmp) {
+          *ptr++ = static_cast<int64_t>(d);
+        }
+      } else {
+        RETURN_ON_CUDA_ERROR(cudaMemcpyAsync(
+            kv.second.host_ptr, kv.second.dev_ptr, kv.second.used_size,
+            cudaMemcpyDeviceToHost, context->stream));
       }
-    } else {
-      CHECK(cudaMemcpyAsync(kv.second.host_ptr, kv.second.dev_ptr,
-                            kv.second.len, cudaMemcpyDeviceToHost,
-                            context->stream));
     }
   }
 
@@ -1306,14 +962,8 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
   if (!comp->is_dynamic_batch) {
     return ODLA_SUCCESS;
   }
-  // copy results and free temp buffers.
-  for (auto& ptr : context->bindings) {
-    CHECK(cudaFree(ptr));
-  }
   context->bindings.clear();
 
-  context->input_ptrs.clear();
-  context->output_ptrs.clear();
   return ODLA_SUCCESS;
 }
 
@@ -1585,8 +1235,10 @@ odla_value odla_Neg(odla_value input, const odla_value_id id) {
 odla_value odla_Pad(odla_value input, const odla_uint32* padding_front,
                     const odla_uint32* padding_back,
                     odla_value_shape output_dims, const odla_value_id id) {
+#ifndef NDEBUG
   const auto& input_dims = input->type.shape;
   assert(input_dims.size >= 3 && input_dims.dims[0] == output_dims.dims[0]);
+#endif
 #if NV_TENSORRT_MAJOR < 7
   auto pad = g_comp->network->addPadding(
       *input->tensor,
@@ -1763,7 +1415,7 @@ static odla_value reduce(odla_value input, nvinfer1::ReduceOperation op,
   }
 
   uint32_t reduce_axes = 0;
-  for (int i = 0; i < num_of_axes; ++i) {
+  for (int i = 0; i < (int)num_of_axes; ++i) {
     reduce_axes |= (1 << axes[i]);
   }
 
@@ -1878,9 +1530,10 @@ odla_value odla_LRN(odla_value input, odla_memory_layout input_layout,
                     odla_int32 window_size, odla_float32 alpha,
                     odla_float32 beta, odla_float32 bias,
                     const odla_value_id value_id) {
+#ifndef NDEBUG
   auto const& type = input->type.element_type;
-  const auto& input_dims = input->type.shape;
   assert(input_layout == odla_memory_layout::ODLA_CHANNELS_FIRST);
+#endif
   assert(type == ODLA_FLOAT32);
   auto lrn = g_comp->network->addLRN(*input, window_size, alpha, beta, bias);
   return CreateValue(lrn, input->type, value_id);
@@ -1980,6 +1633,8 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
   const auto& kernel_dims = kernel->type.shape;
   nvinfer1::Weights bias_weights{kernel_weights.type, nullptr, 0};
   int oc = output_dims.dims[1];
+  int spatial_dims = kernel_dims.size - 2;
+
 #if NV_TENSORRT_MAJOR < 7
   auto conv = g_comp->network->addConvolution(
       *input, oc,
@@ -1990,15 +1645,14 @@ odla_value odla_Conv(odla_value input, odla_memory_layout input_layout,
   conv->setDilation(nvinfer1::DimsHW(dilations[0], dilations[1]));
 #else
   auto conv = g_comp->network->addConvolutionNd(
-      *input, oc,
-      nvinfer1::DimsHW{static_cast<int>(kernel_dims.dims[2]),
-                       static_cast<int>(kernel_dims.dims[3])},
-      kernel_weights, bias_weights);
-  conv->setStrideNd(nvinfer1::DimsHW(strides[0], strides[1]));
-  conv->setDilationNd(nvinfer1::DimsHW(dilations[0], dilations[1]));
+      *input, oc, GetNVDims(spatial_dims, &kernel_dims.dims[2]), kernel_weights,
+      bias_weights);
+  conv->setStrideNd(GetNVDims(spatial_dims, strides));
+  conv->setDilationNd(GetNVDims(spatial_dims, dilations));
 #endif
-  conv->setPrePadding(nvinfer1::DimsHW(paddings_front[0], paddings_front[1]));
-  conv->setPostPadding(nvinfer1::DimsHW(paddings_back[0], paddings_back[1]));
+  conv->setPrePadding(GetNVDims(spatial_dims, paddings_front));
+  conv->setPostPadding(GetNVDims(spatial_dims, paddings_back));
+
   odla_value_type output_type{.element_type = input->type.element_type,
                               .shape = output_dims};
   if (group > 1) {
@@ -2100,7 +1754,7 @@ static odla_value Pooling(odla_value input, odla_memory_layout input_layout,
                           const odla_uint32* strides,
                           const odla_uint32* paddings_front,
                           const odla_uint32* paddings_back,
-                          odla_value_shape output_dims,
+                          bool padding_included, odla_value_shape output_dims,
                           const odla_value_id value_id) {
   assert(input_layout == odla_memory_layout::ODLA_CHANNELS_FIRST);
   int spatial_dims = input->type.shape.size - 2;
@@ -2114,24 +1768,13 @@ static odla_value Pooling(odla_value input, odla_memory_layout input_layout,
       nvinfer1::DimsHW(paddings_front[0], paddings_front[1]));
   pooling->setPostPadding(nvinfer1::DimsHW(paddings_back[0], paddings_back[1]));
 #else
-  nvinfer1::Dims kdims;
-  nvinfer1::Dims stride_dims;
-  nvinfer1::Dims pre_padding_dims;
-  nvinfer1::Dims post_padding_dims;
-
-  kdims.nbDims = stride_dims.nbDims = pre_padding_dims.nbDims =
-      post_padding_dims.nbDims = spatial_dims;
-  for (int i = 0; i < spatial_dims; ++i) {
-    kdims.d[i] = window_dims[i];
-    stride_dims.d[i] = strides[i];
-    pre_padding_dims.d[i] = paddings_front[i];
-    post_padding_dims.d[i] = paddings_back[i];
-  }
-  auto pooling = g_comp->network->addPoolingNd(*input, pooling_type, kdims);
-  pooling->setStrideNd(stride_dims);
-  pooling->setPrePadding(pre_padding_dims);
-  pooling->setPostPadding(post_padding_dims);
+  auto pooling = g_comp->network->addPoolingNd(
+      *input, pooling_type, GetNVDims(spatial_dims, window_dims));
+  pooling->setStrideNd(GetNVDims(spatial_dims, strides));
+  pooling->setPrePadding(GetNVDims(spatial_dims, paddings_front));
+  pooling->setPostPadding(GetNVDims(spatial_dims, paddings_back));
 #endif
+  pooling->setAverageCountExcludesPadding(!padding_included);
 
   odla_value_type output_type{.element_type = input->type.element_type,
                               .shape = output_dims};
@@ -2147,7 +1790,8 @@ odla_value odla_MaxPool(odla_value input, odla_memory_layout input_layout,
                         odla_value_shape output_dims,
                         const odla_value_id value_id) {
   return Pooling(input, input_layout, nvinfer1::PoolingType::kMAX, window_dims,
-                 strides, paddings_front, paddings_back, output_dims, value_id);
+                 strides, paddings_front, paddings_back, true, output_dims,
+                 value_id);
 }
 
 odla_value odla_AveragePool(odla_value input, odla_memory_layout input_layout,
@@ -2155,11 +1799,12 @@ odla_value odla_AveragePool(odla_value input, odla_memory_layout input_layout,
                             const odla_uint32* strides,
                             const odla_uint32* paddings_front,
                             const odla_uint32* paddings_back,
+                            odla_bool padding_included,
                             odla_value_shape output_dims,
                             const odla_value_id value_id) {
   return Pooling(input, input_layout, nvinfer1::PoolingType::kAVERAGE,
                  window_dims, strides, paddings_front, paddings_back,
-                 output_dims, value_id);
+                 padding_included != 0, output_dims, value_id);
 }
 
 odla_value odla_Fill(odla_value_type type, odla_fill_method method,
@@ -2999,7 +2644,7 @@ odla_status odla_EnterBranchBody(odla_bool true_branch) {
 odla_values odla_EndIf(odla_value_ids value_ids) {
   auto br_info = g_comp->branchs.top();
   int n = br_info.true_outputs.size();
-  assert(n == br_info.false_outputs.size());
+  assert((size_t)n == br_info.false_outputs.size());
   assert(n <= ODLA_MAX_OUTPUTS);
   odla_values ret;
   ret.size = n;

@@ -51,7 +51,7 @@ TEST_CASE("NN OPS TESTING") {
     odla_uint32 strides[2] = {1, 1};
     odla_value_shape output_dims;
     auto AveragePool = odla_AveragePool(
-        input, unused_layout, dims, strides, padding_front, padding_back,
+        input, unused_layout, dims, strides, padding_front, padding_back, false,
         output_dims, (const odla_value_id) "AveragePool");
     odla_SetValueAsOutput(AveragePool);
 
@@ -348,8 +348,9 @@ TEST_CASE("NN OPS TESTING") {
     float scalar_scale = 1;
     float scalar_offset = 1;
     // auto InstanceNormalization = odla_InstanceNormalization(
-    //     input, unused_layout, mean, var, epsilon, scale, offset, scalar_scale,
-    //     scalar_offset, (const odla_value_id) "InstanceNormalization");
+    //     input, unused_layout, mean, var, epsilon, scale, offset,
+    //     scalar_scale, scalar_offset, (const odla_value_id)
+    //     "InstanceNormalization");
     // odla_SetValueAsOutput(InstanceNormalization);
 
     static odla_context ctx;
@@ -481,9 +482,9 @@ TEST_CASE("NN OPS TESTING") {
     odla_rnn_outputs rnn_outputs = ODLA_RNN_NO_STATE;
     // auto LSTM = odla_LSTM(
     //     input,
-    //     {.size = 3, .dims = {1, number_of_gates * hidden_size, input_size}}, W,
-    //     R, B, seq_len, hidden_size, direction, rnn_outputs,
-    //     (const odla_value_id) "LSTM");
+    //     {.size = 3, .dims = {1, number_of_gates * hidden_size, input_size}},
+    //     W, R, B, seq_len, hidden_size, direction, rnn_outputs, (const
+    //     odla_value_id) "LSTM");
 
     // odla_SetValueAsOutput(LSTM.values[0]);
     // odla_SetValuesAsOutput(LSTM);
@@ -504,7 +505,8 @@ TEST_CASE("NN OPS TESTING") {
     odla_BindToArgumentById((const odla_value_id) "B", B_data.data(), ctx);
 
     // std::vector<float> out_LSTM(9);
-    // odla_BindToOutputById((const odla_value_id) "LSTM0", out_LSTM.data(), ctx);
+    // odla_BindToOutputById((const odla_value_id) "LSTM0", out_LSTM.data(),
+    // ctx);
 
     // odla_ExecuteComputation(comp, ctx, ODLA_COMPUTE_INFERENCE, nullptr);
     std::vector<float> expected = {0.0952412, 0.0952412, 0.0952412,

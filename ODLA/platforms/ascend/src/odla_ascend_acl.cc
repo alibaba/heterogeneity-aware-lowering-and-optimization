@@ -131,6 +131,112 @@ odla_status odla_SetComputationItem(odla_computation computation,
   return ODLA_SUCCESS;
 }
 
+// new apis
+odla_status odla_GetArgFromComputationByIdx(const odla_computation computation,
+                                            const odla_uint32 arg_idx,
+                                            odla_value* arg_value) {
+  *arg_value = nullptr;
+  if (arg_idx >= computation->input_vals.size()) {
+    return ODLA_FAILURE;
+  }
+  *arg_value = computation->input_vals[arg_idx];
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_GetOutputFromComputationByIdx(
+    const odla_computation computation, const odla_uint32 output_idx,
+    odla_value* output_value) {
+  *output_value = nullptr;
+  if (output_idx >= computation->output_vals.size()) {
+    return ODLA_FAILURE;
+  }
+  *output_value = computation->output_vals[output_idx];
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
+                                odla_context context) {
+  std::vector<Tensor> input_tensors;
+  auto bs_size_weight = 1;
+  vector<int64_t> input_shape;
+
+  for (auto i = 0; i < value->type.shape.size; i++) {
+    bs_size_weight *= value->type.shape.dims[i];
+    input_shape.emplace_back(value->type.shape.dims[i]);
+  }
+
+  size_t bufferSize = bs_size_weight * GetElementSize(value->type);
+  context->comp->input_ptr = (uint8_t*)data_ptr;
+  odla_status ret = model.CreateInput(context->comp->input_ptr, bufferSize);
+  if (ret == ODLA_FAILURE) {
+    ERROR_LOG("odla BindToArgument failed");
+    return ODLA_FAILURE;
+  }
+
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
+                              odla_context context) {
+  std::vector<ge::Tensor> output_tensors;
+  auto bs_size_weight = 1;
+  vector<int64_t> output_shape;
+
+  for (auto i = 0; i < value->type.shape.size; i++) {
+    bs_size_weight *= value->type.shape.dims[i];
+    output_shape.emplace_back(value->type.shape.dims[i]);
+  }
+
+  context->comp->output_ptr = (uint8_t*)data_ptr;
+
+  odla_status ret = model.CreateOutput();
+  if (ret == ODLA_FAILURE) {
+    ERROR_LOG("odla BindToOutput failed");
+    return ODLA_FAILURE;
+  }
+
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_SetContextItem(odla_context context, odla_item_type type,
+                                odla_item_value value) {
+  aclrtSetCurrentContext(context->comp->acl_ctx);
+  switch (type) {
+    case ODLA_RUN_BATCH_SIZE:
+      context->run_batch_size = *(reinterpret_cast<int*>(value));
+      break;
+    default:
+      std::cerr << "Unsupported property type: " << type << std::endl;
+      return ODLA_FAILURE;
+  }
+
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_GetNumOfArgsFromComputation(const odla_computation computation,
+                                             odla_uint32* num_args) {
+  *num_args = computation->input_vals.size();
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_GetValueType(const odla_value value,
+                              odla_value_type* value_type) {
+  *value_type = value->type;
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_GetValueId(const odla_value value, odla_value_id* value_id) {
+  *value_id = reinterpret_cast<odla_value_id>(const_cast<char*>(value->name));
+  return ODLA_SUCCESS;
+}
+
+odla_status odla_GetNumOfOutputsFromComputation(
+    const odla_computation computation, odla_uint32* num_outputs) {
+  *num_outputs = computation->output_vals.size();
+  return ODLA_SUCCESS;
+}
+// end of new apis
+
 const string ConvPad(odla_value input, odla_value kernel,
                      const uint32_t* strides, const uint32_t* dilations,
                      const uint32_t* paddings_front,
@@ -465,7 +571,7 @@ odla_status odla_DestroyComputation(odla_computation comp) {
   if (g_comp->acl_ctx != nullptr) {
     ret = aclrtDestroyContext(g_comp->acl_ctx);
     if (ret != ACL_ERROR_NONE) {
-      ERROR_LOG("Destroy acl context failed");
+      ERROR_LOG("Destroy acl context failed %d", ret);
     }
     g_comp->acl_ctx = nullptr;
   }
@@ -473,13 +579,13 @@ odla_status odla_DestroyComputation(odla_computation comp) {
 
   ret = aclrtResetDevice(0);
   if (ret != ACL_ERROR_NONE) {
-    ERROR_LOG("reset device failed");
+    ERROR_LOG("reset device failed %d", ret);
   }
   INFO_LOG("Reset device success");
 
   ret = aclFinalize();
   if (ret != ACL_ERROR_NONE) {
-    ERROR_LOG("finalize acl failed");
+    ERROR_LOG("finalize acl failed %d", ret);
   }
   INFO_LOG("Finalize acl success");
 
@@ -509,13 +615,13 @@ odla_status odla_CreateComputation(odla_computation* computation) {
 
   acl_ret = aclrtSetDevice(0);
   if (acl_ret != ACL_ERROR_NONE) {
-    ERROR_LOG("odla_CreateContext aclrtSetDevice %d", acl_ret);
+    ERROR_LOG("odla_CreateComputation aclrtSetDevice %d", acl_ret);
     return ODLA_FAILURE;
   }
 
   acl_ret = aclrtCreateContext(&(g_comp->acl_ctx), 0);
   if (acl_ret != ACL_ERROR_NONE) {
-    ERROR_LOG("odla_CreateContext aclrtCreateContext %d", acl_ret);
+    ERROR_LOG("odla_CreateComputation aclrtCreateContext %d", acl_ret);
     return ODLA_FAILURE;
   }
   INFO_LOG("create acl context success");
@@ -542,6 +648,7 @@ odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id) {
 
   odla_value v = CreateValue(data, type, id);
   g_comp->inputs[name] = v;
+  g_comp->input_vals.push_back(v);
 
   return v;
 }
@@ -567,17 +674,24 @@ odla_status odla_SetValueAsOutput(const odla_value val) {
 void PrepareOptions(std::map<AscendString, AscendString>& options) {}
 
 odla_status odla_CreateContext(odla_context* context) {
+  INFO_LOG("odla_CreateContext start");
   *context = new _odla_context(g_comp);
 
   // 2. system init
   std::map<ge::AscendString, ge::AscendString> global_options = {
-      {AscendString(ge::ir_option::SOC_VERSION), "Ascend310P3"},
+      {AscendString(ge::ir_option::SOC_VERSION), AscendString("Ascend310P3")},
   };
+  INFO_LOG("aclgrphBuildInitialize start");
   auto status = aclgrphBuildInitialize(global_options);
   if (status == ACL_ERROR_NONE) {
     INFO_LOG("aclgrphBuildInitialize success");
   } else {
-    ERROR_LOG("aclgrphBuildInitialize failed");
+    ERROR_LOG("aclgrphBuildInitialize failed with status: %d", status);
+    for (auto& p : global_options) {
+      ERROR_LOG("global_options %s : %s", p.first.GetString(),
+                p.second.GetString());
+    }
+    return ODLA_FAILURE;
   }
 
   // 3. Build Ir Model
@@ -589,7 +703,7 @@ odla_status odla_CreateContext(odla_context* context) {
   if (status == ACL_ERROR_NONE) {
     INFO_LOG("Build Model success");
   } else {
-    ERROR_LOG("Build Model failed");
+    ERROR_LOG("Build Model failed with status: %d", status);
   }
 
   // 3.5 Save Model
@@ -597,7 +711,7 @@ odla_status odla_CreateContext(odla_context* context) {
   if (status == ACL_ERROR_NONE) {
     INFO_LOG("Save Model success");
   } else {
-    ERROR_LOG("Save Model failed");
+    ERROR_LOG("Save Model failed with status: %d", status);
   }
 
   // 4. Dump Graph
@@ -605,7 +719,7 @@ odla_status odla_CreateContext(odla_context* context) {
   if (status == ACL_ERROR_NONE) {
     INFO_LOG("Dump Graph success");
   } else {
-    ERROR_LOG("Dump Graph failed");
+    ERROR_LOG("Dump Graph failed with status: %d", status);
   }
 
   odla_status ret = model.LoadModelFromWithMem(g_comp->ModelBufferData_);
@@ -619,7 +733,7 @@ odla_status odla_CreateContext(odla_context* context) {
     ERROR_LOG("odla CreateDesc failed");
     return ODLA_FAILURE;
   }
-
+  INFO_LOG("odla_CreateContext end");
   return ODLA_SUCCESS;
 }
 
@@ -634,6 +748,7 @@ odla_status odla_BindToArgumentById(const odla_value_id value_id,
                                     odla_context context) {
   std::vector<Tensor> input_tensors;
   const char* name = reinterpret_cast<const char*>(value_id);
+  INFO_LOG("input_val start");
   odla_value input_val = context->comp->inputs[name];
   auto bs_size_weight = 1;
   vector<int64_t> input_shape;
@@ -644,8 +759,10 @@ odla_status odla_BindToArgumentById(const odla_value_id value_id,
   }
 
   size_t bufferSize = bs_size_weight * GetElementSize(input_val->type);
-  g_comp->input_ptr = (uint8_t*)data_ptr;
-  odla_status ret = model.CreateInput(g_comp->input_ptr, bufferSize);
+  INFO_LOG("data_ptr start");
+  context->comp->input_ptr = (uint8_t*)data_ptr;
+  odla_status ret = model.CreateInput(context->comp->input_ptr, bufferSize);
+  INFO_LOG("model CreateInput end");
   if (ret == ODLA_FAILURE) {
     ERROR_LOG("odla BindToArgumentById failed");
     return ODLA_FAILURE;
@@ -669,7 +786,7 @@ odla_status odla_BindToOutputById(const odla_value_id value_id,
     output_shape.emplace_back(output_val->type.shape.dims[i]);
   }
 
-  g_comp->output_ptr = (uint8_t*)data_ptr;
+  context->comp->output_ptr = (uint8_t*)data_ptr;
 
   odla_status ret = model.CreateOutput();
   if (ret == ODLA_FAILURE) {
@@ -690,7 +807,7 @@ odla_status odla_ExecuteComputation(odla_computation comp, odla_context context,
     return ODLA_FAILURE;
   }
 
-  model.DumpModelOutputResult(g_comp->output_ptr);
+  model.DumpModelOutputResult(context->comp->output_ptr);
   model.DestroyInput();
   model.DestroyOutput();
   return ODLA_SUCCESS;

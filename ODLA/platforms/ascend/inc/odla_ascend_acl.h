@@ -46,6 +46,8 @@ struct _odla_computation {
   std::vector<ge::Operator> ops;
   unordered_map<string, odla_value> inputs;
   unordered_map<string, odla_value> outputs;
+  std::vector<odla_value> input_vals;
+  std::vector<odla_value> output_vals;
 
   std::vector<std::unique_ptr<_odla_value>> vals;
   ge::ModelBufferData ModelBufferData_;
@@ -105,6 +107,36 @@ odla_status odla_CreateContext(odla_context* context);
 odla_status odla_CreateComputation(odla_computation* computation);
 odla_value odla_CreateArgument(odla_value_type type, const odla_value_id id);
 odla_status odla_SetValueAsOutput(const odla_value val);
+
+// new apis
+odla_status odla_GetArgFromComputationByIdx(const odla_computation computation,
+                                            const odla_uint32 arg_idx,
+                                            odla_value* arg_value);
+
+odla_status odla_GetOutputFromComputationByIdx(
+    const odla_computation computation, const odla_uint32 output_idx,
+    odla_value* output_value);
+
+odla_status odla_BindToArgument(odla_value value, const odla_void* data_ptr,
+                                odla_context context);
+
+odla_status odla_BindToOutput(odla_value value, odla_void* data_ptr,
+                              odla_context context);
+
+odla_status odla_SetContextItem(odla_context context, odla_item_type type,
+                                odla_item_value value);
+
+odla_status odla_GetNumOfArgsFromComputation(const odla_computation computation,
+                                             odla_uint32* num_args);
+
+odla_status odla_GetValueType(const odla_value value,
+                              odla_value_type* value_type);
+
+odla_status odla_GetValueId(const odla_value value, odla_value_id* value_id);
+
+odla_status odla_GetNumOfOutputsFromComputation(
+    const odla_computation computation, odla_uint32* num_outputs);
+// end of new apis
 
 odla_status odla_BindToArgumentById(const odla_value_id value_id,
                                     const odla_void* data_ptr,

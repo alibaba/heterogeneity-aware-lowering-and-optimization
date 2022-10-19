@@ -35,6 +35,7 @@ odla_value odla_AveragePool(odla_value input, odla_memory_layout input_layout,
                             const odla_uint32* strides,
                             const odla_uint32* paddings_front,
                             const odla_uint32* paddings_back,
+                            odla_bool padding_included,
                             odla_value_shape output_dims,
                             const odla_value_id value_id) {
   const auto& name = value_id
@@ -57,7 +58,8 @@ odla_value odla_AveragePool(odla_value input, odla_memory_layout input_layout,
   padding.insert(padding.end(), padding_from_back.begin(),
                  padding_from_back.end());
   popart::TensorId result = g_comp->builder->aiOnnxOpset10().averagepool(
-      {input->tensor_id}, kernel_shape, 0, 0, padding, dim_strides, name);
+      {input->tensor_id}, kernel_shape, 0, padding_included, padding,
+      dim_strides, name);
   return new _odla_value(result,
                          {g_comp->builder->getTensorDataType(result),
                           g_comp->builder->getTensorShape(result)},

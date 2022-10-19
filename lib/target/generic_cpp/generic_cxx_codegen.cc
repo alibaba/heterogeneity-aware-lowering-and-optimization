@@ -598,7 +598,8 @@ void GenericCXXCodeGen::RunOnHostFunction(Function& function) {
     std::string arg_name = opts_.emit_inference_func_sig
                                ? "outputs[" + std::to_string(index++) + "]"
                                : "out_" + cv.name;
-    os_ << "  odla_GetValueData(" << Join(cv.name, arg_name) << ");\n";
+    os_ << "  odla_GetValueData(" << Join(cv.name, arg_name, EmitNull())
+        << ");\n";
   }
 
   for (const auto& name : created_val_names) {

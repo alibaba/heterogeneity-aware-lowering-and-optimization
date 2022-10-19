@@ -223,7 +223,7 @@ static odla_value profile(Args... args) {
     return ret;
   }
   std::vector<float> buf(GetTotalElements(vt.shape));
-  odla_GetValueData(ret, buf.data());
+  odla_GetValueData(ret, buf.data(), nullptr /*context*/);
   odla_ProfileValue(fn_name, buf.data(), vt, reinterpret_cast<char*>(id));
   return ret;
 }
@@ -317,7 +317,8 @@ odla_status odla_GetValueType(const odla_value value,
 }
 
 static constexpr const char fn_gvd[] = "odla_GetValueData";
-odla_status odla_GetValueData(const odla_value value, odla_void* data_ptr) {
+odla_status odla_GetValueData(const odla_value value, odla_void* data_ptr,
+                              odla_context context) {
   return dispatch<fn_gvd, odla_status>(value, data_ptr);
 }
 
@@ -341,10 +342,12 @@ odla_value odla_AveragePool(odla_value input, odla_memory_layout input_layout,
                             const odla_uint32* strides,
                             const odla_uint32* paddings_front,
                             const odla_uint32* paddings_back,
+                            odla_bool padding_included,
                             odla_value_shape output_dims,
                             const odla_value_id value_id) {
   return profile<fn_ap>(input, input_layout, window_dims, strides,
-                        paddings_front, paddings_back, output_dims, value_id);
+                        paddings_front, paddings_back, padding_included,
+                        output_dims, value_id);
 }
 
 static constexpr const char fn_bn[] = "odla_BatchNormalization";

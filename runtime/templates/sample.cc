@@ -1,7 +1,7 @@
 #include "ODLA/odla.h"
 
-__attribute__((annotate("halo_build_computation")))
-odla_computation static build_model();
+__attribute__((annotate("halo_build_computation"))) static void build_model(
+    odla_computation);
 
 static odla_context ctx;
 static odla_computation comp;
@@ -12,7 +12,8 @@ static odla_uint32 nr_outputs;
 
 static int init_model() {
   if (comp == nullptr) {
-    comp = build_model();
+    odla_CreateComputation(&comp);
+    build_model(comp);
   }
   if (ctx == nullptr) {
     odla_CreateContext(&ctx);

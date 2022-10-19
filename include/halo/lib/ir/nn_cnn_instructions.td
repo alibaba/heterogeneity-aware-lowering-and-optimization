@@ -92,6 +92,8 @@ let cat_ = cat_nn_cnn in {
                         IntegerList, "paddings_after", "{}">,
                   Attr<"The round mode to compute the output shape.",
                        Integer, "round_mode", "0">,
+                  Attr<"Padding included in computation",
+                       Bool, "padding_included", "false">,
                   Attr<"The input data format.",
                        EnumDataFormat, "data_format", "NHWC">,
                   Attr<"The constant padding value",
