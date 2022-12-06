@@ -19,6 +19,7 @@ option(ODLA_BUILD_POPART_CUSTOM_OPS "Link with Popart custom ops" ON)
 option(ODLA_BUILD_POPART_UNITEST "Link with Popart unitest " ON)
 
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DONNX_NAMESPACE=onnx")
 if(ENABLE_COVERAGE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage --coverage")
 endif()
@@ -41,9 +42,6 @@ set(POPART_ROOT ${POPART_ROOT} PARENT_SCOPE)
 
 list(APPEND CMAKE_PREFIX_PATH ${POPLAR_ROOT})
 list(APPEND CMAKE_PREFIX_PATH ${POPART_ROOT})
-find_package(popart 2.3.0... REQUIRED CONFIG COMPONENTS popart-only REQUIRED)
-
-message(STATUS "Found popart, version: ${popart_VERSION}")
 
 if (ODLA_BUILD_POPART_CUSTOM_OPS)
   message(STATUS "Build popart custom op")
@@ -58,7 +56,7 @@ if (NOT ODLA_BUILD_POPART_USE_CXX11ABI)
 endif()
 
 
-target_link_libraries(odla_popart PUBLIC ODLA custom_ops popart-only)
+target_link_libraries(odla_popart PUBLIC ODLA custom_ops popart)
 
 if(ENABLE_COVERAGE)
   target_link_libraries(odla_popart PUBLIC gcov)

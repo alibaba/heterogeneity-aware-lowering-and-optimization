@@ -28,6 +28,7 @@
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/version.hpp>
+#include <popart/session.hpp>
 
 #include "odla_pipeline.h"
 #include "onnx/onnx.pb.h"
@@ -278,7 +279,8 @@ odla_status _odla_computation::init(bool is_compile) {
                 int config_len = 0;
                 cache_fs->read((char*)&config_len, sizeof(config_len));
                 cache_fs->seekg(config_len + sizeof(config_len), std::ios::beg);
-                new_session->loadExecutableFromStream(*(cache_fs.get()));
+                std::shared_ptr<std::istream> in{cache_fs.get()};
+                new_session->loadExecutableFromStream(in);
               } catch (std::exception& e) {
                 popart::logging::err("bad cache file: {}", e.what());
                 return ODLA_FAILURE;
