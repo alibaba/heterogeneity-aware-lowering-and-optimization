@@ -34,7 +34,7 @@ cmake_flags="$cmake_flags -DHALO_USE_STATIC_PROTOBUF=ON -DCPACK_SYSTEM_NAME=ubun
 gid=$(id -g ${USER})
 group=$(id -g -n ${USER})
 uid=$(id -u ${USER})
-extra_mnt="-v /opt/poplar_sdk-ubuntu_18_04-2.3.1_793:/opt/poplar_sdk:ro"
+extra_mnt="-v /opt/poplar_sdk-ubuntu_18_04-3.1.0-EA.1+1167-ed39666085:/opt/poplar_sdk:ro"
 mkdir -p /tmp/ubuntu.cache
 extra_mnt="$extra_mnt -v /tmp/ubuntu.cache:/cache"
 
