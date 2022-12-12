@@ -28,7 +28,7 @@ if (NOT ODLA_BUILD_POPART_USE_CXX11ABI)
   target_compile_definitions(custom_ops PRIVATE _GLIBCXX_USE_CXX11_ABI=0)
 endif()
 
-target_link_libraries(custom_ops PRIVATE popart-only)
+target_link_libraries(custom_ops PRIVATE popart)
 target_include_directories(custom_ops PRIVATE
    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/onnx/
    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/include/

@@ -34,12 +34,12 @@ cmake_flags="$cmake_flags -DHALO_USE_STATIC_PROTOBUF=ON -DCPACK_SYSTEM_NAME=ubun
 gid=$(id -g ${USER})
 group=$(id -g -n ${USER})
 uid=$(id -u ${USER})
-extra_mnt="-v /opt/poplar_sdk-ubuntu_18_04-2.3.1_793:/opt/poplar_sdk:ro"
+extra_mnt="-v /opt/poplar_sdk-ubuntu_18_04-3.1.0-EA.1+1167-ed39666085:/opt/poplar_sdk:ro"
 mkdir -p /tmp/ubuntu.cache
 extra_mnt="$extra_mnt -v /tmp/ubuntu.cache:/cache"
 
 rm -fr $MOUNT_DIR/output_ubuntu && mkdir -p $MOUNT_DIR/output_ubuntu
-extra_cmd="source /opt/poplar_sdk/poplar/enable.sh" # dummy command
+extra_cmd="source /opt/poplar_sdk/poplar-ubuntu_18_04-3.1.0+7890-b8d7a31595/enable.sh" # dummy command
 cmd="cd /build && cmake -G Ninja $cmake_flags /host/halo "
 cmd="$cmd && ninja && $extra_cmd && $check_cmds && ninja package "
 cmd="$cmd && cp /build/*.bz2 /host/output_ubuntu"

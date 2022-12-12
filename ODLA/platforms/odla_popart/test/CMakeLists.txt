@@ -28,7 +28,7 @@ function(add_odla_cpp_unit_test name)
   set(target_name ${ARGV0})
 
   add_executable(${target_name} ${FILES} utils.cc)
-  target_link_libraries(${target_name} PUBLIC ODLA pthread gcov custom_ops odla_popart popart-only)
+  target_link_libraries(${target_name} PUBLIC ODLA pthread gcov custom_ops odla_popart popart)
 
   target_include_directories(${target_name}
       PRIVATE
