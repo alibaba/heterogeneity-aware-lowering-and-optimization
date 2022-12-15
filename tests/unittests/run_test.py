@@ -118,9 +118,9 @@ def link(case_path, obj_file, device, flags):
     lib_path = []
     lib_path.append('-L' + odla_lib)
     if device =='popart':
-        poplar_prefix = '/opt/poplar_sdk-ubuntu_18_04-1.4.0+365-665f971c8f'
-        poplar_path = poplar_prefix + '/poplar-ubuntu_18_04-1.4.0+71819-c5c0c8ebab/lib'
-        popart_path = poplar_prefix + '/popart-ubuntu_18_04-1.4.0+5352-e86081acc9/lib'
+        poplar_prefix = '/opt/poplar_sdk'
+        poplar_path = poplar_prefix + '/poplar/lib'
+        popart_path = poplar_prefix + '/popart/lib'
 
         lib_path = ['-L'+poplar_path]
         lib_path.append('-L'+popart_path)
