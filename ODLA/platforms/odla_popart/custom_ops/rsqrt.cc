@@ -26,6 +26,8 @@
 #include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popops/ElementWise.hpp>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
 #include <vector>
 
 namespace CustomOperators {

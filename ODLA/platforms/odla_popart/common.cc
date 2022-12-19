@@ -140,8 +140,8 @@ std::unique_ptr<popart::IArray> MakeNDArrayWrapper(const odla_void* data_ptr,
       break;
     }
     case popart::DataType::FLOAT16: {
-      pArray = std::make_unique<popart::NDArrayWrapper<popart::float16_t>>(
-          reinterpret_cast<popart::float16_t*>(ptr), shape);
+      pArray = std::make_unique<popart::NDArrayWrapper<popart::Half>>(
+          reinterpret_cast<popart::Half*>(ptr), shape);
       break;
     }
     case popart::DataType::UINT32: {

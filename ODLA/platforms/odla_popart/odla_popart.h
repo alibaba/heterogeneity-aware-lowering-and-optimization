@@ -23,8 +23,10 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <popart/iarray.hpp>
 #include <popart/builder.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/devicemanager.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensorinfo.hpp>

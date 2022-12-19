@@ -26,5 +26,4 @@
 // RUN: %t_popart.exe 0.0001 0 popart %data_path/test_pow_types_int32_int32 | FileCheck %s
 // CHECK: Result Pass
 // clang-format on
-// XFAIL: *
 #include "test_pow_types_int32_int32_popart.cc.tmp.main.cc.in"
