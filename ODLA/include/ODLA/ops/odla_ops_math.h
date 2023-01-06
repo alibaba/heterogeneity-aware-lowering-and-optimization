@@ -141,7 +141,7 @@ odla_ArgMin(odla_value input, odla_int32 axis, odla_bool keep_dims,
 
 //! \brief ASin
 /*!
-  Computes asin of \p x element-wise.
+  Computes inverse sine of \p x element-wise.
 
   \param x input value
   \param id the value id assigned to the result
@@ -154,7 +154,7 @@ odla_ASin(odla_value x, const odla_value_id value_id);
 
 //! \brief ASinh
 /*!
-  Computes asinh of \p x element-wise.
+  Computes inverse hyperbolic sine of \p x element-wise.
 
   \param x input value
   \param id the value id assigned to the result
@@ -167,7 +167,7 @@ odla_ASinh(odla_value x, const odla_value_id value_id);
 
 //! \brief ATan
 /*!
-  Computes atan of \p x element-wise.
+  Computes inverse tangent of \p x element-wise.
 
   \param x input value
   \param id the value id assigned to the result
@@ -180,7 +180,7 @@ odla_ATan(odla_value x, const odla_value_id value_id);
 
 //! \brief ATanh
 /*!
-  Computes atanh of \p x element-wise.
+  Computes inverse hyperbolic tangent of \p x element-wise.
 
   \param x input value
   \param id the value id assigned to the result
@@ -929,19 +929,6 @@ extern ODLA_API_EXPORT odla_value ODLA_API_CALL odla_SquaredDifference(
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Sub(odla_value lhs, odla_value rhs, const odla_value_id value_id);
 
-//! \brief Cos
-/*!
-  Computes sine of \p x element-wise.
-
-  \param x input value
-  \param id the value id assigned to the result
-  \param value_id a unique value id (can be NULL)
-
-  \return odla_value
-*/
-extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_Cos(odla_value x, const odla_value_id value_id);
-
 //! \brief Sin
 /*!
   Computes sine of \p x element-wise.
@@ -957,7 +944,7 @@ odla_Sin(odla_value x, const odla_value_id value_id);
 
 //! \brief Sinh
 /*!
-  Computes sineh of \p x element-wise.
+  Computes hyperbolic sine of \p x element-wise.
 
   \param x input value
   \param id the value id assigned to the result
@@ -970,7 +957,7 @@ odla_Sinh(odla_value x, const odla_value_id value_id);
 
 //! \brief Cos
 /*!
-  Computes cosin of \p x element-wise.
+  Computes cosine of \p x element-wise.
 
   \param x input value
   \param id the value id assigned to the result
@@ -983,7 +970,7 @@ odla_Cos(odla_value x, const odla_value_id value_id);
 
 //! \brief Cosh
 /*!
-  Computes cosinh of \p x element-wise.
+  Computes hyperbolic cosine of \p x element-wise.
 
   \param x input value
   \param id the value id assigned to the result
@@ -996,7 +983,7 @@ odla_Cosh(odla_value x, const odla_value_id value_id);
 
 //! \brief Tan
 /*!
-  Computes tan of \p x element-wise.
+  Computes tangent of \p x element-wise.
 
   \param x input value
   \param id the value id assigned to the result
@@ -1009,7 +996,7 @@ odla_Tan(odla_value x, const odla_value_id value_id);
 
 //! \brief Tanh
 /*!
-  Computes tanh of \p x element-wise.
+  Computes hyperbolic tangent of \p x element-wise.
 
   \param x input value
   \param id the value id assigned to the result

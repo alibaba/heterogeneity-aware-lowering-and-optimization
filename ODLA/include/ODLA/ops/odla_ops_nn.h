@@ -681,18 +681,6 @@ odla_Softplus(odla_value input, const odla_value_id value_id);
 extern ODLA_API_EXPORT odla_value ODLA_API_CALL
 odla_Softsign(odla_value input, const odla_value_id value_id);
 
-//! \brief Tanh activation
-/*!
-  Tanh computes the tanh activation as (1 - e^{-2x})/(1 + e^{-2x})
-
-  \param input the input value
-  \param value_id a unique value id (can be NULL)
-
-  \return odla_value
-*/
-extern ODLA_API_EXPORT odla_value ODLA_API_CALL
-odla_Tanh(odla_value input, const odla_value_id value_id);
-
 //! \brief TF-IDF vectorization
 /*!
   TFIDF vectorizes input sequence into a vector.
