@@ -336,7 +336,7 @@ var searchData=
   ['odla_5fstring_333',['odla_string',['../odla__common_8h.html#abd5c0aa787a6e04de64aef40f80c8cc2',1,'odla_common.h']]],
   ['odla_5fsub_334',['odla_Sub',['../odla__ops__math_8h.html#aef5bd943a5e2861e38b74c5c76e0a1c4',1,'odla_ops_math.h']]],
   ['odla_5ftan_335',['odla_Tan',['../odla__ops__math_8h.html#aa91e1621d81e9f51c52a430f77a87824',1,'odla_ops_math.h']]],
-  ['odla_5ftanh_336',['odla_Tanh',['../odla__ops__math_8h.html#a9fba86df17d435c481fcabc39f89f211',1,'odla_Tanh(odla_value x, const odla_value_id value_id):&#160;odla_ops_math.h'],['../odla__ops__nn_8h.html#a88c73b46ef6ff6838bc6d945cf1ac217',1,'odla_Tanh(odla_value input, const odla_value_id value_id):&#160;odla_ops_nn.h']]],
+  ['odla_5ftanh_336',['odla_Tanh',['../odla__ops__math_8h.html#a9fba86df17d435c481fcabc39f89f211',1,'odla_ops_math.h']]],
   ['odla_5ftask_337',['odla_task',['../structodla__task.html',1,'']]],
   ['odla_5ftask_2eh_338',['odla_task.h',['../odla__task_8h.html',1,'']]],
   ['odla_5ftf_5fidf_5fmode_339',['odla_tf_idf_mode',['../odla__ops__nn_8h.html#a4b7910500dd621f0d6fab963c8b980eb',1,'odla_ops_nn.h']]],

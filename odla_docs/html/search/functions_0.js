@@ -214,7 +214,7 @@ var searchData=
   ['odla_5fstoreexecutable_211',['odla_StoreExecutable',['../odla__compute_8h.html#a83cd0160f48a08b2d52bfd054b0ebadb',1,'odla_compute.h']]],
   ['odla_5fsub_212',['odla_Sub',['../odla__ops__math_8h.html#aef5bd943a5e2861e38b74c5c76e0a1c4',1,'odla_ops_math.h']]],
   ['odla_5ftan_213',['odla_Tan',['../odla__ops__math_8h.html#aa91e1621d81e9f51c52a430f77a87824',1,'odla_ops_math.h']]],
-  ['odla_5ftanh_214',['odla_Tanh',['../odla__ops__math_8h.html#a9fba86df17d435c481fcabc39f89f211',1,'odla_Tanh(odla_value x, const odla_value_id value_id):&#160;odla_ops_math.h'],['../odla__ops__nn_8h.html#a88c73b46ef6ff6838bc6d945cf1ac217',1,'odla_Tanh(odla_value input, const odla_value_id value_id):&#160;odla_ops_nn.h']]],
+  ['odla_5ftanh_214',['odla_Tanh',['../odla__ops__math_8h.html#a9fba86df17d435c481fcabc39f89f211',1,'odla_ops_math.h']]],
   ['odla_5ftfidfvectorize_215',['odla_TFIDFVectorize',['../odla__ops__nn_8h.html#a79465412384e1f136beaad67f0b8f086',1,'odla_ops_nn.h']]],
   ['odla_5fthresholdedrelu_216',['odla_ThresholdedRelu',['../odla__ops__nn_8h.html#aeb2f3d624857d69143d99c805d94da1f',1,'odla_ops_nn.h']]],
   ['odla_5ftile_217',['odla_Tile',['../odla__ops__process_8h.html#a5d649803433bda1bfd538cdf689d22e2',1,'odla_ops_process.h']]],
