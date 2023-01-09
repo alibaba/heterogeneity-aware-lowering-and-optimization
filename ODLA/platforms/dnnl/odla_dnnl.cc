@@ -1533,11 +1533,28 @@ odla_value odla_Resize(odla_value input, odla_interpolation_mode interpolation,
   auto input_md = input->mem.get_desc();
   auto dt = input->mem.get_desc().data_type();
 
-  auto ret_md = dnnl::memory::desc(getDims(output_dims), dt,
-                                   dnnl::memory::format_tag::nchw);
+  auto format_tag = dnnl::memory::format_tag::nchw;
+
+  float scale_h;
+  float scale_w;
+  std::vector<float> scales = {1.0f, 1.0f, 1.0f, 1.0f};
+  if (axes_mask == -1) {
+    scale_h = 1.0f * output_dims.dims[1] / input_md.dims()[1];
+    scale_w = 1.0f * output_dims.dims[2] / input_md.dims()[2];
+    scales[1] = scale_h;
+    scales[2] = scale_w;
+    format_tag = dnnl::memory::format_tag::nhwc;
+  } else {
+    scale_h = 1.0f * output_dims.dims[2] / input_md.dims()[2];
+    scale_w = 1.0f * output_dims.dims[3] / input_md.dims()[3];
+    scales[2] = scale_h;
+    scales[3] = scale_w;
+  }
+
+  auto ret_md = dnnl::memory::desc(getDims(output_dims), dt, format_tag);
 
   auto op_desc = dnnl::resampling_forward::desc(
-      dnnl::prop_kind::forward_inference, algo, input_md, ret_md);
+      dnnl::prop_kind::forward_inference, algo, scales, input_md);
   auto pd = dnnl::resampling_forward::primitive_desc(op_desc, g_comp->eng);
   auto prim = dnnl::resampling_forward(pd);
 
