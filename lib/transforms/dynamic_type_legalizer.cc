@@ -46,6 +46,21 @@ static void RunOnInstruction(ReshapeInst* inst) {
   }
 }
 
+static void RunOnInstruction(UnsqueezeInst* inst) {
+  auto op0 = inst->GetOperand(0);
+  const auto& op0_type = op0.GetType();
+  auto op1 = inst->GetOperand(1);
+  const auto& op1_type = op1.GetType();
+
+  if (!op0.GetType().IsValid()) {
+    return;
+  }
+  std::vector<int64_t> ret_shape(
+      (op1_type.GetNumOfElementsInDim(0) + op0_type.GetNumOfDims()), -1);
+  Type new_type{op0_type.GetDataType(), ret_shape};
+  inst->GetResultsTypes()[0] = new_type;
+}
+
 bool DynamicTypeLegalizer::RunOnBasicBlock(BasicBlock* bb) {
   bool changed = false;
   // Dedup names.

@@ -26,6 +26,7 @@
 #include <cstring>
 #include <iostream>
 #include <numeric>
+#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -936,6 +937,43 @@ odla_value odla_ReshapeDynamic(odla_value input, odla_value output_shape,
     if (neg_dim >= 0) {
       new_output_dims.dims[neg_dim] = elements_num / product;
     }
+    is_dynamic_shape = true;
+    real_shape[v] = new_output_dims;
+  };
+  add_op(op);
+  InterpretIfNeeded();
+  return v;
+}
+
+odla_value odla_Unsqueeze(odla_value input, odla_value axes,
+                          const odla_value_id value_id) {
+  const auto& input_dims = input->shape;
+  int dims = input_dims.size;
+  const auto& axes_dims = axes->shape;
+  int axes_nbdims = axes_dims.dims[0];
+
+  dnnl::memory::data_type type = input->mem.get_desc().data_type();
+  dnnl::memory::desc dst_md = getMemoryDesc(input_dims, type);
+  auto dst_mem = dnnl::memory(dst_md, g_comp->eng);
+  auto v = CreateValue(dst_mem, input_dims, value_id);
+  auto len_input = getValueStorageSize(input);
+
+  auto op = [=]() {
+    int output_rank = dims + axes_nbdims;
+    memcpy(dst_mem.get_data_handle(), input->mem.get_data_handle(), len_input);
+    int64_t* p_axes_mem = static_cast<int64_t*>(axes->mem.get_data_handle());
+    std::set<int64_t> axes_data;
+    axes_data = std::set<int64_t>(p_axes_mem, p_axes_mem + axes_nbdims);
+
+    odla_value_shape new_output_dims;
+    new_output_dims.size = output_rank;
+    for (int i = 0, j = 0; i < output_rank; ++i) {
+      new_output_dims.dims[i] =
+          (axes_data.count(i) != 0 || axes_data.count(i - output_rank) != 0)
+              ? 1
+              : input_dims.dims[j++];
+    }
+
     is_dynamic_shape = true;
     real_shape[v] = new_output_dims;
   };

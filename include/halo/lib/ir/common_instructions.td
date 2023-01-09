@@ -98,7 +98,12 @@ let cat_ = cat_common in {
                 Arg<"The shape.", ArgType<[I32,I64]>, 1D>];
     let outs_ = [Arg<"The result.", MatchArgType<0> >];
   }
-
+  def Unsqueeze : Inst<"Unsqueeze the input X1 to create the result with the same"
+                     " number of elements and the shape specified by X2."> {
+    let ins_ = [Arg<"The input.", ArgType<[I8,I16,I32,F16,F32]> >,
+                Arg<"The shape.", ArgType<[I32,I64]>, 1D>];
+    let outs_ = [Arg<"The result.", MatchArgType<0> >];
+  }
   def Return : Inst<"Specify the final output results."> {
     let ins_ = [VarArg<"The operands that will be used as final results",
                     ArgType<[I8,I16,I32,F16,F32]> >];

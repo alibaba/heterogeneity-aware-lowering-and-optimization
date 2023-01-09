@@ -50,4 +50,18 @@ void GenericCXXCodeGen::RunOnInstruction(ShapeInst* inst) {
   ir_mapping_[*inst] = ret;
 }
 
+void GenericCXXCodeGen::RunOnInstruction(UnsqueezeInst* inst) {
+  const Def& input = inst->GetOperand(0);
+
+  CXXValue op0 = ir_mapping_[input];
+
+  CXXValue ret(inst->GetName(), op0.type);
+
+  const Def& axes = inst->GetOperand(1);
+  CXXValue op1 = ir_mapping_[axes];
+  EmitODLACall(ret, "odla_Unsqueeze", op0, op1);
+
+  ir_mapping_[*inst] = ret;
+}
+
 } // namespace halo
