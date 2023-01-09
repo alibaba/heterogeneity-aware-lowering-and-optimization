@@ -44,6 +44,9 @@ class Type final {
   /// To constructs a dt_id type with the shape.
   explicit Type(DataType dt_id, const std::vector<int64_t>& shape);
 
+  explicit Type(DataType dt_id, const std::vector<int64_t>& shape,
+                bool is_literal);
+
   Type(const Type& src_type) = default;
   Type(Type&& src_type) = default;
   Type& operator=(const Type& src_type) = default;
@@ -70,6 +73,12 @@ class Type final {
   const std::vector<int64_t>& GetDimSizes() const noexcept { return shape_; }
 
   DataType GetDataType() const noexcept { return data_type_id_; }
+
+  /// Return true if it is a literal type.
+  bool IsLiteral() const noexcept { return is_literal_; }
+
+  /// Return true if it is a literal type.
+  bool GetLiteral() const noexcept { return is_literal_; }
 
   /// Return true if it is a scalar type.
   bool IsScalar() const noexcept { return is_scalar_; }
@@ -158,6 +167,8 @@ class Type final {
   /// The shape of a scalar type is empty, and the total number
   /// of elements is one.
   std::vector<int64_t> shape_;
+  /// Literal flag, the default is false.
+  bool is_literal_ = false;
 };
 
 template <>

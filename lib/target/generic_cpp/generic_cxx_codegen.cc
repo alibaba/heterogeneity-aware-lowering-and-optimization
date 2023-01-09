@@ -734,6 +734,15 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
   if (emit_builder_func) {
     if (is_compile_mode) {
       os_ << "static odla_computation Comp;\n";
+      if (opts_.is_shape_tensor) {
+        for (uint i = 1; i < function.Args().size(); ++i) {
+          os_ << "static odla_value input" << i << "_value;\n";
+        }
+        os_ << "bool is_dynamic_value = true;\n";
+        os_ << "int min_shape_value = " << opts_.min_shape_value << ";\n";
+        os_ << "int max_shape_value = " << opts_.max_shape_value << ";\n";
+        os_ << "int opt_shape_value = " << opts_.opt_shape_value << ";\n";
+      }
       os_ << "int " << helper_func_name << "(odla_computation comp) {\n";
       EmitComputationItems(&os_, opts_);
     } else {
@@ -795,11 +804,31 @@ void GenericCXXCodeGen::RunOnFunction(Function& function) {
       os_ << "    status = odla_CreateComputation(&Comp);\n";
       os_ << "    " << status_check << "\n";
       os_ << "     status  = (odla_status)" << helper_func_name << "(Comp);\n";
+      if (opts_.is_shape_tensor) {
+        os_ << "odla_SetComputationItem(Comp, ODLA_DYNAMIC_VALUE, "
+               "(odla_item_value) &is_dynamic_value);\n";
+        for (uint i = 1; i < function.Args().size(); ++i) {
+          os_ << "odla_GetArgFromComputationByIdx(Comp," << i << ",&input" << i
+              << "_value);\n";
+          os_ << "odla_SetInputValueInfo("
+              << "input" << i
+              << "_value, ODLA_MIN_VALUE,"
+                 "(odla_item_value) &min_shape_value);\n";
+          os_ << "odla_SetInputValueInfo("
+              << "input" << i
+              << "_value, ODLA_OPT_VALUE,"
+                 "(odla_item_value) &opt_shape_value);\n";
+          os_ << "odla_SetInputValueInfo("
+              << "input" << i
+              << "_value, ODLA_MAX_VALUE,"
+                 "(odla_item_value) &max_shape_value);\n";
+        }
+      }
+
       os_ << "  }\n";
       os_ << "  return status;\n";
       os_ << "}\n";
     }
-
     if (function.IsEntryFunction()) {
       os_ << GetFunctionDecl(function, *return_inst, true, true, true)
           << " {\n";
@@ -932,8 +961,12 @@ void GenericCXXCodeGen::RunOnConstant(Constant& constant, bool decl) {
   }
   auto ptr_name = ir_mapping_[constant].name;
   CXXValue value(constant.GetName() + "_", TensorTypeToCXXType(type, true));
+  if (type.IsLiteral()) {
+    EmitODLACall(value, "odla_CreateLiteral", type, ptr_name);
+  } else {
+    EmitODLACall(value, "odla_CreateConstant", type, ptr_name);
+  }
 
-  EmitODLACall(value, "odla_CreateConstant", type, ptr_name);
   ir_mapping_[constant] = value;
 }
 
