@@ -112,10 +112,14 @@ RUN mv /tmp/models/text/machine_comprehension/bert-squad/model/bertsquad-10.onnx
 
 RUN cd /tmp/models && \
     git checkout -b yolov4 625eaec && \
-    git-lfs pull -X="" -I="yolov4.onnx"
+    git-lfs pull -X="" -I="yolov4.onnx" && \
+    git-lfs pull -X="" -I="retinanet-9.onnx"
 
 WORKDIR /models/vision/detection/yolo
 RUN mv /tmp/models/vision/object_detection_segmentation/yolov4/model/yolov4.onnx .
+
+WORKDIR /models/vision/detection/retinanet
+RUN mv /tmp/models/vision/object_detection_segmentation/retinanet/model/retinanet-9.onnx .
 
 WORKDIR /tmp
 RUN git clone --depth=1 -b rel-1.8.0 https://github.com/onnx/onnx.git
@@ -153,7 +157,8 @@ WORKDIR /tmp/models/vision/detection/yolo
 RUN curl -o test.jpg http://images.cocodataset.org/test2017/000000133861.jpg
 RUN curl -O https://raw.githubusercontent.com/AlexeyAB/darknet/master/data/person.jpg
 RUN curl -O https://raw.githubusercontent.com/ultralytics/yolov5/master/data/images/zidane.jpg
-
+WORKDIR /tmp/models/vision/detection/retinanet
+RUN curl -O https://raw.githubusercontent.com/onnx/models/625eaece0dc31ed1f02067307555321b8a8065cd/vision/object_detection_segmentation/retinanet/dependencies/demo.jpg
 
 # Collect all Models & Data
 FROM alpine
