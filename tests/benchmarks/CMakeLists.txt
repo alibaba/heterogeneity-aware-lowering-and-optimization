@@ -14,30 +14,36 @@
 # limitations under the License
 # ==============================================================================
 
-# Name.
-set(NAME IR)
-
-# Source files.
-set(SRCS
-  argument.cc
-  attribute.cc
-  basic_block.cc
-  constant.cc
-  extension_instructions.cc
-  function.cc
-  instruction.cc
-  ir_builder.cc
-  module.cc
-  values.cc
+set(HALO_TEST_DEPENDS
+  FileCheck
+  halolib
+  halo
+  halo_tblgen
 )
 
-# Dependences which need to be built first.
-set(DEPENDENCES
-  IRGEN
-  MODELGEN
+if (ODLA_BUILD_TRT)
+  list(APPEND HALO_TEST_DEPENDS odla_tensorrt)
+endif()
+
+if (ODLA_BUILD_DNNL)
+  list(APPEND HALO_TEST_DEPENDS odla_dnnl)
+endif()
+
+if (ODLA_BUILD_EIGEN)
+  list(APPEND HALO_TEST_DEPENDS odla_eigen)
+endif()
+
+if (ODLA_BUILD_XNNPACK)
+  list(APPEND HALO_TEST_DEPENDS odla_xnnpack)
+endif()
+
+
+configure_lit_site_cfg(
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lit.site.cfg.in
+    ${CMAKE_CURRENT_BINARY_DIR}/../lit.site.cfg
 )
 
-create_halo_object(TARGET_NAME ${NAME}
-  TARGET_SRCS ${SRCS}
-  TARGET_DEPENDENCES ${DEPENDENCES}
+add_lit_testsuite(check-halo-MZBenchs "Running Halo ModelZoo Benchmarks tests"
+  ${CMAKE_CURRENT_BINARY_DIR}
+  DEPENDS ${HALO_TEST_DEPENDS}
 )

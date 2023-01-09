@@ -54,8 +54,10 @@ include(doxygen)
 include(glog)
 include(protobuf)
 include(flatbuf)
+include(model_zoo)
 include(tablegen)
 include(zbuild_llvm)
+
 
 # ========= Include Directories =========
 include_directories(
