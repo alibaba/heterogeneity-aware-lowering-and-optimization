@@ -18,22 +18,10 @@ RUN yum install -y centos-release-scl && \
 SHELL ["/usr/bin/scl", "enable", "devtoolset-7"]
 WORKDIR /tmp
 
-# Install CUDA driver dependencies
-RUN wget http://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/e/epel-release-7-14.noarch.rpm && \
-    rpm -Uvh epel-release*rpm && \
-    rm -rf *.rpm
-RUN yum install -y opencl-filesystem && \
-    yum clean all && \
-    rm -rf /var/cache/yum/*
-
 RUN yum-config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/cuda-rhel7.repo
 
-# Install CUDA driver
-ENV NV_LATEST_VERSION 460.106.00
-RUN yum upgrade -y && \
-    yum install -y nvidia-driver-latest-${NV_LATEST_VERSION} && \
-    yum clean all && \
-    rm -rf /var/cache/yum/*
+# Install CUDA
+ENV CUDA_VERSION 11.4.2
 
 # Install CUDA runtime 
 ENV NV_CUDA_CUDART_VERSION 11.4.108-1
@@ -62,6 +50,12 @@ RUN yum install -y \
     yum clean all && \
     rm -rf /var/cache/yum/*
 
+# Install cudnn8
+ENV NV_CUDNN_VERSION 8.2.4.15-1
+RUN yum install -y libcudnn8-${NV_CUDNN_VERSION}.cuda11.4 && \
+    yum clean all && \
+    rm -rf /var/cache/yum/*
+
 # Install tenssort
 ENV NV_CUDNN_VERSION 8.2.4.15-1.cuda11.4
 ENV NV_NVINFER_DEV_VERSION=8.2.5-1.cuda11.4
@@ -81,7 +75,5 @@ RUN rm -fr /opt/halo && mkdir -p /opt/halo && \
     rm /tmp/*
 ENV PATH="${PATH}:/opt/halo/bin"
 ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/opt/halo/lib"
-
-WORKDIR /root
 
 RUN echo "source scl_source enable devtoolset-7" >> /etc/bashrc
