@@ -127,8 +127,8 @@ jobs:
       - name: Prepare
         id: prepare
         run: |
-          echo "::set-output name=file::$(cd /tmp/download && ls HALO-*-ubuntu*.bz2)"
-          echo "::set-output name=date::$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          echo "file=$(cd /tmp/download && ls HALO-*-ubuntu*.bz2)" >> "$GITHUB_OUTPUT"
+          echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
           tag=latest
           if [[ $GITHUB_REF == refs/tags/Release/* ]]; then
             tag="Release-${GITHUB_REF#refs/tags/Release/}"
@@ -143,7 +143,7 @@ jobs:
             tag=pr-${{ github.event.number }}
           fi
           ls /tmp/download
-          echo ::set-output name=tag::${tag}
+          echo tag=${tag} >> "$GITHUB_OUTPUT"
 
       - name: Login to aliyun
         uses: docker/login-action@v1
